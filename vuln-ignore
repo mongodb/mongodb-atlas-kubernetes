@@ -1,0 +1,5 @@
+## Use entries such as:
+## # url comment/reason for ignoring
+## GO-xxxx-yyyy
+# https://pkg.go.dev/vuln/GO-2024-2687 not bumped to go 1.22.2 yet
+GO-2024-2687
