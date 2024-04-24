@@ -1,34 +1,37 @@
 # Atlas Operator Release Instructions
 
+For the various PRs involved, seek at least someone else to approve. In case of doubts, engage the team member(s) who might be able to clarify and seek their review as well.
+
+## Prerequisites
+
+To get PRs to be auto-committed for RedHat community & Openshift you need to make sure you are listed in the [team members ci.yaml list for community-operators](https://github.com/k8s-operatorhub/community-operators/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml) and [team members ci.yaml list for community-operators-prod](https://github.com/redhat-openshift-ecosystem/community-operators-prod/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml).
+
+This is not required for [Certified Operators](https://github.com/redhat-openshift-ecosystem/certified-operators/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml).
+
+Finally, make sure you have a "RedHat Connect" account and are a [team member with org administrator role in the team list](https://connect.redhat.com/account/team-members).
+
 ## Create the release branch
 
-Use the GitHub UI to create the new "Release Branch" workflow. Specify the version to be released in the text box.
+Use the GitHub UI to create the new "Create Release Branch" workflow. Specify the version to be released in the text box.
 The deployment scripts (K8s configs, OLM bundle) will be generated and PR will be created with new changes on behalf
 of the `github-actions` bot.
 
-NOTE: The X- and Y- stream releases should only be launched using the workflow from the MAIN branch. Z-stream (patch)
-releases can be launched from a separate branch
+Pass the version with the `X.Y.Z` eg. `1.2.3`, **without** the `v...` prefix.
 
-The release creation will fail if the file `major-version` contents does not match the major version to be released. This file explicitly means the upcoming release is for a particular major version, with potential breaking changes. This allows us to:
-
-1. Notice if we forgot to update the `major-version` file before releasing the next major version.
-2. Notice if we tried to re-release an older major version when the code is already prepared for the next major version.
-3. Skip some tests, like `helm update`, when crossing from one major version to the next, as such test is not expected to work across incompatible major version upgrades.
-
-If the create release branch job fails due an error such as `Bad major version for X... expected Y..`, review whether or not the `major-version` file was updated as expected. Check as well you are not trying to release a patch for the older major version from the new major version codebase.
+See [Troubleshooting](#troubleshooting) in case of issues, such as [errors with the major version](#major-version-issues-when-create-release-branch).
 
 ## Approve the Pull Request named "Release x.y.z"
 
-Review the Pull Request. Approve and merge it to main.
+Review the Pull Request. Approve and merge it to `main`.
 The new job "Create Release" will be triggered and the following will be done:
-* Atlas Operator image built and pushed to dockerhub
+* Atlas Operator image is built and pushed to DockerHub
 * Draft Release will be created with all commits since the previous release
 
-Once the Pull Request is approved, a tag is created out of the branch, which can then be discarded. A branch `release/X.Y.Z` will imply a tag `vX.Y.Z`, and `pre-release/X.Y.Z-...` will imply `vX.Y.Z-...`. The `tag.yml` workflow is the one responsible for creating such tag and triggering the release process workflow (`release-post-merge.yml`).
+The "Create Release Branch" workflow is going to create a Pull Request pointing to a `release/X.Y.Z` branch. Once approved and merged, automation is going to create a `vX.Y.Z` tag.
 
 ## Edit the Release Notes and publish the release
 
-Follow the format described in the release-notes-template.md file. Publish the release.
+Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file. Before publishing the release, keep the release in Draft and get an approval from the team and Product Management. Once approved, publish the release.
 
 ## Synchronize configuration changes with the Helm Charts
 
@@ -49,7 +52,12 @@ All bundles/package manifests for Operators for operatorhub.io reside in the fol
 
 ### Fork/Update the community operators repositories
 
-**Note**: this has to be done once only:
+**Note**: this has to be done once only. 
+
+First ensure your SSH keys in [https://github.com/settings/keys] are authorized for `mongodb-forks` MongoDB SSO.
+
+Execute the following steps:
+
 1. Clone each of the above forked OLM repositories from https://github.com/mongodb-forks
 2. Add `upstream` remotes
 3. Export each cloned repository directory in environment variables
@@ -145,6 +153,32 @@ You can see an [example fixed PR here for certified version 1.9.1](https://githu
 
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
 
+# SSDLC checklist publishing
+
+For the time being, preparing the SSDLC checklist for each release is a manual process. Use this [past PR as a starting point](https://github.com/mongodb/mongodb-atlas-kubernetes/pull/1524).
+
+Copy the closest [sdlc-compliance.md](../releases/v2.2.1/sdlc-compliance.md) file and:
+- Update the **version** references to the one being released.
+- Update dates and release creators of the current release.
+
+Update the image signature instructions to match the current version.
+
+Generate the `linux-amd64.sbom.json` and `linux-arm64.sbom.json` SBOM files and place them in the same directory as the compliance doc `docs/releases/vX.Y.Z`:
+
+```shell
+docker sbom --platform "linux/${arch}" -o "docs/releases/v${version}/linux-${arch}.sbom.json" --format "cyclonedx-json" "$image"
+```
+
+Where:
+- `${arch}` is the architecture to generate, either `amd64` or `arm64`.
+- `${version}` is the current version released in `X.Y.Z` format, without the **v** prefix.
+- `${image}` is the image reference released, usually something like `mongodb/mongodb-atlas-kubernetes-operator:${version}`.
+
+Create a PR with the following new files included in the `releases/vX.Y.Z` directory:
+- `linux-amd64.sbom.json`
+- `linux-arm64.sbom.json`
+- `sdlc-compliance.md`
+
 # Post install hook release
 
 If changes have been made to the post install hook (mongodb-atlas-kubernetes/cmd/post-install/main.go).
@@ -171,3 +205,15 @@ git push
 ```
 
 If the release is a new minor version, then the CLI must be updated with the new version (and any new CRDs) [here](https://github.com/mongodb/mongodb-atlas-cli/blob/master/internal/kubernetes/operator/features/crds.go).
+
+## Troubleshooting
+
+### Major version issues when executing the "Create Release Branch" workflow
+
+The release creation will fail if the file `major-version` contents does not match the major version to be released. This file explicitly means the upcoming release is for a particular major version, with potential breaking changes. This allows us to:
+
+1. Notice if we forgot to update the `major-version` file before releasing the next major version.
+2. Notice if we tried to re-release an older major version when the code is already prepared for the next major version.
+3. Skip some tests, like `helm update`, when crossing from one major version to the next, as such test is not expected to work across incompatible major version upgrades.
+
+If the create release branch job fails due an error such as `Bad major version for X... expected Y..`, review whether or not the `major-version` file was updated as expected. Check as well you are not trying to release a patch for the older major version from the new major version codebase.
