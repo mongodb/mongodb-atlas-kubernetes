@@ -155,29 +155,21 @@ After the PR is approved it will soon appear in the [Atlas Operator openshift cl
 
 # SSDLC checklist publishing
 
-For the time being, preparing the SSDLC checklist for each release is a manual process. Use this [past PR as a starting point](https://github.com/mongodb/mongodb-atlas-kubernetes/pull/1524).
-
-Copy the closest [sdlc-compliance.md](../releases/v2.2.1/sdlc-compliance.md) file and:
-- Update the **version** references to the one being released.
-- Update dates and release creators of the current release.
-
-Update the image signature instructions to match the current version.
-
-Generate the `linux-amd64.sbom.json` and `linux-arm64.sbom.json` SBOM files and place them in the same directory as the compliance doc `docs/releases/vX.Y.Z`:
+You can create the draft for the SSDLC checklist just by running:
 
 ```shell
-docker sbom --platform "linux/${arch}" -o "docs/releases/v${version}/linux-${arch}.sbom.json" --format "cyclonedx-json" "$image"
+$ DATE= VERSION="${version}" AUTHORS="${release_authors}" RELEASE_TYPE= make gen-sdlc-checklist
 ```
 
-Where:
-- `${arch}` is the architecture to generate, either `amd64` or `arm64`.
-- `${version}` is the current version released in `X.Y.Z` format, without the **v** prefix.
-- `${image}` is the image reference released, usually something like `mongodb/mongodb-atlas-kubernetes-operator:${version}`.
+- You can leave `DATE` unset so the script may use today's date.
+- `RELEASE_TYPE` is also optional defaulting to `Minor` releases, set to `Major`when appropriate.
 
-Create a PR with the following new files included in the `releases/vX.Y.Z` directory:
+The script generates the directory `docs/releases/v${VERSION}/` with files:
 - `linux-amd64.sbom.json`
 - `linux-arm64.sbom.json`
 - `sdlc-compliance.md`
+
+Add those files to `git`, and create a PR to review the changes to close the release.
 
 # Post install hook release
 
