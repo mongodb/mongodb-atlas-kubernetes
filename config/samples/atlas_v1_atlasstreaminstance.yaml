@@ -1,0 +1,14 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasStreamInstance
+metadata:
+  name: my-streaminstance-sample
+spec:
+  name: my-instance
+  clusterConfig:
+    provider: AWS
+    region: VIRGINIA_USA
+    tier: SP30
+  connectionRegistry:
+    - name: my-streamconnection-sample
+  projectRef:
+    name: my-project

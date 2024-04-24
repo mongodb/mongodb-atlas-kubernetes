@@ -1,0 +1,17 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasStreamConnection
+metadata:
+  name: my-streamconnection-kafka
+spec:
+  name: "kafka-config"
+  type: "Kafka"
+  kafkaConfig:
+    authentication:
+      credentials:
+        name: kafka-userpass
+      mechanism: SCRAM-512
+    bootstrapServers: "kafka.server1:9001,kafka.server2:9002,kafka.server3:9003"
+    security:
+      protocol: SSL
+      certificate:
+        name: kafka-cert

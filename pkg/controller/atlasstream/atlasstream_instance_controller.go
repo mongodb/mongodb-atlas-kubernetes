@@ -144,7 +144,7 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(ctx context.Context, m
 		Watches(
 			&akov2.AtlasStreamConnection{},
 			handler.EnqueueRequestsFromMapFunc(r.findStreamInstancesForStreamConnection),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
 }
