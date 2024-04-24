@@ -22,6 +22,14 @@ type SearchIndex struct {
 	Status *string
 }
 
+func (s *SearchIndex) GetID() string {
+	return pointer.GetOrDefault(s.ID, "")
+}
+
+func (s *SearchIndex) GetStatus() string {
+	return pointer.GetOrDefault(s.Status, "")
+}
+
 func NewSearchIndexFromAKO(index *akov2.SearchIndex, config *akov2.AtlasSearchIndexConfigSpec) *SearchIndex {
 	if index == nil || config == nil {
 		return nil

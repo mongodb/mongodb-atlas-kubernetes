@@ -1,15 +1,12 @@
 package status
 
-type AtlasSearchIndexStatus string
+type AtlasSearchIndexConfigStatus struct {
+	Projects []SearchIndexConfigProject
+}
 
-const (
-	SearchIndexStatusReady   = "Ready"
-	SearchIndexStatusError   = "Error"
-	SearchIndexStatusPending = "Updating"
-)
-
-type AtlasSearchIndex struct {
-	Name   string                 `json:"name"`
-	ID     string                 `json:"ID"`
-	Status AtlasSearchIndexStatus `json:"status"`
+type SearchIndexConfigProject struct {
+	// Unique identifier of the project inside atlas
+	ID string `json:"id,omitempty"`
+	// Name given to the project
+	Name string `json:"name,omitempty"`
 }

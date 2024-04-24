@@ -19,8 +19,8 @@ type AtlasSearchIndexConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasSearchIndexConfigSpec    `json:"spec,omitempty"`
-	Status status.AtlasSearchIndexStatus `json:"status,omitempty"`
+	Spec   AtlasSearchIndexConfigSpec          `json:"spec,omitempty"`
+	Status status.AtlasSearchIndexConfigStatus `json:"status,omitempty"`
 }
 
 // AtlasSearchIndexConfigList contains a list of AtlasSearchIndexConfig

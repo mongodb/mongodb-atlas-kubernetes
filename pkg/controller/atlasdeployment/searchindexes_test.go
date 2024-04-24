@@ -10,21 +10,21 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
-func Test_getIndicesFromAnnotations(t *testing.T) {
+func Test_getIndexesFromAnnotations(t *testing.T) {
 	t.Run("Should return empty map if annotations are empty", func(t *testing.T) {
 		in := map[string]string{}
-		assert.Nil(t, getIndicesFromAnnotations(in))
+		assert.Nil(t, getIndexesFromAnnotations(in))
 	})
 
 	t.Run("Should return empty map if annotations are nil", func(t *testing.T) {
-		assert.Nil(t, getIndicesFromAnnotations(nil))
+		assert.Nil(t, getIndexesFromAnnotations(nil))
 	})
 
 	t.Run("Should return valid IndexName:IndexID pairs", func(t *testing.T) {
 		in := map[string]string{
-			DeploymentIndicesAnnotation: "IndexOne:1,IndexTwo:2,IndexThree:3",
+			DeploymentIndexesAnnotation: "IndexOne:1,IndexTwo:2,IndexThree:3",
 		}
-		result := getIndicesFromAnnotations(in)
+		result := getIndexesFromAnnotations(in)
 		assert.Len(t, result, 3)
 		assert.Equal(t, "1", result["IndexOne"])
 		assert.Equal(t, "2", result["IndexTwo"])
@@ -33,9 +33,9 @@ func Test_getIndicesFromAnnotations(t *testing.T) {
 
 	t.Run("Should return ONLY valid IndexName:IndexID pairs", func(t *testing.T) {
 		in := map[string]string{
-			DeploymentIndicesAnnotation: "IndexOne:1,IndexTwo:2,IndexThree:3,IndexName4,:5",
+			DeploymentIndexesAnnotation: "IndexOne:1,IndexTwo:2,IndexThree:3,IndexName4,:5",
 		}
-		result := getIndicesFromAnnotations(in)
+		result := getIndexesFromAnnotations(in)
 		assert.Len(t, result, 4)
 		assert.Equal(t, "1", result["IndexOne"])
 		assert.Equal(t, "2", result["IndexTwo"])
@@ -44,7 +44,7 @@ func Test_getIndicesFromAnnotations(t *testing.T) {
 	})
 }
 
-func Test_verifyAllIndicesNamesAreUnique(t *testing.T) {
+func Test_verifyAllIndexesNamesAreUnique(t *testing.T) {
 	t.Run("Should return true if all indices names are unique", func(t *testing.T) {
 		in := []akov2.SearchIndex{
 			{
@@ -57,7 +57,7 @@ func Test_verifyAllIndicesNamesAreUnique(t *testing.T) {
 				Name: "Index-Three",
 			},
 		}
-		assert.True(t, verifyAllIndicesNamesAreUnique(in))
+		assert.True(t, verifyAllIndexesNamesAreUnique(in))
 	})
 	t.Run("Should return false if one index name appeared twice", func(t *testing.T) {
 		in := []akov2.SearchIndex{
@@ -71,15 +71,15 @@ func Test_verifyAllIndicesNamesAreUnique(t *testing.T) {
 				Name: "Index-One",
 			},
 		}
-		assert.False(t, verifyAllIndicesNamesAreUnique(in))
+		assert.False(t, verifyAllIndexesNamesAreUnique(in))
 	})
 }
 
-func Test_handleSearchIndices(t *testing.T) {
+func Test_handleSearchIndexes(t *testing.T) {
 
 }
 
-func Test_findIndicesIntersection(t *testing.T) {
+func Test_findIndexesIntersection(t *testing.T) {
 	type args struct {
 		akoIndices   []*searchindex.SearchIndex
 		atlasIndices []*searchindex.SearchIndex
@@ -249,7 +249,7 @@ func Test_findIndicesIntersection(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, findIndicesIntersection(tt.args.akoIndices, tt.args.atlasIndices, tt.args.intersection), "findIndicesIntersection(%v, %v, %v)", tt.args.akoIndices, tt.args.atlasIndices, tt.args.intersection)
+			assert.Equalf(t, tt.want, findIndexesIntersection(tt.args.akoIndices, tt.args.atlasIndices, tt.args.intersection), "findIndexesIntersection(%v, %v, %v)", tt.args.akoIndices, tt.args.atlasIndices, tt.args.intersection)
 		})
 	}
 }

@@ -89,10 +89,11 @@ func advancedDeploymentIdle(ctx *workflow.Context, k8sClient client.Client, proj
 	}
 
 	// process search indices configuration
-	result := handleSearchIndices(ctx, k8sClient, deployment, project.ID())
+	result := handleSearchIndexes(ctx, k8sClient, deployment, project.ID())
 	if !result.IsOk() {
 		return atlasDeploymentAsAtlas, result
 	}
+
 	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, &specDeployment, &atlasDeployment); areEqual {
 		return atlasDeploymentAsAtlas, workflow.OK()
 	}
