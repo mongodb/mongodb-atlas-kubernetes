@@ -19,11 +19,11 @@ The new job "Create Release" will be triggered and the following will be done:
 * Atlas Operator image is built and pushed to DockerHub
 * Draft Release will be created with all commits since the previous release
 
-Once the Pull Request is approved, a tag is created out of the branch, so such branch could be discarded. A branch `release/X.Y.Z` turns into tag `vX.Y.Z`, and `pre-release/X.Y.Z-...` into `vX.Y.Z-...`. The `tag.yml` workflow is the one responsible for creating a tag from the branch closed, and triggering the release process workflow (`release-post-merge.yml`).
+The "Create Release Branch" workflow is going to create a Pull Request pointing to a `release/X.Y.Z` branch. Once approved and merged, automation is going to create a `vX.Y.Z` tag.
 
 ## Edit the Release Notes and publish the release
 
-Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file. Publish the release.
+Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file. Before publishing the release, keep the release in Draft and get an approval from the team and Product Management. Once approved, publish the release.
 
 ## Synchronize configuration changes with the Helm Charts
 
@@ -48,7 +48,7 @@ All bundles/package manifests for Operators for operatorhub.io reside in the fol
 
 First ensure your SSH keys in [https://github.com/settings/keys] are authorized for `mongodb-forks` MongoDB SSO.
 
-Then, from your usual directory holding your git repository copies, do the following:
+Execute the following steps:
 
 1. Clone each of the above forked OLM repositories from https://github.com/mongodb-forks
 2. Add `upstream` remotes
@@ -75,9 +75,11 @@ export RH_CERTIFIED_OPENSHIFT_REPO_PATH=$PWD/certified-operators
 
 ### Before creating PRs against RedHat repositories
 
-To get PRs to be auto-committed for RedHat community & Openshift you need to make sure you are listed in the [team members ci.yaml list (community-operators)](https://github.com/k8s-operatorhub/community-operators/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml). Link for [community-operators-prod](https://github.com/redhat-openshift-ecosystem/community-operators-prod/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml). This is not a requirement for [Certified Operators](https://github.com/redhat-openshift-ecosystem/certified-operators/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml).
+To get PRs to be auto-committed for RedHat community & Openshift you need to make sure you are listed in the [team members ci.yaml list for community-operators](https://github.com/k8s-operatorhub/community-operators/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml) and [team members ci.yaml list for community-operators-prod](https://github.com/redhat-openshift-ecosystem/community-operators-prod/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml).
 
-All this is in addition to holding a RedHat Connect account adn being a [team member with org administrator role in the team list](https://connect.redhat.com/account/team-members), which is part of the *team onboarding*.
+This is not required for [Certified Operators](https://github.com/redhat-openshift-ecosystem/certified-operators/blob/main/operators/mongodb-atlas-kubernetes/ci.yaml).
+
+Finally, make sure you have a "RedHat Connect" account and are a [team member with org administrator role in the team list](https://connect.redhat.com/account/team-members).
 
 ### Create a Pull Request for the `community-operators` repository
 
@@ -157,12 +159,11 @@ For the time being, preparing the SSDLC checklist for each release is a manual p
 
 Copy the closest [sdlc-compliance.md](../releases/v2.2.1/sdlc-compliance.md) file and:
 - Update the **version** references to the one being released.
-- Update dates and release creators to match the reality of the current release.
-- Usually no more changes will be needed. Only if you actually skipped some CI check, like allowed the release to happen even when some report flagged a dependency that had no fix yet, you might need to mention such case.
+- Update dates and release creators of the current release.
 
-There is no need to make any changes about the image signature part other than updating the instructions to the current version.
+Update the image signature instructions to match the current version.
 
-For SBOMs, you will have to *generate* the files and place them in the same directory as the compliance doc `docs/releases/vX.Y.Z`, with the expected names; `linux-amd64.sbom.json` & `linux-arm64.sbom.json`. To generate each f the files you need to run:
+Generate the `linux-amd64.sbom.json` and `linux-arm64.sbom.json` SBOM files and place them in the same directory as the compliance doc `docs/releases/vX.Y.Z`:
 
 ```shell
 docker sbom --platform "linux/${arch}" -o "docs/releases/v${version}/linux-${arch}.sbom.json" --format "cyclonedx-json" "$image"
@@ -173,7 +174,10 @@ Where:
 - `${version}` is the current version released in `X.Y.Z` format, without the **v** prefix.
 - `${image}` is the image reference released, usually something like `mongodb/mongodb-atlas-kubernetes-operator:${version}`.
 
-Once all such information is in place, create a PR with it and merge it as close to the release as possible.
+Create a PR with the following new files included in the `releases/vX.Y.Z` directory:
+- `linux-amd64.sbom.json`
+- `linux-arm64.sbom.json`
+- `sdlc-compliance.md`
 
 # Post install hook release
 
@@ -204,7 +208,7 @@ If the release is a new minor version, then the CLI must be updated with the new
 
 ## Troubleshooting
 
-### Major version issues when Create Release Branch
+### Major version issues when executing the "Create Release Branch" workflow
 
 The release creation will fail if the file `major-version` contents does not match the major version to be released. This file explicitly means the upcoming release is for a particular major version, with potential breaking changes. This allows us to:
 
