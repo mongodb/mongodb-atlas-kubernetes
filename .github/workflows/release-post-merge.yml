@@ -211,7 +211,7 @@ jobs:
         with:
           tag_name: ${{ env.TAG }}
           release_name: ${{ env.TAG }}
-          body_path: docs/release-notes/release-notes.md
+          body_path: docs/release-notes/release-notes-template.md
           draft: true
           prerelease: false
       - name: Upload Release Asset
