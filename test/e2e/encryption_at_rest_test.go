@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -381,7 +380,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 					Execute()
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(projectData).NotTo(BeNil())
-				ginkgo.GinkgoLogr.Info("Project ID", projectData.GetId())
+				GinkgoLogr.Info("Project ID", projectData.GetId())
 				projectID = projectData.GetId()
 				return nil
 			}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
