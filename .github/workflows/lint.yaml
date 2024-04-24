@@ -24,3 +24,6 @@ jobs:
 
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
+
+      - name: Run govulncheck
+        run: make vulncheck

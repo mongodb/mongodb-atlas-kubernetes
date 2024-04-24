@@ -474,3 +474,10 @@ verify: cosign ./ako.pem ## Verify an AKO multi-architecture image's signature
 	@echo "Verifying multi-architecture image signature $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"
+
+govulncheck:
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+
+.PHONY: vulncheck
+vulncheck: ## Run govulncheck to find vulnerabilities in code
+	@./scripts/vulncheck.sh ./vuln-ignore
