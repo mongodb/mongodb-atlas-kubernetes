@@ -3,8 +3,6 @@ package atlasstream
 import (
 	"context"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/fields"
@@ -23,6 +21,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 const instanceNotFound = "STREAM_TENANT_NOT_FOUND_FOR_NAME"
