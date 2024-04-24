@@ -21,7 +21,11 @@ func NewAtlasStreamInstancesByConnectionRegistryIndex(ctx context.Context, idx c
 }
 
 func AtlasStreamInstancesByConnectionRegistryIndices(object client.Object) []string {
-	streamInstance := object.(*akov2.AtlasStreamInstance)
+	streamInstance, ok := object.(*akov2.AtlasStreamInstance)
+	if !ok {
+		return nil
+	}
+
 	if len(streamInstance.Spec.ConnectionRegistry) == 0 {
 		return nil
 	}

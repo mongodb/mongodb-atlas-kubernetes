@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

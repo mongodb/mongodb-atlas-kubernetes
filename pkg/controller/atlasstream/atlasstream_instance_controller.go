@@ -3,7 +3,7 @@ package atlasstream
 import (
 	"context"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
