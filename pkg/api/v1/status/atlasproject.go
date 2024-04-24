@@ -82,39 +82,6 @@ func AtlasProjectPrometheusOption(prometheus *Prometheus) AtlasProjectStatusOpti
 	}
 }
 
-func AtlasProjectSearchIndexOption(indexes *[]ProjectSearchIndexStatus) AtlasProjectStatusOption {
-	return func(s *AtlasProjectStatus) {
-		if indexes == nil {
-			s.SearchIndexes = nil
-			return
-		}
-		s.SearchIndexes = *indexes
-	}
-}
-
-func AtlasProjectSetSearchIndexStatus(indexStatus ProjectSearchIndexStatus) AtlasProjectStatusOption {
-	return func(s *AtlasProjectStatus) {
-		for i := range s.SearchIndexes {
-			if s.SearchIndexes[i].Name == indexStatus.Name {
-				s.SearchIndexes[i] = indexStatus
-				return
-			}
-		}
-		s.SearchIndexes = append(s.SearchIndexes, indexStatus)
-	}
-}
-
-func AtlasProjectUnsetSearchIndexStatus(indexStatus ProjectSearchIndexStatus) AtlasProjectStatusOption {
-	return func(s *AtlasProjectStatus) {
-		for i := range s.SearchIndexes {
-			if s.SearchIndexes[i].Name == indexStatus.Name {
-				s.SearchIndexes = append(s.SearchIndexes[:i], s.SearchIndexes[i+1:]...)
-				return
-			}
-		}
-	}
-}
-
 // AtlasProjectStatus defines the observed state of AtlasProject
 type AtlasProjectStatus struct {
 	Common `json:",inline"`
@@ -149,9 +116,6 @@ type AtlasProjectStatus struct {
 
 	// Teams contains a list of teams assignment statuses
 	Teams []ProjectTeamStatus `json:"teams,omitempty"`
-
-	// SearchIndexes contains a list of search indexes statuses configured for a project
-	SearchIndexes []ProjectSearchIndexStatus `json:"searchIndexes,omitempty"`
 
 	// Prometheus contains the status for Prometheus integration
 	// including the prometheusDiscoveryURL

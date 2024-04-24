@@ -31,6 +31,9 @@ type AtlasDeploymentStatus struct {
 	// MongoURIUpdated is a timestamp in ISO 8601 date and time format in UTC when the connection string was last updated.
 	// The connection string changes if you update any of the other values.
 	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`
+
+	// SearchIndexes contains a list of search indexes statuses configured for a project
+	SearchIndexes []DeploymentSearchIndexStatus `json:"searchIndexes,omitempty"`
 }
 
 const (
@@ -165,5 +168,38 @@ func AtlasDeploymentConnectionStringsOption(connectionStrings *mongodbatlas.Conn
 func AtlasDeploymentMongoURIUpdatedOption(mongoURIUpdated string) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
 		s.MongoURIUpdated = mongoURIUpdated
+	}
+}
+
+func AtlasDeploymentSearchIndexOption(indexes *[]DeploymentSearchIndexStatus) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		if indexes == nil {
+			s.SearchIndexes = nil
+			return
+		}
+		s.SearchIndexes = *indexes
+	}
+}
+
+func AtlasDeploymentSetSearchIndexStatus(indexStatus DeploymentSearchIndexStatus) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		for i := range s.SearchIndexes {
+			if s.SearchIndexes[i].Name == indexStatus.Name {
+				s.SearchIndexes[i] = indexStatus
+				return
+			}
+		}
+		s.SearchIndexes = append(s.SearchIndexes, indexStatus)
+	}
+}
+
+func AtlasDeploymentUnsetSearchIndexStatus(indexStatus DeploymentSearchIndexStatus) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		for i := range s.SearchIndexes {
+			if s.SearchIndexes[i].Name == indexStatus.Name {
+				s.SearchIndexes = append(s.SearchIndexes[:i], s.SearchIndexes[i+1:]...)
+				return
+			}
+		}
 	}
 }

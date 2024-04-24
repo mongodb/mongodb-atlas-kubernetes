@@ -11,7 +11,7 @@ const (
 
 type IndexStatus string
 
-type ProjectSearchIndexStatus struct {
+type DeploymentSearchIndexStatus struct {
 	Name      string                       `json:"name"`
 	ID        string                       `json:"ID"`
 	Status    IndexStatus                  `json:"status"`
@@ -20,10 +20,10 @@ type ProjectSearchIndexStatus struct {
 }
 
 // +k8s:deepcopy-gen=false
-type IndexStatusOption func(status *ProjectSearchIndexStatus)
+type IndexStatusOption func(status *DeploymentSearchIndexStatus)
 
-func NewProjectSearchIndexStatus(status IndexStatus, options ...IndexStatusOption) ProjectSearchIndexStatus {
-	result := &ProjectSearchIndexStatus{
+func NewDeploymentSearchIndexStatus(status IndexStatus, options ...IndexStatusOption) DeploymentSearchIndexStatus {
+	result := &DeploymentSearchIndexStatus{
 		Status: status,
 	}
 	for i := range options {
@@ -33,13 +33,13 @@ func NewProjectSearchIndexStatus(status IndexStatus, options ...IndexStatusOptio
 }
 
 func WithMsg(msg string) IndexStatusOption {
-	return func(s *ProjectSearchIndexStatus) {
+	return func(s *DeploymentSearchIndexStatus) {
 		s.Message = msg
 	}
 }
 
 func WithID(id string) IndexStatusOption {
-	return func(s *ProjectSearchIndexStatus) {
+	return func(s *DeploymentSearchIndexStatus) {
 		s.ID = id
 	}
 }
