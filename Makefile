@@ -481,3 +481,8 @@ govulncheck:
 .PHONY: vulncheck
 vulncheck: ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
+
+.PHONY: gen-sdlc-checklist
+gen-sdlc-checklist: ## Generate the SDLC checklist
+	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" RELEASE_TYPE="$(RELEASE_TYPE)" \
+	./scripts/gen-sdlc-checklist.sh
