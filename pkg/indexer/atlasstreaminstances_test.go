@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -17,7 +18,8 @@ func TestAtlasStreamInstancesByConnectionRegistryIndices(t *testing.T) {
 			},
 		}
 
-		indexes := AtlasStreamInstancesByConnectionRegistryIndices(instance)
+		indexer := AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar())
+		indexes := indexer(instance)
 		assert.Nil(t, indexes)
 	})
 
@@ -38,7 +40,8 @@ func TestAtlasStreamInstancesByConnectionRegistryIndices(t *testing.T) {
 			},
 		}
 
-		indexes := AtlasStreamInstancesByConnectionRegistryIndices(instance)
+		indexer := AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar())
+		indexes := indexer(instance)
 		assert.Equal(
 			t,
 			[]string{

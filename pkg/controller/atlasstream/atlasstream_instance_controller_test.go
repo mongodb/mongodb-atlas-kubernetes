@@ -1040,7 +1040,7 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 			WithIndex(
 				&akov2.AtlasStreamInstance{},
 				indexer.AtlasStreamInstancesByConnectionRegistry,
-				indexer.AtlasStreamInstancesByConnectionRegistryIndices,
+				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
 			).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{

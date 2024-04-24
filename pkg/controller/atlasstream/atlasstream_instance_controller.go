@@ -132,7 +132,7 @@ func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *
 }
 
 func (r *AtlasStreamsInstanceReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	err := indexer.NewAtlasStreamInstancesByConnectionRegistryIndex(ctx, mgr.GetFieldIndexer())
+	err := indexer.NewAtlasStreamInstancesByConnectionRegistryIndex(ctx, r.Log, mgr.GetFieldIndexer())
 	if err != nil {
 		return err
 	}
