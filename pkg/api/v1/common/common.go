@@ -34,6 +34,10 @@ type ResourceRefNamespaced struct {
 	Namespace string `json:"namespace"`
 }
 
+func (rn ResourceRefNamespaced) Key() string {
+	return rn.Name + "|" + rn.Namespace
+}
+
 // LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
 type LabelSpec struct {
 	// +kubebuilder:validation:MaxLength:=255
