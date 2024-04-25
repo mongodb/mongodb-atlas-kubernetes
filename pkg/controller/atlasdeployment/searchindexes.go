@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"net/http"
 	"strings"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -52,6 +53,19 @@ func getIndexesFromAnnotations(in map[string]string) map[string]string {
 			continue
 		}
 		result[res[0]] = res[1]
+	}
+	return result
+}
+
+func getIndexesFromDeploymentStatus(deploymentStatus status.AtlasDeploymentStatus) map[string]string {
+	if len(deploymentStatus.SearchIndexes) == 0 {
+		return map[string]string{}
+	}
+	result := make(map[string]string, len(deploymentStatus.SearchIndexes))
+
+	for i := range deploymentStatus.SearchIndexes {
+		index := &deploymentStatus.SearchIndexes[i]
+		result[index.Name] = index.ID
 	}
 	return result
 }
@@ -154,17 +168,38 @@ func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, deploym
 	// 5. Update status for each Index
 }
 
+type IndexesErrors map[string][]error
+
+func NewIndexesErrors() IndexesErrors {
+	return map[string][]error{}
+}
+
+func (i IndexesErrors) Add(indexName string, err error) {
+	if _, ok := i[indexName]; !ok {
+		i[indexName] = []error{err}
+	} else {
+		i[indexName] = append(i[indexName], err)
+	}
+}
+
+func (i IndexesErrors) GetErrors(indexName string) []error {
+	val, ok := i[indexName]
+	if !ok {
+		return nil
+	}
+	return val
+}
+
 func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	if !verifyAllIndexesNamesAreUnique(sr.deployment.Spec.DeploymentSpec.SearchIndexes) {
 		return sr.terminate(status.SearchIndexesNamesAreNotUnique, fmt.Errorf("every index 'Name' must be unique"))
 	}
 
-	// TODO: refactor that to be taken from the Status
-	previousAKOIndexes := getIndexesFromAnnotations(sr.deployment.GetAnnotations())
+	previousAKOIndexes := getIndexesFromDeploymentStatus(sr.deployment.Status)
 	atlasIndexes := map[string]*searchindex.SearchIndex{}
 
 	// Map[indexName][]listOfErrors
-	var indexesErrors map[string][]error
+	indexesErrors := NewIndexesErrors()
 
 	// Fetch existing indices from Atlas
 	for prevIndexName, prevIndexID := range previousAKOIndexes {
@@ -172,18 +207,24 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			context.Background(), sr.projectID, sr.deployment.GetDeploymentName(), prevIndexID).Execute()
 		// TODO: store the errors in the sr.errors
 		if err != nil {
-			sr.ctx.Log.Debug("couldn't fetch index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
+			if httpResp.StatusCode == http.StatusNotFound {
+				continue
+			}
+			e := fmt.Errorf("couldn't fetch index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
+			indexesErrors.Add(prevIndexName, e)
+			sr.ctx.Log.Debug(e)
 			continue
 		}
 		if resp == nil {
-			sr.ctx.Log.Debug("received an empty index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
+			e := fmt.Errorf("received an empty index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
+			indexesErrors.Add(prevIndexName, e)
+			sr.ctx.Log.Debug(e)
 			continue
 		}
-
 		akoIndex, err := searchindex.NewSearchIndexFromAtlas(*resp)
 		if err != nil {
-			indexesErrors[prevIndexName] = append(indexesErrors[prevIndexName],
-				fmt.Errorf("unable to convert index to AKO. Name: %s, ID: %s, E: %w", prevIndexName, prevIndexID, err))
+			e := fmt.Errorf("unable to convert index to AKO. Name: %s, ID: %s, E: %w", prevIndexName, prevIndexID, err)
+			indexesErrors.Add(prevIndexName, e)
 		}
 
 		atlasIndexes[akoIndex.Name] = akoIndex
@@ -197,11 +238,13 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 
 		err := sr.k8sClient.Get(context.Background(), *akoIndex.IndexConfigRef.GetObject(sr.deployment.Namespace), &idxConfig)
 		if err != nil {
-			indexesErrors[akoIndex.Name] = append(indexesErrors[akoIndex.Name], fmt.Errorf("couldn't get search index configuration. E: %w", err))
+			e := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", akoIndex.Name, err)
+			indexesErrors.Add(akoIndex.Name, e)
 			continue
 		}
 		akoIndexes[akoIndex.Name] = searchindex.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec)
 	}
+
 	var allIndexes map[string]*searchindex.SearchIndex
 	// note: order matters! first Atlas, then AKO so we have most up-to-date desired state
 	maps.Copy(allIndexes, atlasIndexes)
@@ -216,7 +259,6 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 		current := allIndexes[i]
 
 		var akoIdx, atlasIdx *searchindex.SearchIndex
-		var errors []error
 
 		if _, ok := akoIndexes[current.Name]; ok {
 			akoIdx = current
@@ -224,17 +266,14 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 		if _, ok := atlasIndexes[current.Name]; ok {
 			atlasIdx = current
 		}
-		if _, ok := indexesErrors[current.Name]; ok {
-			errors = indexesErrors[current.Name]
-		}
 
 		results = append(results, (&searchIndexReconciler{
-			ctx:         sr.ctx,
-			deployment:  sr.deployment,
-			k8sClient:   sr.k8sClient,
-			projectID:   sr.projectID,
-			indexErrors: errors,
-		}).Reconcile(akoIdx, atlasIdx))
+			ctx:        sr.ctx,
+			deployment: sr.deployment,
+			k8sClient:  sr.k8sClient,
+			projectID:  sr.projectID,
+			indexName:  current.Name,
+		}).Reconcile(akoIdx, atlasIdx, indexesErrors.GetErrors(current.Name)))
 	}
 
 	for i := range results {

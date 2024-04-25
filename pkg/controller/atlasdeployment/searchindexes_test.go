@@ -3,6 +3,9 @@ package atlasdeployment
 import (
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
 
 	"github.com/stretchr/testify/assert"
@@ -250,6 +253,45 @@ func Test_findIndexesIntersection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, findIndexesIntersection(tt.args.akoIndices, tt.args.atlasIndices, tt.args.intersection), "findIndexesIntersection(%v, %v, %v)", tt.args.akoIndices, tt.args.atlasIndices, tt.args.intersection)
+		})
+	}
+}
+
+func Test_getIndexesFromDeploymentStatus(t *testing.T) {
+	tests := []struct {
+		name             string
+		deploymentStatus status.AtlasDeploymentStatus
+		want             map[string]string
+	}{
+		{
+			name: "Should return valid indexes for some valid indexes in the status",
+			deploymentStatus: status.AtlasDeploymentStatus{
+				SearchIndexes: []status.DeploymentSearchIndexStatus{
+					{
+						Name:      "FirstIndex",
+						ID:        "1",
+						Status:    "",
+						ConfigRef: common.ResourceRefNamespaced{},
+						Message:   "",
+					},
+					{
+						Name:      "SecondIndex",
+						ID:        "2",
+						Status:    "",
+						ConfigRef: common.ResourceRefNamespaced{},
+						Message:   "",
+					},
+				},
+			},
+			want: map[string]string{
+				"FirstIndex":  "1",
+				"SecondIndex": "2",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, getIndexesFromDeploymentStatus(tt.deploymentStatus), "getIndexesFromDeploymentStatus(%v)", tt.deploymentStatus)
 		})
 	}
 }

@@ -43,3 +43,9 @@ func WithID(id string) IndexStatusOption {
 		s.ID = id
 	}
 }
+
+func WithName(name string) IndexStatusOption {
+	return func(s *DeploymentSearchIndexStatus) {
+		s.Name = name
+	}
+}

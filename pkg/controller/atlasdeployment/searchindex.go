@@ -19,11 +19,11 @@ const (
 )
 
 type searchIndexReconciler struct {
-	ctx         *workflow.Context
-	deployment  *akov2.AtlasDeployment
-	k8sClient   client.Client
-	projectID   string
-	indexErrors []error
+	ctx        *workflow.Context
+	deployment *akov2.AtlasDeployment
+	k8sClient  client.Client
+	projectID  string
+	indexName  string
 }
 
 func newStatusEntry(index *searchindex.SearchIndex, newStatus status.IndexStatus, msg string) status.DeploymentSearchIndexStatus {
@@ -41,7 +41,15 @@ func newStatusEntry(index *searchindex.SearchIndex, newStatus status.IndexStatus
 	}
 }
 
-func (sr *searchIndexReconciler) Reconcile(stateInAKO, stateInAtlas *searchindex.SearchIndex) workflow.Result {
+func (sr *searchIndexReconciler) Reconcile(stateInAKO, stateInAtlas *searchindex.SearchIndex, errs []error) workflow.Result {
+	sr.ctx.Log.Debugf("starting reconciliation for index '%s'", sr.indexName)
+	defer sr.ctx.Log.Debugf("finished reconciliation for index '%s'", sr.indexName)
+
+	// TODO terminate if there are errors
+	//if len(errs) != 0 {
+	//	return sr.terminate()
+	//}
+
 	emptyInAtlas := stateInAKO == nil
 	emptyInAKO := stateInAtlas == nil
 
@@ -80,7 +88,10 @@ func (sr *searchIndexReconciler) terminate(index *searchindex.SearchIndex, err e
 	sr.ctx.Log.Debug(msg)
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentSetSearchIndexStatus(status.NewDeploymentSearchIndexStatus(
 		status.SearchIndexStatusError,
-		status.WithMsg(msg.Error()), status.WithID(index.GetID()))))
+		status.WithMsg(msg.Error()),
+		status.WithID(index.GetID()),
+		status.WithName(index.Name),
+	)))
 	return workflow.Terminate(status.SearchIndexStatusError, msg.Error())
 }
 
@@ -110,7 +121,7 @@ func (sr *searchIndexReconciler) progress(index *searchindex.SearchIndex) workfl
 	sr.ctx.Log.Debugf("index '%s' is progress: %s", index.Name, index.GetStatus())
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentSetSearchIndexStatus(
 		status.NewDeploymentSearchIndexStatus(status.SearchIndexStatusInProgress,
-			status.WithMsg(*index.Status), status.WithID(index.GetID()))))
+			status.WithMsg(*index.Status), status.WithID(index.GetID()), status.WithName(index.Name))))
 	return workflow.InProgress(status.SearchIndexStatusInProgress, index.GetStatus())
 }
 
@@ -128,7 +139,7 @@ func (sr *searchIndexReconciler) delete(index *searchindex.SearchIndex) workflow
 		return sr.terminate(index, fmt.Errorf("failed to delete index: %w, status: %d", err, resp.StatusCode))
 	}
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentUnsetSearchIndexStatus(status.NewDeploymentSearchIndexStatus("")))
-	return workflow.OK()
+	return sr.progress(index)
 }
 
 func (sr *searchIndexReconciler) update(akoIdx, atlasIdx *searchindex.SearchIndex) workflow.Result {
