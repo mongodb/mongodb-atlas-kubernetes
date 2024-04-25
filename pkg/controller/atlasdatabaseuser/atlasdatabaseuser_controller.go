@@ -32,6 +32,8 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/dbuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/deployment"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -123,7 +125,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	auc, err := newAtlasUsersClient(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	dus, err := dbuser.NewService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
@@ -131,7 +133,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	deletionRequest, result := r.handleDeletion(ctx, databaseUser, project, auc, log)
+	deletionRequest, result := r.handleDeletion(ctx, databaseUser, project, dus, log)
 	if deletionRequest {
 		return result.ReconcileResult(), nil
 	}
@@ -153,7 +155,15 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	result = r.ensureDatabaseUser(workflowCtx, auc, *project, *databaseUser)
+	ds, err := deployment.NewService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	if err != nil {
+		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
+
+		return result.ReconcileResult(), nil
+	}
+
+	result = r.ensureDatabaseUser(workflowCtx, dus, ds, *project, *databaseUser)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 
@@ -208,7 +218,7 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 	ctx context.Context,
 	dbUser *akov2.AtlasDatabaseUser,
 	project *akov2.AtlasProject,
-	auc *atlasUsersClient,
+	dus *dbuser.Service,
 	log *zap.SugaredLogger,
 ) (bool, workflow.Result) {
 	if dbUser.GetDeletionTimestamp().IsZero() {
@@ -233,7 +243,7 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 		return true, workflow.OK()
 	}
 
-	deleted, err := auc.DeleteAtlasUser(ctx, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
+	deleted, err := dus.Delete(ctx, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if err != nil {
 		return true, workflow.Terminate(workflow.DatabaseUserNotDeletedInAtlas, err.Error())
 	}

@@ -11,6 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/dbuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/deployment"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
@@ -18,20 +20,20 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, auc *atlasUsersClient, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, dus *dbuser.Service, ds *deployment.Service, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
 	if result := checkUserExpired(ctx.Context, ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
-	if err := validateScopes(ctx, auc, project.ID(), dbUser); err != nil {
+	if err := validateScopes(ctx, ds, project.ID(), dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
 	}
 
-	if result := performUpdateInAtlas(ctx, r.Client, auc, project, &dbUser); !result.IsOk() {
+	if result := performUpdateInAtlas(ctx, r.Client, dus, project, &dbUser); !result.IsOk() {
 		return result
 	}
 
-	if result := checkDeploymentsHaveReachedGoalState(ctx, auc, project.ID(), dbUser); !result.IsOk() {
+	if result := checkDeploymentsHaveReachedGoalState(ctx, ds, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
@@ -87,7 +89,7 @@ func checkUserExpired(ctx context.Context, log *zap.SugaredLogger, k8sClient cli
 	return workflow.OK()
 }
 
-func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, auc *atlasUsersClient, project akov2.AtlasProject, dbUser *akov2.AtlasDatabaseUser) workflow.Result {
+func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *dbuser.Service, project akov2.AtlasProject, dbUser *akov2.AtlasDatabaseUser) workflow.Result {
 	log := ctx.Log
 
 	secret := &corev1.Secret{}
@@ -108,11 +110,11 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, auc *a
 	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, "Clusters are scheduled to handle database users updates")
 
 	// Try to find the user
-	au, err := auc.GetAtlasUser(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
+	au, err := dus.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if au == nil && err == nil {
 		log.Debugw("User doesn't exist. Create new user", "dbUser", dbUser)
-		au := &atlasUser{AtlasDatabaseUserSpec: dbUser.Spec, password: password}
-		if err = auc.CreateAtlasUser(ctx.Context, dbUser.Spec.DatabaseName, au); err != nil {
+		au := &dbuser.User{AtlasDatabaseUserSpec: dbUser.Spec, Password: password}
+		if err = dus.Create(ctx.Context, dbUser.Spec.DatabaseName, au); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 		}
 		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
@@ -127,7 +129,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, auc *a
 	if shouldUpdate, err := shouldUpdate(ctx.Log, au, dbUser, currentPasswordResourceVersion); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	} else if shouldUpdate {
-		err = auc.UpdateAtlasUser(ctx.Context, project.ID(), dbUser.Spec.Username, au)
+		err = dus.Update(ctx.Context, project.ID(), dbUser.Spec.Username, au)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
@@ -142,9 +144,9 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, auc *a
 	return workflow.OK()
 }
 
-func validateScopes(ctx *workflow.Context, auc *atlasUsersClient, projectID string, user akov2.AtlasDatabaseUser) error {
+func validateScopes(ctx *workflow.Context, ds *deployment.Service, projectID string, user akov2.AtlasDatabaseUser) error {
 	for _, s := range user.GetScopes(akov2.DeploymentScopeType) {
-		exists, err := auc.CheckAdvancedClusterExists(ctx.Context, projectID, s)
+		exists, err := ds.Exists(ctx.Context, projectID, s)
 		if !exists {
 			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
 		}
@@ -155,7 +157,7 @@ func validateScopes(ctx *workflow.Context, auc *atlasUsersClient, projectID stri
 	return nil
 }
 
-func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, auc *atlasUsersClient, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
+func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, ds *deployment.Service, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
 	allDeploymentNames, err := atlasdeployment.GetAllDeploymentNames(ctx.Context, ctx.Client, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -171,7 +173,7 @@ func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, auc *atlasUsers
 
 	readyDeployments := 0
 	for _, c := range deploymentsToCheck {
-		ready, err := auc.DeploymentIsReady(ctx.Context, projectID, c)
+		ready, err := ds.IsReady(ctx.Context, projectID, c)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -206,7 +208,7 @@ func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProjec
 	return deploymentsToCheck
 }
 
-func shouldUpdate(log *zap.SugaredLogger, atlasUser *atlasUser, operatorUser *akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
+func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
 	matches, err := userMatchesSpec(log, &atlasUser.AtlasDatabaseUserSpec, &operatorUser.Spec)
 	if err != nil {
 		return false, err
