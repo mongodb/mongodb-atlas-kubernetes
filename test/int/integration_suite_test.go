@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasstream"
 	"os"
 	"path/filepath"
 	"testing"
@@ -285,6 +286,28 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasFederatedAuth"),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    deletionProtection,
+		SubObjectDeletionProtection: false,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlasstream.AtlasStreamsInstanceReconciler{
+		Client:                      k8sManager.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasStreamInstance").Sugar(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasStreamInstance"),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    deletionProtection,
+		SubObjectDeletionProtection: false,
+	}).SetupWithManager(context.Background(), k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlasstream.AtlasStreamsConnectionReconciler{
+		Client:                      k8sManager.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasStreamConnection").Sugar(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasStreamConnection"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: false,
