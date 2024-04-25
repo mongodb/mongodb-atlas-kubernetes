@@ -35,12 +35,8 @@ function validate() {
     echo "Missing image"
     usage
     exit 1
+
   fi
-  if [ -z "$bucket_name" ]; then
-      echo "Missing bucket name"
-      usage
-      exit 1
-    fi
 }
 
 function generate_sbom() {
@@ -85,6 +81,8 @@ tag_name=${image_pull_spec##*:}
 
 s3_path="s3://${bucket_name}/sboms/$registry_name/$repo_name/$image_name/$tag_name"
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 echo "Generating and uploading SBOM for $image_pull_spec"
 echo "Image Pull Spec: $image_pull_spec"
 echo "Registry: $registry_name"
@@ -95,16 +93,31 @@ echo "Platforms:" "${platforms[@]}"
 echo "S3 Path: $s3_path"
 
 for platform in "${platforms[@]}"; do
-  s3_path_platform_dependent="$s3_path/${platform////_}"
-  file_name="${image_name}_${tag_name}_${platform////_}.json"
+  os=${platform%/*}
+  arch=${platform#*/}
+
+  s3_path_platform_dependent="$s3_path/${os}_${arch}"
+  file_name="${image_name}_${tag_name}_${os}_${arch}.json"
+  
+  digest=$(docker manifest inspect $image_pull_spec | jq '.manifests[] | select(.platform.architecture == "'$arch'" and .platform.os == "'$os'")' | jq -r .digest)
+
+  echo "Verifying image signature before generating SBOM for $image_pull_spec ($platform)"
+  IMG=$image_pull_spec@$digest SIGNATURE_REPO=$repo_name/$image_name ${SCRIPT_DIR}/verify.sh
+
   echo "Generating SBOM for $image_pull_spec ($platform) and uploading to $s3_path_platform_dependent"
 
   if generate_sbom "$image_pull_spec" "$platform" "$file_name"; then
+    echo "Done generating SBOM for $image_pull_spec ($platform)"
+    if [ -z "$bucket_name" ]; then
+      echo "Skipping S3 Upload (no bucket specified)"
+    else 
     echo "Enabling S3 Bucket ($bucket_name) versioning"
     aws s3api put-bucket-versioning --bucket "${bucket_name}" --versioning-configuration Status=Enabled
 
     echo "Copying SBOM file $file_name to $s3_path_platform_dependent"
     aws s3 cp "$file_name" "$s3_path_platform_dependent"
+
+    echo "Done uploading SBOM for $image_pull_spec ($platform)"
+    fi
   fi
-  echo "Done generating and uploading SBOM for $image_pull_spec"
 done
