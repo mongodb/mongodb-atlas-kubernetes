@@ -6,12 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+
 	"github.com/google/go-cmp/cmp"
-	internalcmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"sigs.k8s.io/yaml"
+
+	internalcmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 )
 
 func TestSpecEquality(t *testing.T) {

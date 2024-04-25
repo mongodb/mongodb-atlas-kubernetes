@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
-
 	internalcmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
