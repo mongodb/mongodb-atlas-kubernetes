@@ -94,7 +94,7 @@ func TestSpecEquality(t *testing.T) {
 		},
 	}
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
 	err := internalcmp.Normalize(ref)
 	if err != nil {
 		t.Fatal(err)
