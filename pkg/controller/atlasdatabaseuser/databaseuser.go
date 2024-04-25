@@ -114,7 +114,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *d
 	if au == nil && err == nil {
 		log.Debugw("User doesn't exist. Create new user", "dbUser", dbUser)
 		au := &dbuser.User{AtlasDatabaseUserSpec: dbUser.Spec, Password: password}
-		if err = dus.Create(ctx.Context, dbUser.Spec.DatabaseName, au); err != nil {
+		if err = dus.Create(ctx.Context, au); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 		}
 		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
@@ -129,7 +129,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *d
 	if shouldUpdate, err := shouldUpdate(ctx.Log, au, dbUser, currentPasswordResourceVersion); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	} else if shouldUpdate {
-		err = dus.Update(ctx.Context, project.ID(), dbUser.Spec.Username, au)
+		err = dus.Update(ctx.Context, au)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}

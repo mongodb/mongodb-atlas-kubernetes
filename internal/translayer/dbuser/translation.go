@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
@@ -16,67 +17,67 @@ type User struct {
 	ProjectID string
 }
 
-func toK8sDatabaseUser(dbUser *mongodbatlas.DatabaseUser) (*User, error) {
-	deleteAfterDate, err := toK8sDateString(dbUser.DeleteAfterDate)
+func toK8sDatabaseUser(dbUser *admin.CloudDatabaseUser) (*User, error) {
+	deleteAfterDate, err := toK8sDateString(dbUser.DeleteAfterDate.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse deleteAfterDate: %w", err)
 	}
-	scopes, err := toK8sScopes(dbUser.Scopes)
+	scopes, err := toK8sScopes(dbUser.GetScopes())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse scopes: %w", err)
 	}
 	return &User{
-		ProjectID: dbUser.GroupID,
-		Password:  dbUser.Password,
+		ProjectID: dbUser.GroupId,
+		Password:  dbUser.GetPassword(),
 		AtlasDatabaseUserSpec: akov2.AtlasDatabaseUserSpec{
 			DatabaseName:    dbUser.DatabaseName,
 			DeleteAfterDate: deleteAfterDate,
-			Roles:           toK8sRoles(dbUser.Roles),
+			Roles:           toK8sRoles(dbUser.GetRoles()),
 			Scopes:          scopes,
 			Username:        dbUser.Username,
-			OIDCAuthType:    dbUser.OIDCAuthType,
-			AWSIAMType:      dbUser.AWSIAMType,
-			X509Type:        dbUser.X509Type,
+			OIDCAuthType:    dbUser.GetOidcAuthType(),
+			AWSIAMType:      dbUser.GetAwsIAMType(),
+			X509Type:        dbUser.GetX509Type(),
 		},
 	}, nil
 }
 
-func toAtlas(au *User) *mongodbatlas.DatabaseUser {
-	return &mongodbatlas.DatabaseUser{
-		DatabaseName:    au.DatabaseName,
-		DeleteAfterDate: au.DeleteAfterDate,
-		X509Type:        au.X509Type,
-		AWSIAMType:      au.AWSIAMType,
-		GroupID:         au.ProjectID,
-		Roles:           rolesToAtlas(au.Roles),
-		Scopes:          scopesToAtlas(au.Scopes),
-		Password:        au.Password,
-		Username:        au.Username,
-		OIDCAuthType:    au.OIDCAuthType,
+func toAtlas(au *User) *admin.CloudDatabaseUser {
+	return &admin.CloudDatabaseUser{
+		DatabaseName: au.DatabaseName,
+		//DeleteAfterDate: au.DeleteAfterDate,
+		X509Type:     pointer.MakePtr(au.X509Type),
+		AwsIAMType:   pointer.MakePtr(au.AWSIAMType),
+		GroupId:      au.ProjectID,
+		Roles:        rolesToAtlas(au.Roles),
+		Scopes:       scopesToAtlas(au.Scopes),
+		Password:     pointer.MakePtr(au.Password),
+		Username:     au.Username,
+		OidcAuthType: pointer.MakePtr(au.OIDCAuthType),
 	}
 }
 
-func rolesToAtlas(roles []akov2.RoleSpec) []mongodbatlas.Role {
-	atlasRoles := []mongodbatlas.Role{}
+func rolesToAtlas(roles []akov2.RoleSpec) *[]admin.DatabaseUserRole {
+	atlasRoles := []admin.DatabaseUserRole{}
 	for _, role := range roles {
-		atlasRoles = append(atlasRoles, mongodbatlas.Role{
+		atlasRoles = append(atlasRoles, admin.DatabaseUserRole{
 			RoleName:       role.RoleName,
 			DatabaseName:   role.DatabaseName,
-			CollectionName: role.CollectionName,
+			CollectionName: pointer.MakePtr(role.CollectionName),
 		})
 	}
-	return atlasRoles
+	return &atlasRoles
 }
 
-func scopesToAtlas(scopes []akov2.ScopeSpec) []mongodbatlas.Scope {
-	atlasScopes := []mongodbatlas.Scope{}
+func scopesToAtlas(scopes []akov2.ScopeSpec) *[]admin.UserScope {
+	atlasScopes := []admin.UserScope{}
 	for _, scope := range scopes {
-		atlasScopes = append(atlasScopes, mongodbatlas.Scope{
+		atlasScopes = append(atlasScopes, admin.UserScope{
 			Name: scope.Name,
 			Type: string(scope.Type),
 		})
 	}
-	return atlasScopes
+	return &atlasScopes
 }
 
 func toK8sDateString(date string) (string, error) {
@@ -90,7 +91,7 @@ func toK8sDateString(date string) (string, error) {
 	return "", nil
 }
 
-func toK8sScopes(scopes []mongodbatlas.Scope) ([]akov2.ScopeSpec, error) {
+func toK8sScopes(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
 	specScopes := []akov2.ScopeSpec{}
 	for _, scope := range scopes {
 		scopeType, err := toK8sScopeType(scope.Type)
@@ -120,13 +121,13 @@ func toK8sScopeType(scopeType string) (akov2.ScopeType, error) {
 	}
 }
 
-func toK8sRoles(roles []mongodbatlas.Role) []akov2.RoleSpec {
+func toK8sRoles(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
 	specRoles := []akov2.RoleSpec{}
 	for _, role := range roles {
 		specRoles = append(specRoles, akov2.RoleSpec{
 			RoleName:       role.RoleName,
 			DatabaseName:   role.DatabaseName,
-			CollectionName: role.CollectionName,
+			CollectionName: role.GetCollectionName(),
 		})
 	}
 	sort.Slice(specRoles, func(i, j int) bool {
