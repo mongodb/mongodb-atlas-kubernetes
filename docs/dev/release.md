@@ -10,6 +10,13 @@ This is not required for [Certified Operators](https://github.com/redhat-openshi
 
 Finally, make sure you have a "RedHat Connect" account and are a [team member with org administrator role in the team list](https://connect.redhat.com/account/team-members).
 
+### Tools
+
+Most tools are automatically installed for you. Most of them are Go binaries and use `go install`. There are a few that might cause issues and you might want to pre-install manually:
+
+- [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) from the `gettext` package is used for expanding env vars on files or strings. Here is needed to autogenerate the SDLC checklist document from a template. You can install it manually with `brew` or `apt`/`dnf`, otherwise the makefile will automatically try to install a [envsubst drop-in replacement in Go](https://github.com/drone/envsubst?tab=readme-ov-file).
+- [docker sbom](https://github.com/docker/sbom-cli-plugin/) is a plugin for docker, it might not work for you out of the box. It can be activated as experimental on Docker for Mac. The makefile will try to install it for you, but otherwise you can pre-install it manually by [following the official instructions](https://github.com/docker/sbom-cli-plugin/?tab=readme-ov-file#getting-started) or inspecting the [script used by teh makefile](../../scripts/install-docker-sbom-plugin.sh).
+
 ## Create the release branch
 
 Use the GitHub UI to create the new "Create Release Branch" workflow. Specify the version to be released in the text box.

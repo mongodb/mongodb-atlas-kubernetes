@@ -4,6 +4,8 @@ SHELL := /usr/bin/env bash
 # CONTAINER ENGINE: docker | podman
 CONTAINER_ENGINE?=docker
 
+DOCKER_SBOM_PLUGIN_VERSION=0.6.1
+
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
@@ -482,7 +484,15 @@ govulncheck:
 vulncheck: ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
 
+envsubst:
+	@which envsubst || go install github.com/drone/envsubst/cmd/envsubst@latest
+
+docker-sbom:
+	@docker sbom --help > /dev/null || \
+	DOCKER_SBOM_PLUGIN_VERSION=$(DOCKER_SBOM_PLUGIN_VERSION) \
+	ARCH=$(TARGET_ARCH) OS=$(TARGET_OS) ./scripts/install-docker-sbom-plugin.sh
+
 .PHONY: gen-sdlc-checklist
-gen-sdlc-checklist: ## Generate the SDLC checklist
+gen-sdlc-checklist: envsubst docker-sbom ## Generate the SDLC checklist
 	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" RELEASE_TYPE="$(RELEASE_TYPE)" \
 	./scripts/gen-sdlc-checklist.sh
