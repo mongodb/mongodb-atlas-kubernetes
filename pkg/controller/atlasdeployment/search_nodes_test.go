@@ -203,7 +203,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are in AKO but not in Atlas (create)", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 3)
 
-		mockError := makeMockError(http.StatusBadRequest)
+		mockError := makeMockError()
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
 		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
@@ -252,7 +252,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are in AKO but not in Atlas but create errors", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 3)
 
-		mockError := makeMockError(http.StatusBadRequest)
+		mockError := makeMockError()
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
 		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
@@ -378,7 +378,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("no search nodes in Atlas nor in AKO (unmanaged)", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName)
 
-		mockError := makeMockError(http.StatusBadRequest)
+		mockError := makeMockError()
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
 		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
@@ -521,7 +521,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are deleted in Atlas, AKO is waiting (handle deleting)", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName)
 
-		mockError := makeMockError(http.StatusBadRequest)
+		mockError := makeMockError()
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
 		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
@@ -552,10 +552,10 @@ func TestHandleSearchNodes(t *testing.T) {
 	})
 }
 
-func makeMockError(error int) *admin.GenericOpenAPIError {
+func makeMockError() *admin.GenericOpenAPIError {
 	mockError := &admin.GenericOpenAPIError{}
 	model := *admin.NewApiError()
-	model.SetError(error)
+	model.SetError(http.StatusBadRequest)
 	mockError.SetModel(model)
 	return mockError
 }

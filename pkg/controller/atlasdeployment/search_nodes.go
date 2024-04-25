@@ -284,7 +284,7 @@ func (s *searchNodeController) unmanage() workflow.Result {
 	return workflow.OK()
 }
 
-// unmanage transitions to pending state search nodes are ready and idle.
+// idle transitions to idle state search nodes that are ready and idle.
 func (s *searchNodeController) idle() workflow.Result {
 	s.ctx.SetConditionTrue(status.SearchNodesReadyType)
 	return workflow.OK()
