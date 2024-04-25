@@ -2,9 +2,8 @@ package dbuser
 
 import (
 	"context"
-	"errors"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -13,22 +12,21 @@ import (
 )
 
 type Service struct {
-	mongodbatlas.DatabaseUsersService
+	admin.DatabaseUsersApi
 }
 
 func NewService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*Service, error) {
-	client, err := translayer.NewLegacyClient(ctx, provider, secretRef, log)
+	client, err := translayer.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
 		return nil, err
 	}
-	return &Service{DatabaseUsersService: client.DatabaseUsers}, nil
+	return &Service{DatabaseUsersApi: client.DatabaseUsersApi}, nil
 }
 
 func (dus *Service) Get(ctx context.Context, db, projectID, username string) (*User, error) {
-	atlasDBUser, _, err := dus.DatabaseUsersService.Get(ctx, db, projectID, username)
+	atlasDBUser, _, err := dus.GetDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
-		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.UsernameNotFound {
+		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
 			return nil, nil
 		}
 		return nil, err
@@ -37,23 +35,23 @@ func (dus *Service) Get(ctx context.Context, db, projectID, username string) (*U
 }
 
 func (dus *Service) Delete(ctx context.Context, db, projectID, username string) (bool, error) {
-	_, err := dus.DatabaseUsersService.Delete(ctx, db, projectID, username)
+	_, _, err := dus.DeleteDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
-		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && apiError.ErrorCode != atlas.UsernameNotFound {
-			return false, err
+		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
+			return false, nil
 		}
-		return false, nil
+		return false, err
 	}
 	return true, nil
 }
 
-func (dus *Service) Create(ctx context.Context, db string, au *User) error {
-	_, _, err := dus.DatabaseUsersService.Create(ctx, db, toAtlas(au))
+func (dus *Service) Create(ctx context.Context, au *User) error {
+	_, _, err := dus.CreateDatabaseUser(ctx, au.ProjectID, toAtlas(au)).Execute()
 	return err
 }
 
-func (dus *Service) Update(ctx context.Context, db, projectID string, au *User) error {
-	_, _, err := dus.DatabaseUsersService.Update(ctx, db, projectID, toAtlas(au))
+func (dus *Service) Update(ctx context.Context, au *User) error {
+	_, _, err := dus.UpdateDatabaseUser(
+		ctx, au.ProjectID, au.DatabaseName, au.Username, toAtlas(au)).Execute()
 	return err
 }
