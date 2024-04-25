@@ -1,51 +1,22 @@
-package atlasdatabaseuser
+package dbuser
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"sort"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
-type atlasUser struct {
+type User struct {
 	akov2.AtlasDatabaseUserSpec
-	password  string
-	projectID string
+	Password  string
+	ProjectID string
 }
 
-type atlasUsersClient struct {
-	*mongodbatlas.Client
-}
-
-func newAtlasUsersClient(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*atlasUsersClient, error) {
-	client, _, err := provider.Client(ctx, secretRef, log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate Atlas client for db users: %w", err)
-	}
-	return &atlasUsersClient{Client: client}, nil
-}
-
-func (auc *atlasUsersClient) GetAtlasUser(ctx context.Context, db, projectID, username string) (*atlasUser, error) {
-	atlasDBUser, _, err := auc.DatabaseUsers.Get(ctx, db, projectID, username)
-	if err != nil {
-		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.UsernameNotFound {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return toK8sDatabaseUser(atlasDBUser)
-}
-
-func toK8sDatabaseUser(dbUser *mongodbatlas.DatabaseUser) (*atlasUser, error) {
+func toK8sDatabaseUser(dbUser *mongodbatlas.DatabaseUser) (*User, error) {
 	deleteAfterDate, err := toK8sDateString(dbUser.DeleteAfterDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse deleteAfterDate: %w", err)
@@ -54,9 +25,9 @@ func toK8sDatabaseUser(dbUser *mongodbatlas.DatabaseUser) (*atlasUser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse scopes: %w", err)
 	}
-	return &atlasUser{
-		projectID: dbUser.GroupID,
-		password:  dbUser.Password,
+	return &User{
+		ProjectID: dbUser.GroupID,
+		Password:  dbUser.Password,
 		AtlasDatabaseUserSpec: akov2.AtlasDatabaseUserSpec{
 			DatabaseName:    dbUser.DatabaseName,
 			DeleteAfterDate: deleteAfterDate,
@@ -70,16 +41,16 @@ func toK8sDatabaseUser(dbUser *mongodbatlas.DatabaseUser) (*atlasUser, error) {
 	}, nil
 }
 
-func toAtlas(au *atlasUser) *mongodbatlas.DatabaseUser {
+func toAtlas(au *User) *mongodbatlas.DatabaseUser {
 	return &mongodbatlas.DatabaseUser{
 		DatabaseName:    au.DatabaseName,
 		DeleteAfterDate: au.DeleteAfterDate,
 		X509Type:        au.X509Type,
 		AWSIAMType:      au.AWSIAMType,
-		GroupID:         au.projectID,
+		GroupID:         au.ProjectID,
 		Roles:           rolesToAtlas(au.Roles),
 		Scopes:          scopesToAtlas(au.Scopes),
-		Password:        au.password,
+		Password:        au.Password,
 		Username:        au.Username,
 		OIDCAuthType:    au.OIDCAuthType,
 	}
@@ -164,46 +135,4 @@ func toK8sRoles(roles []mongodbatlas.Role) []akov2.RoleSpec {
 			specRoles[i].CollectionName < specRoles[j].CollectionName
 	})
 	return specRoles
-}
-
-func (auc *atlasUsersClient) DeleteAtlasUser(ctx context.Context, db, projectID, username string) (bool, error) {
-	_, err := auc.DatabaseUsers.Delete(ctx, db, projectID, username)
-	if err != nil {
-		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && apiError.ErrorCode != atlas.UsernameNotFound {
-			return false, err
-		}
-		return false, nil
-	}
-	return true, nil
-}
-
-func (auc *atlasUsersClient) CreateAtlasUser(ctx context.Context, db string, au *atlasUser) error {
-	_, _, err := auc.DatabaseUsers.Create(ctx, db, toAtlas(au))
-	return err
-}
-
-func (auc *atlasUsersClient) UpdateAtlasUser(ctx context.Context, db, projectID string, au *atlasUser) error {
-	_, _, err := auc.DatabaseUsers.Update(ctx, db, projectID, toAtlas(au))
-	return err
-}
-
-func (auc *atlasUsersClient) CheckAdvancedClusterExists(ctx context.Context, projectID, clusterName string) (bool, error) {
-	var apiError *mongodbatlas.ErrorResponse
-	_, _, err := auc.AdvancedClusters.Get(ctx, projectID, clusterName)
-	if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (auc *atlasUsersClient) DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error) {
-	resourceStatus, _, err := auc.Clusters.Status(ctx, projectID, deploymentName)
-	if err != nil {
-		return false, err
-	}
-	return resourceStatus.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
 }
