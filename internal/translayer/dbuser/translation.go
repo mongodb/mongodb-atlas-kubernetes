@@ -17,12 +17,12 @@ type User struct {
 	ProjectID string
 }
 
-func toK8sDatabaseUser(dbUser *admin.CloudDatabaseUser) (*User, error) {
-	deleteAfterDate, err := toK8sDateString(dbUser.DeleteAfterDate.String())
+func toK8s(dbUser *admin.CloudDatabaseUser) (*User, error) {
+	deleteAfterDate, err := dateStringToK8s(dbUser.DeleteAfterDate.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse deleteAfterDate: %w", err)
 	}
-	scopes, err := toK8sScopes(dbUser.GetScopes())
+	scopes, err := scopesToK8s(dbUser.GetScopes())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse scopes: %w", err)
 	}
@@ -32,7 +32,7 @@ func toK8sDatabaseUser(dbUser *admin.CloudDatabaseUser) (*User, error) {
 		AtlasDatabaseUserSpec: akov2.AtlasDatabaseUserSpec{
 			DatabaseName:    dbUser.DatabaseName,
 			DeleteAfterDate: deleteAfterDate,
-			Roles:           toK8sRoles(dbUser.GetRoles()),
+			Roles:           rolesToK8s(dbUser.GetRoles()),
 			Scopes:          scopes,
 			Username:        dbUser.Username,
 			OIDCAuthType:    dbUser.GetOidcAuthType(),
@@ -80,7 +80,7 @@ func scopesToAtlas(scopes []akov2.ScopeSpec) *[]admin.UserScope {
 	return &atlasScopes
 }
 
-func toK8sDateString(date string) (string, error) {
+func dateStringToK8s(date string) (string, error) {
 	if date != "" {
 		d, err := timeutil.ParseISO8601(date)
 		if err != nil {
@@ -91,10 +91,10 @@ func toK8sDateString(date string) (string, error) {
 	return "", nil
 }
 
-func toK8sScopes(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
+func scopesToK8s(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
 	specScopes := []akov2.ScopeSpec{}
 	for _, scope := range scopes {
-		scopeType, err := toK8sScopeType(scope.Type)
+		scopeType, err := scopeTypeToK8s(scope.Type)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +110,7 @@ func toK8sScopes(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
 	return specScopes, nil
 }
 
-func toK8sScopeType(scopeType string) (akov2.ScopeType, error) {
+func scopeTypeToK8s(scopeType string) (akov2.ScopeType, error) {
 	switch akov2.ScopeType(scopeType) {
 	case akov2.DeploymentScopeType:
 		return akov2.DeploymentScopeType, nil
@@ -121,7 +121,7 @@ func toK8sScopeType(scopeType string) (akov2.ScopeType, error) {
 	}
 }
 
-func toK8sRoles(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
+func rolesToK8s(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
 	specRoles := []akov2.RoleSpec{}
 	for _, role := range roles {
 		specRoles = append(specRoles, akov2.RoleSpec{
