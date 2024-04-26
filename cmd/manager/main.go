@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -138,7 +137,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx := context.TODO()
+	ctx := ctrl.SetupSignalHandler()
 
 	// globalPredicates should be used for general controller Predicates
 	// that should be applied to all controllers in order to limit the
@@ -253,7 +252,7 @@ func main() {
 
 	setupLog.Info(subobjectDeletionProtectionMessage)
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
