@@ -14,8 +14,8 @@ Finally, make sure you have a "RedHat Connect" account and are a [team member wi
 
 Most tools are automatically installed for you. Most of them are Go binaries and use `go install`. There are a few that might cause issues and you might want to pre-install manually:
 
-- [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) from the `gettext` package is used for expanding env vars on files or strings. Here is needed to autogenerate the SDLC checklist document from a template. You can install it manually with `brew` or `apt`/`dnf`, otherwise the makefile will automatically try to install a [envsubst drop-in replacement in Go](https://github.com/drone/envsubst?tab=readme-ov-file).
-- [docker sbom](https://github.com/docker/sbom-cli-plugin/) is a plugin for docker, it might not work for you out of the box. It can be activated as experimental on Docker for Mac. You can pre-install it manually by [following the official instructions](https://github.com/docker/sbom-cli-plugin/?tab=readme-ov-file#getting-started) or could run something like [this script](../../scripts/install-docker-sbom-plugin.sh).
+- [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) for autogenerating the SDLC checklist. Install manually, else makefile automation will install it using `go install`.
+- [Docker SBOM plugin](https://github.com/docker/sbom-cli-plugin/) for generating SBOM files. It is available as an experimental feature on Docker for Mac or can be installed manually by [following the official instructions](https://github.com/docker/sbom-cli-plugin/?tab=readme-ov-file#getting-started). Another option is a [helper install script](../../scripts/install-docker-sbom-plugin.sh). Note: the helper scripts executes command using `sudo` privileges.
 
 ## Create the release branch
 
