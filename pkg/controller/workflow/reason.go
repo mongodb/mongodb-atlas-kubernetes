@@ -60,6 +60,17 @@ const (
 	CustomZoneMappingReady                ConditionReason = "CustomZoneMappingReady"
 )
 
+// Atlas SearchNodes reasons
+const (
+	SearchNodesUpdating ConditionReason = "SearchNodesUpdating"
+	SearchNodesCreating ConditionReason = "SearchNodesCreating"
+	SearchNodesDeleting ConditionReason = "SearchNodesDeleting"
+
+	ErrorSearchNodesNotUpsertedInAtlas ConditionReason = "SearchNodesNotUpsertedInAtlas"
+	ErrorSearchNodesNotDeletedInAtlas  ConditionReason = "SearchNodesNotDeletedInAtlas"
+	ErrorSearchNodesOperationAborted   ConditionReason = "SearchNodesOperationAborted"
+)
+
 // Atlas Database User reasons
 const (
 	DatabaseUserNotCreatedInAtlas           ConditionReason = "DatabaseUserNotCreatedInAtlas"

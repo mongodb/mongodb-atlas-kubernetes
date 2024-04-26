@@ -20,13 +20,16 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -767,182 +770,211 @@ func TestUniqueKey(t *testing.T) {
 }
 
 func TestReconciliation(t *testing.T) {
-	t.Run("should reconcile with existing cluster", func(t *testing.T) {
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "api-secret",
-				Namespace: "default",
-				Labels: map[string]string{
-					"atlas.mongodb.com/type": "credentials",
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "api-secret",
+			Namespace: "default",
+			Labels: map[string]string{
+				"atlas.mongodb.com/type": "credentials",
+			},
+		},
+		Data: map[string][]byte{
+			"orgId":         []byte("1234567890"),
+			"publicApiKey":  []byte("a1b2c3"),
+			"privateApiKey": []byte("abcdef123456"),
+		},
+		Type: "Opaque",
+	}
+	project := &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-project",
+			Namespace: "default",
+		},
+		Spec: akov2.AtlasProjectSpec{
+			Name: "MyProject",
+			ConnectionSecret: &common.ResourceRefNamespaced{
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+			},
+		},
+		Status: status.AtlasProjectStatus{ID: "abc123"},
+	}
+	bPolicy := &akov2.AtlasBackupPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-policy",
+			Namespace: project.Namespace,
+		},
+		Spec: akov2.AtlasBackupPolicySpec{
+			Items: []akov2.AtlasBackupPolicyItem{
+				{
+					FrequencyType:     "days",
+					FrequencyInterval: 1,
+					RetentionUnit:     "weekly",
+					RetentionValue:    1,
 				},
 			},
-			Data: map[string][]byte{
-				"orgId":         []byte("1234567890"),
-				"publicApiKey":  []byte("a1b2c3"),
-				"privateApiKey": []byte("abcdef123456"),
+		},
+	}
+	bSchedule := &akov2.AtlasBackupSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-schedule",
+			Namespace: project.Namespace,
+		},
+		Spec: akov2.AtlasBackupScheduleSpec{
+			PolicyRef: common.ResourceRefNamespaced{
+				Name:      bPolicy.Name,
+				Namespace: bPolicy.Namespace,
 			},
-			Type: "Opaque",
-		}
-		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasProjectSpec{
-				Name: "MyProject",
-				ConnectionSecret: &common.ResourceRefNamespaced{
-					Name:      secret.Name,
-					Namespace: secret.Namespace,
-				},
-			},
-			Status: status.AtlasProjectStatus{ID: "abc123"},
-		}
-		bPolicy := &akov2.AtlasBackupPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-policy",
-				Namespace: project.Namespace,
-			},
-			Spec: akov2.AtlasBackupPolicySpec{
-				Items: []akov2.AtlasBackupPolicyItem{
+			ReferenceHourOfDay:    20,
+			ReferenceMinuteOfHour: 30,
+			RestoreWindowDays:     7,
+		},
+	}
+	searchNodes := []akov2.SearchNode{
+		{
+			InstanceSize: "S100_LOWCPU_NVME",
+			NodeCount:    4,
+		},
+	}
+	deployment := akov2.DefaultAwsAdvancedDeployment(project.Namespace, project.Name)
+	deployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
+	deployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
+		Name:      bSchedule.Name,
+		Namespace: bSchedule.Namespace,
+	}
+	deployment.Spec.DeploymentSpec.SearchNodes = searchNodes
+
+	sch := runtime.NewScheme()
+	sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.Secret{})
+	sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDeployment{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupSchedule{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupScheduleList{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupPolicy{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDatabaseUserList{})
+	// Subresources need to be explicitly set now since controller-runtime 1.15
+	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
+	k8sClient := fake.NewClientBuilder().
+		WithScheme(sch).
+		WithObjects(secret, project, bPolicy, bSchedule, deployment).
+		WithStatusSubresource(bPolicy, bSchedule).
+		Build()
+
+	searchAPI := mockadmin.NewAtlasSearchApi(t)
+	searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name).
+		Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+	searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		Return(
+			&admin.ApiSearchDeploymentResponse{
+				GroupId:   pointer.MakePtr(project.ID()),
+				StateName: pointer.MakePtr("IDLE"),
+				Specs: &[]admin.ApiSearchDeploymentSpec{
 					{
-						FrequencyType:     "days",
-						FrequencyInterval: 1,
-						RetentionUnit:     "weekly",
-						RetentionValue:    1,
+						InstanceSize: "S100_LOWCPU_NVME",
+						NodeCount:    4,
 					},
 				},
 			},
-		}
-		bSchedule := &akov2.AtlasBackupSchedule{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-schedule",
-				Namespace: project.Namespace,
-			},
-			Spec: akov2.AtlasBackupScheduleSpec{
-				PolicyRef: common.ResourceRefNamespaced{
-					Name:      bPolicy.Name,
-					Namespace: bPolicy.Namespace,
+			&http.Response{},
+			nil,
+		)
+
+	orgID := "0987654321"
+	logger := zaptest.NewLogger(t).Sugar()
+	atlasProvider := &atlasmock.TestProvider{
+		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+			return &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			}, orgID, nil
+		},
+		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+			return &mongodbatlas.Client{
+				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
+					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
+						return &mongodbatlas.AdvancedCluster{
+							ID:            "123789",
+							Name:          clusterName,
+							GroupID:       projectID,
+							BackupEnabled: pointer.MakePtr(true),
+							ClusterType:   "REPLICASET",
+							ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
+								{
+									ID:       "789123",
+									ZoneName: "Zone 1",
+									RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
+										{
+											ProviderName: "AWS",
+											RegionName:   "US_EAST_1",
+											ElectableSpecs: &mongodbatlas.Specs{
+												InstanceSize: "M10",
+												NodeCount:    pointer.MakePtr(3),
+											},
+											Priority: pointer.MakePtr(7),
+										},
+									},
+								},
+							},
+							StateName: "IDLE",
+						}, nil, nil
+					},
+					DeleteFunc: func(projectID string, clusterName string) (*mongodbatlas.Response, error) {
+						return nil, nil
+					},
 				},
-				ReferenceHourOfDay:    20,
-				ReferenceMinuteOfHour: 30,
-				RestoreWindowDays:     7,
-			},
-		}
-		deployment := akov2.DefaultAwsAdvancedDeployment(project.Namespace, project.Name)
-		deployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
-		deployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
-			Name:      bSchedule.Name,
-			Namespace: bSchedule.Namespace,
-		}
-
-		sch := runtime.NewScheme()
-		sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.Secret{})
-		sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
-		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
-		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDeployment{})
-		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupSchedule{})
-		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupScheduleList{})
-		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupPolicy{})
-		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDatabaseUserList{})
-		// Subresources need to be explicitly set now since controller-runtime 1.15
-		// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(sch).
-			WithObjects(secret, project, bPolicy, bSchedule, deployment).
-			WithStatusSubresource(bPolicy, bSchedule).
-			Build()
-
-		logger := zaptest.NewLogger(t).Sugar()
-		atlasProvider := &atlasmock.TestProvider{
-			ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-				return &mongodbatlas.Client{
-					AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
-						GetFunc: func(projectID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
-							return &mongodbatlas.AdvancedCluster{
-								ID:            "123789",
-								Name:          clusterName,
-								GroupID:       projectID,
-								BackupEnabled: pointer.MakePtr(true),
-								ClusterType:   "REPLICASET",
-								ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
-									{
-										ID:       "789123",
-										ZoneName: "Zone 1",
-										RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
-											{
-												ProviderName: "AWS",
-												RegionName:   "US_EAST_1",
-												ElectableSpecs: &mongodbatlas.Specs{
-													InstanceSize: "M10",
-													NodeCount:    pointer.MakePtr(3),
-												},
-												Priority: pointer.MakePtr(7),
-											},
+				GlobalClusters: &atlasmock.GlobalClustersClientMock{
+					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.GlobalCluster, *mongodbatlas.Response, error) {
+						return &mongodbatlas.GlobalCluster{}, nil, nil
+					},
+				},
+				CloudProviderSnapshotBackupPolicies: &atlasmock.CloudProviderSnapshotBackupPoliciesClientMock{
+					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
+						return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
+							ClusterID:             "123789",
+							ClusterName:           deployment.GetDeploymentName(),
+							ReferenceHourOfDay:    pointer.MakePtr(int64(20)),
+							ReferenceMinuteOfHour: pointer.MakePtr(int64(30)),
+							RestoreWindowDays:     pointer.MakePtr(int64(7)),
+							Policies: []mongodbatlas.Policy{
+								{
+									ID: "456987",
+									PolicyItems: []mongodbatlas.PolicyItem{
+										{
+											ID:                "987654",
+											FrequencyInterval: 1,
+											FrequencyType:     "days",
+											RetentionUnit:     "weekly",
+											RetentionValue:    1,
 										},
 									},
 								},
-								StateName: "IDLE",
-							}, nil, nil
-						},
-						DeleteFunc: func(projectID string, clusterName string) (*mongodbatlas.Response, error) {
-							return nil, nil
-						},
+							},
+							AutoExportEnabled:                 pointer.MakePtr(false),
+							UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
+						}, nil, nil
 					},
-					GlobalClusters: &atlasmock.GlobalClustersClientMock{
-						GetFunc: func(projectID string, clusterName string) (*mongodbatlas.GlobalCluster, *mongodbatlas.Response, error) {
-							return &mongodbatlas.GlobalCluster{}, nil, nil
-						},
-					},
-					CloudProviderSnapshotBackupPolicies: &atlasmock.CloudProviderSnapshotBackupPoliciesClientMock{
-						GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
-							return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
-								ClusterID:             "123789",
-								ClusterName:           deployment.GetDeploymentName(),
-								ReferenceHourOfDay:    pointer.MakePtr(int64(20)),
-								ReferenceMinuteOfHour: pointer.MakePtr(int64(30)),
-								RestoreWindowDays:     pointer.MakePtr(int64(7)),
-								Policies: []mongodbatlas.Policy{
-									{
-										ID: "456987",
-										PolicyItems: []mongodbatlas.PolicyItem{
-											{
-												ID:                "987654",
-												FrequencyInterval: 1,
-												FrequencyType:     "days",
-												RetentionUnit:     "weekly",
-												RetentionValue:    1,
-											},
-										},
-									},
-								},
-								AutoExportEnabled:                 pointer.MakePtr(false),
-								UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
-							}, nil, nil
-						},
-					},
-				}, "0987654321", nil
-			},
-			SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-				return &admin.APIClient{}, "", nil
-			},
-			IsCloudGovFunc: func() bool {
-				return false
-			},
-			IsSupportedFunc: func() bool {
-				return true
-			},
-		}
+				},
+			}, orgID, nil
+		},
+		IsCloudGovFunc: func() bool {
+			return false
+		},
+		IsSupportedFunc: func() bool {
+			return true
+		},
+	}
 
-		reconciler := &AtlasDeploymentReconciler{
-			DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
-			Client:                      k8sClient,
-			Log:                         logger,
-			AtlasProvider:               atlasProvider,
-			EventRecorder:               record.NewFakeRecorder(10),
-			ObjectDeletionProtection:    false,
-			SubObjectDeletionProtection: false,
-		}
+	reconciler := &AtlasDeploymentReconciler{
+		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
+		Client:                      k8sClient,
+		Log:                         logger,
+		AtlasProvider:               atlasProvider,
+		EventRecorder:               record.NewFakeRecorder(10),
+		ObjectDeletionProtection:    false,
+		SubObjectDeletionProtection: false,
+	}
 
+	t.Run("should reconcile with existing cluster", func(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{

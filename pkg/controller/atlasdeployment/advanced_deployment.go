@@ -83,6 +83,11 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *akov2.AtlasProject, 
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
+	searchNodeResult := handleSearchNodes(ctx, deployment, project.ID())
+	if !searchNodeResult.IsOk() {
+		return atlasDeploymentAsAtlas, searchNodeResult
+	}
+
 	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, &specDeployment, &atlasDeployment); areEqual {
 		return atlasDeploymentAsAtlas, workflow.OK()
 	}
@@ -198,6 +203,8 @@ func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *akov2.
 	expected := deploymentOperator.DeepCopy()
 	actualCleaned := cleanupFieldsToCompare(deploymentAtlas.DeepCopy(), expected)
 
+	// Ignore Atlas Search and Search Nodes
+	expected.SearchNodes = nil
 	// Ignore differences on auto-scaled region configs
 	for _, rs := range expected.ReplicationSpecs {
 		for _, rc := range rs.RegionConfigs {

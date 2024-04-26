@@ -173,7 +173,8 @@ jobs:
             "teams",
             "backup-config",
             "data-federation",
-            "deletion-protection"
+            "deletion-protection",
+            "atlas-search"
           ]
     steps:
       - name: Get repo files from cache

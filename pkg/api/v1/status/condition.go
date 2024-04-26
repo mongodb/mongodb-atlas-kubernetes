@@ -56,6 +56,7 @@ const (
 	ServerlessPrivateEndpointReadyType ConditionType = "ServerlessPrivateEndpointReady"
 	ManagedNamespacesReadyType         ConditionType = "ManagedNamespacesReady"
 	CustomZoneMappingReadyType         ConditionType = "CustomZoneMappingReady"
+	SearchNodesReadyType               ConditionType = "SearchNodesReady"
 )
 
 // AtlasDatabaseUser condition types
