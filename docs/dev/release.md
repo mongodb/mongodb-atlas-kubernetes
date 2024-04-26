@@ -10,6 +10,13 @@ This is not required for [Certified Operators](https://github.com/redhat-openshi
 
 Finally, make sure you have a "RedHat Connect" account and are a [team member with org administrator role in the team list](https://connect.redhat.com/account/team-members).
 
+### Tools
+
+Most tools are automatically installed for you. Most of them are Go binaries and use `go install`. There are a few that might cause issues and you might want to pre-install manually:
+
+- [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) for autogenerating the SDLC checklist. Install manually, else makefile automation will install it using `go install`.
+- [Docker SBOM plugin](https://github.com/docker/sbom-cli-plugin/) for generating SBOM files. It is available as an experimental feature on Docker for Mac or can be installed manually by [following the official instructions](https://github.com/docker/sbom-cli-plugin/?tab=readme-ov-file#getting-started). Another option is a [helper install script](../../scripts/sudo-install-docker-sbom-plugin.sh). Note: the helper scripts executes command using `sudo` privileges.
+
 ## Create the release branch
 
 Use the GitHub UI to create the new "Create Release Branch" workflow. Specify the version to be released in the text box.
