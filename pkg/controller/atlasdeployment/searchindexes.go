@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
-	"strings"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
@@ -26,6 +25,11 @@ const (
 )
 
 const (
+	IndexTypeVector = "vectorSearch"
+	IndexTypeSearch = "search"
+)
+
+const (
 	DeploymentIndexesAnnotation = "mongodb.com/deployment-search-indices"
 	DeploymentIndexesSeparator  = ","
 	IndexToIDSeparator          = ":"
@@ -35,27 +39,6 @@ const (
 var (
 	ErrNoIndexConfig = "index configuration is not available"
 )
-
-// getIndexesFromAnnotations returns a map IndexName -> IndexID
-func getIndexesFromAnnotations(in map[string]string) map[string]string {
-	result := map[string]string{}
-	indexes, ok := in[DeploymentIndexesAnnotation]
-	if !ok {
-		return nil
-	}
-	indexNameIDPairs := strings.Split(indexes, DeploymentIndexesSeparator)
-	for _, pair := range indexNameIDPairs {
-		res := strings.Split(pair, IndexToIDSeparator)
-		if len(res) != 2 {
-			continue
-		}
-		if res[1] == "" {
-			continue
-		}
-		result[res[0]] = res[1]
-	}
-	return result
-}
 
 func getIndexesFromDeploymentStatus(deploymentStatus status.AtlasDeploymentStatus) map[string]string {
 	if len(deploymentStatus.SearchIndexes) == 0 {
@@ -81,62 +64,61 @@ func verifyAllIndexesNamesAreUnique(indexes []akov2.SearchIndex) bool {
 	return true
 }
 
-func findIndexesIntersection(akoIndexes, atlasIndexes []*searchindex.SearchIndex, intersection IntersectionType) []searchindex.SearchIndex {
-	var result []searchindex.SearchIndex
-	switch intersection {
-	case ToCreate:
-		for i := range akoIndexes {
-			found := false
-			for j := range atlasIndexes {
-				if akoIndexes[i].Name == atlasIndexes[j].Name {
-					found = true
-					continue
-				}
-			}
-			if !found {
-				if akoIndexes[i] != nil {
-					result = append(result, *(akoIndexes[i]))
-				}
-			}
-		}
-
-	case ToUpdate:
-		for i := range akoIndexes {
-			for j := range atlasIndexes {
-				if akoIndexes[i].Name == atlasIndexes[j].Name {
-					if akoIndexes[i] != nil {
-						result = append(result, *(akoIndexes[i]))
-					}
-				}
-			}
-		}
-
-	case ToDelete:
-		for i := range atlasIndexes {
-			found := false
-			for j := range akoIndexes {
-				if akoIndexes[j].Name == atlasIndexes[i].Name {
-					found = true
-					continue
-				}
-			}
-			if !found {
-				if atlasIndexes[i] != nil {
-					result = append(result, *(atlasIndexes[i]))
-				}
-			}
-		}
-	}
-
-	return result
-}
+//func findIndexesIntersection(akoIndexes, atlasIndexes []*searchindex.SearchIndex, intersection IntersectionType) []searchindex.SearchIndex {
+//	var result []searchindex.SearchIndex
+//	switch intersection {
+//	case ToCreate:
+//		for i := range akoIndexes {
+//			found := false
+//			for j := range atlasIndexes {
+//				if akoIndexes[i].Name == atlasIndexes[j].Name {
+//					found = true
+//					continue
+//				}
+//			}
+//			if !found {
+//				if akoIndexes[i] != nil {
+//					result = append(result, *(akoIndexes[i]))
+//				}
+//			}
+//		}
+//
+//	case ToUpdate:
+//		for i := range akoIndexes {
+//			for j := range atlasIndexes {
+//				if akoIndexes[i].Name == atlasIndexes[j].Name {
+//					if akoIndexes[i] != nil {
+//						result = append(result, *(akoIndexes[i]))
+//					}
+//				}
+//			}
+//		}
+//
+//	case ToDelete:
+//		for i := range atlasIndexes {
+//			found := false
+//			for j := range akoIndexes {
+//				if akoIndexes[j].Name == atlasIndexes[i].Name {
+//					found = true
+//					continue
+//				}
+//			}
+//			if !found {
+//				if atlasIndexes[i] != nil {
+//					result = append(result, *(atlasIndexes[i]))
+//				}
+//			}
+//		}
+//	}
+//
+//	return result
+//}
 
 type searchIndexesReconciler struct {
-	ctx         *workflow.Context
-	deployment  *akov2.AtlasDeployment
-	k8sClient   client.Client
-	projectID   string
-	atlasErrors map[string]error
+	ctx        *workflow.Context
+	deployment *akov2.AtlasDeployment
+	k8sClient  client.Client
+	projectID  string
 }
 
 func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
@@ -234,19 +216,33 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	akoIndexes := map[string]*searchindex.SearchIndex{}
 	for i := range sr.deployment.Spec.DeploymentSpec.SearchIndexes {
 		akoIndex := &sr.deployment.Spec.DeploymentSpec.SearchIndexes[i]
-		var idxConfig akov2.AtlasSearchIndexConfig
 
-		err := sr.k8sClient.Get(context.Background(), *akoIndex.IndexConfigRef.GetObject(sr.deployment.Namespace), &idxConfig)
-		if err != nil {
-			e := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", akoIndex.Name, err)
-			indexesErrors.Add(akoIndex.Name, e)
-			continue
+		var indexInternal *searchindex.SearchIndex
+		switch akoIndex.Type {
+		case IndexTypeSearch:
+			if akoIndex.Search == nil {
+				e := fmt.Errorf("index %q has type %q but the spec is missing", akoIndex.Name, IndexTypeSearch)
+				indexesErrors.Add(akoIndex.Name, e)
+				continue
+			}
+
+			var idxConfig akov2.AtlasSearchIndexConfig
+			err := sr.k8sClient.Get(context.Background(), *akoIndex.Search.SearchConfigurationRef.GetObject(sr.deployment.Namespace), &idxConfig)
+			if err != nil {
+				e := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", akoIndex.Name, err)
+				indexesErrors.Add(akoIndex.Name, e)
+				continue
+			}
+			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec)
+		case IndexTypeVector:
+			// Vector index doesn't require any external configuration
+			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &akov2.AtlasSearchIndexConfigSpec{})
 		}
-		akoIndexes[akoIndex.Name] = searchindex.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec)
+		akoIndexes[akoIndex.Name] = indexInternal
 	}
 
 	var allIndexes map[string]*searchindex.SearchIndex
-	// note: order matters! first Atlas, then AKO so we have most up-to-date desired state
+	// note: the order matters! first Atlas, then AKO so we have most up-to-date desired state
 	maps.Copy(allIndexes, atlasIndexes)
 	maps.Copy(allIndexes, akoIndexes)
 

@@ -1,7 +1,5 @@
 package status
 
-import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-
 const (
 	SearchIndexStatusReady      = "Ready"
 	SearchIndexStatusError      = "Error"
@@ -12,14 +10,15 @@ const (
 type IndexStatus string
 
 type DeploymentSearchIndexStatus struct {
-	Name      string                       `json:"name"`
-	ID        string                       `json:"ID"`
-	Status    IndexStatus                  `json:"status"`
-	ConfigRef common.ResourceRefNamespaced `json:"configRef"`
-	Message   string                       `json:"message"`
+	Name    string      `json:"name"`
+	ID      string      `json:"ID"`
+	Status  IndexStatus `json:"status"`
+	Message string      `json:"message"`
 }
 
 // +k8s:deepcopy-gen=false
+//
+//nolint:stylecheck
 type IndexStatusOption func(status *DeploymentSearchIndexStatus)
 
 func NewDeploymentSearchIndexStatus(status IndexStatus, options ...IndexStatusOption) DeploymentSearchIndexStatus {

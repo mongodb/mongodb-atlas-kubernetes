@@ -16,8 +16,9 @@ type SearchIndex struct {
 	// Human-readable label that identifies the collection that contains one or more Atlas Search indexes
 	// +required
 	CollectionName string `json:"collectionName"`
-	// Type of the index. Default type is search
+	// Type of the index
 	// +kubebuilder:validation:Enum:=search;vectorSearch
+	// +required
 	Type string `json:"type,omitempty"`
 	// +optional
 	// Atlas search index configuration
@@ -25,9 +26,6 @@ type SearchIndex struct {
 	// +optional
 	// Atlas vector search index configuration
 	VectorSearch *VectorSearch `json:"vectorSearch,omitempty"`
-	// +required
-	// A name and a namespace of the AtlasSearchIndexConfig resource
-	IndexConfigRef common.ResourceRefNamespaced `json:"indexConfigRef,omitempty"`
 }
 
 //// SearchIndexDTO is intended for internal usage only. This is a temporary object used to compare

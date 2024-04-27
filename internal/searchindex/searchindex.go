@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
+
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -187,7 +189,6 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 			Type:           pointer.GetOrDefault(index.Type, ""),
 			Search:         search,
 			VectorSearch:   vectorSearch,
-			IndexConfigRef: common.ResourceRefNamespaced{},
 		},
 		AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
 			Analyzer:       index.Analyzer,
@@ -201,11 +202,21 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 }
 
 func (s *SearchIndex) EqualTo(value *SearchIndex) bool {
-	return value != nil
+	if value == nil {
+		return false
+	}
+
+	return cmp.SemanticEqual(s, value)
+}
+
+func (s *SearchIndex) Normalize() *SearchIndex {
+	// TODO: Refactor interface to return error!
+	_ = cmp.Normalize(s)
+	return s
 }
 
 func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
-	convertJsonToListOfMaps := func(in *apiextensionsv1.JSON) (*[]map[string]interface{}, error) {
+	convertJSONToListOfMaps := func(in *apiextensionsv1.JSON) (*[]map[string]interface{}, error) {
 		if in == nil {
 			return nil, nil
 		}
@@ -214,7 +225,7 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 		return &result, err
 	}
 
-	convertJsonToMap := func(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
+	convertJSONToMap := func(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
 		if in == nil {
 			return nil, nil
 		}
@@ -222,7 +233,7 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 		err := json.Unmarshal(in.Raw, &result)
 		return result, err
 	}
-	convertJsonToInterface := func(in *apiextensionsv1.JSON) (*[]interface{}, error) {
+	convertJSONToInterface := func(in *apiextensionsv1.JSON) (*[]interface{}, error) {
 		if in == nil {
 			return pointer.MakePtr([]interface{}{}), nil
 		}
@@ -231,7 +242,7 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 		return &result, err
 	}
 
-	storedSource, err := convertJsonToMap(s.StoredSource)
+	storedSource, err := convertJSONToMap(s.StoredSource)
 	if err != nil {
 		return nil, fmt.Errorf("unable to convert storedSource: %w", err)
 	}
@@ -244,12 +255,12 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 		result := make([]admin.ApiAtlasFTSAnalyzers, 0, len(*in))
 		for i := range *in {
 			analyzer := (*in)[i]
-			charFilters, err := convertJsonToInterface(analyzer.CharFilters)
+			charFilters, err := convertJSONToInterface(analyzer.CharFilters)
 			if err != nil {
 				return nil, err
 			}
 
-			tokenFilters, err := convertJsonToInterface(analyzer.TokenFilters)
+			tokenFilters, err := convertJSONToInterface(analyzer.TokenFilters)
 			if err != nil {
 				return nil, err
 			}
@@ -278,7 +289,7 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 		if in == nil {
 			return nil, nil
 		}
-		fields, err := convertJsonToMap(in.Fields)
+		fields, err := convertJSONToMap(in.Fields)
 		if err != nil {
 			return nil, err
 		}
@@ -291,9 +302,9 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 		return nil, err
 	}
 
-	synonyms, err := func(in *[]akov2.Synonym) (*[]admin.SearchSynonymMappingDefinition, error) {
+	synonyms := func(in *[]akov2.Synonym) *[]admin.SearchSynonymMappingDefinition {
 		if in == nil {
-			return nil, nil
+			return nil
 		}
 
 		result := make([]admin.SearchSynonymMappingDefinition, 0, len(*in))
@@ -307,15 +318,15 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 			})
 		}
 
-		return &result, nil
+		return &result
 	}(s.Search.Synonyms)
-	if err != nil {
-		return nil, err
-	}
 
-	searchFields, err := convertJsonToListOfMaps(s.VectorSearch.Fields)
-	if err != nil {
-		return nil, err
+	var searchFields *[]map[string]interface{}
+	if s.VectorSearch != nil {
+		searchFields, err = convertJSONToListOfMaps(s.VectorSearch.Fields)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &admin.ClusterSearchIndex{
