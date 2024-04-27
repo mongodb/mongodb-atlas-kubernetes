@@ -24,7 +24,6 @@ import (
 	"strconv"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"k8s.io/apimachinery/pkg/types"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

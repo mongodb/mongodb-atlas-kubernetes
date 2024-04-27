@@ -88,7 +88,6 @@ func advancedDeploymentIdle(ctx *workflow.Context, k8sClient client.Client, proj
 		return atlasDeploymentAsAtlas, searchNodeResult
 	}
 
-	// process search indices configuration
 	result := handleSearchIndexes(ctx, k8sClient, deployment, project.ID())
 	if !result.IsOk() {
 		return atlasDeploymentAsAtlas, result
