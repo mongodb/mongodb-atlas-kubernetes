@@ -75,7 +75,9 @@ func (p *ProductionProvider) IsResourceSupported(resource akov2.AtlasCustomResou
 		*akov2.AtlasDatabaseUser,
 		*akov2.AtlasFederatedAuth:
 		return true
-	case *akov2.AtlasDataFederation:
+	case *akov2.AtlasDataFederation,
+		*akov2.AtlasStreamInstance,
+		*akov2.AtlasStreamConnection:
 		return false
 	case *akov2.AtlasDeployment:
 		if atlasResource.Spec.ServerlessSpec == nil {

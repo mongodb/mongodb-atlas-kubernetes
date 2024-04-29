@@ -18,7 +18,6 @@ type AtlasCustomResource interface {
 }
 
 var _ AtlasCustomResource = &AtlasProject{}
-
 var _ AtlasCustomResource = &AtlasTeam{}
 var _ AtlasCustomResource = &AtlasDeployment{}
 var _ AtlasCustomResource = &AtlasDatabaseUser{}
@@ -26,6 +25,8 @@ var _ AtlasCustomResource = &AtlasDataFederation{}
 var _ AtlasCustomResource = &AtlasBackupSchedule{}
 var _ AtlasCustomResource = &AtlasBackupPolicy{}
 var _ AtlasCustomResource = &AtlasFederatedAuth{}
+var _ AtlasCustomResource = &AtlasStreamInstance{}
+var _ AtlasCustomResource = &AtlasStreamConnection{}
 
 // InitCondition initializes the underlying type of the given condition to the given default value
 // if the underlying condition type is unset.

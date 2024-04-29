@@ -56,6 +56,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasstream"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
@@ -135,6 +136,8 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
+	ctx := ctrl.SetupSignalHandler()
 
 	// globalPredicates should be used for general controller Predicates
 	// that should be applied to all controllers in order to limit the
@@ -222,6 +225,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&atlasstream.AtlasStreamsInstanceReconciler{
+		Scheme:                      mgr.GetScheme(),
+		Client:                      mgr.GetClient(),
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasStreamsInstance"),
+		GlobalPredicates:            globalPredicates,
+		Log:                         logger.Named("controllers").Named("AtlasStreamsInstance").Sugar(),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: false,
+	}).SetupWithManager(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasStreamsInstance")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
@@ -235,7 +252,7 @@ func main() {
 
 	setupLog.Info(subobjectDeletionProtectionMessage)
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

@@ -109,3 +109,15 @@ const (
 	FederatedAuthOrgNotConnected  ConditionReason = "FederatedAuthOrgIsNotConnected"
 	FederatedAuthUsersConflict    ConditionReason = "FederatedAuthUsersConflict"
 )
+
+// Atlas Streams reasons
+const (
+	StreamInstanceSetupInProgress ConditionReason = "StreamInstanceSetupInProgress"
+	StreamInstanceNotCreated      ConditionReason = "StreamInstanceNotCreated"
+	StreamInstanceNotRemoved      ConditionReason = "StreamInstanceNotRemoved"
+	StreamInstanceNotUpdated      ConditionReason = "StreamInstanceNotUpdated"
+	StreamConnectionNotConfigured ConditionReason = "StreamConnectionNotConfigured"
+	StreamConnectionNotCreated    ConditionReason = "StreamConnectionNotCreated"
+	StreamConnectionNotRemoved    ConditionReason = "StreamConnectionNotRemoved"
+	StreamConnectionNotUpdated    ConditionReason = "StreamConnectionNotUpdated"
+)
