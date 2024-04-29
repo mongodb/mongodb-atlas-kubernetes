@@ -507,7 +507,7 @@ func TestLock(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(connection).
 			WithInterceptorFuncs(interceptor.Funcs{
-				Update: func(ctx context.Context, client client.WithWatch, obj client.Object, opts ...client.UpdateOption) error {
+				Patch: func(ctx context.Context, client client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 					return errors.New("failed to set finalizer")
 				},
 			}).
@@ -530,7 +530,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.AtlasFinalizerNotSet), ctx.Conditions()[0].Reason)
-		assert.Equal(t, "failed to remove deletion finalizer from conn1: failed to set finalizer", ctx.Conditions()[0].Message)
+		assert.Equal(t, "failed to set finalizer", ctx.Conditions()[0].Message)
 	})
 
 	t.Run("should transition to ready when setting finalizer", func(t *testing.T) {
@@ -600,8 +600,8 @@ func TestRelease(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(connection).
 			WithInterceptorFuncs(interceptor.Funcs{
-				Update: func(ctx context.Context, client client.WithWatch, obj client.Object, opts ...client.UpdateOption) error {
-					return errors.New("failed to unset finalizer")
+				Patch: func(ctx context.Context, client client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+					return errors.New("failed to set finalizer")
 				},
 			}).
 			Build()
@@ -623,7 +623,7 @@ func TestRelease(t *testing.T) {
 		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.AtlasFinalizerNotRemoved), ctx.Conditions()[0].Reason)
-		assert.Equal(t, "failed to remove deletion finalizer from conn1: failed to unset finalizer", ctx.Conditions()[0].Message)
+		assert.Equal(t, "failed to set finalizer", ctx.Conditions()[0].Message)
 	})
 
 	t.Run("should transition to ready when unsetting finalizer", func(t *testing.T) {
