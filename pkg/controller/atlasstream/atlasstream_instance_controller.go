@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
@@ -68,7 +69,8 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 		return r.skip(ctx, log, akoStreamInstance), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, akoStreamInstance, log, ctx)
+	conditions := akov2.InitCondition(akoStreamInstance, status.FalseCondition(status.ReadyType))
+	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, akoStreamInstance)
 
 	// check if stream instance is in "invalid" state
