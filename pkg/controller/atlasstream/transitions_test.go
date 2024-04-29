@@ -727,7 +727,7 @@ func TestDelete(t *testing.T) {
 		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.AtlasFinalizerNotRemoved), ctx.Conditions()[0].Reason)
-		assert.Contains(t, ctx.Conditions()[0].Message, "failed to get &{{%!t(string=) %!t(string=)} {%!t(string=my-stream-processing-instance)")
+		assert.Contains(t, ctx.Conditions()[0].Message, `atlasstreaminstances.atlas.mongodb.com "my-stream-processing-instance" not found`)
 	})
 }
 
