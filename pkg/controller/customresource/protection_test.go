@@ -7,7 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -137,16 +138,18 @@ func TestIsResourceProtected(t *testing.T) {
 
 func TestApplyLastConfigApplied(t *testing.T) {
 	resource := sampleResource()
+	resource.Name = "foo"
 	resource.Spec.Username = "test-user"
 
-	// ignore the error due to not configuring the fake client
-	// we are not checking that, we are only interested on a new annotation in resource
-	_ = customresource.ApplyLastConfigApplied(context.Background(), resource, fake.NewClientBuilder().Build())
+	scheme := runtime.NewScheme()
+	utilruntime.Must(akov2.AddToScheme(scheme))
+	c := fake.NewClientBuilder().WithObjects(resource).WithScheme(scheme).Build()
+	assert.NoError(t, customresource.ApplyLastConfigApplied(context.Background(), resource, c))
 
 	annot := resource.GetAnnotations()
 	assert.NotEmpty(t, annot)
 	expectedConfig := `{"projectRef":{"name":"","namespace":""},"roles":null,"username":"test-user"}`
-	assert.Equal(t, annot[customresource.AnnotationLastAppliedConfiguration], expectedConfig)
+	assert.Equal(t, expectedConfig, annot[customresource.AnnotationLastAppliedConfiguration])
 }
 
 func TestIsResourceManagedByOperator(t *testing.T) {

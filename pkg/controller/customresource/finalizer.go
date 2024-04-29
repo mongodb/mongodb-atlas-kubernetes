@@ -2,11 +2,13 @@ package customresource
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"reflect"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
@@ -46,21 +48,26 @@ func UnsetFinalizer(resource akov2.AtlasCustomResource, finalizer string) {
 
 func ManageFinalizer(
 	ctx context.Context,
-	client client.Client,
+	c client.Client,
 	resource akov2.AtlasCustomResource,
 	op FinalizerOperator,
 ) error {
-	err := client.Get(ctx, kube.ObjectKeyFromObject(resource), resource)
-	if err != nil {
-		return fmt.Errorf("failed to get %t before removing deletion finalizer: %w", resource, err)
+	// we just copied an akov2.AtlasCustomResource so it must be one
+	resourceCopy := resource.DeepCopyObject().(akov2.AtlasCustomResource)
+	op(resourceCopy, FinalizerLabel)
+
+	if reflect.DeepEqual(resource.GetFinalizers(), resourceCopy.GetFinalizers()) {
+		return nil
 	}
 
-	op(resource, FinalizerLabel)
-
-	err = client.Update(ctx, resource)
+	data, err := json.Marshal([]map[string]interface{}{{
+		"op":    "replace",
+		"path":  "/metadata/finalizers",
+		"value": resourceCopy.GetFinalizers(),
+	}})
 	if err != nil {
-		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", resource.GetName(), err)
+		return err
 	}
 
-	return nil
+	return c.Patch(ctx, resource, client.RawPatch(types.JSONPatchType, data))
 }

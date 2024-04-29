@@ -14,6 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func Test_PatchUpdateStatus(t *testing.T) {
@@ -37,14 +38,16 @@ func Test_PatchUpdateStatus(t *testing.T) {
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(existingProject).
 		WithStatusSubresource(existingProject).Build()
 
-	// Patch the existing project
-	updatedProject := existingProject.DeepCopy()
-	updatedProject.Status.Common.Conditions[0].Status = corev1.ConditionTrue
-	updatedProject.Status.ID = "theId"
-	assert.NoError(t, patchUpdateStatus(context.Background(), fakeClient, updatedProject))
+	// Patch the existing project via workflow context
+	ctx := &workflow.Context{}
+	ctx.SetConditionTrue(status.IPAccessListReadyType)
+	existingProject.Status.ID = "theId"
+	assert.NoError(t, patchUpdateStatus(ctx, fakeClient, existingProject))
 
 	projectAfterPatch := &akov2.AtlasProject{}
-	assert.NoError(t, fakeClient.Get(context.Background(), kube.ObjectKeyFromObject(updatedProject), projectAfterPatch))
+	assert.NoError(t, fakeClient.Get(context.Background(), kube.ObjectKeyFromObject(existingProject), projectAfterPatch))
+	// ignore last transition time
+	projectAfterPatch.Status.Common.Conditions[0].LastTransitionTime = metav1.Time{}
 	assert.Equal(t, []status.Condition{{Type: status.IPAccessListReadyType, Status: corev1.ConditionTrue}}, projectAfterPatch.Status.Common.Conditions)
 	assert.Equal(t, "theId", projectAfterPatch.Status.ID)
 }
