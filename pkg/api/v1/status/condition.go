@@ -85,7 +85,7 @@ const (
 
 const (
 	SearchIndexesNamesAreNotUnique = "SearchIndexesNamesAreNotUnique"
-	SearchIndexesNotAllReady       = "SearchIndexesNotAllReady"
+	SearchIndexesSomeNotReady      = "SearchIndexesSomeNotReady"
 )
 
 // Generic condition type

@@ -195,4 +195,110 @@ func Test_searchIndexReconciler(t *testing.T) {
 		result := reconciler.Reconcile(nil, nil, []error{fmt.Errorf("testError")})
 		assert.False(t, result.IsOk())
 	})
+
+	t.Run("Must return InProgress if index status is anything but ACTIVE", func(t *testing.T) {
+		reconciler := &searchIndexReconciler{
+			ctx: &workflow.Context{
+				Log:       zap.S(),
+				OrgID:     "testOrgID",
+				SdkClient: &admin.APIClient{},
+				Context:   context.Background(),
+			},
+			deployment: nil,
+			k8sClient:  nil,
+			projectID:  "",
+			indexName:  "testIndexName",
+		}
+		result := reconciler.Reconcile(nil, &searchindex.SearchIndex{Status: pointer.MakePtr("NOT STARTED")}, nil)
+		assert.True(t, result.IsInProgress())
+	})
+
+	t.Run("Must not call update API if indexes are equal", func(t *testing.T) {
+		reconciler := &searchIndexReconciler{
+			ctx: &workflow.Context{
+				Log:       zap.S(),
+				OrgID:     "testOrgID",
+				SdkClient: &admin.APIClient{},
+				Context:   context.Background(),
+			},
+			deployment: nil,
+			k8sClient:  nil,
+			projectID:  "",
+			indexName:  "testIndexName",
+		}
+		idx := &searchindex.SearchIndex{
+			SearchIndex:                akov2.SearchIndex{},
+			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
+			ID:                         nil,
+			Status:                     nil,
+		}
+		result := reconciler.Reconcile(idx, idx, nil)
+		assert.True(t, result.IsOk())
+	})
+
+	t.Run("Must trigger index update if state in AKO and in Atlas is different", func(t *testing.T) {
+		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		mockSearchAPI.EXPECT().
+			UpdateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.UpdateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
+		mockSearchAPI.EXPECT().
+			UpdateAtlasSearchIndexExecute(admin.UpdateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
+			Return(
+				&admin.ClusterSearchIndex{Status: pointer.MakePtr("NOT STARTED")},
+				&http.Response{StatusCode: http.StatusCreated}, nil,
+			)
+
+		testCluster := &akov2.AtlasDeployment{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testDeployment",
+				Namespace: "testNamespace",
+			},
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name: "testDeploymentName",
+				},
+			},
+			Status: status.AtlasDeploymentStatus{},
+		}
+
+		reconciler := &searchIndexReconciler{
+			ctx: &workflow.Context{
+				Log:   zap.S(),
+				OrgID: "testOrgID",
+				SdkClient: &admin.APIClient{
+					AtlasSearchApi: mockSearchAPI,
+				},
+				Context: context.Background(),
+			},
+			deployment: testCluster,
+			k8sClient:  nil,
+			projectID:  "",
+			indexName:  "testIndexName",
+		}
+		idxInAtlas := &searchindex.SearchIndex{
+			SearchIndex: akov2.SearchIndex{
+				Name: "testIndex",
+			},
+			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
+			ID:                         pointer.MakePtr("testID"),
+			Status:                     nil,
+		}
+		idxInAKO := &searchindex.SearchIndex{
+			SearchIndex: akov2.SearchIndex{
+				Name: "testIndex",
+				Search: &akov2.Search{
+					Synonyms: nil,
+					Mappings: &akov2.Mappings{
+						Dynamic: pointer.MakePtr(true),
+					},
+				},
+			},
+			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
+			ID:                         pointer.MakePtr("testID"),
+			Status:                     nil,
+		}
+		result := reconciler.Reconcile(idxInAKO, idxInAtlas, nil)
+		assert.True(t, result.IsInProgress())
+	})
 }

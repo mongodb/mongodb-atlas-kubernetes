@@ -1,6 +1,8 @@
 package searchindex
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +24,14 @@ type SearchIndex struct {
 	akov2.AtlasSearchIndexConfigSpec
 	ID     *string
 	Status *string
+}
+
+func (s *SearchIndex) Key() string {
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	err := encoder.Encode(*s)
+	fmt.Println("ERR:", err)
+	return buf.String()
 }
 
 func (s *SearchIndex) GetID() string {

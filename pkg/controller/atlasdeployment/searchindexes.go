@@ -64,6 +64,7 @@ func verifyAllIndexesNamesAreUnique(indexes []akov2.SearchIndex) bool {
 	return true
 }
 
+// TODO: remove if won't refactor to the action-based SM
 //func findIndexesIntersection(akoIndexes, atlasIndexes []*searchindex.SearchIndex, intersection IntersectionType) []searchindex.SearchIndex {
 //	var result []searchindex.SearchIndex
 //	switch intersection {
@@ -234,14 +235,19 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 				continue
 			}
 			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec)
+			// TODO: add finalizer to the Config
 		case IndexTypeVector:
 			// Vector index doesn't require any external configuration
 			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &akov2.AtlasSearchIndexConfigSpec{})
+		default:
+			e := fmt.Errorf("index %q has unknown type %q. Can be either %s or %s",
+				akoIndex.Name, akoIndex.Type, IndexTypeSearch, IndexTypeVector)
+			indexesErrors.Add(akoIndex.Name, e)
 		}
 		akoIndexes[akoIndex.Name] = indexInternal
 	}
 
-	var allIndexes map[string]*searchindex.SearchIndex
+	allIndexes := map[string]*searchindex.SearchIndex{}
 	// note: the order matters! first Atlas, then AKO so we have most up-to-date desired state
 	maps.Copy(allIndexes, atlasIndexes)
 	maps.Copy(allIndexes, akoIndexes)
@@ -256,11 +262,11 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 
 		var akoIdx, atlasIdx *searchindex.SearchIndex
 
-		if _, ok := akoIndexes[current.Name]; ok {
-			akoIdx = current
+		if val, ok := akoIndexes[current.Name]; ok {
+			akoIdx = val
 		}
-		if _, ok := atlasIndexes[current.Name]; ok {
-			atlasIdx = current
+		if val, ok := atlasIndexes[current.Name]; ok {
+			atlasIdx = val
 		}
 
 		results = append(results, (&searchIndexReconciler{
@@ -273,8 +279,8 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	}
 
 	for i := range results {
-		if !results[i].IsOk() {
-			return sr.terminate(status.SearchIndexesNotAllReady, nil)
+		if results[i].IsInProgress() || !results[i].IsOk() {
+			return sr.progress()
 		}
 	}
 
@@ -283,8 +289,18 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 
 func (sr *searchIndexesReconciler) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	sr.ctx.Log.Error(err)
-	result := workflow.Terminate(reason, err.Error())
+	var errMsg string
+	if err != nil {
+		errMsg = err.Error()
+	}
+	result := workflow.Terminate(reason, errMsg)
 	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, result)
+	return result
+}
+
+func (sr *searchIndexesReconciler) progress() workflow.Result {
+	result := workflow.InProgress(status.SearchIndexesSomeNotReady, "not all indexes are in READY state")
+	sr.ctx.SetConditionFromResult(status.SearchIndexStatusReady, result)
 	return result
 }
 
