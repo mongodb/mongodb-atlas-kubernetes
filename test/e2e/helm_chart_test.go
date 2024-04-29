@@ -25,7 +25,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 	skipped := false
 
 	_ = BeforeAll(func() {
-		cli.Execute("kubectl", "delete", "-f", "../../deploy/crds").Wait().Out.Contents()
+		cli.Execute("kubectl", "delete", "--ignore-not-found=true", "-f", "../../deploy/crds").Wait().Out.Contents()
 	})
 
 	_ = AfterAll(func() {

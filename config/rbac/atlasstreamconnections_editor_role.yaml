@@ -1,0 +1,24 @@
+# permissions for end users to edit atlasstreamconnections.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasstreamconnections-editor-role
+rules:
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasstreamconnections
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasstreamconnections/status
+  verbs:
+  - get
