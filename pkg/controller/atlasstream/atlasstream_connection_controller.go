@@ -60,7 +60,8 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 		return r.skip(ctx, log, akoStreamConnection), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, akoStreamConnection, log, ctx)
+	conditions := akov2.InitCondition(akoStreamConnection, status.FalseCondition(status.ReadyType))
+	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, akoStreamConnection)
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, akoStreamConnection, r.Log)
