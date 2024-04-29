@@ -1,39 +1,35 @@
 package statushandler
 
 import (
-	"context"
 	"encoding/json"
+	"reflect"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
-
-type patchValue struct {
-	Op    string      `json:"op"`
-	Path  string      `json:"path"`
-	Value interface{} `json:"value"`
-}
 
 // patchUpdateStatus performs the JSONPatch patch update to the Atlas Custom Resource.
 // The "jsonPatch" merge allows to update only status field so is more
-func patchUpdateStatus(ctx context.Context, kubeClient client.Client, resource akov2.AtlasCustomResource) error {
-	return doPatch(ctx, kubeClient, resource, resource.GetStatus())
-}
+func patchUpdateStatus(ctx *workflow.Context, kubeClient client.Client, resource akov2.AtlasCustomResource) error {
+	// we just copied an akov2.AtlasCustomResource so it must be one
+	resourceCopy := resource.DeepCopyObject().(akov2.AtlasCustomResource)
+	resourceCopy.UpdateStatus(ctx.Conditions(), ctx.StatusOptions()...)
 
-func doPatch(ctx context.Context, kubeClient client.Client, resource client.Object, statusValue interface{}) error {
-	payload := []patchValue{{
-		Op:    "replace",
-		Path:  "/status",
-		Value: statusValue,
-	}}
+	if reflect.DeepEqual(resource.GetStatus(), resourceCopy.GetStatus()) {
+		return nil
+	}
 
-	data, err := json.Marshal(payload)
+	data, err := json.Marshal([]map[string]interface{}{{
+		"op":    "replace",
+		"path":  "/status",
+		"value": resourceCopy.GetStatus(),
+	}})
 	if err != nil {
 		return err
 	}
 
-	patch := client.RawPatch(types.JSONPatchType, data)
-	return kubeClient.Status().Patch(ctx, resource, patch)
+	return kubeClient.Status().Patch(ctx.Context, resource, client.RawPatch(types.JSONPatchType, data))
 }

@@ -50,15 +50,24 @@ func ApplyLastConfigApplied(ctx context.Context, resource akov2.AtlasCustomResou
 		return err
 	}
 
-	annotations := resource.GetAnnotations()
+	// we just copied an akov2.AtlasCustomResource so it must be one
+	resourceCopy := resource.DeepCopyObject().(akov2.AtlasCustomResource)
+
+	annotations := resourceCopy.GetAnnotations()
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
 
 	annotations[AnnotationLastAppliedConfiguration] = string(js)
-	resource.SetAnnotations(annotations)
+	resourceCopy.SetAnnotations(annotations)
+	err = k8sClient.Patch(ctx, resourceCopy, client.MergeFrom(resource))
+	if err != nil {
+		return err
+	}
 
-	return k8sClient.Update(ctx, resource, &client.UpdateOptions{})
+	// retains current behavior
+	resource.SetAnnotations(resourceCopy.GetAnnotations())
+	return nil
 }
 
 func IsResourceManagedByOperator(resource akov2.AtlasCustomResource) (bool, error) {

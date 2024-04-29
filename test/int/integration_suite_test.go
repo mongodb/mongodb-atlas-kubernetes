@@ -151,9 +151,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		err = akov2.AddToScheme(scheme.Scheme)
 		Expect(err).ToNot(HaveOccurred())
 
+		// shallow copy global config
+		ginkgoCfg := *cfg
+		ginkgoCfg.UserAgent = "ginkgo"
+
 		// It's recommended to construct the client directly for tests
 		// see https://github.com/kubernetes-sigs/controller-runtime/issues/343#issuecomment-469435686
-		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+		k8sClient, err = client.New(&ginkgoCfg, client.Options{Scheme: scheme.Scheme})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient).ToNot(BeNil())
 
@@ -199,7 +203,11 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	// Note on the syncPeriod - decreasing this to a smaller time allows to test its work for the long-running tests
 	// (deployments, database users). The prod value is much higher
 	syncPeriod := time.Minute * 30
-	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+
+	// shallow copy global config
+	managerCfg := *cfg
+	managerCfg.UserAgent = "AKO"
+	k8sManager, err := ctrl.NewManager(&managerCfg, ctrl.Options{
 		Scheme:  scheme.Scheme,
 		Metrics: metricsserver.Options{BindAddress: "0"},
 		Cache: cache.Options{
