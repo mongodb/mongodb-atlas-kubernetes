@@ -20,9 +20,8 @@ else
 fi
 export IGNORED_VULNERABILITIES="${ignored_list}"
 
-mkdir -p "docs/releases/v${VERSION}"
 img="mongodb/mongodb-atlas-kubernetes-operator:${VERSION}"
-${SCRIPT_DIR}/generate_upload_sbom.sh -i $img
+"${SCRIPT_DIR}"/generate_upload_sbom.sh -i "$img" -o "docs/releases/v${VERSION}"
 
 envsubst < docs/releases/sdlc-compliance.template.md \
   > "docs/releases/v${VERSION}/sdlc-compliance.md"
