@@ -239,6 +239,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&atlasstream.AtlasStreamsConnectionReconciler{
+		Scheme:                      mgr.GetScheme(),
+		Client:                      mgr.GetClient(),
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasStreamsConnection"),
+		GlobalPredicates:            globalPredicates,
+		Log:                         logger.Named("controllers").Named("AtlasStreamsConnection").Sugar(),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: false,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasStreamsConnection")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("health", healthz.Ping); err != nil {

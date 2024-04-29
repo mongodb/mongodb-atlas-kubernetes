@@ -40,9 +40,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -53,6 +52,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasstream"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
@@ -285,6 +285,28 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasFederatedAuth"),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    deletionProtection,
+		SubObjectDeletionProtection: false,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlasstream.AtlasStreamsInstanceReconciler{
+		Client:                      k8sManager.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasStreamInstance").Sugar(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasStreamInstance"),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    deletionProtection,
+		SubObjectDeletionProtection: false,
+	}).SetupWithManager(context.Background(), k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlasstream.AtlasStreamsConnectionReconciler{
+		Client:                      k8sManager.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasStreamConnection").Sugar(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasStreamConnection"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: false,
