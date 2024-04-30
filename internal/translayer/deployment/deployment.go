@@ -2,8 +2,8 @@ package deployment
 
 import (
 	"context"
-	"errors"
 
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
@@ -13,22 +13,41 @@ import (
 )
 
 type Service struct {
-	mongodbatlas.AdvancedClustersService
-	mongodbatlas.ClustersService
+	admin.ClustersApi
+	admin.ServerlessInstancesApi
 }
 
 func NewService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*Service, error) {
-	client, err := translayer.NewLegacyClient(ctx, provider, secretRef, log)
+	client, err := translayer.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
 		return nil, err
 	}
-	return &Service{AdvancedClustersService: client.AdvancedClusters, ClustersService: client.Clusters}, nil
+	return NewFromAPIs(client.ClustersApi, client.ServerlessInstancesApi), nil
+}
+
+func NewFromAPIs(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi) *Service {
+	return &Service{ClustersApi: clusterService, ServerlessInstancesApi: serverlessAPI}
+}
+
+func (ds *Service) ListDeploymentConns(ctx context.Context, projectID string) ([]Conn, error) {
+	clusters, _, err := ds.ListClusters(ctx, projectID).Execute()
+	if err != nil {
+		return nil, err
+	}
+	clusterConns := clustersToConns(clusters.GetResults())
+
+	serverless, _, err := ds.ListServerlessInstances(ctx, projectID).Execute()
+	if err != nil {
+		return nil, err
+	}
+	serverlessConns := serverlessToConns(serverless.GetResults())
+
+	return connSet(clusterConns, serverlessConns), nil
 }
 
 func (ds *Service) Exists(ctx context.Context, projectID, clusterName string) (bool, error) {
-	var apiError *mongodbatlas.ErrorResponse
-	_, _, err := ds.AdvancedClustersService.Get(ctx, projectID, clusterName)
-	if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+	_, _, err := ds.GetCluster(ctx, projectID, clusterName).Execute()
+	if admin.IsErrorCode(err, atlas.ClusterNotFound) {
 		return false, nil
 	}
 	if err != nil {
@@ -38,9 +57,9 @@ func (ds *Service) Exists(ctx context.Context, projectID, clusterName string) (b
 }
 
 func (ds *Service) IsReady(ctx context.Context, projectID, deploymentName string) (bool, error) {
-	resourceStatus, _, err := ds.ClustersService.Status(ctx, projectID, deploymentName)
+	clusterStatus, _, err := ds.GetClusterStatus(ctx, projectID, deploymentName).Execute()
 	if err != nil {
 		return false, err
 	}
-	return resourceStatus.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
+	return clusterStatus.GetChangeStatus() == string(mongodbatlas.ChangeStatusApplied), nil
 }

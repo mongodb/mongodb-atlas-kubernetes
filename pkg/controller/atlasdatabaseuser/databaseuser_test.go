@@ -3,12 +3,13 @@ package atlasdatabaseuser
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -104,12 +106,19 @@ func TestCheckUserExpired(t *testing.T) {
 
 func TestHandleUserNameChange(t *testing.T) {
 	t.Run("Only one user after name change", func(t *testing.T) {
-		user := *akov2.DefaultDBUser("ns", "theuser", "project1")
+		projectID := "project1"
+		username := "theuser"
+		user := *akov2.DefaultDBUser("ns", "theuser", projectID)
 		user.Spec.Username = "differentuser"
-		user.Status.UserName = "theuser"
+		user.Status.UserName = username
 		ctx := workflow.NewContext(zap.S(), []api.Condition{}, nil)
-		ctx.Client = mongodbatlas.NewClient(&http.Client{})
-		result := handleUserNameChange(ctx, "", user)
+		ctx.Context = context.Background()
+		testUserAPI := mockadmin.NewDatabaseUsersApi(t)
+		dus := dbuser.NewFromDBUserAPI(testUserAPI)
+		testUserAPI.EXPECT().DeleteDatabaseUser(ctx.Context, projectID, "", username).Return(
+			admin.DeleteDatabaseUserApiRequest{ApiService: testUserAPI})
+		testUserAPI.EXPECT().DeleteDatabaseUserExecute(mock.Anything).Return(nil, nil, nil)
+		result := handleUserNameChange(ctx, dus, projectID, user)
 		assert.True(t, result.IsOk())
 	})
 }
