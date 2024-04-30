@@ -362,39 +362,6 @@ spec:
                     type: array
                   rootCertType:
                     type: string
-                  searchNodes:
-                    description: Settings for Search Nodes for the cluster. Currently,
-                      at most one search node configuration may be defined.
-                    items:
-                      properties:
-                        instanceSize:
-                          description: Hardware specification for the Search Node
-                            instance sizes.
-                          enum:
-                          - S20_HIGHCPU_NVME
-                          - S30_HIGHCPU_NVME
-                          - S40_HIGHCPU_NVME
-                          - S50_HIGHCPU_NVME
-                          - S60_HIGHCPU_NVME
-                          - S70_HIGHCPU_NVME
-                          - S80_HIGHCPU_NVME
-                          - S30_LOWCPU_NVME
-                          - S40_LOWCPU_NVME
-                          - S50_LOWCPU_NVME
-                          - S60_LOWCPU_NVME
-                          - S80_LOWCPU_NVME
-                          - S90_LOWCPU_NVME
-                          - S100_LOWCPU_NVME
-                          - S110_LOWCPU_NVME
-                          type: string
-                        nodeCount:
-                          description: Number of Search Nodes in the cluster.
-                          maximum: 32
-                          minimum: 2
-                          type: integer
-                      type: object
-                    maxItems: 1
-                    type: array
                   searchIndexes:
                     description: A list of atlas search indexes configuration for
                       the current deployment
@@ -409,20 +376,6 @@ spec:
                           description: Human-readable label that identifies the collection
                             that contains one or more Atlas Search indexes
                           type: string
-                        indexConfigRef:
-                          description: A name and a namespace of the AtlasSearchIndexConfig
-                            resource
-                          properties:
-                            name:
-                              description: Name is the name of the Kubernetes Resource
-                              type: string
-                            namespace:
-                              description: Namespace is the namespace of the Kubernetes
-                                Resource
-                              type: string
-                          required:
-                          - name
-                          type: object
                         name:
                           description: Human-readable label that identifies this index.
                             Must be unique for a deployment
@@ -545,7 +498,7 @@ spec:
                           - searchConfigurationRef
                           type: object
                         type:
-                          description: Type of the index. Default type is search
+                          description: Type of the index
                           enum:
                           - search
                           - vectorSearch
@@ -564,6 +517,39 @@ spec:
                       - collectionName
                       - name
                       type: object
+                    type: array
+                  searchNodes:
+                    description: Settings for Search Nodes for the cluster. Currently,
+                      at most one search node configuration may be defined.
+                    items:
+                      properties:
+                        instanceSize:
+                          description: Hardware specification for the Search Node
+                            instance sizes.
+                          enum:
+                          - S20_HIGHCPU_NVME
+                          - S30_HIGHCPU_NVME
+                          - S40_HIGHCPU_NVME
+                          - S50_HIGHCPU_NVME
+                          - S60_HIGHCPU_NVME
+                          - S70_HIGHCPU_NVME
+                          - S80_HIGHCPU_NVME
+                          - S30_LOWCPU_NVME
+                          - S40_LOWCPU_NVME
+                          - S50_LOWCPU_NVME
+                          - S60_LOWCPU_NVME
+                          - S80_LOWCPU_NVME
+                          - S90_LOWCPU_NVME
+                          - S100_LOWCPU_NVME
+                          - S110_LOWCPU_NVME
+                          type: string
+                        nodeCount:
+                          description: Number of Search Nodes in the cluster.
+                          maximum: 32
+                          minimum: 2
+                          type: integer
+                      type: object
+                    maxItems: 1
                     type: array
                   tags:
                     description: Key-value pairs for resource tagging.
@@ -993,6 +979,26 @@ spec:
                       type: string
                   required:
                   - id
+                  type: object
+                type: array
+              searchIndexes:
+                description: SearchIndexes contains a list of search indexes statuses
+                  configured for a project
+                items:
+                  properties:
+                    ID:
+                      type: string
+                    message:
+                      type: string
+                    name:
+                      type: string
+                    status:
+                      type: string
+                  required:
+                  - ID
+                  - message
+                  - name
+                  - status
                   type: object
                 type: array
               serverlessPrivateEndpoints:

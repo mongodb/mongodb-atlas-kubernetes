@@ -222,7 +222,21 @@ spec:
                 x-kubernetes-preserve-unknown-fields: true
             type: object
           status:
-            type: string
+            properties:
+              projects:
+                items:
+                  properties:
+                    id:
+                      description: Unique identifier of the project inside atlas
+                      type: string
+                    name:
+                      description: Name given to the project
+                      type: string
+                  type: object
+                type: array
+            required:
+            - projects
+            type: object
         type: object
     served: true
     storage: true

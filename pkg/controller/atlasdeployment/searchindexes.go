@@ -41,13 +41,16 @@ var (
 )
 
 func getIndexesFromDeploymentStatus(deploymentStatus status.AtlasDeploymentStatus) map[string]string {
+	result := map[string]string{}
 	if len(deploymentStatus.SearchIndexes) == 0 {
-		return map[string]string{}
+		return result
 	}
-	result := make(map[string]string, len(deploymentStatus.SearchIndexes))
 
 	for i := range deploymentStatus.SearchIndexes {
 		index := &deploymentStatus.SearchIndexes[i]
+		if index.ID == "" {
+			continue
+		}
 		result[index.Name] = index.ID
 	}
 	return result
@@ -134,21 +137,6 @@ func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, deploym
 	}
 
 	return reconciler.Reconcile()
-	// Action plan:
-	// 0. List all existing indexes IDs from the Annotations
-	//    0.1 Get all indexes by IDs
-	// 1. For each index in Atlas
-	//    1.1 Get the search index configuration
-	//    1.2 Build the search index
-	//    1.3 Save to a list of configured indexes using Atlas DTO (!!!)
-	// 2. Get the current indexes for a deployment
-	// 3. Compare configured indexes
-	//    3.1 Indexes to create
-	//    3.2 Indexes to update
-	//      3.2.1 Find diffs. Update only those that are different
-	//    3.3 Indexes to delete
-	// 4. Store new indexes IDs in the annotations
-	// 5. Update status for each Index
 }
 
 type IndexesErrors map[string][]error
@@ -177,6 +165,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	if !verifyAllIndexesNamesAreUnique(sr.deployment.Spec.DeploymentSpec.SearchIndexes) {
 		return sr.terminate(status.SearchIndexesNamesAreNotUnique, fmt.Errorf("every index 'Name' must be unique"))
 	}
+	sr.ctx.Log.Debug("all indexes names are unique")
 
 	previousAKOIndexes := getIndexesFromDeploymentStatus(sr.deployment.Status)
 	atlasIndexes := map[string]*searchindex.SearchIndex{}
@@ -184,29 +173,39 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	// Map[indexName][]listOfErrors
 	indexesErrors := NewIndexesErrors()
 
+	sr.ctx.Log.Debugf("number previous indexes: %d", len(previousAKOIndexes))
 	// Fetch existing indices from Atlas
 	for prevIndexName, prevIndexID := range previousAKOIndexes {
+		if prevIndexID == "" {
+			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
+			continue
+		}
+		sr.ctx.Log.Debugf("restoring index %q", prevIndexName)
 		resp, httpResp, err := sr.ctx.SdkClient.AtlasSearchApi.GetAtlasSearchIndex(
 			context.Background(), sr.projectID, sr.deployment.GetDeploymentName(), prevIndexID).Execute()
-		// TODO: store the errors in the sr.errors
+
 		if err != nil {
 			if httpResp.StatusCode == http.StatusNotFound {
+				sr.removeIndexStatus(prevIndexName)
 				continue
 			}
 			e := fmt.Errorf("couldn't fetch index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
 			indexesErrors.Add(prevIndexName, e)
+			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
 			sr.ctx.Log.Debug(e)
 			continue
 		}
 		if resp == nil {
 			e := fmt.Errorf("received an empty index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
 			indexesErrors.Add(prevIndexName, e)
+			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
 			sr.ctx.Log.Debug(e)
 			continue
 		}
 		akoIndex, err := searchindex.NewSearchIndexFromAtlas(*resp)
 		if err != nil {
 			e := fmt.Errorf("unable to convert index to AKO. Name: %s, ID: %s, E: %w", prevIndexName, prevIndexID, err)
+			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
 			indexesErrors.Add(prevIndexName, e)
 		}
 
@@ -217,13 +216,15 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	akoIndexes := map[string]*searchindex.SearchIndex{}
 	for i := range sr.deployment.Spec.DeploymentSpec.SearchIndexes {
 		akoIndex := &sr.deployment.Spec.DeploymentSpec.SearchIndexes[i]
+		sr.ctx.Log.Debugf("reading AKO index: '%s'", akoIndex.Name)
 
 		var indexInternal *searchindex.SearchIndex
 		switch akoIndex.Type {
 		case IndexTypeSearch:
 			if akoIndex.Search == nil {
-				e := fmt.Errorf("index %q has type %q but the spec is missing", akoIndex.Name, IndexTypeSearch)
+				e := fmt.Errorf("index '%s' has type '%s' but the spec is missing", akoIndex.Name, IndexTypeSearch)
 				indexesErrors.Add(akoIndex.Name, e)
+				atlasIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 				continue
 			}
 
@@ -232,10 +233,10 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			if err != nil {
 				e := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", akoIndex.Name, err)
 				indexesErrors.Add(akoIndex.Name, e)
+				atlasIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 				continue
 			}
 			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec)
-			// TODO: add finalizer to the Config
 		case IndexTypeVector:
 			// Vector index doesn't require any external configuration
 			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &akov2.AtlasSearchIndexConfigSpec{})
@@ -243,6 +244,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			e := fmt.Errorf("index %q has unknown type %q. Can be either %s or %s",
 				akoIndex.Name, akoIndex.Type, IndexTypeSearch, IndexTypeVector)
 			indexesErrors.Add(akoIndex.Name, e)
+			atlasIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 		}
 		akoIndexes[akoIndex.Name] = indexInternal
 	}
@@ -252,6 +254,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	maps.Copy(allIndexes, atlasIndexes)
 	maps.Copy(allIndexes, akoIndexes)
 
+	sr.ctx.Log.Debugf("number indexes to process: %d", len(allIndexes))
 	if len(allIndexes) == 0 {
 		return sr.empty()
 	}
@@ -285,6 +288,12 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	}
 
 	return sr.idle()
+}
+
+// This is a special method to curate index status in case index is not in Atlas, not in spec but in status
+func (sr *searchIndexesReconciler) removeIndexStatus(prevIndexName string) {
+	sr.ctx.EnsureStatusOption(status.AtlasDeploymentUnsetSearchIndexStatus(
+		status.NewDeploymentSearchIndexStatus("", status.WithName(prevIndexName))))
 }
 
 func (sr *searchIndexesReconciler) terminate(reason workflow.ConditionReason, err error) workflow.Result {

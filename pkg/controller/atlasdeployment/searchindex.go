@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	IndexStatusActive = "ACTIVE"
+	IndexStatusActive = "STEADY"
 )
 
 type searchIndexReconciler struct {
@@ -47,7 +47,6 @@ func (sr *searchIndexReconciler) Reconcile(stateInAKO, stateInAtlas *searchindex
 	if stateInAtlas != nil && stateInAtlas.Status != nil {
 		currentStatus = *stateInAtlas.Status
 	}
-
 	switch currentStatus {
 	case IndexStatusActive, "":
 		break
@@ -72,20 +71,20 @@ func (sr *searchIndexReconciler) idle(index *searchindex.SearchIndex) workflow.R
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentSetSearchIndexStatus(status.NewDeploymentSearchIndexStatus(
 		status.SearchIndexStatusReady,
 		status.WithID(index.GetID()),
-		status.WithName(index.Name))))
+		status.WithName(index.Name),
+		status.WithMsg(index.GetStatus()))))
 	result := workflow.OK()
 	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, result)
 	return result
 }
 
-// TODO: refactor to only include idxID, idxName, status and error
+// Never set the ID (status.WithID()) on terminate. It may be empty and the AKO will lose track on this index
 func (sr *searchIndexReconciler) terminate(index *searchindex.SearchIndex, err error) workflow.Result {
-	msg := fmt.Errorf("error with processing index '%s'. err: %w", index.Name, err)
+	msg := fmt.Errorf("error with processing index %s. err: %w", index.Name, err)
 	sr.ctx.Log.Debug(msg)
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentSetSearchIndexStatus(status.NewDeploymentSearchIndexStatus(
 		status.SearchIndexStatusError,
 		status.WithMsg(msg.Error()),
-		status.WithID(index.GetID()),
 		status.WithName(index.Name),
 	)))
 	result := workflow.Terminate(status.SearchIndexStatusError, msg.Error())
@@ -94,15 +93,15 @@ func (sr *searchIndexReconciler) terminate(index *searchindex.SearchIndex, err e
 }
 
 func (sr *searchIndexReconciler) create(index *searchindex.SearchIndex) workflow.Result {
-	sr.ctx.Log.Debugf("[creating] index '%s'", index.Name)
-	defer sr.ctx.Log.Debugf("[creation finished] for index '%s'", index.Name)
+	sr.ctx.Log.Debugf("[creating] index %s", index.Name)
+	defer sr.ctx.Log.Debugf("[creation finished] for index %s", index.Name)
 	atlasIdx, err := index.ToAtlas()
 	if err != nil {
 		return sr.terminate(index, err)
 	}
 	respIdx, resp, err := sr.ctx.SdkClient.AtlasSearchApi.CreateAtlasSearchIndex(sr.ctx.Context,
 		sr.projectID, sr.deployment.GetDeploymentName(), atlasIdx).Execute()
-	if err != nil || resp.StatusCode != http.StatusCreated {
+	if err != nil || resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return sr.terminate(index, fmt.Errorf("failed to create index: %w, status: %d", err, resp.StatusCode))
 	}
 	if respIdx == nil {
@@ -116,7 +115,7 @@ func (sr *searchIndexReconciler) create(index *searchindex.SearchIndex) workflow
 }
 
 func (sr *searchIndexReconciler) progress(index *searchindex.SearchIndex) workflow.Result {
-	sr.ctx.Log.Debugf("index '%s' is progress: %s", index.Name, index.GetStatus())
+	sr.ctx.Log.Debugf("index %s is progress: %s", index.Name, index.GetStatus())
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentSetSearchIndexStatus(
 		status.NewDeploymentSearchIndexStatus(status.SearchIndexStatusInProgress,
 			status.WithMsg(pointer.GetOrDefault(index.Status, "")),
@@ -128,31 +127,37 @@ func (sr *searchIndexReconciler) progress(index *searchindex.SearchIndex) workfl
 }
 
 func (sr *searchIndexReconciler) delete(index *searchindex.SearchIndex) workflow.Result {
-	sr.ctx.Log.Debugf("[deleting] index '%s'", index.Name)
-	defer sr.ctx.Log.Debugf("[deletion finished] for index '%s'", index.Name)
+	sr.ctx.Log.Debugf("[deleting] index %s", index.Name)
+	defer sr.ctx.Log.Debugf("[deletion finished] for index %s", index.Name)
 	if index.ID == nil {
 		return workflow.OK()
 	}
-	// TODO: get the index first and check the status. if it's not ACTIVE, return terminate
 
 	_, resp, err := sr.ctx.SdkClient.AtlasSearchApi.DeleteAtlasSearchIndex(sr.ctx.Context, sr.projectID,
 		sr.deployment.GetDeploymentName(), *index.ID).Execute()
-	if resp.StatusCode != http.StatusNoContent || err != nil {
+	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusNotFound || err != nil {
 		return sr.terminate(index, fmt.Errorf("failed to delete index: %w, status: %d", err, resp.StatusCode))
 	}
+
+	return sr.deleted(index.Name)
+}
+
+func (sr *searchIndexReconciler) deleted(indexName string) workflow.Result {
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentUnsetSearchIndexStatus(status.NewDeploymentSearchIndexStatus("",
-		status.WithName(index.Name))))
-	return sr.progress(index)
+		status.WithName(indexName))))
+	return workflow.OK()
 }
 
 func (sr *searchIndexReconciler) update(akoIdx, atlasIdx *searchindex.SearchIndex) workflow.Result {
-	sr.ctx.Log.Debugf("[updating] index '%s'", akoIdx.Name)
-	defer sr.ctx.Log.Debugf("[updating] for index '%s'", akoIdx.Name)
+	sr.ctx.Log.Debugf("[updating] index %s", akoIdx.Name)
+	defer sr.ctx.Log.Debugf("[update finished] for index %s", akoIdx.Name)
 
 	if akoIdx.EqualTo(atlasIdx) {
+		sr.ctx.Log.Debugf("index %s is already updated", akoIdx.Name)
 		return sr.idle(atlasIdx)
 	}
 
+	sr.ctx.Log.Debugf("updating index %s...", akoIdx.Name)
 	toUpdateIdx, err := akoIdx.ToAtlas()
 	if err != nil {
 		return sr.terminate(akoIdx, fmt.Errorf("unable to convert index to AKO: %w", err))

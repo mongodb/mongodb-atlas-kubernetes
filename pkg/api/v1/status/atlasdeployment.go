@@ -185,7 +185,11 @@ func AtlasDeploymentSetSearchIndexStatus(indexStatus DeploymentSearchIndexStatus
 	return func(s *AtlasDeploymentStatus) {
 		for i := range s.SearchIndexes {
 			if s.SearchIndexes[i].Name == indexStatus.Name {
-				s.SearchIndexes[i] = indexStatus
+				s.SearchIndexes[i].Status = indexStatus.Status
+				s.SearchIndexes[i].Message = indexStatus.Message
+				if indexStatus.ID != "" {
+					s.SearchIndexes[i].ID = indexStatus.ID
+				}
 				return
 			}
 		}

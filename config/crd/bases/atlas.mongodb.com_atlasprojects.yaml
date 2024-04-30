@@ -1491,23 +1491,6 @@ spec:
                   scheme:
                     type: string
                 type: object
-              searchIndexes:
-                description: SearchIndexes contains a list of search indexes statuses
-                  configured for a project
-                items:
-                  properties:
-                    ID:
-                      type: string
-                    name:
-                      type: string
-                    status:
-                      type: string
-                  required:
-                  - ID
-                  - name
-                  - status
-                  type: object
-                type: array
               teams:
                 description: Teams contains a list of teams assignment statuses
                 items:

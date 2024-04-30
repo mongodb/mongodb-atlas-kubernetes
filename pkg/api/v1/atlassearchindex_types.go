@@ -250,7 +250,7 @@ type Search struct {
 	// +optional
 	Synonyms *[]Synonym `json:"synonyms,omitempty"`
 	// Index specifications for the collection's fields
-	// +optional
+	// +required
 	Mappings *Mappings `json:"mappings,omitempty"`
 	// +required
 	// A reference to the AtlasSearchIndexConfig custom resource

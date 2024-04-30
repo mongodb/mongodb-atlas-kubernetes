@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	SchemeBuilder.Register(&AtlasSearchIndexConfig{})
+	SchemeBuilder.Register(&AtlasSearchIndexConfig{}, &AtlasSearchIndexConfigList{})
 }
 
 // AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API

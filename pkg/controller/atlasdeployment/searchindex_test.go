@@ -155,7 +155,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Return(admin.DeleteAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
 		mockSearchAPI.EXPECT().
 			DeleteAtlasSearchIndexExecute(admin.DeleteAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
-			Return(map[string]interface{}{}, &http.Response{StatusCode: http.StatusNoContent}, nil)
+			Return(map[string]interface{}{}, &http.Response{StatusCode: http.StatusAccepted}, nil)
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
@@ -173,7 +173,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		}
 
 		result := reconciler.Reconcile(nil, indexToTest, nil)
-		assert.True(t, result.IsInProgress())
+		assert.True(t, result.IsOk())
 		fmt.Println(result)
 		fmt.Println(testCluster.Status)
 	})

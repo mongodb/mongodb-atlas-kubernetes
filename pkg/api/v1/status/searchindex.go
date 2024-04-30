@@ -1,7 +1,7 @@
 package status
 
 type AtlasSearchIndexConfigStatus struct {
-	Projects []SearchIndexConfigProject
+	Projects []SearchIndexConfigProject `json:"projects"`
 }
 
 type SearchIndexConfigProject struct {

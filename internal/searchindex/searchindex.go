@@ -211,12 +211,95 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 	}, errors.Join(errs...)
 }
 
+func (s *SearchIndex) cleanup(cleaners ...indexCleaner) {
+	s.ID = nil
+	s.Status = nil
+
+	for _, cleaner := range cleaners {
+		cleaner(s)
+	}
+}
+
+type indexCleaner func(s *SearchIndex)
+
+func cleanConfigRef() indexCleaner {
+	return func(s *SearchIndex) {
+		if s.Search == nil {
+			return
+		}
+		s.Search.SearchConfigurationRef.Name = ""
+		s.Search.SearchConfigurationRef.Namespace = ""
+	}
+}
+
+// This is because API never returns nil
+func cleanVectorSearch() indexCleaner {
+	return func(s *SearchIndex) {
+		if s.VectorSearch == nil {
+			s.VectorSearch = &akov2.VectorSearch{}
+		}
+	}
+}
+
+// This is because API never returns nil
+func cleanSynonyms() indexCleaner {
+	return func(s *SearchIndex) {
+		if s.Search == nil {
+			return
+		}
+		if s.Search.Synonyms == nil {
+			s.Search.Synonyms = &([]akov2.Synonym{})
+		}
+	}
+}
+
+func cleanStoredSource() indexCleaner {
+	return func(s *SearchIndex) {
+		if s.StoredSource == nil {
+			return
+		}
+		if string(s.StoredSource.Raw) == "null" {
+			s.StoredSource = nil
+		}
+	}
+}
+
 func (s *SearchIndex) EqualTo(value *SearchIndex) bool {
 	if value == nil {
 		return false
 	}
+	copySelf := &SearchIndex{
+		SearchIndex:                *s.SearchIndex.DeepCopy(),
+		AtlasSearchIndexConfigSpec: *s.AtlasSearchIndexConfigSpec.DeepCopy(),
+		ID:                         nil,
+		Status:                     nil,
+	}
+	copyValue := &SearchIndex{
+		SearchIndex:                *value.SearchIndex.DeepCopy(),
+		AtlasSearchIndexConfigSpec: *value.AtlasSearchIndexConfigSpec.DeepCopy(),
+		ID:                         nil,
+		Status:                     nil,
+	}
+	copySelf.cleanup(
+		cleanConfigRef(),
+		cleanVectorSearch(),
+		cleanSynonyms(),
+		cleanStoredSource(),
+	)
+	copyValue.cleanup(
+		cleanConfigRef(),
+		cleanVectorSearch(),
+		cleanSynonyms(),
+		cleanStoredSource(),
+	)
 
-	return cmp.SemanticEqual(s, value)
+	//b, _ := json.MarshalIndent(*copySelf, "", " ")
+	//fmt.Println("AKO INDEX", string(b))
+	//
+	//d := cmp2.Diff(copySelf, copyValue, cmpopts.EquateEmpty())
+	//fmt.Println("INDEX DIFF", d)
+
+	return cmp.SemanticEqual(copySelf, copyValue)
 }
 
 func (s *SearchIndex) Normalize() *SearchIndex {

@@ -4,7 +4,6 @@ const (
 	SearchIndexStatusReady      = "Ready"
 	SearchIndexStatusError      = "Error"
 	SearchIndexStatusInProgress = "InProgress"
-	SearchIndexStatusUnknown    = "Unknown"
 )
 
 type IndexStatus string
