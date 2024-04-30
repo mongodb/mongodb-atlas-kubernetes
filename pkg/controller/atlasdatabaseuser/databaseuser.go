@@ -15,7 +15,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/deployment"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -37,12 +36,12 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return result
 	}
 
-	if result := connectionsecret.CreateOrUpdateConnectionSecrets(ctx, r.Client, r.EventRecorder, project, dbUser); !result.IsOk() {
+	if result := connectionsecret.CreateOrUpdateConnectionSecrets(ctx, r.Client, ds, r.EventRecorder, project, dbUser); !result.IsOk() {
 		return result
 	}
 
 	// We need to remove the old Atlas User right after all the connection secrets are ensured if username has changed.
-	if result := handleUserNameChange(ctx, project.ID(), dbUser); !result.IsOk() {
+	if result := handleUserNameChange(ctx, dus, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
@@ -52,13 +51,13 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	return workflow.OK()
 }
 
-func handleUserNameChange(ctx *workflow.Context, projectID string, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+func handleUserNameChange(ctx *workflow.Context, dus *dbuser.Service, projectID string, dbUser akov2.AtlasDatabaseUser) workflow.Result {
 	if dbUser.Spec.Username != dbUser.Status.UserName && dbUser.Status.UserName != "" {
 		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", dbUser.Spec.Username, "oldUserName", dbUser.Status.UserName)
 
 		deleteAttempts := 3
 		for i := 1; i <= deleteAttempts; i++ {
-			_, err := ctx.Client.DatabaseUsers.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
+			_, err := dus.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
 			if err == nil {
 				break
 			}
@@ -113,7 +112,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *d
 	au, err := dus.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if au == nil && err == nil {
 		log.Debugw("User doesn't exist. Create new user", "dbUser", dbUser)
-		au := &dbuser.User{AtlasDatabaseUserSpec: dbUser.Spec, Password: password}
+		au := dbuser.NewUser(dbUser.Spec, project.ID(), password)
 		if err = dus.Create(ctx.Context, au); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 		}
@@ -158,9 +157,13 @@ func validateScopes(ctx *workflow.Context, ds *deployment.Service, projectID str
 }
 
 func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, ds *deployment.Service, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
-	allDeploymentNames, err := atlasdeployment.GetAllDeploymentNames(ctx.Context, ctx.Client, projectID)
+	conns, err := ds.ListDeploymentConns(ctx.Context, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+	allDeploymentNames := []string{}
+	for _, conn := range conns {
+		allDeploymentNames = append(allDeploymentNames, conn.Name)
 	}
 
 	var deploymentsToCheck []string
@@ -225,7 +228,7 @@ func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *
 }
 
 func userMatchesSpec(log *zap.SugaredLogger, atlasUsername, operatorUser *akov2.AtlasDatabaseUserSpec) (bool, error) {
-	operatorCopy := operatorUser.DeepCopy()
+	operatorCopy := dbuser.Normalize(operatorUser.DeepCopy())
 	// performing some normalization of dates
 	if operatorUser.DeleteAfterDate != "" {
 		operatorDeleteDate, err := timeutil.ParseISO8601(operatorUser.DeleteAfterDate)
@@ -259,12 +262,12 @@ func userMatchesSpec(log *zap.SugaredLogger, atlasUsername, operatorUser *akov2.
 		log.Debugf("X509Type differs from spec: %s <> %s", atlasUsername.X509Type, operatorCopy.X509Type)
 		return false, nil
 	}
-	if !reflect.DeepEqual(atlasUsername.Scopes, operatorCopy.Scopes) {
-		log.Debugf("Scopes differs from spec: %v <> %v", atlasUsername.Scopes, operatorCopy.Scopes)
-		return false, nil
-	}
 	if !reflect.DeepEqual(atlasUsername.Roles, operatorCopy.Roles) {
 		log.Debugf("Roles differs from spec: %v <> %v", atlasUsername.Roles, operatorCopy.Roles)
+		return false, nil
+	}
+	if !reflect.DeepEqual(atlasUsername.Scopes, operatorCopy.Scopes) {
+		log.Debugf("Scopes differs from spec: %#+v <> %#+v END", atlasUsername.Scopes, operatorCopy.Scopes)
 		return false, nil
 	}
 	return true, nil

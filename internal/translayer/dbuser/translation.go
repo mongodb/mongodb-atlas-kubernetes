@@ -1,8 +1,11 @@
 package dbuser
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
+	"time"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
@@ -17,8 +20,23 @@ type User struct {
 	ProjectID string
 }
 
+func NewUser(spec akov2.AtlasDatabaseUserSpec, projectID, password string) *User {
+	return &User{AtlasDatabaseUserSpec: spec, ProjectID: projectID, Password: password}
+}
+
+func Normalize(spec *akov2.AtlasDatabaseUserSpec) *akov2.AtlasDatabaseUserSpec {
+	if spec.Roles == nil {
+		spec.Roles = []akov2.RoleSpec{}
+	}
+	if spec.Scopes == nil {
+		spec.Scopes = []akov2.ScopeSpec{}
+	}
+	return spec
+}
+
 func toK8s(dbUser *admin.CloudDatabaseUser) (*User, error) {
-	deleteAfterDate, err := dateStringToK8s(dbUser.DeleteAfterDate.String())
+	log.Printf("atlas dbUser=%s", jsonize(dbUser))
+	deleteAfterDate, err := dateToK8s(dbUser.DeleteAfterDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse deleteAfterDate: %w", err)
 	}
@@ -26,7 +44,7 @@ func toK8s(dbUser *admin.CloudDatabaseUser) (*User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse scopes: %w", err)
 	}
-	return &User{
+	u := &User{
 		ProjectID: dbUser.GroupId,
 		Password:  dbUser.GetPassword(),
 		AtlasDatabaseUserSpec: akov2.AtlasDatabaseUserSpec{
@@ -39,32 +57,63 @@ func toK8s(dbUser *admin.CloudDatabaseUser) (*User, error) {
 			AWSIAMType:      dbUser.GetAwsIAMType(),
 			X509Type:        dbUser.GetX509Type(),
 		},
-	}, nil
+	}
+	log.Printf("k8s u=%s", jsonize(u))
+	return u, nil
 }
 
-func toAtlas(au *User) *admin.CloudDatabaseUser {
-	return &admin.CloudDatabaseUser{
-		DatabaseName: au.DatabaseName,
-		//DeleteAfterDate: au.DeleteAfterDate,
-		X509Type:     pointer.MakePtr(au.X509Type),
-		AwsIAMType:   pointer.MakePtr(au.AWSIAMType),
-		GroupId:      au.ProjectID,
-		Roles:        rolesToAtlas(au.Roles),
-		Scopes:       scopesToAtlas(au.Scopes),
-		Password:     pointer.MakePtr(au.Password),
-		Username:     au.Username,
-		OidcAuthType: pointer.MakePtr(au.OIDCAuthType),
+func jsonize(o any) string {
+	jsonBytes, err := json.MarshalIndent(o, "  ", "  ")
+	if err != nil {
+		return err.Error()
 	}
+	return string(jsonBytes)
+}
+
+func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
+	log.Printf("k8s au=%s", jsonize(au.AtlasDatabaseUserSpec))
+	date, err := dateToAtlas(au.DeleteAfterDate)
+	if err != nil {
+		return nil, err
+	}
+	dbu := &admin.CloudDatabaseUser{
+		DatabaseName:    au.DatabaseName,
+		DeleteAfterDate: date,
+		X509Type:        pointer.MakePtr(au.X509Type),
+		AwsIAMType:      pointer.MakePtr(au.AWSIAMType),
+		GroupId:         au.ProjectID,
+		Roles:           rolesToAtlas(au.Roles),
+		Scopes:          scopesToAtlas(au.Scopes),
+		Password:        pointer.MakePtr(au.Password),
+		Username:        au.Username,
+		OidcAuthType:    pointer.MakePtr(au.OIDCAuthType),
+	}
+	log.Printf("atlas dbu=%s", jsonize(dbu))
+	return dbu, nil
+}
+
+func dateToAtlas(d string) (*time.Time, error) {
+	if d == "" {
+		return nil, nil
+	}
+	date, err := timeutil.ParseISO8601(d)
+	if err != nil {
+		return nil, err
+	}
+	return pointer.MakePtr(date), nil
 }
 
 func rolesToAtlas(roles []akov2.RoleSpec) *[]admin.DatabaseUserRole {
 	atlasRoles := []admin.DatabaseUserRole{}
 	for _, role := range roles {
-		atlasRoles = append(atlasRoles, admin.DatabaseUserRole{
-			RoleName:       role.RoleName,
-			DatabaseName:   role.DatabaseName,
-			CollectionName: pointer.MakePtr(role.CollectionName),
-		})
+		ar := admin.DatabaseUserRole{
+			RoleName:     role.RoleName,
+			DatabaseName: role.DatabaseName,
+		}
+		if role.CollectionName != "" {
+			ar.CollectionName = pointer.MakePtr(role.CollectionName)
+		}
+		atlasRoles = append(atlasRoles, ar)
 	}
 	return &atlasRoles
 }
@@ -80,9 +129,12 @@ func scopesToAtlas(scopes []akov2.ScopeSpec) *[]admin.UserScope {
 	return &atlasScopes
 }
 
-func dateStringToK8s(date string) (string, error) {
-	if date != "" {
-		d, err := timeutil.ParseISO8601(date)
+func dateToK8s(date *time.Time) (string, error) {
+	if date == nil {
+		return "", nil
+	}
+	if date.String() != "" {
+		d, err := timeutil.ParseISO8601(date.String())
 		if err != nil {
 			return "", err
 		}

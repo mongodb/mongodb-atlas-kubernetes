@@ -20,7 +20,11 @@ func NewService(ctx context.Context, provider atlas.Provider, secretRef *types.N
 	if err != nil {
 		return nil, err
 	}
-	return &Service{DatabaseUsersApi: client.DatabaseUsersApi}, nil
+	return NewFromDBUserAPI(client.DatabaseUsersApi), nil
+}
+
+func NewFromDBUserAPI(api admin.DatabaseUsersApi) *Service {
+	return &Service{DatabaseUsersApi: api}
 }
 
 func (dus *Service) Get(ctx context.Context, db, projectID, username string) (*User, error) {
@@ -46,12 +50,19 @@ func (dus *Service) Delete(ctx context.Context, db, projectID, username string) 
 }
 
 func (dus *Service) Create(ctx context.Context, au *User) error {
-	_, _, err := dus.CreateDatabaseUser(ctx, au.ProjectID, toAtlas(au)).Execute()
+	u, err := toAtlas(au)
+	if err != nil {
+		return err
+	}
+	_, _, err = dus.CreateDatabaseUser(ctx, au.ProjectID, u).Execute()
 	return err
 }
 
 func (dus *Service) Update(ctx context.Context, au *User) error {
-	_, _, err := dus.UpdateDatabaseUser(
-		ctx, au.ProjectID, au.DatabaseName, au.Username, toAtlas(au)).Execute()
+	u, err := toAtlas(au)
+	if err != nil {
+		return err
+	}
+	_, _, err = dus.UpdateDatabaseUser(ctx, au.ProjectID, au.DatabaseName, au.Username, u).Execute()
 	return err
 }
