@@ -174,7 +174,7 @@ jobs:
             "backup-config",
             "data-federation",
             "deletion-protection",
-            "atlas-search",
+            "atlas-search-nodes",
             "atlas-search-index",
           ]
     steps:
