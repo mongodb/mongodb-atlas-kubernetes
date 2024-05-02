@@ -106,7 +106,10 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 					Kind:       "AtlasSearchIndexConfig",
 					APIVersion: "atlas.mongodb.com/v1",
 				},
-				ObjectMeta: metav1.ObjectMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testSearchIndexConfig",
+					Namespace: testData.InitialDeployments[0].Namespace,
+				},
 				Spec: akov2.AtlasSearchIndexConfigSpec{
 					Analyzer:       pointer.MakePtr("lucene.standard"),
 					SearchAnalyzer: pointer.MakePtr("lucene.standard"),
