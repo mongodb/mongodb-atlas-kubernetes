@@ -16,7 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-var _ = Describe("Search Nodes", Label("atlas-search"), func() {
+var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 	var testData *model.TestDataProvider
 
 	_ = AfterEach(func() {

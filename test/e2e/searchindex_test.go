@@ -119,28 +119,30 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 		})
 
 		By("Creating one search index, type: SEARCH", func() {
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
-				Name:      testData.InitialDeployments[0].Name,
-				Namespace: testData.InitialDeployments[0].Namespace,
-			}, testData.InitialDeployments[0])).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+					Name:      testData.InitialDeployments[0].Name,
+					Namespace: testData.InitialDeployments[0].Namespace,
+				}, testData.InitialDeployments[0])).To(Succeed())
 
-			searchIndexesToCreate := []akov2.SearchIndex{
-				{
-					Name:           "test-search-index",
-					Type:           atlasdeployment.IndexTypeSearch,
-					DBName:         DBTraining,
-					CollectionName: DBTrainingCollectionRoutes,
-					Search: &akov2.Search{
-						Mappings: &akov2.Mappings{Dynamic: pointer.MakePtr(true)},
-						SearchConfigurationRef: common.ResourceRefNamespaced{
-							Name:      searchIndexConfig.GetName(),
-							Namespace: searchIndexConfig.GetNamespace(),
+				searchIndexesToCreate := []akov2.SearchIndex{
+					{
+						Name:           "test-search-index",
+						Type:           atlasdeployment.IndexTypeSearch,
+						DBName:         DBTraining,
+						CollectionName: DBTrainingCollectionRoutes,
+						Search: &akov2.Search{
+							Mappings: &akov2.Mappings{Dynamic: pointer.MakePtr(true)},
+							SearchConfigurationRef: common.ResourceRefNamespaced{
+								Name:      searchIndexConfig.GetName(),
+								Namespace: searchIndexConfig.GetNamespace(),
+							},
 						},
 					},
-				},
-			}
-			testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes = searchIndexesToCreate
-			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+				}
+				testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes = searchIndexesToCreate
+				g.Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
@@ -153,21 +155,23 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 		})
 
 		By("Creating one search index, type: VECTOR SEARCH", func() {
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
-				Name:      testData.InitialDeployments[0].Name,
-				Namespace: testData.InitialDeployments[0].Namespace,
-			}, testData.InitialDeployments[0])).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+					Name:      testData.InitialDeployments[0].Name,
+					Namespace: testData.InitialDeployments[0].Namespace,
+				}, testData.InitialDeployments[0])).To(Succeed())
 
-			vectorSearchIndexToCreate := akov2.SearchIndex{
-				Name:           "test-search-index",
-				Type:           atlasdeployment.IndexTypeVector,
-				DBName:         DBTraining,
-				CollectionName: DBTrainingCollectionGrades,
-				VectorSearch:   &akov2.VectorSearch{},
-			}
-			testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes = append(
-				testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes, vectorSearchIndexToCreate)
-			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+				vectorSearchIndexToCreate := akov2.SearchIndex{
+					Name:           "test-search-index",
+					Type:           atlasdeployment.IndexTypeVector,
+					DBName:         DBTraining,
+					CollectionName: DBTrainingCollectionGrades,
+					VectorSearch:   &akov2.VectorSearch{},
+				}
+				testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes = append(
+					testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes, vectorSearchIndexToCreate)
+				g.Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
@@ -180,29 +184,35 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 		})
 
 		By("Deleting the VECTOR SEARCH index", func() {
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
-				Name:      testData.InitialDeployments[0].Name,
-				Namespace: testData.InitialDeployments[0].Namespace,
-			}, testData.InitialDeployments[0])).To(Succeed())
-			slices.Delete(testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes, 1, 1)
+			Eventually(func(g Gomega) {
+				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+					Name:      testData.InitialDeployments[0].Name,
+					Namespace: testData.InitialDeployments[0].Namespace,
+				}, testData.InitialDeployments[0])).To(Succeed())
+				slices.Delete(testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes, 1, 1)
 
-			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+				g.Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
+
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
 					Name:      testData.InitialDeployments[0].Name,
 					Namespace: testData.InitialDeployments[0].Namespace,
 				}, testData.InitialDeployments[0])).To(Succeed())
 				g.Expect(len(testData.InitialDeployments[0].Status.SearchIndexes)).To(BeEquivalentTo(1))
-			})
+			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
 		})
 		By("Deleting the SEARCH index", func() {
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
-				Name:      testData.InitialDeployments[0].Name,
-				Namespace: testData.InitialDeployments[0].Namespace,
-			}, testData.InitialDeployments[0])).To(Succeed())
-			testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes = nil
+			Eventually(func(g Gomega) {
+				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+					Name:      testData.InitialDeployments[0].Name,
+					Namespace: testData.InitialDeployments[0].Namespace,
+				}, testData.InitialDeployments[0])).To(Succeed())
+				testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes = nil
 
-			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+				g.Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
+
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
 					Name:      testData.InitialDeployments[0].Name,
