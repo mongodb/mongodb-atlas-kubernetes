@@ -35,20 +35,10 @@ func Test_searchIndexReconciler(t *testing.T) {
 				DBName:         "testDB",
 				CollectionName: "testCollection",
 				Type:           "search",
-				Search: &akov2.Search{
-					Synonyms: nil,
-					Mappings: nil,
-				},
-				VectorSearch: nil,
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer:       pointer.MakePtr("testAnalyzer"),
-				Analyzers:      nil,
-				SearchAnalyzer: nil,
-				StoredSource:   nil,
+				Analyzer: pointer.MakePtr("testAnalyzer"),
 			},
-			ID:     nil,
-			Status: nil,
 		}
 
 		testCluster := &akov2.AtlasDeployment{
@@ -77,14 +67,6 @@ func Test_searchIndexReconciler(t *testing.T) {
 				IndexID:        pointer.MakePtr("testID"),
 				Name:           "",
 				Status:         pointer.MakePtr("NOT STARTED"),
-				Type:           nil,
-				Analyzer:       nil,
-				Analyzers:      nil,
-				Mappings:       nil,
-				SearchAnalyzer: nil,
-				StoredSource:   nil,
-				Synonyms:       nil,
-				Fields:         nil,
 			}, &http.Response{StatusCode: http.StatusCreated}, nil)
 
 		reconciler := &searchIndexReconciler{
@@ -97,7 +79,6 @@ func Test_searchIndexReconciler(t *testing.T) {
 				Context: context.Background(),
 			},
 			deployment: testCluster,
-			k8sClient:  nil,
 			projectID:  "",
 			indexName:  "testIndexName",
 		}
@@ -119,17 +100,9 @@ func Test_searchIndexReconciler(t *testing.T) {
 				DBName:         "testDB",
 				CollectionName: "testCollection",
 				Type:           "search",
-				Search: &akov2.Search{
-					Synonyms: nil,
-					Mappings: nil,
-				},
-				VectorSearch: nil,
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer:       pointer.MakePtr("testAnalyzer"),
-				Analyzers:      nil,
-				SearchAnalyzer: nil,
-				StoredSource:   nil,
+				Analyzer: pointer.MakePtr("testAnalyzer"),
 			},
 			ID:     pointer.MakePtr("testID"),
 			Status: nil,

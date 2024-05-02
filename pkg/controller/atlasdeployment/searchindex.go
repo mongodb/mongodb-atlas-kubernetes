@@ -73,9 +73,9 @@ func (sr *searchIndexReconciler) idle(index *searchindex.SearchIndex) workflow.R
 		status.WithID(index.GetID()),
 		status.WithName(index.Name),
 		status.WithMsg(index.GetStatus()))))
-	result := workflow.OK()
-	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, result)
-	return result
+	ok := workflow.OK()
+	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, ok)
+	return ok
 }
 
 // Never set the ID (status.WithID()) on terminate. It may be empty and the AKO will lose track on this index
@@ -87,9 +87,9 @@ func (sr *searchIndexReconciler) terminate(index *searchindex.SearchIndex, err e
 		status.WithMsg(msg.Error()),
 		status.WithName(index.Name),
 	)))
-	result := workflow.Terminate(status.SearchIndexStatusError, msg.Error())
-	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, result)
-	return result
+	terminate := workflow.Terminate(status.SearchIndexStatusError, msg.Error())
+	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, terminate)
+	return terminate
 }
 
 func (sr *searchIndexReconciler) create(index *searchindex.SearchIndex) workflow.Result {
@@ -121,9 +121,9 @@ func (sr *searchIndexReconciler) progress(index *searchindex.SearchIndex) workfl
 			status.WithMsg(pointer.GetOrDefault(index.Status, "")),
 			status.WithID(index.GetID()),
 			status.WithName(index.Name))))
-	result := workflow.InProgress(status.SearchIndexStatusInProgress, index.GetStatus())
-	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, result)
-	return result
+	inProgress := workflow.InProgress(status.SearchIndexStatusInProgress, index.GetStatus())
+	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, inProgress)
+	return inProgress
 }
 
 func (sr *searchIndexReconciler) delete(index *searchindex.SearchIndex) workflow.Result {
@@ -152,7 +152,11 @@ func (sr *searchIndexReconciler) update(akoIdx, atlasIdx *searchindex.SearchInde
 	sr.ctx.Log.Debugf("[updating] index %s", akoIdx.Name)
 	defer sr.ctx.Log.Debugf("[update finished] for index %s", akoIdx.Name)
 
-	if akoIdx.EqualTo(atlasIdx) {
+	isEqual, err := akoIdx.EqualTo(atlasIdx)
+	if err != nil {
+		sr.terminate(atlasIdx, err)
+	}
+	if isEqual {
 		sr.ctx.Log.Debugf("index %s is already updated", akoIdx.Name)
 		return sr.idle(atlasIdx)
 	}

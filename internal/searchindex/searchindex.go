@@ -1,8 +1,7 @@
+// Package searchindex contains internal representation of the Atlas SearchIndex resource
 package searchindex
 
 import (
-	"bytes"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,19 +18,15 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
+// SearchIndex is the internal representation of the Atlas SearchIndex resource for the AKO usage
+// SearchIndexes represented differently in AKO as CRDs and in Atlas as atlas internal structures.
+// Having a separate representation allows for simpler testing of the internal logic, not tied to
+// AKO and Atlas structures
 type SearchIndex struct {
 	akov2.SearchIndex
 	akov2.AtlasSearchIndexConfigSpec
 	ID     *string
 	Status *string
-}
-
-func (s *SearchIndex) Key() string {
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-	err := encoder.Encode(*s)
-	fmt.Println("ERR:", err)
-	return buf.String()
 }
 
 func (s *SearchIndex) GetID() string {
@@ -42,6 +37,9 @@ func (s *SearchIndex) GetStatus() string {
 	return pointer.GetOrDefault(s.Status, "")
 }
 
+// NewSearchIndexFromAKO requires both parts of search index: data-related part from a Deployment, and
+// index configuration represented in a separate CRD. Partial construction is disabled as it won't work
+// for comparing indexes between each other.
 func NewSearchIndexFromAKO(index *akov2.SearchIndex, config *akov2.AtlasSearchIndexConfigSpec) *SearchIndex {
 	if index == nil || config == nil {
 		return nil
@@ -52,6 +50,8 @@ func NewSearchIndexFromAKO(index *akov2.SearchIndex, config *akov2.AtlasSearchIn
 	}
 }
 
+// NewSearchIndexFromAtlas returns internal representation of the SearchIndex converted from Atlas
+// internals. It can return an error in case some fields are not valid JSON.
 func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, error) {
 	convertVectorFields := func(in *[]map[string]interface{}) (*apiextensionsv1.JSON, error) {
 		if in == nil {
@@ -211,6 +211,7 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 	}, errors.Join(errs...)
 }
 
+// cleanup normalizes the search index for comparison
 func (s *SearchIndex) cleanup(cleaners ...indexCleaner) {
 	s.ID = nil
 	s.Status = nil
@@ -222,6 +223,8 @@ func (s *SearchIndex) cleanup(cleaners ...indexCleaner) {
 
 type indexCleaner func(s *SearchIndex)
 
+// There is no need to compare references to configuration indexes as their data
+// already represented as SearchIndexConfiguration field
 func cleanConfigRef() indexCleaner {
 	return func(s *SearchIndex) {
 		if s.Search == nil {
@@ -253,6 +256,7 @@ func cleanSynonyms() indexCleaner {
 	}
 }
 
+// This is because API returns "null" as a valid JSON when no value is set
 func cleanStoredSource() indexCleaner {
 	return func(s *SearchIndex) {
 		if s.StoredSource == nil {
@@ -264,9 +268,13 @@ func cleanStoredSource() indexCleaner {
 	}
 }
 
-func (s *SearchIndex) EqualTo(value *SearchIndex) bool {
+// EqualTo compares two SearchIndexes using SemanticEqual method
+func (s *SearchIndex) EqualTo(value *SearchIndex) (bool, error) {
 	if value == nil {
-		return false
+		return false, fmt.Errorf("caller is nil")
+	}
+	if s == nil {
+		return false, fmt.Errorf("value is nil")
 	}
 	copySelf := &SearchIndex{
 		SearchIndex:                *s.SearchIndex.DeepCopy(),
@@ -293,21 +301,16 @@ func (s *SearchIndex) EqualTo(value *SearchIndex) bool {
 		cleanStoredSource(),
 	)
 
-	//b, _ := json.MarshalIndent(*copySelf, "", " ")
-	//fmt.Println("AKO INDEX", string(b))
-	//
-	//d := cmp2.Diff(copySelf, copyValue, cmpopts.EquateEmpty())
-	//fmt.Println("INDEX DIFF", d)
-
 	return cmp.SemanticEqual(copySelf, copyValue)
 }
 
-func (s *SearchIndex) Normalize() *SearchIndex {
+func (s *SearchIndex) Normalize() (*SearchIndex, error) {
 	// TODO: Refactor interface to return error!
-	_ = cmp.Normalize(s)
-	return s
+	err := cmp.Normalize(s)
+	return s, err
 }
 
+// ToAtlas converts internal SearchIndex representation to the Atlas structure used for API calls
 func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 	convertJSONToListOfMaps := func(in *apiextensionsv1.JSON) (*[]map[string]interface{}, error) {
 		if in == nil {
@@ -378,7 +381,8 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 		return nil, err
 	}
 
-	mappings, err := func(in *akov2.Mappings) (*admin.ApiAtlasFTSMappings, error) {
+	var mappings *admin.ApiAtlasFTSMappings
+	convertMappings := func(in *akov2.Mappings) (*admin.ApiAtlasFTSMappings, error) {
 		if in == nil {
 			return nil, nil
 		}
@@ -390,12 +394,16 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 			Dynamic: in.Dynamic,
 			Fields:  fields,
 		}, nil
-	}(s.Search.Mappings)
-	if err != nil {
-		return nil, err
+	}
+	if s.Search != nil {
+		mappings, err = convertMappings(s.Search.Mappings)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	synonyms := func(in *[]akov2.Synonym) *[]admin.SearchSynonymMappingDefinition {
+	var synonyms *[]admin.SearchSynonymMappingDefinition
+	convertSynonyms := func(in *[]akov2.Synonym) *[]admin.SearchSynonymMappingDefinition {
 		if in == nil {
 			return nil
 		}
@@ -412,7 +420,10 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 		}
 
 		return &result
-	}(s.Search.Synonyms)
+	}
+	if s.Search != nil {
+		synonyms = convertSynonyms(s.Search.Synonyms)
+	}
 
 	var searchFields *[]map[string]interface{}
 	if s.VectorSearch != nil {

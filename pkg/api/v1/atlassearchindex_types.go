@@ -6,6 +6,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
+// SearchIndex is the CRD to configure part of the Atlas Search Index
 type SearchIndex struct {
 	// Human-readable label that identifies this index. Must be unique for a deployment
 	// +required
@@ -28,223 +29,7 @@ type SearchIndex struct {
 	VectorSearch *VectorSearch `json:"vectorSearch,omitempty"`
 }
 
-//// SearchIndexDTO is intended for internal usage only. This is a temporary object used to compare
-//// AKO configured indices and Atlas indices
-//// +k8s:deepcopy-gen=false
-//type SearchIndexDTO struct {
-//	SearchIndex
-//	AtlasSearchIndexConfigSpec
-//}
-//
-////type SearchIndexDTO *admin.ClusterSearchIndex
-//
-//func NewSearchIndexDTOFromAKO(index *SearchIndex, config *AtlasSearchIndexConfigSpec) *SearchIndexDTO {
-//	return &SearchIndexDTO{
-//		SearchIndex:                *index,
-//		AtlasSearchIndexConfigSpec: *config,
-//	}
-//}
-//
-//func NewSearchIndexDTOFromAtlas(index *admin.ClusterSearchIndex) *SearchIndexDTO {
-//	convertSynonyms := func(in *[]admin.SearchSynonymMappingDefinition) []Synonym {
-//
-//	}
-//	convertMappings := func(in *admin.ApiAtlasFTSMappings) *Mappings {
-//
-//	}
-//	convertAnalyzers := func(in *[]admin.ApiAtlasFTSAnalyzers) []AtlasSearchIndexAnalyzer {
-//
-//	}
-//	return &SearchIndexDTO{
-//		Name:           index.Name,
-//		DBName:         index.Database,
-//		CollectionName: index.CollectionName,
-//		Type:           *index.Type,
-//		Synonyms:       index.Synonyms, // convert
-//		Mappings:        index.Mappings, // convert
-//		Fields:         index.Fields,   // convert
-//		AtlasSearchIndexConfigSpec: AtlasSearchIndexConfigSpec{
-//			Analyzer:       index.Analyzer,
-//			Analyzers:      index.Analyzers,
-//			SearchAnalyzer: index.SearchAnalyzer,
-//			StoredSource:   index.StoredSource,
-//		},
-//	}
-//}
-//
-//func (si *SearchIndex) ToAtlas(ic *AtlasSearchIndexConfigSpec) *admin.ClusterSearchIndex {
-//	convertTokenizerType := func(t *Tokenizer) admin.ApiAtlasFTSAnalyzersTokenizer {
-//		result := admin.ApiAtlasFTSAnalyzersTokenizer{}
-//
-//		switch {
-//		case t.EdgeGram != nil:
-//			result.Type = pointer.MakePtr("edgeGram")
-//			result.MaxGram = &t.EdgeGram.MaxGram
-//			result.MinGram = &t.EdgeGram.MinGram
-//		case t.NGram != nil:
-//			result.Type = pointer.MakePtr("nGram")
-//			result.MaxGram = &t.EdgeGram.MaxGram
-//			result.MinGram = &t.EdgeGram.MinGram
-//		case t.Keyword != nil:
-//			result.Type = pointer.MakePtr("keyword")
-//		case t.RegexCaptureGroup != nil:
-//			result.Type = pointer.MakePtr("regexCaptureGroup")
-//			result.Pattern = pointer.MakePtr(t.RegexCaptureGroup.Pattern)
-//			result.Group = pointer.MakePtr(t.RegexCaptureGroup.Group)
-//		case t.RegexSplit != nil:
-//			result.Type = pointer.MakePtr("regexSplit")
-//			result.Pattern = pointer.MakePtr(t.RegexSplit.Pattern)
-//		case t.Standard != nil:
-//			result.Type = pointer.MakePtr("standard")
-//			result.MaxTokenLength = pointer.MakePtr(t.Standard.MaxTokenLength)
-//		case t.UaxUrlEmail != nil:
-//			result.Type = pointer.MakePtr("uaxUrlEmail")
-//			result.MaxTokenLength = pointer.MakePtr(t.Standard.MaxTokenLength)
-//		case t.Whitespace != nil:
-//			result.Type = pointer.MakePtr("whitespace")
-//			result.MaxTokenLength = pointer.MakePtr(t.Standard.MaxTokenLength)
-//		}
-//		return result
-//	}
-//
-//	convertCharFilters := func(in []CharFilter) *[]interface{} {
-//		result := make([]interface{}, 0, len(in))
-//		for i := range in {
-//			resultItem := map[string]interface{}{}
-//
-//			switch {
-//			case in[i].HtmlNormalize != nil:
-//				resultItem["ignoreTags"] = in[i].HtmlNormalize.IgnoreTags
-//				resultItem["type"] = "htmlNormalize"
-//			case in[i].IcuNormalize != nil:
-//				resultItem["icuNormalize"] = in[i].IcuNormalize
-//				resultItem["type"] = "icuNormalize"
-//			case in[i].Mappings != nil:
-//				resultItem["mappings"] = in[i].Mappings.Mappings
-//				resultItem["type"] = "mapping"
-//			case in[i].Persian != nil:
-//				resultItem["persian"] = in[i].Persian
-//				resultItem["type"] = "persian"
-//			}
-//			result = append(result, resultItem)
-//		}
-//		return &result
-//	}
-//
-//	convertTokenFilters := func(in []TokenFilter) *[]interface{} {
-//		result := make([]interface{}, 0, len(in))
-//		for i := range in {
-//			item := map[string]interface{}{}
-//
-//			switch {
-//			case in[i].AsciiFolding != nil:
-//				item["type"] = "asciiFolding"
-//				item["originalTokens"] = in[i].AsciiFolding.OriginalTokens
-//			case in[i].DaitchMokotoffSoundex != nil:
-//				item["type"] = "daitchMokotoffSoundex"
-//				item["originalTokens"] = in[i].DaitchMokotoffSoundex.OriginalTokens
-//			case in[i].EdgeGram != nil:
-//				item["type"] = "edgeGram"
-//				item["maxGram"] = in[i].EdgeGram.MaxGram
-//				item["minGram"] = in[i].EdgeGram.MinGram
-//				item["termNotInBounds"] = in[i].EdgeGram.TermNotInBounds
-//			case in[i].IcuFolding != nil:
-//				item["type"] = "icuFolding"
-//			case in[i].IcuNormalizer != nil:
-//				item["type"] = "icuNormalizer"
-//				item["normalizationForm"] = in[i].IcuNormalizer.NormalizationForm
-//			case in[i].Length != nil:
-//				item["type"] = "length"
-//				item["max"] = in[i].Length.Max
-//				item["max"] = in[i].Length.Min
-//			case in[i].Lowercase != nil:
-//				item["type"] = "lowercase"
-//			case in[i].NGram != nil:
-//				item["type"] = "nGram"
-//				item["maxGram"] = in[i].NGram.MaxGram
-//				item["minGram"] = in[i].NGram.MinGram
-//				item["termNotInBounds"] = in[i].NGram.TermNotInBounds
-//			case in[i].Regex != nil:
-//				item["type"] = "regex"
-//				item["matches"] = in[i].Regex.Matches
-//				item["pattern"] = in[i].Regex.Pattern
-//				item["replacement"] = in[i].Regex.Replacement
-//			case in[i].Reverse != nil:
-//				item["type"] = "reverse"
-//			case in[i].Shingle != nil:
-//				item["type"] = "shingle"
-//				item["maxShingleSize"] = in[i].Shingle.MaxShingleSize
-//				item["minShingleSize"] = in[i].Shingle.MinShingleSize
-//			case in[i].SnowballStemming != nil:
-//				item["type"] = "snowballStemming"
-//				item["stemmerName"] = in[i].SnowballStemming.StemmerName
-//			case in[i].Stopword != nil:
-//				item["type"] = "stopword"
-//				item["ignoreCase"] = in[i].Stopword.IgnoreCase
-//				item["tokens"] = in[i].Stopword.Tokens
-//			case in[i].Trim != nil:
-//				item["type"] = "trim"
-//			}
-//
-//			result = append(result, item)
-//		}
-//		return &result
-//	}
-//
-//	convertAnalyzers := func(in []AtlasSearchIndexAnalyzer) *[]admin.ApiAtlasFTSAnalyzers {
-//		result := make([]admin.ApiAtlasFTSAnalyzers, 0, len(in))
-//
-//		for i := range in {
-//			result = append(result, admin.ApiAtlasFTSAnalyzers{
-//				CharFilters:  convertCharFilters(in[i].CharFilters),
-//				Name:         in[i].Name,
-//				TokenFilters: convertTokenFilters(in[i].TokenFilters),
-//				Tokenizer:    convertTokenizerType(in[i].Tokenizer),
-//			})
-//		}
-//		return &result
-//	}
-//
-//	convertMappings := func(in *Mappings) *admin.ApiAtlasFTSMappings {
-//		return &admin.ApiAtlasFTSMappings{
-//			Dynamic: &in.Dynamic,
-//			//Fields:  map[string]interface{}(in.Fields),
-//		}
-//	}
-//
-//	convertSynonyms := func(in []Synonym) *[]admin.SearchSynonymMappingDefinition {
-//		result := make([]admin.SearchSynonymMappingDefinition, 0, len(in))
-//
-//		for i := range in {
-//			result = append(result, admin.SearchSynonymMappingDefinition{
-//				Analyzer: in[i].Analyzer,
-//				Name:     in[i].Name,
-//				Source: admin.SynonymSource{
-//					Collection: in[i].Source.Collection,
-//				},
-//			})
-//		}
-//		return &result
-//	}
-//
-//	return &admin.ClusterSearchIndex{
-//		CollectionName: si.CollectionName,
-//		Database:       si.DBName,
-//		// Should be nil
-//		IndexID:        nil,
-//		Name:           si.Name,
-//		Status:         nil,
-//		Type:           &si.Type,
-//		Analyzer:       ic.Analyzer,
-//		Analyzers:      convertAnalyzers(ic.Analyzers),
-//		Mappings:       convertMappings(si.Search.Mappings),
-//		SearchAnalyzer: ic.SearchAnalyzer,
-//		Synonyms:       convertSynonyms(si.Search.Synonyms),
-//		// TODO: Not described in the docs
-//		Fields: nil,
-//	}
-//}
-
+// Search represents "search" type of Atlas Search Index
 type Search struct {
 	// Rule sets that map words to their synonyms in this index
 	// +optional
@@ -257,6 +42,7 @@ type Search struct {
 	SearchConfigurationRef common.ResourceRefNamespaced `json:"searchConfigurationRef"`
 }
 
+// Synonym represents "Synonym" type of Atlas Search Index
 type Synonym struct {
 	// Human-readable label that identifies the synonym definition. Each name must be unique within the same index definition
 	// +required
@@ -270,11 +56,13 @@ type Synonym struct {
 	Source Source `json:"source"`
 }
 
+// Source represents "Source" type of Atlas Search Index
 type Source struct {
 	// Human-readable label that identifies the MongoDB collection that stores words and their applicable synonyms
 	Collection string `json:"collection"`
 }
 
+// Mappings represents "mappings" type of Atlas Search Index
 type Mappings struct {
 	// Flag that indicates whether the index uses dynamic or static mappings. Required if mapping.fields is omitted.
 	Dynamic *bool `json:"dynamic,omitempty"`
@@ -282,22 +70,9 @@ type Mappings struct {
 	Fields *apiextensions.JSON `json:"fields,omitempty"`
 }
 
+// VectorSearch represents "vectorSearch" type of Atlas Search Index
 type VectorSearch struct {
 	// Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
 	// +required
-	//Fields []VectorSearchField `json:"fields,omitempty"`
 	Fields *apiextensions.JSON `json:"fields,omitempty"`
-}
-
-type VectorSearchField struct {
-	// +kubebuilder:validations:Enum:=vector;filter
-	// +kubebuilder:default:=vector
-	// +optional
-	Type string `json:"type,omitempty"`
-	// +optional
-	Path string `json:"path,omitempty"`
-	// +optional
-	Dimensions int `json:"dimensions,omitempty"`
-	// +optional
-	Similarity string `json:"similarity,omitempty"`
 }

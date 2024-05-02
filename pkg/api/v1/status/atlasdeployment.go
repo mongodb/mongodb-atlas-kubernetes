@@ -171,16 +171,7 @@ func AtlasDeploymentMongoURIUpdatedOption(mongoURIUpdated string) AtlasDeploymen
 	}
 }
 
-func AtlasDeploymentSearchIndexOption(indexes *[]DeploymentSearchIndexStatus) AtlasDeploymentStatusOption {
-	return func(s *AtlasDeploymentStatus) {
-		if indexes == nil {
-			s.SearchIndexes = nil
-			return
-		}
-		s.SearchIndexes = *indexes
-	}
-}
-
+// AtlasDeploymentSetSearchIndexStatus set the status for one SearchIndex
 func AtlasDeploymentSetSearchIndexStatus(indexStatus DeploymentSearchIndexStatus) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
 		for i := range s.SearchIndexes {
@@ -197,6 +188,7 @@ func AtlasDeploymentSetSearchIndexStatus(indexStatus DeploymentSearchIndexStatus
 	}
 }
 
+// AtlasDeploymentUnsetSearchIndexStatus removes the status for one SearchIndex
 func AtlasDeploymentUnsetSearchIndexStatus(indexStatus DeploymentSearchIndexStatus) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
 		for i := range s.SearchIndexes {

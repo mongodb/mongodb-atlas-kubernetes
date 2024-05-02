@@ -381,8 +381,9 @@ func TestSearchIndex_EqualTo(t *testing.T) {
 			ID:     nil,
 			Status: nil,
 		}
-
-		assert.True(t, idx1.EqualTo(idx2))
+		isEqual, err := idx1.EqualTo(idx2)
+		assert.Nil(t, err)
+		assert.True(t, isEqual)
 	})
 }
 
