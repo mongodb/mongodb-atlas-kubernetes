@@ -107,7 +107,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 					APIVersion: "atlas.mongodb.com/v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testSearchIndexConfig",
+					Name:      "test-search-index-config",
 					Namespace: testData.InitialDeployments[0].Namespace,
 				},
 				Spec: akov2.AtlasSearchIndexConfigSpec{
@@ -126,7 +126,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 
 			searchIndexesToCreate := []akov2.SearchIndex{
 				{
-					Name:           "testSearchIndex",
+					Name:           "test-search-index",
 					Type:           atlasdeployment.IndexTypeSearch,
 					DBName:         DBTraining,
 					CollectionName: DBTrainingCollectionRoutes,
@@ -159,7 +159,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 			}, testData.InitialDeployments[0])).To(Succeed())
 
 			vectorSearchIndexToCreate := akov2.SearchIndex{
-				Name:           "testSearchIndex",
+				Name:           "test-search-index",
 				Type:           atlasdeployment.IndexTypeVector,
 				DBName:         DBTraining,
 				CollectionName: DBTrainingCollectionGrades,
