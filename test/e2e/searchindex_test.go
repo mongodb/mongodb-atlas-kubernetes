@@ -149,7 +149,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 				}, testData.InitialDeployments[0])).To(Succeed())
 				g.Expect(len(testData.InitialDeployments[0].Status.SearchIndexes)).To(BeEquivalentTo(1))
 				g.Expect(testData.InitialDeployments[0].Status.SearchIndexes[0].Status).To(BeEquivalentTo(status.SearchIndexStatusReady))
-			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute)
+			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
 		})
 
 		By("Creating one search index, type: VECTOR SEARCH", func() {
@@ -176,7 +176,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 				}, testData.InitialDeployments[0])).To(Succeed())
 				g.Expect(len(testData.InitialDeployments[0].Status.SearchIndexes)).To(BeEquivalentTo(2))
 				g.Expect(testData.InitialDeployments[0].Status.SearchIndexes[1].Status).To(BeEquivalentTo(status.SearchIndexStatusReady))
-			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute)
+			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
 		})
 
 		By("Deleting the VECTOR SEARCH index", func() {
@@ -209,7 +209,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 					Namespace: testData.InitialDeployments[0].Namespace,
 				}, testData.InitialDeployments[0])).To(Succeed())
 				g.Expect(len(testData.InitialDeployments[0].Status.SearchIndexes)).To(BeZero())
-			})
+			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
 		})
 
 	})
