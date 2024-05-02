@@ -1,12 +1,9 @@
 package status
 
 type AtlasSearchIndexConfigStatus struct {
-	Projects []SearchIndexConfigProject `json:"projects"`
+	Common `json:",inline"`
 }
 
-type SearchIndexConfigProject struct {
-	// Unique identifier of the project inside atlas
-	ID string `json:"id,omitempty"`
-	// Name given to the project
-	Name string `json:"name,omitempty"`
-}
+// +kubebuilder:object:generate=false
+
+type AtlasSearchIndexConfigStatusOption func(s *AtlasSearchIndexConfigStatus)

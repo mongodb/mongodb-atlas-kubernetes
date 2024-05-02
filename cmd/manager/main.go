@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlassearchindexconfig"
+
 	"go.uber.org/zap/zapcore"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -250,6 +252,20 @@ func main() {
 		SubObjectDeletionProtection: false,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasStreamsConnection")
+		os.Exit(1)
+	}
+
+	if err = (&atlassearchindexconfig.AtlasSearchIndexConfigReconciler{
+		Scheme:                      mgr.GetScheme(),
+		Client:                      mgr.GetClient(),
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasSearchIndexConfig"),
+		GlobalPredicates:            globalPredicates,
+		Log:                         logger.Named("controllers").Named("AtlasSearchIndexConfig").Sugar(),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: false,
+	}).SetupWithManager(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasSearchIndexConfig")
 		os.Exit(1)
 	}
 

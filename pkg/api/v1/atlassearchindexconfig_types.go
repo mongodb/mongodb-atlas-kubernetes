@@ -166,3 +166,17 @@ type TokenFilter struct {
 	// +optional
 	IgnoreCase bool `json:"ignoreCase,omitempty"`
 }
+
+func (s *AtlasSearchIndexConfig) GetStatus() status.Status {
+	return s.Status
+}
+
+func (s *AtlasSearchIndexConfig) UpdateStatus(conditions []status.Condition, opts ...status.Option) {
+	s.Status.Conditions = conditions
+	s.Status.ObservedGeneration = s.ObjectMeta.Generation
+
+	for _, o := range opts {
+		v := o.(status.AtlasSearchIndexConfigStatusOption)
+		v(&s.Status)
+	}
+}
