@@ -105,7 +105,7 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 	synonyms := convertSynonyms(index.Synonyms)
 
 	var search *akov2.Search
-	if mappings != nil || synonyms != nil || len(*synonyms) > 0 {
+	if mappings != nil || (synonyms != nil && len(*synonyms) > 0) {
 		search = &akov2.Search{
 			Synonyms: synonyms,
 			Mappings: mappings,
