@@ -84,9 +84,11 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 		GroupId:         au.ProjectID,
 		Roles:           rolesToAtlas(au.Roles),
 		Scopes:          scopesToAtlas(au.Scopes),
-		Password:        pointer.MakePtr(au.Password),
 		Username:        au.Username,
 		OidcAuthType:    pointer.MakePtr(au.OIDCAuthType),
+	}
+	if au.Password != "" {
+		dbu.Password = pointer.MakePtr(au.Password)
 	}
 	log.Printf("atlas dbu=%s", jsonize(dbu))
 	return dbu, nil
