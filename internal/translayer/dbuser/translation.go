@@ -34,13 +34,13 @@ func Normalize(spec *akov2.AtlasDatabaseUserSpec) *akov2.AtlasDatabaseUserSpec {
 	return spec
 }
 
-func toK8s(dbUser *admin.CloudDatabaseUser) (*User, error) {
+func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 	log.Printf("atlas dbUser=%s", jsonize(dbUser))
-	deleteAfterDate, err := dateToK8s(dbUser.DeleteAfterDate)
+	deleteAfterDate, err := dateFromAtlas(dbUser.DeleteAfterDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse deleteAfterDate: %w", err)
 	}
-	scopes, err := scopesToK8s(dbUser.GetScopes())
+	scopes, err := scopesFromAtlas(dbUser.GetScopes())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse scopes: %w", err)
 	}
@@ -50,7 +50,7 @@ func toK8s(dbUser *admin.CloudDatabaseUser) (*User, error) {
 		AtlasDatabaseUserSpec: akov2.AtlasDatabaseUserSpec{
 			DatabaseName:    dbUser.DatabaseName,
 			DeleteAfterDate: deleteAfterDate,
-			Roles:           rolesToK8s(dbUser.GetRoles()),
+			Roles:           rolesFromAtlas(dbUser.GetRoles()),
 			Scopes:          scopes,
 			Username:        dbUser.Username,
 			OIDCAuthType:    dbUser.GetOidcAuthType(),
@@ -129,7 +129,7 @@ func scopesToAtlas(scopes []akov2.ScopeSpec) *[]admin.UserScope {
 	return &atlasScopes
 }
 
-func dateToK8s(date *time.Time) (string, error) {
+func dateFromAtlas(date *time.Time) (string, error) {
 	if date == nil {
 		return "", nil
 	}
@@ -143,10 +143,10 @@ func dateToK8s(date *time.Time) (string, error) {
 	return "", nil
 }
 
-func scopesToK8s(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
+func scopesFromAtlas(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
 	specScopes := []akov2.ScopeSpec{}
 	for _, scope := range scopes {
-		scopeType, err := scopeTypeToK8s(scope.Type)
+		scopeType, err := scopeTypeFromAtlas(scope.Type)
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +162,7 @@ func scopesToK8s(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
 	return specScopes, nil
 }
 
-func scopeTypeToK8s(scopeType string) (akov2.ScopeType, error) {
+func scopeTypeFromAtlas(scopeType string) (akov2.ScopeType, error) {
 	switch akov2.ScopeType(scopeType) {
 	case akov2.DeploymentScopeType:
 		return akov2.DeploymentScopeType, nil
@@ -173,7 +173,7 @@ func scopeTypeToK8s(scopeType string) (akov2.ScopeType, error) {
 	}
 }
 
-func rolesToK8s(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
+func rolesFromAtlas(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
 	specRoles := []akov2.RoleSpec{}
 	for _, role := range roles {
 		specRoles = append(specRoles, akov2.RoleSpec{
