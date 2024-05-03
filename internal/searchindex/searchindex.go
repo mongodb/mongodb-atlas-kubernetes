@@ -15,7 +15,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
 // SearchIndex is the internal representation of the Atlas SearchIndex resource for the AKO usage
@@ -103,19 +102,26 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 	if mappingsError != nil {
 		return nil, fmt.Errorf("unable to convert mappings: %w", mappingsError)
 	}
+	synonyms := convertSynonyms(index.Synonyms)
 
-	search := &akov2.Search{
-		Synonyms:               convertSynonyms(index.Synonyms),
-		Mappings:               mappings,
-		SearchConfigurationRef: common.ResourceRefNamespaced{},
+	var search *akov2.Search
+	if mappings != nil || synonyms != nil || len(*synonyms) > 0 {
+		search = &akov2.Search{
+			Synonyms: synonyms,
+			Mappings: mappings,
+		}
 	}
 
 	vectorFields, vectorError := convertVectorFields(index.Fields)
-	vectorSearch := &akov2.VectorSearch{
-		Fields: vectorFields,
-	}
-	if mappingsError != nil {
+	if vectorError != nil {
 		return nil, fmt.Errorf("unable to convert vector fields: %w", vectorError)
+	}
+
+	var vectorSearch *akov2.VectorSearch
+	if vectorFields != nil {
+		vectorSearch = &akov2.VectorSearch{
+			Fields: vectorFields,
+		}
 	}
 
 	convertAnalyzers := func(in *[]admin.ApiAtlasFTSAnalyzers) (*[]akov2.AtlasSearchIndexAnalyzer, error) {

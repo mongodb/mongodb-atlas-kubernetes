@@ -1,15 +1,14 @@
 package e2e_test
 
 import (
-	"slices"
 	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -166,7 +165,16 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 					Type:           atlasdeployment.IndexTypeVector,
 					DBName:         DBTraining,
 					CollectionName: DBTrainingCollectionGrades,
-					VectorSearch:   &akov2.VectorSearch{},
+					VectorSearch: &akov2.VectorSearch{
+						Fields: &apiextensions.JSON{
+							Raw: []byte(`[{
+      "type": "vector",
+      "path": "student_id",
+      "numDimensions": 1536,
+      "similarity": "euclidean"
+}]`),
+						},
+					},
 				}
 				testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes = append(
 					testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes, vectorSearchIndexToCreate)
@@ -189,7 +197,9 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 					Name:      testData.InitialDeployments[0].Name,
 					Namespace: testData.InitialDeployments[0].Namespace,
 				}, testData.InitialDeployments[0])).To(Succeed())
-				slices.Delete(testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes, 1, 1)
+				testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes = []akov2.SearchIndex{
+					testData.InitialDeployments[0].Spec.DeploymentSpec.SearchIndexes[0],
+				}
 
 				g.Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
 			}).WithPolling(10 * time.Second).WithTimeout(10 * time.Minute).Should(Succeed())
