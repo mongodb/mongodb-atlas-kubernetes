@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	DBTraining                 = "training"
+	DBTraining                 = "sample_training"
 	DBTrainingCollectionGrades = "grades"
 	DBTrainingCollectionRoutes = "routes"
 )
