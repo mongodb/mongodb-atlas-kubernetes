@@ -35,7 +35,7 @@ func (dus *Service) Get(ctx context.Context, db, projectID, username string) (*U
 		}
 		return nil, err
 	}
-	return toK8s(atlasDBUser)
+	return fromAtlas(atlasDBUser)
 }
 
 func (dus *Service) Delete(ctx context.Context, db, projectID, username string) (bool, error) {
