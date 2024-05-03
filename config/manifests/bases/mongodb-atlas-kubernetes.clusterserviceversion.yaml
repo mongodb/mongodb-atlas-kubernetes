@@ -29,6 +29,11 @@ spec:
       kind: AtlasFederatedAuth
       name: atlasfederatedauths.atlas.mongodb.com
       version: v1
+    - description: Atlas Search Index Config is the Schema for the Atlas Search API
+      displayName: Atlas Search Index Config
+      kind: AtlasSearchIndexConfig
+      name: atlassearchindexconfigs.atlas.mongodb.com
+      version: v1
     - description: AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
       displayName: Atlas Backup Policy
       kind: AtlasBackupPolicy

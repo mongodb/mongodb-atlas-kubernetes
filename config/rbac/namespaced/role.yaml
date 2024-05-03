@@ -225,3 +225,23 @@ rules:
     - get
     - patch
     - update
+- apiGroups:
+    - atlas.mongodb.com
+  resources:
+    - atlassearchindexconfigs
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiGroups:
+    - atlas.mongodb.com
+  resources:
+    - atlassearchindexconfigs/status
+  verbs:
+    - get
+    - patch
+    - update

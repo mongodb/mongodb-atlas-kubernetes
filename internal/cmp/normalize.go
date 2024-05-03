@@ -10,11 +10,19 @@ import (
 )
 
 type Normalizer[T any] interface {
-	Normalize() T
+	Normalize() (T, error)
 }
 
-func SemanticEqual[T Normalizer[T]](this, that T) bool {
-	return reflect.DeepEqual(this.Normalize(), that.Normalize())
+func SemanticEqual[T Normalizer[T]](this, that T) (bool, error) {
+	thisResult, thisError := this.Normalize()
+	thatResult, thatError := that.Normalize()
+	if thisError != nil {
+		return false, thisError
+	}
+	if thatError != nil {
+		return false, thatError
+	}
+	return reflect.DeepEqual(thisResult, thatResult), nil
 }
 
 func NormalizeSlice[S ~[]E, E any](slice S, cmp func(a, b E) int) S {

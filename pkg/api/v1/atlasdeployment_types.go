@@ -24,6 +24,7 @@ import (
 	"strconv"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -145,6 +146,9 @@ type AdvancedDeploymentSpec struct {
 	// +kubebuilder:validation:MaxItems=1
 	// +optional
 	SearchNodes []SearchNode `json:"searchNodes,omitempty"`
+	// A list of atlas search indexes configuration for the current deployment
+	// +optional
+	SearchIndexes []SearchIndex `json:"searchIndexes,omitempty"`
 }
 
 // ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.

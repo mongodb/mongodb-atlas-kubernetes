@@ -48,6 +48,7 @@ const (
 	ProjectSettingsReadyType          ConditionType = "ProjectSettingsReady"
 	ProjectCustomRolesReadyType       ConditionType = "ProjectCustomRolesReady"
 	ProjectTeamsReadyType             ConditionType = "ProjectTeamsReady"
+	SearchIndexesReadyType            ConditionType = "AtlasSearchIndexesReady"
 )
 
 // AtlasDeployment condition types
@@ -80,6 +81,11 @@ const (
 const (
 	StreamInstanceReadyType   ConditionType = "StreamInstanceReady"
 	StreamConnectionReadyType ConditionType = "StreamConnectionReady"
+)
+
+const (
+	SearchIndexesNamesAreNotUnique = "SearchIndexesNamesAreNotUnique"
+	SearchIndexesNotReady          = "SearchIndexesNotReady"
 )
 
 // Generic condition type

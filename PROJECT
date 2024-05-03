@@ -86,4 +86,13 @@ resources:
   kind: AtlasStreamConnection
   path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: mongodb.com
+  group: atlas
+  kind: AtlasSearchIndexConfigs
+  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  version: v1
 version: "3"
