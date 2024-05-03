@@ -47,10 +47,8 @@ func (sr *searchIndexReconciler) Reconcile(stateInAKO, stateInAtlas *searchindex
 	if stateInAtlas != nil && stateInAtlas.Status != nil {
 		currentStatus = *stateInAtlas.Status
 	}
-	switch currentStatus {
-	case IndexStatusActive, "":
-		break
-	default:
+	// Atlas is still processing the index, nothing can't be done
+	if currentStatus != IndexStatusActive && currentStatus != "" {
 		return sr.progress(stateInAtlas)
 	}
 
@@ -118,7 +116,7 @@ func (sr *searchIndexReconciler) progress(index *searchindex.SearchIndex) workfl
 	sr.ctx.Log.Debugf("index %s is progress: %s", index.Name, index.GetStatus())
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentSetSearchIndexStatus(
 		status.NewDeploymentSearchIndexStatus(status.SearchIndexStatusInProgress,
-			status.WithMsg(pointer.GetOrDefault(index.Status, "")),
+			status.WithMsg(fmt.Sprintf("Atlas search index status: %s", pointer.GetOrDefault(index.Status, ""))),
 			status.WithID(index.GetID()),
 			status.WithName(index.Name))))
 	inProgress := workflow.InProgress(status.SearchIndexStatusInProgress, index.GetStatus())

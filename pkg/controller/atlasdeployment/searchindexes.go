@@ -238,7 +238,7 @@ func (sr *searchIndexesReconciler) terminate(reason workflow.ConditionReason, er
 }
 
 func (sr *searchIndexesReconciler) progress() workflow.Result {
-	result := workflow.InProgress(status.SearchIndexesSomeNotReady, "not all indexes are in READY state")
+	result := workflow.InProgress(status.SearchIndexesNotReady, "not all indexes are in READY state")
 	sr.ctx.SetConditionFromResult(status.SearchIndexStatusReady, result)
 	return result
 }

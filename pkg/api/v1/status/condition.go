@@ -48,7 +48,7 @@ const (
 	ProjectSettingsReadyType          ConditionType = "ProjectSettingsReady"
 	ProjectCustomRolesReadyType       ConditionType = "ProjectCustomRolesReady"
 	ProjectTeamsReadyType             ConditionType = "ProjectTeamsReady"
-	SearchIndexesReadyType            ConditionType = "AtlasSearchIndexes"
+	SearchIndexesReadyType            ConditionType = "AtlasSearchIndexesReady"
 )
 
 // AtlasDeployment condition types
@@ -85,7 +85,7 @@ const (
 
 const (
 	SearchIndexesNamesAreNotUnique = "SearchIndexesNamesAreNotUnique"
-	SearchIndexesSomeNotReady      = "SearchIndexesSomeNotReady"
+	SearchIndexesNotReady          = "SearchIndexesNotReady"
 )
 
 // Generic condition type

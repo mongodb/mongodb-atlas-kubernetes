@@ -92,9 +92,11 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 		}
 
 		var fields apiextensionsv1.JSON
-		err := compat.JSONCopy(&fields, in.Fields)
+		if err := compat.JSONCopy(&fields, in.Fields); err != nil {
+			return nil, err
+		}
 		result.Fields = &fields
-		return result, err
+		return result, nil
 	}
 
 	mappings, mappingsError := convertMappings(index.Mappings)
@@ -127,8 +129,10 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 				return nil, nil
 			}
 			var res apiextensionsv1.JSON
-			err := compat.JSONCopy(&res, *in)
-			return &res, err
+			if err := compat.JSONCopy(&res, *in); err != nil {
+				return nil, err
+			}
+			return &res, nil
 		}
 
 		convertTokenizer := func(in *admin.ApiAtlasFTSAnalyzersTokenizer) (akov2.Tokenizer, error) {
@@ -137,8 +141,10 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 				return res, nil
 			}
 
-			err := compat.JSONCopy(&res, *in)
-			return res, err
+			if err := compat.JSONCopy(&res, *in); err != nil {
+				return res, err
+			}
+			return res, nil
 		}
 
 		errs := []error{}
@@ -317,8 +323,10 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 			return nil, nil
 		}
 		var result []map[string]interface{}
-		err := json.Unmarshal(in.Raw, &result)
-		return &result, err
+		if err := json.Unmarshal(in.Raw, &result); err != nil {
+			return nil, err
+		}
+		return &result, nil
 	}
 
 	convertJSONToMap := func(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
@@ -326,16 +334,20 @@ func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
 			return nil, nil
 		}
 		result := map[string]interface{}{}
-		err := json.Unmarshal(in.Raw, &result)
-		return result, err
+		if err := json.Unmarshal(in.Raw, &result); err != nil {
+			return result, err
+		}
+		return result, nil
 	}
 	convertJSONToInterface := func(in *apiextensionsv1.JSON) (*[]interface{}, error) {
 		if in == nil {
 			return pointer.MakePtr([]interface{}{}), nil
 		}
 		var result []interface{}
-		err := json.Unmarshal(in.Raw, &result)
-		return &result, err
+		if err := json.Unmarshal(in.Raw, &result); err != nil {
+			return nil, err
+		}
+		return &result, nil
 	}
 
 	storedSource, err := convertJSONToMap(s.StoredSource)

@@ -347,7 +347,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 		result := reconciler.Reconcile()
 		fmt.Println("Result", result)
-		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesSomeNotReady))
+		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
 	})
 
@@ -480,7 +480,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 		result := reconciler.Reconcile()
 		fmt.Println("Result", result)
-		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesSomeNotReady))
+		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
 	})
 }
