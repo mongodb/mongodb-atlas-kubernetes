@@ -162,7 +162,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 				}, testData.InitialDeployments[0])).To(Succeed())
 
 				vectorSearchIndexToCreate := akov2.SearchIndex{
-					Name:           "test-search-index",
+					Name:           "test-vector-search-index",
 					Type:           atlasdeployment.IndexTypeVector,
 					DBName:         DBTraining,
 					CollectionName: DBTrainingCollectionGrades,
