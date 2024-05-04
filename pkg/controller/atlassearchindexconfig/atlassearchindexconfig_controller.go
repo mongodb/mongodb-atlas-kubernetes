@@ -45,7 +45,7 @@ type AtlasSearchIndexConfigReconciler struct {
 }
 
 func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.With("atlassearchindexconfig", req.NamespacedName)
+	log := r.Log.With("AtlasSearchIndexConfig", req.NamespacedName)
 	log.Infow("-> Starting AtlasSearchIndexConfig reconciliation")
 
 	atlasSearchIndexConfig := &akov2.AtlasSearchIndexConfig{}
