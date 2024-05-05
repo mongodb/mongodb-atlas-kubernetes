@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
@@ -66,11 +64,12 @@ func (sr *searchIndexReconciler) Reconcile(stateInAKO, stateInAtlas *searchindex
 
 func (sr *searchIndexReconciler) idle(index *searchindex.SearchIndex) workflow.Result {
 	sr.ctx.Log.Debugf("[idle] index '%s'", index.Name)
+	msg := fmt.Sprintf("Atlas search index status: %s", index.GetStatus())
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentSetSearchIndexStatus(status.NewDeploymentSearchIndexStatus(
 		status.SearchIndexStatusReady,
 		status.WithID(index.GetID()),
 		status.WithName(index.Name),
-		status.WithMsg(index.GetStatus()))))
+		status.WithMsg(msg))))
 	ok := workflow.OK()
 	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, ok)
 	return ok
@@ -114,12 +113,13 @@ func (sr *searchIndexReconciler) create(index *searchindex.SearchIndex) workflow
 
 func (sr *searchIndexReconciler) progress(index *searchindex.SearchIndex) workflow.Result {
 	sr.ctx.Log.Debugf("index %s is progress: %s", index.Name, index.GetStatus())
+	msg := fmt.Sprintf("Atlas search index status: %s", index.GetStatus())
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentSetSearchIndexStatus(
 		status.NewDeploymentSearchIndexStatus(status.SearchIndexStatusInProgress,
-			status.WithMsg(fmt.Sprintf("Atlas search index status: %s", pointer.GetOrDefault(index.Status, ""))),
+			status.WithMsg(msg),
 			status.WithID(index.GetID()),
 			status.WithName(index.Name))))
-	inProgress := workflow.InProgress(status.SearchIndexStatusInProgress, index.GetStatus())
+	inProgress := workflow.InProgress(status.SearchIndexStatusInProgress, msg)
 	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, inProgress)
 	return inProgress
 }
