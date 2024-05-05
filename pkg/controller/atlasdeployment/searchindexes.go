@@ -136,6 +136,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			e := fmt.Errorf("unable to convert index to AKO. Name: %s, ID: %s, E: %w", prevIndexName, prevIndexID, err)
 			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
 			indexesErrors.Add(prevIndexName, e)
+			continue
 		}
 
 		atlasIndexes[akoIndex.Name] = akoIndex
@@ -153,7 +154,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			if akoIndex.Search == nil {
 				e := fmt.Errorf("index '%s' has type '%s' but the spec is missing", akoIndex.Name, IndexTypeSearch)
 				indexesErrors.Add(akoIndex.Name, e)
-				atlasIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
+				akoIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 				continue
 			}
 
@@ -162,7 +163,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			if err != nil {
 				e := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", akoIndex.Name, err)
 				indexesErrors.Add(akoIndex.Name, e)
-				atlasIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
+				akoIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 				continue
 			}
 			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec)
@@ -173,7 +174,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			e := fmt.Errorf("index %q has unknown type %q. Can be either %s or %s",
 				akoIndex.Name, akoIndex.Type, IndexTypeSearch, IndexTypeVector)
 			indexesErrors.Add(akoIndex.Name, e)
-			atlasIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
+			akoIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 		}
 		akoIndexes[akoIndex.Name] = indexInternal
 	}
