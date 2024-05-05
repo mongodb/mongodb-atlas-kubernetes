@@ -1,7 +1,6 @@
 package atlasdeployment
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"net/http"
@@ -112,7 +111,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 		}
 		sr.ctx.Log.Debugf("restoring index %q", prevIndexName)
 		resp, httpResp, err := sr.ctx.SdkClient.AtlasSearchApi.GetAtlasSearchIndex(
-			context.Background(), sr.projectID, sr.deployment.GetDeploymentName(), prevIndexID).Execute()
+			sr.ctx.Context, sr.projectID, sr.deployment.GetDeploymentName(), prevIndexID).Execute()
 
 		if err != nil {
 			if httpResp.StatusCode == http.StatusNotFound {
@@ -159,7 +158,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			}
 
 			var idxConfig akov2.AtlasSearchIndexConfig
-			err := sr.k8sClient.Get(context.Background(), *akoIndex.Search.SearchConfigurationRef.GetObject(sr.deployment.Namespace), &idxConfig)
+			err := sr.k8sClient.Get(sr.ctx.Context, *akoIndex.Search.SearchConfigurationRef.GetObject(sr.deployment.Namespace), &idxConfig)
 			if err != nil {
 				e := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", akoIndex.Name, err)
 				indexesErrors.Add(akoIndex.Name, e)
