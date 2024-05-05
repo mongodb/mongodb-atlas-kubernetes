@@ -33,6 +33,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -52,6 +53,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 const (
@@ -986,5 +988,103 @@ func TestReconciliation(t *testing.T) {
 		)
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{Requeue: false, RequeueAfter: 0}, result)
+	})
+}
+
+func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
+	t.Run("should fail when watching wrong object", func(t *testing.T) {
+		core, logs := observer.New(zap.DebugLevel)
+		reconciler := &AtlasDeploymentReconciler{
+			Log: zap.New(core).Sugar(),
+		}
+
+		assert.Nil(t, reconciler.findDeploymentsForSearchIndexConfig(context.Background(), &akov2.AtlasProject{}))
+		assert.Equal(t, 1, logs.Len())
+		assert.Equal(t, zap.WarnLevel, logs.All()[0].Level)
+		assert.Equal(t, "watching AtlasSearchIndexConfig but got *v1.AtlasProject", logs.All()[0].Message)
+	})
+
+	t.Run("should return slice of requests for instances", func(t *testing.T) {
+		instance1 := &akov2.AtlasDeployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance1",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					SearchIndexes: []akov2.SearchIndex{
+						{
+							Search: &akov2.Search{
+								SearchConfigurationRef: common.ResourceRefNamespaced{
+									Name:      "index1",
+									Namespace: "default",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		instance2 := &akov2.AtlasDeployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance2",
+				Namespace: "other-ns",
+			},
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					SearchIndexes: []akov2.SearchIndex{
+						{
+							Search: &akov2.Search{
+								SearchConfigurationRef: common.ResourceRefNamespaced{
+									Name:      "index1",
+									Namespace: "default",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		connection := &akov2.AtlasSearchIndexConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "index1",
+				Namespace: "default",
+			},
+		}
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(connection, instance1, instance2).
+			WithIndex(
+				&akov2.AtlasDeployment{},
+				indexer.AtlasSearchIndexToDeploymentRegistry,
+				indexer.AtlasSearchIndexKeysToDeployment(zaptest.NewLogger(t).Sugar()),
+			).
+			Build()
+		reconciler := &AtlasDeploymentReconciler{
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
+		}
+
+		requests := reconciler.findDeploymentsForSearchIndexConfig(context.Background(), connection)
+		assert.Equal(
+			t,
+			[]ctrl.Request{
+				{
+					NamespacedName: types.NamespacedName{
+						Namespace: "default",
+						Name:      "instance1",
+					},
+				},
+				{
+					NamespacedName: types.NamespacedName{
+						Namespace: "other-ns",
+						Name:      "instance2",
+					},
+				},
+			},
+			requests,
+		)
 	})
 }
