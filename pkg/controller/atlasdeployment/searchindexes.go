@@ -211,10 +211,15 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 		}).Reconcile(akoIdx, atlasIdx, indexesErrors.GetErrors(current.Name)))
 	}
 
+	allDeleted := true
 	for i := range results {
 		if results[i].IsInProgress() || !results[i].IsOk() {
 			return sr.progress()
 		}
+		allDeleted = allDeleted && results[i].IsDeleted()
+	}
+	if allDeleted {
+		return sr.empty()
 	}
 
 	return sr.idle()

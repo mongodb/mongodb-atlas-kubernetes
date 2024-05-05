@@ -143,7 +143,7 @@ func (sr *searchIndexReconciler) delete(index *searchindex.SearchIndex) workflow
 func (sr *searchIndexReconciler) deleted(indexName string) workflow.Result {
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentUnsetSearchIndexStatus(status.NewDeploymentSearchIndexStatus("",
 		status.WithName(indexName))))
-	return workflow.OK()
+	return workflow.Deleted()
 }
 
 func (sr *searchIndexReconciler) update(akoIdx, atlasIdx *searchindex.SearchIndex) workflow.Result {
