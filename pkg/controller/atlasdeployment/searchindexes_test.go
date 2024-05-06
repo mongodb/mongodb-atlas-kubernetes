@@ -118,15 +118,10 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 
 		reconciler := searchIndexesReconciler{
 			ctx: &workflow.Context{
-				Log:       zap.S(),
-				OrgID:     "testOrgID",
-				Client:    nil,
-				SdkClient: nil,
-				Context:   nil,
+				Log:   zap.S(),
+				OrgID: "testOrgID",
 			},
 			deployment: deployment,
-			k8sClient:  nil,
-			projectID:  "",
 		}
 		result := reconciler.Reconcile()
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesNamesAreNotUnique))
@@ -152,10 +147,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer:       pointer.MakePtr("testAnalyzer"),
-				Analyzers:      nil,
-				SearchAnalyzer: nil,
-				StoredSource:   nil,
+				Analyzer: pointer.MakePtr("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}
@@ -234,13 +226,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 					Name:           "testName",
 					Status:         pointer.MakePtr(IndexStatusActive),
 					Type:           pointer.MakePtr(IndexTypeSearch),
-					Analyzer:       nil,
-					Analyzers:      nil,
-					Mappings:       nil,
-					SearchAnalyzer: nil,
-					StoredSource:   nil,
-					Synonyms:       nil,
-					Fields:         nil,
 				},
 				&http.Response{StatusCode: http.StatusOK}, nil,
 			)
@@ -258,13 +243,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 					Name:           "testName",
 					Status:         pointer.MakePtr(IndexStatusActive),
 					Type:           pointer.MakePtr(IndexTypeSearch),
-					Analyzer:       nil,
-					Analyzers:      nil,
-					Mappings:       nil,
-					SearchAnalyzer: nil,
-					StoredSource:   nil,
-					Synonyms:       nil,
-					Fields:         nil,
 				},
 				&http.Response{StatusCode: http.StatusOK}, nil,
 			)
@@ -276,10 +254,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer:       pointer.MakePtr("testAnalyzer"),
-				Analyzers:      nil,
-				SearchAnalyzer: nil,
-				StoredSource:   nil,
+				Analyzer: pointer.MakePtr("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}
@@ -367,13 +342,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 					Name:           "testName",
 					Status:         pointer.MakePtr(IndexStatusActive),
 					Type:           pointer.MakePtr(IndexTypeVector),
-					Analyzer:       nil,
-					Analyzers:      nil,
-					Mappings:       nil,
-					SearchAnalyzer: nil,
-					StoredSource:   nil,
-					Synonyms:       nil,
-					Fields:         nil,
 				},
 				&http.Response{StatusCode: http.StatusOK}, nil,
 			)
@@ -391,13 +359,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 					Name:           "testName",
 					Status:         pointer.MakePtr("ACTIVE"),
 					Type:           pointer.MakePtr(IndexTypeVector),
-					Analyzer:       nil,
-					Analyzers:      nil,
-					Mappings:       nil,
-					SearchAnalyzer: nil,
-					StoredSource:   nil,
-					Synonyms:       nil,
-					Fields:         nil,
 				},
 				&http.Response{StatusCode: http.StatusOK}, nil,
 			)
@@ -409,10 +370,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer:       pointer.MakePtr("testAnalyzer"),
-				Analyzers:      nil,
-				SearchAnalyzer: nil,
-				StoredSource:   nil,
+				Analyzer: pointer.MakePtr("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}
@@ -482,5 +440,91 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		fmt.Println("Result", result)
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
+	})
+
+	t.Run("Should proceed with the index Type Search: DELETE INDEX", func(t *testing.T) {
+		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+
+		mockSearchAPI.EXPECT().
+			GetAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.GetAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
+		mockSearchAPI.EXPECT().
+			GetAtlasSearchIndexExecute(admin.GetAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
+			Return(
+				&admin.ClusterSearchIndex{
+					CollectionName: "testCollection",
+					Database:       "testDB",
+					IndexID:        pointer.MakePtr("testID"),
+					Name:           "testName",
+					Status:         pointer.MakePtr(IndexStatusActive),
+					Type:           pointer.MakePtr(IndexTypeVector),
+				},
+				&http.Response{StatusCode: http.StatusOK}, nil,
+			)
+
+		mockSearchAPI.EXPECT().
+			DeleteAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.DeleteAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
+
+		mockSearchAPI.EXPECT().
+			DeleteAtlasSearchIndexExecute(admin.DeleteAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
+			Return(nil, &http.Response{StatusCode: http.StatusAccepted}, nil)
+
+		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testConfig",
+				Namespace: "testNamespace",
+			},
+			Spec: akov2.AtlasSearchIndexConfigSpec{
+				Analyzer: pointer.MakePtr("testAnalyzer"),
+			},
+			Status: status.AtlasSearchIndexConfigStatus{},
+		}
+
+		cluster := &akov2.AtlasDeployment{
+			TypeMeta:   metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "testDeployment",
+					SearchIndexes: []akov2.SearchIndex{},
+				},
+			},
+			Status: status.AtlasDeploymentStatus{
+				SearchIndexes: []status.DeploymentSearchIndexStatus{
+					{
+						Name: "testName",
+						ID:   "testID",
+					},
+				},
+			},
+		}
+
+		sch := runtime.NewScheme()
+		assert.Nil(t, akov2.AddToScheme(sch))
+		assert.Nil(t, corev1.AddToScheme(sch))
+
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(sch).
+			WithObjects(cluster, searchIndexConfig).
+			Build()
+
+		reconciler := searchIndexesReconciler{
+			ctx: &workflow.Context{
+				Log:       zap.S(),
+				OrgID:     "testOrgID",
+				Client:    nil,
+				SdkClient: &admin.APIClient{AtlasSearchApi: mockSearchAPI},
+				Context:   context.Background(),
+			},
+			deployment: cluster,
+			k8sClient:  k8sClient,
+			projectID:  "testProjectID",
+		}
+		result := reconciler.Reconcile()
+		cluster.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
+		assert.Empty(t, cluster.Status.SearchIndexes)
+		assert.True(t, result.IsOk())
 	})
 }

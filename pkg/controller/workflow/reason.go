@@ -58,7 +58,6 @@ const (
 	ServerlessPrivateEndpointInProgress   ConditionReason = "ServerlessPrivateEndpointInProgress"
 	ManagedNamespacesReady                ConditionReason = "ManagedNamespacesReady"
 	CustomZoneMappingReady                ConditionReason = "CustomZoneMappingReady"
-	SearchIndexesReady                    ConditionReason = "SearchIndexesReady"
 )
 
 // Atlas SearchNodes reasons

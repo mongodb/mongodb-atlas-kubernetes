@@ -22,6 +22,10 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,11 +33,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -50,6 +52,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 // AtlasDeploymentReconciler reconciles an AtlasDeployment object
@@ -502,30 +505,54 @@ func (r *AtlasDeploymentReconciler) readProjectResource(ctx context.Context, dep
 }
 
 func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	c, err := controller.New("AtlasDeployment", mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return err
+	return ctrl.NewControllerManagedBy(mgr).
+		Named("AtlasDeployment").
+		For(&akov2.AtlasDeployment{}, builder.WithPredicates(r.GlobalPredicates...)).
+		Watches(&akov2.AtlasBackupSchedule{}, watch.NewBackupScheduleHandler(&r.DeprecatedResourceWatcher)).
+		Watches(&akov2.AtlasBackupPolicy{}, watch.NewBackupPolicyHandler(&r.DeprecatedResourceWatcher)).
+		Watches(
+			&akov2.AtlasSearchIndexConfig{},
+			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForSearchIndexConfig),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
+		Complete(r)
+}
+
+func (r *AtlasDeploymentReconciler) findDeploymentsForSearchIndexConfig(ctx context.Context, obj client.Object) []reconcile.Request {
+	searchIndexConfig, ok := obj.(*akov2.AtlasSearchIndexConfig)
+	if !ok {
+		r.Log.Warnf("watching AtlasSearchIndexConfig but got %T", obj)
+		return nil
 	}
 
-	// Watch for changes to primary resource AtlasDeployment & handle delete separately
-	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasDeployment{}), &handler.EnqueueRequestForObject{}, r.GlobalPredicates...)
+	deployments := &akov2.AtlasDeploymentList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasSearchIndexToDeploymentRegistry,
+			client.ObjectKeyFromObject(searchIndexConfig).String(),
+		),
+	}
+	err := r.Client.List(ctx, deployments, listOps)
 	if err != nil {
-		return err
+		r.Log.Errorf("failed to list Atlas search index configs: %e", err)
+		return []reconcile.Request{}
 	}
 
-	// Watch for Backup schedules
-	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupSchedule{}), watch.NewBackupScheduleHandler(&r.DeprecatedResourceWatcher))
-	if err != nil {
-		return err
+	requests := make([]reconcile.Request, 0, len(deployments.Items))
+	for i := range deployments.Items {
+		item := deployments.Items[i]
+		requests = append(
+			requests,
+			reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      item.Name,
+					Namespace: item.Namespace,
+				},
+			},
+		)
 	}
 
-	// Watch for Backup policies
-	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupPolicy{}), watch.NewBackupPolicyHandler(&r.DeprecatedResourceWatcher))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return requests
 }
 
 // Delete implements a handler for the Delete event.

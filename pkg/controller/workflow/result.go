@@ -19,6 +19,7 @@ type Result struct {
 	// warning indicates if the reconciliation hasn't ended the expected way. Most of all this may happens in case of
 	// an error
 	warning bool
+	deleted bool
 }
 
 // OK indicates that the reconciliation logic can proceed further
@@ -54,6 +55,18 @@ func InProgress(reason ConditionReason, message string) Result {
 		message:      message,
 		warning:      false,
 	}
+}
+
+func Deleted() Result {
+	return Result{
+		terminated:   false,
+		requeueAfter: -1,
+		deleted:      true,
+	}
+}
+
+func (r Result) IsDeleted() bool {
+	return r.deleted
 }
 
 // TerminateSilently indicates that the reconciliation logic cannot proceed and needs to be finished (and possibly requeued)
