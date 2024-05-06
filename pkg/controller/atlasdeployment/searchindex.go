@@ -61,18 +61,24 @@ func (sr *searchIndexReconciler) Reconcile(spec *akov2.SearchIndex, previous *st
 
 	if spec != nil {
 		sr.ctx.Log.Debugf("restoring index %q from spec", spec.Name)
+		internalState := &internal.SearchIndex{
+			SearchIndex:                akov2.SearchIndex{Name: spec.Name},
+			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
+			ID:                         nil,
+			Status:                     nil,
+		}
 		switch spec.Type {
 		case IndexTypeSearch:
 			if spec.Search == nil {
 				err := fmt.Errorf("index '%s' has type '%s' but the spec is missing", spec.Name, IndexTypeSearch)
-				return sr.terminate(stateInAtlas, err)
+				return sr.terminate(internalState, err)
 			}
 
 			var idxConfig akov2.AtlasSearchIndexConfig
 			err := sr.k8sClient.Get(sr.ctx.Context, *spec.Search.SearchConfigurationRef.GetObject(sr.deployment.Namespace), &idxConfig)
 			if err != nil {
 				err := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", spec.Name, err)
-				return sr.terminate(stateInAtlas, err)
+				return sr.terminate(internalState, err)
 			}
 			stateInAKO = internal.NewSearchIndexFromAKO(spec, &idxConfig.Spec)
 		case IndexTypeVector:
@@ -81,7 +87,7 @@ func (sr *searchIndexReconciler) Reconcile(spec *akov2.SearchIndex, previous *st
 		default:
 			err := fmt.Errorf("index %q has unknown type %q. Can be either %s or %s",
 				spec.Name, spec.Type, IndexTypeSearch, IndexTypeVector)
-			return sr.terminate(stateInAtlas, err)
+			return sr.terminate(internalState, err)
 		}
 	}
 
