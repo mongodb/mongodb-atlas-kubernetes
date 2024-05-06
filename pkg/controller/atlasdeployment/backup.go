@@ -51,7 +51,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.DeprecatedResourceWatcher.WatchedResourcesSnapshot())
 	}()
 
-	bSchedule, err := r.ensureBackupSchedule(service, deployment, &resourcesToWatch)
+	bSchedule, err := r.ensureBackupSchedule(service, deployment)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,6 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 	service *workflow.Context,
 	deployment *akov2.AtlasDeployment,
-	resourcesToWatch *[]watch.WatchedObject,
 ) (*akov2.AtlasBackupSchedule, error) {
 	backupScheduleRef := deployment.Spec.BackupScheduleRef.GetObject(deployment.Namespace)
 	bSchedule := &akov2.AtlasBackupSchedule{}
@@ -116,8 +115,6 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 		r.Log.Errorw("failed to update BackupSchedule object", "error", err)
 		return nil, err
 	}
-
-	*resourcesToWatch = append(*resourcesToWatch, watch.WatchedObject{ResourceKind: bSchedule.Kind, Resource: *backupScheduleRef})
 
 	return bSchedule, nil
 }

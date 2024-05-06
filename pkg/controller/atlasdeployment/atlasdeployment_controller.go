@@ -508,7 +508,11 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDeployment").
 		For(&akov2.AtlasDeployment{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&akov2.AtlasBackupSchedule{}, watch.NewBackupScheduleHandler(&r.DeprecatedResourceWatcher)).
+		Watches(
+			&akov2.AtlasBackupSchedule{},
+			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForBackupSchedule),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
 		Watches(&akov2.AtlasBackupPolicy{}, watch.NewBackupPolicyHandler(&r.DeprecatedResourceWatcher)).
 		Watches(
 			&akov2.AtlasSearchIndexConfig{},
@@ -516,6 +520,43 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
+}
+
+func (r *AtlasDeploymentReconciler) findDeploymentsForBackupSchedule(ctx context.Context, obj client.Object) []reconcile.Request {
+	backupSchedule, ok := obj.(*akov2.AtlasBackupSchedule)
+	if !ok {
+		r.Log.Warnf("watching AtlasBackupSchedule but got %T", obj)
+		return nil
+	}
+
+	deployments := &akov2.AtlasDeploymentList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasDeploymentByBackupScheduleIndex,
+			client.ObjectKeyFromObject(backupSchedule).String(),
+		),
+	}
+	err := r.Client.List(ctx, deployments, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list Atlas backup schedules: %e", err)
+		return []reconcile.Request{}
+	}
+
+	requests := make([]reconcile.Request, 0, len(deployments.Items))
+	for i := range deployments.Items {
+		item := deployments.Items[i]
+		requests = append(
+			requests,
+			reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      item.Name,
+					Namespace: item.Namespace,
+				},
+			},
+		)
+	}
+
+	return requests
 }
 
 func (r *AtlasDeploymentReconciler) findDeploymentsForSearchIndexConfig(ctx context.Context, obj client.Object) []reconcile.Request {
