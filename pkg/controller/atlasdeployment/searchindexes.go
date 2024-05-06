@@ -5,13 +5,11 @@ import (
 	"maps"
 	"net/http"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	internal "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -97,7 +95,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	sr.ctx.Log.Debug("all indexes names are unique")
 
 	previousAKOIndexes := getIndexesFromDeploymentStatus(sr.deployment.Status)
-	atlasIndexes := map[string]*searchindex.SearchIndex{}
+	atlasIndexes := map[string]*internal.SearchIndex{}
 
 	// Map[indexName][]listOfErrors
 	indexesErrors := NewIndexesErrors()
@@ -106,7 +104,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	// Fetch existing indices from Atlas
 	for prevIndexName, prevIndexID := range previousAKOIndexes {
 		if prevIndexID == "" {
-			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
+			atlasIndexes[prevIndexName] = &internal.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
 			continue
 		}
 		sr.ctx.Log.Debugf("restoring index %q", prevIndexName)
@@ -120,21 +118,21 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			}
 			e := fmt.Errorf("couldn't fetch index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
 			indexesErrors.Add(prevIndexName, e)
-			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
+			atlasIndexes[prevIndexName] = &internal.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
 			sr.ctx.Log.Debug(e)
 			continue
 		}
 		if resp == nil {
 			e := fmt.Errorf("received an empty index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
 			indexesErrors.Add(prevIndexName, e)
-			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
+			atlasIndexes[prevIndexName] = &internal.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
 			sr.ctx.Log.Debug(e)
 			continue
 		}
-		akoIndex, err := searchindex.NewSearchIndexFromAtlas(*resp)
+		akoIndex, err := internal.NewSearchIndexFromAtlas(*resp)
 		if err != nil {
 			e := fmt.Errorf("unable to convert index to AKO. Name: %s, ID: %s, E: %w", prevIndexName, prevIndexID, err)
-			atlasIndexes[prevIndexName] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
+			atlasIndexes[prevIndexName] = &internal.SearchIndex{SearchIndex: akov2.SearchIndex{Name: prevIndexName}}
 			indexesErrors.Add(prevIndexName, e)
 			continue
 		}
@@ -143,18 +141,18 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	}
 
 	// Build indexes for AKO
-	akoIndexes := map[string]*searchindex.SearchIndex{}
+	akoIndexes := map[string]*internal.SearchIndex{}
 	for i := range sr.deployment.Spec.DeploymentSpec.SearchIndexes {
 		akoIndex := &sr.deployment.Spec.DeploymentSpec.SearchIndexes[i]
 		sr.ctx.Log.Debugf("reading AKO index: '%s'", akoIndex.Name)
 
-		var indexInternal *searchindex.SearchIndex
+		var indexInternal *internal.SearchIndex
 		switch akoIndex.Type {
 		case IndexTypeSearch:
 			if akoIndex.Search == nil {
 				e := fmt.Errorf("index '%s' has type '%s' but the spec is missing", akoIndex.Name, IndexTypeSearch)
 				indexesErrors.Add(akoIndex.Name, e)
-				akoIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
+				akoIndexes[akoIndex.Name] = &internal.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 				continue
 			}
 
@@ -163,23 +161,23 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			if err != nil {
 				e := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", akoIndex.Name, err)
 				indexesErrors.Add(akoIndex.Name, e)
-				akoIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
+				akoIndexes[akoIndex.Name] = &internal.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 				continue
 			}
-			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec)
+			indexInternal = internal.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec)
 		case IndexTypeVector:
 			// Vector index doesn't require any external configuration
-			indexInternal = searchindex.NewSearchIndexFromAKO(akoIndex, &akov2.AtlasSearchIndexConfigSpec{})
+			indexInternal = internal.NewSearchIndexFromAKO(akoIndex, &akov2.AtlasSearchIndexConfigSpec{})
 		default:
 			e := fmt.Errorf("index %q has unknown type %q. Can be either %s or %s",
 				akoIndex.Name, akoIndex.Type, IndexTypeSearch, IndexTypeVector)
 			indexesErrors.Add(akoIndex.Name, e)
-			akoIndexes[akoIndex.Name] = &searchindex.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
+			akoIndexes[akoIndex.Name] = &internal.SearchIndex{SearchIndex: akov2.SearchIndex{Name: akoIndex.Name}}
 		}
 		akoIndexes[akoIndex.Name] = indexInternal
 	}
 
-	allIndexes := map[string]*searchindex.SearchIndex{}
+	allIndexes := map[string]*internal.SearchIndex{}
 	// note: the order matters! first Atlas, then AKO so we have most up-to-date desired state
 	maps.Copy(allIndexes, atlasIndexes)
 	maps.Copy(allIndexes, akoIndexes)
@@ -193,7 +191,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	for i := range allIndexes {
 		current := allIndexes[i]
 
-		var akoIdx, atlasIdx *searchindex.SearchIndex
+		var akoIdx, atlasIdx *internal.SearchIndex
 
 		if val, ok := akoIndexes[current.Name]; ok {
 			akoIdx = val
@@ -208,7 +206,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			k8sClient:  sr.k8sClient,
 			projectID:  sr.projectID,
 			indexName:  current.Name,
-		}).Reconcile(akoIdx, atlasIdx, indexesErrors.GetErrors(current.Name)))
+		}).reconcileInternal(akoIdx, atlasIdx, indexesErrors.GetErrors(current.Name)))
 	}
 
 	allDeleted := true

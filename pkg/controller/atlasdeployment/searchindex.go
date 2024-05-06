@@ -25,7 +25,7 @@ type searchIndexReconciler struct {
 	indexName  string
 }
 
-func (sr *searchIndexReconciler) Reconcile(stateInAKO, stateInAtlas *searchindex.SearchIndex, errs []error) workflow.Result {
+func (sr *searchIndexReconciler) reconcileInternal(stateInAKO, stateInAtlas *searchindex.SearchIndex, errs []error) workflow.Result {
 	sr.ctx.Log.Debugf("starting reconciliation for index '%s'", sr.indexName)
 	defer sr.ctx.Log.Debugf("finished reconciliation for index '%s'", sr.indexName)
 
