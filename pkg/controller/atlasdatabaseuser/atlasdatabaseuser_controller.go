@@ -18,6 +18,7 @@ package atlasdatabaseuser
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -31,9 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -243,12 +244,11 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 		return true, workflow.OK()
 	}
 
-	deleted, err := dus.Delete(ctx, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
-	if err != nil {
-		return true, workflow.Terminate(workflow.DatabaseUserNotDeletedInAtlas, err.Error())
-	}
-	if !deleted {
+	err := dus.Delete(ctx, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
+	if errors.Is(err, dbuser.ErrorNotFound) {
 		log.Info("Database user doesn't exist or is already deleted")
+	} else if err != nil {
+		return true, workflow.Terminate(workflow.DatabaseUserNotDeletedInAtlas, err.Error())
 	}
 
 	err = customresource.ManageFinalizer(ctx, r.Client, dbUser, customresource.UnsetFinalizer)

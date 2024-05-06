@@ -1,9 +1,7 @@
 package dbuser
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"time"
 
@@ -35,7 +33,6 @@ func Normalize(spec *akov2.AtlasDatabaseUserSpec) *akov2.AtlasDatabaseUserSpec {
 }
 
 func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
-	log.Printf("atlas dbUser=%s", jsonize(dbUser))
 	deleteAfterDate, err := dateFromAtlas(dbUser.DeleteAfterDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse deleteAfterDate: %w", err)
@@ -58,20 +55,10 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 			X509Type:        dbUser.GetX509Type(),
 		},
 	}
-	log.Printf("k8s u=%s", jsonize(u))
 	return u, nil
 }
 
-func jsonize(o any) string {
-	jsonBytes, err := json.MarshalIndent(o, "  ", "  ")
-	if err != nil {
-		return err.Error()
-	}
-	return string(jsonBytes)
-}
-
 func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
-	log.Printf("k8s au=%s", jsonize(au.AtlasDatabaseUserSpec))
 	date, err := dateToAtlas(au.DeleteAfterDate)
 	if err != nil {
 		return nil, err
@@ -90,7 +77,6 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 	if au.Password != "" {
 		dbu.Password = pointer.MakePtr(au.Password)
 	}
-	log.Printf("atlas dbu=%s", jsonize(dbu))
 	return dbu, nil
 }
 
