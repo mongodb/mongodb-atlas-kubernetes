@@ -527,5 +527,4 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		assert.Empty(t, cluster.Status.SearchIndexes)
 		assert.True(t, result.IsOk())
 	})
-
 }

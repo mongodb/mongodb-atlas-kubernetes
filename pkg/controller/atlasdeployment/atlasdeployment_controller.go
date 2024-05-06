@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -53,6 +52,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 // AtlasDeploymentReconciler reconciles an AtlasDeployment object
