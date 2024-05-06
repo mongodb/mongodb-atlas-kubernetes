@@ -2,6 +2,7 @@ package dbuser
 
 import (
 	"context"
+	"errors"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
@@ -9,6 +10,11 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+)
+
+var (
+	// ErrorNotFound is returned when an database user was not found
+	ErrorNotFound = errors.New("database user not found")
 )
 
 type Service struct {
@@ -31,22 +37,22 @@ func (dus *Service) Get(ctx context.Context, db, projectID, username string) (*U
 	atlasDBUser, _, err := dus.GetDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
-			return nil, nil
+			return nil, errors.Join(ErrorNotFound, err)
 		}
 		return nil, err
 	}
 	return fromAtlas(atlasDBUser)
 }
 
-func (dus *Service) Delete(ctx context.Context, db, projectID, username string) (bool, error) {
+func (dus *Service) Delete(ctx context.Context, db, projectID, username string) error {
 	_, _, err := dus.DeleteDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
-			return false, nil
+			return errors.Join(ErrorNotFound, err)
 		}
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }
 
 func (dus *Service) Create(ctx context.Context, au *User) error {

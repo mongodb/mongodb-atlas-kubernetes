@@ -2,6 +2,7 @@ package atlasdatabaseuser
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -57,8 +58,8 @@ func handleUserNameChange(ctx *workflow.Context, dus *dbuser.Service, projectID 
 
 		deleteAttempts := 3
 		for i := 1; i <= deleteAttempts; i++ {
-			_, err := dus.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
-			if err == nil {
+			err := dus.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
+			if errors.Is(err, dbuser.ErrorNotFound) {
 				break
 			}
 
@@ -110,7 +111,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *d
 
 	// Try to find the user
 	au, err := dus.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
-	if au == nil && err == nil {
+	if errors.Is(err, dbuser.ErrorNotFound) {
 		log.Debugw("User doesn't exist. Create new user", "dbUser", dbUser)
 		au := dbuser.NewUser(dbUser.Spec, project.ID(), password)
 		if err = dus.Create(ctx.Context, au); err != nil {
