@@ -101,6 +101,10 @@ GOMOD_SHA := $(shell git ls-files -s go.mod | awk '{print $$1" "$$2" "$$4}')
 LICENSES_GOMOD_SHA_FILE := .licenses-gomod.sha256
 GOMOD_LICENSES_SHA := $(shell cat $(LICENSES_GOMOD_SHA_FILE))
 
+OPERATOR_NAMESPACE=atlas-operator
+OPERATOR_POD_NAME=mongodb-atlas-operator
+RUN_YAML= # Set to the YAML to run when calling make run
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -500,3 +504,31 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 	git restore bundle* config deploy
 	cd helm-charts && git restore .
 	git submodule update helm-charts
+
+.PHONY: install-crds
+install-crds: ## Install CRDs in Kubernetes
+	kubectl apply -k config/crd
+
+.PHONY: set-namespace
+set-namespace:
+	kubectl create namespace $(OPERATOR_NAMESPACE) || echo "Namespace already in place"
+
+.PHONY: install-credentials
+install-credentials: set-namespace ## Install the Atlas credentials for the Operator
+	kubectl create secret generic mongodb-atlas-operator-api-key \
+	--from-literal="orgId=$(MCLI_ORG_ID)" \
+	--from-literal="publicApiKey=$(MCLI_PUBLIC_API_KEY)" \
+	--from-literal="privateApiKey=$(MCLI_PRIVATE_API_KEY)" \
+	-n "$(OPERATOR_NAMESPACE)" || echo "Secret already in place"
+	kubectl label secret -n "${OPERATOR_NAMESPACE}" \
+	mongodb-atlas-operator-api-key atlas.mongodb.com/type=credentials
+
+.PHONY: run
+run: manager run-kind install-crds install-credentials ## Run a freshly compiled manager against kind
+ifdef RUN_YAML
+	kubectl apply -f $(RUN_YAML)
+endif
+	OPERATOR_NAMESPACE=atlas-operator OPERATOR_POD_NAME=mongodb-atlas-operator \
+	bin/manager --object-deletion-protection=false --log-level=debug \
+	--atlas-domain=$(MCLI_OPS_MANAGER_URL) \
+	--global-api-secret-name=mongodb-atlas-operator-api-key
