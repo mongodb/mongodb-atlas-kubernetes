@@ -93,12 +93,7 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 }
 
 func (r *AtlasStreamsConnectionReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	err := indexer.NewAtlasStreamConnectionsByCredentialSecretIndex(ctx, r.Log, mgr.GetFieldIndexer())
-	if err != nil {
-		return err
-	}
-
-	err = indexer.NewAtlasStreamConnectionsByCertificateSecretIndex(ctx, r.Log, mgr.GetFieldIndexer())
+	err := indexer.NewAtlasStreamConnectionsBySecretIndex(ctx, r.Log, mgr.GetFieldIndexer())
 	if err != nil {
 		return err
 	}

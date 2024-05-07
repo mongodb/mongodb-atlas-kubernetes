@@ -1139,13 +1139,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			).
 			WithIndex(
 				&akov2.AtlasStreamConnection{},
-				indexer.AtlasStreamConnectionByCredentialsSecret,
-				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), indexer.CredentialSecretKey),
-			).
-			WithIndex(
-				&akov2.AtlasStreamConnection{},
-				indexer.AtlasStreamConnectionByCertificateSecret,
-				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), indexer.CertificateSecretKey),
+				indexer.AtlasStreamConnectionBySecret,
+				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar()),
 			).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{
@@ -1225,13 +1220,113 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			).
 			WithIndex(
 				&akov2.AtlasStreamConnection{},
-				indexer.AtlasStreamConnectionByCredentialsSecret,
-				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), indexer.CredentialSecretKey),
+				indexer.AtlasStreamConnectionBySecret,
+				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar()),
+			).
+			Build()
+		reconciler := &AtlasStreamsInstanceReconciler{
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
+		}
+
+		requests := reconciler.findStreamInstancesForSecret(context.Background(), secret)
+		assert.Equal(
+			t,
+			[]ctrl.Request{
+				{
+					NamespacedName: types.NamespacedName{
+						Name:      "instance",
+						Namespace: "default",
+					},
+				},
+			},
+			requests,
+		)
+	})
+
+	t.Run("should return slice of requests for instances when there are multiple referrals", func(t *testing.T) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "connection-secrets",
+				Namespace: "default",
+			},
+			Data: map[string][]byte{
+				"username":    []byte("my-user"),
+				"password":    []byte("my-pass"),
+				"certificate": []byte("hash"),
+			},
+		}
+		connection1 := &akov2.AtlasStreamConnection{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "connection-1",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "connection1",
+				ConnectionType: "Kafka",
+				KafkaConfig: &akov2.StreamsKafkaConnection{
+					Authentication: akov2.StreamsKafkaAuthentication{
+						Credentials: common.ResourceRefNamespaced{
+							Name:      "connection-secrets",
+							Namespace: "default",
+						},
+					},
+				},
+			},
+		}
+		connection2 := &akov2.AtlasStreamConnection{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "connection-2",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "connection2",
+				ConnectionType: "Kafka",
+				KafkaConfig: &akov2.StreamsKafkaConnection{
+					Security: akov2.StreamsKafkaSecurity{
+						Protocol: "SSL",
+						Certificate: common.ResourceRefNamespaced{
+							Name:      "connection-secrets",
+							Namespace: "default",
+						},
+					},
+				},
+			},
+		}
+		instance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance1",
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "connection-1",
+						Namespace: "default",
+					},
+					{
+						Name:      "connection-2",
+						Namespace: "default",
+					},
+				},
+			},
+		}
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(secret, connection1, connection2, instance).
+			WithIndex(
+				&akov2.AtlasStreamInstance{},
+				indexer.AtlasStreamInstancesByConnectionRegistry,
+				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
 			).
 			WithIndex(
 				&akov2.AtlasStreamConnection{},
-				indexer.AtlasStreamConnectionByCertificateSecret,
-				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), indexer.CertificateSecretKey),
+				indexer.AtlasStreamConnectionBySecret,
+				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar()),
 			).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{

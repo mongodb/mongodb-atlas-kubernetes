@@ -15,7 +15,7 @@ import (
 func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 	t.Run("should return nil when indexing wrong type object", func(t *testing.T) {
 		core, logs := observer.New(zap.DebugLevel)
-		indexer := AtlasStreamConnectionsBySecretIndices(zap.New(core).Sugar(), CredentialSecretKey)
+		indexer := AtlasStreamConnectionsBySecretIndices(zap.New(core).Sugar())
 		indexes := indexer(&akov2.AtlasProject{})
 		assert.Nil(t, indexes)
 		assert.Equal(t, 1, logs.Len())
@@ -31,7 +31,7 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), CredentialSecretKey)
+		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
 		indexes := indexer(connection)
 		assert.Nil(t, indexes)
 	})
@@ -52,7 +52,7 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), CredentialSecretKey)
+		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
 		indexes := indexer(connection)
 		assert.Equal(
 			t,
@@ -61,27 +61,6 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 			indexes,
 		)
-	})
-
-	t.Run("should return nil when connection has no certificate", func(t *testing.T) {
-		connection := &akov2.AtlasStreamConnection{
-			Spec: akov2.AtlasStreamConnectionSpec{
-				Name:           "connection-0",
-				ConnectionType: "Kafka",
-				KafkaConfig: &akov2.StreamsKafkaConnection{
-					Authentication: akov2.StreamsKafkaAuthentication{
-						Credentials: common.ResourceRefNamespaced{
-							Name:      "connection-credentials",
-							Namespace: "default",
-						},
-					},
-				},
-			},
-		}
-
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), CertificateSecretKey)
-		indexes := indexer(connection)
-		assert.Nil(t, indexes)
 	})
 
 	t.Run("should return indexes slice when connection has certificate", func(t *testing.T) {
@@ -100,12 +79,80 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), CertificateSecretKey)
+		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
 		indexes := indexer(connection)
 		assert.Equal(
 			t,
 			[]string{
 				"default/connection-certificate",
+			},
+			indexes,
+		)
+	})
+
+	t.Run("should return nil when connection has different secrets for credentials and certificate", func(t *testing.T) {
+		connection := &akov2.AtlasStreamConnection{
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "connection-0",
+				ConnectionType: "Kafka",
+				KafkaConfig: &akov2.StreamsKafkaConnection{
+					Authentication: akov2.StreamsKafkaAuthentication{
+						Credentials: common.ResourceRefNamespaced{
+							Name:      "connection-credentials",
+							Namespace: "default",
+						},
+					},
+					Security: akov2.StreamsKafkaSecurity{
+						Certificate: common.ResourceRefNamespaced{
+							Name:      "connection-certificate",
+							Namespace: "default",
+						},
+					},
+				},
+			},
+		}
+
+		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
+		indexes := indexer(connection)
+		assert.Equal(
+			t,
+			[]string{
+				"default/connection-credentials",
+				"default/connection-certificate",
+			},
+			indexes,
+		)
+	})
+
+	t.Run("should return nil when connection has the same secrets for credentials and certificate", func(t *testing.T) {
+		connection := &akov2.AtlasStreamConnection{
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "connection-0",
+				ConnectionType: "Kafka",
+				KafkaConfig: &akov2.StreamsKafkaConnection{
+					Authentication: akov2.StreamsKafkaAuthentication{
+						Credentials: common.ResourceRefNamespaced{
+							Name:      "connection-secrets",
+							Namespace: "default",
+						},
+					},
+					Security: akov2.StreamsKafkaSecurity{
+						Certificate: common.ResourceRefNamespaced{
+							Name:      "connection-secrets",
+							Namespace: "default",
+						},
+					},
+				},
+			},
+		}
+
+		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
+		indexes := indexer(connection)
+		assert.Equal(
+			t,
+			[]string{
+				"default/connection-secrets",
+				"default/connection-secrets",
 			},
 			indexes,
 		)

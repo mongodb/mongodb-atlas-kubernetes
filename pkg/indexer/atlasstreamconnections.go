@@ -10,27 +10,18 @@ import (
 )
 
 const (
-	AtlasStreamConnectionByCredentialsSecret = ".spec.kafkaConfig.authentication.credentials" //nolint:gosec
-	AtlasStreamConnectionByCertificateSecret = ".spec.kafkaConfig.security.certificate"       //nolint:gosec
+	AtlasStreamConnectionBySecret = ".spec.kafkaConfig" //nolint:gosec
 )
 
-func NewAtlasStreamConnectionsByCredentialSecretIndex(ctx context.Context, logger *zap.SugaredLogger, idx client.FieldIndexer) error {
+func NewAtlasStreamConnectionsBySecretIndex(ctx context.Context, logger *zap.SugaredLogger, idx client.FieldIndexer) error {
 	return idx.IndexField(ctx,
 		&akov2.AtlasStreamConnection{},
-		AtlasStreamConnectionByCredentialsSecret,
-		AtlasStreamConnectionsBySecretIndices(logger.Named("indexers").Named(AtlasStreamConnectionByCredentialsSecret), CredentialSecretKey),
+		AtlasStreamConnectionBySecret,
+		AtlasStreamConnectionsBySecretIndices(logger.Named("indexers").Named(AtlasStreamConnectionBySecret)),
 	)
 }
 
-func NewAtlasStreamConnectionsByCertificateSecretIndex(ctx context.Context, logger *zap.SugaredLogger, idx client.FieldIndexer) error {
-	return idx.IndexField(ctx,
-		&akov2.AtlasStreamConnection{},
-		AtlasStreamConnectionByCertificateSecret,
-		AtlasStreamConnectionsBySecretIndices(logger.Named("indexers").Named(AtlasStreamConnectionByCertificateSecret), CertificateSecretKey),
-	)
-}
-
-func AtlasStreamConnectionsBySecretIndices(logger *zap.SugaredLogger, keyReader ConnectionSecretKeyReader) client.IndexerFunc {
+func AtlasStreamConnectionsBySecretIndices(logger *zap.SugaredLogger) client.IndexerFunc {
 	return func(object client.Object) []string {
 		streamConnection, ok := object.(*akov2.AtlasStreamConnection)
 		if !ok {
@@ -38,19 +29,24 @@ func AtlasStreamConnectionsBySecretIndices(logger *zap.SugaredLogger, keyReader 
 			return nil
 		}
 
-		key, found := keyReader(streamConnection)
-		if !found {
-			return nil
+		var indexes []string
+
+		key, found := credentialSecretKey(streamConnection)
+		if found {
+			indexes = append(indexes, key)
 		}
 
-		return []string{key}
+		key, found = certificateSecretKey(streamConnection)
+		if found {
+			indexes = append(indexes, key)
+		}
+
+		return indexes
 	}
 }
 
-type ConnectionSecretKeyReader func(connection *akov2.AtlasStreamConnection) (string, bool)
-
-func CredentialSecretKey(connection *akov2.AtlasStreamConnection) (string, bool) {
-	if connection == nil || connection.Spec.KafkaConfig == nil {
+func credentialSecretKey(connection *akov2.AtlasStreamConnection) (string, bool) {
+	if connection == nil || connection.Spec.KafkaConfig == nil || connection.Spec.KafkaConfig.Authentication.Credentials.Name == "" {
 		return "", false
 	}
 
@@ -59,7 +55,7 @@ func CredentialSecretKey(connection *akov2.AtlasStreamConnection) (string, bool)
 	return credentialsKey.String(), true
 }
 
-func CertificateSecretKey(connection *akov2.AtlasStreamConnection) (string, bool) {
+func certificateSecretKey(connection *akov2.AtlasStreamConnection) (string, bool) {
 	if connection == nil || connection.Spec.KafkaConfig == nil || connection.Spec.KafkaConfig.Security.Certificate.Name == "" {
 		return "", false
 	}

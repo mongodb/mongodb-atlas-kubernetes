@@ -200,55 +200,35 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForSecret(ctx contex
 		return nil
 	}
 
-	connectionsByCredentials := &akov2.AtlasStreamConnectionList{}
+	connections := &akov2.AtlasStreamConnectionList{}
 	listOps := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasStreamConnectionByCredentialsSecret,
+			indexer.AtlasStreamConnectionBySecret,
 			client.ObjectKeyFromObject(secret).String(),
 		),
 	}
 
-	err := r.Client.List(ctx, connectionsByCredentials, listOps)
+	err := r.Client.List(ctx, connections, listOps)
 	if err != nil {
 		r.Log.Errorf("failed to list Atlas stream connections: %e", err)
 		return []reconcile.Request{}
 	}
 
-	connectionsByCertificates := &akov2.AtlasStreamConnectionList{}
-	listOps = &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasStreamConnectionByCertificateSecret,
-			client.ObjectKeyFromObject(secret).String(),
-		),
-	}
-
-	err = r.Client.List(ctx, connectionsByCertificates, listOps)
-	if err != nil {
-		r.Log.Errorf("failed to list Atlas stream connections: %e", err)
+	if len(connections.Items) == 0 {
 		return []reconcile.Request{}
 	}
 
-	if len(connectionsByCertificates.Items)+len(connectionsByCredentials.Items) == 0 {
-		return []reconcile.Request{}
-	}
-
-	// dedupe connections
-	connectionsMap := make(
-		map[string]struct{},
-		len(connectionsByCertificates.Items)+len(connectionsByCredentials.Items),
-	)
-	connections := make([]*akov2.AtlasStreamConnection, 0, len(connectionsByCertificates.Items)+len(connectionsByCredentials.Items))
-	for i := range connectionsByCertificates.Items {
-		key := client.ObjectKeyFromObject(&connectionsByCertificates.Items[i]).String()
-		if _, present := connectionsMap[key]; !present {
-			connections = append(connections, &connectionsByCertificates.Items[i])
-			connectionsMap[key] = struct{}{}
+	streamInstancesMap := make(map[string]struct{}, len(connections.Items))
+	streamInstances := make([]reconcile.Request, 0, len(connections.Items))
+	for i := range connections.Items {
+		requests := r.findStreamInstancesForStreamConnection(ctx, &connections.Items[i])
+		for j := range requests {
+			key := requests[j].String()
+			if _, found := streamInstancesMap[key]; !found {
+				streamInstances = append(streamInstances, requests[j])
+				streamInstancesMap[key] = struct{}{}
+			}
 		}
-	}
-
-	streamInstances := make([]reconcile.Request, 0, len(connections))
-	for i := range connections {
-		streamInstances = append(streamInstances, r.findStreamInstancesForStreamConnection(ctx, connections[i])...)
 	}
 
 	return streamInstances
