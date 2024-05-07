@@ -16,6 +16,7 @@ func TestParseISO8601(t *testing.T) {
 		{name: "Correct Date (UTC)", dateTime: "2021-02-07T21:39:31Z", wantErr: false},
 		{name: "Correct Date (no timezone)", dateTime: "2021-11-30T15:04:05", wantErr: false},
 		{name: "Correct Date (no time)", dateTime: "2021-11-30", wantErr: false},
+		{name: "Correct Date and time Versioned SDK", dateTime: "2024-05-11 17:23:32 +0000 UTC", wantErr: false},
 		{name: "Incorrect Date (date)", dateTime: "2021/11/30T15:04:05", wantErr: true},
 		{name: "Incorrect Date (time)", dateTime: "2021-11-30T15-04:05", wantErr: true},
 		{name: "Incorrect Date (timezone)", dateTime: "2021-11-30T15:04:05-8", wantErr: true},
