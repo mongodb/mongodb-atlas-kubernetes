@@ -200,7 +200,7 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForSecret(ctx contex
 		return nil
 	}
 
-	atlasStreamConnections := &akov2.AtlasStreamConnectionList{}
+	connectionsByCredentials := &akov2.AtlasStreamConnectionList{}
 	listOps := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
 			indexer.AtlasStreamConnectionByCredentialsSecret,
@@ -208,35 +208,48 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForSecret(ctx contex
 		),
 	}
 
-	err := r.Client.List(ctx, atlasStreamConnections, listOps)
+	err := r.Client.List(ctx, connectionsByCredentials, listOps)
 	if err != nil {
 		r.Log.Errorf("failed to list Atlas stream connections: %e", err)
 		return []reconcile.Request{}
 	}
 
-	if len(atlasStreamConnections.Items) == 0 {
-		listOps = &client.ListOptions{
-			FieldSelector: fields.OneTermEqualSelector(
-				indexer.AtlasStreamConnectionByCertificateSecret,
-				client.ObjectKeyFromObject(secret).String(),
-			),
-		}
+	connectionsByCertificates := &akov2.AtlasStreamConnectionList{}
+	listOps = &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasStreamConnectionByCertificateSecret,
+			client.ObjectKeyFromObject(secret).String(),
+		),
+	}
 
-		err = r.Client.List(ctx, atlasStreamConnections, listOps)
-		if err != nil {
-			r.Log.Errorf("failed to list Atlas stream connections: %e", err)
-			return []reconcile.Request{}
-		}
+	err = r.Client.List(ctx, connectionsByCertificates, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list Atlas stream connections: %e", err)
+		return []reconcile.Request{}
+	}
 
-		if len(atlasStreamConnections.Items) == 0 {
-			return []reconcile.Request{}
+	if len(connectionsByCertificates.Items)+len(connectionsByCredentials.Items) == 0 {
+		return []reconcile.Request{}
+	}
+
+	// dedupe connections
+	connectionsMap := make(
+		map[string]struct{},
+		len(connectionsByCertificates.Items)+len(connectionsByCredentials.Items),
+	)
+	connections := make([]*akov2.AtlasStreamConnection, 0, len(connectionsByCertificates.Items)+len(connectionsByCredentials.Items))
+	for i := range connectionsByCertificates.Items {
+		key := client.ObjectKeyFromObject(&connectionsByCertificates.Items[i]).String()
+		if _, present := connectionsMap[key]; !present {
+			connections = append(connections, &connectionsByCertificates.Items[i])
+			connectionsMap[key] = struct{}{}
 		}
 	}
 
-	requests := make([]reconcile.Request, 0, len(atlasStreamConnections.Items))
-	for i := range atlasStreamConnections.Items {
-		requests = append(requests, r.findStreamInstancesForStreamConnection(ctx, &atlasStreamConnections.Items[i])...)
+	streamInstances := make([]reconcile.Request, 0, len(connections))
+	for i := range connections {
+		streamInstances = append(streamInstances, r.findStreamInstancesForStreamConnection(ctx, connections[i])...)
 	}
 
-	return requests
+	return streamInstances
 }
