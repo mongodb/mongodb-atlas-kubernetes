@@ -5,6 +5,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -146,6 +147,11 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(ctx context.Context, m
 			handler.EnqueueRequestsFromMapFunc(r.findStreamInstancesForStreamConnection),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(r.findStreamInstancesForSecret),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		Complete(r)
 }
 
@@ -182,6 +188,54 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(
 				},
 			},
 		)
+	}
+
+	return requests
+}
+
+func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForSecret(ctx context.Context, obj client.Object) []reconcile.Request {
+	secret, ok := obj.(*corev1.Secret)
+	if !ok {
+		r.Log.Warnf("watching Secret but got %T", obj)
+		return nil
+	}
+
+	atlasStreamConnections := &akov2.AtlasStreamConnectionList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasStreamConnectionByCredentialsSecret,
+			client.ObjectKeyFromObject(secret).String(),
+		),
+	}
+
+	err := r.Client.List(ctx, atlasStreamConnections, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list Atlas stream connections: %e", err)
+		return []reconcile.Request{}
+	}
+
+	if len(atlasStreamConnections.Items) == 0 {
+		listOps = &client.ListOptions{
+			FieldSelector: fields.OneTermEqualSelector(
+				indexer.AtlasStreamConnectionByCertificateSecret,
+				client.ObjectKeyFromObject(secret).String(),
+			),
+		}
+
+		err = r.Client.List(ctx, atlasStreamConnections, listOps)
+		if err != nil {
+			r.Log.Errorf("failed to list Atlas stream connections: %e", err)
+			return []reconcile.Request{}
+		}
+
+		if len(atlasStreamConnections.Items) == 0 {
+			return []reconcile.Request{}
+		}
+	}
+
+	requests := make([]reconcile.Request, 0, len(atlasStreamConnections.Items))
+	for i := range atlasStreamConnections.Items {
+		requests = append(requests, r.findStreamInstancesForStreamConnection(ctx, &atlasStreamConnections.Items[i])...)
 	}
 
 	return requests

@@ -250,7 +250,7 @@ func main() {
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    config.ObjectDeletionProtection,
 		SubObjectDeletionProtection: false,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasStreamsConnection")
 		os.Exit(1)
 	}

@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -31,6 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 func TestReconcile(t *testing.T) {
@@ -1062,6 +1061,192 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 					NamespacedName: types.NamespacedName{
 						Namespace: "other-ns",
 						Name:      "instance2",
+					},
+				},
+			},
+			requests,
+		)
+	})
+}
+
+func TestFindStreamInstancesForSecret(t *testing.T) {
+	t.Run("should fail when watching wrong object", func(t *testing.T) {
+		core, logs := observer.New(zap.DebugLevel)
+		reconciler := &AtlasStreamsInstanceReconciler{
+			Log: zap.New(core).Sugar(),
+		}
+
+		assert.Nil(t, reconciler.findStreamInstancesForSecret(context.Background(), &akov2.AtlasProject{}))
+		assert.Equal(t, 1, logs.Len())
+		assert.Equal(t, zap.WarnLevel, logs.All()[0].Level)
+		assert.Equal(t, "watching Secret but got *v1.AtlasProject", logs.All()[0].Message)
+	})
+
+	t.Run("should return slice of requests for instances for related credentials secret", func(t *testing.T) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "connection-credentials",
+				Namespace: "default",
+			},
+			Data: map[string][]byte{
+				"username": []byte("my-user"),
+				"password": []byte("my-pass"),
+			},
+		}
+		connection := &akov2.AtlasStreamConnection{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "connection",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "connection1",
+				ConnectionType: "Kafka",
+				KafkaConfig: &akov2.StreamsKafkaConnection{
+					Authentication: akov2.StreamsKafkaAuthentication{
+						Credentials: common.ResourceRefNamespaced{
+							Name:      "connection-credentials",
+							Namespace: "default",
+						},
+					},
+				},
+			},
+		}
+		instance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance1",
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "connection",
+						Namespace: "default",
+					},
+				},
+			},
+		}
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(secret, connection, instance).
+			WithIndex(
+				&akov2.AtlasStreamInstance{},
+				indexer.AtlasStreamInstancesByConnectionRegistry,
+				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+			).
+			WithIndex(
+				&akov2.AtlasStreamConnection{},
+				indexer.AtlasStreamConnectionByCredentialsSecret,
+				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), indexer.CredentialSecretKey),
+			).
+			WithIndex(
+				&akov2.AtlasStreamConnection{},
+				indexer.AtlasStreamConnectionByCertificateSecret,
+				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), indexer.CertificateSecretKey),
+			).
+			Build()
+		reconciler := &AtlasStreamsInstanceReconciler{
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
+		}
+
+		requests := reconciler.findStreamInstancesForSecret(context.Background(), secret)
+		assert.Equal(
+			t,
+			[]ctrl.Request{
+				{
+					NamespacedName: types.NamespacedName{
+						Name:      "instance",
+						Namespace: "default",
+					},
+				},
+			},
+			requests,
+		)
+	})
+
+	t.Run("should return slice of requests for instances for related certificate secret", func(t *testing.T) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "connection-certificate",
+				Namespace: "default",
+			},
+			Data: map[string][]byte{
+				"certificate": []byte("hash"),
+			},
+		}
+		connection := &akov2.AtlasStreamConnection{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "connection",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "connection1",
+				ConnectionType: "Kafka",
+				KafkaConfig: &akov2.StreamsKafkaConnection{
+					Security: akov2.StreamsKafkaSecurity{
+						Protocol: "SSL",
+						Certificate: common.ResourceRefNamespaced{
+							Name:      "connection-certificate",
+							Namespace: "default",
+						},
+					},
+				},
+			},
+		}
+		instance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance1",
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "connection",
+						Namespace: "default",
+					},
+				},
+			},
+		}
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(secret, connection, instance).
+			WithIndex(
+				&akov2.AtlasStreamInstance{},
+				indexer.AtlasStreamInstancesByConnectionRegistry,
+				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+			).
+			WithIndex(
+				&akov2.AtlasStreamConnection{},
+				indexer.AtlasStreamConnectionByCredentialsSecret,
+				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), indexer.CredentialSecretKey),
+			).
+			WithIndex(
+				&akov2.AtlasStreamConnection{},
+				indexer.AtlasStreamConnectionByCertificateSecret,
+				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar(), indexer.CertificateSecretKey),
+			).
+			Build()
+		reconciler := &AtlasStreamsInstanceReconciler{
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
+		}
+
+		requests := reconciler.findStreamInstancesForSecret(context.Background(), secret)
+		assert.Equal(
+			t,
+			[]ctrl.Request{
+				{
+					NamespacedName: types.NamespacedName{
+						Name:      "instance",
+						Namespace: "default",
 					},
 				},
 			},

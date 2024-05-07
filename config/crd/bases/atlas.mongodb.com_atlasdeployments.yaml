@@ -366,6 +366,8 @@ spec:
                     description: A list of atlas search indexes configuration for
                       the current deployment
                     items:
+                      description: SearchIndex is the CRD to configure part of the
+                        Atlas Search Index
                       properties:
                         DBName:
                           description: Human-readable label that identifies the database
@@ -417,6 +419,8 @@ spec:
                               description: Rule sets that map words to their synonyms
                                 in this index
                               items:
+                                description: Synonym represents "Synonym" type of
+                                  Atlas Search Index
                                 properties:
                                   analyzer:
                                     description: Specific pre-defined method chosen
@@ -507,9 +511,7 @@ spec:
                           description: Atlas vector search index configuration
                           properties:
                             fields:
-                              description: |-
-                                Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
-                                Fields []VectorSearchField `json:"fields,omitempty"`
+                              description: Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
                               x-kubernetes-preserve-unknown-fields: true
                           type: object
                       required:
