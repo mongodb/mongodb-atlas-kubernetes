@@ -219,6 +219,17 @@ YJZC5C0=
 				checkInstanceIsReady(client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name})
 			})
 
+			By("Updating a secret", func() {
+				Eventually(func(g Gomega) {
+					s := corev1.Secret{}
+					g.Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: kafkaUserPassSecretName, Namespace: testNamespace.Name}, &s)).To(Succeed())
+					s.Data["username"] = []byte("kafka_user_changed")
+					g.Expect(k8sClient.Update(context.Background(), &s)).To(Succeed())
+				}).WithTimeout(time.Minute).WithPolling(PollingInterval)
+
+				checkInstanceIsReady(client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name})
+			})
+
 			By("Releasing a connection when removed from instance", func() {
 				streamInstance := &akov2.AtlasStreamInstance{}
 				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, streamInstance)).To(Succeed())

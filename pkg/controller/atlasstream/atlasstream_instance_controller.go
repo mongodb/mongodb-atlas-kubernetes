@@ -5,6 +5,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -146,6 +147,11 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(ctx context.Context, m
 			handler.EnqueueRequestsFromMapFunc(r.findStreamInstancesForStreamConnection),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(r.findStreamInstancesForSecret),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		Complete(r)
 }
 
@@ -185,4 +191,45 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(
 	}
 
 	return requests
+}
+
+func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForSecret(ctx context.Context, obj client.Object) []reconcile.Request {
+	secret, ok := obj.(*corev1.Secret)
+	if !ok {
+		r.Log.Warnf("watching Secret but got %T", obj)
+		return nil
+	}
+
+	connections := &akov2.AtlasStreamConnectionList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasStreamConnectionBySecret,
+			client.ObjectKeyFromObject(secret).String(),
+		),
+	}
+
+	err := r.Client.List(ctx, connections, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list Atlas stream connections: %e", err)
+		return []reconcile.Request{}
+	}
+
+	if len(connections.Items) == 0 {
+		return []reconcile.Request{}
+	}
+
+	streamInstancesMap := make(map[string]struct{}, len(connections.Items))
+	streamInstances := make([]reconcile.Request, 0, len(connections.Items))
+	for i := range connections.Items {
+		requests := r.findStreamInstancesForStreamConnection(ctx, &connections.Items[i])
+		for j := range requests {
+			key := requests[j].String()
+			if _, found := streamInstancesMap[key]; !found {
+				streamInstances = append(streamInstances, requests[j])
+				streamInstancesMap[key] = struct{}{}
+			}
+		}
+	}
+
+	return streamInstances
 }

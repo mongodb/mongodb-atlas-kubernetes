@@ -183,6 +183,7 @@ func defaultTimeouts() {
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
 // reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
 func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.CancelFunc) {
+	ctx := context.Background()
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "test",
@@ -191,7 +192,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	}
 
 	By("Creating the namespace " + namespace.GenerateName + "...")
-	Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
+	Expect(k8sClient.Create(ctx, &namespace)).ToNot(HaveOccurred())
 	Expect(namespace.Name).ToNot(BeEmpty())
 	GinkgoWriter.Printf("Generated namespace %q\n", namespace.Name)
 
@@ -299,7 +300,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: false,
-	}).SetupWithManager(context.Background(), k8sManager)
+	}).SetupWithManager(ctx, k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasstream.AtlasStreamsConnectionReconciler{
@@ -310,12 +311,11 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: false,
-	}).SetupWithManager(k8sManager)
+	}).SetupWithManager(ctx, k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Starting controllers")
 
-	var ctx context.Context
 	ctx, managerCancelFunc = context.WithCancel(context.Background())
 
 	go func() {

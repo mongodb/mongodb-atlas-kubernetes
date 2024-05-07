@@ -92,7 +92,12 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 	return r.release(workflowCtx, akoStreamConnection)
 }
 
-func (r *AtlasStreamsConnectionReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *AtlasStreamsConnectionReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+	err := indexer.NewAtlasStreamConnectionsBySecretIndex(ctx, r.Log, mgr.GetFieldIndexer())
+	if err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasStreamConnection").
 		For(&akov2.AtlasStreamConnection{}, builder.WithPredicates(r.GlobalPredicates...)).
