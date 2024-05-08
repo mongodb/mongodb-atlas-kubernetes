@@ -1,23 +1,23 @@
 FROM registry.access.redhat.com/ubi8/ubi:latest
 
 RUN yum install -y \
-      bzip2 \
-      gzip \
-      tar \
-      iptables \
-      yum-utils \
-      jq
+  bzip2 \
+  gzip \
+  tar \
+  iptables \
+  yum-utils \
+  jq
 
 RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
-    yum list docker-ce --showduplicates | sort -r && \
-    yum install -y \
-      docker-ce \
-      docker-ce-cli \
-      containerd.io
+  yum list docker-ce --showduplicates | sort -r && \
+  yum install -y \
+  docker-ce \
+  docker-ce-cli \
+  containerd.io
 
 RUN yum clean all
 
-RUN curl -LO https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.9.1/preflight-linux-amd64  && \
+RUN curl -LO https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.9.2/preflight-linux-amd64  && \
   chmod +x ./preflight-linux-amd64 && \
   mv ./preflight-linux-amd64 /usr/local/bin/preflight
 
