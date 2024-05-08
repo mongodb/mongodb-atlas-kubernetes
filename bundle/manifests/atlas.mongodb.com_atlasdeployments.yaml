@@ -367,8 +367,11 @@ spec:
                   rootCertType:
                     type: string
                   searchIndexes:
-                    description: A list of atlas search indexes configurations
+                    description: A list of atlas search indexes configuration for
+                      the current deployment
                     items:
+                      description: SearchIndex is the CRD to configure part of the
+                        Atlas Search Index
                       properties:
                         DBName:
                           description: Human-readable label that identifies the database
@@ -381,8 +384,7 @@ spec:
                           type: string
                         name:
                           description: Human-readable label that identifies this index.
-                            Within each namespace, names of all indexes in the namespace
-                            must be unique
+                            Must be unique for a deployment
                           type: string
                         search:
                           description: Atlas search index configuration
@@ -390,20 +392,18 @@ spec:
                             mappings:
                               description: Index specifications for the collection's
                                 fields
-                              items:
-                                properties:
-                                  dynamic:
-                                    description: Flag that indicates whether the index
-                                      uses dynamic or static mappings. Required if
-                                      mapping.fields is omitted.
-                                    type: boolean
-                                  fields:
-                                    description: One or more field specifications
-                                      for the Atlas Search index. Required if mapping.dynamic
-                                      is omitted or set to false.
-                                    type: string
-                                type: object
-                              type: array
+                              properties:
+                                dynamic:
+                                  description: Flag that indicates whether the index
+                                    uses dynamic or static mappings. Required if mapping.fields
+                                    is omitted.
+                                  type: boolean
+                                fields:
+                                  description: One or more field specifications for
+                                    the Atlas Search index. Required if mapping.dynamic
+                                    is omitted or set to false.
+                                  x-kubernetes-preserve-unknown-fields: true
+                              type: object
                             searchConfigurationRef:
                               description: A reference to the AtlasSearchIndexConfig
                                 custom resource
@@ -423,6 +423,8 @@ spec:
                               description: Rule sets that map words to their synonyms
                                 in this index
                               items:
+                                description: Synonym represents "Synonym" type of
+                                  Atlas Search Index
                                 properties:
                                   analyzer:
                                     description: Specific pre-defined method chosen
@@ -504,7 +506,7 @@ spec:
                           - searchConfigurationRef
                           type: object
                         type:
-                          description: Type of the index. Default type is search
+                          description: Type of the index
                           enum:
                           - search
                           - vectorSearch
@@ -514,13 +516,46 @@ spec:
                           properties:
                             fields:
                               description: Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
-                              type: string
+                              x-kubernetes-preserve-unknown-fields: true
                           type: object
                       required:
                       - DBName
                       - collectionName
                       - name
                       type: object
+                    type: array
+                  searchNodes:
+                    description: Settings for Search Nodes for the cluster. Currently,
+                      at most one search node configuration may be defined.
+                    items:
+                      properties:
+                        instanceSize:
+                          description: Hardware specification for the Search Node
+                            instance sizes.
+                          enum:
+                          - S20_HIGHCPU_NVME
+                          - S30_HIGHCPU_NVME
+                          - S40_HIGHCPU_NVME
+                          - S50_HIGHCPU_NVME
+                          - S60_HIGHCPU_NVME
+                          - S70_HIGHCPU_NVME
+                          - S80_HIGHCPU_NVME
+                          - S30_LOWCPU_NVME
+                          - S40_LOWCPU_NVME
+                          - S50_LOWCPU_NVME
+                          - S60_LOWCPU_NVME
+                          - S80_LOWCPU_NVME
+                          - S90_LOWCPU_NVME
+                          - S100_LOWCPU_NVME
+                          - S110_LOWCPU_NVME
+                          type: string
+                        nodeCount:
+                          description: Number of Search Nodes in the cluster.
+                          maximum: 32
+                          minimum: 2
+                          type: integer
+                      type: object
+                    maxItems: 1
                     type: array
                   tags:
                     description: Key-value pairs for resource tagging.
@@ -950,6 +985,26 @@ spec:
                       type: string
                   required:
                   - id
+                  type: object
+                type: array
+              searchIndexes:
+                description: SearchIndexes contains a list of search indexes statuses
+                  configured for a project
+                items:
+                  properties:
+                    ID:
+                      type: string
+                    message:
+                      type: string
+                    name:
+                      type: string
+                    status:
+                      type: string
+                  required:
+                  - ID
+                  - message
+                  - name
+                  - status
                   type: object
                 type: array
               serverlessPrivateEndpoints:
