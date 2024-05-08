@@ -240,7 +240,7 @@ type indexCleaner func(s *SearchIndex)
 func cleanConfigRef() indexCleaner {
 	return func(s *SearchIndex) {
 		if s.Search == nil {
-			return
+			s.Search = &akov2.Search{}
 		}
 		s.Search.SearchConfigurationRef.Name = ""
 		s.Search.SearchConfigurationRef.Namespace = ""

@@ -2,12 +2,12 @@ package atlasdeployment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
 
-	internal "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
-
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
@@ -18,14 +18,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-
-	"github.com/stretchr/testify/assert"
-
+	internal "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func Test_verifyAllIndexesNamesAreUnique(t *testing.T) {
@@ -314,6 +311,182 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 		result := reconciler.Reconcile()
 		assert.False(t, result.IsOk())
+	})
+
+	t.Run("Should proceed with index Type Search if it cannot be found: CREATE INDEX", func(t *testing.T) {
+		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+
+		nestMock := func(f func(nestedMock *mockadmin.AtlasSearchApi)) {
+			nested := mockadmin.NewAtlasSearchApi(t)
+			f(nested)
+		}
+
+		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testConfig",
+				Namespace: "testNamespace",
+			},
+			Spec: akov2.AtlasSearchIndexConfigSpec{
+				Analyzer: pointer.MakePtr("testAnalyzer"),
+			},
+			Status: status.AtlasSearchIndexConfigStatus{},
+		}
+
+		deployment := &akov2.AtlasDeployment{
+			TypeMeta:   metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name: "testDeployment",
+					SearchIndexes: []akov2.SearchIndex{
+						{
+							Name: "Index1",
+							Type: IndexTypeSearch,
+							Search: &akov2.Search{
+								SearchConfigurationRef: common.ResourceRefNamespaced{
+									Name:      searchIndexConfig.Name,
+									Namespace: searchIndexConfig.Namespace,
+								},
+							},
+						},
+					},
+				},
+			},
+			Status: status.AtlasDeploymentStatus{},
+		}
+
+		sch := runtime.NewScheme()
+		assert.Nil(t, akov2.AddToScheme(sch))
+		assert.Nil(t, corev1.AddToScheme(sch))
+
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(sch).
+			WithObjects(deployment, searchIndexConfig).
+			Build()
+
+		reconciler := searchIndexesReconciler{
+			ctx: &workflow.Context{
+				Log:       zap.S(),
+				OrgID:     "testOrgID",
+				Client:    nil,
+				SdkClient: &admin.APIClient{AtlasSearchApi: mockSearchAPI},
+				Context:   context.Background(),
+			},
+			deployment: deployment,
+			k8sClient:  k8sClient,
+			projectID:  "testProjectID",
+		}
+
+		// mock GET for Index1
+		nestMock(func(n *mockadmin.AtlasSearchApi) {
+			mockSearchAPI.EXPECT().
+				GetAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, "123").
+				Return(admin.GetAtlasSearchIndexApiRequest{ApiService: n})
+			n.EXPECT().
+				GetAtlasSearchIndexExecute(admin.GetAtlasSearchIndexApiRequest{ApiService: n}).
+				Return(
+					&admin.ClusterSearchIndex{
+						IndexID:  pointer.MakePtr("123"),
+						Name:     "Index1",
+						Status:   pointer.MakePtr(IndexStatusActive),
+						Type:     pointer.MakePtr(IndexTypeSearch),
+						Analyzer: pointer.MakePtr("testAnalyzer"),
+					},
+					&http.Response{StatusCode: http.StatusOK}, nil,
+				)
+		})
+
+		// mock CREATE for Index1
+		atlasIdx, err := internal.NewSearchIndexFromAKO(&deployment.Spec.DeploymentSpec.SearchIndexes[0], &searchIndexConfig.Spec).ToAtlas()
+		assert.NoError(t, err)
+
+		nestMock(func(n *mockadmin.AtlasSearchApi) {
+			mockSearchAPI.EXPECT().
+				CreateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, atlasIdx).
+				Return(admin.CreateAtlasSearchIndexApiRequest{ApiService: n})
+			n.EXPECT().
+				CreateAtlasSearchIndexExecute(admin.CreateAtlasSearchIndexApiRequest{ApiService: n}).
+				Return(
+					&admin.ClusterSearchIndex{Name: "Index1", IndexID: pointer.MakePtr("123"), Status: pointer.MakePtr("NOT STARTED")},
+					&http.Response{StatusCode: http.StatusCreated}, nil,
+				)
+		})
+
+		// first reconcile succeeds, creation succeeds
+		result := reconciler.Reconcile()
+		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
+		assert.False(t, result.IsOk())
+		assert.Equal(t, []status.DeploymentSearchIndexStatus{
+			{
+				Name:    "Index1",
+				ID:      "123",
+				Status:  "InProgress",
+				Message: "Atlas search index status: NOT STARTED",
+			},
+		}, deployment.Status.SearchIndexes)
+
+		// Add another search Index2 which is a copy of Index1
+		deployment.Spec.DeploymentSpec.SearchIndexes = append(deployment.Spec.DeploymentSpec.SearchIndexes, akov2.SearchIndex{
+			Name: "Index2",
+			Type: IndexTypeSearch,
+			Search: &akov2.Search{
+				SearchConfigurationRef: common.ResourceRefNamespaced{
+					Name:      searchIndexConfig.Name,
+					Namespace: searchIndexConfig.Namespace,
+				},
+			},
+		})
+
+		// mock CREATE for Index2
+		atlasIdx, err = internal.NewSearchIndexFromAKO(&deployment.Spec.DeploymentSpec.SearchIndexes[1], &searchIndexConfig.Spec).ToAtlas()
+		assert.NoError(t, err)
+
+		nestMock(func(n *mockadmin.AtlasSearchApi) {
+			mockSearchAPI.EXPECT().CreateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, atlasIdx).
+				Return(admin.CreateAtlasSearchIndexApiRequest{ApiService: n})
+			n.EXPECT().
+				CreateAtlasSearchIndexExecute(admin.CreateAtlasSearchIndexApiRequest{ApiService: n}).
+				Return(
+					nil,
+					&http.Response{StatusCode: http.StatusBadRequest}, errors.New("conflict"),
+				)
+		})
+
+		// create fails
+		result = reconciler.Reconcile()
+		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
+		assert.False(t, result.IsOk())
+		assert.Equal(t, []status.DeploymentSearchIndexStatus{
+			{
+				Name:    "Index1",
+				ID:      "123",
+				Status:  "Ready",
+				Message: "Atlas search index status: STEADY",
+			},
+			{
+				Name:    "Index2",
+				ID:      "",
+				Status:  "Error",
+				Message: "error with processing index Index2. err: failed to create index: conflict, status: 400",
+			},
+		}, deployment.Status.SearchIndexes)
+
+		// remove Index2 from the spec
+		deployment.Spec.DeploymentSpec.SearchIndexes = []akov2.SearchIndex{deployment.Spec.DeploymentSpec.SearchIndexes[0]}
+
+		// third reconcile succeeds, creation succeeds
+		result = reconciler.Reconcile()
+		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
+		assert.True(t, result.IsOk())
+		assert.Equal(t, []status.DeploymentSearchIndexStatus{
+			{
+				Name:    "Index1",
+				ID:      "123",
+				Status:  "Ready",
+				Message: "Atlas search index status: STEADY",
+			},
+		}, deployment.Status.SearchIndexes)
 	})
 
 	t.Run("Should proceed with the index Type Search: UPDATE INDEX", func(t *testing.T) {
