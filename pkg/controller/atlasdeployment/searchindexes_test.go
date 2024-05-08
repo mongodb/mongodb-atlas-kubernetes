@@ -3,6 +3,7 @@ package atlasdeployment
 import (
 	"context"
 	"fmt"
+	internal "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
 	"net/http"
 	"testing"
 
