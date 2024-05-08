@@ -151,5 +151,6 @@ func (sr *searchIndexesReconciler) empty() workflow.Result {
 
 func (sr *searchIndexesReconciler) idle() workflow.Result {
 	sr.ctx.SetConditionTrue(status.SearchIndexesReadyType)
+	sr.ctx.EnsureStatusOption(status.AtlasDeploymentRemoveStatusesWithEmptyIDs())
 	return workflow.OK()
 }

@@ -171,6 +171,18 @@ func AtlasDeploymentMongoURIUpdatedOption(mongoURIUpdated string) AtlasDeploymen
 	}
 }
 
+func AtlasDeploymentRemoveStatusesWithEmptyIDs() AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		var result []DeploymentSearchIndexStatus
+		for i := range s.SearchIndexes {
+			if s.SearchIndexes[i].ID != "" {
+				result = append(result, s.SearchIndexes[i])
+			}
+		}
+		s.SearchIndexes = result
+	}
+}
+
 // AtlasDeploymentSetSearchIndexStatus set the status for one SearchIndex
 func AtlasDeploymentSetSearchIndexStatus(indexStatus DeploymentSearchIndexStatus) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
