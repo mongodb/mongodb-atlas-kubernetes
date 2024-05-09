@@ -481,7 +481,7 @@ govulncheck:
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 .PHONY: vulncheck
-vulncheck: ## Run govulncheck to find vulnerabilities in code
+vulncheck: govulncheck ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
 
 envsubst:
