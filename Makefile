@@ -121,7 +121,8 @@ licenses.csv: go-licenses go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
 	@echo "========================================"
 	GOOS=linux GOARCH=amd64 go mod download
-	GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
+	# https://github.com/google/go-licenses/issues/244
+	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
 recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was changed)
