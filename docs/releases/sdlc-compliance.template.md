@@ -21,7 +21,7 @@ Overview:
   - See SBOMS Lite manifests (CycloneDX in JSON format) for [Intel](./linux-amd64.sbom.json) or [ARM](./linux-arm64.sbom.json)
 
 - **Static Analysis Report**
-  - No reports (filtered before release by CI tests)${IGNORED_VULNERABILITIES}
+  - No SAST findings. Our CI system blocks merges on any SAST findings.${IGNORED_VULNERABILITIES}
 
 - **Release Signature Report**
   - Image signatures enforced by CI pipeline.
@@ -39,10 +39,6 @@ Overview:
 
 Assumptions and attestations:
 
-1. Internal processes are used to ensure CVEs are identified and mitigated within SLAs.
+- Internal processes are used to ensure CVEs are identified and mitigated within SLAs.
 
-2. The Dependency document does not specify third party OSS CVEs fixed by the release and the date we discovered them.
-
-3. There is no CycloneDX field for original/modified CVSS scor or discovery date. The `x-` prefix indicates this.
-
-3. Assumption: We can include the SBOMs as links to read-only files on S3. The links can be included as metadata or text file links in release artifacts e.g. as labels on OCI containers.
+- All Operator images are signed by MongoDB, with signatures stored at `docker.io/mongodb/signatures`.
