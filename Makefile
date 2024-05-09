@@ -108,6 +108,8 @@ RUN_YAML= # Set to the YAML to run when calling make run
 LOCAL_IMAGE=mongodb-atlas-kubernetes-operator:compiled
 CONTAINER_SPEC=.spec.template.spec.containers[0]
 
+SILK_ASSET_GROUP="atlas-kubernetes-operator"
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -555,3 +557,8 @@ test-all-in-one: prepare-all-in-one install-credentials ## Test the deploy/all-i
 	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).image="$(LOCAL_IMAGE)"' \
 	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).args[0]="--atlas-domain=$(ATLAS_DOMAIN)"' \
 	| kubectl apply -f -
+.PHONY: upload-sbom-to-silk
+upload-sbom-to-silk: ## Upload a give SBOM (lite) to Silk
+	@ARTIFACTORY_USERNAME=$(ARTIFACTORY_USERNAME) ARTIFACTORY_PASSWORD=$(ARTIFACTORY_PASSWORD) \
+	SILK_CLIENT_ID=$(SILK_CLIENT_ID) SILK_CLIENT_SECRET=$(SILK_CLIENT_SECRET) \
+	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/upload-to-silk.sh $(SBOM_JSON_FILE)
