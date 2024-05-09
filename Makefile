@@ -136,7 +136,8 @@ licenses-up-to-date:
 check-licenses: go-licenses licenses-up-to-date ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
-	GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests \
+	# https://github.com/google/go-licenses/issues/244
+	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
 	@echo "Licenses check: PASS"
