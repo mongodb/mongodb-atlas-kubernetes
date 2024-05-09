@@ -647,4 +647,4 @@ spec:
   provider:
     name: MongoDB, Inc
   version: 2.3.0
-  replaces: mongodb-atlas-kubernetes.v2.3.0
+  replaces: mongodb-atlas-kubernetes.v2.2.2
