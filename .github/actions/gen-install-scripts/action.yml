@@ -8,7 +8,7 @@ inputs:
     description: "Version of the Operator"
     required: true
   ENV:
-    description: "Kustomize patch name (enviroment configuration patch)"
+    description: "Kustomize patch name (environment configuration patch)"
     required: true
 runs:
   using: 'docker'

@@ -41,5 +41,8 @@ const (
 	AzureRegionEU = "northeurope"
 
 	// GCP
-	FileNameSAGCP = "../../output/gcp_service_account.json"
+	FileNameSAGCP = "output/gcp_service_account.json"
+
+	// X509 auth test PEM key
+	PEMCertFileName = "output/x509cert.pem"
 )

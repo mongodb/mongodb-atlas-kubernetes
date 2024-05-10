@@ -5,6 +5,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	. "github.com/onsi/gomega"
 	"github.com/sethvargo/go-password/password"
@@ -14,16 +15,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	k8scfg "sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
 func CreateNewClient() (client.Client, error) {
-	cfg, err := config.GetConfig()
+	cfg, err := k8scfg.GetConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -252,10 +254,9 @@ func CreateCertificateX509(ctx context.Context, k8sClient client.Client, name, n
 		return fmt.Errorf("error generating x509 cert: %w", err)
 	}
 
-	certFileName := "x509cert.pem"
-	certFile, err := os.Create(certFileName)
+	certFile, err := os.Create(filepath.Clean(config.PEMCertFileName))
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", certFileName, err)
+		return fmt.Errorf("failed to create file %s: %w", config.PEMCertFileName, err)
 	}
 
 	err = pem.Encode(certFile, &pem.Block{
@@ -263,7 +264,7 @@ func CreateCertificateX509(ctx context.Context, k8sClient client.Client, name, n
 		Bytes: cert,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to write data to %s: %w", certFileName, err)
+		return fmt.Errorf("failed to write data to %s: %w", config.PEMCertFileName, err)
 	}
 	err = certFile.Close()
 	if err != nil {
@@ -271,7 +272,7 @@ func CreateCertificateX509(ctx context.Context, k8sClient client.Client, name, n
 	}
 
 	var rawCert []byte
-	rawCert, err = os.ReadFile(certFileName)
+	rawCert, err = os.ReadFile(filepath.Clean(config.PEMCertFileName))
 	if err != nil {
 		return fmt.Errorf("failed to read cert file: %w", err)
 	}
@@ -282,7 +283,7 @@ func CreateCertificateX509(ctx context.Context, k8sClient client.Client, name, n
 			Namespace: ns,
 		},
 		Data: map[string][]byte{
-			certFileName: rawCert,
+			filepath.Base(config.PEMCertFileName): rawCert,
 		},
 	}
 	certificateSecret.Labels = map[string]string{
