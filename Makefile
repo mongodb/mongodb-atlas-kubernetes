@@ -208,13 +208,9 @@ manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
-	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
-$(TIMESTAMPS_DIR)/golangci-lint:
+golangci-lint:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
-	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
-
-golangci-lint: $(TIMESTAMPS_DIR)/golangci-lint
 
 .PHONY: lint
 lint: golangci-lint
@@ -497,3 +493,8 @@ docker-sbom:
 gen-sdlc-checklist: envsubst docker-sbom ## Generate the SDLC checklist
 	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" RELEASE_TYPE="$(RELEASE_TYPE)" \
 	./scripts/gen-sdlc-checklist.sh
+
+# TODO: avoid leaving leftovers in the first place
+.PHONY: clear-e2e-leftovers
+clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
+	git restore bundle* config deploy

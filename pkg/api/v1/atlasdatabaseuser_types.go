@@ -105,6 +105,9 @@ type AtlasDatabaseUserSpec struct {
 	AWSIAMType string `json:"awsIamType,omitempty"`
 
 	// X509Type is X.509 method by which the database authenticates the provided username
+	// +kubebuilder:default:=NONE
+	// +kubebuilder:validation:Enum:=NONE;MANAGED;CUSTOMER
+	// +optional
 	X509Type string `json:"x509Type,omitempty"`
 }
 
