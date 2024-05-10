@@ -1,6 +1,8 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/v2
 
-go 1.22.1
+go 1.22.0
+
+toolchain go1.22.3
 
 require (
 	cloud.google.com/go/kms v1.15.8
