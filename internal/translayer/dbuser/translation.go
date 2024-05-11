@@ -63,21 +63,18 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbu := &admin.CloudDatabaseUser{
+	return &admin.CloudDatabaseUser{
 		DatabaseName:    au.DatabaseName,
 		DeleteAfterDate: date,
-		X509Type:        pointer.MakePtr(au.X509Type),
-		AwsIAMType:      pointer.MakePtr(au.AWSIAMType),
+		X509Type:        pointer.MakePtrOrNil(au.X509Type),
+		AwsIAMType:      pointer.MakePtrOrNil(au.AWSIAMType),
 		GroupId:         au.ProjectID,
 		Roles:           rolesToAtlas(au.Roles),
 		Scopes:          scopesToAtlas(au.Scopes),
 		Username:        au.Username,
-		OidcAuthType:    pointer.MakePtr(au.OIDCAuthType),
-	}
-	if au.Password != "" {
-		dbu.Password = pointer.MakePtr(au.Password)
-	}
-	return dbu, nil
+		Password:        pointer.MakePtrOrNil(au.Password),
+		OidcAuthType:    pointer.MakePtrOrNil(au.OIDCAuthType),
+	}, nil
 }
 
 func dateToAtlas(d string) (*time.Time, error) {
