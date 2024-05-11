@@ -15,9 +15,9 @@ import (
 func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 	t.Run("should return nil when indexing wrong type object", func(t *testing.T) {
 		core, logs := observer.New(zap.DebugLevel)
-		indexer := AtlasStreamConnectionsBySecretIndices(zap.New(core).Sugar())
-		indexes := indexer(&akov2.AtlasProject{})
-		assert.Nil(t, indexes)
+		indexer := NewAtlasStreamConnectionBySecretIndexer(zap.New(core))
+		keys := indexer.Keys(&akov2.AtlasProject{})
+		assert.Nil(t, keys)
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, zap.ErrorLevel, logs.All()[0].Level)
 		assert.Equal(t, "expected *akov2.AtlasStreamConnection but got *v1.AtlasProject", logs.All()[0].Message)
@@ -31,9 +31,9 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(connection)
-		assert.Nil(t, indexes)
+		indexer := NewAtlasStreamConnectionBySecretIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(connection)
+		assert.Nil(t, keys)
 	})
 
 	t.Run("should return indexes slice when connection has credentials", func(t *testing.T) {
@@ -52,14 +52,14 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(connection)
+		indexer := NewAtlasStreamConnectionBySecretIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(connection)
 		assert.Equal(
 			t,
 			[]string{
 				"default/connection-credentials",
 			},
-			indexes,
+			keys,
 		)
 	})
 
@@ -79,14 +79,14 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(connection)
+		indexer := NewAtlasStreamConnectionBySecretIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(connection)
 		assert.Equal(
 			t,
 			[]string{
 				"default/connection-certificate",
 			},
-			indexes,
+			keys,
 		)
 	})
 
@@ -112,15 +112,15 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(connection)
+		indexer := NewAtlasStreamConnectionBySecretIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(connection)
 		assert.Equal(
 			t,
 			[]string{
 				"default/connection-credentials",
 				"default/connection-certificate",
 			},
-			indexes,
+			keys,
 		)
 	})
 
@@ -146,15 +146,15 @@ func TestAtlasStreamConnectionsBySecretIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(connection)
+		indexer := NewAtlasStreamConnectionBySecretIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(connection)
 		assert.Equal(
 			t,
 			[]string{
 				"default/connection-secrets",
 				"default/connection-secrets",
 			},
-			indexes,
+			keys,
 		)
 	})
 }

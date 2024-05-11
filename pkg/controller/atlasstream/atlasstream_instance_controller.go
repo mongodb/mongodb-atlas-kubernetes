@@ -134,11 +134,6 @@ func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *
 }
 
 func (r *AtlasStreamsInstanceReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	err := indexer.NewAtlasStreamInstancesByConnectionRegistryIndex(ctx, r.Log, mgr.GetFieldIndexer())
-	if err != nil {
-		return err
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasStreamInstance").
 		For(&akov2.AtlasStreamInstance{}, builder.WithPredicates(r.GlobalPredicates...)).
@@ -165,7 +160,7 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(
 	atlasStreamInstances := &akov2.AtlasStreamInstanceList{}
 	listOps := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasStreamInstancesByConnectionRegistry,
+			indexer.AtlasStreamInstanceByConnectionIndex,
 			client.ObjectKeyFromObject(streamConnection).String(),
 		),
 	}
@@ -203,7 +198,7 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForSecret(ctx contex
 	connections := &akov2.AtlasStreamConnectionList{}
 	listOps := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasStreamConnectionBySecret,
+			indexer.AtlasStreamConnectionBySecretIndex,
 			client.ObjectKeyFromObject(secret).String(),
 		),
 	}

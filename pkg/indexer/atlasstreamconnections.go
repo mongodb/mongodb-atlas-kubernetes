@@ -1,48 +1,53 @@
 package indexer
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
-const (
-	AtlasStreamConnectionBySecret = ".spec.kafkaConfig" //nolint:gosec
-)
+// nolint:gosec,stylecheck
+const AtlasStreamConnectionBySecretIndex = ".spec.kafkaConfig"
 
-func NewAtlasStreamConnectionsBySecretIndex(ctx context.Context, logger *zap.SugaredLogger, idx client.FieldIndexer) error {
-	return idx.IndexField(ctx,
-		&akov2.AtlasStreamConnection{},
-		AtlasStreamConnectionBySecret,
-		AtlasStreamConnectionsBySecretIndices(logger.Named("indexers").Named(AtlasStreamConnectionBySecret)),
-	)
+type AtlasStreamConnectionBySecretIndexer struct {
+	logger *zap.SugaredLogger
 }
 
-func AtlasStreamConnectionsBySecretIndices(logger *zap.SugaredLogger) client.IndexerFunc {
-	return func(object client.Object) []string {
-		streamConnection, ok := object.(*akov2.AtlasStreamConnection)
-		if !ok {
-			logger.Errorf("expected *akov2.AtlasStreamConnection but got %T", object)
-			return nil
-		}
-
-		var indexes []string
-
-		key, found := credentialSecretKey(streamConnection)
-		if found {
-			indexes = append(indexes, key)
-		}
-
-		key, found = certificateSecretKey(streamConnection)
-		if found {
-			indexes = append(indexes, key)
-		}
-
-		return indexes
+func NewAtlasStreamConnectionBySecretIndexer(logger *zap.Logger) *AtlasStreamConnectionBySecretIndexer {
+	return &AtlasStreamConnectionBySecretIndexer{
+		logger: logger.Named(AtlasStreamConnectionBySecretIndex).Sugar(),
 	}
+}
+
+func (*AtlasStreamConnectionBySecretIndexer) Object() client.Object {
+	return &akov2.AtlasStreamConnection{}
+}
+
+func (*AtlasStreamConnectionBySecretIndexer) Name() string {
+	return AtlasStreamConnectionBySecretIndex
+}
+
+func (a *AtlasStreamConnectionBySecretIndexer) Keys(object client.Object) []string {
+	streamConnection, ok := object.(*akov2.AtlasStreamConnection)
+	if !ok {
+		a.logger.Errorf("expected *akov2.AtlasStreamConnection but got %T", object)
+		return nil
+	}
+
+	var indexes []string
+
+	key, found := credentialSecretKey(streamConnection)
+	if found {
+		indexes = append(indexes, key)
+	}
+
+	key, found = certificateSecretKey(streamConnection)
+	if found {
+		indexes = append(indexes, key)
+	}
+
+	return indexes
 }
 
 func credentialSecretKey(connection *akov2.AtlasStreamConnection) (string, bool) {

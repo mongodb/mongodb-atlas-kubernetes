@@ -74,7 +74,7 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 	deployments := &akov2.AtlasDeploymentList{}
 	listOps := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasSearchIndexToDeploymentRegistry,
+			indexer.AtlasDeploymentBySearchIndexIndex,
 			client.ObjectKeyFromObject(atlasSearchIndexConfig).String(),
 		),
 	}
@@ -93,11 +93,6 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 }
 
 func (r *AtlasSearchIndexConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	err := indexer.NewAtlasSearchIndexConfigsToDeploymentIndex(ctx, r.Log, mgr.GetFieldIndexer())
-	if err != nil {
-		return err
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasSearchIndexConfig").
 		For(&akov2.AtlasSearchIndexConfig{}, builder.WithPredicates(r.GlobalPredicates...)).

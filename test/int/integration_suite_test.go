@@ -54,6 +54,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasstream"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 
@@ -230,6 +231,9 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	featureFlags := featureflags.NewFeatureFlags(os.Environ)
 
 	atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
+
+	err = indexer.RegisterAll(ctx, k8sManager, logger)
+	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasproject.AtlasProjectReconciler{
 		Client:                      k8sManager.GetClient(),
