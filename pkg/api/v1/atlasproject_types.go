@@ -164,9 +164,12 @@ var _ api.AtlasCustomResource = &AtlasProject{}
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Atlas Name",type=string,JSONPath=`.spec.name`
+// +kubebuilder:printcolumn:name="Atlas ID",type=string,JSONPath=`.status.id`
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
+// +kubebuilder:resource:categories=atlas,shortName=ap
 
 // AtlasProject is the Schema for the atlasprojects API
 type AtlasProject struct {

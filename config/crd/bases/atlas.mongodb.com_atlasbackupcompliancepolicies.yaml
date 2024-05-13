@@ -18,7 +18,11 @@ spec:
     singular: atlasbackupcompliancepolicy
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: AtlasBackupCompliancePolicy defines the desired state of a compliance

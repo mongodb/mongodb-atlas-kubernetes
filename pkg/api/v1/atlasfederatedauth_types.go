@@ -107,10 +107,15 @@ type RoleAssignment struct {
 
 var _ api.AtlasCustomResource = &AtlasFederatedAuth{}
 
-// AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=atlas,shortName=afa
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+//
+// AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
+//
+//nolint:stylecheck
 type AtlasFederatedAuth struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
