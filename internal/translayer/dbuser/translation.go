@@ -33,10 +33,6 @@ func Normalize(spec *akov2.AtlasDatabaseUserSpec) *akov2.AtlasDatabaseUserSpec {
 }
 
 func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
-	deleteAfterDate, err := dateFromAtlas(dbUser.DeleteAfterDate)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse deleteAfterDate: %w", err)
-	}
 	scopes, err := scopesFromAtlas(dbUser.GetScopes())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse scopes: %w", err)
@@ -46,7 +42,7 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 		Password:  dbUser.GetPassword(),
 		AtlasDatabaseUserSpec: akov2.AtlasDatabaseUserSpec{
 			DatabaseName:    dbUser.DatabaseName,
-			DeleteAfterDate: deleteAfterDate,
+			DeleteAfterDate: dateFromAtlas(dbUser.DeleteAfterDate),
 			Roles:           rolesFromAtlas(dbUser.GetRoles()),
 			Scopes:          scopes,
 			Username:        dbUser.Username,
@@ -114,18 +110,11 @@ func scopesToAtlas(scopes []akov2.ScopeSpec) *[]admin.UserScope {
 	return &atlasScopes
 }
 
-func dateFromAtlas(date *time.Time) (string, error) {
+func dateFromAtlas(date *time.Time) string {
 	if date == nil {
-		return "", nil
+		return ""
 	}
-	if date.String() != "" {
-		d, err := timeutil.ParseISO8601(date.String())
-		if err != nil {
-			return "", err
-		}
-		return timeutil.FormatISO8601(d), nil
-	}
-	return "", nil
+	return timeutil.FormatISO8601(*date)
 }
 
 func scopesFromAtlas(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {

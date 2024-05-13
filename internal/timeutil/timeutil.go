@@ -31,10 +31,6 @@ func ParseISO8601(dateTime string) (time.Time, error) {
 	if err == nil {
 		return parse, nil
 	}
-	parse, err = time.Parse("2006-01-02 15:04:05 +0000 UTC", dateTime)
-	if err == nil {
-		return parse, nil
-	}
 	return parse, err
 }
 
