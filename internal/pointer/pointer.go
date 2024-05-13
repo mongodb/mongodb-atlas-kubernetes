@@ -27,3 +27,12 @@ func GetOrDefault[T any](ptr *T, defaultValue T) T {
 func MakePtr[T any](value T) *T {
 	return &value
 }
+
+// MakePtrOrNil returns a pointer only when value is not empty.
+// Otherwise Atlas versioned API interprets a pointer to an empty value as not empty.
+func MakePtrOrNil[T comparable](value T) *T {
+	if value == *new(T) {
+		return nil
+	}
+	return &value
+}
