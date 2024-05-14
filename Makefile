@@ -562,3 +562,8 @@ upload-sbom-to-silk: ## Upload a give SBOM (lite) to Silk
 	@ARTIFACTORY_USERNAME=$(ARTIFACTORY_USERNAME) ARTIFACTORY_PASSWORD=$(ARTIFACTORY_PASSWORD) \
 	SILK_CLIENT_ID=$(SILK_CLIENT_ID) SILK_CLIENT_SECRET=$(SILK_CLIENT_SECRET) \
 	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/upload-to-silk.sh $(SBOM_JSON_FILE)
+
+.PHONY: contract-tests
+contract-tests: ## Run contract tests
+	go clean -testcache
+	AKO_CONTRACT_TEST=1 go test -race -cover ./test/contract/...

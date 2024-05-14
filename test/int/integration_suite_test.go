@@ -87,13 +87,10 @@ var (
 )
 
 func TestAPIs(t *testing.T) {
+	control.SkipTestUnless(t, "AKO_INT_TEST")
 	err := akov2.AddToScheme(scheme.Scheme)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if !control.Enabled("AKO_INT_TEST") {
-		t.Skip("Skipping int tests, AKO_INT_TEST is not set")
 	}
 
 	RegisterFailHandler(Fail)
