@@ -1,0 +1,37 @@
+name: Contract Tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+        
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "${{ github.workspace }}/go.mod"
+          cache: false
+
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          version: v0.22.0
+          config: test/helper/e2e/config/kind.yaml
+          node_image: kindest/node:v1.29.2
+
+      - name: Run Contract Testing
+        env:
+          AKO_CONTRACT_TEST: 1
+          MCLI_OPS_MANAGER_URL: https://cloud-qa.mongodb.com
+          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+        run: make contract-tests

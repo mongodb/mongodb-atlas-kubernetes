@@ -532,3 +532,8 @@ endif
 	bin/manager --object-deletion-protection=false --log-level=debug \
 	--atlas-domain=$(MCLI_OPS_MANAGER_URL) \
 	--global-api-secret-name=mongodb-atlas-operator-api-key
+
+.PHONY: contract-tests
+contract-tests: ## Run contract tests
+	go clean -testcache
+	AKO_CONTRACT_TEST=1 go test -race -cover ./test/contract/...
