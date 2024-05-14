@@ -76,7 +76,6 @@ var (
 )
 
 func TestAPIs(t *testing.T) {
-	control.SkipTestUnless(t, "AKO_INT_TEST")
 
 	utilruntime.Must(scheme.AddToScheme(scheme.Scheme))
 	utilruntime.Must(akov2.AddToScheme(scheme.Scheme))
