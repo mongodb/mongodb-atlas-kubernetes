@@ -34,6 +34,10 @@ type ResourceRefNamespaced struct {
 	Namespace string `json:"namespace"`
 }
 
+func (rn ResourceRefNamespaced) IsEmpty() bool {
+	return rn.Name == "" && rn.Namespace == ""
+}
+
 func (rn ResourceRefNamespaced) Key() string {
 	return rn.Name + "|" + rn.Namespace
 }
