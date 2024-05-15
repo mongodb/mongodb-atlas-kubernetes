@@ -14,7 +14,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -44,12 +43,6 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	if !isEnabled {
 		return fmt.Errorf("can not proceed with backup configuration. Backups are not enabled for cluster %s", deployment.GetDeploymentName())
 	}
-
-	resourcesToWatch := []watch.WatchedObject{}
-	defer func() {
-		service.AddResourcesToWatch(resourcesToWatch...)
-		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.DeprecatedResourceWatcher.WatchedResourcesSnapshot())
-	}()
 
 	bSchedule, err := r.ensureBackupSchedule(service, deployment)
 	if err != nil {

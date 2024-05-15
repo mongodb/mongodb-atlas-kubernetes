@@ -54,7 +54,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
@@ -970,7 +969,6 @@ func TestReconciliation(t *testing.T) {
 	}
 
 	reconciler := &AtlasDeploymentReconciler{
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		Client:                      k8sClient,
 		Log:                         logger,
 		AtlasProvider:               atlasProvider,

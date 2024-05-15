@@ -50,14 +50,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 // AtlasDeploymentReconciler reconciles an AtlasDeployment object
 type AtlasDeploymentReconciler struct {
-	watch.DeprecatedResourceWatcher
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
@@ -117,7 +115,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	log.Infow("-> Starting AtlasDeployment reconciliation", "spec", deployment.Spec, "status", deployment.Status)
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, deployment)
-		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, log, workflowCtx.ListResourcesToWatch()...)
 	}()
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, deployment, r.Log)
