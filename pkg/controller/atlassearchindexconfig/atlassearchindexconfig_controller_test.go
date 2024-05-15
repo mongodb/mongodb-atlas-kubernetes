@@ -137,7 +137,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Empty(t, conditions[0].Reason)
 		assert.Empty(t, conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[1].Status)
 		assert.Equal(t, string(workflow.AtlasResourceVersionIsInvalid), conditions[1].Reason)
 		assert.Equal(t, "SomeRandomVersion is not a valid semver version for label mongodb.com/atlas-resource-version", conditions[1].Message)
@@ -188,7 +188,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Equal(t, string(workflow.AtlasGovUnsupported), conditions[0].Reason)
 		assert.Equal(t, "the AtlasSearchIndexConfig is not supported by Atlas for government", conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -252,7 +252,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Equal(t, string(workflow.Internal), conditions[0].Reason)
 		assert.Equal(t, "failed to list instances", conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -328,7 +328,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.Len(t, conditions, 2)
 		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -383,7 +383,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.Len(t, conditions, 2)
 		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 

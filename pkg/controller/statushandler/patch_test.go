@@ -25,7 +25,7 @@ func Test_PatchUpdateStatus(t *testing.T) {
 			Namespace: "test-ns",
 		},
 		Status: status.AtlasProjectStatus{
-			Common: status.Common{Conditions: []status.Condition{{
+			Common: api.Common{Conditions: []api.Condition{{
 				Type:   api.IPAccessListReadyType,
 				Status: corev1.ConditionFalse,
 			}}},
@@ -49,6 +49,6 @@ func Test_PatchUpdateStatus(t *testing.T) {
 	assert.NoError(t, fakeClient.Get(context.Background(), kube.ObjectKeyFromObject(existingProject), projectAfterPatch))
 	// ignore last transition time
 	projectAfterPatch.Status.Common.Conditions[0].LastTransitionTime = metav1.Time{}
-	assert.Equal(t, []status.Condition{{Type: api.IPAccessListReadyType, Status: corev1.ConditionTrue}}, projectAfterPatch.Status.Common.Conditions)
+	assert.Equal(t, []api.Condition{{Type: api.IPAccessListReadyType, Status: corev1.ConditionTrue}}, projectAfterPatch.Status.Common.Conditions)
 	assert.Equal(t, "theId", projectAfterPatch.Status.ID)
 }

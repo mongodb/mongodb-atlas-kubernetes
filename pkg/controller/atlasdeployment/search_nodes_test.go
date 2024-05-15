@@ -29,8 +29,8 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -437,7 +437,7 @@ func TestHandleSearchNodes(t *testing.T) {
 			Log:     zaptest.NewLogger(t).Sugar(),
 		}
 
-		ctx.SetConditionFromResult(status.SearchNodesReadyType, workflow.InProgress(workflow.SearchNodesCreating, "search nodes creating"))
+		ctx.SetConditionFromResult(api.SearchNodesReadyType, workflow.InProgress(workflow.SearchNodesCreating, "search nodes creating"))
 
 		result := handleSearchNodes(ctx, deployment, projectID)
 
@@ -474,7 +474,7 @@ func TestHandleSearchNodes(t *testing.T) {
 			Log:     zaptest.NewLogger(t).Sugar(),
 		}
 
-		ctx.SetConditionFromResult(status.SearchNodesReadyType, workflow.InProgress(workflow.SearchNodesCreating, "search nodes creating"))
+		ctx.SetConditionFromResult(api.SearchNodesReadyType, workflow.InProgress(workflow.SearchNodesCreating, "search nodes creating"))
 
 		result := handleSearchNodes(ctx, deployment, projectID)
 
@@ -511,7 +511,7 @@ func TestHandleSearchNodes(t *testing.T) {
 			Log:     zaptest.NewLogger(t).Sugar(),
 		}
 
-		ctx.SetConditionFromResult(status.SearchNodesReadyType, workflow.InProgress(workflow.SearchNodesDeleting, "search nodes creating"))
+		ctx.SetConditionFromResult(api.SearchNodesReadyType, workflow.InProgress(workflow.SearchNodesDeleting, "search nodes creating"))
 
 		result := handleSearchNodes(ctx, deployment, projectID)
 
@@ -544,7 +544,7 @@ func TestHandleSearchNodes(t *testing.T) {
 			Log:     zaptest.NewLogger(t).Sugar(),
 		}
 
-		ctx.SetConditionFromResult(status.SearchNodesReadyType, workflow.InProgress(workflow.SearchNodesDeleting, "search nodes deleting"))
+		ctx.SetConditionFromResult(api.SearchNodesReadyType, workflow.InProgress(workflow.SearchNodesDeleting, "search nodes deleting"))
 
 		result := handleSearchNodes(ctx, deployment, projectID)
 

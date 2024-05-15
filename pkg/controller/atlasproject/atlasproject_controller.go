@@ -96,7 +96,7 @@ func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result
 		if !project.GetDeletionTimestamp().IsZero() {
 			err := customresource.ManageFinalizer(ctx, r.Client, project, customresource.UnsetFinalizer)
 			if err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
+				result := workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("Failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
@@ -159,7 +159,7 @@ func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result
 	// Setting protection flag to static false because ownership detection is disabled.
 	owner, err := customresource.IsOwner(project, false, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
 	if err != nil {
-		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
 		log.Error(result.GetMessage())
 
@@ -167,7 +167,7 @@ func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result
 	}
 
 	if !owner {
-		result = workflow.Terminate(
+		result := workflow.Terminate(
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Project due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
@@ -177,15 +177,19 @@ func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result
 		return result.ReconcileResult(), nil
 	}
 
-	projectID, result := r.ensureProjectExists(workflowCtx, project)
-	if !result.IsOk() {
-		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+	var projectID string
+	{
+		var result workflow.Result
+		projectID, result = r.ensureProjectExists(workflowCtx, project)
+		if !result.IsOk() {
+			setCondition(workflowCtx, api.ProjectReadyType, result)
+			return result.ReconcileResult(), nil
+		}
 	}
 
 	workflowCtx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
-	if result = r.handleDeletion(workflowCtx, atlasClient, project); !result.IsOk() {
+	if result := r.handleDeletion(workflowCtx, atlasClient, project); !result.IsOk() {
 		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -193,7 +197,7 @@ func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result
 	if project.ID() == "" {
 		err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
 		if err != nil {
-			result = workflow.Terminate(workflow.Internal, err.Error())
+			result := workflow.Terminate(workflow.Internal, err.Error())
 			workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
 			log.Error(result.GetMessage())
 
@@ -225,7 +229,7 @@ func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result
 
 	err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
 	if err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
+		result := workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
 		log.Error(result.GetMessage())
 

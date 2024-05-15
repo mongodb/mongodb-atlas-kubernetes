@@ -10,16 +10,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
 type resource struct {
 	metav1.Object
 	runtimeObject runtime.Object
-	status.Reader
-	status.Writer
+	api.Reader
+	api.Writer
 
-	conditions         []status.Condition
+	conditions         []api.Condition
 	observedGeneration int64
 }
 
@@ -33,11 +32,11 @@ func (r *resource) DeepCopyObject() runtime.Object {
 	return r.runtimeObject.DeepCopyObject()
 }
 
-func (r *resource) GetStatus() status.Status {
+func (r *resource) GetStatus() api.Status {
 	return r
 }
 
-func (r *resource) GetConditions() []status.Condition {
+func (r *resource) GetConditions() []api.Condition {
 	return r.conditions
 }
 
@@ -49,30 +48,30 @@ func TestInitCondition(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
 		resource         AtlasCustomResource
-		defaultCondition status.Condition
-		want             []status.Condition
+		defaultCondition api.Condition
+		want             []api.Condition
 	}{
 		{
 			name: "keep condition",
 			resource: &resource{
-				conditions: []status.Condition{
+				conditions: []api.Condition{
 					{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "untouched"},
 				},
 			},
-			defaultCondition: status.Condition{Type: api.ReadyType, Status: corev1.ConditionFalse, Message: "default"},
-			want: []status.Condition{
+			defaultCondition: api.Condition{Type: api.ReadyType, Status: corev1.ConditionFalse, Message: "default"},
+			want: []api.Condition{
 				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "untouched"},
 			},
 		},
 		{
 			name: "set condition",
 			resource: &resource{
-				conditions: []status.Condition{
+				conditions: []api.Condition{
 					{Type: api.ValidationSucceeded, Status: corev1.ConditionTrue, Message: "untouched"},
 				},
 			},
-			defaultCondition: status.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
-			want: []status.Condition{
+			defaultCondition: api.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+			want: []api.Condition{
 				{Type: api.ValidationSucceeded, Status: corev1.ConditionTrue, Message: "untouched"},
 				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			},
@@ -82,18 +81,18 @@ func TestInitCondition(t *testing.T) {
 			resource: &resource{
 				conditions: nil,
 			},
-			defaultCondition: status.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
-			want: []status.Condition{
+			defaultCondition: api.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+			want: []api.Condition{
 				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			},
 		},
 		{
 			name: "set condition on empty list",
 			resource: &resource{
-				conditions: []status.Condition{},
+				conditions: []api.Condition{},
 			},
-			defaultCondition: status.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
-			want: []status.Condition{
+			defaultCondition: api.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+			want: []api.Condition{
 				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			},
 		},

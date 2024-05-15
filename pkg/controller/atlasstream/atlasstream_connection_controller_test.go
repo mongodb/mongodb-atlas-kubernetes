@@ -23,7 +23,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
@@ -149,7 +148,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Empty(t, conditions[0].Reason)
 		assert.Empty(t, conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[1].Status)
 		assert.Equal(t, string(workflow.AtlasResourceVersionIsInvalid), conditions[1].Reason)
 		assert.Equal(t, "no-semver is not a valid semver version for label mongodb.com/atlas-resource-version", conditions[1].Message)
@@ -204,7 +203,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Equal(t, string(workflow.AtlasGovUnsupported), conditions[0].Reason)
 		assert.Equal(t, "the AtlasStreamConnection is not supported by Atlas for government", conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -272,7 +271,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Equal(t, string(workflow.Internal), conditions[0].Reason)
 		assert.Equal(t, "failed to list instances", conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -345,7 +344,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.Len(t, conditions, 2)
 		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -404,7 +403,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.Len(t, conditions, 2)
 		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 }

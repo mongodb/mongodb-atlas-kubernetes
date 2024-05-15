@@ -206,7 +206,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 		condition.LastTransitionTime = metav1.Time{} // not relevant for the unit test
 		assert.Equal(
 			t,
-			status.Condition{
+			api.Condition{
 				Type:    api.ServerlessPrivateEndpointReadyType,
 				Status:  corev1.ConditionFalse,
 				Reason:  string(workflow.ServerlessPrivateEndpointInProgress),
@@ -267,7 +267,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 		condition.LastTransitionTime = metav1.Time{} // not relevant for the unit test
 		assert.Equal(
 			t,
-			status.Condition{
+			api.Condition{
 				Type:   api.ServerlessPrivateEndpointReadyType,
 				Status: corev1.ConditionTrue,
 			},
