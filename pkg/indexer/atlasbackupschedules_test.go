@@ -55,7 +55,7 @@ func TestAtlasDeploymentByBackupScheduleIndexer(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			indexer := NewAtlasBackupScheduleToDeploymentIndex(zaptest.NewLogger(t))
+			indexer := NewAtlasDeploymentByBackupScheduleIndexer(zaptest.NewLogger(t))
 			keys := indexer.Keys(tc.object)
 			assert.Equal(t, tc.wantKeys, keys)
 		})

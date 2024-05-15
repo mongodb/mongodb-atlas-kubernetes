@@ -1151,7 +1151,7 @@ func TestFindDeploymentsForBackupPolicy(t *testing.T) {
 			testScheme := runtime.NewScheme()
 			assert.NoError(t, akov2.AddToScheme(testScheme))
 			backupScheduleIndexer := indexer.NewAtlasBackupScheduleByBackupPolicyIndexer(zaptest.NewLogger(t))
-			deploymentIndexer := indexer.NewAtlasBackupScheduleToDeploymentIndex(zaptest.NewLogger(t))
+			deploymentIndexer := indexer.NewAtlasDeploymentByBackupScheduleIndexer(zaptest.NewLogger(t))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tc.initObjs...).
@@ -1217,7 +1217,7 @@ func TestFindDeploymentsForBackupSchedule(t *testing.T) {
 			testScheme := runtime.NewScheme()
 			assert.NoError(t, akov2.AddToScheme(testScheme))
 			backupScheduleIndexer := indexer.NewAtlasBackupScheduleByBackupPolicyIndexer(zaptest.NewLogger(t))
-			deploymentIndexer := indexer.NewAtlasBackupScheduleToDeploymentIndex(zaptest.NewLogger(t))
+			deploymentIndexer := indexer.NewAtlasDeploymentByBackupScheduleIndexer(zaptest.NewLogger(t))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tc.initObjs...).

@@ -16,7 +16,7 @@ type AtlasDeploymentByBackupScheduleIndexer struct {
 	logger *zap.SugaredLogger
 }
 
-func NewAtlasBackupScheduleToDeploymentIndex(logger *zap.Logger) *AtlasDeploymentByBackupScheduleIndexer {
+func NewAtlasDeploymentByBackupScheduleIndexer(logger *zap.Logger) *AtlasDeploymentByBackupScheduleIndexer {
 	return &AtlasDeploymentByBackupScheduleIndexer{
 		logger: logger.Named(AtlasDeploymentByBackupScheduleIndex).Sugar(),
 	}
