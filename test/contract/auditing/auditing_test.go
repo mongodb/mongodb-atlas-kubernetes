@@ -7,7 +7,10 @@ import (
 	"testing"
 	"time"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/auditing"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/launcher"
 
@@ -48,72 +51,72 @@ func TestDefaultAuditingGet(t *testing.T) {
 
 	require.NoError(t, err)
 	result.ConfigurationType = "" // Do not expect the returned  cfg type to match
-	if result.AuditFilter == "{}" {
-		// Support re-runs, as we cannot get the filter back to empty
-		result.AuditFilter = ""
+	if result.AuditFilter != nil && string(result.AuditFilter.Raw) == "{}" {
+		// Support re-runs, as we cannot get the filter back to unset
+		result.AuditFilter = nil
 	}
 	assert.Equal(t, defaultAtlasAuditing(), result)
 }
 
-func defaultAtlasAuditing() *auditing.Auditing {
-	return &auditing.Auditing{
+func defaultAtlasAuditing() *v1alpha1.AtlasAuditingSpec {
+	return &v1alpha1.AtlasAuditingSpec{
 		Enabled:                   false,
 		AuditAuthorizationSuccess: false,
-		AuditFilter:               "",
+		AuditFilter:               nil,
 	}
 }
 
 func TestSyncs(t *testing.T) {
 	testCases := []struct {
 		title    string
-		auditing *auditing.Auditing
+		auditing *v1alpha1.AtlasAuditingSpec
 	}{
 		{
 			title: "Just enabled",
-			auditing: &auditing.Auditing{
+			auditing: &v1alpha1.AtlasAuditingSpec{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               "{}", // must sent empty JSON to overwrite previous state
+				AuditFilter:               jsonType("{}"), // must sent empty JSON to overwrite previous state
 			},
 		},
 		{
 			title: "Auth success logs as well",
-			auditing: &auditing.Auditing{
+			auditing: &v1alpha1.AtlasAuditingSpec{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               "{}",
+				AuditFilter:               jsonType("{}"),
 			},
 		},
 		{
 			title: "With a filter",
-			auditing: &auditing.Auditing{
+			auditing: &v1alpha1.AtlasAuditingSpec{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
 			},
 		},
 		{
 			title: "With a filter and success logs",
-			auditing: &auditing.Auditing{
+			auditing: &v1alpha1.AtlasAuditingSpec{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
 			},
 		},
 		{
 			title: "All set but disabled",
-			auditing: &auditing.Auditing{
+			auditing: &v1alpha1.AtlasAuditingSpec{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
 			},
 		},
 		{
 			title: "Default (disabled) case",
-			auditing: &auditing.Auditing{
+			auditing: &v1alpha1.AtlasAuditingSpec{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               "{}",
+				AuditFilter:               jsonType("{}"),
 			},
 		},
 	}
@@ -141,4 +144,8 @@ func mustReadProjectID() string {
 		log.Fatalf("Failed to get test project id: %v", err)
 	}
 	return output
+}
+
+func jsonType(js string) *apiextensionsv1.JSON {
+	return &apiextensionsv1.JSON{Raw: []byte(js)}
 }

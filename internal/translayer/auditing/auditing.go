@@ -9,12 +9,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
 type Service interface {
-	Get(ctx context.Context, projectID string) (*Auditing, error)
-	Set(ctx context.Context, projectID string, auditing *Auditing) error
+	Get(ctx context.Context, projectID string) (*v1alpha1.AtlasAuditingSpec, error)
+	Set(ctx context.Context, projectID string, auditing *v1alpha1.AtlasAuditingSpec) error
 }
 
 type service struct {
@@ -33,7 +34,7 @@ func NewFromAuditingAPI(api admin.AuditingApi) *service {
 	return &service{AuditingApi: api}
 }
 
-func (s *service) Get(ctx context.Context, projectID string) (*Auditing, error) {
+func (s *service) Get(ctx context.Context, projectID string) (*v1alpha1.AtlasAuditingSpec, error) {
 	auditLog, _, err := s.AuditingApi.GetAuditingConfiguration(ctx, projectID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get audit log from Atlas: %w", err)
@@ -41,7 +42,7 @@ func (s *service) Get(ctx context.Context, projectID string) (*Auditing, error) 
 	return fromAtlas(auditLog)
 }
 
-func (s *service) Set(ctx context.Context, projectID string, auditing *Auditing) error {
+func (s *service) Set(ctx context.Context, projectID string, auditing *v1alpha1.AtlasAuditingSpec) error {
 	_, _, err := s.AuditingApi.UpdateAuditingConfiguration(ctx, projectID, toAtlas(auditing)).Execute()
 	return err
 }
