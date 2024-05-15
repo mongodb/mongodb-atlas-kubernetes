@@ -8,7 +8,7 @@ import (
 )
 
 // nolint:gosec,stylecheck
-const AtlasStreamConnectionBySecretIndex = ".spec.kafkaConfig"
+const AtlasStreamConnectionBySecretIndex = "atlasstreamconnection.spec.kafkaConfig"
 
 type AtlasStreamConnectionBySecretIndexer struct {
 	logger *zap.SugaredLogger

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	AtlasDeploymentByBackupScheduleIndex = ".spec.backupScheduleRef"
+	AtlasDeploymentByBackupScheduleIndex = "atlasdeployment.spec.backupScheduleRef"
 )
 
 type AtlasDeploymentByBackupScheduleIndexer struct {

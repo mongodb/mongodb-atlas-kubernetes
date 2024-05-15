@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	AtlasBackupScheduleByBackupPolicyIndex = "spec.policyRef"
+	AtlasBackupScheduleByBackupPolicyIndex = "atlasbackupschedule.spec.policyRef"
 )
 
 type AtlasBackupScheduleByBackupPolicyIndexer struct {

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	AtlasStreamInstanceByConnectionIndex = ".spec.connectionRegistry"
+	AtlasStreamInstanceByConnectionIndex = "atlasstreaminstance.spec.connectionRegistry"
 )
 
 type AtlasStreamInstanceByConnectionIndexer struct {
