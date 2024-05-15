@@ -220,14 +220,15 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		streamInstanceIndexer := indexer.NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(streamConnection).
 			WithStatusSubresource(streamConnection).
 			WithIndex(
-				&akov2.AtlasStreamInstance{},
-				indexer.AtlasStreamInstancesByConnectionRegistry,
-				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+				streamInstanceIndexer.Object(),
+				streamInstanceIndexer.Name(),
+				streamInstanceIndexer.Keys,
 			).
 			WithInterceptorFuncs(interceptor.Funcs{List: func(ctx context.Context, client client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
 				return errors.New("failed to list instances")
@@ -302,14 +303,15 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		streamInstanceIndexer := indexer.NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(streamInstance, streamConnection).
 			WithStatusSubresource(streamConnection).
 			WithIndex(
-				&akov2.AtlasStreamInstance{},
-				indexer.AtlasStreamInstancesByConnectionRegistry,
-				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+				streamInstanceIndexer.Object(),
+				streamInstanceIndexer.Name(),
+				streamInstanceIndexer.Keys,
 			).
 			Build()
 
@@ -360,14 +362,15 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		streamInstanceIndexer := indexer.NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(streamConnection).
 			WithStatusSubresource(streamConnection).
 			WithIndex(
-				&akov2.AtlasStreamInstance{},
-				indexer.AtlasStreamInstancesByConnectionRegistry,
-				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+				streamInstanceIndexer.Object(),
+				streamInstanceIndexer.Name(),
+				streamInstanceIndexer.Keys,
 			).
 			Build()
 

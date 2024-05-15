@@ -21,9 +21,9 @@ func Test_AtlasSearchIndexKeysToDeployment(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasSearchIndexKeysToDeployment(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(instance)
-		assert.Nil(t, indexes)
+		indexer := NewAtlasDeploymentBySearchIndexIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(instance)
+		assert.Nil(t, keys)
 	})
 
 	t.Run("should return indexes slice AtlasSearchIndex is referenced by a Deployment", func(t *testing.T) {
@@ -53,8 +53,8 @@ func Test_AtlasSearchIndexKeysToDeployment(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasSearchIndexKeysToDeployment(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(instance)
+		indexer := NewAtlasDeploymentBySearchIndexIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(instance)
 
 		assert.Equal(
 			t,
@@ -62,7 +62,7 @@ func Test_AtlasSearchIndexKeysToDeployment(t *testing.T) {
 				"default/config-1",
 				"default/config-2",
 			},
-			indexes,
+			keys,
 		)
 	})
 }

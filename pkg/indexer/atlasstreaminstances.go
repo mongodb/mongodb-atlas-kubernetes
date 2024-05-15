@@ -1,8 +1,6 @@
 package indexer
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -10,36 +8,43 @@ import (
 )
 
 const (
-	AtlasStreamInstancesByConnectionRegistry = ".spec.connectionRegistry"
+	AtlasStreamInstanceByConnectionIndex = ".spec.connectionRegistry"
 )
 
-func NewAtlasStreamInstancesByConnectionRegistryIndex(ctx context.Context, logger *zap.SugaredLogger, idx client.FieldIndexer) error {
-	return idx.IndexField(ctx,
-		&akov2.AtlasStreamInstance{},
-		AtlasStreamInstancesByConnectionRegistry,
-		AtlasStreamInstancesByConnectionRegistryIndices(logger.Named("indexers").Named(AtlasStreamInstancesByConnectionRegistry)),
-	)
+type AtlasStreamInstanceByConnectionIndexer struct {
+	logger *zap.SugaredLogger
 }
 
-func AtlasStreamInstancesByConnectionRegistryIndices(logger *zap.SugaredLogger) client.IndexerFunc {
-	return func(object client.Object) []string {
-		streamInstance, ok := object.(*akov2.AtlasStreamInstance)
-		if !ok {
-			logger.Errorf("expected *akov2.AtlasStreamInstance but got %T", object)
-			return nil
-		}
-
-		if len(streamInstance.Spec.ConnectionRegistry) == 0 {
-			return nil
-		}
-
-		registry := streamInstance.Spec.ConnectionRegistry
-		indices := make([]string, 0, len(registry))
-		for i := range registry {
-			key := registry[i].GetObject(streamInstance.GetNamespace())
-			indices = append(indices, key.String())
-		}
-
-		return indices
+func NewAtlasStreamInstanceByConnectionIndexer(logger *zap.Logger) *AtlasStreamInstanceByConnectionIndexer {
+	return &AtlasStreamInstanceByConnectionIndexer{
+		logger: logger.Named(AtlasStreamInstanceByConnectionIndex).Sugar(),
 	}
+}
+
+func (*AtlasStreamInstanceByConnectionIndexer) Object() client.Object {
+	return &akov2.AtlasStreamInstance{}
+}
+func (*AtlasStreamInstanceByConnectionIndexer) Name() string {
+	return AtlasStreamInstanceByConnectionIndex
+}
+
+func (a *AtlasStreamInstanceByConnectionIndexer) Keys(object client.Object) []string {
+	streamInstance, ok := object.(*akov2.AtlasStreamInstance)
+	if !ok {
+		a.logger.Errorf("expected *akov2.AtlasStreamInstance but got %T", object)
+		return nil
+	}
+
+	if len(streamInstance.Spec.ConnectionRegistry) == 0 {
+		return nil
+	}
+
+	registry := streamInstance.Spec.ConnectionRegistry
+	indices := make([]string, 0, len(registry))
+	for i := range registry {
+		key := registry[i].GetObject(streamInstance.GetNamespace())
+		indices = append(indices, key.String())
+	}
+
+	return indices
 }

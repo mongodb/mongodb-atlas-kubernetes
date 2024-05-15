@@ -1033,13 +1033,14 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		streamInstanceIndexer := indexer.NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(connection, instance1, instance2).
 			WithIndex(
-				&akov2.AtlasStreamInstance{},
-				indexer.AtlasStreamInstancesByConnectionRegistry,
-				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+				streamInstanceIndexer.Object(),
+				streamInstanceIndexer.Name(),
+				streamInstanceIndexer.Keys,
 			).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{
@@ -1129,18 +1130,20 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
 		assert.NoError(t, corev1.AddToScheme(testScheme))
+		connectionIndexer := indexer.NewAtlasStreamConnectionBySecretIndexer(zaptest.NewLogger(t))
+		streamInstanceIndexer := indexer.NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(secret, connection, instance).
 			WithIndex(
-				&akov2.AtlasStreamInstance{},
-				indexer.AtlasStreamInstancesByConnectionRegistry,
-				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+				streamInstanceIndexer.Object(),
+				streamInstanceIndexer.Name(),
+				streamInstanceIndexer.Keys,
 			).
 			WithIndex(
-				&akov2.AtlasStreamConnection{},
-				indexer.AtlasStreamConnectionBySecret,
-				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar()),
+				connectionIndexer.Object(),
+				connectionIndexer.Name(),
+				connectionIndexer.Keys,
 			).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{
@@ -1210,18 +1213,20 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
 		assert.NoError(t, corev1.AddToScheme(testScheme))
+		connectionIndexer := indexer.NewAtlasStreamConnectionBySecretIndexer(zaptest.NewLogger(t))
+		streamInstanceIndexer := indexer.NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(secret, connection, instance).
 			WithIndex(
-				&akov2.AtlasStreamInstance{},
-				indexer.AtlasStreamInstancesByConnectionRegistry,
-				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+				streamInstanceIndexer.Object(),
+				streamInstanceIndexer.Name(),
+				streamInstanceIndexer.Keys,
 			).
 			WithIndex(
-				&akov2.AtlasStreamConnection{},
-				indexer.AtlasStreamConnectionBySecret,
-				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar()),
+				connectionIndexer.Object(),
+				connectionIndexer.Name(),
+				connectionIndexer.Keys,
 			).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{
@@ -1315,18 +1320,20 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
 		assert.NoError(t, corev1.AddToScheme(testScheme))
+		connectionIndexer := indexer.NewAtlasStreamConnectionBySecretIndexer(zaptest.NewLogger(t))
+		streamInstanceIndexer := indexer.NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(secret, connection1, connection2, instance).
 			WithIndex(
-				&akov2.AtlasStreamInstance{},
-				indexer.AtlasStreamInstancesByConnectionRegistry,
-				indexer.AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar()),
+				streamInstanceIndexer.Object(),
+				streamInstanceIndexer.Name(),
+				streamInstanceIndexer.Keys,
 			).
 			WithIndex(
-				&akov2.AtlasStreamConnection{},
-				indexer.AtlasStreamConnectionBySecret,
-				indexer.AtlasStreamConnectionsBySecretIndices(zaptest.NewLogger(t).Sugar()),
+				connectionIndexer.Object(),
+				connectionIndexer.Name(),
+				connectionIndexer.Keys,
 			).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{

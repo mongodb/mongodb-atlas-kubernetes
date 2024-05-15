@@ -1053,13 +1053,14 @@ func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		deploymentIndexer := indexer.NewAtlasDeploymentBySearchIndexIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(connection, instance1, instance2).
 			WithIndex(
-				&akov2.AtlasDeployment{},
-				indexer.AtlasSearchIndexToDeploymentRegistry,
-				indexer.AtlasSearchIndexKeysToDeployment(zaptest.NewLogger(t).Sugar()),
+				deploymentIndexer.Object(),
+				deploymentIndexer.Name(),
+				deploymentIndexer.Keys,
 			).
 			Build()
 		reconciler := &AtlasDeploymentReconciler{

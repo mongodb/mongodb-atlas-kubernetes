@@ -18,9 +18,9 @@ func TestAtlasStreamInstancesByConnectionRegistryIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(instance)
-		assert.Nil(t, indexes)
+		indexer := NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(instance)
+		assert.Nil(t, keys)
 	})
 
 	t.Run("should return indexes slice when instance has connections", func(t *testing.T) {
@@ -40,15 +40,15 @@ func TestAtlasStreamInstancesByConnectionRegistryIndices(t *testing.T) {
 			},
 		}
 
-		indexer := AtlasStreamInstancesByConnectionRegistryIndices(zaptest.NewLogger(t).Sugar())
-		indexes := indexer(instance)
+		indexer := NewAtlasStreamInstanceByConnectionIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(instance)
 		assert.Equal(
 			t,
 			[]string{
 				"default/conn-1",
 				"default/conn-2",
 			},
-			indexes,
+			keys,
 		)
 	})
 }

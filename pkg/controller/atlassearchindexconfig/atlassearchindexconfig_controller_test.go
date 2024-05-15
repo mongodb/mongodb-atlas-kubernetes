@@ -200,14 +200,15 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		deploymentIndexer := indexer.NewAtlasDeploymentBySearchIndexIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(searchIndexConfig).
 			WithStatusSubresource(searchIndexConfig).
 			WithIndex(
-				&akov2.AtlasDeployment{},
-				indexer.AtlasSearchIndexToDeploymentRegistry,
-				indexer.AtlasSearchIndexKeysToDeployment(zaptest.NewLogger(t).Sugar()),
+				deploymentIndexer.Object(),
+				deploymentIndexer.Name(),
+				deploymentIndexer.Keys,
 			).
 			WithInterceptorFuncs(interceptor.Funcs{List: func(ctx context.Context, client client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
 				return errors.New("failed to list instances")
@@ -285,14 +286,15 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		deploymentIndexer := indexer.NewAtlasDeploymentBySearchIndexIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(searchIndexConfig, atlasDeployment).
 			WithStatusSubresource(searchIndexConfig).
 			WithIndex(
-				&akov2.AtlasDeployment{},
-				indexer.AtlasSearchIndexToDeploymentRegistry,
-				indexer.AtlasSearchIndexKeysToDeployment(zaptest.NewLogger(t).Sugar()),
+				deploymentIndexer.Object(),
+				deploymentIndexer.Name(),
+				deploymentIndexer.Keys,
 			).
 			Build()
 
@@ -339,14 +341,15 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		deploymentIndexer := indexer.NewAtlasDeploymentBySearchIndexIndexer(zaptest.NewLogger(t))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(searchIndexConfig).
 			WithStatusSubresource(searchIndexConfig).
 			WithIndex(
-				&akov2.AtlasDeployment{},
-				indexer.AtlasSearchIndexToDeploymentRegistry,
-				indexer.AtlasSearchIndexKeysToDeployment(zaptest.NewLogger(t).Sugar()),
+				deploymentIndexer.Object(),
+				deploymentIndexer.Name(),
+				deploymentIndexer.Keys,
 			).
 			Build()
 

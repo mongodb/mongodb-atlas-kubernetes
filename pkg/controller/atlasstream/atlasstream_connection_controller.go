@@ -76,7 +76,7 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 	streamInstances := &akov2.AtlasStreamInstanceList{}
 	listOps := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasStreamInstancesByConnectionRegistry,
+			indexer.AtlasStreamInstanceByConnectionIndex,
 			client.ObjectKeyFromObject(akoStreamConnection).String(),
 		),
 	}
@@ -93,11 +93,6 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 }
 
 func (r *AtlasStreamsConnectionReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	err := indexer.NewAtlasStreamConnectionsBySecretIndex(ctx, r.Log, mgr.GetFieldIndexer())
-	if err != nil {
-		return err
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasStreamConnection").
 		For(&akov2.AtlasStreamConnection{}, builder.WithPredicates(r.GlobalPredicates...)).

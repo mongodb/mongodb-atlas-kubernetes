@@ -528,7 +528,7 @@ func (r *AtlasDeploymentReconciler) findDeploymentsForSearchIndexConfig(ctx cont
 	deployments := &akov2.AtlasDeploymentList{}
 	listOps := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasSearchIndexToDeploymentRegistry,
+			indexer.AtlasDeploymentBySearchIndexIndex,
 			client.ObjectKeyFromObject(searchIndexConfig).String(),
 		),
 	}
