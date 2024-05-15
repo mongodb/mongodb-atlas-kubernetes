@@ -513,13 +513,53 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForBackupSchedule),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
-		Watches(&akov2.AtlasBackupPolicy{}, watch.NewBackupPolicyHandler(&r.DeprecatedResourceWatcher)).
+		Watches(
+			&akov2.AtlasBackupPolicy{},
+			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForBackupPolicy),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
 		Watches(
 			&akov2.AtlasSearchIndexConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForSearchIndexConfig),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
+}
+
+func (r *AtlasDeploymentReconciler) findDeploymentsForBackupPolicy(ctx context.Context, obj client.Object) []reconcile.Request {
+	backupPolicy, ok := obj.(*akov2.AtlasBackupPolicy)
+	if !ok {
+		r.Log.Warnf("watching AtlasBackupPolicy but got %T", obj)
+		return nil
+	}
+
+	backupSchedules := &akov2.AtlasBackupScheduleList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasBackupScheduleByBackupPolicyIndex,
+			client.ObjectKeyFromObject(backupPolicy).String(),
+		),
+	}
+	err := r.Client.List(ctx, backupSchedules, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list Atlas backup schedules: %e", err)
+		return []reconcile.Request{}
+	}
+
+	deploymentMap := make(map[string]struct{}, len(backupSchedules.Items))
+	deployments := make([]reconcile.Request, 0, len(backupSchedules.Items))
+	for i := range backupSchedules.Items {
+		deploymentKeys := r.findDeploymentsForBackupSchedule(ctx, &backupSchedules.Items[i])
+		for j := range deploymentKeys {
+			key := deploymentKeys[j].String()
+			if _, found := deploymentMap[key]; !found {
+				deployments = append(deployments, deploymentKeys[j])
+				deploymentMap[key] = struct{}{}
+			}
+		}
+	}
+
+	return deployments
 }
 
 func (r *AtlasDeploymentReconciler) findDeploymentsForBackupSchedule(ctx context.Context, obj client.Object) []reconcile.Request {
@@ -538,7 +578,7 @@ func (r *AtlasDeploymentReconciler) findDeploymentsForBackupSchedule(ctx context
 	}
 	err := r.Client.List(ctx, deployments, listOps)
 	if err != nil {
-		r.Log.Errorf("failed to list Atlas backup schedules: %e", err)
+		r.Log.Errorf("failed to list Atlas deployments: %e", err)
 		return []reconcile.Request{}
 	}
 
