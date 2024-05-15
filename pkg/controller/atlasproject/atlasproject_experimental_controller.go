@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	akov1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -51,7 +50,7 @@ type AtlasProjectExperimentalReconciler struct {
 func (r *AtlasProjectExperimentalReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlas_experimental_project", req.NamespacedName)
 
-	projectexperimental := &v1alpha1.AtlasProject{}
+	projectexperimental := &akov1alpha1.AtlasProject{}
 	result := customresource.PrepareResource(ctx, r.Client, req, projectexperimental, log)
 	if result.IsOk() {
 		log.Info("reconciling experimental AtlasProject")

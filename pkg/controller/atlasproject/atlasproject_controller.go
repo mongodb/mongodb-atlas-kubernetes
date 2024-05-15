@@ -98,7 +98,7 @@ func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result
 		if !project.GetDeletionTimestamp().IsZero() {
 			err := customresource.ManageFinalizer(ctx, r.Client, project, customresource.UnsetFinalizer)
 			if err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
+				result := workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("Failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
