@@ -14,7 +14,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -45,18 +44,12 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		return fmt.Errorf("can not proceed with backup configuration. Backups are not enabled for cluster %s", deployment.GetDeploymentName())
 	}
 
-	resourcesToWatch := []watch.WatchedObject{}
-	defer func() {
-		service.AddResourcesToWatch(resourcesToWatch...)
-		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.DeprecatedResourceWatcher.WatchedResourcesSnapshot())
-	}()
-
 	bSchedule, err := r.ensureBackupSchedule(service, deployment)
 	if err != nil {
 		return err
 	}
 
-	bPolicy, err := r.ensureBackupPolicy(service, bSchedule, &resourcesToWatch)
+	bPolicy, err := r.ensureBackupPolicy(service, bSchedule)
 	if err != nil {
 		return err
 	}
@@ -119,11 +112,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 	return bSchedule, nil
 }
 
-func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
-	service *workflow.Context,
-	bSchedule *akov2.AtlasBackupSchedule,
-	resourcesToWatch *[]watch.WatchedObject,
-) (*akov2.AtlasBackupPolicy, error) {
+func (r *AtlasDeploymentReconciler) ensureBackupPolicy(service *workflow.Context, bSchedule *akov2.AtlasBackupSchedule) (*akov2.AtlasBackupPolicy, error) {
 	bPolicyRef := *bSchedule.Spec.PolicyRef.GetObject(bSchedule.Namespace)
 	bPolicy := &akov2.AtlasBackupPolicy{}
 	err := r.Client.Get(service.Context, bPolicyRef, bPolicy)
@@ -168,8 +157,6 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 		r.Log.Errorw("failed to update BackupPolicy object", "error", err)
 		return nil, err
 	}
-
-	*resourcesToWatch = append(*resourcesToWatch, watch.WatchedObject{ResourceKind: bPolicy.Kind, Resource: bPolicyRef})
 
 	return bPolicy, nil
 }

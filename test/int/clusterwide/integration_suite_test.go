@@ -155,12 +155,11 @@ var _ = BeforeSuite(func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = (&atlasdeployment.AtlasDeploymentReconciler{
-			Client:                    k8sManager.GetClient(),
-			Log:                       logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
-			EventRecorder:             k8sManager.GetEventRecorderFor("AtlasDeployment"),
-			AtlasProvider:             atlasProvider,
-			GlobalPredicates:          globalPredicates,
+			Client:           k8sManager.GetClient(),
+			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
+			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
+			AtlasProvider:    atlasProvider,
+			GlobalPredicates: globalPredicates,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 

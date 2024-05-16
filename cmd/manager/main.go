@@ -157,7 +157,6 @@ func main() {
 		Client:                      mgr.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 		Scheme:                      mgr.GetScheme(),
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasDeployment"),
 		AtlasProvider:               atlasProvider,

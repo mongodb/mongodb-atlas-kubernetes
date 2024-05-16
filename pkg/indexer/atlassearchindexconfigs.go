@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	AtlasDeploymentBySearchIndexIndex = ".spec.deploymentSpec.searchIndexes"
+	AtlasDeploymentBySearchIndexIndex = "atlasdeployment.spec.deploymentSpec.searchIndexes"
 )
 
 type AtlasDeploymentBySearchIndexIndexer struct {

@@ -21,9 +21,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"regexp"
 	"testing"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -51,7 +54,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
@@ -472,7 +474,7 @@ func TestCleanupBindings(t *testing.T) {
 		require.NoError(t, r.Client.Create(context.Background(), schedule))
 
 		// test ensureBackupPolicy and cleanup
-		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule, &[]watch.WatchedObject{})
+		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
@@ -509,7 +511,7 @@ func TestCleanupBindings(t *testing.T) {
 		require.NoError(t, r.Client.Create(context.Background(), schedule))
 
 		// test cleanup
-		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule, &[]watch.WatchedObject{})
+		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
@@ -554,9 +556,9 @@ func TestCleanupBindings(t *testing.T) {
 		}
 
 		// test cleanup
-		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule, &[]watch.WatchedObject{})
+		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
 		require.NoError(t, err)
-		_, err = r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule2, &[]watch.WatchedObject{})
+		_, err = r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule2)
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
@@ -967,7 +969,6 @@ func TestReconciliation(t *testing.T) {
 	}
 
 	reconciler := &AtlasDeploymentReconciler{
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		Client:                      k8sClient,
 		Log:                         logger,
 		AtlasProvider:               atlasProvider,
@@ -1088,4 +1089,149 @@ func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
 			requests,
 		)
 	})
+}
+
+func TestFindDeploymentsForBackupPolicy(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasProject{},
+			want: nil,
+		},
+		{
+			name: "transitive dependency",
+			obj: &akov2.AtlasBackupPolicy{
+				ObjectMeta: metav1.ObjectMeta{Name: "some-policy", Namespace: "ns1"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasBackupSchedule{
+					ObjectMeta: metav1.ObjectMeta{Name: "some-schedule", Namespace: "ns2"},
+					Spec: akov2.AtlasBackupScheduleSpec{
+						PolicyRef: common.ResourceRefNamespaced{Name: "some-policy", Namespace: "ns1"},
+					},
+				},
+				&akov2.AtlasBackupSchedule{
+					ObjectMeta: metav1.ObjectMeta{Name: "some-schedule2", Namespace: "ns2"},
+					Spec: akov2.AtlasBackupScheduleSpec{
+						PolicyRef: common.ResourceRefNamespaced{Name: "some-policy", Namespace: "ns1"},
+					},
+				},
+				&akov2.AtlasDeployment{
+					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment", Namespace: "ns3"},
+					Spec: akov2.AtlasDeploymentSpec{
+						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule", Namespace: "ns2"},
+					},
+				},
+				&akov2.AtlasDeployment{
+					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment2", Namespace: "ns4"},
+					Spec: akov2.AtlasDeploymentSpec{
+						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule", Namespace: "ns2"},
+					},
+				},
+				&akov2.AtlasDeployment{
+					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment3", Namespace: "ns5"},
+					Spec: akov2.AtlasDeploymentSpec{
+						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule2", Namespace: "ns2"},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "some-deployment", Namespace: "ns3"}},
+				{NamespacedName: types.NamespacedName{Name: "some-deployment2", Namespace: "ns4"}},
+				{NamespacedName: types.NamespacedName{Name: "some-deployment3", Namespace: "ns5"}},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			backupScheduleIndexer := indexer.NewAtlasBackupScheduleByBackupPolicyIndexer(zaptest.NewLogger(t))
+			deploymentIndexer := indexer.NewAtlasDeploymentByBackupScheduleIndexer(zaptest.NewLogger(t))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(backupScheduleIndexer.Object(), backupScheduleIndexer.Name(), backupScheduleIndexer.Keys).
+				WithIndex(deploymentIndexer.Object(), deploymentIndexer.Name(), deploymentIndexer.Keys).
+				Build()
+			reconciler := &AtlasDeploymentReconciler{
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
+			}
+			got := reconciler.findDeploymentsForBackupPolicy(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestFindDeploymentsForBackupSchedule(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasProject{},
+			want: nil,
+		},
+		{
+			name: "transitive dependency",
+			obj: &akov2.AtlasBackupSchedule{
+				ObjectMeta: metav1.ObjectMeta{Name: "some-schedule", Namespace: "ns2"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasDeployment{
+					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment", Namespace: "ns3"},
+					Spec: akov2.AtlasDeploymentSpec{
+						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule", Namespace: "ns2"},
+					},
+				},
+				&akov2.AtlasDeployment{
+					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment2", Namespace: "ns4"},
+					Spec: akov2.AtlasDeploymentSpec{
+						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule", Namespace: "ns2"},
+					},
+				},
+				&akov2.AtlasDeployment{
+					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment3", Namespace: "ns5"},
+					Spec: akov2.AtlasDeploymentSpec{
+						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule2", Namespace: "ns2"},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "some-deployment", Namespace: "ns3"}},
+				{NamespacedName: types.NamespacedName{Name: "some-deployment2", Namespace: "ns4"}},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			backupScheduleIndexer := indexer.NewAtlasBackupScheduleByBackupPolicyIndexer(zaptest.NewLogger(t))
+			deploymentIndexer := indexer.NewAtlasDeploymentByBackupScheduleIndexer(zaptest.NewLogger(t))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(backupScheduleIndexer.Object(), backupScheduleIndexer.Name(), backupScheduleIndexer.Keys).
+				WithIndex(deploymentIndexer.Object(), deploymentIndexer.Name(), deploymentIndexer.Keys).
+				Build()
+			reconciler := &AtlasDeploymentReconciler{
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
+			}
+			got := reconciler.findDeploymentsForBackupSchedule(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", got, tc.want)
+			}
+		})
+	}
 }

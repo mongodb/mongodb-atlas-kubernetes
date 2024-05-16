@@ -250,7 +250,6 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	err = (&atlasdeployment.AtlasDeploymentReconciler{
 		Client:                      k8sManager.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDeployment"),
 		AtlasProvider:               atlasProvider,

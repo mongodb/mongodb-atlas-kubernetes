@@ -21,10 +21,11 @@ type Indexer interface {
 func RegisterAll(ctx context.Context, mgr manager.Manager, logger *zap.Logger) error {
 	logger = logger.Named("indexer")
 	return Register(ctx, mgr,
-		NewAtlasStreamConnectionBySecretIndexer(logger),
+		NewAtlasBackupScheduleByBackupPolicyIndexer(logger),
+		NewAtlasDeploymentByBackupScheduleIndexer(logger),
 		NewAtlasDeploymentBySearchIndexIndexer(logger),
+		NewAtlasStreamConnectionBySecretIndexer(logger),
 		NewAtlasStreamInstanceByConnectionIndexer(logger),
-		NewAtlasBackupScheduleToDeploymentIndex(logger),
 	)
 }
 

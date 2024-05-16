@@ -13,7 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
-func TestAtlasDeploymentByBackupScheduleIndexer(t *testing.T) {
+func TestAtlasBackupScheduleByBackupPolicyIndexer(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		object   client.Object
@@ -26,27 +26,27 @@ func TestAtlasDeploymentByBackupScheduleIndexer(t *testing.T) {
 		},
 		{
 			name:     "should return nil when there are no references",
-			object:   &akov2.AtlasDeployment{},
+			object:   &akov2.AtlasBackupSchedule{},
 			wantKeys: nil,
 		},
 		{
 			name: "should return nil when there is an empty reference",
-			object: &akov2.AtlasDeployment{
-				Spec: akov2.AtlasDeploymentSpec{
-					BackupScheduleRef: common.ResourceRefNamespaced{},
+			object: &akov2.AtlasBackupSchedule{
+				Spec: akov2.AtlasBackupScheduleSpec{
+					PolicyRef: common.ResourceRefNamespaced{},
 				},
 			},
 			wantKeys: nil,
 		},
 		{
 			name: "should return a key when there is a reference",
-			object: &akov2.AtlasDeployment{
+			object: &akov2.AtlasBackupSchedule{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "bar",
 				},
-				Spec: akov2.AtlasDeploymentSpec{
-					BackupScheduleRef: common.ResourceRefNamespaced{
+				Spec: akov2.AtlasBackupScheduleSpec{
+					PolicyRef: common.ResourceRefNamespaced{
 						Name: "baz",
 					},
 				},
@@ -55,7 +55,7 @@ func TestAtlasDeploymentByBackupScheduleIndexer(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			indexer := NewAtlasDeploymentByBackupScheduleIndexer(zaptest.NewLogger(t))
+			indexer := NewAtlasBackupScheduleByBackupPolicyIndexer(zaptest.NewLogger(t))
 			keys := indexer.Keys(tc.object)
 			assert.Equal(t, tc.wantKeys, keys)
 		})
