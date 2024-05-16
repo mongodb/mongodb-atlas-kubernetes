@@ -1201,15 +1201,6 @@ func TestAuditingValidation(t *testing.T) {
 			expected: ErrorUnsupported,
 		},
 		{
-			title: "Enabled fails without projects",
-			auditing: &v1alpha1.AtlasAuditing{
-				Spec: v1alpha1.AtlasAuditingSpec{
-					Type: "standalone",
-				},
-			},
-			expected: ErrorEmpty,
-		},
-		{
 			title: "Enabled with projects succeeds",
 			auditing: &v1alpha1.AtlasAuditing{
 				Spec: v1alpha1.AtlasAuditingSpec{

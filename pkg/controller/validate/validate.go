@@ -24,9 +24,6 @@ var (
 
 	// ErrorUnsupported happens when some value or setting is unsupported
 	ErrorUnsupported = errors.New("unsupported")
-
-	// ErrorEmpty happens when a list should not be empty
-	ErrorEmpty = errors.New("empty")
 )
 
 func DeploymentSpec(deploymentSpec *akov2.AtlasDeploymentSpec, isGov bool, regionUsageRestrictions string) error {
@@ -508,9 +505,6 @@ func Auditing(auditing *v1alpha1.AtlasAuditing) error {
 	// TODO: add support for linked auditing
 	if auditing.Spec.Type == v1alpha1.Linked {
 		return fmt.Errorf("%w Type %q is currently unsupported", ErrorUnsupported, auditing.Spec.Type)
-	}
-	if auditing.Spec.Type == v1alpha1.Standalone && len(auditing.Spec.ProjectIDs) == 0 {
-		return fmt.Errorf("%w projects for %s auditing", ErrorEmpty, auditing.Spec.Type)
 	}
 	return nil
 }
