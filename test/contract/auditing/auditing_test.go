@@ -9,7 +9,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/auditing"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/launcher"
@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 func TestDefaultAuditingGet(t *testing.T) {
 	testProjectID := mustReadProjectID()
 	ctx := context.Background()
-	as := auditing.NewFromAuditingAPI(contract.MustVersionedClient(t, ctx).AuditingApi)
+	as := audit.NewFromAuditingAPI(contract.MustVersionedClient(t, ctx).AuditingApi)
 
 	result, err := as.Get(ctx, testProjectID)
 
@@ -122,7 +122,7 @@ func TestSyncs(t *testing.T) {
 	}
 	testProjectID := mustReadProjectID()
 	ctx := context.Background()
-	as := auditing.NewFromAuditingAPI(contract.MustVersionedClient(t, ctx).AuditingApi)
+	as := audit.NewFromAuditingAPI(contract.MustVersionedClient(t, ctx).AuditingApi)
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {

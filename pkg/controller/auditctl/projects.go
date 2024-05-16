@@ -1,4 +1,4 @@
-package auditing
+package auditctl
 
 import (
 	"context"

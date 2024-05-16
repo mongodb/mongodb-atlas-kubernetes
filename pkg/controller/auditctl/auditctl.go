@@ -1,4 +1,4 @@
-package auditing
+package auditctl
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/auditing"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -37,7 +37,7 @@ type AtlasAuditingReconciler struct {
 	Log           *zap.SugaredLogger
 	Scheme        *runtime.Scheme
 	EventRecorder record.EventRecorder
-	AuditService  auditing.Service
+	AuditService  audit.Service
 }
 
 func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -52,9 +52,10 @@ func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(auditing) {
-		r.Log.Infow(fmt.Sprintf("-> Skipping AtlasAuditing reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", auditing.Spec)
-		return workflow.OK().ReconcileResult(), fmt.Errorf("%w %s/%s has skip annotation, will not reconcile",
-			ErrorSkipped, auditing.Namespace, auditing.Name)
+		msg := fmt.Sprintf("-> Skipping AtlasAuditing reconciliation as annotation %s=%s",
+			customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip)
+		r.Log.Infow(msg, "spec", auditing.Spec)
+		return workflow.OK().ReconcileResult(), fmt.Errorf("%w: %s", ErrorSkipped, msg)
 	}
 
 	conditions := akov2.InitCondition(auditing, api.FalseCondition(api.ReadyType))

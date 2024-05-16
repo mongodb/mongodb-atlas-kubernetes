@@ -1,4 +1,4 @@
-package auditing_test
+package auditctl_test
 
 import (
 	"context"
@@ -18,9 +18,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	audit "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/auditing"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/auditing"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/auditctl"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -79,7 +79,7 @@ func TestReconcile(t *testing.T) {
 			req: ctrl.Request{
 				NamespacedName: types.NamespacedName{Name: "this-does-not-exist"},
 			},
-			expected: reconcileOutcome{result: reconcile.Result{}, err: auditing.ErrorNotFound},
+			expected: reconcileOutcome{result: reconcile.Result{}, err: auditctl.ErrorNotFound},
 		},
 		{
 			title: "Right auditing object but with skip annotation also gets skipped",
@@ -97,7 +97,7 @@ func TestReconcile(t *testing.T) {
 			req: ctrl.Request{
 				NamespacedName: types.NamespacedName{Name: "test-auditing"},
 			},
-			expected: reconcileOutcome{result: reconcile.Result{}, err: auditing.ErrorSkipped},
+			expected: reconcileOutcome{result: reconcile.Result{}, err: auditctl.ErrorSkipped},
 		},
 		{
 			title: "Right auditing object but empty gets rejected by type enum validation",
@@ -149,8 +149,8 @@ func TestReconcile(t *testing.T) {
 	}
 }
 
-func newTestReconciler(k8sClient client.Client, as audit.Service) *auditing.AtlasAuditingReconciler {
-	return &auditing.AtlasAuditingReconciler{
+func newTestReconciler(k8sClient client.Client, as audit.Service) *auditctl.AtlasAuditingReconciler {
+	return &auditctl.AtlasAuditingReconciler{
 		Client:        k8sClient,
 		Log:           zap.S(),
 		Scheme:        &runtime.Scheme{},

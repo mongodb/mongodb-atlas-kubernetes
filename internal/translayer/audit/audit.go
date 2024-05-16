@@ -1,4 +1,4 @@
-package auditing
+package audit
 
 import (
 	"context"
