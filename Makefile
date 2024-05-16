@@ -210,6 +210,7 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/v1/..." output:crd:artifacts:config=config/crd/bases
+	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/v1alpha1/..." output:crd:artifacts:config=config/crd/experimental/bases
 	@./scripts/split_roles_yaml.sh
 
 golangci-lint:

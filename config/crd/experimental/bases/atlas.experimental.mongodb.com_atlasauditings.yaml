@@ -1,0 +1,167 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: atlasauditings.atlas.experimental.mongodb.com
+spec:
+  group: atlas.experimental.mongodb.com
+  names:
+    kind: AtlasAuditing
+    listKind: AtlasAuditingList
+    plural: atlasauditings
+    singular: atlasauditing
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: AtlasAuditing is the Schema for the Atlas Auditing API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AtlasAuditingSpec defines the desired state of Database Auditing
+              in Atlas
+            properties:
+              ConfigurationType:
+                default: NONE
+                description: ConfigurationType displays how to configure the audit
+                  filter
+                enum:
+                - NONE
+                - FILTER_BUILDER
+                - FILTER_JSON
+                type: string
+              auditAuthorizationSuccess:
+                description: AuditAuthorizationSuccess is true when auth successes
+                  are to be logged
+                type: boolean
+              auditFilter:
+                description: AuditFilter contains the JSON/YAML definition of the
+                  audit logging filter
+                x-kubernetes-preserve-unknown-fields: true
+              enabled:
+                description: Enabled is true when database auditing is on for the
+                  given projects
+                type: boolean
+              projectIDs:
+                description: |-
+                  ProjectIDs is a list of projects using this auditing config
+                  This can NOT be used when type is "linked"
+                items:
+                  type: string
+                type: array
+              type:
+                default: standalone
+                description: Type of the Auditing config definition
+                enum:
+                - standalone
+                - linked
+                type: string
+            required:
+            - ConfigurationType
+            - auditAuthorizationSuccess
+            - auditFilter
+            - enabled
+            - projectIDs
+            - type
+            type: object
+          status:
+            description: AtlasAuditingStatus defines the observed state of Auditing
+              for one of more projects
+            properties:
+              conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
+                items:
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: |-
+                  ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
+                  The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
+                format: int64
+                type: integer
+              projects:
+                description: Projects lists each associated project auditing status
+                items:
+                  description: ProjectAuditingStatus defined an individual Project
+                    Auditing status condition
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    projects:
+                      description: ID represents the project ID
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - projects
+                  - status
+                  - type
+                  type: object
+                type: array
+            required:
+            - conditions
+            - projects
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

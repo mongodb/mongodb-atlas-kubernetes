@@ -20,7 +20,7 @@ type AtlasAuditingStatus struct {
 // ProjectAuditingStatus defined an individual Project Auditing status condition
 // +k8s:deepcopy-gen=true
 type ProjectAuditingStatus struct {
-	api.Condition
+	api.Condition `json:",inline"`
 
 	// ID represents the project ID
 	ID string `json:"projects"`
