@@ -74,7 +74,8 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	ctx := customresource.MarkReconciliationStarted(r.Client, dataFederation, log, context)
+	conditions := akov2.InitCondition(dataFederation, api.FalseCondition(api.ReadyType))
+	ctx := workflow.NewContext(log, conditions, context)
 	log.Infow("-> Starting AtlasDataFederation reconciliation", "spec", dataFederation.Spec, "status", dataFederation.Status)
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, dataFederation)
 

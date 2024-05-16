@@ -30,12 +30,7 @@ var _ AtlasCustomResource = &AtlasStreamConnection{}
 var _ AtlasCustomResource = &AtlasSearchIndexConfig{}
 var _ AtlasCustomResource = &AtlasBackupCompliancePolicy{}
 
-// InitCondition initializes the underlying type of the given condition to the given default value
-// if the underlying condition type is unset.
+// InitCondition initializes the underlying type of the given condition to the given default value.
 func InitCondition(resource AtlasCustomResource, defaultCondition api.Condition) []api.Condition {
-	conditions := resource.GetStatus().GetConditions()
-	if !api.HasConditionType(defaultCondition.Type, conditions) {
-		return api.EnsureConditionExists(defaultCondition, conditions)
-	}
-	return conditions
+	return api.EnsureConditionExists(defaultCondition, resource.GetStatus().GetConditions())
 }

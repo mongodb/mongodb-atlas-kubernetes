@@ -111,7 +111,8 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, deployment, log, context)
+	conditions := akov2.InitCondition(deployment, api.FalseCondition(api.ReadyType))
+	workflowCtx := workflow.NewContext(log, conditions, context)
 	log.Infow("-> Starting AtlasDeployment reconciliation", "spec", deployment.Spec, "status", deployment.Status)
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, deployment)

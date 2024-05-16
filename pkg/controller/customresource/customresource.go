@@ -12,7 +12,7 @@ import (
 	"github.com/Masterminds/semver"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
@@ -71,18 +71,7 @@ func ValidateResourceVersion(ctx *workflow.Context, resource api.AtlasCustomReso
 	return workflow.OK()
 }
 
-// MarkReconciliationStarted updates the status of the Atlas Resource to indicate that the Operator has started working on it.
-// Internally this will also update the 'observedGeneration' field that notify clients that the resource is being worked on
-func MarkReconciliationStarted(client client.Client, resource api.AtlasCustomResource, log *zap.SugaredLogger, context context.Context) *workflow.Context {
-	updatedConditions := api.EnsureConditionExists(api.FalseCondition(api.ReadyType), resource.GetStatus().GetConditions())
-
-	ctx := workflow.NewContext(log, updatedConditions, context)
-	statushandler.Update(ctx, client, nil, resource)
-
-	return ctx
-}
-
-func IsResourcePolicyKeepOrDefault(resource api.AtlasCustomResource, protectionFlag bool) bool {
+func IsResourcePolicyKeepOrDefault(resource akov2.AtlasCustomResource, protectionFlag bool) bool {
 	if policy, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
 		return policy == ResourcePolicyKeep
 	}
