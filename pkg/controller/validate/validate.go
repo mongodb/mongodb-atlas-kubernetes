@@ -10,11 +10,23 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+)
+
+var (
+	// ErrorBadEnum happens when some enum has a wrong value
+	ErrorBadEnum = errors.New("bad enum value")
+
+	// ErrorUnsupported happens when some value or setting is unsupported
+	ErrorUnsupported = errors.New("unsupported")
+
+	// ErrorEmpty happens when a list should not be empty
+	ErrorEmpty = errors.New("empty")
 )
 
 func DeploymentSpec(deploymentSpec *akov2.AtlasDeploymentSpec, isGov bool, regionUsageRestrictions string) error {
@@ -485,6 +497,20 @@ func alertConfigs(alertConfigs []akov2.AlertConfiguration) error {
 			}
 		}
 		seenConfigs = append(seenConfigs, cfg)
+	}
+	return nil
+}
+
+func Auditing(auditing *v1alpha1.AtlasAuditing) error {
+	if !auditing.Spec.Type.Valid() {
+		return fmt.Errorf("%w Type %q is invalid", ErrorBadEnum, auditing.Spec.Type)
+	}
+	// TODO: add support for linked auditing
+	if auditing.Spec.Type == v1alpha1.Linked {
+		return fmt.Errorf("%w Type %q is currently unsupported", ErrorUnsupported, auditing.Spec.Type)
+	}
+	if auditing.Spec.Type == v1alpha1.Standalone && len(auditing.Spec.ProjectIDs) == 0 {
+		return fmt.Errorf("%w projects for %s auditing", ErrorEmpty, auditing.Spec.Type)
 	}
 	return nil
 }

@@ -47,6 +47,10 @@ const (
 	Linked AuditingSpecTypes = "linked"
 )
 
+func (auditType AuditingSpecTypes) Valid() bool {
+	return auditType == Standalone || auditType == Linked
+}
+
 type AuditingConfigTypes string
 
 const (

@@ -10,10 +10,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/auditing"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -45,11 +48,14 @@ func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	// TODO: Fix! we no longer want the status to flip&flap but be updated only at the end
-	//       not sure what we chose to replace this with
-	// workflowCtx := customresource.MarkReconciliationStarted(r.Client, databaseUser, log, ctx)
-	updatedConditions := api.EnsureConditionExists(api.FalseCondition(api.ReadyType), auditing.GetStatus().GetConditions())
-	workflowCtx := workflow.NewContext(r.Log, updatedConditions, ctx)
+	conditions := akov2.InitCondition(auditing, api.FalseCondition(api.ReadyType))
+	workflowCtx := workflow.NewContext(r.Log, conditions, ctx)
+
+	if err := validate.Auditing(auditing); err != nil {
+		result = workflow.Terminate(workflow.Internal, err.Error())
+		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
+		return result.ReconcileResult(), nil
+	}
 
 	resultAuditing, err := r.evaluateState(ctx, auditing)
 	if err != nil {

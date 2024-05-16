@@ -9,6 +9,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 )
 
 func TestClusterValidation(t *testing.T) {
@@ -1168,4 +1169,85 @@ func TestServerlessPrivateEndpoints(t *testing.T) {
 
 		assert.ErrorContains(t, err, "serverless private endpoint should have a unique name: spe-1 is duplicated\nserverless private endpoint should have a unique name: spe-2 is duplicated")
 	})
+}
+
+func TestAuditingValidation(t *testing.T) {
+	testCases := []struct {
+		title    string
+		auditing *v1alpha1.AtlasAuditing
+		expected error
+	}{
+		{
+			title: "Empty fails due to bad type",
+			auditing: &v1alpha1.AtlasAuditing{
+				Spec: v1alpha1.AtlasAuditingSpec{},
+			},
+			expected: ErrorBadEnum,
+		},
+		{
+			title: "Bad type value also fails",
+			auditing: &v1alpha1.AtlasAuditing{
+				Spec: v1alpha1.AtlasAuditingSpec{Type: "bad-value"},
+			},
+			expected: ErrorBadEnum,
+		},
+		{
+			title: "Linked is unsupported",
+			auditing: &v1alpha1.AtlasAuditing{
+				Spec: v1alpha1.AtlasAuditingSpec{
+					Type: "linked",
+				},
+			},
+			expected: ErrorUnsupported,
+		},
+		{
+			title: "Enabled fails without projects",
+			auditing: &v1alpha1.AtlasAuditing{
+				Spec: v1alpha1.AtlasAuditingSpec{
+					Type: "standalone",
+				},
+			},
+			expected: ErrorEmpty,
+		},
+		{
+			title: "Enabled with projects succeeds",
+			auditing: &v1alpha1.AtlasAuditing{
+				Spec: v1alpha1.AtlasAuditingSpec{
+					Type:       "standalone",
+					ProjectIDs: []string{"324324"},
+					Enabled:    true,
+				},
+			},
+			expected: nil,
+		},
+		{
+			title: "Disabled with projects succeeds",
+			auditing: &v1alpha1.AtlasAuditing{
+				Spec: v1alpha1.AtlasAuditingSpec{
+					Type:       "standalone",
+					ProjectIDs: []string{"324324"},
+					Enabled:    false,
+				},
+			},
+			expected: nil,
+		},
+		{
+			title: "Enabled with auth success on is also fine",
+			auditing: &v1alpha1.AtlasAuditing{
+				Spec: v1alpha1.AtlasAuditingSpec{
+					Type:                      "standalone",
+					ProjectIDs:                []string{"324324", "23541545"},
+					Enabled:                   false,
+					AuditAuthorizationSuccess: true,
+				},
+			},
+			expected: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			err := Auditing(tc.auditing)
+			assert.ErrorIs(t, err, tc.expected)
+		})
+	}
 }
