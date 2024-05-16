@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: atlasauditings.atlas.experimental.mongodb.com
 spec:
   group: atlas.experimental.mongodb.com
@@ -40,15 +40,6 @@ spec:
             description: AtlasAuditingSpec defines the desired state of Database Auditing
               in Atlas
             properties:
-              ConfigurationType:
-                default: NONE
-                description: ConfigurationType displays how to configure the audit
-                  filter
-                enum:
-                - NONE
-                - FILTER_BUILDER
-                - FILTER_JSON
-                type: string
               auditAuthorizationSuccess:
                 description: AuditAuthorizationSuccess is true when auth successes
                   are to be logged
@@ -76,7 +67,6 @@ spec:
                 - linked
                 type: string
             required:
-            - ConfigurationType
             - auditAuthorizationSuccess
             - auditFilter
             - enabled

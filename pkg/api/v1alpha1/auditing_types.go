@@ -83,7 +83,7 @@ func (in *AtlasAuditing) UpdateStatus(conditions []api.Condition, options ...api
 // AtlasAuditingSpec defines the desired state of Database Auditing in Atlas
 // +k8s:deepcopy-gen=true
 type AtlasAuditingSpec struct {
-	AtlasAuditingConfig
+	AtlasAuditingConfig `json:",inline"`
 
 	// Type of the Auditing config definition
 	// +kubebuilder:default:=standalone

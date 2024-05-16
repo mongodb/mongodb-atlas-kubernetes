@@ -102,7 +102,7 @@ func (r *AtlasProjectExperimentalReconciler) reconcile(ctx context.Context, expe
 		// no stable project is present, create one
 		return r.create(ctx, experimentalProject)
 	case err != nil:
-		// some error occured
+		// some error occurred
 		return r.terminate(err)
 	}
 
