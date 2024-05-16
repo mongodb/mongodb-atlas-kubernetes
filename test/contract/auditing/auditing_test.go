@@ -50,7 +50,6 @@ func TestDefaultAuditingGet(t *testing.T) {
 	result, err := as.Get(ctx, testProjectID)
 
 	require.NoError(t, err)
-	result.ConfigurationType = "" // Do not expect the returned  cfg type to match
 	if result.AuditFilter != nil && string(result.AuditFilter.Raw) == "{}" {
 		// Support re-runs, as we cannot get the filter back to unset
 		result.AuditFilter = nil
@@ -131,7 +130,6 @@ func TestSyncs(t *testing.T) {
 
 			result, err := as.Get(ctx, testProjectID)
 			require.NoError(t, err)
-			result.ConfigurationType = "" // Do not expect the returned  cfg type to match
 			assert.Equal(t, tc.auditing, result)
 		})
 	}

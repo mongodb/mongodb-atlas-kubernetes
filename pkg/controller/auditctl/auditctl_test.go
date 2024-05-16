@@ -23,7 +23,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/auditctl"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 const (
@@ -97,7 +96,7 @@ func TestReconcile(t *testing.T) {
 			req: ctrl.Request{
 				NamespacedName: types.NamespacedName{Name: "test-auditing"},
 			},
-			expected: reconcileOutcome{result: reconcile.Result{}, err: auditctl.ErrorSkipped},
+			expected: reconcileOutcome{result: ctrl.Result{}, err: auditctl.ErrorSkipped},
 		},
 		{
 			title: "Right auditing object but empty gets rejected by type enum validation",
@@ -110,7 +109,7 @@ func TestReconcile(t *testing.T) {
 			req: ctrl.Request{
 				NamespacedName: types.NamespacedName{Name: "test-auditing"},
 			},
-			expected: reconcileOutcome{result: reconcile.Result{RequeueAfter: workflow.DefaultRetry}, err: validate.ErrorBadEnum},
+			expected: reconcileOutcome{result: ctrl.Result{}, err: validate.ErrorBadEnum},
 		},
 		{
 			title: "Right & proper auditing fails state evaluation if the project id is missing",
@@ -127,7 +126,7 @@ func TestReconcile(t *testing.T) {
 			req: ctrl.Request{
 				NamespacedName: types.NamespacedName{Name: "test-auditing"},
 			},
-			expected: reconcileOutcome{result: reconcile.Result{RequeueAfter: workflow.DefaultRetry}, err: ErrorNotFound},
+			expected: reconcileOutcome{result: ctrl.Result{}, err: ErrorNotFound},
 		},
 	}
 	ctx := context.Background()

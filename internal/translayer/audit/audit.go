@@ -39,7 +39,7 @@ func (s *service) Get(ctx context.Context, projectID string) (*v1alpha1.AtlasAud
 	if err != nil {
 		return nil, fmt.Errorf("failed to get audit log from Atlas: %w", err)
 	}
-	return fromAtlas(auditLog)
+	return fromAtlas(auditLog), nil
 }
 
 func (s *service) Set(ctx context.Context, projectID string, auditing *v1alpha1.AtlasAuditingSpec) error {

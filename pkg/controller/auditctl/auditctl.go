@@ -10,15 +10,12 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/audit"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 var (
@@ -47,41 +44,27 @@ func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	auditing := &v1alpha1.AtlasAuditing{}
 	result := customresource.PrepareResource(ctx, r.Client, req, auditing, r.Log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), fmt.Errorf("%w %s/%s, will not reconcile",
-			ErrorNotFound, req.Namespace, req.Name)
+		return ctrl.Result{}, fmt.Errorf("%w %s/%s, will not reconcile", ErrorNotFound, req.Namespace, req.Name)
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(auditing) {
 		msg := fmt.Sprintf("-> Skipping AtlasAuditing reconciliation as annotation %s=%s",
 			customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip)
 		r.Log.Infow(msg, "spec", auditing.Spec)
-		return workflow.OK().ReconcileResult(), fmt.Errorf("%w: %s", ErrorSkipped, msg)
+		return ctrl.Result{}, reconcile.TerminalError(fmt.Errorf("%w: %s", ErrorSkipped, msg))
 	}
-
-	conditions := akov2.InitCondition(auditing, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(r.Log, conditions, ctx)
 
 	if err := validate.Auditing(auditing); err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
-		return result.ReconcileResult(), err
+		return ctrl.Result{}, err
 	}
 
-	resultAuditing, err := r.evaluateState(ctx, auditing)
+	resultAuditing, err := r.reconcile(ctx, auditing)
 	if err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(api.AuditingReadyType, result)
-		return result.ReconcileResult(), err
+		return ctrl.Result{}, err
 	}
 	if err := customresource.ApplyLastConfigApplied(ctx, resultAuditing, r.Client); err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
-		return result.ReconcileResult(), nil
+		return ctrl.Result{}, err
 	}
-
-	workflowCtx.SetConditionTrue(api.AuditingReadyType)
-	workflowCtx.SetConditionTrue(api.ReadyType)
-
 	return result.ReconcileResult(), nil
 }
 
@@ -93,14 +76,15 @@ func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 // UNKNOWN --(has NO projects)--> RELEASED
 // IN LOCKED: evaluate project auditing pairs
 // RELEASED --(delete)--> DELETED (Delete succeeds when no finalizer is set or was released)
-func (r *AtlasAuditingReconciler) evaluateState(ctx context.Context, auditing *v1alpha1.AtlasAuditing) (*v1alpha1.AtlasAuditing, error) {
-	// UNKNOWN status...
-	if hasProjectRefs(auditing) {
-		resultAuditing := r.lock(auditing) // LOCKED
+func (r *AtlasAuditingReconciler) reconcile(ctx context.Context, auditing *v1alpha1.AtlasAuditing) (*v1alpha1.AtlasAuditing, error) {
+	switch hasProjectRefs(auditing) { // Evaluate UNKNOWN status...
+	case true: // LOCKED
+		resultAuditing := r.lock(auditing)
 		return r.reconcileProjectsAuditing(ctx, resultAuditing)
+	default: // RELEASED
+		resultAuditing := r.release(auditing)
+		return resultAuditing, nil
 	}
-	resultAuditing := r.release(auditing) // RELEASED
-	return resultAuditing, nil
 }
 
 func (r *AtlasAuditingReconciler) lock(auditing *v1alpha1.AtlasAuditing) *v1alpha1.AtlasAuditing {

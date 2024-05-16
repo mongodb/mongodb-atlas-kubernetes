@@ -1,8 +1,6 @@
 package audit
 
 import (
-	"fmt"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -19,17 +17,12 @@ func toAtlas(spec *v1alpha1.AtlasAuditingSpec) *admin.AuditLog {
 	}
 }
 
-func fromAtlas(auditLog *admin.AuditLog) (*v1alpha1.AtlasAuditingSpec, error) {
-	cfgType, err := configTypeFromAtlas(auditLog.ConfigurationType)
-	if err != nil {
-		return nil, err
-	}
+func fromAtlas(auditLog *admin.AuditLog) *v1alpha1.AtlasAuditingSpec {
 	return &v1alpha1.AtlasAuditingSpec{
 		Enabled:                   pointer.GetOrDefault(auditLog.Enabled, false),
 		AuditAuthorizationSuccess: pointer.GetOrDefault(auditLog.AuditAuthorizationSuccess, false),
-		ConfigurationType:         cfgType,
 		AuditFilter:               jsonFromAtlas(auditLog.AuditFilter),
-	}, nil
+	}
 }
 
 func jsonToAtlas(js *apiextensionsv1.JSON) string {
@@ -44,14 +37,4 @@ func jsonFromAtlas(js *string) *apiextensionsv1.JSON {
 		return nil
 	}
 	return &apiextensionsv1.JSON{Raw: ([]byte)(*js)}
-}
-
-func configTypeFromAtlas(configType *string) (v1alpha1.AuditingConfigTypes, error) {
-	ct := pointer.GetOrDefault(configType, string(v1alpha1.None))
-	switch ct {
-	case string(v1alpha1.None), string(v1alpha1.FilterBuilder), string(v1alpha1.FilterJSON):
-		return v1alpha1.AuditingConfigTypes(ct), nil
-	default:
-		return v1alpha1.AuditingConfigTypes(ct), fmt.Errorf("unsupported Auditing Config Type %q", ct)
-	}
 }

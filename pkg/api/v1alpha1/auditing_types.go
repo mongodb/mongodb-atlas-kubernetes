@@ -51,14 +51,6 @@ func (auditType AuditingSpecTypes) Valid() bool {
 	return auditType == Standalone || auditType == Linked
 }
 
-type AuditingConfigTypes string
-
-const (
-	None          AuditingConfigTypes = "NONE"
-	FilterBuilder AuditingConfigTypes = "FILTER_BUILDER"
-	FilterJSON    AuditingConfigTypes = "FILTER_JSON"
-)
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // AtlasAuditing is the Schema for the Atlas Auditing API
@@ -105,11 +97,6 @@ type AtlasAuditingSpec struct {
 
 	// AuditAuthorizationSuccess is true when auth successes are to be logged
 	AuditAuthorizationSuccess bool `json:"auditAuthorizationSuccess"`
-
-	// ConfigurationType displays how to configure the audit filter
-	// +kubebuilder:default:=NONE
-	// +kubebuilder:validation:Enum:=NONE;FILTER_BUILDER;FILTER_JSON
-	ConfigurationType AuditingConfigTypes `json:"ConfigurationType"`
 
 	// AuditFilter contains the JSON/YAML definition of the audit logging filter
 	AuditFilter *apiextensionsv1.JSON `json:"auditFilter"`
