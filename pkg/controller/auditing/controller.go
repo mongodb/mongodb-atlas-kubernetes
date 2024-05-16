@@ -1,7 +1,8 @@
-package atlasauditing
+package auditing
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -17,20 +18,26 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+)
+
+var (
+	// ErrorNotFound a resources was not found when expected
+	ErrorNotFound = errors.New("not Found")
+
+	// ErrorSkipped when a resource needs to be skipped
+	ErrorSkipped = errors.New("skipped")
 )
 
 type AuditingStatus string
 
 // AtlasAuditingReconciler reconciles an AtlasAuditing object
 type AtlasAuditingReconciler struct {
-	watch.DeprecatedResourceWatcher
-	Client          client.Client
-	Log             *zap.SugaredLogger
-	Scheme          *runtime.Scheme
-	EventRecorder   record.EventRecorder
-	auditingService auditing.Service
+	Client        client.Client
+	Log           *zap.SugaredLogger
+	Scheme        *runtime.Scheme
+	EventRecorder record.EventRecorder
+	AuditService  auditing.Service
 }
 
 func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -40,12 +47,14 @@ func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	auditing := &v1alpha1.AtlasAuditing{}
 	result := customresource.PrepareResource(ctx, r.Client, req, auditing, r.Log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult(), fmt.Errorf("%w %s/%s, will not reconcile",
+			ErrorNotFound, req.Namespace, req.Name)
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(auditing) {
 		r.Log.Infow(fmt.Sprintf("-> Skipping AtlasAuditing reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", auditing.Spec)
-		return workflow.OK().ReconcileResult(), nil
+		return workflow.OK().ReconcileResult(), fmt.Errorf("%w %s/%s has skip annotation, will not reconcile",
+			ErrorSkipped, auditing.Namespace, auditing.Name)
 	}
 
 	conditions := akov2.InitCondition(auditing, api.FalseCondition(api.ReadyType))
@@ -54,14 +63,14 @@ func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err := validate.Auditing(auditing); err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult(), err
 	}
 
 	resultAuditing, err := r.evaluateState(ctx, auditing)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(api.AuditingReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult(), err
 	}
 	if err := customresource.ApplyLastConfigApplied(ctx, resultAuditing, r.Client); err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())

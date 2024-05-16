@@ -1,4 +1,4 @@
-package atlasauditing
+package auditing
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func (r *AtlasAuditingReconciler) reconcileProjectsAuditing(ctx context.Context,
 //
 //	NOTE: IDLE is the only state that does not update the status
 func (r *AtlasAuditingReconciler) reconcileProjectAuditing(ctx context.Context, auditing *v1alpha1.AtlasAuditing, projectID string) (*v1alpha1.AtlasAuditing, error) {
-	atlasAuditing, err := r.auditingService.Get(ctx, projectID)
+	atlasAuditing, err := r.AuditService.Get(ctx, projectID)
 	if err != nil {
 		return failure(auditing, projectID, err)
 	}
@@ -43,7 +43,7 @@ func (r *AtlasAuditingReconciler) reconcileProjectAuditing(ctx context.Context, 
 
 func (r *AtlasAuditingReconciler) update(ctx context.Context, auditing *v1alpha1.AtlasAuditing, projectID string) (*v1alpha1.AtlasAuditing, error) {
 	resultAuditing := auditing.DeepCopy()
-	if err := r.auditingService.Set(ctx, projectID, &auditing.Spec); err != nil {
+	if err := r.AuditService.Set(ctx, projectID, &auditing.Spec); err != nil {
 		resultAuditing.UpdateStatus([]api.Condition{}, status.WithProjectFailure(projectID, err))
 		return resultAuditing, err
 	}
