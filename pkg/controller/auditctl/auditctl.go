@@ -68,7 +68,7 @@ func (r *AtlasAuditingReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return result.ReconcileResult(), nil
 }
 
-// evaluateState detects and updates the auditing config state machine
+// reconcile detects and updates the auditing config state machine
 //
 // State machine summary:
 //

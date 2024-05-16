@@ -35,7 +35,7 @@ func (r *AtlasAuditingReconciler) reconcileProjectAuditing(ctx context.Context, 
 	if err != nil {
 		return failure(auditing, projectID, err)
 	}
-	if reflect.DeepEqual(auditing.Spec, atlasAuditing) {
+	if reflect.DeepEqual(auditing.Spec.AtlasAuditingConfig, *atlasAuditing) {
 		return idle(auditing)
 	}
 	return r.update(ctx, auditing, projectID)
@@ -43,7 +43,7 @@ func (r *AtlasAuditingReconciler) reconcileProjectAuditing(ctx context.Context, 
 
 func (r *AtlasAuditingReconciler) update(ctx context.Context, auditing *v1alpha1.AtlasAuditing, projectID string) (*v1alpha1.AtlasAuditing, error) {
 	resultAuditing := auditing.DeepCopy()
-	if err := r.AuditService.Set(ctx, projectID, &auditing.Spec); err != nil {
+	if err := r.AuditService.Set(ctx, projectID, &auditing.Spec.AtlasAuditingConfig); err != nil {
 		resultAuditing.UpdateStatus([]api.Condition{}, status.WithProjectFailure(projectID, err))
 		return resultAuditing, err
 	}

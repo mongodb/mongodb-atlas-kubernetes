@@ -57,8 +57,8 @@ func TestDefaultAuditingGet(t *testing.T) {
 	assert.Equal(t, defaultAtlasAuditing(), result)
 }
 
-func defaultAtlasAuditing() *v1alpha1.AtlasAuditingSpec {
-	return &v1alpha1.AtlasAuditingSpec{
+func defaultAtlasAuditing() *v1alpha1.AtlasAuditingConfig {
+	return &v1alpha1.AtlasAuditingConfig{
 		Enabled:                   false,
 		AuditAuthorizationSuccess: false,
 		AuditFilter:               nil,
@@ -68,11 +68,11 @@ func defaultAtlasAuditing() *v1alpha1.AtlasAuditingSpec {
 func TestSyncs(t *testing.T) {
 	testCases := []struct {
 		title    string
-		auditing *v1alpha1.AtlasAuditingSpec
+		auditing *v1alpha1.AtlasAuditingConfig
 	}{
 		{
 			title: "Just enabled",
-			auditing: &v1alpha1.AtlasAuditingSpec{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
 				AuditFilter:               jsonType("{}"), // must sent empty JSON to overwrite previous state
@@ -80,7 +80,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "Auth success logs as well",
-			auditing: &v1alpha1.AtlasAuditingSpec{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
 				AuditFilter:               jsonType("{}"),
@@ -88,7 +88,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "With a filter",
-			auditing: &v1alpha1.AtlasAuditingSpec{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
 				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
@@ -96,7 +96,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "With a filter and success logs",
-			auditing: &v1alpha1.AtlasAuditingSpec{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
 				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
@@ -104,7 +104,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "All set but disabled",
-			auditing: &v1alpha1.AtlasAuditingSpec{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: true,
 				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
@@ -112,7 +112,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "Default (disabled) case",
-			auditing: &v1alpha1.AtlasAuditingSpec{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: false,
 				AuditFilter:               jsonType("{}"),

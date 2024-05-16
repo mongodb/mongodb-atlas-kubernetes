@@ -1206,7 +1206,9 @@ func TestAuditingValidation(t *testing.T) {
 				Spec: v1alpha1.AtlasAuditingSpec{
 					Type:       "standalone",
 					ProjectIDs: []string{"324324"},
-					Enabled:    true,
+					AtlasAuditingConfig: v1alpha1.AtlasAuditingConfig{
+						Enabled: true,
+					},
 				},
 			},
 			expected: nil,
@@ -1217,7 +1219,9 @@ func TestAuditingValidation(t *testing.T) {
 				Spec: v1alpha1.AtlasAuditingSpec{
 					Type:       "standalone",
 					ProjectIDs: []string{"324324"},
-					Enabled:    false,
+					AtlasAuditingConfig: v1alpha1.AtlasAuditingConfig{
+						Enabled: false,
+					},
 				},
 			},
 			expected: nil,
@@ -1226,10 +1230,12 @@ func TestAuditingValidation(t *testing.T) {
 			title: "Enabled with auth success on is also fine",
 			auditing: &v1alpha1.AtlasAuditing{
 				Spec: v1alpha1.AtlasAuditingSpec{
-					Type:                      "standalone",
-					ProjectIDs:                []string{"324324", "23541545"},
-					Enabled:                   false,
-					AuditAuthorizationSuccess: true,
+					Type:       "standalone",
+					ProjectIDs: []string{"324324", "23541545"},
+					AtlasAuditingConfig: v1alpha1.AtlasAuditingConfig{
+						Enabled:                   false,
+						AuditAuthorizationSuccess: true,
+					},
 				},
 			},
 			expected: nil,

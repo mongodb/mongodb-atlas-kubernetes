@@ -83,6 +83,8 @@ func (in *AtlasAuditing) UpdateStatus(conditions []api.Condition, options ...api
 // AtlasAuditingSpec defines the desired state of Database Auditing in Atlas
 // +k8s:deepcopy-gen=true
 type AtlasAuditingSpec struct {
+	AtlasAuditingConfig
+
 	// Type of the Auditing config definition
 	// +kubebuilder:default:=standalone
 	// +kubebuilder:validation:Enum:=standalone;linked
@@ -91,7 +93,10 @@ type AtlasAuditingSpec struct {
 	// ProjectIDs is a list of projects using this auditing config
 	// This can NOT be used when type is "linked"
 	ProjectIDs []string `json:"projectIDs"`
+}
 
+// AtlasAuditingConfig represents the actual fields that can bet set by Auditing
+type AtlasAuditingConfig struct {
 	// Enabled is true when database auditing is on for the given projects
 	Enabled bool `json:"enabled"`
 
