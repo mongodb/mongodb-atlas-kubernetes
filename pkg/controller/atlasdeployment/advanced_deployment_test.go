@@ -6,11 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func TestMergedAdvancedDeployment(t *testing.T) {
@@ -237,5 +240,71 @@ func TestDbUserBelongsToProjects(t *testing.T) {
 		}
 
 		assert.True(t, dbUserBelongsToProject(dbUser, project))
+	})
+}
+
+func TestAdvancedDeploymentIdle(t *testing.T) {
+	t.Run("should not handle search nodes in Atlas Gov", func(t *testing.T) {
+		core, logs := observer.New(zap.DebugLevel)
+		reconciler := &AtlasDeploymentReconciler{
+			AtlasProvider: &atlas.TestProvider{
+				IsCloudGovFunc: func() bool {
+					return true
+				},
+			},
+		}
+		ctx := &workflow.Context{
+			Log: zap.New(core).Sugar(),
+		}
+		deployment := &akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name: "test",
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "us-east1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M10",
+										NodeCount:    pointer.MakePtr(3),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		cluster := &mongodbatlas.AdvancedCluster{
+			Name: "test",
+			ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
+				{
+					ZoneName:  "Zone 1",
+					NumShards: 1,
+					RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
+						{
+							ProviderName: "AWS",
+							RegionName:   "us-east1",
+							Priority:     pointer.MakePtr(7),
+							ElectableSpecs: &mongodbatlas.Specs{
+								InstanceSize: "M10",
+								NodeCount:    pointer.MakePtr(3),
+							},
+						},
+					},
+				},
+			},
+		}
+
+		_, result := reconciler.advancedDeploymentIdle(ctx, &akov2.AtlasProject{}, deployment, cluster)
+		assert.Equal(t, workflow.OK(), result)
+		for _, log := range logs.All() {
+			assert.NotEqual(t, "starting search node processing", log)
+		}
 	})
 }
