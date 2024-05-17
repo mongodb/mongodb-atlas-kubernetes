@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: atlasprojects.atlas.experimental.mongodb.com
 spec:
   group: atlas.experimental.mongodb.com
@@ -289,6 +289,18 @@ spec:
                       type: object
                   type: object
                 type: array
+              auditRef:
+                description: AuditRef references an existing audit configuration
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
               auditing:
                 description: Auditing represents MongoDB Maintenance Windows
                 properties:
@@ -782,10 +794,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              newRequiredField:
-                description: NewField is a new field in the Atlas project and completely
-                  breaks compatibility with v1
-                type: string
               privateEndpoints:
                 description: PrivateEndpoints is a list of Private Endpoints configured
                   for the current Project.
@@ -952,7 +960,6 @@ spec:
                 type: object
             required:
             - name
-            - newRequiredField
             type: object
           status:
             description: AtlasProjectStatus defines the observed state of AtlasProject

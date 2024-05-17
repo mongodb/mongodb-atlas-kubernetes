@@ -18,9 +18,12 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	v1status "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
@@ -48,9 +51,8 @@ type AtlasProject struct {
 type AtlasProjectSpec struct {
 	v1.AtlasProjectSpec `json:",inline"`
 
-	// NewField is a new field in the Atlas project and completely breaks compatibility with v1
-	// +kubebuilder:validation:Required
-	NewField string `json:"newRequiredField"`
+	// AuditRef references an existing audit configuration
+	AuditRef common.ResourceRefNamespaced `json:"auditRef,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -75,4 +77,17 @@ func (p *AtlasProject) UpdateStatus(conditions []api.Condition, options ...api.O
 		v := o.(v1status.AtlasProjectStatusOption)
 		v(&p.Status)
 	}
+}
+
+func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
+	if p.Spec.ConnectionSecret != nil {
+		var key client.ObjectKey
+		if p.Spec.ConnectionSecret.Namespace != "" {
+			key = kube.ObjectKey(p.Spec.ConnectionSecret.Namespace, p.Spec.ConnectionSecret.Name)
+		} else {
+			key = kube.ObjectKey(p.Namespace, p.Spec.ConnectionSecret.Name)
+		}
+		return &key
+	}
+	return nil
 }

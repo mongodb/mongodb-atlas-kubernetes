@@ -30,10 +30,9 @@ import (
 // // 1. Edit the file
 // // 1. Run "make generate" to regenerate code
 // // 2. Run "make manifests" to regenerate the CRD
-//
-// func init() {
-// 	SchemeBuilder.Register(&AtlasDatabaseUser{}, &AtlasDatabaseUserList{})
-// }
+func init() {
+	SchemeBuilder.Register(&AtlasAuditing{}, &AtlasAuditingList{})
+}
 
 // +k8s:deepcopy-gen=package
 
@@ -92,7 +91,7 @@ type AtlasAuditingSpec struct {
 
 	// ProjectIDs is a list of projects using this auditing config
 	// This can NOT be used when type is "linked"
-	ProjectIDs []string `json:"projectIDs"`
+	ProjectIDs []string `json:"projectIDs,omitempty"`
 }
 
 // AtlasAuditingConfig represents the actual fields that can bet set by Auditing
@@ -101,8 +100,17 @@ type AtlasAuditingConfig struct {
 	Enabled bool `json:"enabled"`
 
 	// AuditAuthorizationSuccess is true when auth successes are to be logged
-	AuditAuthorizationSuccess bool `json:"auditAuthorizationSuccess"`
+	AuditAuthorizationSuccess bool `json:"auditAuthorizationSuccess,omitempty"`
 
 	// AuditFilter contains the JSON/YAML definition of the audit logging filter
-	AuditFilter *apiextensionsv1.JSON `json:"auditFilter"`
+	AuditFilter *apiextensionsv1.JSON `json:"auditFilter,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// AtlasAuditingList contains a list of AtlasAuditing
+type AtlasAuditingList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []AtlasAuditing `json:"items"`
 }
