@@ -9,7 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	k8scfg "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func GetPodLogsByDeployment(deploymentName, deploymentNS string, options corev1.PodLogOptions) ([]byte, error) {
@@ -24,7 +24,7 @@ func GetPodLogsByDeployment(deploymentName, deploymentNS string, options corev1.
 }
 
 func GetPodLogs(options corev1.PodLogOptions, ns string, podName string) ([]byte, error) {
-	cfg, err := config.GetConfig()
+	cfg, err := k8scfg.GetConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config: %w", err)
 	}
@@ -50,7 +50,7 @@ func GetPodLogs(options corev1.PodLogOptions, ns string, podName string) ([]byte
 }
 
 func GetAllDeploymentPods(deploymentName, deploymentNS string) ([]corev1.Pod, error) {
-	cfg, err := config.GetConfig()
+	cfg, err := k8scfg.GetConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config: %w", err)
 	}
@@ -75,7 +75,7 @@ func GetAllDeploymentPods(deploymentName, deploymentNS string) ([]corev1.Pod, er
 }
 
 func GetDeployment(deploymentName, deploymentNS string) (*appsv1.Deployment, error) {
-	cfg, err := config.GetConfig()
+	cfg, err := k8scfg.GetConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config: %w", err)
 	}

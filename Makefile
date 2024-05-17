@@ -498,3 +498,5 @@ gen-sdlc-checklist: envsubst docker-sbom ## Generate the SDLC checklist
 .PHONY: clear-e2e-leftovers
 clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 	git restore bundle* config deploy
+	cd helm-charts && git restore .
+	git submodule update helm-charts
