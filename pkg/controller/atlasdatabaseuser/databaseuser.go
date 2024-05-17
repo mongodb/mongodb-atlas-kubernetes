@@ -21,6 +21,12 @@ import (
 )
 
 func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, dus *dbuser.Service, ds *deployment.Service, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+	password, err := dbUser.ReadPassword(ctx.Context, r.Client)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+	apiUser := dbuser.NewUser(dbUser.Spec, project.ID(), password)
+
 	if result := checkUserExpired(ctx.Context, ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
@@ -29,7 +35,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
 	}
 
-	if result := performUpdateInAtlas(ctx, r.Client, dus, project, &dbUser); !result.IsOk() {
+	if result := performUpdateInAtlas(ctx, r.Client, dus, project, &dbUser, apiUser); !result.IsOk() {
 		return result
 	}
 
@@ -89,22 +95,17 @@ func checkUserExpired(ctx context.Context, log *zap.SugaredLogger, k8sClient cli
 	return workflow.OK()
 }
 
-func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *dbuser.Service, project akov2.AtlasProject, dbUser *akov2.AtlasDatabaseUser) workflow.Result {
+func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *dbuser.Service, project akov2.AtlasProject, dbUser *akov2.AtlasDatabaseUser, apiUser *dbuser.User) workflow.Result {
 	log := ctx.Log
 
 	secret := &corev1.Secret{}
 	passwordKey := dbUser.PasswordSecretObjectKey()
 	var currentPasswordResourceVersion string
-	password := ""
 	if passwordKey != nil {
 		if err := k8sClient.Get(ctx.Context, *passwordKey, secret); err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 		currentPasswordResourceVersion = secret.ResourceVersion
-		p, ok := secret.Data["password"]
-		if ok && len(p) > 0 {
-			password = string(p)
-		}
 	}
 
 	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, "Clusters are scheduled to handle database users updates")
@@ -113,8 +114,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *d
 	au, err := dus.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if errors.Is(err, dbuser.ErrorNotFound) {
 		log.Debugw("User doesn't exist. Create new user", "dbUser", dbUser)
-		au := dbuser.NewUser(dbUser.Spec, project.ID(), password)
-		if err = dus.Create(ctx.Context, au); err != nil {
+		if err = dus.Create(ctx.Context, apiUser); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 		}
 		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
@@ -129,7 +129,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *d
 	if shouldUpdate, err := shouldUpdate(ctx.Log, au, dbUser, currentPasswordResourceVersion); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	} else if shouldUpdate {
-		err = dus.Update(ctx.Context, au)
+		err = dus.Update(ctx.Context, apiUser)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
