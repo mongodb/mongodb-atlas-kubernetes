@@ -158,13 +158,9 @@ func validateScopes(ctx *workflow.Context, ds *deployment.Service, projectID str
 }
 
 func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, ds *deployment.Service, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
-	conns, err := ds.ListDeploymentConns(ctx.Context, projectID)
+	allDeploymentNames, err := ds.ListClusterDeploymentNames(ctx.Context, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
-	}
-	allDeploymentNames := []string{}
-	for _, conn := range conns {
-		allDeploymentNames = append(allDeploymentNames, conn.Name)
 	}
 
 	var deploymentsToCheck []string

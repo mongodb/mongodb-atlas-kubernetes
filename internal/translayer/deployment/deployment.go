@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
@@ -27,6 +28,25 @@ func NewService(ctx context.Context, provider atlas.Provider, secretRef *types.N
 
 func NewFromAPIs(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi) *Service {
 	return &Service{ClustersApi: clusterService, ServerlessInstancesApi: serverlessAPI}
+}
+
+func (ds *Service) ListClusterDeploymentNames(ctx context.Context, projectID string) ([]string, error) {
+	var deploymentNames []string
+	clusters, _, err := ds.ListClusters(ctx, projectID).Execute()
+	if err != nil {
+		return nil, err
+	}
+	if clusters.Results == nil {
+		return deploymentNames, nil
+	}
+
+	for _, d := range *clusters.Results {
+		name := pointer.GetOrDefault(d.Name, "")
+		if name != "" {
+			deploymentNames = append(deploymentNames, name)
+		}
+	}
+	return deploymentNames, nil
 }
 
 func (ds *Service) ListDeploymentConns(ctx context.Context, projectID string) ([]Conn, error) {
