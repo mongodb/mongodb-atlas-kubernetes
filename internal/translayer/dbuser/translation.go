@@ -36,7 +36,9 @@ func Normalize(spec *akov2.AtlasDatabaseUserSpec) (*akov2.AtlasDatabaseUserSpec,
 		}
 		spec.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
 	}
-	if spec.X509Type == "" { // Ensure comparisons succeed on default value
+	// Ensure comparisons succeed on default value
+	// TODO: Check if this is required after updating the Helm Chart CRDs
+	if spec.X509Type == "" {
 		spec.X509Type = "NONE"
 	}
 	if spec.OIDCAuthType == "" {
