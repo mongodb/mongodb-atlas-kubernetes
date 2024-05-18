@@ -22,14 +22,30 @@ func NewUser(spec akov2.AtlasDatabaseUserSpec, projectID, password string) *User
 	return &User{AtlasDatabaseUserSpec: spec, ProjectID: projectID, Password: password}
 }
 
-func Normalize(spec *akov2.AtlasDatabaseUserSpec) *akov2.AtlasDatabaseUserSpec {
+func Normalize(spec *akov2.AtlasDatabaseUserSpec) (*akov2.AtlasDatabaseUserSpec, error) {
 	if spec.Roles == nil {
 		spec.Roles = []akov2.RoleSpec{}
 	}
 	if spec.Scopes == nil {
 		spec.Scopes = []akov2.ScopeSpec{}
 	}
-	return spec
+	if spec.DeleteAfterDate != "" { // enforce date format
+		operatorDeleteDate, err := timeutil.ParseISO8601(spec.DeleteAfterDate)
+		if err != nil {
+			return nil, err
+		}
+		spec.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
+	}
+	if spec.X509Type == "" { // Ensure comparisons succeed on default value
+		spec.X509Type = "NONE"
+	}
+	if spec.OIDCAuthType == "" {
+		spec.OIDCAuthType = "NONE"
+	}
+	if spec.AWSIAMType == "" {
+		spec.AWSIAMType = "NONE"
+	}
+	return spec, nil
 }
 
 func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
