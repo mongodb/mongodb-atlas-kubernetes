@@ -24,7 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
+var _ = Describe("Alert configuration tests", Label("alert-config", "alert-configs-table"), func() {
 	var testData *model.TestDataProvider
 
 	_ = AfterEach(func() {
@@ -187,39 +187,58 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 })
 
 func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []akov2.AlertConfiguration) {
-	Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-		Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
-	userData.Project.Spec.AlertConfigurationSyncEnabled = true
-	userData.Project.Spec.AlertConfigurations = append(userData.Project.Spec.AlertConfigurations, alertConfigs...)
-	Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+	By("Enable Alert Config Sync on Atlas Project", func() {
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+		userData.Project.Spec.AlertConfigurationSyncEnabled = true
+		userData.Project.Spec.AlertConfigurations = append(userData.Project.Spec.AlertConfigurations, alertConfigs...)
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+	})
 
-	actions.WaitForConditionsToBecomeTrue(userData, status.AlertConfigurationReadyType, status.ReadyType)
-	Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
-	Expect(userData.Project.Status.AlertConfigurations).Should(HaveLen(len(alertConfigs)))
+	By("Wait for Alert Configurations to activate", func() {
+		actions.WaitForConditionsToBecomeTrue(userData, status.AlertConfigurationReadyType, status.ReadyType)
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.Project.Status.AlertConfigurations).Should(HaveLen(len(alertConfigs)))
+	})
 
-	alertConfigurations, _, err := atlasClient.Client.AlertConfigurationsApi.
-		ListAlertConfigurations(userData.Context, userData.Project.ID()).
-		Execute()
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(alertConfigurations.GetTotalCount()).Should(Equal(len(alertConfigs)), "Atlas alert configurations", alertConfigurations)
+	By("Check alert configurations have no errors and match configured configs", func() {
+		var err error
+		alertConfigurations, _, err := atlasClient.Client.AlertConfigurationsApi.
+			ListAlertConfigurations(userData.Context, userData.Project.ID()).
+			Execute()
+		By("No errors listing alert configs", func() {
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+		By("Check config counts match configured count", func() {
+			Expect(alertConfigurations.GetTotalCount()).Should(Equal(len(alertConfigs)), "Atlas alert configurations", alertConfigurations)
+		})
 
-	atlasIDList := make([]string, 0, alertConfigurations.GetTotalCount())
-	for _, alertConfig := range alertConfigurations.GetResults() {
-		atlasIDList = append(atlasIDList, alertConfig.GetId())
-	}
-	statusIDList := make([]string, 0, len(userData.Project.Status.AlertConfigurations))
-	for _, alertConfig := range userData.Project.Status.AlertConfigurations {
-		statusIDList = append(statusIDList, alertConfig.ID)
-	}
-	Expect(compare.IsEqualWithoutOrder(statusIDList, atlasIDList)).Should(BeTrue())
+		By("ID sets in Atlas matches the status IDs", func() {
+			atlasIDList := make([]string, 0, alertConfigurations.GetTotalCount())
+			for _, alertConfig := range alertConfigurations.GetResults() {
+				atlasIDList = append(atlasIDList, alertConfig.GetId())
+			}
+			statusIDList := make([]string, 0, len(userData.Project.Status.AlertConfigurations))
+			for _, alertConfig := range userData.Project.Status.AlertConfigurations {
+				statusIDList = append(statusIDList, alertConfig.ID)
+			}
+			Expect(compare.IsEqualWithoutOrder(statusIDList, atlasIDList)).Should(BeTrue())
+		})
 
-	atlasConfigs := alertConfigurations.GetResults()
-	for i := range atlasConfigs {
-		atlasConfig := normalizeAtlasAlertConfig(atlasConfigs[i])
-		akoConfig, err := alertConfigs[i].ToAtlas()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(atlasConfig).Should(Equal(*akoConfig))
-	}
+		By("Each Atlas alert config matches its Kubernetes config", func() {
+			atlasConvertedSpecs := []*admin.GroupAlertsConfig{}
+			for i := range alertConfigs {
+				akoConfig, err := alertConfigs[i].ToAtlas()
+				Expect(err).ToNot(HaveOccurred())
+				atlasConvertedSpecs = append(atlasConvertedSpecs, akoConfig)
+			}
+			atlasConfigs := alertConfigurations.GetResults()
+			for _, atlasConfig := range atlasConfigs {
+				normalizedAtlasConfig := normalizeAtlasAlertConfig(atlasConfig)
+				Expect(atlasConvertedSpecs).To(ContainElement(&normalizedAtlasConfig))
+			}
+		})
+	})
 }
 
 func normalizeAtlasAlertConfig(atlasConfig admin.GroupAlertsConfig) admin.GroupAlertsConfig {
@@ -244,7 +263,7 @@ func normalizeAtlasAlertConfig(atlasConfig admin.GroupAlertsConfig) admin.GroupA
 	return atlasConfig
 }
 
-var _ = Describe("Alert configuration with secrets test", Label("alert-config"), func() {
+var _ = Describe("Alert configuration with secrets test", Label("alert-config", "alert-config-datadog"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
