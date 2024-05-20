@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-logr/zapr"
@@ -39,6 +40,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
+
+var setupSignalHandlerOnce sync.Once
+
+var signalCancelledCtx context.Context
 
 func BuildManager(initCfg *Config) (manager.Manager, error) {
 	scheme := runtime.NewScheme()
@@ -111,8 +116,12 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 
 	atlasProvider := atlas.NewProductionProvider(config.AtlasDomain, config.GlobalAPISecret, mgr.GetClient())
 
-	ctx := ctrl.SetupSignalHandler()
-	if err := indexer.RegisterAll(ctx, mgr, logger); err != nil {
+	// Ensure all concurrent managers configured per test share a single exit signal handler
+	setupSignalHandlerOnce.Do(func() {
+		signalCancelledCtx = ctrl.SetupSignalHandler()
+	})
+
+	if err := indexer.RegisterAll(signalCancelledCtx, mgr, logger); err != nil {
 		setupLog.Error(err, "unable to create indexers")
 		return nil, err
 	}
