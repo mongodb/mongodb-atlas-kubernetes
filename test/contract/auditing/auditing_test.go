@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 func TestDefaultAuditingGet(t *testing.T) {
 	testProjectID := mustReadProjectID()
 	ctx := context.Background()
-	as := auditing.NewFromAuditingAPI(contract.MustVersionedClient(t, ctx).AuditingApi)
+	as := auditing.NewProductionAtlasAudit(contract.MustVersionedClient(t, ctx).AuditingApi)
 
 	result, err := as.Get(ctx, testProjectID)
 
@@ -119,7 +119,7 @@ func TestSyncs(t *testing.T) {
 	}
 	testProjectID := mustReadProjectID()
 	ctx := context.Background()
-	as := auditing.NewFromAuditingAPI(contract.MustVersionedClient(t, ctx).AuditingApi)
+	as := auditing.NewProductionAtlasAudit(contract.MustVersionedClient(t, ctx).AuditingApi)
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
