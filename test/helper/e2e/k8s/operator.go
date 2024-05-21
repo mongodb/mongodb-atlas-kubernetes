@@ -41,11 +41,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
-var setupSignalHandlerOnce sync.Once
-
 var (
-  setupSignalHandlerOnce sync.Once
-  signalCancelledCtx context.Context
+	setupSignalHandlerOnce sync.Once
+	signalCancelledCtx     context.Context
 )
 
 func BuildManager(initCfg *Config) (manager.Manager, error) {
