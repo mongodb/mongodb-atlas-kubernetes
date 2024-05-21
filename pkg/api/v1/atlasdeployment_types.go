@@ -24,7 +24,6 @@ import (
 	"strconv"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,6 +31,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -527,6 +527,8 @@ func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.AdvancedCluster, er
 	return result, err
 }
 
+var _ api.AtlasCustomResource = &AtlasDeployment{}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
@@ -586,11 +588,11 @@ func (c AtlasDeployment) AtlasProjectObjectKey() client.ObjectKey {
 	return kube.ObjectKey(ns, c.Spec.Project.Name)
 }
 
-func (c *AtlasDeployment) GetStatus() status.Status {
+func (c *AtlasDeployment) GetStatus() api.Status {
 	return c.Status
 }
 
-func (c *AtlasDeployment) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (c *AtlasDeployment) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	c.Status.Conditions = conditions
 	c.Status.ObservedGeneration = c.ObjectMeta.Generation
 

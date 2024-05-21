@@ -5,6 +5,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -65,7 +66,7 @@ func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, deploym
 
 func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	if !verifyAllIndexesNamesAreUnique(sr.deployment.Spec.DeploymentSpec.SearchIndexes) {
-		return sr.terminate(status.SearchIndexesNamesAreNotUnique, fmt.Errorf("every index 'Name' must be unique"))
+		return sr.terminate(api.SearchIndexesNamesAreNotUnique, fmt.Errorf("every index 'Name' must be unique"))
 	}
 	sr.ctx.Log.Debug("all indexes names are unique")
 
@@ -134,23 +135,23 @@ func (sr *searchIndexesReconciler) terminate(reason workflow.ConditionReason, er
 		errMsg = err.Error()
 	}
 	result := workflow.Terminate(reason, errMsg)
-	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, result)
+	sr.ctx.SetConditionFromResult(api.SearchIndexesReadyType, result)
 	return result
 }
 
 func (sr *searchIndexesReconciler) progress() workflow.Result {
-	result := workflow.InProgress(status.SearchIndexesNotReady, "not all indexes are in READY state")
+	result := workflow.InProgress(api.SearchIndexesNotReady, "not all indexes are in READY state")
 	sr.ctx.SetConditionFromResult(status.SearchIndexStatusReady, result)
 	return result
 }
 
 func (sr *searchIndexesReconciler) empty() workflow.Result {
-	sr.ctx.UnsetCondition(status.SearchIndexesReadyType)
+	sr.ctx.UnsetCondition(api.SearchIndexesReadyType)
 	return workflow.OK()
 }
 
 func (sr *searchIndexesReconciler) idle() workflow.Result {
-	sr.ctx.SetConditionTrue(status.SearchIndexesReadyType)
+	sr.ctx.SetConditionTrue(api.SearchIndexesReadyType)
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentRemoveStatusesWithEmptyIDs())
 	return workflow.OK()
 }

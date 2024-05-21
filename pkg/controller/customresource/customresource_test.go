@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
@@ -44,8 +45,8 @@ func TestResourceShouldBeLeftInAtlas(t *testing.T) {
 }
 
 func TestReconciliationShouldBeSkipped(t *testing.T) {
-	newResourceTypes := func() []akov2.AtlasCustomResource {
-		return []akov2.AtlasCustomResource{
+	newResourceTypes := func() []api.AtlasCustomResource {
+		return []api.AtlasCustomResource{
 			&akov2.AtlasDeployment{},
 			&akov2.AtlasDatabaseUser{},
 			&akov2.AtlasProject{},
@@ -83,7 +84,7 @@ func TestReconciliationShouldBeSkipped(t *testing.T) {
 func TestResourceVersionIsValid(t *testing.T) {
 	tests := []struct {
 		name            string
-		resource        akov2.AtlasCustomResource
+		resource        api.AtlasCustomResource
 		want            bool
 		wantErr         assert.ErrorAssertionFunc
 		operatorVersion string

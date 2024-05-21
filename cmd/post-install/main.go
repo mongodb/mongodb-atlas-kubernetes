@@ -7,9 +7,10 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -79,7 +80,7 @@ func isDeploymentReady(ctx context.Context, logger *zap.SugaredLogger) (bool, er
 
 		// the atlas project has reached the DeploymentReady state.
 		for _, cond := range atlasDeployment.Status.Conditions {
-			if cond.Type == status.DeploymentReadyType {
+			if cond.Type == api.DeploymentReadyType {
 				if cond.Status == corev1.ConditionTrue {
 					return true, nil
 				}

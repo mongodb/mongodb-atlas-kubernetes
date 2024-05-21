@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
@@ -79,14 +79,14 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if !r.AtlasProvider.IsResourceSupported(fedauth) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasFederatedAuth is not supported by Atlas for government").
 			WithoutRetry()
-		setCondition(workflowCtx, status.FederatedAuthReadyType, result)
+		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	atlasClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, fedauth.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		setCondition(workflowCtx, status.FederatedAuthReadyType, result)
+		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.SdkClient = atlasClient
@@ -96,7 +96,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	owner, err := customresource.IsOwner(fedauth, false, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, orgID))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
+		workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
@@ -107,15 +107,15 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile FederatedAuthConfig due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
+		workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
 	}
 
 	result = r.ensureFederatedAuth(workflowCtx, fedauth)
-	workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
-	workflowCtx.SetConditionFromResult(status.ReadyType, result)
+	workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)
+	workflowCtx.SetConditionFromResult(api.ReadyType, result)
 
 	return result.ReconcileResult(), nil
 }
@@ -128,7 +128,7 @@ func (r *AtlasFederatedAuthReconciler) SetupWithManager(mgr ctrl.Manager) error 
 		Complete(r)
 }
 
-func setCondition(ctx *workflow.Context, condition status.ConditionType, result workflow.Result) {
+func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.Result) {
 	ctx.SetConditionFromResult(condition, result)
 	logIfWarning(ctx, result)
 }
@@ -140,7 +140,7 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 }
 
 func managedByAtlas(ctx context.Context, atlasClient *admin.APIClient, orgID string) customresource.AtlasChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		fedauth, ok := resource.(*akov2.AtlasFederatedAuth)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasFederatedAuth")

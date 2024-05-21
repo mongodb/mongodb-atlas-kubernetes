@@ -24,6 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
@@ -125,6 +126,8 @@ func (pe DataFederationPE) Identifier() interface{} {
 	return pe.EndpointID
 }
 
+var _ api.AtlasCustomResource = &AtlasDataFederation{}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
@@ -157,11 +160,11 @@ func (c AtlasDataFederation) AtlasProjectObjectKey() client.ObjectKey {
 	return kube.ObjectKey(ns, c.Spec.Project.Name)
 }
 
-func (c *AtlasDataFederation) GetStatus() status.Status {
+func (c *AtlasDataFederation) GetStatus() api.Status {
 	return c.Status
 }
 
-func (c *AtlasDataFederation) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (c *AtlasDataFederation) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	c.Status.Conditions = conditions
 	c.Status.ObservedGeneration = c.ObjectMeta.Generation
 

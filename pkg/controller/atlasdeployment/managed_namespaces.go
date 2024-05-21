@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -19,15 +20,15 @@ func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterT
 
 	result := syncManagedNamespaces(service, groupID, deploymentName, managedNamespace)
 	if !result.IsOk() {
-		service.SetConditionFromResult(status.ManagedNamespacesReadyType, result)
+		service.SetConditionFromResult(api.ManagedNamespacesReadyType, result)
 		return result
 	}
 
 	if managedNamespace == nil {
-		service.UnsetCondition(status.ManagedNamespacesReadyType)
+		service.UnsetCondition(api.ManagedNamespacesReadyType)
 		service.EnsureStatusOption(status.AtlasDeploymentManagedNamespacesOption(nil))
 	} else {
-		service.SetConditionTrue(status.ManagedNamespacesReadyType)
+		service.SetConditionTrue(api.ManagedNamespacesReadyType)
 	}
 	return result
 }

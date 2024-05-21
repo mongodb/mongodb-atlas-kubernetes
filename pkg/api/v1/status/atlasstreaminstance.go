@@ -1,9 +1,12 @@
 package status
 
-import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+)
 
 type AtlasStreamInstanceStatus struct {
-	Common `json:",inline"`
+	api.Common `json:",inline"`
 	// Unique 24-hexadecimal character string that identifies the instance
 	ID string `json:"id,omitempty"`
 	// List that contains the hostnames assigned to the stream instance.

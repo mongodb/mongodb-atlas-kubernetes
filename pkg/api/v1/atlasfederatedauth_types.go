@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
@@ -104,6 +105,8 @@ type RoleAssignment struct {
 	Role string `json:"role,omitempty"`
 }
 
+var _ api.AtlasCustomResource = &AtlasFederatedAuth{}
+
 // AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
@@ -126,11 +129,11 @@ func (f *AtlasFederatedAuth) ConnectionSecretObjectKey() *client.ObjectKey {
 	return &key
 }
 
-func (f *AtlasFederatedAuth) GetStatus() status.Status {
+func (f *AtlasFederatedAuth) GetStatus() api.Status {
 	return f.Status
 }
 
-func (f *AtlasFederatedAuth) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (f *AtlasFederatedAuth) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	f.Status.Conditions = conditions
 	f.Status.ObservedGeneration = f.ObjectMeta.Generation
 

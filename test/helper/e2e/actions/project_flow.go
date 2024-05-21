@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -104,6 +105,6 @@ func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atla
 		testData.Project.Spec.CloudProviderIntegrations[0].IamAssumedRoleArn = roleArn
 		Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
 
-		WaitForConditionsToBecomeTrue(testData, status.CloudProviderIntegrationReadyType, status.ReadyType)
+		WaitForConditionsToBecomeTrue(testData, api.CloudProviderIntegrationReadyType, api.ReadyType)
 	})
 }

@@ -25,9 +25,12 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap/zapcore"
+	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,10 +41,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"

@@ -15,6 +15,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -1599,7 +1600,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 			result,
 		)
 		assert.Len(t, workflowCtx.Conditions(), 1)
-		assert.Equal(t, status.CloudProviderIntegrationReadyType, workflowCtx.Conditions()[0].Type)
+		assert.Equal(t, api.CloudProviderIntegrationReadyType, workflowCtx.Conditions()[0].Type)
 		assert.Equal(t, "True", string(workflowCtx.Conditions()[0].Status))
 		assert.Empty(t, workflowCtx.Conditions()[0].Message)
 	})
@@ -1676,7 +1677,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 			result,
 		)
 		assert.Len(t, workflowCtx.Conditions(), 1)
-		assert.Equal(t, status.CloudProviderIntegrationReadyType, workflowCtx.Conditions()[0].Type)
+		assert.Equal(t, api.CloudProviderIntegrationReadyType, workflowCtx.Conditions()[0].Type)
 		assert.Equal(t, "True", string(workflowCtx.Conditions()[0].Status))
 		assert.Equal(
 			t,

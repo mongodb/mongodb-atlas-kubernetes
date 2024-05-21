@@ -4,20 +4,20 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 const (
 	AnnotationLastAppliedConfiguration = "mongodb.com/last-applied-configuration"
 )
 
-type OperatorChecker func(resource akov2.AtlasCustomResource) (bool, error)
-type AtlasChecker func(resource akov2.AtlasCustomResource) (bool, error)
+type OperatorChecker func(resource api.AtlasCustomResource) (bool, error)
+type AtlasChecker func(resource api.AtlasCustomResource) (bool, error)
 
-func IsOwner(resource akov2.AtlasCustomResource, protectionFlag bool, operatorChecker OperatorChecker, atlasChecker AtlasChecker) (bool, error) {
+func IsOwner(resource api.AtlasCustomResource, protectionFlag bool, operatorChecker OperatorChecker, atlasChecker AtlasChecker) (bool, error) {
 	if !protectionFlag {
 		return true, nil
 	}
@@ -39,7 +39,7 @@ func IsOwner(resource akov2.AtlasCustomResource, protectionFlag bool, operatorCh
 	return !existInAtlas, nil
 }
 
-func ApplyLastConfigApplied(ctx context.Context, resource akov2.AtlasCustomResource, k8sClient client.Client) error {
+func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client) error {
 	uObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resource)
 	if err != nil {
 		return err
@@ -50,8 +50,8 @@ func ApplyLastConfigApplied(ctx context.Context, resource akov2.AtlasCustomResou
 		return err
 	}
 
-	// we just copied an akov2.AtlasCustomResource so it must be one
-	resourceCopy := resource.DeepCopyObject().(akov2.AtlasCustomResource)
+	// we just copied an api.AtlasCustomResource so it must be one
+	resourceCopy := resource.DeepCopyObject().(api.AtlasCustomResource)
 
 	annotations := resourceCopy.GetAnnotations()
 	if annotations == nil {
@@ -70,7 +70,7 @@ func ApplyLastConfigApplied(ctx context.Context, resource akov2.AtlasCustomResou
 	return nil
 }
 
-func IsResourceManagedByOperator(resource akov2.AtlasCustomResource) (bool, error) {
+func IsResourceManagedByOperator(resource api.AtlasCustomResource) (bool, error) {
 	annotations := resource.GetAnnotations()
 	if annotations == nil {
 		return false, nil

@@ -11,8 +11,7 @@ import (
 
 	"github.com/Masterminds/semver"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
@@ -30,7 +29,7 @@ const (
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
-func PrepareResource(ctx context.Context, client client.Client, request reconcile.Request, resource akov2.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
+func PrepareResource(ctx context.Context, client client.Client, request reconcile.Request, resource api.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
 	err := client.Get(ctx, request.NamespacedName, resource)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
@@ -48,12 +47,12 @@ func PrepareResource(ctx context.Context, client client.Client, request reconcil
 	return workflow.OK()
 }
 
-func ValidateResourceVersion(ctx *workflow.Context, resource akov2.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
+func ValidateResourceVersion(ctx *workflow.Context, resource api.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
 	valid, err := ResourceVersionIsValid(resource)
 	if err != nil {
 		log.Debugf("resource version for '%s' is invalid", resource.GetName())
 		result := workflow.Terminate(workflow.AtlasResourceVersionIsInvalid, err.Error())
-		ctx.SetConditionFromResult(status.ResourceVersionStatus, result)
+		ctx.SetConditionFromResult(api.ResourceVersionStatus, result)
 		return result
 	}
 
@@ -63,19 +62,19 @@ func ValidateResourceVersion(ctx *workflow.Context, resource akov2.AtlasCustomRe
 			fmt.Sprintf("version of the resource '%s' is higher than the operator version '%s'. ",
 				resource.GetName(),
 				version.Version))
-		ctx.SetConditionFromResult(status.ResourceVersionStatus, result)
+		ctx.SetConditionFromResult(api.ResourceVersionStatus, result)
 		return result
 	}
 
 	log.Debugf("resource '%s' version is valid", resource.GetName())
-	ctx.SetConditionTrue(status.ResourceVersionStatus)
+	ctx.SetConditionTrue(api.ResourceVersionStatus)
 	return workflow.OK()
 }
 
 // MarkReconciliationStarted updates the status of the Atlas Resource to indicate that the Operator has started working on it.
 // Internally this will also update the 'observedGeneration' field that notify clients that the resource is being worked on
-func MarkReconciliationStarted(client client.Client, resource akov2.AtlasCustomResource, log *zap.SugaredLogger, context context.Context) *workflow.Context {
-	updatedConditions := status.EnsureConditionExists(status.FalseCondition(status.ReadyType), resource.GetStatus().GetConditions())
+func MarkReconciliationStarted(client client.Client, resource api.AtlasCustomResource, log *zap.SugaredLogger, context context.Context) *workflow.Context {
+	updatedConditions := api.EnsureConditionExists(api.FalseCondition(api.ReadyType), resource.GetStatus().GetConditions())
 
 	ctx := workflow.NewContext(log, updatedConditions, context)
 	statushandler.Update(ctx, client, nil, resource)
@@ -83,7 +82,7 @@ func MarkReconciliationStarted(client client.Client, resource akov2.AtlasCustomR
 	return ctx
 }
 
-func IsResourcePolicyKeepOrDefault(resource akov2.AtlasCustomResource, protectionFlag bool) bool {
+func IsResourcePolicyKeepOrDefault(resource api.AtlasCustomResource, protectionFlag bool) bool {
 	if policy, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
 		return policy == ResourcePolicyKeep
 	}
@@ -92,7 +91,7 @@ func IsResourcePolicyKeepOrDefault(resource akov2.AtlasCustomResource, protectio
 }
 
 // IsResourcePolicyKeep returns 'true' if the resource should not be removed from Atlas on K8s resource removal.
-func IsResourcePolicyKeep(resource akov2.AtlasCustomResource) bool {
+func IsResourcePolicyKeep(resource api.AtlasCustomResource) bool {
 	if v, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
 		return v == ResourcePolicyKeep
 	}
@@ -100,7 +99,7 @@ func IsResourcePolicyKeep(resource akov2.AtlasCustomResource) bool {
 }
 
 // ResourceVersionIsValid returns 'true' if current version of resource is <= current version of the operator.
-func ResourceVersionIsValid(resource akov2.AtlasCustomResource) (bool, error) {
+func ResourceVersionIsValid(resource api.AtlasCustomResource) (bool, error) {
 	// proceed if label is not present
 	resourceVersion, ok := resource.GetLabels()[ResourceVersion]
 	if !ok {
@@ -135,7 +134,7 @@ func ResourceVersionIsValid(resource akov2.AtlasCustomResource) (bool, error) {
 }
 
 // ReconciliationShouldBeSkipped returns 'true' if reconciliation should be skipped for this resource.
-func ReconciliationShouldBeSkipped(resource akov2.AtlasCustomResource) bool {
+func ReconciliationShouldBeSkipped(resource api.AtlasCustomResource) bool {
 	if v, ok := resource.GetAnnotations()[ReconciliationPolicyAnnotation]; ok {
 		return v == ReconciliationPolicySkip
 	}
@@ -143,7 +142,7 @@ func ReconciliationShouldBeSkipped(resource akov2.AtlasCustomResource) bool {
 }
 
 // SetAnnotation sets an annotation in resource while respecting the rest of annotations.
-func SetAnnotation(resource akov2.AtlasCustomResource, key, value string) {
+func SetAnnotation(resource api.AtlasCustomResource, key, value string) {
 	annot := resource.GetAnnotations()
 	if annot == nil {
 		annot = map[string]string{}

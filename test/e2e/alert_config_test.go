@@ -14,9 +14,9 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
@@ -196,7 +196,7 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []akov2.Aler
 	})
 
 	By("Wait for Alert Configurations to activate", func() {
-		actions.WaitForConditionsToBecomeTrue(userData, status.AlertConfigurationReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.AlertConfigurationReadyType, api.ReadyType)
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		Expect(userData.Project.Status.AlertConfigurations).Should(HaveLen(len(alertConfigs)))
 	})
