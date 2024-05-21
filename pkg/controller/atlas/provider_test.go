@@ -152,6 +152,15 @@ func TestProvider_IsResourceSupported(t *testing.T) {
 			},
 			expectation: false,
 		},
+		"should return true when it's Atlas Gov and resource is a Deployment with no search nodes": {
+			domain: "https://cloud.mongodbgov.com",
+			resource: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
+				},
+			},
+			expectation: true,
+		},
 	}
 
 	for desc, data := range dataProvider {
