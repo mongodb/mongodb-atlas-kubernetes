@@ -9,33 +9,33 @@ import (
 func TestConnSet(t *testing.T) {
 	testCases := []struct {
 		title    string
-		inputs   [][]Conn
-		expected []Conn
+		inputs   [][]Connection
+		expected []Connection
 	}{
 		{
 			title: "Disjoint lists concatenate",
-			inputs: [][]Conn{
+			inputs: [][]Connection{
 				{{Name: "A"}, {Name: "B"}, {Name: "C"}},
 				{{Name: "D"}, {Name: "E"}, {Name: "F"}},
 			},
-			expected: []Conn{
+			expected: []Connection{
 				{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"}, {Name: "E"}, {Name: "F"},
 			},
 		},
 		{
 			title: "Common items get merged away",
-			inputs: [][]Conn{
+			inputs: [][]Connection{
 				{{Name: "A"}, {Name: "B"}, {Name: "C"}},
 				{{Name: "B"}, {Name: "C"}, {Name: "D"}},
 			},
-			expected: []Conn{
+			expected: []Connection{
 				{Name: "A"}, {Name: "B"}, {Name: "C"}, {Name: "D"},
 			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			result := connSet(tc.inputs...)
+			result := connectionSet(tc.inputs...)
 			assert.Equal(t, tc.expected, result)
 		})
 	}

@@ -17,24 +17,31 @@ var (
 	ErrorNotFound = errors.New("database user not found")
 )
 
-type Service struct {
-	admin.DatabaseUsersApi
+type AtlasUsersService interface {
+	Get(ctx context.Context, db, projectID, username string) (*User, error)
+	Delete(ctx context.Context, db, projectID, username string) error
+	Create(ctx context.Context, au *User) error
+	Update(ctx context.Context, au *User) error
 }
 
-func NewService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*Service, error) {
+type ProductionAtlasUsers struct {
+	usersAPI admin.DatabaseUsersApi
+}
+
+func NewAtlasDatabaseUsersService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*ProductionAtlasUsers, error) {
 	client, err := translayer.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
 		return nil, err
 	}
-	return NewFromDBUserAPI(client.DatabaseUsersApi), nil
+	return NewProductionAtlasUsers(client.DatabaseUsersApi), nil
 }
 
-func NewFromDBUserAPI(api admin.DatabaseUsersApi) *Service {
-	return &Service{DatabaseUsersApi: api}
+func NewProductionAtlasUsers(api admin.DatabaseUsersApi) *ProductionAtlasUsers {
+	return &ProductionAtlasUsers{usersAPI: api}
 }
 
-func (dus *Service) Get(ctx context.Context, db, projectID, username string) (*User, error) {
-	atlasDBUser, _, err := dus.GetDatabaseUser(ctx, projectID, db, username).Execute()
+func (dus *ProductionAtlasUsers) Get(ctx context.Context, db, projectID, username string) (*User, error) {
+	atlasDBUser, _, err := dus.usersAPI.GetDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
 			return nil, errors.Join(ErrorNotFound, err)
@@ -44,8 +51,8 @@ func (dus *Service) Get(ctx context.Context, db, projectID, username string) (*U
 	return fromAtlas(atlasDBUser)
 }
 
-func (dus *Service) Delete(ctx context.Context, db, projectID, username string) error {
-	_, _, err := dus.DeleteDatabaseUser(ctx, projectID, db, username).Execute()
+func (dus *ProductionAtlasUsers) Delete(ctx context.Context, db, projectID, username string) error {
+	_, _, err := dus.usersAPI.DeleteDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
 			return errors.Join(ErrorNotFound, err)
@@ -55,20 +62,20 @@ func (dus *Service) Delete(ctx context.Context, db, projectID, username string) 
 	return nil
 }
 
-func (dus *Service) Create(ctx context.Context, au *User) error {
+func (dus *ProductionAtlasUsers) Create(ctx context.Context, au *User) error {
 	u, err := toAtlas(au)
 	if err != nil {
 		return err
 	}
-	_, _, err = dus.CreateDatabaseUser(ctx, au.ProjectID, u).Execute()
+	_, _, err = dus.usersAPI.CreateDatabaseUser(ctx, au.ProjectID, u).Execute()
 	return err
 }
 
-func (dus *Service) Update(ctx context.Context, au *User) error {
+func (dus *ProductionAtlasUsers) Update(ctx context.Context, au *User) error {
 	u, err := toAtlas(au)
 	if err != nil {
 		return err
 	}
-	_, _, err = dus.UpdateDatabaseUser(ctx, au.ProjectID, au.DatabaseName, au.Username, u).Execute()
+	_, _, err = dus.usersAPI.UpdateDatabaseUser(ctx, au.ProjectID, au.DatabaseName, au.Username, u).Execute()
 	return err
 }

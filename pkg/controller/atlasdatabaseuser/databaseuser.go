@@ -20,7 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, dus *dbuser.Service, ds *deployment.Service, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, dus dbuser.AtlasUsersService, ds deployment.AtlasDeploymentsService, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
 	password, err := dbUser.ReadPassword(ctx.Context, r.Client)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -58,7 +58,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	return workflow.OK()
 }
 
-func handleUserNameChange(ctx *workflow.Context, dus *dbuser.Service, projectID string, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+func handleUserNameChange(ctx *workflow.Context, dus dbuser.AtlasUsersService, projectID string, dbUser akov2.AtlasDatabaseUser) workflow.Result {
 	if dbUser.Spec.Username != dbUser.Status.UserName && dbUser.Status.UserName != "" {
 		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", dbUser.Spec.Username, "oldUserName", dbUser.Status.UserName)
 
@@ -95,7 +95,7 @@ func checkUserExpired(ctx context.Context, log *zap.SugaredLogger, k8sClient cli
 	return workflow.OK()
 }
 
-func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *dbuser.Service, project akov2.AtlasProject, dbUser *akov2.AtlasDatabaseUser, apiUser *dbuser.User) workflow.Result {
+func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus dbuser.AtlasUsersService, project akov2.AtlasProject, dbUser *akov2.AtlasDatabaseUser, apiUser *dbuser.User) workflow.Result {
 	log := ctx.Log
 
 	secret := &corev1.Secret{}
@@ -144,9 +144,9 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus *d
 	return workflow.OK()
 }
 
-func validateScopes(ctx *workflow.Context, ds *deployment.Service, projectID string, user akov2.AtlasDatabaseUser) error {
+func validateScopes(ctx *workflow.Context, ds deployment.AtlasDeploymentsService, projectID string, user akov2.AtlasDatabaseUser) error {
 	for _, s := range user.GetScopes(akov2.DeploymentScopeType) {
-		exists, err := ds.Exists(ctx.Context, projectID, s)
+		exists, err := ds.ClusterExists(ctx.Context, projectID, s)
 		if !exists {
 			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
 		}
@@ -157,8 +157,8 @@ func validateScopes(ctx *workflow.Context, ds *deployment.Service, projectID str
 	return nil
 }
 
-func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, ds *deployment.Service, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
-	allDeploymentNames, err := ds.ListClusterDeploymentNames(ctx.Context, projectID)
+func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, ds deployment.AtlasDeploymentsService, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
+	allDeploymentNames, err := ds.ListClusterNames(ctx.Context, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -173,7 +173,7 @@ func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, ds *deployment.
 
 	readyDeployments := 0
 	for _, c := range deploymentsToCheck {
-		ready, err := ds.IsReady(ctx.Context, projectID, c)
+		ready, err := ds.DeploymentIsReady(ctx.Context, projectID, c)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}

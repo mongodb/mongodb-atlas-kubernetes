@@ -126,7 +126,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	dus, err := dbuser.NewService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	dus, err := dbuser.NewAtlasDatabaseUsersService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
@@ -156,7 +156,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	ds, err := deployment.NewService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	ds, err := deployment.NewAtlasDeploymentsService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
@@ -219,7 +219,7 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 	ctx context.Context,
 	dbUser *akov2.AtlasDatabaseUser,
 	project *akov2.AtlasProject,
-	dus *dbuser.Service,
+	dus dbuser.AtlasUsersService,
 	log *zap.SugaredLogger,
 ) (bool, workflow.Result) {
 	if dbUser.GetDeletionTimestamp().IsZero() {
