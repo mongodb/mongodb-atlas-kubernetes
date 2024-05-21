@@ -19,8 +19,8 @@ import (
 
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 
-func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, ds *deployment.Service, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
-	conns, err := ds.ListDeploymentConns(ctx.Context, project.ID())
+func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, ds deployment.AtlasDeploymentsService, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+	conns, err := ds.ListDeploymentConnections(ctx.Context, project.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
@@ -33,7 +33,7 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 	return workflow.OK()
 }
 
-func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser, conns []deployment.Conn) workflow.Result {
+func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser, conns []deployment.Connection) workflow.Result {
 	requeue := false
 	secrets := make([]string, 0)
 
@@ -143,7 +143,7 @@ func RemoveStaleSecretsByUserName(ctx context.Context, k8sClient client.Client, 
 	return lastError
 }
 
-func FillPrivateConns(conn deployment.Conn, data *ConnectionData) {
+func FillPrivateConns(conn deployment.Connection, data *ConnectionData) {
 	if conn.PrivateURL != "" {
 		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
 			PvtConnURL:    conn.PrivateURL,

@@ -13,26 +13,33 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
-type Service struct {
-	admin.ClustersApi
-	admin.ServerlessInstancesApi
+type AtlasDeploymentsService interface {
+	ListClusterNames(ctx context.Context, projectID string) ([]string, error)
+	ListDeploymentConnections(ctx context.Context, projectID string) ([]Connection, error)
+	ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error)
+	DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error)
 }
 
-func NewService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*Service, error) {
+type ProductionAtlasDeployments struct {
+	clustersAPI   admin.ClustersApi
+	serverlessAPI admin.ServerlessInstancesApi
+}
+
+func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*ProductionAtlasDeployments, error) {
 	client, err := translayer.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
 		return nil, err
 	}
-	return NewFromAPIs(client.ClustersApi, client.ServerlessInstancesApi), nil
+	return NewProductionAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi), nil
 }
 
-func NewFromAPIs(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi) *Service {
-	return &Service{ClustersApi: clusterService, ServerlessInstancesApi: serverlessAPI}
+func NewProductionAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi) *ProductionAtlasDeployments {
+	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI}
 }
 
-func (ds *Service) ListClusterDeploymentNames(ctx context.Context, projectID string) ([]string, error) {
+func (ds *ProductionAtlasDeployments) ListClusterNames(ctx context.Context, projectID string) ([]string, error) {
 	var deploymentNames []string
-	clusters, _, err := ds.ListClusters(ctx, projectID).Execute()
+	clusters, _, err := ds.clustersAPI.ListClusters(ctx, projectID).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -49,24 +56,24 @@ func (ds *Service) ListClusterDeploymentNames(ctx context.Context, projectID str
 	return deploymentNames, nil
 }
 
-func (ds *Service) ListDeploymentConns(ctx context.Context, projectID string) ([]Conn, error) {
-	clusters, _, err := ds.ListClusters(ctx, projectID).Execute()
+func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Context, projectID string) ([]Connection, error) {
+	clusters, _, err := ds.clustersAPI.ListClusters(ctx, projectID).Execute()
 	if err != nil {
 		return nil, err
 	}
-	clusterConns := clustersToConns(clusters.GetResults())
+	clusterConns := clustersToConnections(clusters.GetResults())
 
-	serverless, _, err := ds.ListServerlessInstances(ctx, projectID).Execute()
+	serverless, _, err := ds.serverlessAPI.ListServerlessInstances(ctx, projectID).Execute()
 	if err != nil {
 		return nil, err
 	}
-	serverlessConns := serverlessToConns(serverless.GetResults())
+	serverlessConns := serverlessToConnections(serverless.GetResults())
 
-	return connSet(clusterConns, serverlessConns), nil
+	return connectionSet(clusterConns, serverlessConns), nil
 }
 
-func (ds *Service) Exists(ctx context.Context, projectID, clusterName string) (bool, error) {
-	_, _, err := ds.GetCluster(ctx, projectID, clusterName).Execute()
+func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error) {
+	_, _, err := ds.clustersAPI.GetCluster(ctx, projectID, clusterName).Execute()
 	if admin.IsErrorCode(err, atlas.ClusterNotFound) {
 		return false, nil
 	}
@@ -76,8 +83,9 @@ func (ds *Service) Exists(ctx context.Context, projectID, clusterName string) (b
 	return true, nil
 }
 
-func (ds *Service) IsReady(ctx context.Context, projectID, deploymentName string) (bool, error) {
-	clusterStatus, _, err := ds.GetClusterStatus(ctx, projectID, deploymentName).Execute()
+func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error) {
+	// although this is within the clusters API it seems to also reply for serverless deployments
+	clusterStatus, _, err := ds.clustersAPI.GetClusterStatus(ctx, projectID, deploymentName).Execute()
 	if err != nil {
 		return false, err
 	}

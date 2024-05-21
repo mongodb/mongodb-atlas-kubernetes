@@ -2,7 +2,7 @@ package deployment
 
 import "go.mongodb.org/atlas-sdk/v20231115008/admin"
 
-type Conn struct {
+type Connection struct {
 	Name             string
 	ConnURL          string
 	SrvConnURL       string
@@ -18,10 +18,10 @@ type PrivateEndpoint struct {
 	ShardURL string
 }
 
-func clustersToConns(clusters []admin.AdvancedClusterDescription) []Conn {
-	conns := []Conn{}
+func clustersToConnections(clusters []admin.AdvancedClusterDescription) []Connection {
+	conns := []Connection{}
 	for _, c := range clusters {
-		conns = append(conns, Conn{
+		conns = append(conns, Connection{
 			Name:             c.GetName(),
 			ConnURL:          c.ConnectionStrings.GetStandard(),
 			SrvConnURL:       c.ConnectionStrings.GetStandardSrv(),
@@ -49,10 +49,10 @@ func fillClusterPrivateEndpoints(cpeList []admin.ClusterDescriptionConnectionStr
 	return pes
 }
 
-func serverlessToConns(serverless []admin.ServerlessInstanceDescription) []Conn {
-	conns := []Conn{}
+func serverlessToConnections(serverless []admin.ServerlessInstanceDescription) []Connection {
+	conns := []Connection{}
 	for _, s := range serverless {
-		conns = append(conns, Conn{
+		conns = append(conns, Connection{
 			Name:             s.GetName(),
 			ConnURL:          "",
 			SrvConnURL:       s.ConnectionStrings.GetStandardSrv(),
@@ -76,8 +76,8 @@ func fillServerlessPrivateEndpoints(cpeList []admin.ServerlessConnectionStringsP
 	return pes
 }
 
-func connSet(conns ...[]Conn) []Conn {
-	return set(func(conn Conn) string { return conn.Name }, conns...)
+func connectionSet(conns ...[]Connection) []Connection {
+	return set(func(conn Connection) string { return conn.Name }, conns...)
 }
 
 func set[T any](nameFn func(T) string, lists ...[]T) []T {
