@@ -187,13 +187,6 @@ bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
 .PHONY: manager
 manager: generate fmt vet bin/manager recompute-licenses ## Build manager binary
 
-.PHONY: run
-run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
-	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
-	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
-	go run ./cmd/manager/main.go --atlas-domain=$(ATLAS_DOMAIN) \
-	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME) --log-level=debug
-
 .PHONY: install
 install: manifests kustomize ## Install CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
@@ -515,20 +508,24 @@ set-namespace:
 
 .PHONY: install-credentials
 install-credentials: set-namespace ## Install the Atlas credentials for the Operator
-	kubectl create secret generic mongodb-atlas-operator-api-key \
+	kubectl create secret generic $(ATLAS_KEY_SECRET_NAME) \
 	--from-literal="orgId=$(MCLI_ORG_ID)" \
 	--from-literal="publicApiKey=$(MCLI_PUBLIC_API_KEY)" \
 	--from-literal="privateApiKey=$(MCLI_PRIVATE_API_KEY)" \
 	-n "$(OPERATOR_NAMESPACE)" || echo "Secret already in place"
 	kubectl label secret -n "${OPERATOR_NAMESPACE}" \
-	mongodb-atlas-operator-api-key atlas.mongodb.com/type=credentials
+	$(ATLAS_KEY_SECRET_NAME) atlas.mongodb.com/type=credentials
+
+.PHONY: prepare-run
+prepare-run: generate vet manifests manager run-kind install-crds install-credentials
 
 .PHONY: run
-run: manager run-kind install-crds install-credentials ## Run a freshly compiled manager against kind
+run: prepare-run ## Run a freshly compiled manager against kind
 ifdef RUN_YAML
 	kubectl apply -f $(RUN_YAML)
 endif
-	OPERATOR_NAMESPACE=atlas-operator OPERATOR_POD_NAME=mongodb-atlas-operator \
+	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
 	bin/manager --object-deletion-protection=false --log-level=debug \
-	--atlas-domain=$(MCLI_OPS_MANAGER_URL) \
-	--global-api-secret-name=mongodb-atlas-operator-api-key
+	--atlas-domain=$(ATLAS_DOMAIN) \
+	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME)
