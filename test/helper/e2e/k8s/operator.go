@@ -43,7 +43,10 @@ import (
 
 var setupSignalHandlerOnce sync.Once
 
-var signalCancelledCtx context.Context
+var (
+  setupSignalHandlerOnce sync.Once
+  signalCancelledCtx context.Context
+)
 
 func BuildManager(initCfg *Config) (manager.Manager, error) {
 	scheme := runtime.NewScheme()
