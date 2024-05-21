@@ -49,6 +49,16 @@ That workflow also shows relevant CI context values that allow us to debug why t
 
 The [test.yml](../../.github/workflows/test.yml) workflow takes the output from [cloud-tests-filter.yml](../../.github/workflows/cloud-tests-filter.yml) and will ONLY invoke the [cloud tests](../../.github/workflows/cloud-tests.yml) workflow IF `cloud-tests-filter.yml` had decided **Cloud Tests** should run.
 
+### Linting
+
+The lint workflow runs three seperate linters; `golangci` (via `make lint`, `shellcheck`, and `govulncheck`.
+
+`golangci` is a tool that makes use of a defined collection of other linters. The enabled linters (and other configuration) for `golangci` can be seen in [this repo's config file](../../.golangci.yml).
+
+`shellcheck` lints shell scripts in the repo. This is performed with default settings, using [`shellcheck-action`](https://github.com/bewuethr/shellcheck-action). This tool makes use of a regex to find all files within the codebase that have shell scripts that should be assessed.
+
+`govulncheck` checks the Go packages used in the codebase, and flags any that have known vulnerabilities. [`vuln-ignore`](../../vuln-ignore) contains a list of vulnerabilities that we are explicitly ignoring; for use when there is not an available fix, and `govulncheck` is blocking.
+
 #### Cloud tests
 
 The [cloud tests](../../.github/workflows/cloud-tests.yml) workflow is also worth an explanation. It is in charge of running all expensive and slow tests such as:
