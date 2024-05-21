@@ -539,7 +539,7 @@ local-docker-build:
 
 .PHONY: yq
 yq:
-	go install github.com/mikefarah/yq/v4@latest
+	which yq || go install github.com/mikefarah/yq/v4@latest
 
 .PHONY: prepare-all-in-one
 prepare-all-in-one: yq local-docker-build run-kind
