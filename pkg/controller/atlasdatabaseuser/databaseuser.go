@@ -213,7 +213,7 @@ func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *
 	if err != nil {
 		return false, err
 	}
-	if len(diffs) == 0 {
+	if len(diffs) > 0 {
 		return true, nil
 	}
 	// We need to check if the password has changed since the last time
