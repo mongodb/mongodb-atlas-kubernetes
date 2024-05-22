@@ -18,11 +18,14 @@ package v1
 
 import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var _ api.AtlasCustomResource = &AtlasTeam{}
 
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
@@ -66,11 +69,11 @@ func (in *AtlasTeam) Identifier() interface{} {
 	return in.Status.ID
 }
 
-func (in *AtlasTeam) GetStatus() status.Status {
+func (in *AtlasTeam) GetStatus() api.Status {
 	return in.Status
 }
 
-func (in *AtlasTeam) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (in *AtlasTeam) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	in.Status.Conditions = conditions
 	in.Status.ObservedGeneration = in.ObjectMeta.Generation
 

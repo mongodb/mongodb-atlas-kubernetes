@@ -10,6 +10,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -26,32 +27,32 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasPr
 
 	result, conditionType := syncPrivateEndpointsWithAtlas(workflowCtx, project.ID(), specPEs, atlasPEs)
 	if !result.IsOk() {
-		if conditionType == status.PrivateEndpointServiceReadyType {
-			workflowCtx.UnsetCondition(status.PrivateEndpointReadyType)
+		if conditionType == api.PrivateEndpointServiceReadyType {
+			workflowCtx.UnsetCondition(api.PrivateEndpointReadyType)
 		}
 		workflowCtx.SetConditionFromResult(conditionType, result)
 		return result
 	}
 
 	if len(specPEs) == 0 && len(atlasPEs) == 0 {
-		workflowCtx.UnsetCondition(status.PrivateEndpointServiceReadyType)
-		workflowCtx.UnsetCondition(status.PrivateEndpointReadyType)
+		workflowCtx.UnsetCondition(api.PrivateEndpointServiceReadyType)
+		workflowCtx.UnsetCondition(api.PrivateEndpointReadyType)
 		return workflow.OK()
 	}
 
 	serviceStatus := getStatusForServices(workflowCtx, atlasPEs)
 	if !serviceStatus.IsOk() {
-		workflowCtx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
+		workflowCtx.SetConditionFromResult(api.PrivateEndpointServiceReadyType, serviceStatus)
 		return serviceStatus
 	}
 
 	unconfiguredAmount := countNotConfiguredEndpoints(specPEs)
 	if unconfiguredAmount != 0 {
 		serviceStatus = serviceStatus.WithMessage("Interface Private Endpoint awaits configuration")
-		workflowCtx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
+		workflowCtx.SetConditionFromResult(api.PrivateEndpointServiceReadyType, serviceStatus)
 
 		if len(specPEs) == unconfiguredAmount {
-			workflowCtx.UnsetCondition(status.PrivateEndpointReadyType)
+			workflowCtx.UnsetCondition(api.PrivateEndpointReadyType)
 			return serviceStatus
 		} else {
 			return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "Not All Interface Private Endpoint are fully configured")
@@ -59,43 +60,43 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasPr
 	}
 
 	interfaceStatus := getStatusForInterfaces(workflowCtx, project.ID(), specPEs, atlasPEs)
-	workflowCtx.SetConditionFromResult(status.PrivateEndpointReadyType, interfaceStatus)
+	workflowCtx.SetConditionFromResult(api.PrivateEndpointReadyType, interfaceStatus)
 
 	return interfaceStatus
 }
 
-func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) (workflow.Result, status.ConditionType) {
+func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) (workflow.Result, api.ConditionType) {
 	log := ctx.Log
 
 	log.Debugw("PE Connections", "atlasPEs", atlasPEs, "specPEs", specPEs)
 	endpointsToDelete := getEndpointsNotInSpec(specPEs, atlasPEs)
 	log.Debugf("Number of Private Endpoints to delete: %d", len(endpointsToDelete))
 	if result := deletePrivateEndpointsFromAtlas(ctx, projectID, endpointsToDelete); !result.IsOk() {
-		return result, status.PrivateEndpointServiceReadyType
+		return result, api.PrivateEndpointServiceReadyType
 	}
 
 	endpointsToCreate, endpointCounts := getEndpointsNotInAtlas(specPEs, atlasPEs)
 	log.Debugf("Number of Private Endpoints to create: %d", len(endpointsToCreate))
 	newConnections, err := createPeServiceInAtlas(ctx, projectID, endpointsToCreate, endpointCounts)
 	if err != nil {
-		return terminateWithError(ctx, status.PrivateEndpointServiceReadyType, "Failed to create PE Service in Atlas", err)
+		return terminateWithError(ctx, api.PrivateEndpointServiceReadyType, "Failed to create PE Service in Atlas", err)
 	}
 
 	endpointsToSync := getEndpointsIntersection(specPEs, atlasPEs)
 	log.Debugf("Number of Private Endpoints to sync: %d", len(endpointsToSync))
 	syncedConnections, err := syncPeInterfaceInAtlas(ctx, projectID, endpointsToSync)
 	if err != nil {
-		return terminateWithError(ctx, status.PrivateEndpointReadyType, "Failed to sync PE Interface in Atlas", err)
+		return terminateWithError(ctx, api.PrivateEndpointReadyType, "Failed to sync PE Interface in Atlas", err)
 	}
 
 	log.Debugw("PE Changes", "newConnections", newConnections, "syncedConnections", syncedConnections)
 	updatePEStatusOption(ctx, projectID, newConnections, syncedConnections)
 
 	if len(newConnections) != 0 {
-		return notReadyServiceResult, status.PrivateEndpointServiceReadyType
+		return notReadyServiceResult, api.PrivateEndpointServiceReadyType
 	}
 
-	return workflow.OK(), status.PrivateEndpointReadyType
+	return workflow.OK(), api.PrivateEndpointReadyType
 }
 
 func getStatusForServices(ctx *workflow.Context, atlasPEs []atlasPE) workflow.Result {
@@ -490,7 +491,7 @@ func isFailed(status string) bool {
 	return status == "FAILED"
 }
 
-func terminateWithError(ctx *workflow.Context, conditionType status.ConditionType, message string, err error) (workflow.Result, status.ConditionType) {
+func terminateWithError(ctx *workflow.Context, conditionType api.ConditionType, message string, err error) (workflow.Result, api.ConditionType) {
 	ctx.Log.Debugw(message, "error", err)
 	result := workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, err.Error()).WithoutRetry()
 	return result, conditionType

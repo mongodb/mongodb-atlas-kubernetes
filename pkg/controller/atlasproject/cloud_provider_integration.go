@@ -10,6 +10,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -20,7 +21,7 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov
 	canReconcile, err := canCloudProviderIntegrationReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.CloudProviderIntegrationReadyType, result)
+		workflowCtx.SetConditionFromResult(api.CloudProviderIntegrationReadyType, result)
 
 		return result
 	}
@@ -30,7 +31,7 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Cloud Provider Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.CloudProviderIntegrationReadyType, result)
+		workflowCtx.SetConditionFromResult(api.CloudProviderIntegrationReadyType, result)
 
 		return result
 	}
@@ -39,20 +40,20 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov
 	roleSpecs := getCloudProviderIntegrations(project.Spec)
 
 	if len(roleSpecs) == 0 && len(roleStatuses) == 0 {
-		workflowCtx.UnsetCondition(status.CloudProviderIntegrationReadyType)
+		workflowCtx.UnsetCondition(api.CloudProviderIntegrationReadyType)
 		return workflow.OK()
 	}
 
 	allAuthorized, err := syncCloudProviderIntegration(workflowCtx, project.ID(), roleSpecs)
 	if err != nil {
 		result := workflow.Terminate(workflow.ProjectCloudIntegrationsIsNotReadyInAtlas, err.Error())
-		workflowCtx.SetConditionFromResult(status.CloudProviderIntegrationReadyType, result)
+		workflowCtx.SetConditionFromResult(api.CloudProviderIntegrationReadyType, result)
 
 		return result
 	}
 
 	if !allAuthorized {
-		workflowCtx.SetConditionFalse(status.CloudProviderIntegrationReadyType)
+		workflowCtx.SetConditionFalse(api.CloudProviderIntegrationReadyType)
 
 		return workflow.InProgress(workflow.ProjectCloudIntegrationsIsNotReadyInAtlas, "not all entries are authorized")
 	}
@@ -62,7 +63,7 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov
 		warnDeprecationMsg = "The CloudProviderAccessRole has been deprecated, please move your configuration under CloudProviderIntegration."
 	}
 
-	workflowCtx.SetConditionTrueMsg(status.CloudProviderIntegrationReadyType, warnDeprecationMsg)
+	workflowCtx.SetConditionTrueMsg(api.CloudProviderIntegrationReadyType, warnDeprecationMsg)
 
 	return workflow.OK()
 }

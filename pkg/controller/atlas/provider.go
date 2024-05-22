@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
@@ -30,7 +31,7 @@ type Provider interface {
 	Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
 	SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
 	IsCloudGov() bool
-	IsResourceSupported(resource akov2.AtlasCustomResource) bool
+	IsResourceSupported(resource api.AtlasCustomResource) bool
 }
 
 type ProductionProvider struct {
@@ -62,7 +63,7 @@ func (p *ProductionProvider) IsCloudGov() bool {
 	return strings.HasSuffix(domainURL.Hostname(), govAtlasDomain)
 }
 
-func (p *ProductionProvider) IsResourceSupported(resource akov2.AtlasCustomResource) bool {
+func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResource) bool {
 	if !p.IsCloudGov() {
 		return true
 	}

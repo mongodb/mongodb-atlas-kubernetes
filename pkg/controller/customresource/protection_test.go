@@ -11,6 +11,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 )
@@ -30,13 +31,13 @@ func taggedResource(tag, value string) *akov2.AtlasDatabaseUser {
 }
 
 func testOpChecker(reply bool) customresource.OperatorChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		return reply, nil
 	}
 }
 
 func testAtlasChecker(reply bool) customresource.AtlasChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		return reply, nil
 	}
 }
@@ -44,7 +45,7 @@ func testAtlasChecker(reply bool) customresource.AtlasChecker {
 var ErrOpChecker = fmt.Errorf("operator checker failed")
 
 func failedOpChecker(err error) customresource.OperatorChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		return false, err
 	}
 }
@@ -52,7 +53,7 @@ func failedOpChecker(err error) customresource.OperatorChecker {
 var ErrAtlasChecker = fmt.Errorf("atlas checker failed")
 
 func failedAtlasChecker(err error) customresource.AtlasChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		return false, err
 	}
 }
@@ -105,7 +106,7 @@ func TestIsResourceProtected(t *testing.T) {
 	tests := []struct {
 		title             string
 		protectionFlag    bool
-		resource          akov2.AtlasCustomResource
+		resource          api.AtlasCustomResource
 		expectedProtected bool
 	}{
 		{"Resource without tags with the flag set is protected", true, sampleResource(), true},

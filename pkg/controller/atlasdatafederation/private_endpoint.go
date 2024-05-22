@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -22,7 +22,7 @@ func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Con
 
 	result := syncPrivateEndpointsWithAtlas(ctx, clientDF, projectID, specPEs, atlasPEs)
 	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.DataFederationPEReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationPEReadyType, result)
 		return result
 	}
 

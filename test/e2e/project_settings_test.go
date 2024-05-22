@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -58,12 +58,12 @@ func projectSettingsFlow(userData *model.TestDataProvider, settings *akov2.Proje
 	By("Add Project Settings to the project", func() {
 		userData.Project.Spec.Settings = settings
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectSettingsReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectSettingsReadyType, api.ReadyType)
 	})
 
 	By("Remove Project Settings from the project", func() {
 		userData.Project.Spec.Settings = nil
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.CheckProjectConditionsNotSet(userData, status.ProjectSettingsReadyType)
+		actions.CheckProjectConditionsNotSet(userData, api.ProjectSettingsReadyType)
 	})
 }

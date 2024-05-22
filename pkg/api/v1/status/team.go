@@ -1,5 +1,7 @@
 package status
 
+import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 // +k8s:deepcopy-gen=false
 
 // AtlasTeamStatusOption is the option that is applied to Atlas Project Status
@@ -24,7 +26,7 @@ func AtlasTeamSetProjects(projects []TeamProject) AtlasTeamStatusOption {
 }
 
 type TeamStatus struct {
-	Common `json:",inline"`
+	api.Common `json:",inline"`
 
 	// ID of the team
 	ID string `json:"id,omitempty"`

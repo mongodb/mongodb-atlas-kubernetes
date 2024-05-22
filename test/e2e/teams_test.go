@@ -8,9 +8,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -81,7 +81,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []akov2.Team) {
 			return ensureTeamsStatus(g, *userData, teams, teamWasCreated)
 		}).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Teams were not created")
 
-		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectTeamsReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectTeamsReadyType, api.ReadyType)
 	})
 
 	By("Remove one team from the project", func() {
@@ -96,7 +96,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []akov2.Team) {
 			return ensureTeamsStatus(g, *userData, teams[1:], teamWasRemoved)
 		}).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Team were not removed")
 
-		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectTeamsReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectTeamsReadyType, api.ReadyType)
 	})
 
 	By("Update team role in the project", func() {
@@ -107,7 +107,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []akov2.Team) {
 			return ensureTeamsStatus(g, *userData, userData.Project.Spec.Teams, teamWasCreated)
 		}).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Teams were not created")
 
-		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectTeamsReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectTeamsReadyType, api.ReadyType)
 	})
 
 	By("Remove all teams from the project", func() {
@@ -121,7 +121,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []akov2.Team) {
 			return ensureTeamsStatus(g, *userData, teams, teamWasRemoved)
 		}).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Team were not removed")
 
-		actions.CheckProjectConditionsNotSet(userData, status.ProjectTeamsReadyType)
+		actions.CheckProjectConditionsNotSet(userData, api.ProjectTeamsReadyType)
 	})
 }
 

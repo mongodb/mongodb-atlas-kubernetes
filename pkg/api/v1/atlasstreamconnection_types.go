@@ -3,6 +3,7 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
@@ -87,11 +88,11 @@ func init() {
 }
 
 // GetStatus implements status.Reader
-func (f *AtlasStreamConnection) GetStatus() status.Status {
+func (f *AtlasStreamConnection) GetStatus() api.Status {
 	return f.Status
 }
 
-func (f *AtlasStreamConnection) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (f *AtlasStreamConnection) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	f.Status.Conditions = conditions
 	f.Status.ObservedGeneration = f.ObjectMeta.Generation
 

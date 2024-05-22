@@ -7,18 +7,19 @@ import (
 
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
 func ProjectReadyCondition(data *model.TestDataProvider) string {
-	condition, _ := kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, status.ReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
+	condition, _ := kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, api.ReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
 	return condition
 }
 
 func DeploymentReadyCondition(data *model.TestDataProvider) func() string {
 	return func() string {
-		condition, _ := kubecli.GetDeploymentStatusCondition(data.Context, data.K8SClient, status.ReadyType, data.Resources.Namespace, data.InitialDeployments[0].ObjectMeta.GetName())
+		condition, _ := kubecli.GetDeploymentStatusCondition(data.Context, data.K8SClient, api.ReadyType, data.Resources.Namespace, data.InitialDeployments[0].ObjectMeta.GetName())
 		return condition
 	}
 }
@@ -41,7 +42,7 @@ func GetProjectStatus(data *model.TestDataProvider) status.AtlasProjectStatus {
 	return data.Project.Status
 }
 
-func GetProjectStatusCondition(data *model.TestDataProvider, statusType status.ConditionType) (string, error) {
+func GetProjectStatusCondition(data *model.TestDataProvider, statusType api.ConditionType) (string, error) {
 	conditions, err := GetAllProjectConditions(data)
 	if err != nil {
 		return "", err
@@ -54,7 +55,7 @@ func GetProjectStatusCondition(data *model.TestDataProvider, statusType status.C
 	return "", fmt.Errorf("condition %s not found, conditions: %v", statusType, conditions)
 }
 
-func GetAllProjectConditions(data *model.TestDataProvider) (result []status.Condition, err error) {
+func GetAllProjectConditions(data *model.TestDataProvider) (result []api.Condition, err error) {
 	err = data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Project.Namespace}, data.Project)
 	if err != nil {
 		return result, err

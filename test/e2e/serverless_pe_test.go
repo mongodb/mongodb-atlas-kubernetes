@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
@@ -113,7 +113,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 		Eventually(func(g Gomega) {
 			deployment := userData.InitialDeployments[0]
 			g.Expect(userData.K8SClient.Get(userData.Context, client.ObjectKeyFromObject(deployment), deployment)).To(Succeed())
-			g.Expect(deployment.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.DeploymentReadyType))))
+			g.Expect(deployment.Status.Conditions).To(ContainElement(conditions.MatchCondition(api.TrueCondition(api.DeploymentReadyType))))
 		}).WithTimeout(time.Minute * 15).WithPolling(time.Second * 15).Should(Succeed())
 	})
 
@@ -178,7 +178,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 			).To(Succeed())
 			g.Expect(len(userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints)).To(Equal(0))
 			for _, condition := range userData.InitialDeployments[0].Status.Conditions {
-				g.Expect(condition.Type).ToNot(Equal(status.ServerlessPrivateEndpointReadyType))
+				g.Expect(condition.Type).ToNot(Equal(api.ServerlessPrivateEndpointReadyType))
 			}
 		}).WithTimeout(15*time.Minute).Should(Succeed(), "Deployment should not have any Private Endpoints")
 	})
@@ -194,7 +194,7 @@ func invalidSPEFlow(userData *model.TestDataProvider, spe []akov2.ServerlessPriv
 		}
 	}
 	if !isValid {
-		expectedCondition := status.FalseCondition(status.ServerlessPrivateEndpointReadyType).WithReason(string(workflow.ServerlessPrivateEndpointFailed))
+		expectedCondition := api.FalseCondition(api.ServerlessPrivateEndpointReadyType).WithReason(string(workflow.ServerlessPrivateEndpointFailed))
 		Eventually(func() bool {
 			return resources.CheckCondition(userData.K8SClient, userData.InitialDeployments[0], expectedCondition)
 		}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())

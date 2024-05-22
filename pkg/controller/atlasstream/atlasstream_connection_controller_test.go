@@ -20,9 +20,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
@@ -144,11 +144,11 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamConnection), streamConnection))
 		conditions := streamConnection.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Empty(t, conditions[0].Reason)
 		assert.Empty(t, conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[1].Status)
 		assert.Equal(t, string(workflow.AtlasResourceVersionIsInvalid), conditions[1].Reason)
 		assert.Equal(t, "no-semver is not a valid semver version for label mongodb.com/atlas-resource-version", conditions[1].Message)
@@ -199,11 +199,11 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamConnection), streamConnection))
 		conditions := streamConnection.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Equal(t, string(workflow.AtlasGovUnsupported), conditions[0].Reason)
 		assert.Equal(t, "the AtlasStreamConnection is not supported by Atlas for government", conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -267,11 +267,11 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamConnection), streamConnection))
 		conditions := streamConnection.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Equal(t, string(workflow.Internal), conditions[0].Reason)
 		assert.Equal(t, "failed to list instances", conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -342,9 +342,9 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.NotEmpty(t, streamConnection.GetFinalizers())
 		conditions := streamConnection.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 
@@ -401,9 +401,9 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		assert.Empty(t, streamConnection.GetFinalizers())
 		conditions := streamConnection.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
+		assert.Equal(t, api.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 	})
 }
@@ -493,7 +493,7 @@ func TestLock(t *testing.T) {
 		assert.Equal(t, ctrl.Result{}, result)
 		assert.NotEmpty(t, connection.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
 	})
 
@@ -530,7 +530,7 @@ func TestLock(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(connection), connection))
 		assert.Empty(t, connection.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.AtlasFinalizerNotSet), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to set finalizer", ctx.Conditions()[0].Message)
@@ -563,7 +563,7 @@ func TestLock(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(connection), connection))
 		assert.NotEmpty(t, connection.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
 	})
 }
@@ -585,7 +585,7 @@ func TestRelease(t *testing.T) {
 		assert.Equal(t, ctrl.Result{}, result)
 		assert.Empty(t, connection.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
 	})
 
@@ -623,7 +623,7 @@ func TestRelease(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(connection), connection))
 		assert.NotEmpty(t, connection.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.AtlasFinalizerNotRemoved), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to set finalizer", ctx.Conditions()[0].Message)
@@ -658,7 +658,7 @@ func TestRelease(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(connection), connection))
 		assert.Empty(t, connection.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
 	})
 }

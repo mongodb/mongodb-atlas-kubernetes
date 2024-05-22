@@ -49,6 +49,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -148,7 +149,7 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 			} else {
 				assert.NotNil(t, te.workflowCtx.LastCondition())
 				if te.workflowCtx.LastCondition() != nil {
-					assert.Equal(t, status.DeploymentReadyType, te.workflowCtx.LastCondition().Type)
+					assert.Equal(t, api.DeploymentReadyType, te.workflowCtx.LastCondition().Type)
 				}
 				assert.Regexp(t, regexp.MustCompile(tc.expectedErr), result.GetMessage())
 			}
@@ -193,7 +194,7 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 			} else {
 				assert.NotNil(t, te.workflowCtx.LastCondition())
 				if te.workflowCtx.LastCondition() != nil {
-					assert.Equal(t, status.DeploymentReadyType, te.workflowCtx.LastCondition().Type)
+					assert.Equal(t, api.DeploymentReadyType, te.workflowCtx.LastCondition().Type)
 				}
 				assert.Regexp(t, regexp.MustCompile(tc.expectedErr), result.GetMessage())
 			}

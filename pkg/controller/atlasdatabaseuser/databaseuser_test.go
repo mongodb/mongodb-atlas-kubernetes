@@ -17,8 +17,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -107,7 +107,7 @@ func TestHandleUserNameChange(t *testing.T) {
 		user := *akov2.DefaultDBUser("ns", "theuser", "project1")
 		user.Spec.Username = "differentuser"
 		user.Status.UserName = "theuser"
-		ctx := workflow.NewContext(zap.S(), []status.Condition{}, nil)
+		ctx := workflow.NewContext(zap.S(), []api.Condition{}, nil)
 		ctx.Client = mongodbatlas.NewClient(&http.Client{})
 		result := handleUserNameChange(ctx, "", user)
 		assert.True(t, result.IsOk())

@@ -9,6 +9,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -204,7 +205,7 @@ func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, "the AtlasStreamInstance is not supported by Atlas for government").
 		WithoutRetry()
-	ctx.SetConditionFromResult(status.StreamInstanceReadyType, unsupported)
+	ctx.SetConditionFromResult(api.StreamInstanceReadyType, unsupported)
 	return unsupported.ReconcileResult(), nil
 }
 
@@ -212,21 +213,21 @@ func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.
 func (r *AtlasStreamsInstanceReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err.Error())
-	ctx.SetConditionFromResult(status.StreamInstanceReadyType, terminated)
+	ctx.SetConditionFromResult(api.StreamInstanceReadyType, terminated)
 	return terminated.ReconcileResult(), nil
 }
 
 func (r *AtlasStreamsInstanceReconciler) ready(ctx *workflow.Context, streamInstance *admin.StreamsTenant) (ctrl.Result, error) {
 	ctx.EnsureStatusOption(status.AtlasStreamInstanceDetails(streamInstance.GetId(), streamInstance.GetHostnames()))
 	result := workflow.OK()
-	ctx.SetConditionFromResult(status.ReadyType, result)
-	ctx.SetConditionFromResult(status.StreamInstanceReadyType, result)
+	ctx.SetConditionFromResult(api.ReadyType, result)
+	ctx.SetConditionFromResult(api.StreamInstanceReadyType, result)
 	return result.ReconcileResult(), nil
 }
 
 func (r *AtlasStreamsInstanceReconciler) inProgress(ctx *workflow.Context, streamInstance *admin.StreamsTenant) (ctrl.Result, error) {
 	ctx.EnsureStatusOption(status.AtlasStreamInstanceDetails(streamInstance.GetId(), streamInstance.GetHostnames()))
 	result := workflow.InProgress(workflow.StreamInstanceSetupInProgress, "configuring stream instance in Atlas")
-	ctx.SetConditionFromResult(status.StreamInstanceReadyType, result)
+	ctx.SetConditionFromResult(api.StreamInstanceReadyType, result)
 	return result.ReconcileResult(), nil
 }

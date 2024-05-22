@@ -1,4 +1,4 @@
-package status
+package api
 
 // +k8s:deepcopy-gen=false
 

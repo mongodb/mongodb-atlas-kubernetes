@@ -4,11 +4,12 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 )
 
 // AtlasDeploymentStatus defines the observed state of AtlasDeployment.
 type AtlasDeploymentStatus struct {
-	Common `json:",inline"`
+	api.Common `json:",inline"`
 
 	// StateName is the current state of the cluster.
 	// The possible states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING

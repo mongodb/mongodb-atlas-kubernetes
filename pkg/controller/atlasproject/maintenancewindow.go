@@ -9,9 +9,9 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -23,7 +23,7 @@ func ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *akov2.
 	canReconcile, err := canMaintenanceWindowReconcile(workflowCtx, protected, atlasProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		workflowCtx.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 		return result
 	}
@@ -33,13 +33,13 @@ func ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *akov2.
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.MaintenanceWindowReadyType, result)
+		workflowCtx.SetConditionFromResult(api.MaintenanceWindowReadyType, result)
 
 		return result
 	}
 
 	if isEmptyWindow(atlasProject.Spec.MaintenanceWindow) {
-		if condition, found := workflowCtx.GetCondition(status.MaintenanceWindowReadyType); found {
+		if condition, found := workflowCtx.GetCondition(api.MaintenanceWindowReadyType); found {
 			workflowCtx.Log.Debugw("Window is empty, deleting in Atlas")
 			if result := deleteInAtlas(workflowCtx.Context, workflowCtx.Client, atlasProject.ID()); !result.IsOk() {
 				workflowCtx.SetConditionFromResult(condition.Type, result)
@@ -52,11 +52,11 @@ func ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *akov2.
 	}
 
 	if result := syncAtlasWithSpec(workflowCtx, atlasProject.ID(), atlasProject.Spec.MaintenanceWindow); !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.MaintenanceWindowReadyType, result)
+		workflowCtx.SetConditionFromResult(api.MaintenanceWindowReadyType, result)
 		return result
 	}
 
-	workflowCtx.SetConditionTrue(status.MaintenanceWindowReadyType)
+	workflowCtx.SetConditionTrue(api.MaintenanceWindowReadyType)
 	return workflow.OK()
 }
 
