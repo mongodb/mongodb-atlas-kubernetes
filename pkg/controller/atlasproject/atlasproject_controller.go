@@ -317,7 +317,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensureCustomRoles(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureCustomRoles(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.ProjectCustomRolesReadyType), "")
 	}
 	results = append(results, result)
