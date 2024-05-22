@@ -1,7 +1,6 @@
 package int
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -20,15 +19,12 @@ import (
 
 var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection-enabled"), func() {
 	const (
-		interval               = PollingInterval
 		dataFederationBaseName = "test-data-federation-%s"
 	)
 
 	var (
 		connectionSecret       corev1.Secret
 		testProject            *akov2.AtlasProject
-		testNamespace          *corev1.Namespace
-		stopManager            context.CancelFunc
 		testDataFederation     *akov2.AtlasDataFederation
 		testDataFederationName string
 		manualDeletion         bool
@@ -36,21 +32,20 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 	BeforeEach(func() {
 		By("Starting the operator", func() {
-			testNamespace, stopManager = prepareControllers(true)
+			prepareControllers(true)
 			Expect(testNamespace).ToNot(BeNil())
-			Expect(stopManager).ToNot(BeNil())
 		})
 
 		By("Creating project connection secret", func() {
 			connectionSecret = buildConnectionSecret(fmt.Sprintf("%s-atlas-key", testNamespace.Name))
-			Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
+			Expect(k8sClient.Create(ctx, &connectionSecret)).To(Succeed())
 		})
 
 		By("Creating a project in the cluster", func() {
 			testProject = akov2.DefaultProject(testNamespace.Name, connectionSecret.Name).
 				WithIPAccessList(project.NewIPAccessList().
 					WithCIDR("0.0.0.0/0"))
-			Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
+			Expect(k8sClient.Create(ctx, testProject, &client.CreateOptions{})).To(Succeed())
 
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
@@ -66,40 +61,33 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 	AfterEach(func() {
 		By("Deleting project connection secret", func() {
-			Expect(k8sClient.Delete(context.Background(), &connectionSecret)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &connectionSecret)).To(Succeed())
 		})
 
 		if !manualDeletion {
 			By("Removing Atlas DataFederation "+testDataFederationName, func() {
 				_, _, err := atlasClient.DataFederationApi.
-					DeleteFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+					DeleteFederatedDatabase(ctx, testProject.ID(), testDataFederation.Spec.Name).
 					Execute()
 				Expect(err).To(BeNil())
 			})
 		}
 
 		By("Removing Atlas Project "+testProject.Status.ID, func() {
-			_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), testProject.ID()).Execute()
+			_, _, err := atlasClient.ProjectsApi.DeleteProject(ctx, testProject.ID()).Execute()
 			Expect(err).To(BeNil())
 		})
-
-		By("Stopping the operator", func() {
-			stopManager()
-			err := k8sClient.Delete(context.Background(), testNamespace)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 	})
 
 	Describe("Operator is running with deletion protection enabled", func() {
 		It("Creates a data federation and protects it from deletion", func() {
 			By("Creating a DataFederation instance", func() {
 				testDataFederation = akov2.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name)
-				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
+				Expect(k8sClient.Create(ctx, testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
 					df, _, err := atlasClient.DataFederationApi.
-						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+						GetFederatedDatabase(ctx, testProject.ID(), testDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).ShouldNot(HaveOccurred())
 					g.Expect(df).NotTo(BeNil())
@@ -108,12 +96,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 			// nolint:dupl
 			By("Deleting a data federation instance in cluster doesn't delete it from Atlas", func() {
-				Expect(k8sClient.Delete(context.Background(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testDataFederation, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
 					dataFederation, _, err := atlasClient.DataFederationApi.
-						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+						GetFederatedDatabase(ctx, testProject.ID(), testDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(dataFederation).ToNot(BeNil())
@@ -128,12 +116,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 				}
 
 				_, _, err := atlasClient.DataFederationApi.
-					CreateFederatedDatabase(context.Background(), testProject.ID(), df).
+					CreateFederatedDatabase(ctx, testProject.ID(), df).
 					Execute()
 				Expect(err).To(BeNil())
 				Eventually(func(g Gomega) {
 					atlasDataFederation, _, err := atlasClient.DataFederationApi.
-						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederationName).
+						GetFederatedDatabase(ctx, testProject.ID(), testDataFederationName).
 						Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasDataFederation).ToNot(BeNil())
@@ -143,7 +131,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 			By("Creating a data federation instance in the cluster", func() {
 				testDataFederation = akov2.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name)
-				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
+				Expect(k8sClient.Create(ctx, testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDataFederation, api.TrueCondition(api.ReadyType))
@@ -152,12 +140,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 			// nolint:dupl
 			By("Deleting a data federation instance in the cluster does not delete it in Atlas", func() {
-				Expect(k8sClient.Delete(context.Background(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testDataFederation, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
 					dataFederation, _, err := atlasClient.DataFederationApi.
-						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+						GetFederatedDatabase(ctx, testProject.ID(), testDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(dataFederation).ToNot(BeNil())
@@ -169,7 +157,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 			By("Creating a data federation instance in the cluster", func() {
 				testDataFederation = akov2.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name).
 					WithAnnotations(map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete})
-				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
+				Expect(k8sClient.Create(ctx, testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDataFederation, api.TrueCondition(api.ReadyType))
@@ -178,12 +166,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 			})
 
 			By("Deleting annotated data federation instance in cluster should delete it from  Atlas", func() {
-				Expect(k8sClient.Delete(context.Background(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testDataFederation, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
 					dataFederation, _, err := atlasClient.DataFederationApi.
-						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+						GetFederatedDatabase(ctx, testProject.ID(), testDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(dataFederation).To(BeNil())

@@ -1,7 +1,6 @@
 package int
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -31,6 +30,7 @@ const (
 
 var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 	const interval = time.Second * 1
+	var namespace corev1.Namespace
 
 	var (
 		connectionSecret     corev1.Secret
@@ -42,12 +42,12 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 	BeforeEach(func() {
 		namespace = corev1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: "test"}}
-		Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(ctx, &namespace)).ToNot(HaveOccurred())
 
 		createdDBUser = &akov2.AtlasDatabaseUser{}
 
-		connectionSecret = buildConnectionSecret("my-atlas-key")
-		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
+		connectionSecret = buildConnectionSecret("my-atlas-key", namespace.Name)
+		Expect(k8sClient.Create(ctx, &connectionSecret)).To(Succeed())
 
 		By("Creating the project", func() {
 			// adding whitespace to the name to check normalization for connection secrets names
@@ -59,7 +59,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 				createdProject.Spec.Name = "dev-test atlas-project"
 			}
 
-			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
+			Expect(k8sClient.Create(ctx, createdProject)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
@@ -68,10 +68,10 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 	AfterEach(func() {
 		if DevMode {
-			Expect(k8sClient.Delete(context.Background(), createdDBUser)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, createdDBUser)).To(Succeed())
 			Eventually(checkAtlasDatabaseUserRemoved(createdProject.ID(), *createdDBUser), 20, interval).Should(BeTrue())
 			if secondDBUser != nil {
-				Expect(k8sClient.Delete(context.Background(), secondDBUser)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, secondDBUser)).To(Succeed())
 				Eventually(checkAtlasDatabaseUserRemoved(createdProject.ID(), *secondDBUser), 20, interval).Should(BeTrue())
 			}
 			return
@@ -79,18 +79,18 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 		if createdProject != nil && createdProject.ID() != "" {
 			list := akov2.AtlasDeploymentList{}
-			Expect(k8sClient.List(context.Background(), &list, client.InNamespace(namespace.Name))).To(Succeed())
+			Expect(k8sClient.List(ctx, &list, client.InNamespace(namespace.Name))).To(Succeed())
 
 			for i := range list.Items {
 				By("Removing Atlas Deployment " + list.Items[i].Name)
-				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
+				Expect(k8sClient.Delete(ctx, &list.Items[i])).To(Succeed())
 			}
 			for i := range list.Items {
 				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), list.Items[i].GetDeploymentName()), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, createdProject)).To(Succeed())
 			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 60, interval).Should(BeTrue())
 		}
 	})
@@ -98,20 +98,20 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 	Describe("Create user and deployment in different namespaces", func() {
 		It("Should Succeed", func() {
 			deploymentNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-deployment"}}
-			Expect(k8sClient.Create(context.Background(), &deploymentNS)).ToNot(HaveOccurred())
+			Expect(k8sClient.Create(ctx, &deploymentNS)).ToNot(HaveOccurred())
 
 			userNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-user"}}
-			Expect(k8sClient.Create(context.Background(), &userNS)).ToNot(HaveOccurred())
+			Expect(k8sClient.Create(ctx, &userNS)).ToNot(HaveOccurred())
 
 			By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret))
 			passwordSecret := buildPasswordSecret(userNS.Name, UserPasswordSecret, DBUserPassword)
-			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
+			Expect(k8sClient.Create(ctx, &passwordSecret)).To(Succeed())
 
 			createdDeploymentAWS = akov2.DefaultAWSDeployment(deploymentNS.Name, createdProject.Name).Lightweight()
 			// The project namespace is different from the deployment one - need to specify explicitly
 			createdDeploymentAWS.Spec.Project.Namespace = namespace.Name
 
-			Expect(k8sClient.Create(context.Background(), createdDeploymentAWS)).ToNot(HaveOccurred())
+			Expect(k8sClient.Create(ctx, createdDeploymentAWS)).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) bool {
 				return resources.CheckCondition(k8sClient, createdDeploymentAWS, api.TrueCondition(api.ReadyType), validateDeploymentCreatingFunc(g))
@@ -119,24 +119,24 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 			createdDBUser = akov2.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			createdDBUser.Spec.Project.Namespace = namespace.Name
-			Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
+			Expect(k8sClient.Create(ctx, createdDBUser)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, createdDBUser, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(DBUserUpdateTimeout).WithPolling(interval).Should(BeTrue())
 
 			By("Removing the deployment", func() {
-				Expect(k8sClient.Delete(context.Background(), createdDeploymentAWS)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, createdDeploymentAWS)).To(Succeed())
 				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), createdDeploymentAWS.GetDeploymentName()), 600, interval).Should(BeTrue())
 			})
 		})
 	})
 })
 
-func buildConnectionSecret(name string) corev1.Secret {
+func buildConnectionSecret(name, namespace string) corev1.Secret {
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace.Name,
+			Namespace: namespace,
 		},
 		StringData: map[string]string{"orgId": orgID, "publicApiKey": publicKey, "privateApiKey": privateKey},
 	}
@@ -155,7 +155,7 @@ func buildPasswordSecret(namespace, name, password string) corev1.Secret {
 func checkAtlasDatabaseUserRemoved(projectID string, user akov2.AtlasDatabaseUser) func() bool {
 	return func() bool {
 		_, r, err := atlasClient.DatabaseUsersApi.
-			GetDatabaseUser(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username).
+			GetDatabaseUser(ctx, user.Spec.DatabaseName, projectID, user.Spec.Username).
 			Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
@@ -170,7 +170,7 @@ func checkAtlasDatabaseUserRemoved(projectID string, user akov2.AtlasDatabaseUse
 func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
 		_, r, err := atlasClient.ClustersApi.
-			GetCluster(context.Background(), projectID, deploymentName).
+			GetCluster(ctx, projectID, deploymentName).
 			Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
@@ -184,7 +184,7 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+		_, r, err := atlasClient.ProjectsApi.GetProject(ctx, projectID).Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true

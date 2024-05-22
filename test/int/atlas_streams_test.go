@@ -1,7 +1,6 @@
 package int
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,8 +19,6 @@ import (
 )
 
 var _ = Describe("AtlasStreams", Label("int", "AtlasStreams"), func() {
-	var testNamespace *corev1.Namespace
-	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret
 	var projectName string
 	var testProject *akov2.AtlasProject
@@ -57,14 +54,13 @@ YJZC5C0=
 
 	BeforeEach(func() {
 		By("Starting the operator", func() {
-			testNamespace, stopManager = prepareControllers(false)
+			prepareControllers(false)
 			Expect(testNamespace).ToNot(BeNil())
-			Expect(stopManager).ToNot(BeNil())
 		})
 
 		By("Creating project connection secret", func() {
 			connectionSecret = buildConnectionSecret(fmt.Sprintf("%s-atlas-key", testNamespace.Name))
-			Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
+			Expect(k8sClient.Create(ctx, &connectionSecret)).To(Succeed())
 		})
 
 		By("Creating a project", func() {
@@ -73,7 +69,7 @@ YJZC5C0=
 
 			testProject = akov2.NewProject(testNamespace.Name, projectName, projectName).
 				WithConnectionSecret(connectionSecret.Name)
-			Expect(k8sClient.Create(context.Background(), testProject)).To(Succeed())
+			Expect(k8sClient.Create(ctx, testProject)).To(Succeed())
 
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
@@ -98,7 +94,7 @@ YJZC5C0=
 					},
 				}
 
-				Expect(k8sClient.Create(context.Background(), sampleConnection)).To(Succeed())
+				Expect(k8sClient.Create(ctx, sampleConnection)).To(Succeed())
 				Expect(sampleConnection.GetFinalizers()).To(BeEmpty())
 			})
 
@@ -116,7 +112,7 @@ YJZC5C0=
 						"password": "kafka_pass",
 					},
 				}
-				Expect(k8sClient.Create(context.Background(), kafkaUserPassSecret)).To(Succeed())
+				Expect(k8sClient.Create(ctx, kafkaUserPassSecret)).To(Succeed())
 
 				kafkaCertificateSecret := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
@@ -130,7 +126,7 @@ YJZC5C0=
 						"certificate": certificate,
 					},
 				}
-				Expect(k8sClient.Create(context.Background(), kafkaCertificateSecret)).To(Succeed())
+				Expect(k8sClient.Create(ctx, kafkaCertificateSecret)).To(Succeed())
 
 				kafkaConnection = &akov2.AtlasStreamConnection{
 					ObjectMeta: metav1.ObjectMeta{
@@ -159,7 +155,7 @@ YJZC5C0=
 						},
 					},
 				}
-				Expect(k8sClient.Create(context.Background(), kafkaConnection)).To(Succeed())
+				Expect(k8sClient.Create(ctx, kafkaConnection)).To(Succeed())
 				Expect(kafkaConnection.GetFinalizers()).To(BeEmpty())
 			})
 
@@ -192,7 +188,7 @@ YJZC5C0=
 						},
 					},
 				}
-				Expect(k8sClient.Create(context.Background(), streamInstance)).To(Succeed())
+				Expect(k8sClient.Create(ctx, streamInstance)).To(Succeed())
 
 				checkInstanceIsReady(client.ObjectKeyFromObject(streamInstance))
 			})
@@ -200,10 +196,10 @@ YJZC5C0=
 			By("Updating the instance", func() {
 				Eventually(func(g Gomega) {
 					streamInstance := &akov2.AtlasStreamInstance{}
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, streamInstance)).To(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, streamInstance)).To(Succeed())
 
 					streamInstance.Spec.Config.Region = "DUBLIN_IRL"
-					g.Expect(k8sClient.Update(context.Background(), streamInstance)).To(Succeed())
+					g.Expect(k8sClient.Update(ctx, streamInstance)).To(Succeed())
 				}).WithTimeout(time.Minute).WithPolling(PollingInterval)
 
 				checkInstanceIsReady(client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name})
@@ -211,9 +207,9 @@ YJZC5C0=
 
 			By("Updating a connection", func() {
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(kafkaConnection), kafkaConnection)).To(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(kafkaConnection), kafkaConnection)).To(Succeed())
 					kafkaConnection.Spec.KafkaConfig.BootstrapServers = "kafka.server1:9001,kafka.server2:9002,kafka.server3:9003"
-					g.Expect(k8sClient.Update(context.Background(), kafkaConnection)).To(Succeed())
+					g.Expect(k8sClient.Update(ctx, kafkaConnection)).To(Succeed())
 				}).WithTimeout(time.Minute).WithPolling(PollingInterval)
 
 				checkInstanceIsReady(client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name})
@@ -222,9 +218,9 @@ YJZC5C0=
 			By("Updating a secret", func() {
 				Eventually(func(g Gomega) {
 					s := corev1.Secret{}
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: kafkaUserPassSecretName, Namespace: testNamespace.Name}, &s)).To(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: kafkaUserPassSecretName, Namespace: testNamespace.Name}, &s)).To(Succeed())
 					s.Data["username"] = []byte("kafka_user_changed")
-					g.Expect(k8sClient.Update(context.Background(), &s)).To(Succeed())
+					g.Expect(k8sClient.Update(ctx, &s)).To(Succeed())
 				}).WithTimeout(time.Minute).WithPolling(PollingInterval)
 
 				checkInstanceIsReady(client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name})
@@ -232,7 +228,7 @@ YJZC5C0=
 
 			By("Releasing a connection when removed from instance", func() {
 				streamInstance := &akov2.AtlasStreamInstance{}
-				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, streamInstance)).To(Succeed())
+				Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, streamInstance)).To(Succeed())
 
 				streamInstance.Spec.ConnectionRegistry = []common.ResourceRefNamespaced{
 					{
@@ -240,31 +236,31 @@ YJZC5C0=
 						Namespace: sampleConnection.Namespace,
 					},
 				}
-				Expect(k8sClient.Update(context.Background(), streamInstance)).To(Succeed())
+				Expect(k8sClient.Update(ctx, streamInstance)).To(Succeed())
 
 				checkInstanceIsReady(client.ObjectKeyFromObject(streamInstance))
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(kafkaConnection), kafkaConnection)).To(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(kafkaConnection), kafkaConnection)).To(Succeed())
 					g.Expect(kafkaConnection.GetFinalizers()).To(BeEmpty())
 				}).WithTimeout(2 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 			})
 
 			By("Deleting instance and connections", func() {
-				Expect(k8sClient.Delete(context.Background(), kafkaConnection)).To(Succeed())
-				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(kafkaConnection), kafkaConnection)).ToNot(Succeed())
+				Expect(k8sClient.Delete(ctx, kafkaConnection)).To(Succeed())
+				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(kafkaConnection), kafkaConnection)).ToNot(Succeed())
 
-				Expect(k8sClient.Delete(context.Background(), sampleConnection)).To(Succeed())
-				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(sampleConnection), sampleConnection)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, sampleConnection)).To(Succeed())
+				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sampleConnection), sampleConnection)).To(Succeed())
 				Expect(sampleConnection.DeletionTimestamp).ShouldNot(BeNil())
 
 				streamInstance := &akov2.AtlasStreamInstance{}
-				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, streamInstance)).To(Succeed())
-				Expect(k8sClient.Delete(context.Background(), streamInstance))
+				Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, streamInstance)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, streamInstance))
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(sampleConnection), sampleConnection)).ToNot(Succeed())
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamInstance), streamInstance)).ToNot(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(sampleConnection), sampleConnection)).ToNot(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(streamInstance), streamInstance)).ToNot(Succeed())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 			})
 		})
@@ -274,24 +270,24 @@ YJZC5C0=
 		By("Deleting stream connection secrets", func() {
 			Eventually(func(g Gomega) {
 				secret := &corev1.Secret{}
-				g.Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: kafkaUserPassSecretName, Namespace: testNamespace.Name}, secret)).To(Succeed())
-				g.Expect(k8sClient.Delete(context.Background(), secret)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: kafkaUserPassSecretName, Namespace: testNamespace.Name}, secret)).To(Succeed())
+				g.Expect(k8sClient.Delete(ctx, secret)).To(Succeed())
 			}).WithTimeout(1 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				secret := &corev1.Secret{}
-				g.Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: kafkaCertificateSecretName, Namespace: testNamespace.Name}, secret)).To(Succeed())
-				g.Expect(k8sClient.Delete(context.Background(), secret)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: kafkaCertificateSecretName, Namespace: testNamespace.Name}, secret)).To(Succeed())
+				g.Expect(k8sClient.Delete(ctx, secret)).To(Succeed())
 			}).WithTimeout(1 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 		})
 
 		By("Deleting project", func() {
 			if testProject != nil {
 				projectID := testProject.ID()
-				Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testProject)).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+					_, r, err := atlasClient.ProjectsApi.GetProject(ctx, projectID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(r).ToNot(BeNil())
 					g.Expect(r.StatusCode).To(Equal(http.StatusNotFound))
@@ -300,13 +296,7 @@ YJZC5C0=
 		})
 
 		By("Deleting project connection secret", func() {
-			Expect(k8sClient.Delete(context.Background(), &connectionSecret)).To(Succeed())
-		})
-
-		By("Stopping the operator", func() {
-			stopManager()
-			err := k8sClient.Delete(context.Background(), testNamespace)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(k8sClient.Delete(ctx, &connectionSecret)).To(Succeed())
 		})
 	})
 })
@@ -319,17 +309,17 @@ func checkInstanceIsReady(instanceObjKey client.ObjectKey) {
 	)
 	Eventually(func(g Gomega) {
 		streamInstance := &akov2.AtlasStreamInstance{}
-		g.Expect(k8sClient.Get(context.Background(), instanceObjKey, streamInstance)).To(Succeed())
+		g.Expect(k8sClient.Get(ctx, instanceObjKey, streamInstance)).To(Succeed())
 		g.Expect(streamInstance.Status.Conditions).To(ContainElements(readyConditions))
 	}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
 	Eventually(func(g Gomega) {
 		streamInstance := &akov2.AtlasStreamInstance{}
-		g.Expect(k8sClient.Get(context.Background(), instanceObjKey, streamInstance)).To(Succeed())
+		g.Expect(k8sClient.Get(ctx, instanceObjKey, streamInstance)).To(Succeed())
 
 		for _, connectionRef := range streamInstance.Spec.ConnectionRegistry {
 			connection := &akov2.AtlasStreamConnection{}
-			g.Expect(k8sClient.Get(context.Background(), *connectionRef.GetObject(streamInstance.Namespace), connection)).To(Succeed())
+			g.Expect(k8sClient.Get(ctx, *connectionRef.GetObject(streamInstance.Namespace), connection)).To(Succeed())
 			g.Expect(connection.GetFinalizers()).ToNot(BeEmpty())
 		}
 	}).WithTimeout(2 * time.Minute).WithPolling(PollingInterval).Should(Succeed())

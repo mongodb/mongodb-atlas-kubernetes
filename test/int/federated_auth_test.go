@@ -1,7 +1,6 @@
 package int
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -21,8 +20,6 @@ import (
 )
 
 var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federated-auth"), func() {
-	var testNamespace *corev1.Namespace
-	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret
 
 	var akoProject *akov2.AtlasProject
@@ -32,7 +29,6 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 	resourceName := "fed-auth-test"
 	newRoleMapName := "ako_team"
-	ctx := context.Background()
 
 	BeforeEach(func() {
 		By("Checking if Federation Settings enabled for the org", func() {
@@ -68,9 +64,8 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 		})
 
 		By("Starting the operator with protection OFF", func() {
-			testNamespace, stopManager = prepareControllers(false)
+			prepareControllers(false)
 			Expect(testNamespace).ShouldNot(BeNil())
-			Expect(stopManager).ShouldNot(BeNil())
 		})
 
 		By("Creating project connection secret", func() {
@@ -79,10 +74,10 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 		})
 
 		By("Creating a project", func() {
-			akoProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
+			akoProject = akov2.DefaultProject(testNamespace.Name, connectionSecret.Name).
 				WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
 
-			Expect(k8sClient.Create(context.Background(), akoProject)).To(Succeed())
+			Expect(k8sClient.Create(ctx, akoProject)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, akoProject, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(5 * time.Minute).WithPolling(interval).Should(BeTrue())
@@ -197,11 +192,6 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 		By("Should delete connection secret", func() {
 			Expect(k8sClient.Delete(ctx, &connectionSecret)).To(Succeed())
-		})
-
-		By("Should stop the operator", func() {
-			stopManager()
-			Expect(k8sClient.Delete(ctx, testNamespace)).ToNot(HaveOccurred())
 		})
 	})
 })

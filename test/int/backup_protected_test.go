@@ -1,7 +1,6 @@
 package int
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -25,22 +24,19 @@ import (
 var _ = Describe("AtlasBackupSchedule Deletion Protected",
 	Ordered,
 	Label("AtlasDeployment", "AtlasBackupSchedule", "deletion-protection", "deletion-protection-backup"), func() {
-		var testNamespace *corev1.Namespace
-		var stopManager context.CancelFunc
 		var connectionSecret corev1.Secret
 		var testProject *akov2.AtlasProject
 		var testDeployment *akov2.AtlasDeployment
 
 		BeforeAll(func() {
 			By("Starting the operator with protection ON", func() {
-				testNamespace, stopManager = prepareControllers(true)
+				prepareControllers(true)
 				Expect(testNamespace).ToNot(BeNil())
-				Expect(stopManager).ToNot(BeNil())
 			})
 
 			By("Creating project connection secret", func() {
 				connectionSecret = buildConnectionSecret(fmt.Sprintf("%s-atlas-key", testNamespace.Name))
-				Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &connectionSecret)).To(Succeed())
 			})
 
 			By("Creating a project with deletion annotation", func() {
@@ -50,7 +46,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 					customresource.ResourcePolicyAnnotation,
 					customresource.ResourcePolicyDelete,
 				)
-				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
+				Expect(k8sClient.Create(ctx, testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
@@ -66,23 +62,17 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 				Expect(deleteAtlasDeployment(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name)).To(Succeed())
 			})
 			By("Deleting deployment from Kubernetes", func() {
-				Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testDeployment)).To(Succeed())
 			})
 			By("Deleting project from k8s and atlas", func() {
-				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testProject, &client.DeleteOptions{})).To(Succeed())
 				Eventually(
 					checkAtlasProjectRemoved(testProject.Status.ID),
 				).WithTimeout(20 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
 			By("Deleting project connection secret", func() {
-				Expect(k8sClient.Delete(context.Background(), &connectionSecret)).To(Succeed())
-			})
-
-			By("Stopping the operator", func() {
-				stopManager()
-				err := k8sClient.Delete(context.Background(), testNamespace)
-				Expect(err).ToNot(HaveOccurred())
+				Expect(k8sClient.Delete(ctx, &connectionSecret)).To(Succeed())
 			})
 		})
 
@@ -112,7 +102,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 						},
 					},
 				}
-				Expect(k8sClient.Create(context.Background(), bsPolicy)).To(Succeed())
+				Expect(k8sClient.Create(ctx, bsPolicy)).To(Succeed())
 			})
 
 			By("Creating AtlasBackupSchedule resource", func() {
@@ -139,13 +129,13 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 						CopySettings:                      []akov2.CopySetting{},
 					},
 				}
-				Expect(k8sClient.Create(context.Background(), bsSchedule)).To(Succeed())
+				Expect(k8sClient.Create(ctx, bsSchedule)).To(Succeed())
 			})
 
 			By("Creating a deployment with backups enabled (default)", func() {
 				testDeployment = akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
 				testDeployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
-				Expect(k8sClient.Create(context.Background(), testDeployment)).To(Succeed())
+				Expect(k8sClient.Create(ctx, testDeployment)).To(Succeed())
 			})
 
 			By("Deployment should be Ready", func() {
@@ -158,7 +148,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 				Eventually(func(g Gomega) {
 					deployment := &akov2.AtlasDeployment{}
 					g.Expect(
-						k8sClient.Get(context.Background(),
+						k8sClient.Get(ctx,
 							kube.ObjectKeyFromObject(testDeployment),
 							deployment),
 					).To(Succeed())
@@ -168,7 +158,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 						Namespace: bsSchedule.Namespace,
 					}
 
-					g.Expect(k8sClient.Update(context.Background(), deployment)).To(Succeed())
+					g.Expect(k8sClient.Update(ctx, deployment)).To(Succeed())
 				}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 			})
 

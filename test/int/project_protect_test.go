@@ -1,7 +1,6 @@
 package int
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,20 +19,17 @@ import (
 )
 
 var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enabled"), func() {
-	var testNamespace *corev1.Namespace
-	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret
 
 	BeforeEach(func() {
 		By("Starting the operator", func() {
-			testNamespace, stopManager = prepareControllers(true)
+			prepareControllers(true)
 			Expect(testNamespace).ToNot(BeNil())
-			Expect(stopManager).ToNot(BeNil())
 		})
 
 		By("Creating project connection secret", func() {
 			connectionSecret = buildConnectionSecret(fmt.Sprintf("%s-atlas-key", testNamespace.Name))
-			Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
+			Expect(k8sClient.Create(ctx, &connectionSecret)).To(Succeed())
 		})
 	})
 
@@ -45,7 +41,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			By("Creating a project in the cluster", func() {
 				testProject = akov2.NewProject(testNamespace.Name, projectName, projectName).
 					WithConnectionSecret(connectionSecret.Name)
-				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
+				Expect(k8sClient.Create(ctx, testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
@@ -55,17 +51,17 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			// nolint:dupl
 			By("Deleting project in cluster doesn't delete from Atlas", func() {
 				projectID := testProject.ID()
-				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testProject, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(context.Background(), projectName).Execute()
+					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(ctx, projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+				_, _, err := atlasClient.ProjectsApi.DeleteProject(ctx, projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -80,14 +76,14 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 					Name:                      projectName,
 					WithDefaultAlertsSettings: pointer.MakePtr(true),
 				}
-				_, _, err := atlasClient.ProjectsApi.CreateProject(context.Background(), &atlasProject).Execute()
+				_, _, err := atlasClient.ProjectsApi.CreateProject(ctx, &atlasProject).Execute()
 				Expect(err).To(BeNil())
 			})
 
 			By("Creating a project in the cluster", func() {
 				testProject = akov2.NewProject(testNamespace.Name, projectName, projectName).
 					WithConnectionSecret(connectionSecret.Name)
-				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
+				Expect(k8sClient.Create(ctx, testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
@@ -97,17 +93,17 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			// nolint:dupl
 			By("Deleting project in cluster doesn't delete from Atlas", func() {
 				projectID := testProject.ID()
-				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testProject, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(context.Background(), projectName).Execute()
+					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(ctx, projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+				_, _, err := atlasClient.ProjectsApi.DeleteProject(ctx, projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -120,7 +116,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				testProject = akov2.NewProject(testNamespace.Name, projectName, projectName).
 					WithAnnotations(map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete}).
 					WithConnectionSecret(connectionSecret.Name)
-				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
+				Expect(k8sClient.Create(ctx, testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
@@ -130,10 +126,10 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			// nolint:dupl
 			By("Deleting project in cluster should delete it from Atlas", func() {
 				projectID := testProject.ID()
-				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testProject, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+					_, r, err := atlasClient.ProjectsApi.GetProject(ctx, projectID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(r).ToNot(BeNil())
 					g.Expect(r.StatusCode).To(Equal(http.StatusNotFound))
@@ -144,13 +140,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 
 	AfterEach(func() {
 		By("Deleting project connection secret", func() {
-			Expect(k8sClient.Delete(context.Background(), &connectionSecret)).To(Succeed())
-		})
-
-		By("Stopping the operator", func() {
-			stopManager()
-			err := k8sClient.Delete(context.Background(), testNamespace)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(k8sClient.Delete(ctx, &connectionSecret)).To(Succeed())
 		})
 	})
 })

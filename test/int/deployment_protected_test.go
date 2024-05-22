@@ -1,9 +1,14 @@
 package int
 
 import (
-	"context"
 	"fmt"
 	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -11,34 +16,24 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
-
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // nolint:dupl
 var _ = Describe("AtlasDeployment Deletion Protected",
 	Ordered,
 	Label("AtlasDeployment", "deletion-protection", "deployment-deletion-protected"), func() {
-		var testNamespace *corev1.Namespace
-		var stopManager context.CancelFunc
 		var connectionSecret corev1.Secret
 		var testProject *akov2.AtlasProject
 
 		BeforeAll(func() {
 			By("Starting the operator with protection ON", func() {
-				testNamespace, stopManager = prepareControllers(true)
+				prepareControllers(true)
 				Expect(testNamespace).ToNot(BeNil())
-				Expect(stopManager).ToNot(BeNil())
 			})
 
 			By("Creating project connection secret", func() {
 				connectionSecret = buildConnectionSecret(fmt.Sprintf("%s-atlas-key", testNamespace.Name))
-				Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &connectionSecret)).To(Succeed())
 			})
 
 			By("Creating a project with deletion annotation", func() {
@@ -48,7 +43,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 					customresource.ResourcePolicyAnnotation,
 					customresource.ResourcePolicyDelete,
 				)
-				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
+				Expect(k8sClient.Create(ctx, testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
@@ -58,20 +53,14 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 
 		AfterAll(func() {
 			By("Deleting project from k8s and atlas", func() {
-				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(ctx, testProject, &client.DeleteOptions{})).To(Succeed())
 				Eventually(
 					checkAtlasProjectRemoved(testProject.Status.ID),
 				).WithTimeout(3 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
 			By("Deleting project connection secret", func() {
-				Expect(k8sClient.Delete(context.Background(), &connectionSecret)).To(Succeed())
-			})
-
-			By("Stopping the operator", func() {
-				stopManager()
-				err := k8sClient.Delete(context.Background(), testNamespace)
-				Expect(err).ToNot(HaveOccurred())
+				Expect(k8sClient.Delete(ctx, &connectionSecret)).To(Succeed())
 			})
 		})
 
@@ -95,7 +84,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 
 func preserveDeploymentFlow(ns string, testProject *akov2.AtlasProject, testDeployment *akov2.AtlasDeployment) {
 	By("Creating deployment in Kubernetes", func() {
-		Expect(k8sClient.Create(context.Background(), testDeployment, &client.CreateOptions{})).To(Succeed())
+		Expect(k8sClient.Create(ctx, testDeployment, &client.CreateOptions{})).To(Succeed())
 	})
 
 	By("Waiting the deployment to settle in Kubernetes", func() {
@@ -105,10 +94,10 @@ func preserveDeploymentFlow(ns string, testProject *akov2.AtlasProject, testDepl
 	})
 
 	By("Deleting the deployment from Kubernetes", func() {
-		Expect(k8sClient.Delete(context.Background(), testDeployment, &client.DeleteOptions{})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, testDeployment, &client.DeleteOptions{})).To(Succeed())
 		Eventually(func() bool {
 			deployment := akov2.AtlasDeployment{}
-			err := k8sClient.Get(context.Background(), kube.ObjectKey(ns, testDeployment.Name), &deployment, &client.GetOptions{})
+			err := k8sClient.Get(ctx, kube.ObjectKey(ns, testDeployment.Name), &deployment, &client.GetOptions{})
 			return k8serrors.IsNotFound(err)
 		}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 	})
