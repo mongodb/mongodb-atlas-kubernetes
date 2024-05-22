@@ -209,11 +209,11 @@ func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProjec
 }
 
 func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
-	matches, err := userMatchesSpec(log, atlasUser.AtlasDatabaseUserSpec, &operatorUser.Spec)
+	diffs, err := userMatchesSpec(atlasUser.AtlasDatabaseUserSpec, &operatorUser.Spec)
 	if err != nil {
 		return false, err
 	}
-	if !matches {
+	if len(diffs) == 0 {
 		return true, nil
 	}
 	// We need to check if the password has changed since the last time
@@ -224,43 +224,44 @@ func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *
 	return passwordsChanged, nil
 }
 
-func userMatchesSpec(log *zap.SugaredLogger, atlasUsername, operatorUser *akov2.AtlasDatabaseUserSpec) (bool, error) {
+func userMatchesSpec(atlasUsername, operatorUser *akov2.AtlasDatabaseUserSpec) ([]string, error) {
 	operatorCopy, err := dbuser.Normalize(operatorUser.DeepCopy())
 	if err != nil {
-		return false, err
+		return []string{}, err
 	}
 
+	diffs := []string{}
 	if atlasUsername.Username != operatorCopy.Username {
-		log.Infof("Usernames differs from spec: %q <> %q\n", atlasUsername.Username, operatorCopy.Username)
-		return false, nil
+		diffs = append(diffs, fmt.Sprintf("Usernames differs from spec: %q <> %q\n",
+			atlasUsername.Username, operatorCopy.Username))
 	}
 	if atlasUsername.DatabaseName != operatorCopy.DatabaseName {
-		log.Infof("DatabaseName differs from spec: %q <> %q\n", atlasUsername.DatabaseName, operatorCopy.DatabaseName)
-		return false, nil
+		diffs = append(diffs, fmt.Sprintf("DatabaseName differs from spec: %q <> %q\n",
+			atlasUsername.DatabaseName, operatorCopy.DatabaseName))
 	}
 	if atlasUsername.DeleteAfterDate != operatorCopy.DeleteAfterDate {
-		log.Infof("DeleteAfterDate differs from spec: %q <> %q\n", atlasUsername.DeleteAfterDate, operatorCopy.DeleteAfterDate)
-		return false, nil
+		diffs = append(diffs, fmt.Sprintf("DeleteAfterDate differs from spec: %q <> %q\n",
+			atlasUsername.DeleteAfterDate, operatorCopy.DeleteAfterDate))
 	}
 	if atlasUsername.OIDCAuthType != operatorCopy.OIDCAuthType {
-		log.Infof("OIDCAuthType differs from spec: %q <> %q\n", atlasUsername.OIDCAuthType, operatorCopy.OIDCAuthType)
-		return false, nil
+		diffs = append(diffs, fmt.Sprintf("OIDCAuthType differs from spec: %q <> %q\n",
+			atlasUsername.OIDCAuthType, operatorCopy.OIDCAuthType))
 	}
 	if atlasUsername.AWSIAMType != operatorCopy.AWSIAMType {
-		log.Infof("AWSIAMType differs from spec: %q <> %q\n", atlasUsername.AWSIAMType, operatorCopy.AWSIAMType)
-		return false, nil
+		diffs = append(diffs, fmt.Sprintf("AWSIAMType differs from spec: %q <> %q\n",
+			atlasUsername.AWSIAMType, operatorCopy.AWSIAMType))
 	}
 	if atlasUsername.X509Type != operatorCopy.X509Type {
-		log.Infof("X509Type differs from spec: %q <> %q\n", atlasUsername.X509Type, operatorCopy.X509Type)
-		return false, nil
+		diffs = append(diffs, fmt.Sprintf("X509Type differs from spec: %q <> %q\n",
+			atlasUsername.X509Type, operatorCopy.X509Type))
 	}
 	if !reflect.DeepEqual(atlasUsername.Roles, operatorCopy.Roles) {
-		log.Infof("Roles differs from spec: %v <> %v\n", atlasUsername.Roles, operatorCopy.Roles)
-		return false, nil
+		diffs = append(diffs, fmt.Sprintf("Roles differs from spec: %v <> %v\n",
+			atlasUsername.Roles, operatorCopy.Roles))
 	}
 	if !reflect.DeepEqual(atlasUsername.Scopes, operatorCopy.Scopes) {
-		log.Infof("Scopes differs from spec: %v <> %v END\n", atlasUsername.Scopes, operatorCopy.Scopes)
-		return false, nil
+		diffs = append(diffs, fmt.Sprintf("Scopes differs from spec: %v <> %v END\n",
+			atlasUsername.Scopes, operatorCopy.Scopes))
 	}
-	return true, nil
+	return diffs, nil
 }
