@@ -13,15 +13,17 @@ import (
 )
 
 type User struct {
-	akov2.AtlasDatabaseUserSpec
+	*akov2.AtlasDatabaseUserSpec
 	Password  string
 	ProjectID string
 }
 
-func NewUser(spec akov2.AtlasDatabaseUserSpec, projectID, password string) *User {
+// NewUser wraps a Kubernetes Atlas User Spec pointer augmenting it with projectID and password.
+func NewUser(spec *akov2.AtlasDatabaseUserSpec, projectID, password string) *User {
 	return &User{AtlasDatabaseUserSpec: spec, ProjectID: projectID, Password: password}
 }
 
+// Normalize modifies the spec and returns it back. Clone to avoid unwanted changes.
 func Normalize(spec *akov2.AtlasDatabaseUserSpec) (*akov2.AtlasDatabaseUserSpec, error) {
 	if spec.Roles == nil {
 		spec.Roles = []akov2.RoleSpec{}
@@ -58,7 +60,7 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 	u := &User{
 		ProjectID: dbUser.GroupId,
 		Password:  dbUser.GetPassword(),
-		AtlasDatabaseUserSpec: akov2.AtlasDatabaseUserSpec{
+		AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
 			DatabaseName:    dbUser.DatabaseName,
 			DeleteAfterDate: dateFromAtlas(dbUser.DeleteAfterDate),
 			Roles:           rolesFromAtlas(dbUser.GetRoles()),

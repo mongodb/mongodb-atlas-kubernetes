@@ -12,8 +12,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/dbuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -25,7 +25,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
-	apiUser := dbuser.NewUser(dbUser.Spec, project.ID(), password)
+	apiUser := dbuser.NewUser(&dbUser.Spec, project.ID(), password)
 
 	if result := checkUserExpired(ctx.Context, ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
 		return result
@@ -209,7 +209,7 @@ func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProjec
 }
 
 func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
-	matches, err := userMatchesSpec(log, &atlasUser.AtlasDatabaseUserSpec, &operatorUser.Spec)
+	matches, err := userMatchesSpec(log, atlasUser.AtlasDatabaseUserSpec, &operatorUser.Spec)
 	if err != nil {
 		return false, err
 	}
