@@ -14,6 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
 var _ = Describe("Teams", Label("teams"), func() {
@@ -53,7 +54,7 @@ var _ = Describe("Teams", Label("teams"), func() {
 			[]akov2.Team{
 				{
 					TeamRef: common.ResourceRefNamespaced{
-						Name: "my-team-1",
+						Name: utils.RandomName("my-team-1"),
 					},
 					Roles: []akov2.TeamRole{
 						akov2.TeamRoleOwner,
@@ -61,7 +62,7 @@ var _ = Describe("Teams", Label("teams"), func() {
 				},
 				{
 					TeamRef: common.ResourceRefNamespaced{
-						Name: "my-team-2",
+						Name: utils.RandomName("my-team-2"),
 					},
 					Roles: []akov2.TeamRole{
 						akov2.TeamRoleOwner,
