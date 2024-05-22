@@ -13,9 +13,9 @@ type Connection struct {
 }
 
 type PrivateEndpoint struct {
-	URL      string
-	SrvURL   string
-	ShardURL string
+	URL       string
+	ServerURL string
+	ShardURL  string
 }
 
 func clustersToConnections(clusters []admin.AdvancedClusterDescription) []Connection {
@@ -41,9 +41,9 @@ func fillClusterPrivateEndpoints(cpeList []admin.ClusterDescriptionConnectionStr
 	}
 	for _, cpe := range cpeList {
 		pes = append(pes, PrivateEndpoint{
-			URL:      cpe.GetConnectionString(),
-			SrvURL:   cpe.GetSrvConnectionString(),
-			ShardURL: cpe.GetSrvShardOptimizedConnectionString(),
+			URL:       cpe.GetConnectionString(),
+			ServerURL: cpe.GetSrvConnectionString(),
+			ShardURL:  cpe.GetSrvShardOptimizedConnectionString(),
 		})
 	}
 	return pes
@@ -70,7 +70,7 @@ func fillServerlessPrivateEndpoints(cpeList []admin.ServerlessConnectionStringsP
 	}
 	for _, cpe := range cpeList {
 		pes = append(pes, PrivateEndpoint{
-			SrvURL: cpe.GetSrvConnectionString(),
+			ServerURL: cpe.GetSrvConnectionString(),
 		})
 	}
 	return pes

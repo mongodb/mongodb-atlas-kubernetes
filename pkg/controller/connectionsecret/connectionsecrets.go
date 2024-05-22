@@ -154,14 +154,14 @@ func FillPrivateConns(conn deployment.Connection, data *ConnectionData) {
 	if conn.Serverless {
 		for _, pe := range conn.PrivateEndpoints {
 			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-				PvtSrvConnURL: pe.SrvURL,
+				PvtSrvConnURL: pe.ServerURL,
 			})
 		}
 	} else {
 		for _, pe := range conn.PrivateEndpoints {
 			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
 				PvtConnURL:      pe.URL,
-				PvtSrvConnURL:   pe.SrvURL,
+				PvtSrvConnURL:   pe.ServerURL,
 				PvtShardConnURL: pe.ShardURL,
 			})
 		}
