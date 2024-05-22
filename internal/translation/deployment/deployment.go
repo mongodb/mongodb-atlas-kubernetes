@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
@@ -26,7 +26,7 @@ type ProductionAtlasDeployments struct {
 }
 
 func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*ProductionAtlasDeployments, error) {
-	client, err := translayer.NewVersionedClient(ctx, provider, secretRef, log)
+	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
 		return nil, err
 	}
