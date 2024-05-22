@@ -63,7 +63,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 
 	switch advancedDeployment.StateName {
 	case "IDLE":
-		return advancedDeploymentIdle(ctx, r.Client, project, deployment, advancedDeployment)
+		return r.advancedDeploymentIdle(ctx, project, deployment, advancedDeployment)
 
 	case "CREATING":
 		return advancedDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
@@ -78,18 +78,25 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 	}
 }
 
-func advancedDeploymentIdle(ctx *workflow.Context, k8sClient client.Client, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+func (r *AtlasDeploymentReconciler) advancedDeploymentIdle(
+	ctx *workflow.Context,
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment,
+	atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster,
+) (*mongodbatlas.AdvancedCluster, workflow.Result) {
 	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.DeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	searchNodeResult := handleSearchNodes(ctx, deployment, project.ID())
-	if !searchNodeResult.IsOk() {
-		return atlasDeploymentAsAtlas, searchNodeResult
+	if !r.AtlasProvider.IsCloudGov() {
+		searchNodeResult := handleSearchNodes(ctx, deployment, project.ID())
+		if !searchNodeResult.IsOk() {
+			return atlasDeploymentAsAtlas, searchNodeResult
+		}
 	}
 
-	result := handleSearchIndexes(ctx, k8sClient, deployment, project.ID())
+	result := handleSearchIndexes(ctx, r.Client, deployment, project.ID())
 	if !result.IsOk() {
 		return atlasDeploymentAsAtlas, result
 	}
