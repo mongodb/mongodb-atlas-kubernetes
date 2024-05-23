@@ -2,6 +2,7 @@ package atlasdeployment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -19,7 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex/fake"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -57,32 +59,25 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
-		mockSearchAPI.EXPECT().
-			CreateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.CreateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
-		mockSearchAPI.EXPECT().
-			CreateAtlasSearchIndexExecute(admin.CreateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
-			Return(&admin.ClusterSearchIndex{
-				CollectionName: "",
-				Database:       "",
-				IndexID:        pointer.MakePtr("testID"),
-				Name:           "",
-				Status:         pointer.MakePtr("NOT STARTED"),
-			}, &http.Response{StatusCode: http.StatusCreated}, nil)
+		fakeAtlasSearch := &fake.FakeAtlasSearch{
+			CreateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+				return &searchindex.SearchIndex{
+					ID:     pointer.MakePtr("testID"),
+					Status: pointer.MakePtr("NOT STARTED"),
+				}, nil
+			},
+		}
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: fakeAtlasSearch,
 		}
 
 		result := reconciler.reconcileInternal(indexToTest, nil)
@@ -122,32 +117,25 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
-		mockSearchAPI.EXPECT().
-			CreateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.CreateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
-		mockSearchAPI.EXPECT().
-			CreateAtlasSearchIndexExecute(admin.CreateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
-			Return(&admin.ClusterSearchIndex{
-				CollectionName: "",
-				Database:       "",
-				IndexID:        pointer.MakePtr("testID"),
-				Name:           "",
-				Status:         pointer.MakePtr("NOT STARTED"),
-			}, &http.Response{StatusCode: http.StatusInternalServerError}, nil)
+		fakeAtlasSearch := &fake.FakeAtlasSearch{
+			CreateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+				return &searchindex.SearchIndex{
+					ID:     pointer.MakePtr("testID"),
+					Status: pointer.MakePtr("NOT STARTED"),
+				}, errors.New(http.StatusText(http.StatusInternalServerError))
+			},
+		}
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: fakeAtlasSearch,
 		}
 
 		result := reconciler.reconcileInternal(indexToTest, nil)
@@ -193,19 +181,18 @@ func Test_searchIndexReconciler(t *testing.T) {
 		mockSearchAPI.EXPECT().
 			CreateAtlasSearchIndexExecute(admin.CreateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
 			Return(nil, &http.Response{StatusCode: http.StatusOK}, nil)
+		atlasSearch := searchindex.NewProductionAtlasSearch(mockSearchAPI)
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: atlasSearch,
 		}
 
 		result := reconciler.reconcileInternal(indexToTest, nil)
@@ -244,17 +231,19 @@ func Test_searchIndexReconciler(t *testing.T) {
 			},
 			Status: status.AtlasDeploymentStatus{},
 		}
+		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		atlasSearch := searchindex.NewProductionAtlasSearch(mockSearchAPI)
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:       zap.S(),
-				OrgID:     "testOrgID",
-				SdkClient: &admin.APIClient{},
-				Context:   context.Background(),
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
+				Context: context.Background(),
 			},
-			deployment: testCluster,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: atlasSearch,
 		}
 
 		result := reconciler.reconcileInternal(indexToTest, nil)
@@ -295,27 +284,23 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
-		mockSearchAPI.EXPECT().
-			DeleteAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.DeleteAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
-		mockSearchAPI.EXPECT().
-			DeleteAtlasSearchIndexExecute(admin.DeleteAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
-			Return(map[string]interface{}{}, &http.Response{StatusCode: http.StatusAccepted}, nil)
+		fakeAtlasSearch := &fake.FakeAtlasSearch{
+			DeleteIndexFn: func(_ context.Context, _, _, _ string) error {
+				return nil
+			},
+		}
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			k8sClient:  nil,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			k8sClient:     nil,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: fakeAtlasSearch,
 		}
 
 		result := reconciler.reconcileInternal(nil, indexToTest)
@@ -357,27 +342,23 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
-		mockSearchAPI.EXPECT().
-			DeleteAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.DeleteAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
-		mockSearchAPI.EXPECT().
-			DeleteAtlasSearchIndexExecute(admin.DeleteAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
-			Return(map[string]interface{}{}, &http.Response{StatusCode: http.StatusInternalServerError}, nil)
+		fakeAtlasSearch := &fake.FakeAtlasSearch{
+			DeleteIndexFn: func(_ context.Context, _, _, _ string) error {
+				return errors.New(http.StatusText(http.StatusInternalServerError))
+			},
+		}
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			k8sClient:  nil,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			k8sClient:     nil,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: fakeAtlasSearch,
 		}
 
 		result := reconciler.reconcileInternal(nil, indexToTest)
@@ -420,11 +401,8 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: nil,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
 			deployment: testCluster,
@@ -478,16 +456,13 @@ func Test_searchIndexReconciler(t *testing.T) {
 	})
 
 	t.Run("UPDATE: Must trigger index update if state in AKO and in Atlas is different", func(t *testing.T) {
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
-		mockSearchAPI.EXPECT().
-			UpdateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.UpdateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
-		mockSearchAPI.EXPECT().
-			UpdateAtlasSearchIndexExecute(admin.UpdateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
-			Return(
-				&admin.ClusterSearchIndex{Status: pointer.MakePtr("NOT STARTED")},
-				&http.Response{StatusCode: http.StatusCreated}, nil,
-			)
+		fakeAtlasSearch := &fake.FakeAtlasSearch{
+			UpdateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+				return &searchindex.SearchIndex{
+					Status: pointer.MakePtr("NOT STARTED"),
+				}, nil
+			},
+		}
 
 		testCluster := &akov2.AtlasDeployment{
 			TypeMeta: metav1.TypeMeta{},
@@ -505,17 +480,15 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			k8sClient:  nil,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			k8sClient:     nil,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: fakeAtlasSearch,
 		}
 		idxInAtlas := &searchindex.SearchIndex{
 			SearchIndex: akov2.SearchIndex{
@@ -544,16 +517,13 @@ func Test_searchIndexReconciler(t *testing.T) {
 	})
 
 	t.Run("UPDATE: Must terminate if API call returned anything but 201 or 200", func(t *testing.T) {
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
-		mockSearchAPI.EXPECT().
-			UpdateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.UpdateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
-		mockSearchAPI.EXPECT().
-			UpdateAtlasSearchIndexExecute(admin.UpdateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
-			Return(
-				&admin.ClusterSearchIndex{Status: pointer.MakePtr("NOT STARTED")},
-				&http.Response{StatusCode: http.StatusInternalServerError}, nil,
-			)
+		fakeAtlasSearch := &fake.FakeAtlasSearch{
+			UpdateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+				return &searchindex.SearchIndex{
+					Status: pointer.MakePtr("NOT STARTED"),
+				}, errors.New(http.StatusText(http.StatusInternalServerError))
+			},
+		}
 
 		testCluster := &akov2.AtlasDeployment{
 			TypeMeta: metav1.TypeMeta{},
@@ -571,17 +541,15 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			k8sClient:  nil,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			k8sClient:     nil,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: fakeAtlasSearch,
 		}
 		idxInAtlas := &searchindex.SearchIndex{
 			SearchIndex: akov2.SearchIndex{
@@ -621,6 +589,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 				nil,
 				&http.Response{StatusCode: http.StatusCreated}, nil,
 			)
+		atlasSearch := searchindex.NewProductionAtlasSearch(mockSearchAPI)
 
 		testCluster := &akov2.AtlasDeployment{
 			TypeMeta: metav1.TypeMeta{},
@@ -638,17 +607,15 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			k8sClient:  nil,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			k8sClient:     nil,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: atlasSearch,
 		}
 		idxInAtlas := &searchindex.SearchIndex{
 			SearchIndex: akov2.SearchIndex{
@@ -679,6 +646,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 	t.Run("UPDATE: Must terminate if index equality can not be confirmed", func(t *testing.T) {
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		atlasSearch := searchindex.NewProductionAtlasSearch(mockSearchAPI)
 
 		testCluster := &akov2.AtlasDeployment{
 			TypeMeta: metav1.TypeMeta{},
@@ -696,17 +664,15 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:   zap.S(),
-				OrgID: "testOrgID",
-				SdkClient: &admin.APIClient{
-					AtlasSearchApi: mockSearchAPI,
-				},
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
 				Context: context.Background(),
 			},
-			deployment: testCluster,
-			k8sClient:  nil,
-			projectID:  "",
-			indexName:  "testIndexName",
+			deployment:    testCluster,
+			k8sClient:     nil,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: atlasSearch,
 		}
 		idxInAtlas := &searchindex.SearchIndex{
 			SearchIndex: akov2.SearchIndex{
