@@ -190,7 +190,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		assert.Nil(t, akov2.AddToScheme(sch))
 		assert.Nil(t, corev1.AddToScheme(sch))
 
-		idxToReturn := searchindex.NewSearchIndexFromAKO(
+		idxToReturn := searchindex.NewSearchIndex(
 			&deployment.Spec.DeploymentSpec.SearchIndexes[0],
 			&searchIndexConfig.Spec)
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{

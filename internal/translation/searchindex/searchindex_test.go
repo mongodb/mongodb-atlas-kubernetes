@@ -162,7 +162,7 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewSearchIndexFromAKO(tt.args.index, tt.args.config)
+			got := NewSearchIndex(tt.args.index, tt.args.config)
 			if diff := cmp.Diff(got, tt.want, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("NewSearchIndexFromAKO() = %v, want %v.\nDiff: %s", got, tt.want, diff)
 			}
@@ -288,7 +288,7 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewSearchIndexFromAtlas(tt.args.index)
+			got, err := fromAtlas(tt.args.index)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewSearchIndexFromAtlas() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -501,7 +501,7 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 				ID:                         tt.fields.ID,
 				Status:                     tt.fields.Status,
 			}
-			got, err := s.ToAtlas()
+			got, err := s.toAtlas()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToAtlas() error = %v, wantErr %v", err, tt.wantErr)
 				return

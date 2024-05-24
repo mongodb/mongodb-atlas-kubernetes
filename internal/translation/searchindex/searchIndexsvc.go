@@ -54,7 +54,7 @@ func (si *ProductionAtlasSearch) GetIndex(ctx context.Context, projectID, cluste
 		return nil, fmt.Errorf("received an empty index. Index: %s(%s). Status code: %d, E: %w",
 			indexName, indexID, httpResp.StatusCode, err)
 	}
-	stateInAtlas, err := NewSearchIndexFromAtlas(*resp)
+	stateInAtlas, err := fromAtlas(*resp)
 	if err != nil {
 		return nil, fmt.Errorf("unable to convert index to AKO. Index: %s(%s, E: %w",
 			indexName, indexID, err)
@@ -63,7 +63,7 @@ func (si *ProductionAtlasSearch) GetIndex(ctx context.Context, projectID, cluste
 }
 
 func (si *ProductionAtlasSearch) CreateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
-	atlasIndex, err := index.ToAtlas()
+	atlasIndex, err := index.toAtlas()
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (si *ProductionAtlasSearch) CreateIndex(ctx context.Context, projectID, clu
 	if resp == nil {
 		return nil, fmt.Errorf("returned an empty index as a result of creation")
 	}
-	akoIndex, err := NewSearchIndexFromAtlas(*resp)
+	akoIndex, err := fromAtlas(*resp)
 	if err != nil {
 		return nil, fmt.Errorf("unable to convert index to AKO: %w", err)
 	}
@@ -90,7 +90,7 @@ func (si *ProductionAtlasSearch) DeleteIndex(ctx context.Context, projectID, clu
 }
 
 func (si *ProductionAtlasSearch) UpdateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
-	atlasIndex, err := index.ToAtlas()
+	atlasIndex, err := index.toAtlas()
 	if err != nil {
 		return nil, fmt.Errorf("unable to convert index to AKO: %w", err)
 	}
@@ -101,7 +101,7 @@ func (si *ProductionAtlasSearch) UpdateIndex(ctx context.Context, projectID, clu
 	if resp == nil {
 		return nil, fmt.Errorf("update returned an empty index: %w", err)
 	}
-	akoIndex, err := NewSearchIndexFromAtlas(*resp)
+	akoIndex, err := fromAtlas(*resp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert updated index to AKO: %w", err)
 	}

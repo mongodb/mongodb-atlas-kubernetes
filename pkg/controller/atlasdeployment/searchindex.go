@@ -66,10 +66,10 @@ func (sr *searchIndexReconciler) Reconcile(spec *akov2.SearchIndex, previous *st
 				err := fmt.Errorf("can not get search index configuration for index '%s'. E: %w", spec.Name, err)
 				return sr.terminate(internalState, err)
 			}
-			stateInAKO = searchindex.NewSearchIndexFromAKO(spec, &idxConfig.Spec)
+			stateInAKO = searchindex.NewSearchIndex(spec, &idxConfig.Spec)
 		case IndexTypeVector:
 			// Vector index doesn't require any external configuration
-			stateInAKO = searchindex.NewSearchIndexFromAKO(spec, &akov2.AtlasSearchIndexConfigSpec{})
+			stateInAKO = searchindex.NewSearchIndex(spec, &akov2.AtlasSearchIndexConfigSpec{})
 		default:
 			err := fmt.Errorf("index %q has unknown type %q. Can be either %s or %s",
 				spec.Name, spec.Type, IndexTypeSearch, IndexTypeVector)
