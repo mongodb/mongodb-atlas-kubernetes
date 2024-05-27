@@ -19,6 +19,7 @@ package int
 import (
 	"context"
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 	"os"
 	"path/filepath"
 	"testing"
@@ -76,7 +77,7 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Atlas Operator Cluster-Wide Integration Test Suite")
 }
 
-var _ = BeforeSuite(func() {
+var _ = BeforeSuite(func(ctx context.Context) {
 	if !control.Enabled("AKO_INT_TEST") {
 		fmt.Println("Skipping int BeforeSuite, AKO_INT_TEST is not set")
 
@@ -144,6 +145,9 @@ var _ = BeforeSuite(func() {
 
 		atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
 
+		err = indexer.RegisterAll(ctx, k8sManager, logger)
+		Expect(err).ToNot(HaveOccurred())
+
 		err = (&atlasproject.AtlasProjectReconciler{
 			Client:                    k8sManager.GetClient(),
 			Log:                       logger.Named("controllers").Named("AtlasProject").Sugar(),
@@ -172,9 +176,6 @@ var _ = BeforeSuite(func() {
 			GlobalPredicates:          globalPredicates,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
-
-		var ctx context.Context
-		ctx, cancelManager = context.WithCancel(context.Background())
 
 		go func() {
 			err = k8sManager.Start(ctx)
