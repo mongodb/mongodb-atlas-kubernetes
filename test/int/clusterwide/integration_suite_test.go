@@ -19,7 +19,6 @@ package int
 import (
 	"context"
 	"fmt"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,6 +45,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 
