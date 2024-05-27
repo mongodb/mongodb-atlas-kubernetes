@@ -80,7 +80,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 
-		result := reconciler.reconcileInternal(indexToTest, nil)
+		result := reconciler.reconcileInternal("", indexToTest, nil)
 		assert.True(t, result.IsInProgress())
 		fmt.Println(result)
 		fmt.Println(testCluster.Status)
@@ -138,7 +138,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 
-		result := reconciler.reconcileInternal(indexToTest, nil)
+		result := reconciler.reconcileInternal("", indexToTest, nil)
 		assert.False(t, result.IsOk())
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
@@ -195,7 +195,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			searchService: atlasSearch,
 		}
 
-		result := reconciler.reconcileInternal(indexToTest, nil)
+		result := reconciler.reconcileInternal("", indexToTest, nil)
 		assert.False(t, result.IsOk())
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
@@ -246,7 +246,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			searchService: atlasSearch,
 		}
 
-		result := reconciler.reconcileInternal(indexToTest, nil)
+		result := reconciler.reconcileInternal("", indexToTest, nil)
 		assert.False(t, result.IsOk())
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
@@ -303,7 +303,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 
-		result := reconciler.reconcileInternal(nil, indexToTest)
+		result := reconciler.reconcileInternal("", nil, indexToTest)
 		assert.True(t, result.IsOk())
 		fmt.Println(result)
 		fmt.Println(testCluster.Status)
@@ -361,7 +361,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 
-		result := reconciler.reconcileInternal(nil, indexToTest)
+		result := reconciler.reconcileInternal("", nil, indexToTest)
 		assert.False(t, result.IsOk())
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
@@ -411,7 +411,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			indexName:  "testIndexName",
 		}
 
-		result := reconciler.reconcileInternal(nil, indexToTest)
+		result := reconciler.reconcileInternal("", nil, indexToTest)
 		assert.True(t, result.IsOk())
 	})
 
@@ -428,7 +428,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			projectID:  "",
 			indexName:  "testIndexName",
 		}
-		result := reconciler.reconcileInternal(nil, &searchindex.SearchIndex{Status: pointer.MakePtr("NOT STARTED")})
+		result := reconciler.reconcileInternal("", nil, &searchindex.SearchIndex{Status: pointer.MakePtr("NOT STARTED")})
 		assert.True(t, result.IsInProgress())
 	})
 
@@ -451,7 +451,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			ID:                         nil,
 			Status:                     nil,
 		}
-		result := reconciler.reconcileInternal(idx, idx)
+		result := reconciler.reconcileInternal("", idx, idx)
 		assert.True(t, result.IsOk())
 	})
 
@@ -512,7 +512,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			ID:                         pointer.MakePtr("testID"),
 			Status:                     nil,
 		}
-		result := reconciler.reconcileInternal(idxInAKO, idxInAtlas)
+		result := reconciler.reconcileInternal("", idxInAKO, idxInAtlas)
 		assert.True(t, result.IsInProgress())
 	})
 
@@ -573,7 +573,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			ID:                         pointer.MakePtr("testID"),
 			Status:                     nil,
 		}
-		result := reconciler.reconcileInternal(idxInAKO, idxInAtlas)
+		result := reconciler.reconcileInternal("", idxInAKO, idxInAtlas)
 		assert.False(t, result.IsOk())
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
@@ -639,7 +639,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			ID:                         pointer.MakePtr("testID"),
 			Status:                     nil,
 		}
-		result := reconciler.reconcileInternal(idxInAKO, idxInAtlas)
+		result := reconciler.reconcileInternal("", idxInAKO, idxInAtlas)
 		assert.False(t, result.IsOk())
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
@@ -697,8 +697,50 @@ func Test_searchIndexReconciler(t *testing.T) {
 			ID:                         pointer.MakePtr("testID"),
 			Status:                     nil,
 		}
-		result := reconciler.reconcileInternal(idxInAKO, idxInAtlas)
+		result := reconciler.reconcileInternal("", idxInAKO, idxInAtlas)
 		assert.False(t, result.IsOk())
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
+	})
+
+	t.Run("DROP: Must clear if the index disappeared from Atlas", func(t *testing.T) {
+		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
+
+		testCluster := &akov2.AtlasDeployment{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testDeployment",
+				Namespace: "testNamespace",
+			},
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name: "testDeploymentName",
+				},
+			},
+			Status: status.AtlasDeploymentStatus{},
+		}
+
+		reconciler := &searchIndexReconciler{
+			ctx: &workflow.Context{
+				Log:     zap.S(),
+				OrgID:   "testOrgID",
+				Context: context.Background(),
+			},
+			deployment:    testCluster,
+			k8sClient:     nil,
+			projectID:     "",
+			indexName:     "testIndexName",
+			searchService: atlasSearch,
+		}
+		// In previous status, but not found in Atlas now
+		idxInAtlas := &searchindex.SearchIndex{
+			SearchIndex: akov2.SearchIndex{
+				Name: "testIndex",
+			},
+		}
+		result := reconciler.reconcileInternal(idxInAtlas.Name, nil, nil)
+		assert.True(t, result.IsOk())
+		assert.True(t, result.IsDeleted())
+		assert.Empty(t, reconciler.ctx.Conditions())
 	})
 }
