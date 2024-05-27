@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -93,6 +94,95 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		)
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{}, result)
+	})
+
+	t.Run("should unset finalizer and delete if reconciliation is skipped", func(t *testing.T) {
+		now := metav1.Now()
+		streamConnection := &akov2.AtlasStreamConnection{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "my-stream-processing-connection",
+				Namespace:         "default",
+				DeletionTimestamp: &now,
+				Finalizers:        []string{"mongodbatlas/finalizer"},
+				Annotations: map[string]string{
+					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
+				},
+			},
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "sample-conn",
+				ConnectionType: "Sample",
+			},
+		}
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(streamConnection).
+			Build()
+
+		reconciler := &AtlasStreamsConnectionReconciler{
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
+		}
+
+		result, err := reconciler.Reconcile(
+			context.Background(),
+			ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "my-stream-processing-connection",
+					Namespace: "default",
+				},
+			},
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, ctrl.Result{}, result)
+		err = k8sClient.Delete(context.Background(), streamConnection)
+		assert.True(t, apierrors.IsNotFound(err))
+	})
+
+	t.Run("should terminate upon failed patching when unsetting finalizer", func(t *testing.T) {
+		now := metav1.Now()
+		streamConnection := &akov2.AtlasStreamConnection{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "my-stream-processing-connection",
+				Namespace:         "default",
+				DeletionTimestamp: &now,
+				Finalizers:        []string{"mongodbatlas/finalizer"},
+				Annotations: map[string]string{
+					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
+				},
+			},
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "sample-conn",
+				ConnectionType: "Sample",
+			},
+		}
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(streamConnection).
+			WithInterceptorFuncs(interceptor.Funcs{Patch: func(ctx context.Context, client client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+				return errors.New("failed to patch")
+			}}).
+			Build()
+
+		reconciler := &AtlasStreamsConnectionReconciler{
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
+		}
+
+		result, err := reconciler.Reconcile(
+			context.Background(),
+			ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "my-stream-processing-connection",
+					Namespace: "default",
+				},
+			},
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 	})
 
 	t.Run("should transition to invalid state when resource version is invalid", func(t *testing.T) {
