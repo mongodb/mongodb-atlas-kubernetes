@@ -4,40 +4,24 @@ import (
 	"context"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/operator"
 )
 
 var (
@@ -46,162 +30,43 @@ var (
 )
 
 func BuildManager(initCfg *Config) (manager.Manager, error) {
-	scheme := runtime.NewScheme()
-	setupLog := ctrl.Log.WithName("setup")
+	akoScheme := runtime.NewScheme()
+	utilruntime.Must(scheme.AddToScheme(akoScheme))
+	utilruntime.Must(akov2.AddToScheme(akoScheme))
 
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(akov2.AddToScheme(scheme))
-
-	ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 	config := mergeConfiguration(initCfg)
-
 	logger := zaptest.NewLogger(
 		GinkgoT(),
 		zaptest.WrapOptions(
 			zap.ErrorOutput(zapcore.Lock(zapcore.AddSync(GinkgoWriter))),
 		),
 	)
-
-	logger.Info("starting with configuration", zap.Any("config", config))
-
 	ctrl.SetLogger(zapr.NewLogger(logger))
-
-	syncPeriod := time.Hour * 3
-
-	logger.Info("starting manager", zap.Any("config", config))
-
-	var cacheFunc cache.NewCacheFunc
-	if len(config.WatchedNamespaces) > 0 {
-		var namespaces []string
-		for ns := range config.WatchedNamespaces {
-			namespaces = append(namespaces, ns)
-		}
-		cacheFunc = controller.MultiNamespacedCacheBuilder(namespaces)
-	} else {
-		cacheFunc = controller.CustomLabelSelectorCacheBuilder(
-			&corev1.Secret{},
-			labels.SelectorFromSet(labels.Set{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
-			}),
-		)
-	}
-
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:  scheme,
-		Metrics: metricsserver.Options{BindAddress: config.MetricsAddr},
-		WebhookServer: webhook.NewServer(webhook.Options{
-			Port: 9443,
-		}),
-		Cache: cache.Options{
-			SyncPeriod: &syncPeriod,
-		},
-		HealthProbeBindAddress: config.ProbeAddr,
-		LeaderElection:         config.EnableLeaderElection,
-		LeaderElectionID:       "06d035fb.mongodb.com",
-		NewCache:               cacheFunc,
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		return nil, err
-	}
-
-	// globalPredicates should be used for general controller Predicates
-	// that should be applied to all controllers in order to limit the
-	// resources they receive events for.
-	predicateNamespaces := controller.NamespacesOrAllPredicate(config.WatchedNamespaces)
-	globalPredicates := []predicate.Predicate{
-		watch.CommonPredicates(),                             // ignore spurious changes. status changes etc.
-		watch.SelectNamespacesPredicate(predicateNamespaces), // select only desired namespaces
-	}
-
-	atlasProvider := atlas.NewProductionProvider(config.AtlasDomain, config.GlobalAPISecret, mgr.GetClient())
+	setupLog := logger.Named("setup").Sugar()
+	setupLog.Info("starting with configuration", zap.Any("config", *config))
 
 	// Ensure all concurrent managers configured per test share a single exit signal handler
 	setupSignalHandlerOnce.Do(func() {
 		signalCancelledCtx = ctrl.SetupSignalHandler()
 	})
 
-	if err := indexer.RegisterAll(signalCancelledCtx, mgr, logger); err != nil {
-		setupLog.Error(err, "unable to create indexers")
-		return nil, err
-	}
-
-	if err = (&atlasdeployment.AtlasDeploymentReconciler{
-		Client:                      mgr.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-		Scheme:                      mgr.GetScheme(),
-		GlobalPredicates:            globalPredicates,
-		EventRecorder:               mgr.GetEventRecorderFor("AtlasDeployment"),
-		AtlasProvider:               atlasProvider,
-		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AtlasDeployment")
-		return nil, err
-	}
-
-	if err = (&atlasproject.AtlasProjectReconciler{
-		Client:                      mgr.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasProject").Sugar(),
-		Scheme:                      mgr.GetScheme(),
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
-		GlobalPredicates:            globalPredicates,
-		EventRecorder:               mgr.GetEventRecorderFor("AtlasProject"),
-		AtlasProvider:               atlasProvider,
-		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
-		return nil, err
-	}
-
-	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		DeprecatedResourceWatcher:     watch.NewDeprecatedResourceWatcher(),
-		Client:                        mgr.GetClient(),
-		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:                        mgr.GetScheme(),
-		EventRecorder:                 mgr.GetEventRecorderFor("AtlasDatabaseUser"),
-		AtlasProvider:                 atlasProvider,
-		GlobalPredicates:              globalPredicates,
-		ObjectDeletionProtection:      config.ObjectDeletionProtection,
-		SubObjectDeletionProtection:   config.SubObjectDeletionProtection,
-		FeaturePreviewOIDCAuthEnabled: config.FeatureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
-		return nil, err
-	}
-
-	if err = (&atlasdatafederation.AtlasDataFederationReconciler{
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
-		Client:                      mgr.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
-		Scheme:                      mgr.GetScheme(),
-		EventRecorder:               mgr.GetEventRecorderFor("AtlasDataFederation"),
-		AtlasProvider:               atlasProvider,
-		GlobalPredicates:            globalPredicates,
-		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AtlasDataFederation")
-		return nil, err
-	}
-
-	if err = mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		return nil, err
-	}
-	if err = mgr.AddReadyzCheck("check", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		return nil, err
-	}
-	return mgr, nil
+	return operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme).
+		WithConfig(ctrl.GetConfigOrDie()).
+		WithNamespaces(collection.Keys(config.WatchedNamespaces)...).
+		WithLogger(logger).
+		WithMetricAddress(config.MetricsAddr).
+		WithProbeAddress(config.ProbeAddr).
+		WithLeaderElection(config.EnableLeaderElection).
+		WithAtlasDomain(config.AtlasDomain).
+		WithAPISecret(config.GlobalAPISecret).
+		WithDeletionProtection(config.ObjectDeletionProtection).
+		Build(signalCancelledCtx)
 }
 
 type Config struct {
 	AtlasDomain                 string
 	EnableLeaderElection        bool
 	MetricsAddr                 string
-	Namespace                   string
 	WatchedNamespaces           map[string]bool
 	ProbeAddr                   string
 	GlobalAPISecret             client.ObjectKey

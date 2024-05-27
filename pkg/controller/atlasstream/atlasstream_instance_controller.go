@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -133,7 +134,7 @@ func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *
 	return config.Provider != dataProcessRegion.GetCloudProvider() || config.Region != dataProcessRegion.GetRegion()
 }
 
-func (r *AtlasStreamsInstanceReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasStreamInstance").
 		For(&akov2.AtlasStreamInstance{}, builder.WithPredicates(r.GlobalPredicates...)).
@@ -148,6 +149,24 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(ctx context.Context, m
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Complete(r)
+}
+
+func NewAtlasStreamsInstanceReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+) *AtlasStreamsInstanceReconciler {
+	return &AtlasStreamsInstanceReconciler{
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasStreamsInstance"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasStreamsInstance").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
+	}
 }
 
 func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(ctx context.Context, obj client.Object) []reconcile.Request {

@@ -32,20 +32,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 
@@ -121,62 +114,17 @@ var _ = BeforeSuite(func() {
 
 		logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
 		ctrl.SetLogger(zapr.NewLogger(logger))
-		syncPeriod := time.Minute * 30
-		// The manager watches ALL namespaces
-		k8sManager, err := ctrl.NewManager(testEnv.Config, ctrl.Options{
-			Scheme: scheme.Scheme,
-			Cache: cache.Options{
-				SyncPeriod: &syncPeriod,
-			},
-		})
-		Expect(err).ToNot(HaveOccurred())
 
-		// globalPredicates should be used for general controller Predicates
-		// that should be applied to all controllers in order to limit the
-		// resources they receive events for.
-		globalPredicates := []predicate.Predicate{
-			watch.CommonPredicates(), // ignore spurious changes. status changes etc.
-			watch.SelectNamespacesPredicate(map[string]bool{ // select only desired namespaces
-				namespace.Name: true,
-			}),
-		}
-
-		atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
-
-		err = indexer.RegisterAll(ctx, k8sManager, logger)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = (&atlasproject.AtlasProjectReconciler{
-			Client:                    k8sManager.GetClient(),
-			Log:                       logger.Named("controllers").Named("AtlasProject").Sugar(),
-			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
-			EventRecorder:             k8sManager.GetEventRecorderFor("AtlasProject"),
-			AtlasProvider:             atlasProvider,
-			GlobalPredicates:          globalPredicates,
-		}).SetupWithManager(k8sManager)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = (&atlasdeployment.AtlasDeploymentReconciler{
-			Client:           k8sManager.GetClient(),
-			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
-			AtlasProvider:    atlasProvider,
-			GlobalPredicates: globalPredicates,
-		}).SetupWithManager(k8sManager)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-			Client:                    k8sManager.GetClient(),
-			Log:                       logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
-			EventRecorder:             k8sManager.GetEventRecorderFor("AtlasDeployment"),
-			AtlasProvider:             atlasProvider,
-			GlobalPredicates:          globalPredicates,
-		}).SetupWithManager(k8sManager)
+		mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), testEnv.Scheme).
+			WithConfig(testEnv.Config).
+			WithLogger(logger).
+			WithAtlasDomain(atlasDomain).
+			WithSyncPeriod(30 * time.Minute).
+			Build(ctx)
 		Expect(err).ToNot(HaveOccurred())
 
 		go func() {
-			err = k8sManager.Start(ctx)
+			err = mgr.Start(ctx)
 			Expect(err).ToNot(HaveOccurred())
 		}()
 	})

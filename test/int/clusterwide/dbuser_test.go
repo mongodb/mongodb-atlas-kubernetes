@@ -15,6 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
@@ -137,6 +138,9 @@ func buildConnectionSecret(name string) corev1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace.Name,
+			Labels: map[string]string{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			},
 		},
 		StringData: map[string]string{"orgId": orgID, "publicApiKey": publicKey, "privateApiKey": privateKey},
 	}
@@ -147,6 +151,9 @@ func buildPasswordSecret(namespace, name, password string) corev1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels: map[string]string{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			},
 		},
 		StringData: map[string]string{"password": password},
 	}

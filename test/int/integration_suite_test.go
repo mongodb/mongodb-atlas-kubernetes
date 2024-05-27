@@ -33,28 +33,17 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasstream"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 
@@ -88,10 +77,9 @@ var (
 
 func TestAPIs(t *testing.T) {
 	control.SkipTestUnless(t, "AKO_INT_TEST")
-	err := akov2.AddToScheme(scheme.Scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	utilruntime.Must(scheme.AddToScheme(scheme.Scheme))
+	utilruntime.Must(akov2.AddToScheme(scheme.Scheme))
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Atlas Operator Namespaced Integration Test Suite")
@@ -116,10 +104,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	var b bytes.Buffer
 
 	By("Bootstrapping test environment", func() {
-		useExistingCluster := os.Getenv("USE_EXISTING_CLUSTER") != ""
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths:  []string{filepath.Join("..", "..", "config", "crd", "bases")},
-			UseExistingCluster: &useExistingCluster,
+			CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		}
 
 		cfg, err := testEnv.Start()
@@ -145,9 +131,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		if domain, found := os.LookupEnv("ATLAS_DOMAIN"); found && domain != "" {
 			atlasDomain = domain
 		}
-
-		err = akov2.AddToScheme(scheme.Scheme)
-		Expect(err).ToNot(HaveOccurred())
 
 		// shallow copy global config
 		ginkgoCfg := *cfg
@@ -181,7 +164,8 @@ func defaultTimeouts() {
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
 // reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
 func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.CancelFunc) {
-	ctx := context.Background()
+	var ctx context.Context
+	ctx, managerCancelFunc = context.WithCancel(context.Background())
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "test",
@@ -194,132 +178,25 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	Expect(namespace.Name).ToNot(BeEmpty())
 	GinkgoWriter.Printf("Generated namespace %q\n", namespace.Name)
 
-	// +kubebuilder:scaffold:scheme
 	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
-
 	ctrl.SetLogger(zapr.NewLogger(logger))
-
-	// Note on the syncPeriod - decreasing this to a smaller time allows to test its work for the long-running tests
-	// (deployments, database users). The prod value is much higher
-	syncPeriod := time.Minute * 30
 
 	// shallow copy global config
 	managerCfg := *cfg
 	managerCfg.UserAgent = "AKO"
-	k8sManager, err := ctrl.NewManager(&managerCfg, ctrl.Options{
-		Scheme:  scheme.Scheme,
-		Metrics: metricsserver.Options{BindAddress: "0"},
-		Cache: cache.Options{
-			SyncPeriod: &syncPeriod,
-		},
-	})
+	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), scheme.Scheme).
+		WithConfig(&managerCfg).
+		WithNamespaces(namespace.Name).
+		WithLogger(logger).
+		WithAtlasDomain(atlasDomain).
+		WithSyncPeriod(30 * time.Minute).
+		WithAPISecret(client.ObjectKey{Name: "atlas-operator-api-key", Namespace: namespace.Name}).
+		WithDeletionProtection(deletionProtection).
+		Build(ctx)
 	Expect(err).ToNot(HaveOccurred())
-
-	// globalPredicates should be used for general controller Predicates
-	// that should be applied to all controllers in order to limit the
-	// resources they receive events for.
-	globalPredicates := []predicate.Predicate{
-		watch.CommonPredicates(), // ignore spurious changes. status changes etc.
-		watch.SelectNamespacesPredicate(map[string]bool{ // select only desired namespaces
-			namespace.Name: true,
-		}),
-	}
-
-	featureFlags := featureflags.NewFeatureFlags(os.Environ)
-
-	atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
-
-	err = indexer.RegisterAll(ctx, k8sManager, logger)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasproject.AtlasProjectReconciler{
-		Client:                      k8sManager.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasProject").Sugar(),
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
-		GlobalPredicates:            globalPredicates,
-		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasProject"),
-		AtlasProvider:               atlasProvider,
-		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: false,
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasdeployment.AtlasDeploymentReconciler{
-		Client:                      k8sManager.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-		GlobalPredicates:            globalPredicates,
-		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDeployment"),
-		AtlasProvider:               atlasProvider,
-		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: false,
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:                        k8sManager.GetClient(),
-		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		EventRecorder:                 k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
-		DeprecatedResourceWatcher:     watch.NewDeprecatedResourceWatcher(),
-		AtlasProvider:                 atlasProvider,
-		GlobalPredicates:              globalPredicates,
-		ObjectDeletionProtection:      deletionProtection,
-		SubObjectDeletionProtection:   false,
-		FeaturePreviewOIDCAuthEnabled: featureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasdatafederation.AtlasDataFederationReconciler{
-		Client:                      k8sManager.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
-		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
-		AtlasProvider:               atlasProvider,
-		GlobalPredicates:            globalPredicates,
-		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: false,
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasfederatedauth.AtlasFederatedAuthReconciler{
-		Client:                      k8sManager.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasFederatedAuth").Sugar(),
-		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
-		GlobalPredicates:            globalPredicates,
-		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasFederatedAuth"),
-		AtlasProvider:               atlasProvider,
-		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: false,
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasstream.AtlasStreamsInstanceReconciler{
-		Client:                      k8sManager.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasStreamInstance").Sugar(),
-		GlobalPredicates:            globalPredicates,
-		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasStreamInstance"),
-		AtlasProvider:               atlasProvider,
-		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: false,
-	}).SetupWithManager(ctx, k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasstream.AtlasStreamsConnectionReconciler{
-		Client:                      k8sManager.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasStreamConnection").Sugar(),
-		GlobalPredicates:            globalPredicates,
-		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasStreamConnection"),
-		AtlasProvider:               atlasProvider,
-		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: false,
-	}).SetupWithManager(ctx, k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	By("Starting controllers")
-
-	ctx, managerCancelFunc = context.WithCancel(context.Background())
 
 	go func() {
-		err = k8sManager.Start(ctx)
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 	}()
 

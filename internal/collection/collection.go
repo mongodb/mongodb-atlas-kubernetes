@@ -11,3 +11,13 @@ func CopyWithSkip[T comparable](list []T, skip T) []T {
 
 	return newList
 }
+
+func Keys[K comparable, V any](m map[K]V) []K {
+	s := make([]K, 0, len(m))
+
+	for k := range m {
+		s = append(s, k)
+	}
+
+	return s
+}

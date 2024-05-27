@@ -21,29 +21,16 @@ func CommonPredicates() predicate.Funcs {
 	}
 }
 
-// DeleteOnly returns a predicate that will filter out everything except the Delete event
-func DeleteOnly() predicate.Funcs {
-	return predicate.Funcs{
-		CreateFunc: func(ce event.CreateEvent) bool {
-			return false
-		},
-		UpdateFunc: func(ce event.UpdateEvent) bool {
-			return false
-		},
-		GenericFunc: func(ce event.GenericEvent) bool {
-			return false
-		},
-	}
-}
-
-func SelectNamespacesPredicate(namespaceMap map[string]bool) predicate.Funcs {
+func SelectNamespacesPredicate(namespaces []string) predicate.Funcs {
 	return predicate.NewPredicateFuncs(func(object client.Object) bool {
-		if _, ok := namespaceMap[""]; ok {
+		if len(namespaces) == 0 {
 			return true
 		}
 
-		if _, ok := namespaceMap[object.GetNamespace()]; ok {
-			return true
+		for _, ns := range namespaces {
+			if object.GetNamespace() == ns {
+				return true
+			}
 		}
 
 		return false

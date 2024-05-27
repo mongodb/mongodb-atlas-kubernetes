@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -201,6 +203,25 @@ func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager) error
 		Watches(&akov2.AtlasDataFederation{}, &watch.EventHandlerWithDelete{Controller: r}, builder.WithPredicates(r.GlobalPredicates...)).
 		For(&akov2.AtlasDataFederation{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Complete(r)
+}
+
+func NewAtlasDataFederationReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+) *AtlasDataFederationReconciler {
+	return &AtlasDataFederationReconciler{
+		Scheme:                    mgr.GetScheme(),
+		Client:                    mgr.GetClient(),
+		EventRecorder:             mgr.GetEventRecorderFor("AtlasDataFederation"),
+		DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
+		GlobalPredicates:          predicates,
+		Log:                       logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
+		AtlasProvider:             atlasProvider,
+		ObjectDeletionProtection:  deletionProtection,
+	}
 }
 
 // Delete implements a handler for the Delete event

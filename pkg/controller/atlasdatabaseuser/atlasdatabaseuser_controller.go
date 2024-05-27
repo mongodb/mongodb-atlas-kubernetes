@@ -29,11 +29,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -259,4 +260,25 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&akov2.AtlasDatabaseUser{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
 		Complete(r)
+}
+
+func NewAtlasDatabaseUserReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	featureFlags *featureflags.FeatureFlags,
+	logger *zap.Logger,
+) *AtlasDatabaseUserReconciler {
+	return &AtlasDatabaseUserReconciler{
+		Scheme:                        mgr.GetScheme(),
+		Client:                        mgr.GetClient(),
+		EventRecorder:                 mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		DeprecatedResourceWatcher:     watch.NewDeprecatedResourceWatcher(),
+		GlobalPredicates:              predicates,
+		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		AtlasProvider:                 atlasProvider,
+		ObjectDeletionProtection:      deletionProtection,
+		FeaturePreviewOIDCAuthEnabled: featureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
+	}
 }
