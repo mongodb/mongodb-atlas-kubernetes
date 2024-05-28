@@ -75,6 +75,7 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 		*akov2.AtlasBackupPolicy,
 		*akov2.AtlasDatabaseUser,
 		*akov2.AtlasSearchIndexConfig,
+		*akov2.AtlasBackupCompliancePolicy,
 		*akov2.AtlasFederatedAuth:
 		return true
 	case *akov2.AtlasDataFederation,

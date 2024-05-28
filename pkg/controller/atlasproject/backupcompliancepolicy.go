@@ -17,135 +17,136 @@ limitations under the License.
 package atlasproject
 
 import (
-	"cmp"
-	"slices"
-	"strings"
+	"errors"
+	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
-	"k8s.io/apimachinery/pkg/api/equality"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-const ProjectAnnotation = "mongodbatlas/project"
+type backupComplianceController struct {
+	ctx     *workflow.Context
+	client  client.Client
+	project *akov2.AtlasProject
+}
 
-func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
-	defer func() {
-		err := r.garbageCollectBackupResource(ctx.Context, project)
+func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+	ctx.Log.Debug("starting backup compliance policy processing")
+	defer ctx.Log.Debug("finished backup compliance policy processing")
+
+	b := backupComplianceController{
+		ctx:     ctx,
+		client:  r.Client,
+		project: project,
+	}
+
+	return b.handlePending()
+}
+
+func (b *backupComplianceController) handlePending() workflow.Result {
+	bcp, found, err := b.getAtlasBackupCompliancePolicy()
+	if err != nil {
+		return b.terminate(workflow.Internal, err)
+	}
+
+	akoEmpty := true
+	if bcpRef := b.project.Spec.BackupCompliancePolicyRef; bcpRef != nil {
+		akoEmpty = bcpRef.IsEmpty()
+	}
+
+	atlasEmpty := !found
+
+	switch {
+	case !akoEmpty && atlasEmpty:
+		return b.upsert(bcp)
+	case !akoEmpty && !atlasEmpty:
+		return b.upsert(bcp)
+	case akoEmpty && !atlasEmpty:
+		return b.delete()
+	default:
+		return b.unmanage()
+	}
+}
+
+// upsert updates the backup compliance settings for a project. These settings can only be updated (not created), so
+// we also use this for creation too.
+func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettings20231001) workflow.Result {
+	b.ctx.Log.Debug("updating backup compliance policy")
+	akoBCP, err := b.getAKOBackupCompliancePolicy()
+	if err != nil {
+		return b.terminate(workflow.Internal, err)
+	}
+	equal, err := cmp.SemanticEqual(akoBCP, akov2.NewBCPFromAtlas(atlasBCP))
+	if err != nil {
+		return b.terminate(workflow.Internal, err)
+	}
+	if !equal {
+		_, _, err = b.ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
+		// TODO: catch the "bcp not met" error & log appropriately
 		if err != nil {
-			ctx.SetConditionFalseMsg(status.BackupComplianceReadyType, "Failed to garbage collect backup compliance policy resources")
-		}
-	}()
-
-	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
-		// check if it is actually enabled in Atlas
-		atlasCompliancePolicy, _, err := ctx.SdkClient.CloudBackupsApi.GetDataProtectionSettings(ctx.Context, project.ID()).Execute()
-		if err != nil {
-			ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
-			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
-		}
-		// if not in atlas, we can return OK
-		// atlas returns an empty object rather than an error
-		if (*atlasCompliancePolicy == admin.DataProtectionSettings20231001{}) {
-			return workflow.OK()
-		}
-		// if it is enabled in Atlas, we still have to signal here via the status condition
-		// that there is an not-deleted-yet backup compliance policy in Atlas
-		ctx.SetConditionFalseMsg(status.BackupComplianceReadyType, "Backup Compliance Policy must be deleted via Support")
-		return workflow.OK()
-	}
-
-	// watch compliance policies
-	compliancePolicy := &mdbv1.AtlasBackupCompliancePolicy{}
-	defer func() {
-		ctx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: compliancePolicy.Kind, Resource: *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace)})
-		r.Log.Debugf("watched backup compliance policy resource: %v\r\n", project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace))
-	}()
-
-	// reference set
-	// check reference points to existing compliance policy CR
-	err := r.Client.Get(ctx.Context, *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace), compliancePolicy)
-	if err != nil {
-		ctx.Log.Errorf("failed to get backup compliance policy: %v", err)
-		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
-	}
-
-	if compliancePolicy.Annotations == nil {
-		compliancePolicy.Annotations = map[string]string{}
-	}
-	if projectIds, ok := compliancePolicy.Annotations[ProjectAnnotation]; !ok {
-		compliancePolicy.Annotations[ProjectAnnotation] = project.ID()
-	} else {
-		if !slices.Contains(strings.Split(projectIds, ","), project.ID()) {
-			compliancePolicy.Annotations[ProjectAnnotation] = projectIds + "," + project.ID()
+			return b.terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err)
 		}
 	}
+	return b.idle()
+}
 
-	err = r.Client.Update(ctx.Context, compliancePolicy)
-	if err != nil {
-		ctx.Log.Errorf("failed to update backup compliance policy: %v", err)
-		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
-	}
+// delete begins the deletion process for a backup compliance policy. However, the admin API cannot delete BCPs (which must be
+// done via support), so we notify the user of next steps via status.
+func (b *backupComplianceController) delete() workflow.Result {
+	b.ctx.Log.Debug("deleting backup compliance policy")
+	return b.terminate(
+		workflow.ProjectBackupCompliancePolicyCannotDelete,
+		errors.New("cannot delete backup compliance policy through the API - to delete a backup compliance policy, please contact support"),
+	).WithoutRetry()
+}
 
-	// check if compliance policy exists in atlas (and matches)
-	// if match, return workflow.OK()
-	atlasCompliancePolicy, _, err := ctx.SdkClient.CloudBackupsApi.GetDataProtectionSettings(ctx.Context, project.ID()).Execute()
-
-	if err != nil {
-		ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
-		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
-	}
-
-	// otherwise, create/update compliance policy...
-	// create compliance policy in atlas
-	result := syncBackupCompliancePolicy(ctx, project.ID(), *compliancePolicy, *atlasCompliancePolicy)
-	ctx.SetConditionFromResult(status.BackupComplianceReadyType, result)
+// terminate transitions to pending state if an error occurred.
+func (b *backupComplianceController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+	b.ctx.Log.Error(err)
+	result := workflow.Terminate(reason, err.Error())
+	b.ctx.SetConditionFromResult(status.BackupComplianceReadyType, result)
 	return result
 }
 
-func IsBackupComplianceEmpty(backupCompliancePolicyRef *common.ResourceRefNamespaced) bool {
-	return (backupCompliancePolicyRef == nil) || (backupCompliancePolicyRef.Name == "")
-}
-
-// syncBackupCompliancePolicy compares the compliance policy specified in Kubernetes to the one currently present in Atlas, updating Atlas should they differ.
-func syncBackupCompliancePolicy(ctx *workflow.Context, groupID string, kubeCompliancePolicy mdbv1.AtlasBackupCompliancePolicy, atlasCompliancePolicy admin.DataProtectionSettings20231001) workflow.Result {
-	// convert the CR type to atlas type, so we can compare
-	localCompliancePolicy := kubeCompliancePolicy.ToAtlas(groupID)
-	// sort the slices, so we can compare
-	if localCompliancePolicy.ScheduledPolicyItems != nil {
-		slices.SortFunc(*localCompliancePolicy.ScheduledPolicyItems, compareSPI)
-	}
-	if atlasCompliancePolicy.ScheduledPolicyItems != nil {
-		slices.SortFunc(*atlasCompliancePolicy.ScheduledPolicyItems, compareSPI)
-	}
-	// deep equal, now that the slices are sorted
-	if !equality.Semantic.DeepEqual(localCompliancePolicy, atlasCompliancePolicy) {
-		_, _, err := ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(ctx.Context, groupID, localCompliancePolicy).Execute()
-		if err != nil {
-			ctx.Log.Errorf("failed to update backup compliance policy in atlas: %v", err)
-			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err.Error())
-		}
-	}
+// unmanage transitions to pending state if there is no managed BCP.
+func (b *backupComplianceController) unmanage() workflow.Result {
+	b.ctx.UnsetCondition(status.BackupComplianceReadyType)
 	return workflow.OK()
 }
 
-// compareSPI is a function for deciding if one instance is less than another, for use when sorting
-func compareSPI(a, b admin.BackupComplianceScheduledPolicyItem) int {
-	if a.FrequencyType != b.FrequencyType {
-		return cmp.Compare(a.FrequencyType, b.FrequencyType)
+// idle transitions BCP to idle state when ready and idle.
+func (b *backupComplianceController) idle() workflow.Result {
+	b.ctx.SetConditionTrue(status.BackupComplianceReadyType)
+	return workflow.OK()
+}
+
+func (b *backupComplianceController) getAtlasBackupCompliancePolicy() (*admin.DataProtectionSettings20231001, bool, error) {
+	bcp, _, err := b.ctx.SdkClient.CloudBackupsApi.GetDataProtectionSettings(b.ctx.Context, b.project.ID()).Execute()
+	if err != nil {
+		apiError, ok := admin.AsError(err)
+		if ok && (apiError.GetError() == http.StatusNotFound) {
+			b.ctx.Log.Debug("no search nodes in atlas found")
+			return nil, false, nil
+		} else {
+			return nil, false, err
+		}
 	}
-	if x := a.FrequencyInterval - b.FrequencyInterval; x != 0 {
-		return x
+	if bcp == nil {
+		return nil, false, nil
 	}
-	if a.RetentionUnit != b.RetentionUnit {
-		return cmp.Compare(a.RetentionUnit, b.RetentionUnit)
+	return bcp, true, nil
+}
+
+func (b *backupComplianceController) getAKOBackupCompliancePolicy() (*akov2.AtlasBackupCompliancePolicy, error) {
+	bcp := &akov2.AtlasBackupCompliancePolicy{}
+	err := b.client.Get(b.ctx.Context, *b.project.BackupCompliancePolicyObjectKey(), bcp)
+	if err != nil {
+		return nil, err
 	}
-	if x := a.RetentionValue - b.RetentionValue; x != 0 {
-		return x
-	}
-	return 0
+	return bcp, nil
 }

@@ -43,9 +43,9 @@ const (
 	ProjectAlertConfigurationIsNotReadyInAtlas     ConditionReason = "ProjectAlertConfigurationIsNotReadyInAtlas"
 	ProjectCustomRolesReady                        ConditionReason = "ProjectCustomRolesReady"
 	ProjectTeamUnavailable                         ConditionReason = "ProjectTeamUnavailable"
-	ProjectBackupCompliancePolicyUnavailable       ConditionReason = "ProjectBackupCompliancePolicyUnavailable"
 	ProjectBackupCompliancePolicyNotMet            ConditionReason = "ProjectBackupCompliancePolicyNotMet"
 	ProjectBackupCompliancePolicyNotCreatedInAtlas ConditionReason = "ProjectBackupCompliancePolicyNotCreatedInAtlas"
+	ProjectBackupCompliancePolicyCannotDelete      ConditionReason = "ProjectBackupCompliancePolicyCannotDelete"
 )
 
 // Atlas Deployment reasons
