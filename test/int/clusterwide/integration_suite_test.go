@@ -77,7 +77,7 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Atlas Operator Cluster-Wide Integration Test Suite")
 }
 
-var _ = BeforeSuite(func(ctx context.Context) {
+var _ = BeforeSuite(func() {
 	if !control.Enabled("AKO_INT_TEST") {
 		fmt.Println("Skipping int BeforeSuite, AKO_INT_TEST is not set")
 
@@ -96,10 +96,8 @@ var _ = BeforeSuite(func(ctx context.Context) {
 	})
 
 	By("Bootstrapping test environment", func() {
-		useExistingCluster := os.Getenv("USE_EXISTING_CLUSTER") != ""
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths:  []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-			UseExistingCluster: &useExistingCluster,
+			CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		}
 
 		_, err := testEnv.Start()
@@ -121,6 +119,9 @@ var _ = BeforeSuite(func(ctx context.Context) {
 	})
 
 	By("Start the operator", func() {
+		var ctx context.Context
+		ctx, cancelManager = context.WithCancel(context.Background())
+
 		logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
 		ctrl.SetLogger(zapr.NewLogger(logger))
 		syncPeriod := time.Minute * 30
