@@ -29,6 +29,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
+const bcpNotMet = "BACKUP_POLICIES_NOT_MEETING_BACKUP_COMPLIANCE_POLICY_REQUIREMENTS"
+
 type backupComplianceController struct {
 	ctx     *workflow.Context
 	client  client.Client
@@ -87,8 +89,10 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 	}
 	if !equal {
 		_, _, err = b.ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
-		// TODO: catch the "bcp not met" error & log appropriately
 		if err != nil {
+			if admin.IsErrorCode(err, bcpNotMet) {
+				return b.terminate(workflow.ProjectBackupCompliancePolicyNotMet, err)
+			}
 			return b.terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err)
 		}
 	}
