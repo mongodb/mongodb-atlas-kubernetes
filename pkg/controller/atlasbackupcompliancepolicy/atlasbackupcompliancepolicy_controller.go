@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -85,7 +86,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolic
 	return r.release(workflowCtx, bcp)
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+func (r *AtlasBackupCompliancePolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasBackupCompliancePolicy").
 		For(&akov2.AtlasBackupCompliancePolicy{}, builder.WithPredicates(r.GlobalPredicates...)).
@@ -95,6 +96,24 @@ func (r *AtlasBackupCompliancePolicyReconciler) SetupWithManager(ctx context.Con
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
+}
+
+func NewAtlasBackupCompliancePolicyReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+) *AtlasBackupCompliancePolicyReconciler {
+	return &AtlasBackupCompliancePolicyReconciler{
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasBackupCompliancePolicy"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasBackupCompliancePolicy").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
+	}
 }
 
 func (r *AtlasBackupCompliancePolicyReconciler) findBCPForProjects(_ context.Context, obj client.Object) []reconcile.Request {
