@@ -9,6 +9,7 @@ import (
 
 const (
 	AtlasStreamInstanceByConnectionIndex = "atlasstreaminstance.spec.connectionRegistry"
+	AtlasStreamInstanceByProjectIndex    = "atlasstreaminstance.spec.projectRef"
 )
 
 type AtlasStreamInstanceByConnectionIndexer struct {
@@ -24,6 +25,7 @@ func NewAtlasStreamInstanceByConnectionIndexer(logger *zap.Logger) *AtlasStreamI
 func (*AtlasStreamInstanceByConnectionIndexer) Object() client.Object {
 	return &akov2.AtlasStreamInstance{}
 }
+
 func (*AtlasStreamInstanceByConnectionIndexer) Name() string {
 	return AtlasStreamInstanceByConnectionIndex
 }
@@ -47,4 +49,38 @@ func (a *AtlasStreamInstanceByConnectionIndexer) Keys(object client.Object) []st
 	}
 
 	return indices
+}
+
+type AtlasStreamInstanceByProjectIndexer struct {
+	logger *zap.SugaredLogger
+}
+
+func NewAtlasStreamInstanceByProjectIndexer(logger *zap.Logger) *AtlasStreamInstanceByProjectIndexer {
+	return &AtlasStreamInstanceByProjectIndexer{
+		logger: logger.Named(AtlasStreamInstanceByProjectIndex).Sugar(),
+	}
+}
+
+func (*AtlasStreamInstanceByProjectIndexer) Object() client.Object {
+	return &akov2.AtlasStreamInstance{}
+}
+
+func (*AtlasStreamInstanceByProjectIndexer) Name() string {
+	return AtlasStreamInstanceByProjectIndex
+}
+
+func (a *AtlasStreamInstanceByProjectIndexer) Keys(object client.Object) []string {
+	streamInstance, ok := object.(*akov2.AtlasStreamInstance)
+	if !ok {
+		a.logger.Errorf("expected *akov2.AtlasStreamInstance but got %T", object)
+		return nil
+	}
+
+	if streamInstance.Spec.Project.Name == "" {
+		return nil
+	}
+
+	key := streamInstance.Spec.Project.GetObject(streamInstance.GetNamespace())
+
+	return []string{key.String()}
 }

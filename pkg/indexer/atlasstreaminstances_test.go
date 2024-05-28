@@ -52,3 +52,39 @@ func TestAtlasStreamInstancesByConnectionRegistryIndices(t *testing.T) {
 		)
 	})
 }
+
+func TestAtlasStreamInstancesByProjectIndices(t *testing.T) {
+	t.Run("should return nil when instance has no project associated to it", func(t *testing.T) {
+		instance := &akov2.AtlasStreamInstance{
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+			},
+		}
+
+		indexer := NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(instance)
+		assert.Nil(t, keys)
+	})
+
+	t.Run("should return indexes slice when instance has project associated to it", func(t *testing.T) {
+		instance := &akov2.AtlasStreamInstance{
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Project: common.ResourceRefNamespaced{
+					Name:      "project-1",
+					Namespace: "default",
+				},
+			},
+		}
+
+		indexer := NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
+		keys := indexer.Keys(instance)
+		assert.Equal(
+			t,
+			[]string{
+				"default/project-1",
+			},
+			keys,
+		)
+	})
+}

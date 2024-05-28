@@ -45,6 +45,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 
@@ -95,10 +96,8 @@ var _ = BeforeSuite(func() {
 	})
 
 	By("Bootstrapping test environment", func() {
-		useExistingCluster := os.Getenv("USE_EXISTING_CLUSTER") != ""
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths:  []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-			UseExistingCluster: &useExistingCluster,
+			CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		}
 
 		_, err := testEnv.Start()
@@ -120,6 +119,9 @@ var _ = BeforeSuite(func() {
 	})
 
 	By("Start the operator", func() {
+		var ctx context.Context
+		ctx, cancelManager = context.WithCancel(context.Background())
+
 		logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
 		ctrl.SetLogger(zapr.NewLogger(logger))
 		syncPeriod := time.Minute * 30
@@ -143,6 +145,9 @@ var _ = BeforeSuite(func() {
 		}
 
 		atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
+
+		err = indexer.RegisterAll(ctx, k8sManager, logger)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = (&atlasproject.AtlasProjectReconciler{
 			Client:                    k8sManager.GetClient(),
@@ -172,9 +177,6 @@ var _ = BeforeSuite(func() {
 			GlobalPredicates:          globalPredicates,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
-
-		var ctx context.Context
-		ctx, cancelManager = context.WithCancel(context.Background())
 
 		go func() {
 			err = k8sManager.Start(ctx)

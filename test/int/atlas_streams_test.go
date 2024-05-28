@@ -250,6 +250,16 @@ YJZC5C0=
 				}).WithTimeout(2 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 			})
 
+			By("Removing a project with associated instance", func() {
+				Expect(k8sClient.Delete(ctx, testProject)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(testProject), testProject)).Should(Succeed())
+					g.Expect(testProject.DeletionTimestamp.IsZero()).Should(BeFalse())
+					g.Expect(testProject.Finalizers).ShouldNot(BeEmpty())
+				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
+			})
+
 			By("Deleting instance and connections", func() {
 				Expect(k8sClient.Delete(ctx, kafkaConnection)).To(Succeed())
 				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(kafkaConnection), kafkaConnection)).ToNot(Succeed())
