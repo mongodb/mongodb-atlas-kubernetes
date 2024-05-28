@@ -24,8 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -109,19 +109,19 @@ func (b *backupComplianceController) delete() workflow.Result {
 func (b *backupComplianceController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	b.ctx.Log.Error(err)
 	result := workflow.Terminate(reason, err.Error())
-	b.ctx.SetConditionFromResult(status.BackupComplianceReadyType, result)
+	b.ctx.SetConditionFromResult(api.BackupComplianceReadyType, result)
 	return result
 }
 
 // unmanage transitions to pending state if there is no managed BCP.
 func (b *backupComplianceController) unmanage() workflow.Result {
-	b.ctx.UnsetCondition(status.BackupComplianceReadyType)
+	b.ctx.UnsetCondition(api.BackupComplianceReadyType)
 	return workflow.OK()
 }
 
 // idle transitions BCP to idle state when ready and idle.
 func (b *backupComplianceController) idle() workflow.Result {
-	b.ctx.SetConditionTrue(status.BackupComplianceReadyType)
+	b.ctx.SetConditionTrue(api.BackupComplianceReadyType)
 	return workflow.OK()
 }
 

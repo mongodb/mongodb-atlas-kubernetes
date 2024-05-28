@@ -8,8 +8,11 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
+
+var _ api.AtlasCustomResource = &AtlasBackupCompliancePolicy{}
 
 // AtlasBackupCompliancePolicy defines the desired state of a compliance policy in Atlas.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -127,11 +130,11 @@ func (b *AtlasBackupCompliancePolicy) Normalize() (*AtlasBackupCompliancePolicy,
 	return b, err
 }
 
-func (b *AtlasBackupCompliancePolicy) GetStatus() status.Status {
+func (b *AtlasBackupCompliancePolicy) GetStatus() api.Status {
 	return b.Status
 }
 
-func (b *AtlasBackupCompliancePolicy) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (b *AtlasBackupCompliancePolicy) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	b.Status.Conditions = conditions
 	b.Status.ObservedGeneration = b.ObjectMeta.Generation
 
