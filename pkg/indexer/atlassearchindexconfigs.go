@@ -32,7 +32,7 @@ func (*AtlasDeploymentBySearchIndexIndexer) Name() string {
 func (a *AtlasDeploymentBySearchIndexIndexer) Keys(object client.Object) []string {
 	deployment, ok := object.(*akov2.AtlasDeployment)
 	if !ok {
-		a.logger.Errorf("expected *akov2.AtlasSearchIndexConfig but got %T", object)
+		a.logger.Errorf("expected *akov2.AtlasDeployment but got %T", object)
 		return nil
 	}
 
