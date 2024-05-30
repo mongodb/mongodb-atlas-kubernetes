@@ -124,6 +124,94 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 		assert.Equal(t, beforeSpec, &merged, "Comparison should not change original spec values")
 		assert.Equal(t, beforeAtlas, &atlas, "Comparison should not change original atlas values")
 	})
+
+	t.Run("Advanced deployments are the same when region configs are unordered", func(t *testing.T) {
+		akoDeployment := akov2.DefaultAwsAdvancedDeployment("default", "my-project")
+		akoDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs = []*akov2.AdvancedRegionConfig{
+			{
+				ElectableSpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    pointer.MakePtr(1),
+				},
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M30",
+					NodeCount:    pointer.MakePtr(0),
+				},
+				Priority:     pointer.MakePtr(7),
+				ProviderName: "AWS",
+				RegionName:   "US_EAST_1",
+			},
+			{
+				ElectableSpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    pointer.MakePtr(2),
+				},
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M30",
+					NodeCount:    pointer.MakePtr(0),
+				},
+				Priority:     pointer.MakePtr(6),
+				ProviderName: "AWS",
+				RegionName:   "US_WEST_2",
+			},
+			{
+				ElectableSpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    pointer.MakePtr(4),
+				},
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M30",
+					NodeCount:    pointer.MakePtr(2),
+				},
+				Priority:     pointer.MakePtr(5),
+				ProviderName: "AWS",
+				RegionName:   "CA_CENTRAL_1",
+			},
+		}
+
+		atlasDeployment := makeDefaultAtlasSpec()
+		atlasDeployment.ReplicationSpecs[0].RegionConfigs = []*mongodbatlas.AdvancedRegionConfig{
+			{
+				ElectableSpecs: &mongodbatlas.Specs{
+					InstanceSize: "M10",
+					NodeCount:    pointer.MakePtr(1),
+				},
+				Priority:     pointer.MakePtr(7),
+				ProviderName: "AWS",
+				RegionName:   "US_EAST_1",
+			},
+			{
+				ElectableSpecs: &mongodbatlas.Specs{
+					InstanceSize: "M10",
+					NodeCount:    pointer.MakePtr(4),
+				},
+				ReadOnlySpecs: &mongodbatlas.Specs{
+					InstanceSize: "M30",
+					NodeCount:    pointer.MakePtr(2),
+				},
+				Priority:     pointer.MakePtr(5),
+				ProviderName: "AWS",
+				RegionName:   "CA_CENTRAL_1",
+			},
+			{
+				ElectableSpecs: &mongodbatlas.Specs{
+					InstanceSize: "M10",
+					NodeCount:    pointer.MakePtr(2),
+				},
+				Priority:     pointer.MakePtr(6),
+				ProviderName: "AWS",
+				RegionName:   "US_WEST_2",
+			},
+		}
+
+		merged, atlas, err := MergedAdvancedDeployment(*atlasDeployment, *akoDeployment.Spec.DeploymentSpec)
+		assert.NoError(t, err)
+
+		logger, _ := zap.NewProduction()
+		areEqual, _ := AdvancedDeploymentsEqual(logger.Sugar(), &merged, &atlas)
+		assert.True(t, areEqual, "Deployments should be the same")
+
+	})
 }
 
 func makeDefaultAtlasSpec() *mongodbatlas.AdvancedCluster {
