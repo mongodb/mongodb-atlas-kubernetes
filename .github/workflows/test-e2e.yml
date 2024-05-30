@@ -176,6 +176,10 @@ jobs:
             "deletion-protection",
             "atlas-search-nodes",
             "atlas-search-index",
+            "cache-watch",
+            "reconcile-all",
+            "reconcile-one",
+            "reconcile-two",
           ]
     steps:
       - name: Get repo files from cache
