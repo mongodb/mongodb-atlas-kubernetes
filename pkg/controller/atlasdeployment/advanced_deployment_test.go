@@ -210,7 +210,6 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 		logger, _ := zap.NewProduction()
 		areEqual, _ := AdvancedDeploymentsEqual(logger.Sugar(), &merged, &atlas)
 		assert.True(t, areEqual, "Deployments should be the same")
-
 	})
 }
 
