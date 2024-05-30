@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -171,7 +172,22 @@ func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluste
 	atlasDeployment.MongoDBVersion = ""
 	mergedDeployment.MongoDBVersion = ""
 
+	atlasDeployment = sortReplicationSpecs(atlasDeployment)
+	mergedDeployment = sortReplicationSpecs(mergedDeployment)
+
 	return
+}
+
+func sortReplicationSpecs(spec akov2.AdvancedDeploymentSpec) akov2.AdvancedDeploymentSpec {
+	slices.SortFunc(spec.ReplicationSpecs, func(a, b *akov2.AdvancedReplicationSpec) int {
+		return strings.Compare(a.ZoneName, b.ZoneName)
+	})
+	for _, r := range spec.ReplicationSpecs {
+		slices.SortFunc(r.RegionConfigs, func(a, b *akov2.AdvancedRegionConfig) int {
+			return strings.Compare(a.RegionName, b.RegionName)
+		})
+	}
+	return spec
 }
 
 func IsFreeTierAdvancedDeployment(deployment *mongodbatlas.AdvancedCluster) bool {
