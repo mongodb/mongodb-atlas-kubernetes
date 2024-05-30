@@ -2,23 +2,19 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -35,25 +31,7 @@ type networkPeerDiff struct {
 	PeersToUpdate []admin.BaseNetworkPeeringConnectionSettings
 }
 
-func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject, subobjectProtect bool) workflow.Result {
-	canReconcile, err := canNetworkPeeringReconcile(workflowCtx, subobjectProtect, akoProject)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(api.NetworkPeerReadyType, result)
-
-		return result
-	}
-
-	if !canReconcile {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(api.NetworkPeerReadyType, result)
-
-		return result
-	}
-
+func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.Result {
 	networkPeerStatus := akoProject.Status.DeepCopy().NetworkPeers
 	networkPeerSpec := akoProject.Spec.DeepCopy().NetworkPeers
 
@@ -590,104 +568,4 @@ func deleteAllNetworkPeers(ctx context.Context, groupID string, service admin.Ne
 		}
 	}
 	return nil
-}
-
-func canNetworkPeeringReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
-	if !protected {
-		return true, nil
-	}
-
-	latestConfig := &akov2.AtlasProjectSpec{}
-	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
-			return false, err
-		}
-	}
-
-	containers, _, err := workflowCtx.Client.Containers.List(workflowCtx.Context, akoProject.ID(), &mongodbatlas.ContainersListOptions{})
-	if err != nil {
-		return false, err
-	}
-
-	if len(containers) > 0 && !areContainersEqual(latestConfig.NetworkPeers, containers) && !areContainersEqual(akoProject.Spec.NetworkPeers, containers) {
-		return false, nil
-	}
-
-	peers, _, err := workflowCtx.Client.Peers.List(workflowCtx.Context, akoProject.ID(), &mongodbatlas.ContainersListOptions{})
-	if err != nil {
-		return false, err
-	}
-
-	if len(peers) == 0 {
-		return true, nil
-	}
-
-	if !arePeersEqual(latestConfig.NetworkPeers, peers) && !arePeersEqual(akoProject.Spec.NetworkPeers, peers) {
-		return false, nil
-	}
-
-	return true, err
-}
-
-func areContainersEqual(operatorContainers []akov2.NetworkPeer, atlasContainers []mongodbatlas.Container) bool {
-	if len(operatorContainers) != len(atlasContainers) {
-		return false
-	}
-
-	atlasContainersIDs := map[string]struct{}{}
-	for _, container := range atlasContainers {
-		switch container.ProviderName {
-		case string(provider.ProviderAWS):
-			atlasContainersIDs[fmt.Sprintf("%s.%s.%s", container.ProviderName, container.RegionName, container.AtlasCIDRBlock)] = struct{}{}
-		case string(provider.ProviderGCP):
-			atlasContainersIDs[fmt.Sprintf("%s.%s", container.ProviderName, container.AtlasCIDRBlock)] = struct{}{}
-		case string(provider.ProviderAzure):
-			atlasContainersIDs[fmt.Sprintf("%s.%s.%s", container.ProviderName, container.Region, container.AtlasCIDRBlock)] = struct{}{}
-		}
-	}
-
-	for _, container := range operatorContainers {
-		switch container.ProviderName {
-		case provider.ProviderAWS:
-			delete(atlasContainersIDs, fmt.Sprintf("%s.%s.%s", container.ProviderName, containerRegionNameMatcher(container.GetContainerRegion(), container.ProviderName), container.AtlasCIDRBlock))
-		case provider.ProviderGCP:
-			delete(atlasContainersIDs, fmt.Sprintf("%s.%s", container.ProviderName, container.AtlasCIDRBlock))
-		case provider.ProviderAzure:
-			delete(atlasContainersIDs, fmt.Sprintf("%s.%s.%s", container.ProviderName, containerRegionMatcher(container.GetContainerRegion(), container.ProviderName), container.AtlasCIDRBlock))
-		}
-	}
-
-	return len(atlasContainersIDs) == 0
-}
-
-func arePeersEqual(operatorPeers []akov2.NetworkPeer, atlasPeers []mongodbatlas.Peer) bool {
-	if len(operatorPeers) != len(atlasPeers) {
-		return false
-	}
-
-	atlasPeersIDs := map[string]struct{}{}
-	for _, peer := range atlasPeers {
-		switch peer.ProviderName {
-		case string(provider.ProviderAWS):
-			atlasPeersIDs[fmt.Sprintf("%s.%s.%s", peer.AWSAccountID, peer.VpcID, peer.RouteTableCIDRBlock)] = struct{}{}
-		case string(provider.ProviderGCP):
-			atlasPeersIDs[fmt.Sprintf("%s.%s", peer.GCPProjectID, peer.NetworkName)] = struct{}{}
-		case string(provider.ProviderAzure):
-			atlasPeersIDs[fmt.Sprintf("%s.%s.%s.%s", peer.AzureSubscriptionID, peer.AzureDirectoryID, peer.ResourceGroupName, peer.VNetName)] = struct{}{}
-		}
-	}
-
-	for _, peer := range operatorPeers {
-		switch peer.ProviderName {
-		case provider.ProviderAWS:
-			delete(atlasPeersIDs, fmt.Sprintf("%s.%s.%s", peer.AWSAccountID, peer.VpcID, peer.RouteTableCIDRBlock))
-		case provider.ProviderGCP:
-			delete(atlasPeersIDs, fmt.Sprintf("%s.%s", peer.GCPProjectID, peer.NetworkName))
-		case provider.ProviderAzure:
-			delete(atlasPeersIDs, fmt.Sprintf("%s.%s.%s.%s", peer.AzureSubscriptionID, peer.AzureDirectoryID, peer.ResourceGroupName, peer.VNetName))
-		}
-	}
-
-	return len(atlasPeersIDs) == 0
 }

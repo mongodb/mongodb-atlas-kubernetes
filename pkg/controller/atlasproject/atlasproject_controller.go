@@ -150,35 +150,10 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx.OrgID = orgID
 	workflowCtx.Client = atlasClient
 
-	// Setting protection flag to static false because ownership detection is disabled.
-	owner, err := customresource.IsOwner(project, false, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
-		log.Error(result.GetMessage())
-
+	projectID, result := r.ensureProjectExists(workflowCtx, project)
+	if !result.IsOk() {
+		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
-	}
-
-	if !owner {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Project due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
-	var projectID string
-	{
-		var result workflow.Result
-		projectID, result = r.ensureProjectExists(workflowCtx, project)
-		if !result.IsOk() {
-			setCondition(workflowCtx, api.ProjectReadyType, result)
-			return result.ReconcileResult(), nil
-		}
 	}
 
 	workflowCtx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
@@ -303,7 +278,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 
 	var result workflow.Result
-	if result = ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(workflowCtx.SdkClient), project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(workflowCtx.SdkClient), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.IPAccessListReadyType), "")
 	}
 	results = append(results, result)
@@ -313,12 +288,12 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensureCloudProviderIntegration(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureCloudProviderIntegration(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.CloudProviderIntegrationReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureNetworkPeers(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureNetworkPeers(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.NetworkPeerReadyType), "")
 	}
 	results = append(results, result)
@@ -328,37 +303,37 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = r.ensureIntegration(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = r.ensureIntegration(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.IntegrationReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureMaintenanceWindow(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureMaintenanceWindow(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.MaintenanceWindowReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureEncryptionAtRest(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = r.ensureEncryptionAtRest(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.EncryptionAtRestReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureAuditing(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureAuditing(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.AuditingReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureProjectSettings(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureProjectSettings(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.ProjectSettingsReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureCustomRoles(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureCustomRoles(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.ProjectCustomRolesReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureAssignedTeams(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = r.ensureAssignedTeams(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.ProjectTeamsReadyType), "")
 	}
 	results = append(results, result)
@@ -414,34 +389,5 @@ func setCondition(ctx *workflow.Context, condition api.ConditionType, result wor
 func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
-	}
-}
-
-func managedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
-	return func(resource api.AtlasCustomResource) (bool, error) {
-		project, ok := resource.(*akov2.AtlasProject)
-		if !ok {
-			return false, errors.New("failed to match resource type as AtlasProject")
-		}
-
-		if project.ID() == "" {
-			return false, nil
-		}
-
-		atlasProject, _, err := workflowCtx.Client.Projects.GetOneProject(workflowCtx.Context, project.ID())
-		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
-				return false, nil
-			}
-
-			return false, err
-		}
-
-		if project.Spec.Name == atlasProject.Name {
-			return false, err
-		}
-
-		return true, nil
 	}
 }

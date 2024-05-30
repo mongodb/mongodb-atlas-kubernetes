@@ -1,8 +1,6 @@
 package atlasproject
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -18,7 +16,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -28,25 +25,7 @@ const ipAccessStatusFailed = "FAILED"
 // ensureIPAccessList ensures that the state of the Atlas IP Access List matches the
 // state of the IP Access list specified in the project CR. Any Access Lists which exist
 // in Atlas but are not specified in the CR are deleted.
-func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessListStatus, akoProject *akov2.AtlasProject, subobjectProtect bool) workflow.Result {
-	canReconcile, err := canIPAccessListReconcile(service.Context, service.SdkClient, subobjectProtect, akoProject)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		service.SetConditionFromResult(api.IPAccessListReadyType, result)
-
-		return result
-	}
-
-	if !canReconcile {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile IP Access List due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		service.SetConditionFromResult(api.IPAccessListReadyType, result)
-
-		return result
-	}
-
+func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessListStatus, akoProject *akov2.AtlasProject) workflow.Result {
 	desiredList, expiredList := filterActiveIPAccessLists(akoProject.Spec.ProjectIPAccessList)
 	service.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expiredList))
 
@@ -225,34 +204,4 @@ func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IP
 		active = append(active, list)
 	}
 	return active, expired
-}
-
-func canIPAccessListReconcile(ctx context.Context, atlasClient *admin.APIClient, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
-	if !protected {
-		return true, nil
-	}
-
-	latestConfig := &akov2.AtlasProjectSpec{}
-	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
-			return false, err
-		}
-	}
-
-	list, _, err := atlasClient.ProjectIPAccessListApi.ListProjectIpAccessLists(ctx, akoProject.ID()).Execute()
-	if err != nil {
-		return false, err
-	}
-
-	if list.GetTotalCount() == 0 {
-		return true, nil
-	}
-
-	atlasAccessLists := mapToOperatorSpec(list.GetResults())
-	if cmp.Equal(atlasAccessLists, latestConfig.ProjectIPAccessList, cmpopts.EquateEmpty()) {
-		return true, nil
-	}
-
-	return cmp.Equal(akoProject.Spec.ProjectIPAccessList, atlasAccessLists, cmpopts.EquateEmpty()), nil
 }

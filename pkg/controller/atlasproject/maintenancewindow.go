@@ -2,42 +2,20 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 // ensureMaintenanceWindow ensures that the state of the Atlas Maintenance Window matches the
 // state of the Maintenance Window specified in the project CR. If a Maintenance Window exists
 // in Atlas but is not specified in the CR, it is deleted.
-func ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *akov2.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canMaintenanceWindowReconcile(workflowCtx, protected, atlasProject)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(api.IPAccessListReadyType, result)
-
-		return result
-	}
-
-	if !canReconcile {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(api.MaintenanceWindowReadyType, result)
-
-		return result
-	}
-
+func ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.Result {
 	if isEmptyWindow(atlasProject.Spec.MaintenanceWindow) {
 		if condition, found := workflowCtx.GetCondition(api.MaintenanceWindowReadyType); found {
 			workflowCtx.Log.Debugw("Window is empty, deleting in Atlas")
@@ -190,53 +168,4 @@ func toggleAutoDeferInAtlas(ctx context.Context, client *mongodbatlas.Client, pr
 		return workflow.Terminate(workflow.ProjectWindowNotAutoDeferredInAtlas, err.Error())
 	}
 	return workflow.OK()
-}
-
-func canMaintenanceWindowReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
-	if !protected {
-		return true, nil
-	}
-
-	latestConfig := &akov2.AtlasProjectSpec{}
-	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
-			return false, err
-		}
-	}
-
-	mWindow, _, err := workflowCtx.Client.MaintenanceWindows.Get(workflowCtx.Context, akoProject.ID())
-	if err != nil {
-		return false, err
-	}
-
-	if isAtlasMaintenanceWindowEmpty(mWindow) {
-		return true, nil
-	}
-
-	return isMaintenanceWindowConfigEqual(latestConfig.MaintenanceWindow, *mWindow) ||
-		isMaintenanceWindowConfigEqual(akoProject.Spec.MaintenanceWindow, *mWindow), nil
-}
-
-func isMaintenanceWindowConfigEqual(akoMWindow project.MaintenanceWindow, atlasMWindow mongodbatlas.MaintenanceWindow) bool {
-	if atlasMWindow.HourOfDay == nil {
-		atlasMWindow.HourOfDay = pointer.MakePtr(0)
-	}
-
-	if atlasMWindow.StartASAP == nil {
-		atlasMWindow.StartASAP = pointer.MakePtr(false)
-	}
-
-	if atlasMWindow.AutoDeferOnceEnabled == nil {
-		atlasMWindow.AutoDeferOnceEnabled = pointer.MakePtr(false)
-	}
-
-	return akoMWindow.DayOfWeek == atlasMWindow.DayOfWeek &&
-		akoMWindow.HourOfDay == *atlasMWindow.HourOfDay &&
-		akoMWindow.StartASAP == *atlasMWindow.StartASAP &&
-		akoMWindow.AutoDefer == *atlasMWindow.AutoDeferOnceEnabled
-}
-
-func isAtlasMaintenanceWindowEmpty(mWindow *mongodbatlas.MaintenanceWindow) bool {
-	return mWindow.DayOfWeek == 0 && mWindow.HourOfDay == nil && mWindow.StartASAP == nil && mWindow.AutoDeferOnceEnabled == nil
 }

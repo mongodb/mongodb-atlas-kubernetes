@@ -2,7 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -17,7 +16,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -26,28 +24,10 @@ const (
 	ObjectIDRegex = "^([a-f0-9]{24})$"
 )
 
-func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
+func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
 	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, project.Spec.EncryptionAtRest, project.Namespace); err != nil {
 		workflowCtx.UnsetCondition(api.EncryptionAtRestReadyType)
 		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
-	}
-
-	canReconcile, err := canEncryptionAtRestReconcile(workflowCtx, protected, project)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(api.EncryptionAtRestReadyType, result)
-
-		return result
-	}
-
-	if !canReconcile {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(api.EncryptionAtRestReadyType, result)
-
-		return result
 	}
 
 	result := createOrDeleteEncryptionAtRests(workflowCtx, project.ID(), project)
@@ -387,88 +367,4 @@ func selectRole(accessRoles []status.CloudProviderIntegration, providerName stri
 	}
 
 	return
-}
-
-func canEncryptionAtRestReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
-	if !protected {
-		return true, nil
-	}
-
-	latestConfig := &akov2.AtlasProjectSpec{}
-	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
-			return false, err
-		}
-	}
-
-	ear, _, err := workflowCtx.Client.EncryptionsAtRest.Get(workflowCtx.Context, akoProject.ID())
-	if err != nil {
-		return false, err
-	}
-
-	if IsEncryptionAtlasEmpty(ear) {
-		return true, nil
-	}
-
-	return areEaRConfigEqual(*latestConfig.EncryptionAtRest, ear, true) ||
-		areEaRConfigEqual(*akoProject.Spec.EncryptionAtRest, ear, false), nil
-}
-
-func areEaRConfigEqual(operator akov2.EncryptionAtRest, atlas *mongodbatlas.EncryptionAtRest, lastApplied bool) bool {
-	return areAWSConfigEqual(operator.AwsKms, atlas.AwsKms, lastApplied) &&
-		areGCPConfigEqual(operator.GoogleCloudKms, atlas.GoogleCloudKms, lastApplied) &&
-		areAzureConfigEqual(operator.AzureKeyVault, atlas.AzureKeyVault, lastApplied)
-}
-
-func areAWSConfigEqual(operator akov2.AwsKms, atlas mongodbatlas.AwsKms, lastApplied bool) bool {
-	if operator.Enabled == nil {
-		operator.Enabled = pointer.MakePtr(false)
-	}
-
-	if lastApplied {
-		return *operator.Enabled == *atlas.Enabled &&
-			operator.Region == atlas.Region
-	}
-	// Atlas API does not return SecretAccessKey or RoleID
-	return *operator.Enabled == *atlas.Enabled &&
-		operator.CustomerMasterKeyID() == atlas.CustomerMasterKeyID &&
-		operator.Region == atlas.Region
-}
-
-func areGCPConfigEqual(operator akov2.GoogleCloudKms, atlas mongodbatlas.GoogleCloudKms, lastApplied bool) bool {
-	if operator.Enabled == nil {
-		operator.Enabled = pointer.MakePtr(false)
-	}
-
-	if lastApplied {
-		return *operator.Enabled == *atlas.Enabled
-	}
-
-	// Atlas API does not return service account key
-	return *operator.Enabled == *atlas.Enabled &&
-		operator.KeyVersionResourceID() == atlas.KeyVersionResourceID
-}
-
-func areAzureConfigEqual(operator akov2.AzureKeyVault, atlas mongodbatlas.AzureKeyVault, lastApplied bool) bool {
-	if operator.Enabled == nil {
-		operator.Enabled = pointer.MakePtr(false)
-	}
-
-	if lastApplied {
-		return *operator.Enabled == *atlas.Enabled &&
-			operator.AzureEnvironment == atlas.AzureEnvironment &&
-			operator.ClientID == atlas.ClientID &&
-			operator.ResourceGroupName == atlas.ResourceGroupName &&
-			operator.TenantID == atlas.TenantID
-	}
-
-	return *operator.Enabled == *atlas.Enabled &&
-		operator.AzureEnvironment == atlas.AzureEnvironment &&
-		operator.ClientID == atlas.ClientID &&
-		operator.KeyIdentifier() == atlas.KeyIdentifier &&
-		operator.KeyVaultName() == atlas.KeyVaultName &&
-		operator.ResourceGroupName == atlas.ResourceGroupName &&
-		operator.SubscriptionID() == atlas.SubscriptionID &&
-		operator.TenantID == atlas.TenantID
 }

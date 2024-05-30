@@ -66,26 +66,6 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		teamCtx.OrgID = orgID
 		teamCtx.Client = atlasClient
 
-		owner, err := customresource.IsOwner(team, false, customresource.IsResourceManagedByOperator, teamsManagedByAtlas(teamCtx))
-		if err != nil {
-			result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-			teamCtx.SetConditionFromResult(api.ReadyType, result)
-			log.Error(result.GetMessage())
-
-			return result.ReconcileResult(), nil
-		}
-
-		if !owner {
-			result = workflow.Terminate(
-				workflow.AtlasDeletionProtection,
-				"unable to reconcile Team due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-			)
-			teamCtx.SetConditionFromResult(api.ReadyType, result)
-			log.Error(result.GetMessage())
-
-			return result.ReconcileResult(), nil
-		}
-
 		teamID, result := ensureTeamState(teamCtx, team)
 		if !result.IsOk() {
 			teamCtx.SetConditionFromResult(api.ReadyType, result)
