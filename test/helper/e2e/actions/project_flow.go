@@ -43,7 +43,6 @@ func ProjectCreationFlow(userData *model.TestDataProvider) {
 func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Manager {
 	CreateNamespaceAndSecrets(userData)
 	mgr, err := k8s.BuildManager(&k8s.Config{
-		Namespace: userData.Resources.Namespace,
 		WatchedNamespaces: map[string]bool{
 			userData.Resources.Namespace: true,
 		},

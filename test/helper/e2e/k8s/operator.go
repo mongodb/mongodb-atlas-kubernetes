@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -72,7 +71,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 	logger.Info("starting manager", zap.Any("config", config))
 
 	var cacheFunc cache.NewCacheFunc
-	if len(config.WatchedNamespaces) > 1 {
+	if len(config.WatchedNamespaces) > 0 {
 		var namespaces []string
 		for ns := range config.WatchedNamespaces {
 			namespaces = append(namespaces, ns)
@@ -94,8 +93,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 			Port: 9443,
 		}),
 		Cache: cache.Options{
-			DefaultNamespaces: map[string]cache.Config{config.Namespace: {}},
-			SyncPeriod:        &syncPeriod,
+			SyncPeriod: &syncPeriod,
 		},
 		HealthProbeBindAddress: config.ProbeAddr,
 		LeaderElection:         config.EnableLeaderElection,
@@ -110,9 +108,10 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 	// globalPredicates should be used for general controller Predicates
 	// that should be applied to all controllers in order to limit the
 	// resources they receive events for.
+	predicateNamespaces := controller.NamespacesForGlobalPredicate(config.WatchedNamespaces)
 	globalPredicates := []predicate.Predicate{
-		watch.CommonPredicates(),                                  // ignore spurious changes. status changes etc.
-		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
+		watch.CommonPredicates(),                             // ignore spurious changes. status changes etc.
+		watch.SelectNamespacesPredicate(predicateNamespaces), // select only desired namespaces
 	}
 
 	atlasProvider := atlas.NewProductionProvider(config.AtlasDomain, config.GlobalAPISecret, mgr.GetClient())
@@ -226,19 +225,6 @@ func mergeConfiguration(initCfg *Config) *Config {
 		config.ProbeAddr = ":0"
 	}
 
-	watchedNamespace := ""
-	if config.WatchedNamespaces == nil {
-		config.WatchedNamespaces = make(map[string]bool)
-		for _, namespace := range strings.Split(watchedNamespace, ",") {
-			namespace = strings.TrimSpace(namespace)
-			config.WatchedNamespaces[namespace] = true
-		}
-	}
-
-	if len(config.WatchedNamespaces) == 1 && config.Namespace == "" {
-		config.Namespace = watchedNamespace
-	}
-
 	return config
 }
 
@@ -250,7 +236,6 @@ func managerDefaults() *Config {
 		AtlasDomain:                 "https://cloud-qa.mongodb.com/",
 		EnableLeaderElection:        false,
 		MetricsAddr:                 "0",
-		Namespace:                   "mongodb-atlas-system",
 		WatchedNamespaces:           map[string]bool{},
 		ProbeAddr:                   "0",
 		GlobalAPISecret:             client.ObjectKey{},
@@ -270,10 +255,6 @@ func WithNamespaces(namespaces ...string) ManagerConfig {
 	return func(config *Config) {
 		for _, namespace := range namespaces {
 			config.WatchedNamespaces[namespace] = true
-		}
-
-		if len(namespaces) == 1 {
-			config.Namespace = namespaces[0]
 		}
 	}
 }

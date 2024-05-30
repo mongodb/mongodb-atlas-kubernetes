@@ -85,11 +85,6 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
 				},
-				Namespace: config.DefaultOperatorNS,
-				WatchedNamespaces: map[string]bool{
-					config.DefaultOperatorNS: true,
-					secondNamespace:          true,
-				},
 				FeatureFlags: featureflags.NewFeatureFlags(func() []string { return []string{} }),
 			})
 			Expect(err).NotTo(HaveOccurred())

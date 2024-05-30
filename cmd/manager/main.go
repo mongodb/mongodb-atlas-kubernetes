@@ -102,7 +102,7 @@ func main() {
 	syncPeriod := time.Hour * 3
 
 	var cacheFunc cache.NewCacheFunc
-	if len(config.WatchedNamespaces) > 1 {
+	if len(config.WatchedNamespaces) > 0 {
 		var namespaces []string
 		for ns := range config.WatchedNamespaces {
 			namespaces = append(namespaces, ns)
@@ -124,8 +124,7 @@ func main() {
 			Port: 9443,
 		}),
 		Cache: cache.Options{
-			DefaultNamespaces: map[string]cache.Config{config.Namespace: {}},
-			SyncPeriod:        &syncPeriod,
+			SyncPeriod: &syncPeriod,
 		},
 		HealthProbeBindAddress: config.ProbeAddr,
 		LeaderElection:         config.EnableLeaderElection,
@@ -142,9 +141,10 @@ func main() {
 	// globalPredicates should be used for general controller Predicates
 	// that should be applied to all controllers in order to limit the
 	// resources they receive events for.
+	predicateNamespaces := controller.NamespacesForGlobalPredicate(config.WatchedNamespaces)
 	globalPredicates := []predicate.Predicate{
-		watch.CommonPredicates(),                                  // ignore spurious changes. status changes etc.
-		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
+		watch.CommonPredicates(),                             // ignore spurious changes. status changes etc.
+		watch.SelectNamespacesPredicate(predicateNamespaces), // select only desired namespaces
 	}
 
 	atlasProvider := atlas.NewProductionProvider(config.AtlasDomain, config.GlobalAPISecret, mgr.GetClient())
@@ -294,7 +294,6 @@ type Config struct {
 	AtlasDomain                 string
 	EnableLeaderElection        bool
 	MetricsAddr                 string
-	Namespace                   string
 	WatchedNamespaces           map[string]bool
 	ProbeAddr                   string
 	GlobalAPISecret             client.ObjectKey
@@ -336,14 +335,12 @@ func parseConfiguration() Config {
 	// dev note: we pass the watched namespace as the env variable to use the Kubernetes Downward API. Unfortunately
 	// there is no way to use it for container arguments
 	watchedNamespace := os.Getenv("WATCH_NAMESPACE")
-	config.WatchedNamespaces = make(map[string]bool)
-	for _, namespace := range strings.Split(watchedNamespace, ",") {
-		namespace = strings.TrimSpace(namespace)
-		config.WatchedNamespaces[namespace] = true
-	}
-
-	if len(config.WatchedNamespaces) == 1 {
-		config.Namespace = watchedNamespace
+	if strings.TrimSpace(watchedNamespace) != "" {
+		config.WatchedNamespaces = make(map[string]bool)
+		for _, namespace := range strings.Split(watchedNamespace, ",") {
+			namespace = strings.TrimSpace(namespace)
+			config.WatchedNamespaces[namespace] = true
+		}
 	}
 
 	configureDeletionProtection(&config)
