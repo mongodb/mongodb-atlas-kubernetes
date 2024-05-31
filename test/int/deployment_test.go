@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	retry2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
@@ -37,6 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 )
 
 const (
@@ -294,7 +293,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Filling token secret with invalid data", func() {
-				_, err := retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(connectionSecret), func(secret *corev1.Secret) {
+				_, err := akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(connectionSecret), func(secret *corev1.Secret) {
 					secret.StringData = map[string]string{
 						OrgID: "fake", PrivateAPIKey: "fake", PublicAPIKey: "fake",
 					}
@@ -314,7 +313,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Fix the token secret", func() {
-				_, err := retry2.RetryUpdateOnConflict(ctx, k8sClient, types.NamespacedName{Namespace: namespace.Name, Name: ConnectionSecretName}, func(secret *corev1.Secret) {
+				_, err := akoretry.RetryUpdateOnConflict(ctx, k8sClient, types.NamespacedName{Namespace: namespace.Name, Name: ConnectionSecretName}, func(secret *corev1.Secret) {
 					secret.StringData = secretData()
 				})
 				Expect(err).To(BeNil())
@@ -765,7 +764,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Updating the Deployment tags with a duplicate key and removing all tags", func() {
-				_, err := retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				_, err := akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.DeploymentSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-1", Value: "value-2"}}
 				})
 				Expect(err).To(BeNil())
@@ -813,7 +812,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Updating the Deployment configuration while paused (should fail)", func() {
-				_, err := retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				_, err := akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(false)
 				})
 				Expect(err).To(BeNil())
@@ -855,7 +854,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					oldSizeName string
 					err         error
 				)
-				createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					oldSizeName = deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs = &akov2.Specs{
 						InstanceSize: "M42",
@@ -1008,7 +1007,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				performCreate(createdDeployment, 30*time.Minute)
 
 				var err error
-				createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
 					deployment.Spec.DeploymentSpec.Labels = append(createdDeployment.Spec.DeploymentSpec.Labels, common.LabelSpec{
 						Key:   "some-key",
@@ -1046,7 +1045,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By(fmt.Sprintf("Updating the InstanceSize of Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				var err error
-				createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs = &akov2.Specs{
 						InstanceSize: "M20",
 						NodeCount:    pointer.MakePtr(3),
@@ -1072,7 +1071,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				var err error
-				createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					regionConfig := deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
 					regionConfig.ElectableSpecs.InstanceSize = "M10"
 					regionConfig.ReadOnlySpecs.InstanceSize = "M10"
@@ -1101,7 +1100,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By(fmt.Sprintf("Update Instance Size Margins with AutoScaling for Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				var err error
-				createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					regionConfig := deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
 					regionConfig.AutoScaling.Compute.MinInstanceSize = "M20"
 					regionConfig.ElectableSpecs.InstanceSize = "M20"
@@ -1180,7 +1179,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				err := compat.JSONCopy(&previousDeployment, createdDeployment)
 				Expect(err).NotTo(HaveOccurred())
 
-				createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].
 						RegionConfigs[0].
 						AutoScaling.
@@ -1207,7 +1206,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					err := compat.JSONCopy(&previousDeployment, createdDeployment)
 					Expect(err).NotTo(HaveOccurred())
 
-					createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+					createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 						deployment.Spec.DeploymentSpec.ReplicationSpecs[0].
 							RegionConfigs[0].
 							ElectableSpecs.InstanceSize = "M20"
@@ -1316,7 +1315,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			//nolint:dupl
 			By("Updating the Instance tags with a duplicate key and removing all tags", func() {
 				var err error
-				createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.ServerlessSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-1", Value: "value-2"}}
 				})
 				Expect(err).To(BeNil())
@@ -1532,7 +1531,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 
 				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(createdDeployment), createdDeployment)).Should(Succeed())
 				var err error
-				createdDeployment, err = retry2.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 						Name:      bScheduleName,
 						Namespace: namespace.Name,
@@ -1866,7 +1865,7 @@ func mergedAdvancedDeployment(
 }
 
 func performUpdate[T any](ctx context.Context, timeout time.Duration, key client.ObjectKey, mutator func(*T)) *T {
-	obj, err := retry2.RetryUpdateOnConflict(ctx, k8sClient, key, mutator)
+	obj, err := akoretry.RetryUpdateOnConflict(ctx, k8sClient, key, mutator)
 	Expect(err).To(BeNil())
 
 	clientObj := any(obj).(api.AtlasCustomResource)
