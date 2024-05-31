@@ -155,7 +155,25 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 				RegionName:   "US_WEST_2",
 			},
 			{
-				ElectableSpecs: &akov2.Specs{
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M30",
+					NodeCount:    pointer.MakePtr(2),
+				},
+				Priority:     pointer.MakePtr(0),
+				ProviderName: "GCP",
+				RegionName:   "US_WEST_2",
+			},
+			{
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M30",
+					NodeCount:    pointer.MakePtr(2),
+				},
+				Priority:     pointer.MakePtr(0),
+				ProviderName: "AWS",
+				RegionName:   "CA_CENTRAL_1",
+			},
+			{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(4),
 				},
@@ -163,14 +181,23 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 					InstanceSize: "M30",
 					NodeCount:    pointer.MakePtr(2),
 				},
-				Priority:     pointer.MakePtr(5),
+				Priority:     pointer.MakePtr(0),
 				ProviderName: "AWS",
-				RegionName:   "CA_CENTRAL_1",
+				RegionName:   "US_WEST_2",
 			},
 		}
 
 		atlasDeployment := makeDefaultAtlasSpec()
 		atlasDeployment.ReplicationSpecs[0].RegionConfigs = []*mongodbatlas.AdvancedRegionConfig{
+			{
+				AnalyticsSpecs: &mongodbatlas.Specs{
+					InstanceSize: "M30",
+					NodeCount:    pointer.MakePtr(2),
+				},
+				Priority:     pointer.MakePtr(0),
+				ProviderName: "AWS",
+				RegionName:   "CA_CENTRAL_1",
+			},
 			{
 				ElectableSpecs: &mongodbatlas.Specs{
 					InstanceSize: "M10",
@@ -181,7 +208,7 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 				RegionName:   "US_EAST_1",
 			},
 			{
-				ElectableSpecs: &mongodbatlas.Specs{
+				AnalyticsSpecs: &mongodbatlas.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(4),
 				},
@@ -189,9 +216,18 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 					InstanceSize: "M30",
 					NodeCount:    pointer.MakePtr(2),
 				},
-				Priority:     pointer.MakePtr(5),
+				Priority:     pointer.MakePtr(0),
 				ProviderName: "AWS",
-				RegionName:   "CA_CENTRAL_1",
+				RegionName:   "US_WEST_2",
+			},
+			{
+				ReadOnlySpecs: &mongodbatlas.Specs{
+					InstanceSize: "M30",
+					NodeCount:    pointer.MakePtr(2),
+				},
+				Priority:     pointer.MakePtr(0),
+				ProviderName: "GCP",
+				RegionName:   "US_WEST_2",
 			},
 			{
 				ElectableSpecs: &mongodbatlas.Specs{

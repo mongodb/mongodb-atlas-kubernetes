@@ -184,7 +184,13 @@ func sortReplicationSpecs(spec akov2.AdvancedDeploymentSpec) akov2.AdvancedDeplo
 	})
 	for _, r := range spec.ReplicationSpecs {
 		slices.SortFunc(r.RegionConfigs, func(a, b *akov2.AdvancedRegionConfig) int {
-			return strings.Compare(a.RegionName, b.RegionName)
+			if !(*a.Priority == *b.Priority) {
+				return *a.Priority - *b.Priority
+			} else if !strings.EqualFold(a.ProviderName, b.ProviderName) {
+				return strings.Compare(a.ProviderName, b.ProviderName)
+			} else {
+				return strings.Compare(a.RegionName, b.RegionName)
+			}
 		})
 	}
 	return spec
