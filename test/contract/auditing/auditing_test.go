@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/auditing"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/auditing"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/launcher"
 
