@@ -29,7 +29,7 @@ func CustomLabelSelectorCacheBuilder(obj client.Object, labelsSelector labels.Se
 	}
 }
 
-func NamespacesForGlobalPredicate(namespaceMap map[string]bool) map[string]bool {
+func NamespacesOrAllPredicate(namespaceMap map[string]bool) map[string]bool {
 	if len(namespaceMap) > 0 {
 		return namespaceMap
 	}

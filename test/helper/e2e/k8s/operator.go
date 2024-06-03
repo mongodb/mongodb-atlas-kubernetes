@@ -108,7 +108,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 	// globalPredicates should be used for general controller Predicates
 	// that should be applied to all controllers in order to limit the
 	// resources they receive events for.
-	predicateNamespaces := controller.NamespacesForGlobalPredicate(config.WatchedNamespaces)
+	predicateNamespaces := controller.NamespacesOrAllPredicate(config.WatchedNamespaces)
 	globalPredicates := []predicate.Predicate{
 		watch.CommonPredicates(),                             // ignore spurious changes. status changes etc.
 		watch.SelectNamespacesPredicate(predicateNamespaces), // select only desired namespaces
