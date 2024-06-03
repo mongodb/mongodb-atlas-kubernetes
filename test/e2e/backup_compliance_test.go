@@ -1,10 +1,11 @@
 package e2e_test
 
 import (
+	"context"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -12,6 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 )
 
 var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), func() {
@@ -49,7 +51,7 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 		})
 	})
 
-	It("Configures a backup compliance policy", func() {
+	It("Configures a backup compliance policy", func(ctx context.Context) {
 		By("Creating a backup compliance policy in kubernetes", func() {
 			backupCompliancePolicy = &v1.AtlasBackupCompliancePolicy{
 				ObjectMeta: metav1.ObjectMeta{
@@ -81,15 +83,14 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 			Expect(testData.K8SClient.Create(testData.Context, backupCompliancePolicy)).Should(Succeed())
 		})
 		By("Adding BCP to a Project", func() {
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed())
-			testData.Project.Spec.BackupCompliancePolicyRef = &common.ResourceRefNamespaced{
-				Name:      backupCompliancePolicy.Name,
-				Namespace: backupCompliancePolicy.Namespace,
-			}
-			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).Should(Succeed())
+			_, err := akoretry.RetryUpdateOnConflict(ctx, testData.K8SClient, client.ObjectKeyFromObject(testData.Project), func(project *v1.AtlasProject) {
+				project.Spec.BackupCompliancePolicyRef = &common.ResourceRefNamespaced{
+					Name:      backupCompliancePolicy.Name,
+					Namespace: backupCompliancePolicy.Namespace,
+				}
+			})
+			Expect(err).To(BeNil())
 			actions.WaitForConditionsToBecomeTrue(testData, api.BackupComplianceReadyType, api.ReadyType)
-
 		})
 	})
-
 })
