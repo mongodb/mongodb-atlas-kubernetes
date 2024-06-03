@@ -334,8 +334,8 @@ func parseConfiguration() Config {
 
 	// dev note: we pass the watched namespace as the env variable to use the Kubernetes Downward API. Unfortunately
 	// there is no way to use it for container arguments
-	watchedNamespace := os.Getenv("WATCH_NAMESPACE")
-	if strings.TrimSpace(watchedNamespace) != "" {
+	watchedNamespace := strings.TrimSpace(os.Getenv("WATCH_NAMESPACE"))
+	if watchedNamespace != "" {
 		config.WatchedNamespaces = make(map[string]bool)
 		for _, namespace := range strings.Split(watchedNamespace, ",") {
 			namespace = strings.TrimSpace(namespace)
