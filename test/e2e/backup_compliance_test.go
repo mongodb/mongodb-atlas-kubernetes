@@ -6,9 +6,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -87,7 +87,7 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 				Namespace: backupCompliancePolicy.Namespace,
 			}
 			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).Should(Succeed())
-			actions.WaitForConditionsToBecomeTrue(testData, status.BackupComplianceReadyType, status.ReadyType)
+			actions.WaitForConditionsToBecomeTrue(testData, api.BackupComplianceReadyType, api.ReadyType)
 
 		})
 	})

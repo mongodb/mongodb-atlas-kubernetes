@@ -18,7 +18,8 @@ package atlasproject
 
 import (
 	"errors"
-	"net/http"
+	"fmt"
+	"reflect"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -132,17 +133,15 @@ func (b *backupComplianceController) idle() workflow.Result {
 func (b *backupComplianceController) getAtlasBackupCompliancePolicy() (*admin.DataProtectionSettings20231001, bool, error) {
 	bcp, _, err := b.ctx.SdkClient.CloudBackupsApi.GetDataProtectionSettings(b.ctx.Context, b.project.ID()).Execute()
 	if err != nil {
-		apiError, ok := admin.AsError(err)
-		if ok && (apiError.GetError() == http.StatusNotFound) {
-			b.ctx.Log.Debug("no search nodes in atlas found")
-			return nil, false, nil
-		} else {
-			return nil, false, err
-		}
+		// Note: getting backup compliance policies never yields a 404
+		return nil, false, fmt.Errorf("error finding backup compliance policy: %w", err)
 	}
-	if bcp == nil {
+
+	var emptyPolicy admin.DataProtectionSettings20231001
+	if bcp == nil || reflect.DeepEqual(&emptyPolicy, bcp) {
 		return nil, false, nil
 	}
+
 	return bcp, true, nil
 }
 
