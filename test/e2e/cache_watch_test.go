@@ -69,16 +69,16 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 			wantToFind:      []string{"ns1", "ns2", "ns3"},
 		}),
 
-		Entry("One namespace when only one namespace is configured", Label("gets-all"), &tc{
+		Entry("One namespace when only one namespace is configured", Label("gets-one"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1"},
 			wantToFind:      []string{"ns1"},
 		}),
 
-		Entry("Two namespaces when only those two are configured", Label("gets-all"), &tc{
+		Entry("Two namespaces when only those two are configured", Label("gets-two"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
-			watchNamespaces: []string{"ns1", "n2"},
-			wantToFind:      []string{"ns1", "n2"},
+			watchNamespaces: []string{"ns1", "ns2"},
+			wantToFind:      []string{"ns1", "ns2"},
 		}),
 	)
 
@@ -129,8 +129,8 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 
 		Entry("Two namespaces when only those two are configured", Label("list-two"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
-			watchNamespaces: []string{"ns1", "n2"},
-			wantToFind:      []string{"ns1", "n2"},
+			watchNamespaces: []string{"ns1", "ns2"},
+			wantToFind:      []string{"ns1", "ns2"},
 		}),
 	)
 })
@@ -241,8 +241,8 @@ var _ = Describe("Reconciles test:", func() {
 
 		Entry("Two namespaces when only those two are configured", Label("reconcile-two"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
-			watchNamespaces: []string{"ns1", "n2"},
-			wantToFind:      []string{"ns1", "n2"},
+			watchNamespaces: []string{"ns1", "ns2"},
+			wantToFind:      []string{"ns1", "ns2"},
 		}),
 	)
 })
