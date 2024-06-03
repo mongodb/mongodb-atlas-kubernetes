@@ -73,7 +73,6 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
 				},
-				Namespace:    config.DefaultOperatorNS,
 				FeatureFlags: featureflags.NewFeatureFlags(func() []string { return []string{} }),
 			})
 			Expect(err).NotTo(HaveOccurred())

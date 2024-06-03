@@ -30,7 +30,6 @@ func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []strin
 			watchNamespaceMap[ns] = true
 		}
 		mgr, err := k8s.BuildManager(&k8s.Config{
-			Namespace: config.DefaultOperatorNS,
 			GlobalAPISecret: client.ObjectKey{
 				Namespace: config.DefaultOperatorNS,
 				Name:      config.DefaultOperatorGlobalKey,

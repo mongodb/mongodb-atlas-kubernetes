@@ -185,6 +185,21 @@ func CreateNamespace(ctx context.Context, k8sClient client.Client, ns string) er
 	return nil
 }
 
+func CreateRandomNamespace(ctx context.Context, k8sClient client.Client, generateName string) (*corev1.Namespace, error) {
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: generateName,
+		},
+	}
+	err := k8sClient.Create(ctx, namespace)
+	if err != nil {
+		if !k8serrors.IsAlreadyExists(err) {
+			return nil, err
+		}
+	}
+	return namespace, nil
+}
+
 func CreateRandomUserSecret(ctx context.Context, k8sClient client.Client, name, ns string) error {
 	secret, _ := password.Generate(10, 3, 0, false, false)
 	return CreateUserSecret(ctx, k8sClient, secret, name, ns)
