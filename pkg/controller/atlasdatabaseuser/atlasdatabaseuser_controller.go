@@ -86,6 +86,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return workflow.OK().ReconcileResult(), nil
 	}
 
+	// Note OrgID is not set in nor required in WorkflowCtx for db user reconciliation
 	workflowCtx := customresource.MarkReconciliationStarted(r.Client, databaseUser, log, ctx)
 	log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", databaseUser.Spec, "status", databaseUser.Status)
 	if databaseUser.Spec.PasswordSecret != nil {
