@@ -94,24 +94,22 @@ func (b *AtlasBackupCompliancePolicy) ToAtlas(projectID string) *admin.DataProte
 	return result
 }
 
-func NewBCPFromAtlas(in *admin.DataProtectionSettings20231001) *AtlasBackupCompliancePolicy {
+func NewBCPFromAtlas(in *admin.DataProtectionSettings20231001) *AtlasBackupCompliancePolicySpec {
 	if in == nil {
 		return nil
 	}
 
-	out := &AtlasBackupCompliancePolicy{
-		Spec: AtlasBackupCompliancePolicySpec{
-			AuthorizedEmail:         in.AuthorizedEmail,
-			AuthorizedUserFirstName: in.AuthorizedUserFirstName,
-			AuthorizedUserLastName:  in.AuthorizedUserLastName,
-			CopyProtectionEnabled:   admin.GetOrDefault(in.CopyProtectionEnabled, false),
-			EncryptionAtRestEnabled: admin.GetOrDefault(in.EncryptionAtRestEnabled, false),
-			PITEnabled:              admin.GetOrDefault(in.PitEnabled, false),
-			RestoreWindowDays:       admin.GetOrDefault(in.RestoreWindowDays, 0),
-			OnDemandPolicy: AtlasOnDemandPolicy{
-				RetentionUnit:  in.OnDemandPolicyItem.RetentionUnit,
-				RetentionValue: in.OnDemandPolicyItem.RetentionValue,
-			},
+	out := &AtlasBackupCompliancePolicySpec{
+		AuthorizedEmail:         in.AuthorizedEmail,
+		AuthorizedUserFirstName: in.AuthorizedUserFirstName,
+		AuthorizedUserLastName:  in.AuthorizedUserLastName,
+		CopyProtectionEnabled:   admin.GetOrDefault(in.CopyProtectionEnabled, false),
+		EncryptionAtRestEnabled: admin.GetOrDefault(in.EncryptionAtRestEnabled, false),
+		PITEnabled:              admin.GetOrDefault(in.PitEnabled, false),
+		RestoreWindowDays:       admin.GetOrDefault(in.RestoreWindowDays, 0),
+		OnDemandPolicy: AtlasOnDemandPolicy{
+			RetentionUnit:  in.OnDemandPolicyItem.RetentionUnit,
+			RetentionValue: in.OnDemandPolicyItem.RetentionValue,
 		},
 	}
 
@@ -124,14 +122,14 @@ func NewBCPFromAtlas(in *admin.DataProtectionSettings20231001) *AtlasBackupCompl
 			RetentionValue:    policy.RetentionValue,
 		}
 	}
-	out.Spec.ScheduledPolicyItems = temp
+	out.ScheduledPolicyItems = temp
 
 	return out
 }
 
-func (b *AtlasBackupCompliancePolicy) Normalize() (*AtlasBackupCompliancePolicy, error) {
-	err := cmp.Normalize(b)
-	return b, err
+func (s *AtlasBackupCompliancePolicySpec) Normalize() (*AtlasBackupCompliancePolicySpec, error) {
+	err := cmp.Normalize(s)
+	return s, err
 }
 
 func (b *AtlasBackupCompliancePolicy) GetStatus() api.Status {

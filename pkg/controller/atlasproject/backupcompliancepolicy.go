@@ -96,13 +96,13 @@ func (b *backupComplianceController) handleUpserting() workflow.Result {
 	if err != nil {
 		return b.terminate(workflow.Internal, err)
 	}
-	hasChanged, err := cmp.SemanticEqual(akoBCP, akov2.NewBCPFromAtlas(atlasBCP))
+	equal, err := cmp.SemanticEqual(&akoBCP.Spec, akov2.NewBCPFromAtlas(atlasBCP))
 	if err != nil {
 		return b.terminate(workflow.Internal, err)
 	}
 
 	switch {
-	case hasChanged:
+	case !equal:
 		return b.terminate(workflow.ProjectBackupCompliancePolicyUpdating, errors.New("aborting update: spec has changed"))
 	case atlasBCP.GetState() != "ACTIVE":
 		return b.progress(
@@ -123,7 +123,8 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 	if err != nil {
 		return b.terminate(workflow.Internal, err)
 	}
-	equal, err := cmp.SemanticEqual(akoBCP, akov2.NewBCPFromAtlas(atlasBCP))
+
+	equal, err := cmp.SemanticEqual(&akoBCP.Spec, akov2.NewBCPFromAtlas(atlasBCP))
 	if err != nil {
 		return b.terminate(workflow.Internal, err)
 	}
@@ -191,7 +192,7 @@ func (b *backupComplianceController) idle() workflow.Result {
 func (b *backupComplianceController) getAtlasBackupCompliancePolicy() (*admin.DataProtectionSettings20231001, bool, error) {
 	bcp, _, err := b.ctx.SdkClient.CloudBackupsApi.GetDataProtectionSettings(b.ctx.Context, b.project.ID()).Execute()
 	if err != nil {
-		// Note: getting backup compliance policies never yields a 404
+		// NOTE: getting backup compliance policies never yields a 404
 		return nil, false, fmt.Errorf("error finding backup compliance policy: %w", err)
 	}
 
