@@ -14,8 +14,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault,https
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2,https://github.com/Azure/azure-sdk-for-go/blob/sdk/resourcemanager/network/armnetwork/v2.2.1/sdk/resourcemanager/network/armnetwork/LICENSE.txt,MIT
 github.com/Azure/go-autorest/autorest,https://github.com/Azure/go-autorest/blob/autorest/v0.11.29/autorest/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/autorest/adal,https://github.com/Azure/go-autorest/blob/autorest/adal/v0.9.22/autorest/adal/LICENSE,Apache-2.0
-github.com/Azure/go-autorest/autorest/azure/auth,https://github.com/Azure/go-autorest/blob/autorest/azure/auth/v0.5.12/autorest/azure/auth/LICENSE,Apache-2.0
-github.com/Azure/go-autorest/autorest/azure/cli,https://github.com/Azure/go-autorest/blob/autorest/azure/cli/v0.4.5/autorest/azure/cli/LICENSE,Apache-2.0
+github.com/Azure/go-autorest/autorest/azure/auth,https://github.com/Azure/go-autorest/blob/autorest/azure/auth/v0.5.13/autorest/azure/auth/LICENSE,Apache-2.0
+github.com/Azure/go-autorest/autorest/azure/cli,https://github.com/Azure/go-autorest/blob/autorest/azure/cli/v0.4.6/autorest/azure/cli/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/autorest/date,https://github.com/Azure/go-autorest/blob/autorest/date/v0.3.0/autorest/date/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/autorest/to,https://github.com/Azure/go-autorest/blob/autorest/to/v0.4.0/autorest/to/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/autorest/validation,https://github.com/Azure/go-autorest/blob/autorest/validation/v0.3.1/autorest/validation/LICENSE,Apache-2.0
