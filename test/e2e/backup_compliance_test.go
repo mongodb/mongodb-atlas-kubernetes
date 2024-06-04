@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -18,7 +18,7 @@ import (
 
 var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), func() {
 	var testData *model.TestDataProvider
-	var backupCompliancePolicy *v1.AtlasBackupCompliancePolicy
+	var backupCompliancePolicy *akov2.AtlasBackupCompliancePolicy
 
 	BeforeEach(func() {
 		By("Setting up cloud environment", func() {
@@ -53,12 +53,12 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 
 	It("Configures a backup compliance policy", func(ctx context.Context) {
 		By("Creating a backup compliance policy in kubernetes", func() {
-			backupCompliancePolicy = &v1.AtlasBackupCompliancePolicy{
+			backupCompliancePolicy = &akov2.AtlasBackupCompliancePolicy{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-bcp",
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: v1.AtlasBackupCompliancePolicySpec{
+				Spec: akov2.AtlasBackupCompliancePolicySpec{
 					AuthorizedEmail:         "test@example.com",
 					AuthorizedUserFirstName: "John",
 					AuthorizedUserLastName:  "Doe",
@@ -66,7 +66,7 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 					EncryptionAtRestEnabled: false,
 					PITEnabled:              false,
 					RestoreWindowDays:       42,
-					ScheduledPolicyItems: []v1.AtlasBackupPolicyItem{
+					ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
 						{
 							FrequencyType:     "monthly",
 							FrequencyInterval: 4,
@@ -74,7 +74,7 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 							RetentionValue:    1,
 						},
 					},
-					OnDemandPolicy: v1.AtlasOnDemandPolicy{
+					OnDemandPolicy: akov2.AtlasOnDemandPolicy{
 						RetentionUnit:  "weeks",
 						RetentionValue: 3,
 					},
@@ -83,7 +83,7 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 			Expect(testData.K8SClient.Create(testData.Context, backupCompliancePolicy)).Should(Succeed())
 		})
 		By("Adding BCP to a Project", func() {
-			_, err := akoretry.RetryUpdateOnConflict(ctx, testData.K8SClient, client.ObjectKeyFromObject(testData.Project), func(project *v1.AtlasProject) {
+			_, err := akoretry.RetryUpdateOnConflict(ctx, testData.K8SClient, client.ObjectKeyFromObject(testData.Project), func(project *akov2.AtlasProject) {
 				project.Spec.BackupCompliancePolicyRef = &common.ResourceRefNamespaced{
 					Name:      backupCompliancePolicy.Name,
 					Namespace: backupCompliancePolicy.Namespace,
