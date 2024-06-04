@@ -48,6 +48,14 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 		project: project,
 	}
 
+	c, ok := ctx.GetCondition(api.BackupComplianceReadyType)
+	if ok {
+		switch reason := workflow.ConditionReason(c.Reason); reason {
+		case workflow.ProjectBackupCompliancePolicyUpdating:
+			return b.handleUpserting()
+		}
+	}
+
 	return b.handlePending()
 }
 
@@ -76,6 +84,37 @@ func (b *backupComplianceController) handlePending() workflow.Result {
 	}
 }
 
+func (b *backupComplianceController) handleUpserting() workflow.Result {
+	atlasBCP, found, err := b.getAtlasBackupCompliancePolicy()
+	if err != nil {
+		return b.terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err)
+	}
+	if !found {
+		return b.terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, errors.New("bcp not found in Atlas"))
+	}
+	akoBCP, err := b.getAKOBackupCompliancePolicy()
+	if err != nil {
+		return b.terminate(workflow.Internal, err)
+	}
+	hasChanged, err := cmp.SemanticEqual(akoBCP, akov2.NewBCPFromAtlas(atlasBCP))
+	if err != nil {
+		return b.terminate(workflow.Internal, err)
+	}
+
+	switch {
+	case hasChanged:
+		return b.terminate(workflow.ProjectBackupCompliancePolicyUpdating, errors.New("aborting update: spec has changed"))
+	case atlasBCP.GetState() != "ACTIVE":
+		return b.progress(
+			workflow.ProjectBackupCompliancePolicyUpdating,
+			fmt.Sprintf("backup compliance policy not ready yet: %q", atlasBCP.GetState()),
+			"updating backup compliance policy",
+		)
+	default:
+		return b.idle()
+	}
+}
+
 // upsert updates the backup compliance settings for a project. These settings can only be updated (not created), so
 // we also use this for creation too.
 func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettings20231001) workflow.Result {
@@ -89,7 +128,7 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 		return b.terminate(workflow.Internal, err)
 	}
 	if !equal {
-		_, _, err = b.ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
+		atlasBCP, _, err = b.ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
 		if err != nil {
 			if admin.IsErrorCode(err, bcpNotMet) {
 				return b.terminate(workflow.ProjectBackupCompliancePolicyNotMet, err)
@@ -97,6 +136,15 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 			return b.terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err)
 		}
 	}
+
+	if atlasBCP.GetState() != "ACTIVE" {
+		return b.progress(
+			workflow.ProjectBackupCompliancePolicyUpdating,
+			fmt.Sprintf("backup compliance policy not ready yet: %q", atlasBCP.GetState()),
+			"updating backup compliance policy",
+		)
+	}
+
 	return b.idle()
 }
 
@@ -108,6 +156,16 @@ func (b *backupComplianceController) delete() workflow.Result {
 		workflow.ProjectBackupCompliancePolicyCannotDelete,
 		errors.New("cannot delete backup compliance policy through the API - to delete a backup compliance policy, please contact support"),
 	).WithoutRetry()
+}
+
+func (b *backupComplianceController) progress(state workflow.ConditionReason, fineMsg, coarseMsg string) workflow.Result {
+	var (
+		fineProgress   = workflow.InProgress(state, fineMsg)
+		coarseProgress = workflow.InProgress(state, coarseMsg)
+	)
+
+	b.ctx.SetConditionFromResult(api.BackupComplianceReadyType, fineProgress)
+	return coarseProgress
 }
 
 // terminate transitions to pending state if an error occurred.

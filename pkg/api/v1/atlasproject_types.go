@@ -284,6 +284,20 @@ func (p *AtlasProject) WithConnectionSecretNamespaced(name, namespace string) *A
 	return p
 }
 
+func (p *AtlasProject) WithBackupCompliancePolicy(name string) *AtlasProject {
+	if name != "" {
+		p.Spec.BackupCompliancePolicyRef = &common.ResourceRefNamespaced{Name: name, Namespace: p.Namespace}
+	}
+	return p
+}
+
+func (p *AtlasProject) WithBackupCompliancePolicyNamespaced(name, namespace string) *AtlasProject {
+	if name != "" {
+		p.Spec.BackupCompliancePolicyRef = &common.ResourceRefNamespaced{Name: name, Namespace: namespace}
+	}
+	return p
+}
+
 func (p *AtlasProject) WithIPAccessList(ipAccess project.IPAccessList) *AtlasProject {
 	if p.Spec.ProjectIPAccessList == nil {
 		p.Spec.ProjectIPAccessList = []project.IPAccessList{}
