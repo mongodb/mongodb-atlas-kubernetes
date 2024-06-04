@@ -26,9 +26,7 @@ var (
 )
 
 func TestE2e(t *testing.T) {
-	if !control.Enabled("AKO_E2E_TEST") {
-		t.Skip("Skipping e2e tests, AKO_E2E_TEST is not set")
-	}
+	control.SkipTestUnless(t, "AKO_E2E_TEST")
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Atlas Operator E2E Test Suite")

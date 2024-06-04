@@ -69,9 +69,7 @@ const (
 )
 
 func TestAPIs(t *testing.T) {
-	if !control.Enabled("AKO_INT_TEST") {
-		t.Skip("Skipping int tests, AKO_INT_TEST is not set")
-	}
+	control.SkipTestUnless(t, "AKO_INT_TEST")
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Atlas Operator Cluster-Wide Integration Test Suite")
@@ -80,7 +78,6 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func() {
 	if !control.Enabled("AKO_INT_TEST") {
 		fmt.Println("Skipping int BeforeSuite, AKO_INT_TEST is not set")
-
 		return
 	}
 
