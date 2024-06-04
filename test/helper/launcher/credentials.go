@@ -8,8 +8,8 @@ type AtlasCredentials struct {
 
 func credentialsFromEnv() AtlasCredentials {
 	return AtlasCredentials{
-		OrgID:      MustSetEnv("MCLI_ORG_ID"),
-		PublicKey:  MustSetEnv("MCLI_PUBLIC_API_KEY"),
-		PrivateKey: MustSetEnv("MCLI_PRIVATE_API_KEY"),
+		OrgID:      MustLookupEnv("MCLI_ORG_ID"),
+		PublicKey:  MustLookupEnv("MCLI_PUBLIC_API_KEY"),
+		PrivateKey: MustLookupEnv("MCLI_PRIVATE_API_KEY"),
 	}
 }

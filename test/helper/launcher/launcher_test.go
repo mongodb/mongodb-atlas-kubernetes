@@ -24,12 +24,13 @@ func TestLaunch(t *testing.T) {
 	control.SkipTestUnless(t, "AKO_LAUNCHER_TEST")
 
 	l := launcher.NewFromEnv(testVersion)
+	timeout := time.Minute
 	assert.NoError(t, l.Launch(
 		testYml,
-		launcher.WaitReady("atlasprojects/my-project", 30*time.Second)))
+		launcher.WaitReady("atlasprojects/my-project", timeout)))
 	// retest should also work and faster (no need to re-create resources)
 	assert.NoError(t, l.Launch(
 		testYml,
-		launcher.WaitReady("atlasprojects/my-project", 30*time.Second)))
+		launcher.WaitReady("atlasprojects/my-project", timeout)))
 	require.NoError(t, l.Cleanup())
 }

@@ -11,18 +11,12 @@ import (
 )
 
 const (
-	ExpectedContext = "kind-kind"
-
+	ExpectedContext     = "kind-kind"
 	LauncherTestInstall = "test-ako"
-
-	HelmRepoURL = "https://mongodb.github.io/helm-charts"
-
-	RepoRef = "mongodb"
-
-	OperatorChart = "mongodb-atlas-operator"
-
-	AtlasURI = "https://cloud-qa.mongodb.com"
-
+	HelmRepoURL         = "https://mongodb.github.io/helm-charts"
+	RepoRef             = "mongodb"
+	OperatorChart       = "mongodb-atlas-operator"
+	AtlasURI            = "https://cloud-qa.mongodb.com"
 	// #nosec G101 -- This is just a name
 	AtlasSecretName = "mongodb-atlas-operator-api-key"
 )
@@ -47,8 +41,8 @@ func NewFromEnv(version string) *Launcher {
 	return NewLauncher(credentialsFromEnv(), version, true)
 }
 
-// MustSetEnv sets the env var value given, or panics if the env var is not set
-func MustSetEnv(envvar string) string {
+// MustLookupEnv sets the env var value given, or panics if the env var is not set
+func MustLookupEnv(envvar string) string {
 	value, ok := os.LookupEnv(envvar)
 	if !ok {
 		panic(fmt.Errorf("environment variable %s not set", envvar))
@@ -59,16 +53,16 @@ func MustSetEnv(envvar string) string {
 // Launch will try to launch the operator and apply the given YAML for it to handle
 func (l *Launcher) Launch(yml string, waitCfg *WaitConfig) error {
 	if err := l.ensureK8sCluster(); err != nil {
-		return err
+		return fmt.Errorf("failed to setup Kubernetes cluster: %w", err)
 	}
 	if err := l.ensureOperator(); err != nil {
-		return err
+		return fmt.Errorf("failed to setup Atlas Kubernetes Operator: %w", err)
 	}
 	if err := l.ensureAtlasSecret(); err != nil {
-		return err
+		return fmt.Errorf("failed to setup Atlas Secrets: %w", err)
 	}
 	if err := l.kubeApply(yml); err != nil {
-		return err
+		return fmt.Errorf("failed to setup Kubernetes resources: %w", err)
 	}
 	l.appliedYAMLs = append(l.appliedYAMLs, yml)
 	return l.kubeWait(waitCfg)
@@ -85,12 +79,12 @@ func (l *Launcher) Cleanup() error {
 	}
 	if l.clearOperator {
 		if err := l.uninstall(); err != nil {
-			return err
+			return fmt.Errorf("failed to uninstall Atlas operator: %w", err)
 		}
 	}
 	if l.clearSecret {
 		if err := l.kubeDeleteAtlasSecret(); err != nil {
-			return err
+			return fmt.Errorf("failed to delete Atlas secrets: %w", err)
 		}
 	}
 	if l.clearKind {
@@ -113,10 +107,11 @@ func (l *Launcher) isKubeConfigAvailable() bool {
 
 func (l *Launcher) startKind() error {
 	err := l.silentRun("kind", "create", "cluster")
-	if err == nil {
-		l.clearKind = true
+	if err != nil {
+		return fmt.Errorf("failed to start kind: %w", err)
 	}
-	return err
+	l.clearKind = true
+	return nil
 }
 
 func (l *Launcher) stopKind() error {
@@ -167,10 +162,11 @@ func (l *Launcher) install() error {
 	}
 	err = l.silentRun("helm", "install", LauncherTestInstall, path.Join(RepoRef, OperatorChart),
 		"--version", l.version, "--atomic", "--set", fmt.Sprintf("atlasURI=%s", AtlasURI))
-	if err == nil {
-		l.clearOperator = true
+	if err != nil {
+		return fmt.Errorf("failed to install operator: %w", err)
 	}
-	return err
+	l.clearOperator = true
+	return nil
 }
 
 func (l *Launcher) uninstall() error {
@@ -194,7 +190,7 @@ func (l *Launcher) kubeCreateAtlasSecret() error {
 		fmt.Sprintf("--from-literal=orgId=%s", l.credentials.OrgID),
 		fmt.Sprintf("--from-literal=publicApiKey=%s", l.credentials.PublicKey),
 		fmt.Sprintf("--from-literal=privateApiKey=%s", l.credentials.PrivateKey)); err != nil {
-		return err
+		return fmt.Errorf("failed to create secret: %w", err)
 	}
 	return l.silentRun("kubectl", "label", "secret", AtlasSecretName, "atlas.mongodb.com/type=credentials")
 }

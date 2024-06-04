@@ -1,4 +1,4 @@
-package auditing
+package audit
 
 import (
 	"fmt"
@@ -16,14 +16,15 @@ const (
 	FilterJSON    AuditingConfigType = "FILTER_JSON"
 )
 
-type Auditing struct {
+// AuditConfig represents the Atlas Project audit log config
+type AuditConfig struct {
 	Enabled                   bool
 	AuditAuthorizationSuccess bool
 	ConfigurationType         AuditingConfigType
 	AuditFilter               string
 }
 
-func toAtlas(auditing *Auditing) *admin.AuditLog {
+func toAtlas(auditing *AuditConfig) *admin.AuditLog {
 	return &admin.AuditLog{
 		Enabled:                   pointer.MakePtr(auditing.Enabled),
 		AuditAuthorizationSuccess: pointer.MakePtr(auditing.AuditAuthorizationSuccess),
@@ -32,12 +33,12 @@ func toAtlas(auditing *Auditing) *admin.AuditLog {
 	}
 }
 
-func fromAtlas(auditLog *admin.AuditLog) (*Auditing, error) {
+func fromAtlas(auditLog *admin.AuditLog) (*AuditConfig, error) {
 	cfgType, err := configTypeFromAtlas(auditLog.ConfigurationType)
 	if err != nil {
 		return nil, err
 	}
-	return &Auditing{
+	return &AuditConfig{
 		Enabled:                   pointer.GetOrDefault(auditLog.Enabled, false),
 		AuditAuthorizationSuccess: pointer.GetOrDefault(auditLog.AuditAuthorizationSuccess, false),
 		ConfigurationType:         cfgType,

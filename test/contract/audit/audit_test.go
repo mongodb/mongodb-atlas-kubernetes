@@ -1,13 +1,14 @@
-package auditing
+package audit
 
 import (
 	"context"
 	_ "embed"
 	"log"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/auditing"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/launcher"
 
@@ -30,19 +31,21 @@ func TestMain(m *testing.M) {
 		return
 	}
 	l := launcher.NewFromEnv(testVersion)
-	l.Launch(
+	if err := l.Launch(
 		testYml,
-		launcher.WaitReady("atlasprojects/my-project", 30*time.Second))
+		launcher.WaitReady("atlasprojects/my-project", time.Minute)); err != nil {
+		log.Fatalf("Failed to launch test bed: %v", err)
+	}
 	if !control.Enabled("SKIP_CLEANUP") { // allow to reuse Atlas resources for local tests
 		defer l.Cleanup()
 	}
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestDefaultAuditingGet(t *testing.T) {
 	testProjectID := mustReadProjectID()
 	ctx := context.Background()
-	as := auditing.NewProductionAtlasAudit(contract.MustVersionedClient(t, ctx).AuditingApi)
+	as := audit.NewAuditLog(contract.MustVersionedClient(t, ctx).AuditingApi)
 
 	result, err := as.Get(ctx, testProjectID)
 
@@ -55,8 +58,8 @@ func TestDefaultAuditingGet(t *testing.T) {
 	assert.Equal(t, defaultAtlasAuditing(), result)
 }
 
-func defaultAtlasAuditing() *auditing.Auditing {
-	return &auditing.Auditing{
+func defaultAtlasAuditing() *audit.AuditConfig {
+	return &audit.AuditConfig{
 		Enabled:                   false,
 		AuditAuthorizationSuccess: false,
 		AuditFilter:               "",
@@ -66,11 +69,11 @@ func defaultAtlasAuditing() *auditing.Auditing {
 func TestSyncs(t *testing.T) {
 	testCases := []struct {
 		title    string
-		auditing *auditing.Auditing
+		auditing *audit.AuditConfig
 	}{
 		{
 			title: "Just enabled",
-			auditing: &auditing.Auditing{
+			auditing: &audit.AuditConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
 				AuditFilter:               "{}", // must sent empty JSON to overwrite previous state
@@ -78,7 +81,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "Auth success logs as well",
-			auditing: &auditing.Auditing{
+			auditing: &audit.AuditConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
 				AuditFilter:               "{}",
@@ -86,7 +89,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "With a filter",
-			auditing: &auditing.Auditing{
+			auditing: &audit.AuditConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
 				AuditFilter:               `{"atype":"authenticate"}`,
@@ -94,7 +97,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "With a filter and success logs",
-			auditing: &auditing.Auditing{
+			auditing: &audit.AuditConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
 				AuditFilter:               `{"atype":"authenticate"}`,
@@ -102,7 +105,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "All set but disabled",
-			auditing: &auditing.Auditing{
+			auditing: &audit.AuditConfig{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: true,
 				AuditFilter:               `{"atype":"authenticate"}`,
@@ -110,7 +113,7 @@ func TestSyncs(t *testing.T) {
 		},
 		{
 			title: "Default (disabled) case",
-			auditing: &auditing.Auditing{
+			auditing: &audit.AuditConfig{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: false,
 				AuditFilter:               "{}",
@@ -119,7 +122,7 @@ func TestSyncs(t *testing.T) {
 	}
 	testProjectID := mustReadProjectID()
 	ctx := context.Background()
-	as := auditing.NewProductionAtlasAudit(contract.MustVersionedClient(t, ctx).AuditingApi)
+	as := audit.NewAuditLog(contract.MustVersionedClient(t, ctx).AuditingApi)
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
