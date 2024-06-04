@@ -269,7 +269,7 @@ endif
 validate-manifests: generate manifests check-missing-files
 
 .PHONY: kustomize
-KUSTOMIZE = $(shell which kustomize)
+KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary
 ifeq ("$(wildcard $(KUSTOMIZE))", "")
 	rm -f ./kustomize

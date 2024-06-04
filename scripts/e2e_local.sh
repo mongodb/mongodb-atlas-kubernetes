@@ -1,12 +1,11 @@
 #!/bin/bash
 
 set -eo pipefail
-label=$1
+focus_key=$1
 build=$2
 if [[ -z "${build:-}" ]]; then
   build="true"
 fi
-
 
 public_key=$(grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
 private_key=$(grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
@@ -41,5 +40,4 @@ export MCLI_PUBLIC_API_KEY="${public_key}"
 export MCLI_PRIVATE_API_KEY="${private_key}"
 export MCLI_ORG_ID="${org_id}"
 export IMAGE_URL="${image}" #for helm chart
-AKO_INT_TEST=1 ginkgo --race --label-filter="${label}" --timeout 80m -v ./test/int -coverprofile cover.out
-AKO_INT_TEST=1 ginkgo --race --label-filter="${label}" --timeout 80m -v ./test/int/clusterwide... -coverprofile cover.out
+AKO_E2E_TEST=1 ginkgo --race --label-filter="${focus_key}" --timeout 120m -vv test/e2e/
