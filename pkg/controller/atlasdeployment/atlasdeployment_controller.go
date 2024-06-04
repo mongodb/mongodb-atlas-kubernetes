@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -479,6 +481,24 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
+}
+
+func NewAtlasDeploymentReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+) *AtlasDeploymentReconciler {
+	return &AtlasDeploymentReconciler{
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasDeployment"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasDeployment").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
+	}
 }
 
 func (r *AtlasDeploymentReconciler) findDeploymentsForBackupPolicy(ctx context.Context, obj client.Object) []reconcile.Request {

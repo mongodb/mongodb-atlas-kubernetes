@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -92,7 +94,7 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 	return r.release(workflowCtx, akoStreamConnection)
 }
 
-func (r *AtlasStreamsConnectionReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+func (r *AtlasStreamsConnectionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasStreamConnection").
 		For(&akov2.AtlasStreamConnection{}, builder.WithPredicates(r.GlobalPredicates...)).
@@ -102,6 +104,24 @@ func (r *AtlasStreamsConnectionReconciler) SetupWithManager(ctx context.Context,
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
+}
+
+func NewAtlasStreamsConnectionReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+) *AtlasStreamsConnectionReconciler {
+	return &AtlasStreamsConnectionReconciler{
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasStreamsConnection"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasStreamsConnection").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
+	}
 }
 
 func (r *AtlasStreamsConnectionReconciler) findStreamConnectionsForStreamInstances(_ context.Context, obj client.Object) []reconcile.Request {

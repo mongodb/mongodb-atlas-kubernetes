@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -92,7 +94,7 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 	return r.release(workflowCtx, atlasSearchIndexConfig)
 }
 
-func (r *AtlasSearchIndexConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+func (r *AtlasSearchIndexConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasSearchIndexConfig").
 		For(&akov2.AtlasSearchIndexConfig{}, builder.WithPredicates(r.GlobalPredicates...)).
@@ -102,6 +104,24 @@ func (r *AtlasSearchIndexConfigReconciler) SetupWithManager(ctx context.Context,
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
+}
+
+func NewAtlasSearchIndexConfigReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+) *AtlasSearchIndexConfigReconciler {
+	return &AtlasSearchIndexConfigReconciler{
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasSearchIndexConfig"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasSearchIndexConfig").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
+	}
 }
 
 func (r *AtlasSearchIndexConfigReconciler) findReferencesInAtlasDeployments(ctx context.Context, obj client.Object) []reconcile.Request {

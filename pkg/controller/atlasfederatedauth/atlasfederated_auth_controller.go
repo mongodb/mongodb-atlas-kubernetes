@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -103,6 +105,25 @@ func (r *AtlasFederatedAuthReconciler) SetupWithManager(mgr ctrl.Manager) error 
 		For(&akov2.AtlasFederatedAuth{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
 		Complete(r)
+}
+
+func NewAtlasFederatedAuthReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+) *AtlasFederatedAuthReconciler {
+	return &AtlasFederatedAuthReconciler{
+		Scheme:                    mgr.GetScheme(),
+		Client:                    mgr.GetClient(),
+		EventRecorder:             mgr.GetEventRecorderFor("AtlasFederatedAuth"),
+		DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
+		GlobalPredicates:          predicates,
+		Log:                       logger.Named("controllers").Named("AtlasFederatedAuth").Sugar(),
+		AtlasProvider:             atlasProvider,
+		ObjectDeletionProtection:  deletionProtection,
+	}
 }
 
 func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.Result) {

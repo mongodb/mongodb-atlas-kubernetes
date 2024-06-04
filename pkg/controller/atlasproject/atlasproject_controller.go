@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -378,6 +380,25 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
 		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(&r.DeprecatedResourceWatcher)).
 		Complete(r)
+}
+
+func NewAtlasProjectReconciler(
+	mgr manager.Manager,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+) *AtlasProjectReconciler {
+	return &AtlasProjectReconciler{
+		Scheme:                    mgr.GetScheme(),
+		Client:                    mgr.GetClient(),
+		EventRecorder:             mgr.GetEventRecorderFor("AtlasProject"),
+		DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
+		GlobalPredicates:          predicates,
+		Log:                       logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasProvider:             atlasProvider,
+		ObjectDeletionProtection:  deletionProtection,
+	}
 }
 
 // setCondition sets the condition from the result and logs the warnings
