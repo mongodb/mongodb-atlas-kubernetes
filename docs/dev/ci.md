@@ -51,9 +51,9 @@ The [test.yml](../../.github/workflows/test.yml) workflow takes the output from 
 
 ### Linting
 
-The lint workflow runs three seperate linters; `golangci` (via `make lint`, `shellcheck`, and `govulncheck`.
+The lint workflow runs three seperate linters; `golangci` (via `make lint`), `shellcheck`, and `govulncheck`.
 
-`golangci` is a tool that makes use of a defined collection of other linters. The enabled linters (and other configuration) for `golangci` can be seen in [this repo's config file](../../.golangci.yml).
+`golangci` is a tool that makes use of a defined collection of other linters, such as `gosec` and `govet`. The enabled linters (and other configuration) for `golangci` can be seen in [this repo's config file](../../.golangci.yml).
 
 `shellcheck` lints shell scripts in the repo. This is performed with default settings, using [`shellcheck-action`](https://github.com/bewuethr/shellcheck-action). This tool makes use of a regex to find all files within the codebase that have shell scripts that should be assessed.
 
