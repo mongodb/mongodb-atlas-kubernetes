@@ -566,6 +566,16 @@ upload-sbom-to-silk: ## Upload a given SBOM (lite) file to Silk
 	SILK_CLIENT_ID=$(SILK_CLIENT_ID) SILK_CLIENT_SECRET=$(SILK_CLIENT_SECRET) \
 	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/upload-to-silk.sh $(SBOM_JSON_FILE)
 
+.PHONY: download-from-silk
+download-from-silk: ## Download the latest augmented SBOM for a given architecture on a given directory
+	@ARTIFACTORY_USERNAME=$(ARTIFACTORY_USERNAME) ARTIFACTORY_PASSWORD=$(ARTIFACTORY_PASSWORD) \
+	SILK_CLIENT_ID=$(SILK_CLIENT_ID) SILK_CLIENT_SECRET=$(SILK_CLIENT_SECRET) \
+	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/download-from-silk.sh $(TARGET_ARCH) tmp
+
+.PHONY: store-silk-sboms
+store-silk-sboms: download-from-silk ## Download & Store the latest augmented SBOM for a given version & architecture
+	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH)
+
 .PHONY: contract-tests
 contract-tests: ## Run contract tests
 	go clean -testcache

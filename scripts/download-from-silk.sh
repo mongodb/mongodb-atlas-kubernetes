@@ -9,6 +9,7 @@ docker_platform="linux/amd64"
 
 # Arguments
 arch=$1
+target_dir=$2
 
 # Environment inputs
 artifactory_usr="${ARTIFACTORY_USERNAME}"
@@ -19,7 +20,7 @@ asset_group_prefix="${SILK_ASSET_GROUP}"
 
 # Computed values
 asset_group="${asset_group_prefix}-linux-${arch}"
-target="linux-${arch}.sbom.json"
+target="${target_dir}/linux-${arch}.sbom.json"
 
 echo "Computed Silk Asset Group: ${asset_group}"
 
@@ -27,6 +28,7 @@ echo "Computed Silk Asset Group: ${asset_group}"
 echo "${artifactory_pwd}" |docker login "${registry}" -u "${artifactory_usr}" --password-stdin
 
 # Download
+mkdir -p "${target_dir}"
 docker run --platform="${docker_platform}" -it --rm -v "${PWD}":/pwd \
   -e SILK_CLIENT_ID="${client_id}" -e SILK_CLIENT_SECRET="${client_secret}" \
   "${silkbomb_img}" download -o "/pwd/${target}" --silk_asset_group "${asset_group}"
