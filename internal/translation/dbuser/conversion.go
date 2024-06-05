@@ -2,6 +2,7 @@ package dbuser
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"time"
 
@@ -19,37 +20,79 @@ type User struct {
 }
 
 // NewUser wraps a Kubernetes Atlas User Spec pointer augmenting it with projectID and password.
-func NewUser(spec *akov2.AtlasDatabaseUserSpec, projectID, password string) *User {
-	return &User{AtlasDatabaseUserSpec: spec, ProjectID: projectID, Password: password}
+func NewUser(spec *akov2.AtlasDatabaseUserSpec, projectID, password string) (*User, error) {
+	return normalize(&User{AtlasDatabaseUserSpec: spec, ProjectID: projectID, Password: password})
 }
 
-// Normalize modifies the spec and returns it back. Clone to avoid unwanted changes.
-func Normalize(spec *akov2.AtlasDatabaseUserSpec) (*akov2.AtlasDatabaseUserSpec, error) {
-	if spec.Roles == nil {
-		spec.Roles = []akov2.RoleSpec{}
+// DiffSpecs returns all differences found in the user Spec fields or a spec user and an atlas user.
+// Non Spec fields are not compared. Inputs are dbuser.User so they are normalized
+func DiffSpecs(specUser, atlasUser *User) []string {
+	diffs := []string{}
+	if atlasUser.Username != specUser.Username {
+		diffs = append(diffs, fmt.Sprintf("Usernames differs from spec: %q <> %q\n",
+			atlasUser.Username, specUser.Username))
 	}
-	if spec.Scopes == nil {
-		spec.Scopes = []akov2.ScopeSpec{}
+	if atlasUser.DatabaseName != specUser.DatabaseName {
+		diffs = append(diffs, fmt.Sprintf("DatabaseName differs from spec: %q <> %q\n",
+			atlasUser.DatabaseName, specUser.DatabaseName))
 	}
-	if spec.DeleteAfterDate != "" { // enforce date format
-		operatorDeleteDate, err := timeutil.ParseISO8601(spec.DeleteAfterDate)
+	if atlasUser.DeleteAfterDate != specUser.DeleteAfterDate {
+		diffs = append(diffs, fmt.Sprintf("DeleteAfterDate differs from spec: %q <> %q\n",
+			atlasUser.DeleteAfterDate, specUser.DeleteAfterDate))
+	}
+	if atlasUser.OIDCAuthType != specUser.OIDCAuthType {
+		diffs = append(diffs, fmt.Sprintf("OIDCAuthType differs from spec: %q <> %q\n",
+			atlasUser.OIDCAuthType, specUser.OIDCAuthType))
+	}
+	if atlasUser.AWSIAMType != specUser.AWSIAMType {
+		diffs = append(diffs, fmt.Sprintf("AWSIAMType differs from spec: %q <> %q\n",
+			atlasUser.AWSIAMType, specUser.AWSIAMType))
+	}
+	if atlasUser.X509Type != specUser.X509Type {
+		diffs = append(diffs, fmt.Sprintf("X509Type differs from spec: %q <> %q\n",
+			atlasUser.X509Type, specUser.X509Type))
+	}
+	if !reflect.DeepEqual(atlasUser.Roles, specUser.Roles) {
+		diffs = append(diffs, fmt.Sprintf("Roles differs from spec: %v <> %v\n",
+			atlasUser.Roles, specUser.Roles))
+	}
+	if !reflect.DeepEqual(atlasUser.Scopes, specUser.Scopes) {
+		diffs = append(diffs, fmt.Sprintf("Scopes differs from spec: %v <> %v END\n",
+			atlasUser.Scopes, specUser.Scopes))
+	}
+	return diffs
+}
+
+func normalize(user *User) (*User, error) {
+	if user.Roles == nil {
+		user.Roles = []akov2.RoleSpec{}
+	} else {
+		orderRoles(user.Roles)
+	}
+	if user.Scopes == nil {
+		user.Scopes = []akov2.ScopeSpec{}
+	} else {
+		orderScopes(user.Scopes)
+	}
+	if user.DeleteAfterDate != "" { // enforce date format
+		operatorDeleteDate, err := timeutil.ParseISO8601(user.DeleteAfterDate)
 		if err != nil {
 			return nil, err
 		}
-		spec.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
+		user.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
 	}
 	// Ensure comparisons succeed on default value
 	// TODO: Check if this is required after updating the Helm Chart CRDs
-	if spec.X509Type == "" {
-		spec.X509Type = "NONE"
+	if user.X509Type == "" {
+		user.X509Type = "NONE"
 	}
-	if spec.OIDCAuthType == "" {
-		spec.OIDCAuthType = "NONE"
+	if user.OIDCAuthType == "" {
+		user.OIDCAuthType = "NONE"
 	}
-	if spec.AWSIAMType == "" {
-		spec.AWSIAMType = "NONE"
+	if user.AWSIAMType == "" {
+		user.AWSIAMType = "NONE"
 	}
-	return spec, nil
+	return user, nil
 }
 
 func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
@@ -71,7 +114,7 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 			X509Type:        dbUser.GetX509Type(),
 		},
 	}
-	return u, nil
+	return normalize(u)
 }
 
 func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
@@ -149,11 +192,14 @@ func scopesFromAtlas(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
 			Type: scopeType,
 		})
 	}
-	sort.Slice(specScopes, func(i, j int) bool {
-		return specScopes[i].Name < specScopes[j].Name &&
-			specScopes[i].Type < specScopes[j].Type
-	})
 	return specScopes, nil
+}
+
+func orderScopes(scopes []akov2.ScopeSpec) {
+	sort.Slice(scopes, func(i, j int) bool {
+		return scopes[i].Name < scopes[j].Name &&
+			scopes[i].Type < scopes[j].Type
+	})
 }
 
 func scopeTypeFromAtlas(scopeType string) (akov2.ScopeType, error) {
@@ -176,10 +222,13 @@ func rolesFromAtlas(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
 			CollectionName: role.GetCollectionName(),
 		})
 	}
-	sort.Slice(specRoles, func(i, j int) bool {
-		return specRoles[i].RoleName < specRoles[j].RoleName &&
-			specRoles[i].DatabaseName < specRoles[j].DatabaseName &&
-			specRoles[i].CollectionName < specRoles[j].CollectionName
-	})
 	return specRoles
+}
+
+func orderRoles(roles []akov2.RoleSpec) {
+	sort.Slice(roles, func(i, j int) bool {
+		return roles[i].RoleName < roles[j].RoleName &&
+			roles[i].DatabaseName < roles[j].DatabaseName &&
+			roles[i].CollectionName < roles[j].CollectionName
+	})
 }
