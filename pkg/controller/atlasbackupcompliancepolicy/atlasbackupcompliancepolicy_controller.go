@@ -36,13 +36,15 @@ type AtlasBackupCompliancePolicyReconciler struct {
 	SubObjectDeletionProtection bool
 }
 
+//TODO kubebuilder rbac
+
 func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasbackupcompliancepolicy", req.NamespacedName)
 	log.Infow("-> Starting AtlasBackupCompliancePolicy reonciliation")
 
 	bcp := akov2.AtlasBackupCompliancePolicy{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &bcp, log)
-	if result.IsOk() {
+	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
