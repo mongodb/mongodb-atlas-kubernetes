@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 
 	"go.uber.org/zap"
@@ -25,7 +24,10 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
-	apiUser := dbuser.NewUser(&dbUser.Spec, project.ID(), password)
+	apiUser, err := dbuser.NewUser(dbUser.Spec.DeepCopy(), project.ID(), password)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
 
 	if result := checkUserExpired(ctx.Context, ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
 		return result
@@ -209,7 +211,7 @@ func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProjec
 }
 
 func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
-	diffs, err := userMatchesSpec(atlasUser.AtlasDatabaseUserSpec, &operatorUser.Spec)
+	diffs, err := userMatchesSpec(atlasUser, &operatorUser.Spec)
 	if err != nil {
 		return false, err
 	}
@@ -224,44 +226,10 @@ func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *
 	return passwordsChanged, nil
 }
 
-func userMatchesSpec(atlasUsername, operatorUser *akov2.AtlasDatabaseUserSpec) ([]string, error) {
-	operatorCopy, err := dbuser.Normalize(operatorUser.DeepCopy())
+func userMatchesSpec(atlasUser *dbuser.User, specUser *akov2.AtlasDatabaseUserSpec) ([]string, error) {
+	userSpecCopy, err := dbuser.NewUser(specUser.DeepCopy(), "", "") // project and password will not be compared
 	if err != nil {
 		return []string{}, err
 	}
-
-	diffs := []string{}
-	if atlasUsername.Username != operatorCopy.Username {
-		diffs = append(diffs, fmt.Sprintf("Usernames differs from spec: %q <> %q\n",
-			atlasUsername.Username, operatorCopy.Username))
-	}
-	if atlasUsername.DatabaseName != operatorCopy.DatabaseName {
-		diffs = append(diffs, fmt.Sprintf("DatabaseName differs from spec: %q <> %q\n",
-			atlasUsername.DatabaseName, operatorCopy.DatabaseName))
-	}
-	if atlasUsername.DeleteAfterDate != operatorCopy.DeleteAfterDate {
-		diffs = append(diffs, fmt.Sprintf("DeleteAfterDate differs from spec: %q <> %q\n",
-			atlasUsername.DeleteAfterDate, operatorCopy.DeleteAfterDate))
-	}
-	if atlasUsername.OIDCAuthType != operatorCopy.OIDCAuthType {
-		diffs = append(diffs, fmt.Sprintf("OIDCAuthType differs from spec: %q <> %q\n",
-			atlasUsername.OIDCAuthType, operatorCopy.OIDCAuthType))
-	}
-	if atlasUsername.AWSIAMType != operatorCopy.AWSIAMType {
-		diffs = append(diffs, fmt.Sprintf("AWSIAMType differs from spec: %q <> %q\n",
-			atlasUsername.AWSIAMType, operatorCopy.AWSIAMType))
-	}
-	if atlasUsername.X509Type != operatorCopy.X509Type {
-		diffs = append(diffs, fmt.Sprintf("X509Type differs from spec: %q <> %q\n",
-			atlasUsername.X509Type, operatorCopy.X509Type))
-	}
-	if !reflect.DeepEqual(atlasUsername.Roles, operatorCopy.Roles) {
-		diffs = append(diffs, fmt.Sprintf("Roles differs from spec: %v <> %v\n",
-			atlasUsername.Roles, operatorCopy.Roles))
-	}
-	if !reflect.DeepEqual(atlasUsername.Scopes, operatorCopy.Scopes) {
-		diffs = append(diffs, fmt.Sprintf("Scopes differs from spec: %v <> %v END\n",
-			atlasUsername.Scopes, operatorCopy.Scopes))
-	}
-	return diffs, nil
+	return dbuser.DiffSpecs(userSpecCopy, atlasUser), nil
 }
