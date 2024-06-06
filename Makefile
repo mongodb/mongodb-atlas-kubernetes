@@ -488,7 +488,7 @@ envsubst:
 	@which envsubst || go install github.com/drone/envsubst/cmd/envsubst@latest
 
 docker-sbom:
-	@docker sbom --help > /dev/null || |
+	@docker sbom --help > /dev/null || \
 	echo "You might need to install the SBOM plugin for docker, check out docs/dev/release.md#tools"
 
 .PHONY: gen-sdlc-checklist
