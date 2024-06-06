@@ -12,8 +12,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
-var _ api.AtlasCustomResource = &AtlasBackupCompliancePolicy{}
-
 // AtlasBackupCompliancePolicy defines the desired state of a compliance policy in Atlas.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true

@@ -35,6 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -426,7 +427,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 
 		mockError := &admin.GenericOpenAPIError{}
 		model := *admin.NewApiError()
-		model.SetErrorCode("BACKUP_POLICIES_NOT_MEETING_BACKUP_COMPLIANCE_POLICY_REQUIREMENTS")
+		model.SetErrorCode(atlas.BackupComplianceNotMet)
 		mockError.SetModel(model)
 
 		backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), project.ID(), mock.AnythingOfType("*admin.DataProtectionSettings20231001")).

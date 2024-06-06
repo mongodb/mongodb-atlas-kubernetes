@@ -1,7 +1,9 @@
+//nolint:dupl
 package e2e_test
 
 import (
 	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +34,6 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 		})
 	})
 
-	//nolint:dupl
 	AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))

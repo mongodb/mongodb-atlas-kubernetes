@@ -42,16 +42,12 @@ func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, r
 	log := r.Log.With("atlasbackupcompliancepolicy", req.NamespacedName)
 	log.Infow("-> Starting AtlasBackupCompliancePolicy reonciliation")
 
-	bcp := akov2.AtlasBackupCompliancePolicy{}
-	result := customresource.PrepareResource(ctx, r.Client, req, &bcp, log)
+	bcp := &akov2.AtlasBackupCompliancePolicy{}
+	result := customresource.PrepareResource(ctx, r.Client, req, bcp, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
-	return r.ensureAtlasBackupCompliancePolicy(ctx, log, &bcp)
-}
-
-func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolicy(ctx context.Context, log *zap.SugaredLogger, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	if customresource.ReconciliationShouldBeSkipped(bcp) {
 		return r.skip(ctx, log, bcp), nil
 	}
@@ -69,6 +65,10 @@ func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolic
 		return r.unsupport(workflowCtx)
 	}
 
+	return r.ensureAtlasBackupCompliancePolicy(workflowCtx, bcp)
+}
+
+func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolicy(workflowCtx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	projects := &akov2.AtlasProjectList{}
 	listOpts := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
@@ -76,7 +76,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolic
 			client.ObjectKeyFromObject(bcp).String(),
 		),
 	}
-	err := r.Client.List(ctx, projects, listOpts)
+	err := r.Client.List(workflowCtx.Context, projects, listOpts)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.Internal, err)
 	}

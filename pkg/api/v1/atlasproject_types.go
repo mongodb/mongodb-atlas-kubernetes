@@ -204,19 +204,6 @@ func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 	return nil
 }
 
-func (p *AtlasProject) BackupCompliancePolicyObjectKey() *client.ObjectKey {
-	if p.Spec.BackupCompliancePolicyRef != nil {
-		var key client.ObjectKey
-		if p.Spec.BackupCompliancePolicyRef.Namespace != "" {
-			key = kube.ObjectKey(p.Spec.BackupCompliancePolicyRef.Namespace, p.Spec.BackupCompliancePolicyRef.Name)
-		} else {
-			key = kube.ObjectKey(p.Namespace, p.Spec.ConnectionSecret.Name)
-		}
-		return &key
-	}
-	return nil
-}
-
 func (p *AtlasProject) GetStatus() api.Status {
 	return p.Status
 }

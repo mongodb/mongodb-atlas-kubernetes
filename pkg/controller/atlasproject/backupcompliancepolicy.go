@@ -1,5 +1,5 @@
 /*
-Copyright 2023 MongoDB.
+Copyright 2024 MongoDB.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,10 +27,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
-
-const bcpNotMet = "BACKUP_POLICIES_NOT_MEETING_BACKUP_COMPLIANCE_POLICY_REQUIREMENTS"
 
 type backupComplianceController struct {
 	ctx     *workflow.Context
@@ -67,24 +66,22 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 }
 
 func (b *backupComplianceController) handlePending() workflow.Result {
-	bcp, found, err := b.getAtlasBackupCompliancePolicy()
+	bcp, inAtlas, err := b.getAtlasBackupCompliancePolicy()
 	if err != nil {
 		return b.terminate(workflow.Internal, err)
 	}
 
-	akoEmpty := true
+	inAKO := false
 	if bcpRef := b.project.Spec.BackupCompliancePolicyRef; bcpRef != nil {
-		akoEmpty = bcpRef.IsEmpty()
+		inAKO = !bcpRef.IsEmpty()
 	}
 
-	atlasEmpty := !found
-
 	switch {
-	case !akoEmpty && atlasEmpty:
+	case inAKO && !inAtlas:
 		return b.upsert(bcp)
-	case !akoEmpty && !atlasEmpty:
+	case inAKO && inAtlas:
 		return b.upsert(bcp)
-	case akoEmpty && !atlasEmpty:
+	case !inAKO && inAtlas:
 		return b.delete()
 	default:
 		return b.unmanage()
@@ -138,7 +135,7 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 	if !equal {
 		atlasBCP, _, err = b.ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
 		if err != nil {
-			if admin.IsErrorCode(err, bcpNotMet) {
+			if admin.IsErrorCode(err, atlas.BackupComplianceNotMet) {
 				return b.terminate(workflow.ProjectBackupCompliancePolicyNotMet, err)
 			}
 			return b.terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err)
@@ -162,7 +159,7 @@ func (b *backupComplianceController) delete() workflow.Result {
 	b.ctx.Log.Debug("deleting backup compliance policy")
 	return b.terminate(
 		workflow.ProjectBackupCompliancePolicyCannotDelete,
-		errors.New("cannot delete backup compliance policy through the API - to delete a backup compliance policy, please contact support"),
+		errors.New("deletion of backup compliance policies is not supported in Atlas: please contact support"),
 	).WithoutRetry()
 }
 
@@ -213,7 +210,7 @@ func (b *backupComplianceController) getAtlasBackupCompliancePolicy() (*admin.Da
 
 func (b *backupComplianceController) getAKOBackupCompliancePolicy() (*akov2.AtlasBackupCompliancePolicy, error) {
 	bcp := &akov2.AtlasBackupCompliancePolicy{}
-	err := b.client.Get(b.ctx.Context, *b.project.BackupCompliancePolicyObjectKey(), bcp)
+	err := b.client.Get(b.ctx.Context, *b.project.Spec.BackupCompliancePolicyRef.GetObject(b.project.Namespace), bcp)
 	if err != nil {
 		return nil, err
 	}
