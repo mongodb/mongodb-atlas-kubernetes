@@ -36,6 +36,10 @@ func (a *AtlasProjectByBackupCompliancePolicyIndexer) Keys(object client.Object)
 		return nil
 	}
 
+	if project.Spec.BackupCompliancePolicyRef == nil {
+		return nil
+	}
+
 	if project.Spec.BackupCompliancePolicyRef.IsEmpty() {
 		return nil
 	}
