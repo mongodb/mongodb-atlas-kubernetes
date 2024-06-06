@@ -32,6 +32,7 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 		})
 	})
 
+	//nolint:dupl
 	AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
