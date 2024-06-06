@@ -3,11 +3,11 @@ package dbuser
 import (
 	"fmt"
 	"reflect"
-	"sort"
 	"time"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -64,16 +64,15 @@ func DiffSpecs(specUser, atlasUser *User) []string {
 }
 
 func normalize(user *User) (*User, error) {
-	if user.Roles == nil {
-		user.Roles = []akov2.RoleSpec{}
-	} else {
-		orderRoles(user.Roles)
-	}
-	if user.Scopes == nil {
-		user.Scopes = []akov2.ScopeSpec{}
-	} else {
-		orderScopes(user.Scopes)
-	}
+	cmp.NormalizeSlice(user.Roles, func(i, j int) bool {
+		return user.Roles[i].RoleName < user.Roles[j].RoleName &&
+			user.Roles[i].DatabaseName < user.Roles[j].DatabaseName &&
+			user.Roles[i].CollectionName < user.Roles[j].CollectionName
+	})
+	cmp.NormalizeSlice(user.Scopes, func(i, j int) bool {
+		return user.Scopes[i].Name < user.Scopes[j].Name &&
+			user.Scopes[i].Type < user.Scopes[j].Type
+	})
 	if user.DeleteAfterDate != "" { // enforce date format
 		operatorDeleteDate, err := timeutil.ParseISO8601(user.DeleteAfterDate)
 		if err != nil {
@@ -148,6 +147,9 @@ func dateToAtlas(d string) (*time.Time, error) {
 }
 
 func rolesToAtlas(roles []akov2.RoleSpec) *[]admin.DatabaseUserRole {
+	if len(roles) == 0 {
+		return nil
+	}
 	atlasRoles := []admin.DatabaseUserRole{}
 	for _, role := range roles {
 		ar := admin.DatabaseUserRole{
@@ -163,6 +165,9 @@ func rolesToAtlas(roles []akov2.RoleSpec) *[]admin.DatabaseUserRole {
 }
 
 func scopesToAtlas(scopes []akov2.ScopeSpec) *[]admin.UserScope {
+	if len(scopes) == 0 {
+		return nil
+	}
 	atlasScopes := []admin.UserScope{}
 	for _, scope := range scopes {
 		atlasScopes = append(atlasScopes, admin.UserScope{
@@ -181,6 +186,9 @@ func dateFromAtlas(date *time.Time) string {
 }
 
 func scopesFromAtlas(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
+	if len(scopes) == 0 {
+		return nil, nil
+	}
 	specScopes := []akov2.ScopeSpec{}
 	for _, scope := range scopes {
 		scopeType, err := scopeTypeFromAtlas(scope.Type)
@@ -195,13 +203,6 @@ func scopesFromAtlas(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
 	return specScopes, nil
 }
 
-func orderScopes(scopes []akov2.ScopeSpec) {
-	sort.Slice(scopes, func(i, j int) bool {
-		return scopes[i].Name < scopes[j].Name &&
-			scopes[i].Type < scopes[j].Type
-	})
-}
-
 func scopeTypeFromAtlas(scopeType string) (akov2.ScopeType, error) {
 	switch akov2.ScopeType(scopeType) {
 	case akov2.DeploymentScopeType:
@@ -214,6 +215,9 @@ func scopeTypeFromAtlas(scopeType string) (akov2.ScopeType, error) {
 }
 
 func rolesFromAtlas(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
+	if len(roles) == 0 {
+		return nil
+	}
 	specRoles := []akov2.RoleSpec{}
 	for _, role := range roles {
 		specRoles = append(specRoles, akov2.RoleSpec{
@@ -223,12 +227,4 @@ func rolesFromAtlas(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
 		})
 	}
 	return specRoles
-}
-
-func orderRoles(roles []akov2.RoleSpec) {
-	sort.Slice(roles, func(i, j int) bool {
-		return roles[i].RoleName < roles[j].RoleName &&
-			roles[i].DatabaseName < roles[j].DatabaseName &&
-			roles[i].CollectionName < roles[j].CollectionName
-	})
 }
