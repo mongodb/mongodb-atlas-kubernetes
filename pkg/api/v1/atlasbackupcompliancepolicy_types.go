@@ -18,6 +18,8 @@ var _ api.AtlasCustomResource = &AtlasBackupCompliancePolicy{}
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=atlas,shortName=abcp
+
 type AtlasBackupCompliancePolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
