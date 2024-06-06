@@ -125,6 +125,10 @@ func (r *AtlasBackupCompliancePolicyReconciler) findBCPForProjects(_ context.Con
 		return nil
 	}
 
+	if project.Spec.BackupCompliancePolicyRef == nil {
+		return nil
+	}
+
 	return []reconcile.Request{
 		{
 			NamespacedName: *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace),
