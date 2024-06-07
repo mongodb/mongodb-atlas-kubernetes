@@ -37,13 +37,6 @@ type backupComplianceController struct {
 	project *akov2.AtlasProject
 }
 
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackupcompliancepolicy,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackupcompliancepolicy/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasbackupcompliancepolicy,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasbackupcompliancepolicy/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasproject,verbs=get;list
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasproject,verbs=get;list
-
 func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
 	ctx.Log.Debug("starting backup compliance policy processing")
 	defer ctx.Log.Debug("finished backup compliance policy processing")

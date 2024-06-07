@@ -351,4 +351,23 @@ func TestFindBCPForProjects(t *testing.T) {
 			reqs,
 		)
 	})
+	t.Run("should return nil when no bcp specified", func(t *testing.T) {
+		project := akov2.NewProject("project1", "default", "connection-secret")
+
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(project).
+			Build()
+
+		reconciler := &AtlasBackupCompliancePolicyReconciler{
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
+		}
+
+		reqs := reconciler.findBCPForProjects(context.Background(), project)
+
+		assert.Equal(t, nil, reqs)
+	})
 }

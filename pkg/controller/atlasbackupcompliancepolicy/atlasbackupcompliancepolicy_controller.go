@@ -36,7 +36,12 @@ type AtlasBackupCompliancePolicyReconciler struct {
 	SubObjectDeletionProtection bool
 }
 
-//TODO kubebuilder rbac
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackupcompliancepolicy,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackupcompliancepolicy/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasbackupcompliancepolicy,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasbackupcompliancepolicy/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasproject,verbs=get;list
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasproject,verbs=get;list
 
 func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasbackupcompliancepolicy", req.NamespacedName)
