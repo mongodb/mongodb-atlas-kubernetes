@@ -53,6 +53,7 @@ REGISTRY ?= quay.io/mongodb
 BUNDLE_IMG ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease-bundle:$(VERSION)
 
 #BUNDLE_REGISTRY ?= $(REGISTRY)/mongodb-atlas-operator-bundle
+RELEASED_OPERATOR_IMAGE ?= mongodb/mongodb-atlas-kubernetes-operator
 OPERATOR_REGISTRY ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease
 CATALOG_REGISTRY ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease-catalog
 OPERATOR_IMAGE ?= ${OPERATOR_REGISTRY}:${VERSION}
@@ -491,10 +492,15 @@ docker-sbom:
 	@docker sbom --help > /dev/null || \
 	echo "You might need to install the SBOM plugin for docker, check out docs/dev/release.md#tools"
 
+.PHONY: generate-sboms
+generate-sboms: docker-sbom ## Generate a released version SBOMs
+	@mkdir -p docs/releases/v$(VERSION) && \
+	./scripts/generate_upload_sbom.sh -i $(RELEASED_OPERATOR_IMAGE):$(VERSION) -o docs/releases/v$(VERSION) && \
+	ls -l docs/releases/v$(VERSION)
+
 .PHONY: gen-sdlc-checklist
-gen-sdlc-checklist: envsubst docker-sbom ## Generate the SDLC checklist
-	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" RELEASE_TYPE="$(RELEASE_TYPE)" \
-	./scripts/gen-sdlc-checklist.sh
+gen-sdlc-checklist: envsubst ## Generate the SDLC checklist
+	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" ./scripts/gen-sdlc-checklist.sh
 
 # TODO: avoid leaving leftovers in the first place
 .PHONY: clear-e2e-leftovers

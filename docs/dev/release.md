@@ -19,13 +19,15 @@ Most tools are automatically installed for you. Most of them are Go binaries and
 
 ## Create the release branch
 
-Use the GitHub UI to create the new "Create Release Branch" workflow. Specify the version to be released in the text box.
+Use the GitHub UI to create the new "Create Release Branch" workflow. Specify the `version` to be released in the text box and the author or `authors` involved in the release.
 The deployment scripts (K8s configs, OLM bundle) will be generated and PR will be created with new changes on behalf
 of the `github-actions` bot.
 
 Pass the version with the `X.Y.Z` eg. `1.2.3`, **without** the `v...` prefix.
 
 See [Troubleshooting](#troubleshooting) in case of issues, such as [errors with the major version](#major-version-issues-when-create-release-branch).
+
+Expect this branch to include the Software Security Development Lifecycle Policy Checklist (SSDLC) document at path `docs/releases/v${VERSION}/sdlc-compliance.md`. Note the SBOM files cannot be generated yet, as they require the image to have been published already.
 
 ## Approve the Pull Request named "Release x.y.z"
 
@@ -35,6 +37,12 @@ The new job "Create Release" will be triggered and the following will be done:
 * Draft Release will be created with all commits since the previous release
 
 The "Create Release Branch" workflow is going to create a Pull Request pointing to a `release/X.Y.Z` branch. Once approved and merged, automation is going to create a `vX.Y.Z` tag.
+
+### SSDLC SBOMs PR
+
+A new PR should have been created titled `Add SBOMs for version ...`. Please review all is as expected and merge. It should contain just a couple of new files at directory `docs/releases/v${VERSION}/`:
+- `linux-amd64.sbom.json`
+- `linux-arm64.sbom.json`
 
 ## Edit the Release Notes and publish the release
 
@@ -160,29 +168,11 @@ You can see an [example fixed PR here for certified version 1.9.1](https://githu
 
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
 
-# SSDLC checklist publishing
-
-You can create the draft for the SSDLC checklist just by running:
-
-```shell
-$ DATE= VERSION="${version}" AUTHORS="${release_authors}" RELEASE_TYPE= make gen-sdlc-checklist
-```
-
-- You can leave `DATE` unset so the script may use today's date.
-- `RELEASE_TYPE` is also optional defaulting to `Minor` releases, set to `Major`when appropriate.
-
-The script generates the directory `docs/releases/v${VERSION}/` with files:
-- `linux-amd64.sbom.json`
-- `linux-arm64.sbom.json`
-- `sdlc-compliance.md`
-
-Add those files to `git`, and create a PR to review the changes to close the release.
-
 # Post install hook release
 
 If changes have been made to the post install hook (mongodb-atlas-kubernetes/cmd/post-install/main.go).
 You must also release this image. Run the "Release Post Install Hook" workflow manually specifying the desired 
-release version. 
+release version.
 
 # Post Release actions
 

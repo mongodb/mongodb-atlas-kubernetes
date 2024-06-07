@@ -16,12 +16,12 @@ function usage() {
 
 Usage:
   generate_upload_sbom.sh [-h]
-  generate_upload_sbom.sh -i <image_name> -b <bucket_name>
+  generate_upload_sbom.sh -i <image_name>
 
 Options:
   -h                   (optional) Shows this screen.
   -i <image_name>      (required) Image to be processed.
-  -b                   (required) S3 bucket name.
+  -b                   (optional) S3 bucket name.
   -p                   (optional) An array of platforms, for example 'linux/arm64,linux/amd64'. The script **doesn't** fail if a particular architecture is not found.
   -o <output_folder>   (optional) Folder to output SBOM to.
 "

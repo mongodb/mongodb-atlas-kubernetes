@@ -4,7 +4,6 @@ set -eu
 
 release_date=${DATE:-$(date -u '+%Y-%m-%d')}
 release_type=${RELEASE_TYPE:-Minor}
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 export DATE="${release_date}"
 export VERSION="${VERSION}"
@@ -20,9 +19,7 @@ else
 fi
 export IGNORED_VULNERABILITIES="${ignored_list}"
 
-img="mongodb/mongodb-atlas-kubernetes-operator:${VERSION}"
-"${SCRIPT_DIR}"/generate_upload_sbom.sh -i "$img" -o "docs/releases/v${VERSION}"
-
+mkdir -p "docs/releases/v${VERSION}/"
 envsubst < docs/releases/sdlc-compliance.template.md \
   > "docs/releases/v${VERSION}/sdlc-compliance.md"
 
