@@ -4,6 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,304 +26,239 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func TestReconcile(t *testing.T) {
-	t.Run("should terminate silently when resource is not found", func(t *testing.T) {
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			Build()
+func TestReconcilev2(t *testing.T) {
+	for _, tc := range []struct {
+		name string
 
-		reconciler := &AtlasBackupCompliancePolicyReconciler{
-			Client: k8sClient,
-			Log:    zaptest.NewLogger(t).Sugar(),
-		}
+		objects     []client.Object
+		isSupported bool
 
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "bcp",
-					Namespace: "default",
+		wantErr              string
+		wantResult           reconcile.Result
+		wantStatusConditions []api.Condition
+		wantFinalizers       []string
+	}{
+		{
+			name:        "should terminate silently when resource is not found",
+			isSupported: true,
+		},
+		{
+			name: "should skip reconciliation when annotation is set",
+			objects: []client.Object{
+				&akov2.AtlasBackupCompliancePolicy{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "bcp",
+						Namespace: "default",
+						Annotations: map[string]string{
+							customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
+						},
+					},
 				},
 			},
-		)
-		assert.NoError(t, err)
-		assert.Equal(t, ctrl.Result{}, result)
-	})
-}
-
-func TestEnsureAtlasBackupCompliancePolicy(t *testing.T) {
-	t.Run("should skip reconciliation when annotation is set", func(t *testing.T) {
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-bcp",
-				Namespace: "default",
-				Annotations: map[string]string{
-					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
+			isSupported: true,
+		},
+		{
+			name: "should transition to error state when resource version is invalid",
+			objects: []client.Object{
+				&akov2.AtlasBackupCompliancePolicy{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "bcp",
+						Namespace: "default",
+						Labels: map[string]string{
+							customresource.ResourceVersion: "blah",
+						},
+					},
 				},
 			},
-		}
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			WithStatusSubresource(bcp).
-			Build()
-
-		reconciler := &AtlasBackupCompliancePolicyReconciler{
-			Client:        k8sClient,
-			Log:           zaptest.NewLogger(t).Sugar(),
-			EventRecorder: record.NewFakeRecorder(1),
-			AtlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return true
-				},
-			},
-		}
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-bcp",
-					Namespace: "default",
-				},
-			},
-		)
-		assert.NoError(t, err)
-		assert.Equal(t, ctrl.Result{}, result)
-	})
-
-	t.Run("should transition to error state when resource version is invalid", func(t *testing.T) {
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-bcp",
-				Namespace: "default",
-				Labels: map[string]string{
-					customresource.ResourceVersion: "blah",
-				},
-			},
-		}
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			WithStatusSubresource(bcp).
-			Build()
-
-		reconciler := &AtlasBackupCompliancePolicyReconciler{
-			Client:        k8sClient,
-			Log:           zaptest.NewLogger(t).Sugar(),
-			EventRecorder: record.NewFakeRecorder(1),
-			AtlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return true
-				},
-			},
-		}
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-bcp",
-					Namespace: "default",
-				},
-			},
-		)
-		assert.NoError(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
+			wantResult: ctrl.Result{
 				RequeueAfter: workflow.DefaultRetry,
 			},
-			result,
-		)
-	})
-
-	t.Run("should transition to error state when resource is unsupported", func(t *testing.T) {
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-bcp",
-				Namespace: "default",
-			},
-		}
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			WithStatusSubresource(bcp).
-			Build()
-
-		reconciler := &AtlasBackupCompliancePolicyReconciler{
-			Client:        k8sClient,
-			Log:           zaptest.NewLogger(t).Sugar(),
-			EventRecorder: record.NewFakeRecorder(1),
-			AtlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return false
+			isSupported: true,
+			wantStatusConditions: []api.Condition{
+				{
+					Type:   "Ready",
+					Status: "False",
+				},
+				{
+					Type:    "ResourceVersionIsValid",
+					Status:  "False",
+					Reason:  "AtlasResourceVersionIsInvalid",
+					Message: "blah is not a valid semver version for label mongodb.com/atlas-resource-version",
 				},
 			},
-		}
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-bcp",
-					Namespace: "default",
-				},
-			},
-		)
-		assert.NoError(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{},
-			result,
-		)
-	})
-
-	t.Run("should lock when there are references", func(t *testing.T) {
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-bcp",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasBackupCompliancePolicySpec{
-				AuthorizedEmail:         "test@example.com",
-				AuthorizedUserFirstName: "John",
-				AuthorizedUserLastName:  "Doe",
-				CopyProtectionEnabled:   false,
-				EncryptionAtRestEnabled: false,
-				PITEnabled:              false,
-				RestoreWindowDays:       42,
-				ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
-					{
-						FrequencyType:     "monthly",
-						FrequencyInterval: 4,
-						RetentionUnit:     "months",
-						RetentionValue:    1,
+		},
+		{
+			name: "should transition to error state when resource is unsupported",
+			objects: []client.Object{
+				&akov2.AtlasBackupCompliancePolicy{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "bcp",
+						Namespace: "default",
 					},
 				},
-				OnDemandPolicy: akov2.AtlasOnDemandPolicy{
-					RetentionUnit:  "weeks",
-					RetentionValue: 3,
+			},
+			isSupported: false,
+			wantStatusConditions: []api.Condition{
+				{
+					Type:    "Ready",
+					Status:  "False",
+					Reason:  "AtlasGovUnsupported",
+					Message: "the AtlasBackupCompliancePolicy is not supported by Atlas for government",
+				},
+				{
+					Type:   "ResourceVersionIsValid",
+					Status: "True",
 				},
 			},
-		}
-
-		project := akov2.DefaultProject("default", "connection-secret").WithBackupCompliancePolicyNamespaced("my-bcp", "default")
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		bcpIndexer := indexer.NewAtlasProjectByBackupCompliancePolicyIndexer(zaptest.NewLogger(t))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp, project).
-			WithStatusSubresource(bcp).
-			WithIndex(
-				bcpIndexer.Object(),
-				bcpIndexer.Name(),
-				bcpIndexer.Keys,
-			).
-			Build()
-
-		reconciler := &AtlasBackupCompliancePolicyReconciler{
-			Client:        k8sClient,
-			Log:           zaptest.NewLogger(t).Sugar(),
-			EventRecorder: record.NewFakeRecorder(1),
-			AtlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return true
-				},
-			},
-		}
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-bcp",
-					Namespace: "default",
-				},
-			},
-		)
-		assert.NoError(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{},
-			result,
-		)
-	})
-
-	t.Run("should release when there are no references", func(t *testing.T) {
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "my-bcp",
-				Namespace:  "default",
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
-			Spec: akov2.AtlasBackupCompliancePolicySpec{
-				AuthorizedEmail:         "test@example.com",
-				AuthorizedUserFirstName: "John",
-				AuthorizedUserLastName:  "Doe",
-				CopyProtectionEnabled:   false,
-				EncryptionAtRestEnabled: false,
-				PITEnabled:              false,
-				RestoreWindowDays:       42,
-				ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
-					{
-						FrequencyType:     "monthly",
-						FrequencyInterval: 4,
-						RetentionUnit:     "months",
-						RetentionValue:    1,
+		},
+		{
+			name: "should lock when there are references",
+			objects: []client.Object{
+				&akov2.AtlasBackupCompliancePolicy{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "bcp",
+						Namespace: "default",
+					},
+					Spec: akov2.AtlasBackupCompliancePolicySpec{
+						AuthorizedEmail:         "test@example.com",
+						AuthorizedUserFirstName: "John",
+						AuthorizedUserLastName:  "Doe",
+						CopyProtectionEnabled:   false,
+						EncryptionAtRestEnabled: false,
+						PITEnabled:              false,
+						RestoreWindowDays:       42,
+						ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
+							{
+								FrequencyType:     "monthly",
+								FrequencyInterval: 4,
+								RetentionUnit:     "months",
+								RetentionValue:    1,
+							},
+						},
+						OnDemandPolicy: akov2.AtlasOnDemandPolicy{
+							RetentionUnit:  "weeks",
+							RetentionValue: 3,
+						},
 					},
 				},
-				OnDemandPolicy: akov2.AtlasOnDemandPolicy{
-					RetentionUnit:  "weeks",
-					RetentionValue: 3,
+				akov2.DefaultProject("default", "connection-secret").
+					WithBackupCompliancePolicyNamespaced("bcp", "default"),
+			},
+			isSupported: true,
+			wantStatusConditions: []api.Condition{
+				{
+					Type:   "Ready",
+					Status: "True",
+				},
+				{
+					Type:   "ResourceVersionIsValid",
+					Status: "True",
 				},
 			},
-		}
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		bcpIndexer := indexer.NewAtlasProjectByBackupCompliancePolicyIndexer(zaptest.NewLogger(t))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			WithStatusSubresource(bcp).
-			WithIndex(
-				bcpIndexer.Object(),
-				bcpIndexer.Name(),
-				bcpIndexer.Keys,
-			).
-			Build()
+			wantFinalizers: []string{"mongodbatlas/finalizer"},
+		},
+		{
+			name: "should lock when there are references",
+			objects: []client.Object{
+				&akov2.AtlasBackupCompliancePolicy{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "bcp",
+						Namespace: "default",
+					},
+					Spec: akov2.AtlasBackupCompliancePolicySpec{
+						AuthorizedEmail:         "test@example.com",
+						AuthorizedUserFirstName: "John",
+						AuthorizedUserLastName:  "Doe",
+						CopyProtectionEnabled:   false,
+						EncryptionAtRestEnabled: false,
+						PITEnabled:              false,
+						RestoreWindowDays:       42,
+						ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
+							{
+								FrequencyType:     "monthly",
+								FrequencyInterval: 4,
+								RetentionUnit:     "months",
+								RetentionValue:    1,
+							},
+						},
+						OnDemandPolicy: akov2.AtlasOnDemandPolicy{
+							RetentionUnit:  "weeks",
+							RetentionValue: 3,
+						},
+					},
+				},
+			},
+			isSupported: true,
+			wantStatusConditions: []api.Condition{
+				{
+					Type:   "Ready",
+					Status: "True",
+				},
+				{
+					Type:   "ResourceVersionIsValid",
+					Status: "True",
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			bcpIndexer := indexer.NewAtlasProjectByBackupCompliancePolicyIndexer(zaptest.NewLogger(t))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.objects...).
+				WithStatusSubresource(tc.objects...).
+				WithIndex(
+					bcpIndexer.Object(),
+					bcpIndexer.Name(),
+					bcpIndexer.Keys,
+				).
+				Build()
 
-		reconciler := &AtlasBackupCompliancePolicyReconciler{
-			Client:        k8sClient,
-			Log:           zaptest.NewLogger(t).Sugar(),
-			EventRecorder: record.NewFakeRecorder(1),
-			AtlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return true
+			reconciler := &AtlasBackupCompliancePolicyReconciler{
+				Client:        k8sClient,
+				Log:           zaptest.NewLogger(t).Sugar(),
+				EventRecorder: record.NewFakeRecorder(1),
+				AtlasProvider: &atlasmock.TestProvider{
+					IsSupportedFunc: func() bool {
+						return tc.isSupported
+					},
 				},
-			},
-		}
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-bcp",
-					Namespace: "default",
+			}
+
+			result, err := reconciler.Reconcile(
+				context.Background(),
+				ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      "bcp",
+						Namespace: "default",
+					},
 				},
-			},
-		)
-		assert.NoError(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{},
-			result,
-		)
-	})
+			)
+
+			gotErr := ""
+			if err != nil {
+				gotErr = err.Error()
+			}
+			assert.Equal(t, tc.wantErr, gotErr)
+			assert.Equal(t, tc.wantResult, result)
+
+			if len(tc.objects) == 0 {
+				return
+			}
+
+			bcp := &akov2.AtlasBackupCompliancePolicy{}
+			assert.NoError(t, k8sClient.Get(context.Background(), types.NamespacedName{Namespace: "default", Name: "bcp"}, bcp))
+
+			for i := range bcp.Status.Conditions {
+				bcp.Status.Conditions[i].LastTransitionTime = metav1.Time{}
+			}
+
+			assert.Equal(t, bcp.Status.Conditions, tc.wantStatusConditions)
+			assert.Equal(t, bcp.Finalizers, tc.wantFinalizers)
+		})
+	}
 }
 
 func TestFindBCPForProjects(t *testing.T) {
