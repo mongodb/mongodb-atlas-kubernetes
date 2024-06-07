@@ -241,5 +241,6 @@ jobs:
         uses: ./.github/actions/create-pr
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REVIEWERS: ${{ env.REVIEWERS }}
         with:
-          REVIEWERS: igor-karpukhin,helderjs,josvazg,roothorp
+          REVIEWERS: ${{ env.REVIEWERS }}
