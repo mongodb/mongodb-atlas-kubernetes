@@ -44,9 +44,10 @@ function validate() {
 function generate_sbom() {
   local image_pull_spec=$1
   local platform=$2
-  local file_name=$3
+  local digest=$3
+  local file_name=$4
   set +Ee
-  docker sbom --platform "$platform" -o "$file_name" --format "cyclonedx-json" "$image_pull_spec"
+  docker sbom --platform "$platform" -o "$file_name" --format "cyclonedx-json" "$image_pull_spec@$digest"
   docker_sbom_return_code=$?
   set -Ee
   if ((docker_sbom_return_code != 0)); then
@@ -109,7 +110,7 @@ for platform in "${platforms[@]}"; do
 
   echo "Generating SBOM for $image_pull_spec ($platform) and uploading to $s3_path_platform_dependent"
 
-  if generate_sbom "$image_pull_spec" "$platform" "$output_folder/$file_name"; then
+  if generate_sbom "$image_pull_spec" "$platform" "$digest" "$output_folder/$file_name"; then
     echo "Done generating SBOM for $image_pull_spec ($platform)"
     if [ -z "$bucket_name" ]; then
       echo "Skipping S3 Upload (no bucket specified)"
