@@ -2,13 +2,13 @@ SSDLC Compliance Report: Atlas Kubernetes Operator Manager v2.3.0
 =================================================================
 
 - Release Creators: igor.karpukhin@mongodb.com
-- Created On:       2024-06-06
+- Created On:       2024-06-07
 
 Overview:
 
 - **Product and Release Name**
 
-    - Atlas Kubernetes Operator v2.3.0, 2024-06-06.
+    - Atlas Kubernetes Operator v2.3.0, 2024-06-07.
     - Release Type: Minor
 
 - **Process Document**
