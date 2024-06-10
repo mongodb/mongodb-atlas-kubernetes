@@ -9,6 +9,9 @@ on:
       version:
         description: "Release version:"
         required: true
+      authors:
+        description: "Comma separated list of the release authors' emails"
+        required: true
 
 jobs:
   create-release-branch:
@@ -17,6 +20,7 @@ jobs:
     env:
       VERSION: ${{ github.event.inputs.version }}
       TAG: v${{ github.event.inputs.version }}
+      AUTHORS: ${{ github.event.inputs.authors }}
       GITHUB_REPO: mongodb/mongodb-atlas-kubernetes
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
     steps:
@@ -40,8 +44,11 @@ jobs:
         cache: false
 
     - name: Download dependencies
+      run: go mod download
+
+    - name: Generate SDLC checklist files for released version
       run: |
-        go mod download
+         make gen-sdlc-checklist VERSION=${{ env.VERSION }} AUTHORS=${{ env.AUTHORS }}
 
     - name: Configure Git
       run: |
@@ -63,5 +70,6 @@ jobs:
       uses: ./.github/actions/create-pr
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REVIEWERS: ${{ env.REVIEWERS }}
       with:
-        REVIEWERS: igor-karpukhin,helderjs,josvazg,roothorp
+        REVIEWERS: ${{ env.REVIEWERS }}

@@ -9,16 +9,17 @@ Overview:
 - **Product and Release Name**
 
     - Atlas Kubernetes Operator v${VERSION}, ${DATE}.
-    - Release Type: ${RELEASE_TYPE}
 
 - **Process Document**
   - http://go/how-we-develop-software-doc
 
 - **Tool used to track third party vulnerabilities**
-  - Silk
+  - [Silk](https://www.silk.security/)
 
 - **Dependency Information**
-  - See SBOMS Lite manifests (CycloneDX in JSON format) for [Intel](./linux-amd64.sbom.json) or [ARM](./linux-arm64.sbom.json)
+  - See SBOMS Lite manifests (CycloneDX in JSON format) for `Intel` and `ARM` are to be found [here](.)
+  - See [instructions on how the SBOMs are generated or how to generate them manually](../../dev/image-sboms.md)
+  - [Internal compliance folder](https://drive.google.com/drive/folders/1k0TsPgJcMwgj2muSPHU0FHHBjPT0dkS0?usp=drive_link)
 
 - **Static Analysis Report**
   - No SAST findings. Our CI system blocks merges on any SAST findings.${IGNORED_VULNERABILITIES}
