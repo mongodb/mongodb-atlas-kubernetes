@@ -202,6 +202,9 @@ func (b *backupComplianceController) getAtlasBackupCompliancePolicy() (*admin.Da
 }
 
 func (b *backupComplianceController) getAKOBackupCompliancePolicy() (*akov2.AtlasBackupCompliancePolicy, error) {
+	if b.project.Spec.BackupCompliancePolicyRef == nil {
+		return nil, errors.New("bcp not found in Kubernetes")
+	}
 	bcp := &akov2.AtlasBackupCompliancePolicy{}
 	err := b.client.Get(b.ctx.Context, *b.project.Spec.BackupCompliancePolicyRef.GetObject(b.project.Namespace), bcp)
 	if err != nil {

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -70,7 +71,7 @@ func TestBackupCompliancePolicyToAtlas(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "", cmp.Diff(*out, want))
+		assert.True(t, reflect.DeepEqual(*out, want), cmp.Diff(*out, want))
 	})
 }
 
@@ -125,6 +126,6 @@ func TestBackupCompliancePolicyFromAtlas(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "", cmp.Diff(*out, want))
+		assert.True(t, reflect.DeepEqual(*out, want), cmp.Diff(*out, want))
 	})
 }
