@@ -61,7 +61,7 @@ jobs:
         make check-major-version
         BRANCH="release/${VERSION}"
         git checkout -b $BRANCH
-        git add -f ./deploy ./bundle bundle.Dockerfile
+        git add -f ./deploy ./bundle bundle.Dockerfile docs/releases
         git commit -m "Release ${VERSION}"
         git reset --hard
         git push --set-upstream origin $BRANCH
