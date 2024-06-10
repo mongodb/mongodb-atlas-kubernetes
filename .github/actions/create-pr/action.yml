@@ -4,6 +4,10 @@ inputs:
   REVIEWERS:
     description: "Add reviewers to PR"
     required: true
+  TITLE_PREFIX:
+    description: "PR prefix"
+    required: true
+    default: "Release "
 runs:
   using: 'docker'
   image: 'Dockerfile'

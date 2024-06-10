@@ -10,6 +10,7 @@ bucket_name=""
 registry_name=""
 s3_path=""
 output_folder="$PWD"
+docker_sbom_binary="docker"
 
 function usage() {
   echo "Generates and uploads an SBOM to an S3 bucket.
@@ -41,13 +42,22 @@ function validate() {
   fi
 }
 
+function detect_docker_sbom_binary() {
+  if [[ -f ./docker-sbom ]]; then
+    docker_sbom_binary="./docker-sbom"
+    echo "detected local override ${docker_sbom_binary} binary"
+  else
+    echo "falling back to docker sbom preinstalled plugin"
+  fi
+}
+
 function generate_sbom() {
   local image_pull_spec=$1
   local platform=$2
   local digest=$3
   local file_name=$4
   set +Ee
-  docker sbom --platform "$platform" -o "$file_name" --format "cyclonedx-json" "$image_pull_spec@$digest"
+  "${docker_sbom_binary}" sbom --platform "$platform" -o "$file_name" --format "cyclonedx-json" "$image_pull_spec@$digest"
   docker_sbom_return_code=$?
   set -Ee
   if ((docker_sbom_return_code != 0)); then
@@ -95,6 +105,8 @@ echo "Image: $image_name"
 echo "Tag: $tag_name"
 echo "Platforms:" "${platforms[@]}"
 echo "S3 Path: $s3_path"
+
+detect_docker_sbom_binary
 
 for platform in "${platforms[@]}"; do
   os=${platform%/*}

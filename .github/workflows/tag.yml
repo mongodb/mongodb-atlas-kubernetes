@@ -41,3 +41,11 @@ jobs:
     secrets: inherit
     with:
       tag: ${{ needs.tag.outputs.tag }}
+
+  sboms-pr:
+    needs:
+    - tag
+    uses: ./.github/workflows/sboms.yml
+    secrets: inherit
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
