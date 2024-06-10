@@ -185,8 +185,13 @@ spec:
                 maxLength: 1024
                 type: string
               x509Type:
+                default: NONE
                 description: X509Type is X.509 method by which the database authenticates
                   the provided username
+                enum:
+                - NONE
+                - MANAGED
+                - CUSTOMER
                 type: string
             required:
             - projectRef
