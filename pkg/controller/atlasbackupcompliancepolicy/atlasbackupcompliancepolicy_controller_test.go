@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func TestReconcilev2(t *testing.T) {
+func TestReconcile(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 
@@ -262,52 +262,48 @@ func TestReconcilev2(t *testing.T) {
 }
 
 func TestFindBCPForProjects(t *testing.T) {
-	t.Run("should return a slice of requests for BCP", func(t *testing.T) {
-		project := akov2.NewProject("project1", "default", "connection-secret").WithBackupCompliancePolicyNamespaced("bcp1", "other-ns")
+	for _, tc := range []struct {
+		name string
 
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(project).
-			Build()
+		project client.Object
 
-		reconciler := &AtlasBackupCompliancePolicyReconciler{
-			Client: k8sClient,
-			Log:    zaptest.NewLogger(t).Sugar(),
-		}
+		wantRequests []ctrl.Request
+	}{
+		{
+			name:         "should return a slice of requests for BCP",
+			project:      akov2.NewProject("test-project", "default", "connection-secret").WithBackupCompliancePolicyNamespaced("bcp1", "other-ns"),
+			wantRequests: []ctrl.Request{{NamespacedName: types.NamespacedName{Name: "bcp1", Namespace: "other-ns"}}},
+		},
+		{
+			name:         "should return nil when no BCP specified in project",
+			project:      akov2.NewProject("test-project", "default", "connection-secret"),
+			wantRequests: nil,
+		},
+		{
+			name:         "should return nil when cannot cast object to project",
+			project:      akov2.NewDeployment("default", "test-deployment", "test-deployment"),
+			wantRequests: nil,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.project).
+				Build()
 
-		reqs := reconciler.findBCPForProjects(context.Background(), project)
-		assert.Equal(
-			t,
-			[]ctrl.Request{
-				{
-					NamespacedName: types.NamespacedName{
-						Name:      "bcp1",
-						Namespace: "other-ns",
-					},
-				},
-			},
-			reqs,
-		)
-	})
-	t.Run("should return nil when no bcp specified", func(t *testing.T) {
-		project := akov2.NewProject("project1", "default", "connection-secret")
+			reconciler := &AtlasBackupCompliancePolicyReconciler{
+				Client: k8sClient,
+				Log:    zaptest.NewLogger(t).Sugar(),
+			}
 
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(project).
-			Build()
-
-		reconciler := &AtlasBackupCompliancePolicyReconciler{
-			Client: k8sClient,
-			Log:    zaptest.NewLogger(t).Sugar(),
-		}
-
-		reqs := reconciler.findBCPForProjects(context.Background(), project)
-
-		assert.Equal(t, nil, reqs)
-	})
+			reqs := reconciler.findBCPForProjects(context.Background(), tc.project)
+			assert.Equal(
+				t,
+				tc.wantRequests,
+				reqs,
+			)
+		})
+	}
 }

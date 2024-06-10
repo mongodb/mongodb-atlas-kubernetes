@@ -39,559 +39,327 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func TestEnsureBackupCompliance(t *testing.T) {
-	t.Run("get BCP request errors", func(t *testing.T) {
-		project := akov2.DefaultProject("test-namespace", "test-connection")
-		backupAPI := mockadmin.NewCloudBackupsApi(t)
-
-		backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), project.ID()).
-			Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				nil,
-				&http.Response{},
-				errors.New("get test error"),
-			)
-
-		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				CloudBackupsApi: backupAPI,
-			},
-			Context: context.Background(),
-			Log:     zaptest.NewLogger(t).Sugar(),
-		}
-
-		reconciler := &AtlasProjectReconciler{
-			AtlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return true
+func TestEnsureBackupCompliance2(t *testing.T) {
+	testBCP := &akov2.AtlasBackupCompliancePolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-bcp",
+			Namespace: "test-namespace",
+		},
+		Spec: akov2.AtlasBackupCompliancePolicySpec{
+			AuthorizedEmail:         "test@example.com",
+			AuthorizedUserFirstName: "John",
+			AuthorizedUserLastName:  "Doe",
+			CopyProtectionEnabled:   false,
+			EncryptionAtRestEnabled: false,
+			PITEnabled:              false,
+			RestoreWindowDays:       42,
+			ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
+				{
+					FrequencyType:     "monthly",
+					FrequencyInterval: 4,
+					RetentionUnit:     "months",
+					RetentionValue:    1,
 				},
 			},
-		}
-
-		result := reconciler.ensureBackupCompliance(workflowCtx, project)
-
-		assert.False(t, result.IsOk())
-
-		_, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
-		assert.True(t, ok)
-		assert.True(t, result.IsWarning())
-	})
-
-	t.Run("BCP is in AKO, but not Atlas (create)", func(t *testing.T) {
-		project := akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp")
-		backupAPI := mockadmin.NewCloudBackupsApi(t)
-
-		backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), project.ID()).
-			Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{},
-				&http.Response{},
-				nil,
-			)
-		backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), project.ID(), mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
-			Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{
-					State: pointer.MakePtr("ACTIVE"),
-				},
-				&http.Response{},
-				nil,
-			)
-
-		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				CloudBackupsApi: backupAPI,
+			OnDemandPolicy: akov2.AtlasOnDemandPolicy{
+				RetentionUnit:  "weeks",
+				RetentionValue: 3,
 			},
-			Context: context.Background(),
-			Log:     zaptest.NewLogger(t).Sugar(),
-		}
+		},
+	}
 
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-bcp",
-				Namespace: project.Namespace,
-			},
-			Spec: akov2.AtlasBackupCompliancePolicySpec{
-				AuthorizedEmail:         "test@example.com",
-				AuthorizedUserFirstName: "John",
-				AuthorizedUserLastName:  "Doe",
-				CopyProtectionEnabled:   false,
-				EncryptionAtRestEnabled: false,
-				PITEnabled:              false,
-				RestoreWindowDays:       42,
-				ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
-					{
-						FrequencyType:     "monthly",
-						FrequencyInterval: 4,
-						RetentionUnit:     "months",
-						RetentionValue:    1,
-					},
-				},
-				OnDemandPolicy: akov2.AtlasOnDemandPolicy{
-					RetentionUnit:  "weeks",
-					RetentionValue: 3,
-				},
-			},
-		}
+	for _, tc := range []struct {
+		name string
 
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			Build()
+		project         *akov2.AtlasProject
+		conditionStatus workflow.ConditionReason
+		bcp             *akov2.AtlasBackupCompliancePolicy
 
-		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-		}
+		backupAPI *mockadmin.CloudBackupsApi
 
-		result := reconciler.ensureBackupCompliance(workflowCtx, project)
+		isOK      bool
+		isWarning bool
 
-		assert.True(t, result.IsOk())
-		_, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
-		assert.True(t, ok)
-	})
-
-	t.Run("BCP is in AKO, but not Atlas, create errors", func(t *testing.T) {
-		project := akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp")
-		backupAPI := mockadmin.NewCloudBackupsApi(t)
-
-		backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), project.ID()).
-			Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{},
-				&http.Response{},
-				nil,
-			)
-		backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), project.ID(), mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
-			Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{},
-				&http.Response{},
-				errors.New("create test error"),
-			)
-
-		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				CloudBackupsApi: backupAPI,
-			},
-			Context: context.Background(),
-			Log:     zaptest.NewLogger(t).Sugar(),
-		}
-
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-bcp",
-				Namespace: project.Namespace,
-			},
-			Spec: akov2.AtlasBackupCompliancePolicySpec{
-				AuthorizedEmail:         "test@example.com",
-				AuthorizedUserFirstName: "John",
-				AuthorizedUserLastName:  "Doe",
-				CopyProtectionEnabled:   false,
-				EncryptionAtRestEnabled: false,
-				PITEnabled:              false,
-				RestoreWindowDays:       42,
-				ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
-					{
-						FrequencyType:     "monthly",
-						FrequencyInterval: 4,
-						RetentionUnit:     "months",
-						RetentionValue:    1,
-					},
-				},
-				OnDemandPolicy: akov2.AtlasOnDemandPolicy{
-					RetentionUnit:  "weeks",
-					RetentionValue: 3,
-				},
-			},
-		}
-
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			Build()
-
-		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-		}
-
-		result := reconciler.ensureBackupCompliance(workflowCtx, project)
-
-		assert.False(t, result.IsOk())
-
-		_, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
-		assert.True(t, ok)
-		assert.True(t, result.IsWarning())
-	})
-
-	t.Run("BCP are still creating in Atlas, AKO is waiting", func(t *testing.T) {
-		project := akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp")
-		backupAPI := mockadmin.NewCloudBackupsApi(t)
-
-		backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), project.ID()).
-			Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{
-					AuthorizedEmail:         "test@example.com",
-					AuthorizedUserFirstName: "John",
-					AuthorizedUserLastName:  "Doe",
-					CopyProtectionEnabled:   pointer.MakePtr(false),
-					EncryptionAtRestEnabled: pointer.MakePtr(false),
-					PitEnabled:              pointer.MakePtr(false),
-					RestoreWindowDays:       pointer.MakePtr(42),
-					ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
-						{
-							FrequencyType:     "monthly",
-							FrequencyInterval: 4,
-							RetentionUnit:     "months",
-							RetentionValue:    1,
+		wantReadyType bool                     // whether the BackupComplianceReadyType is expected
+		wantStatus    string                   // the expected status of BackupComplianceReadyType ("True", "False")
+		wantReason    workflow.ConditionReason // the expected reason of BackupComplianceReadyType
+	}{
+		{
+			name:    "BCP GET request errors",
+			project: akov2.DefaultProject("test-namespace", "test-connection"),
+			bcp:     &akov2.AtlasBackupCompliancePolicy{},
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(
+						nil,
+						&http.Response{},
+						errors.New("bcp get test error"),
+					)
+				return backupAPI
+			}(),
+			isOK:          false,
+			isWarning:     true,
+			wantReadyType: true,
+			wantStatus:    "False",
+		},
+		{
+			name:    "BCP is in AKO, but not Atlas (create)",
+			project: akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
+			bcp:     testBCP,
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, nil)
+				backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
+					Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
+					Return(&admin.DataProtectionSettings20231001{State: pointer.MakePtr("ACTIVE")}, &http.Response{}, nil)
+				return backupAPI
+			}(),
+			isOK:          true,
+			wantReadyType: true,
+			wantStatus:    "True",
+		},
+		{
+			name:    "BCP is in AKO, but not Atlas, create errors",
+			project: akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
+			bcp:     testBCP,
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, nil)
+				backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
+					Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
+					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, errors.New("create test error"))
+				return backupAPI
+			}(),
+			isOK:          false,
+			isWarning:     true,
+			wantReadyType: true,
+			wantStatus:    "False",
+		},
+		{
+			name:    "BCP are still creating in Atlas, AKO is waiting",
+			project: akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
+			bcp:     testBCP,
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(
+						&admin.DataProtectionSettings20231001{
+							AuthorizedEmail:         "test@example.com",
+							AuthorizedUserFirstName: "John",
+							AuthorizedUserLastName:  "Doe",
+							CopyProtectionEnabled:   pointer.MakePtr(false),
+							EncryptionAtRestEnabled: pointer.MakePtr(false),
+							PitEnabled:              pointer.MakePtr(false),
+							RestoreWindowDays:       pointer.MakePtr(42),
+							ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
+								{
+									FrequencyType:     "monthly",
+									FrequencyInterval: 4,
+									RetentionUnit:     "months",
+									RetentionValue:    1,
+								},
+							},
+							OnDemandPolicyItem: &admin.BackupComplianceOnDemandPolicyItem{
+								RetentionUnit:  "weeks",
+								RetentionValue: 3,
+							},
+							State: pointer.MakePtr("UPDATING"),
 						},
-					},
-					OnDemandPolicyItem: &admin.BackupComplianceOnDemandPolicyItem{
-						RetentionUnit:  "weeks",
-						RetentionValue: 3,
-					},
-					State: pointer.MakePtr("UPDATING"),
-				},
-				&http.Response{},
-				nil,
-			)
-
-		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				CloudBackupsApi: backupAPI,
-			},
-			Context: context.Background(),
-			Log:     zaptest.NewLogger(t).Sugar(),
-		}
-
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-bcp",
-				Namespace: project.Namespace,
-			},
-			Spec: akov2.AtlasBackupCompliancePolicySpec{
-				AuthorizedEmail:         "test@example.com",
-				AuthorizedUserFirstName: "John",
-				AuthorizedUserLastName:  "Doe",
-				CopyProtectionEnabled:   false,
-				EncryptionAtRestEnabled: false,
-				PITEnabled:              false,
-				RestoreWindowDays:       42,
-				ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
-					{
-						FrequencyType:     "monthly",
-						FrequencyInterval: 4,
-						RetentionUnit:     "months",
-						RetentionValue:    1,
-					},
-				},
-				OnDemandPolicy: akov2.AtlasOnDemandPolicy{
-					RetentionUnit:  "weeks",
-					RetentionValue: 3,
-				},
-			},
-		}
-
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			Build()
-
-		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-		}
-
-		result := reconciler.ensureBackupCompliance(workflowCtx, project)
-
-		assert.False(t, result.IsOk())
-		assert.False(t, result.IsWarning())
-		_, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
-		assert.True(t, ok)
-		assert.True(t, workflowCtx.HasReason(workflow.ProjectBackupCompliancePolicyUpdating))
-	})
-
-	t.Run("BCP is no longer UPDATING in Atlas, AKO checks", func(t *testing.T) {
-		project := akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp")
-		backupAPI := mockadmin.NewCloudBackupsApi(t)
-
-		backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), project.ID()).
-			Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{
-					AuthorizedEmail:         "test@example.com",
-					AuthorizedUserFirstName: "John",
-					AuthorizedUserLastName:  "Doe",
-					CopyProtectionEnabled:   pointer.MakePtr(false),
-					EncryptionAtRestEnabled: pointer.MakePtr(false),
-					PitEnabled:              pointer.MakePtr(false),
-					RestoreWindowDays:       pointer.MakePtr(42),
-					ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
-						{
-							FrequencyType:     "monthly",
-							FrequencyInterval: 4,
-							RetentionUnit:     "months",
-							RetentionValue:    1,
+						&http.Response{},
+						nil,
+					)
+				return backupAPI
+			}(),
+			isOK:          false,
+			isWarning:     false,
+			wantReadyType: true,
+			wantStatus:    "False",
+			wantReason:    workflow.ProjectBackupCompliancePolicyUpdating,
+		},
+		{
+			name:            "BCP is no longer UPDATING in Atlas, AKO checks",
+			project:         akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
+			bcp:             testBCP,
+			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(
+						&admin.DataProtectionSettings20231001{
+							AuthorizedEmail:         "test@example.com",
+							AuthorizedUserFirstName: "John",
+							AuthorizedUserLastName:  "Doe",
+							CopyProtectionEnabled:   pointer.MakePtr(false),
+							EncryptionAtRestEnabled: pointer.MakePtr(false),
+							PitEnabled:              pointer.MakePtr(false),
+							RestoreWindowDays:       pointer.MakePtr(42),
+							ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
+								{
+									FrequencyType:     "monthly",
+									FrequencyInterval: 4,
+									RetentionUnit:     "months",
+									RetentionValue:    1,
+								},
+							},
+							OnDemandPolicyItem: &admin.BackupComplianceOnDemandPolicyItem{
+								RetentionUnit:  "weeks",
+								RetentionValue: 3,
+							},
+							State: pointer.MakePtr("ACTIVE"),
 						},
-					},
-					OnDemandPolicyItem: &admin.BackupComplianceOnDemandPolicyItem{
-						RetentionUnit:  "weeks",
-						RetentionValue: 3,
-					},
-					State: pointer.MakePtr("ACTIVE"),
-				},
-				&http.Response{},
-				nil,
-			)
+						&http.Response{},
+						nil,
+					)
+				return backupAPI
+			}(),
+			isOK:          true,
+			isWarning:     false,
+			wantReadyType: true,
+			wantStatus:    "True",
+		},
+		{
+			name:    "BCP is in AKO, but not Atlas, and BCP is not met",
+			project: akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
+			bcp:     testBCP,
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, nil)
 
-		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				CloudBackupsApi: backupAPI,
-			},
-			Context: context.Background(),
-			Log:     zaptest.NewLogger(t).Sugar(),
-		}
+				mockError := &admin.GenericOpenAPIError{}
+				model := *admin.NewApiError()
+				model.SetErrorCode(atlas.BackupComplianceNotMet)
+				mockError.SetModel(model)
 
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-bcp",
-				Namespace: project.Namespace,
-			},
-			Spec: akov2.AtlasBackupCompliancePolicySpec{
-				AuthorizedEmail:         "test@example.com",
-				AuthorizedUserFirstName: "John",
-				AuthorizedUserLastName:  "Doe",
-				CopyProtectionEnabled:   false,
-				EncryptionAtRestEnabled: false,
-				PITEnabled:              false,
-				RestoreWindowDays:       42,
-				ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
-					{
-						FrequencyType:     "monthly",
-						FrequencyInterval: 4,
-						RetentionUnit:     "months",
-						RetentionValue:    1,
-					},
-				},
-				OnDemandPolicy: akov2.AtlasOnDemandPolicy{
-					RetentionUnit:  "weeks",
-					RetentionValue: 3,
-				},
-			},
-		}
-
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			Build()
-
-		workflowCtx.SetConditionFromResult(api.BackupComplianceReadyType, workflow.InProgress(workflow.ProjectBackupCompliancePolicyUpdating, "test state"))
-
-		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-		}
-
-		result := reconciler.ensureBackupCompliance(workflowCtx, project)
-
-		assert.True(t, result.IsOk())
-		_, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
-		assert.True(t, ok)
-	})
-
-	t.Run("BCP is in AKO, but not Atlas, and BCP is not met", func(t *testing.T) {
-		project := akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp")
-		backupAPI := mockadmin.NewCloudBackupsApi(t)
-
-		backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), project.ID()).
-			Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{},
-				&http.Response{},
-				nil,
-			)
-
-		mockError := &admin.GenericOpenAPIError{}
-		model := *admin.NewApiError()
-		model.SetErrorCode(atlas.BackupComplianceNotMet)
-		mockError.SetModel(model)
-
-		backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), project.ID(), mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
-			Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{},
-				&http.Response{},
-				mockError,
-			)
-
-		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				CloudBackupsApi: backupAPI,
-			},
-			Context: context.Background(),
-			Log:     zaptest.NewLogger(t).Sugar(),
-		}
-
-		bcp := &akov2.AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-bcp",
-				Namespace: project.Namespace,
-			},
-			Spec: akov2.AtlasBackupCompliancePolicySpec{
-				AuthorizedEmail:         "test@example.com",
-				AuthorizedUserFirstName: "John",
-				AuthorizedUserLastName:  "Doe",
-				CopyProtectionEnabled:   false,
-				EncryptionAtRestEnabled: false,
-				PITEnabled:              false,
-				RestoreWindowDays:       42,
-				ScheduledPolicyItems: []akov2.AtlasBackupPolicyItem{
-					{
-						FrequencyType:     "monthly",
-						FrequencyInterval: 4,
-						RetentionUnit:     "months",
-						RetentionValue:    1,
-					},
-				},
-				OnDemandPolicy: akov2.AtlasOnDemandPolicy{
-					RetentionUnit:  "weeks",
-					RetentionValue: 3,
-				},
-			},
-		}
-
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(bcp).
-			Build()
-
-		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-		}
-
-		result := reconciler.ensureBackupCompliance(workflowCtx, project)
-
-		assert.False(t, result.IsOk())
-
-		_, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
-		assert.True(t, ok)
-		assert.True(t, workflowCtx.HasReason(workflow.ProjectBackupCompliancePolicyNotMet))
-	})
-
-	t.Run("BCP is in Atlas but not AKO (attempted delete)", func(t *testing.T) {
-		project := akov2.DefaultProject("test-namespace", "test-connection")
-		backupAPI := mockadmin.NewCloudBackupsApi(t)
-
-		backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), project.ID()).
-			Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{
-					AuthorizedEmail:         "test@example.com",
-					AuthorizedUserFirstName: "John",
-					AuthorizedUserLastName:  "Doe",
-					CopyProtectionEnabled:   pointer.MakePtr(false),
-					EncryptionAtRestEnabled: pointer.MakePtr(false),
-					PitEnabled:              pointer.MakePtr(false),
-					RestoreWindowDays:       pointer.MakePtr(42),
-					ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
-						{
-							FrequencyType:     "monthly",
-							FrequencyInterval: 4,
-							RetentionUnit:     "months",
-							RetentionValue:    1,
+				backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
+					Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
+					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, mockError)
+				return backupAPI
+			}(),
+			isOK:          false,
+			isWarning:     true,
+			wantReadyType: true,
+			wantStatus:    "False",
+			wantReason:    workflow.ProjectBackupCompliancePolicyNotMet,
+		},
+		{
+			name:    "BCP is in Atlas but not AKO (attempted delete)",
+			project: akov2.DefaultProject("test-namespace", "test-connection"),
+			bcp:     &akov2.AtlasBackupCompliancePolicy{},
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(
+						&admin.DataProtectionSettings20231001{
+							AuthorizedEmail:         "test@example.com",
+							AuthorizedUserFirstName: "John",
+							AuthorizedUserLastName:  "Doe",
+							CopyProtectionEnabled:   pointer.MakePtr(false),
+							EncryptionAtRestEnabled: pointer.MakePtr(false),
+							PitEnabled:              pointer.MakePtr(false),
+							RestoreWindowDays:       pointer.MakePtr(42),
+							ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
+								{
+									FrequencyType:     "monthly",
+									FrequencyInterval: 4,
+									RetentionUnit:     "months",
+									RetentionValue:    1,
+								},
+							},
+							OnDemandPolicyItem: &admin.BackupComplianceOnDemandPolicyItem{
+								RetentionUnit:  "weeks",
+								RetentionValue: 3,
+							},
+							State: pointer.MakePtr("ACTIVE"),
 						},
-					},
-					OnDemandPolicyItem: &admin.BackupComplianceOnDemandPolicyItem{
-						RetentionUnit:  "weeks",
-						RetentionValue: 3,
-					},
-					State: pointer.MakePtr("ACTIVE"),
+						&http.Response{},
+						nil,
+					)
+				return backupAPI
+			}(),
+			isOK:          false,
+			isWarning:     true,
+			wantReadyType: true,
+			wantStatus:    "False",
+			wantReason:    workflow.ProjectBackupCompliancePolicyCannotDelete,
+		},
+		{
+			name:    "BCP is not in AKO nor Atlas (unmanage)",
+			project: akov2.DefaultProject("test-namespace", "test-connection"),
+			bcp:     &akov2.AtlasBackupCompliancePolicy{},
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(
+						&admin.DataProtectionSettings20231001{},
+						&http.Response{},
+						nil,
+					)
+				return backupAPI
+			}(),
+			isOK:          true,
+			isWarning:     false,
+			wantReadyType: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			workflowCtx := &workflow.Context{
+				SdkClient: &admin.APIClient{
+					CloudBackupsApi: tc.backupAPI,
 				},
-				&http.Response{},
-				nil,
-			)
+				Context: context.Background(),
+				Log:     zaptest.NewLogger(t).Sugar(),
+			}
 
-		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				CloudBackupsApi: backupAPI,
-			},
-			Context: context.Background(),
-			Log:     zaptest.NewLogger(t).Sugar(),
-		}
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithStatusSubresource(tc.bcp).
+				WithObjects(tc.bcp).
+				Build()
 
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			Build()
+			reconciler := &AtlasProjectReconciler{
+				AtlasProvider: &atlasmock.TestProvider{},
+				Client:        k8sClient,
+			}
 
-		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-		}
+			workflowCtx.SetConditionFromResult(api.BackupComplianceReadyType, workflow.InProgress(tc.conditionStatus, "test state"))
 
-		result := reconciler.ensureBackupCompliance(workflowCtx, project)
+			result := reconciler.ensureBackupCompliance(workflowCtx, tc.project)
 
-		assert.False(t, result.IsOk())
+			assert.Equal(t, tc.isOK, result.IsOk())
+			assert.Equal(t, tc.isWarning, result.IsWarning())
 
-		_, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
-		assert.True(t, ok)
-		assert.True(t, workflowCtx.HasReason(workflow.ProjectBackupCompliancePolicyCannotDelete))
-	})
+			con, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
+			assert.Equal(t, tc.wantReadyType, ok)
 
-	t.Run("BCP is not in AKO nor Atlas (unmanage)", func(t *testing.T) {
-		project := akov2.DefaultProject("test-namespace", "test-connection")
-		backupAPI := mockadmin.NewCloudBackupsApi(t)
-
-		backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), project.ID()).
-			Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-		backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
-			Return(
-				&admin.DataProtectionSettings20231001{},
-				&http.Response{},
-				nil,
-			)
-
-		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				CloudBackupsApi: backupAPI,
-			},
-			Context: context.Background(),
-			Log:     zaptest.NewLogger(t).Sugar(),
-		}
-
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			Build()
-
-		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-		}
-
-		result := reconciler.ensureBackupCompliance(workflowCtx, project)
-
-		assert.True(t, result.IsOk())
-
-		_, ok := workflowCtx.GetCondition(api.BackupComplianceReadyType)
-		assert.False(t, ok)
-	})
+			assert.Equal(t, tc.wantStatus, string(con.Status))
+			if tc.wantReason != "" {
+				assert.True(t, workflowCtx.HasReason(tc.wantReason))
+			}
+		})
+	}
 }
