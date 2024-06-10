@@ -1,4 +1,3 @@
-//nolint:dupl
 package e2e_test
 
 import (
@@ -35,16 +34,6 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 	})
 
 	AfterEach(func() {
-		GinkgoWriter.Write([]byte("\n"))
-		GinkgoWriter.Write([]byte("===============================================\n"))
-		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
-		GinkgoWriter.Write([]byte("===============================================\n"))
-		if CurrentSpecReport().Failed() {
-			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-			Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-			Expect(actions.SaveUsersToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-		}
-
 		By("Should clean up created resources", func() {
 			actions.DeleteTestDataDeployments(testData)
 			actions.DeleteTestDataProject(testData)
