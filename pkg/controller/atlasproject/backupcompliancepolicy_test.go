@@ -190,6 +190,50 @@ func TestEnsureBackupCompliance2(t *testing.T) {
 			wantReason:    workflow.ProjectBackupCompliancePolicyUpdating,
 		},
 		{
+			name:            "BCP is still updating in Atlas, AKO status persists",
+			project:         akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
+			bcp:             testBCP,
+			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(
+						&admin.DataProtectionSettings20231001{
+							AuthorizedEmail:         "test@example.com",
+							AuthorizedUserFirstName: "John",
+							AuthorizedUserLastName:  "Doe",
+							CopyProtectionEnabled:   pointer.MakePtr(false),
+							EncryptionAtRestEnabled: pointer.MakePtr(false),
+							PitEnabled:              pointer.MakePtr(false),
+							RestoreWindowDays:       pointer.MakePtr(42),
+							ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
+								{
+									FrequencyType:     "monthly",
+									FrequencyInterval: 4,
+									RetentionUnit:     "months",
+									RetentionValue:    1,
+								},
+							},
+							OnDemandPolicyItem: &admin.BackupComplianceOnDemandPolicyItem{
+								RetentionUnit:  "weeks",
+								RetentionValue: 3,
+							},
+							State: pointer.MakePtr("UPDATING"),
+						},
+						&http.Response{},
+						nil,
+					)
+				return backupAPI
+			}(),
+			isOK:          false,
+			isWarning:     false,
+			wantReadyType: true,
+			wantStatus:    "False",
+			wantReason:    workflow.ProjectBackupCompliancePolicyUpdating,
+		},
+		{
 			name:            "BCP is no longer UPDATING in Atlas, AKO checks",
 			project:         akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
 			bcp:             testBCP,

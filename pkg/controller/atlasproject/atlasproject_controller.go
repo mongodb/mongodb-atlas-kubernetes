@@ -418,6 +418,7 @@ func (r *AtlasProjectReconciler) findProjectsForBCP(ctx context.Context, obj cli
 	bcp, ok := obj.(*akov2.AtlasBackupCompliancePolicy)
 	if !ok {
 		r.Log.Warnf("watching AtlasBackupCompliancePolicy but got %T", obj)
+		return nil
 	}
 
 	projects := &akov2.AtlasProjectList{}
