@@ -234,6 +234,29 @@ func TestEnsureBackupCompliance2(t *testing.T) {
 			wantReason:    workflow.ProjectBackupCompliancePolicyUpdating,
 		},
 		{
+			name:            "BCP removed from project in AKO with UPDATING status",
+			project:         akov2.DefaultProject("test-namespace", "test-connection"),
+			bcp:             testBCP,
+			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
+			backupAPI: func() *mockadmin.CloudBackupsApi {
+				backupAPI := mockadmin.NewCloudBackupsApi(t)
+				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+					Return(
+						&admin.DataProtectionSettings20231001{State: pointer.MakePtr("UPDATING")},
+						&http.Response{},
+						nil,
+					)
+				return backupAPI
+			}(),
+			isOK:          false,
+			isWarning:     true,
+			wantReadyType: true,
+			wantStatus:    "False",
+			wantReason:    workflow.Internal,
+		},
+		{
 			name:            "BCP is no longer UPDATING in Atlas, AKO checks",
 			project:         akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
 			bcp:             testBCP,
