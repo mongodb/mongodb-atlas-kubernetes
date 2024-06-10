@@ -23,5 +23,5 @@ mkdir -p "docs/releases/v${VERSION}/"
 envsubst < docs/releases/sdlc-compliance.template.md \
   > "docs/releases/v${VERSION}/sdlc-compliance.md"
 
-echo "SDLC checklist ready:"
+echo "SDLC checklist ready. Files at docs/releases/v${VERSION}:"
 ls -l "docs/releases/v${VERSION}"
