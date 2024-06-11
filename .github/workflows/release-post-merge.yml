@@ -225,22 +225,3 @@ jobs:
           asset_path: ./atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_name: atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_content_type: application/tgz
-
-      - name: Create SBOMs branch
-        env:
-          BRANCH: version-${{ steps.tag.outputs.version }}-sboms
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          make generate-sboms VERSION=${{ steps.tag.outputs.version }}
-          git checkout -b $BRANCH
-          git add .
-          git commit -m "Add SBOMs for version ${{ steps.tag.outputs.version }}"
-          git push --set-upstream origin $BRANCH
-
-      - name: Create SBOMs PR
-        uses: ./.github/actions/create-pr
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVIEWERS: ${{ env.REVIEWERS }}
-        with:
-          REVIEWERS: ${{ env.REVIEWERS }}

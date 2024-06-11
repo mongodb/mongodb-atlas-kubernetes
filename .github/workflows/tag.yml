@@ -15,6 +15,7 @@ jobs:
       BRANCH: ${{ github.head_ref }}
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -32,6 +33,7 @@ jobs:
           git tag "${tag}"
           git push origin "${tag}"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
 
   release-post-merge:
@@ -41,3 +43,11 @@ jobs:
     secrets: inherit
     with:
       tag: ${{ needs.tag.outputs.tag }}
+
+  sboms-pr:
+    needs:
+    - tag
+    uses: ./.github/workflows/sboms.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.tag.outputs.version }}

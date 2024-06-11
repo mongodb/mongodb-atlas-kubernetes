@@ -488,13 +488,9 @@ vulncheck: govulncheck ## Run govulncheck to find vulnerabilities in code
 envsubst:
 	@which envsubst || go install github.com/drone/envsubst/cmd/envsubst@latest
 
-docker-sbom:
-	@docker sbom --help > /dev/null || \
-	echo "You might need to install the SBOM plugin for docker, check out docs/dev/release.md#tools"
-
 .PHONY: generate-sboms
-generate-sboms: docker-sbom ## Generate a released version SBOMs
-	@mkdir -p docs/releases/v$(VERSION) && \
+generate-sboms: cosign ./ako.pem ## Generate a released version SBOMs
+	mkdir -p docs/releases/v$(VERSION) && \
 	./scripts/generate_upload_sbom.sh -i $(RELEASED_OPERATOR_IMAGE):$(VERSION) -o docs/releases/v$(VERSION) && \
 	ls -l docs/releases/v$(VERSION)
 
