@@ -1,56 +1,29 @@
-# GitHub workflow for creating release.
-# Trigger release branch should be merge into main
-# TODO add e2e/smoke test for autogen configuration
-
+# GitHub workflow for creating the SDLC SBOMs PR after a release.
 name: Create SBOMs PR
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_call:
     inputs:
-      tag:
+      version:
         type: string
-        description: "Name of existing tag to release (format should be 'v*')"
+        description: "Version of the image to extract the SBOMs from (without the 'v' prefix)"
         required: true
-      checkout-tag:
-        description: "Checkout the given tag or work on main otherwise"
-        type: boolean
-        required: true
-        default: true
   workflow_dispatch:
     inputs:
-      tag:
+      version:
         type: string
-        description: "Name of existing tag (or branch) to release (format should be 'v*')"
+        description: "Version of the image to extract the SBOMs from (without the 'v' prefix)"
         required: true
-      checkout-tag:
-        description: "Checkout the given tag or work on main otherwise"
-        type: boolean
-        required: true
-        default: true
 jobs:
   sboms:
     environment: release
     name: Create SBOMs PR
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ inputs.tag || github.head_ref || github.ref_name }}
-      CHECKOUT_TAG: ${{ inputs.checkout-tag && inputs.tag || 'main' }}
+      VERSION: ${{ inputs.version }}
     steps:
-      - name: Compute version
-        id: version
-        run: |
-          version=$(echo "${TAG}" |awk -F'^v' '{print $2}')
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-
       - name: Check out code
         uses: actions/checkout@v4
-        with:
-          submodules: true
-          fetch-depth: 0
-          ref: ${{ env.CHECKOUT_TAG }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -66,14 +39,14 @@ jobs:
 
       - name: Create SBOMs branch
         env:
-          BRANCH: version-${{ steps.version.outputs.version }}-sboms
+          BRANCH: version-${{ env.VERSION }}-sboms
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           OS=linux ARCH=amd64 DOCKER_SBOM_PLUGIN_VERSION=0.6.1 ./scripts/get-docker-sbom-plugin.sh
-          make generate-sboms VERSION=${{ steps.version.outputs.version }}
+          make generate-sboms VERSION=${{ env.VERSION }}
           git checkout -b $BRANCH
           git add docs/releases
-          git commit -m "Add SBOMs for version ${{ steps.version.outputs.version }}"
+          git commit -m "Add SBOMs for version ${{ env.VERSION }}"
           git push --set-upstream origin $BRANCH
 
       - name: Create SBOMs PR
@@ -81,7 +54,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REVIEWERS: ${{ env.REVIEWERS }}
-          VERSION: ${{ steps.version.outputs.version }}
         with:
           REVIEWERS: ${{ env.REVIEWERS }}
           TITLE_PREFIX: "SBOMs for version "
