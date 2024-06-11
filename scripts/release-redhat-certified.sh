@@ -38,9 +38,8 @@ yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8"
   "${REPO}/${VERSION}"/metadata/annotations.yaml
 
 cd "${REPO}"
-git checkout -b origin main
+git checkout -b "mongodb-atlas-kubernetes-operator-${VERSION}" origin/main
 git pull --rebase upstream main
-git checkout -b "mongodb-atlas-kubernetes-operator-${VERSION}"
 git add "${REPO}/${VERSION}"
 git commit -m "operator mongodb-atlas-kubernetes (${VERSION})" --signoff
 git push -u origin "mongodb-atlas-kubernetes-operator-${VERSION}"
