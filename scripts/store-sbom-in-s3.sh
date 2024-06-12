@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -euo pipefail
 
 # Constants
 base_s3_dir="kubernetes-operators-sboms/sboms"
