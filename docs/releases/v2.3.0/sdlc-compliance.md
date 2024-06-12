@@ -18,7 +18,7 @@ Overview:
   - Silk
 
 - **Dependency Information**
-  - See SBOMS Lite manifests (CycloneDX in JSON format) for [Intel](./linux-amd64.sbom.json) or [ARM](./linux-arm64.sbom.json)
+  - See SBOMS Lite manifests (CycloneDX in JSON format) for [Intel](./linux_amd64.sbom.json) or [ARM](./linux_arm64.sbom.json)
 
 - **Static Analysis Report**
   - No SAST findings. Our CI system blocks merges on any SAST findings.

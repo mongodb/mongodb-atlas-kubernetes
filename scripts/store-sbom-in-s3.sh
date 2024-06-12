@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euxo pipefail
 
 # Constants
 base_s3_dir="kubernetes-operators-sboms/sboms"
@@ -13,7 +13,7 @@ arch=$2
 asset_group_prefix="${SILK_ASSET_GROUP}"
 
 # Computed values
-sbom_lite_json="docs/releases/v${version}/linux-${arch}.sbom.json"
+sbom_lite_json="docs/releases/v${version}/linux_${arch}.sbom.json"
 sbom_json="tmp/linux-${arch}.sbom.json"
 lite_name=$(jq -r < "${sbom_lite_json}" '.metadata.component.name')
 name=$(jq -r < "${sbom_json}" '.metadata.component.name')
