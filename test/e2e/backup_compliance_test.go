@@ -164,9 +164,7 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 
 func checkForStatusReason(conditions []api.Condition, conditionType api.ConditionType, conditionReason workflow.ConditionReason) bool {
 	for _, con := range conditions {
-		fmt.Printf("ROO: checking condition %s\n", con.Type)
 		if con.Type == conditionType {
-			fmt.Printf("ROO: checking reason %s\n", con.Reason)
 			fmt.Println(con.Reason == string(conditionReason))
 			return con.Reason == string(conditionReason)
 		}
