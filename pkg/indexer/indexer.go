@@ -27,6 +27,7 @@ func RegisterAll(ctx context.Context, mgr manager.Manager, logger *zap.Logger) e
 		NewAtlasStreamConnectionBySecretIndexer(logger),
 		NewAtlasStreamInstanceByProjectIndexer(logger),
 		NewAtlasStreamInstanceByConnectionIndexer(logger),
+		NewAtlasProjectByBackupCompliancePolicyIndexer(logger),
 	)
 }
 
