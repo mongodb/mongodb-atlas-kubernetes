@@ -172,13 +172,6 @@ spec:
             - authorizedEmail
             - authorizedUserFirstName
             - authorizedUserLastName
-            - copyProtectionEnabled
-            - encryptionAtRestEnabled
-            - onDemandPolicy
-            - overwriteBackupPolicies
-            - pointInTimeEnabled
-            - restoreWindowDays
-            - scheduledPolicyItems
             type: object
           status:
             properties:

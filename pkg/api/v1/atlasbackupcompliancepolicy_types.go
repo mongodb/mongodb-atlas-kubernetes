@@ -31,36 +31,41 @@ type AtlasBackupCompliancePolicy struct {
 
 type AtlasBackupCompliancePolicySpec struct {
 	// Email address of the user who authorized to update the Backup Compliance Policy settings.
+	// +kubebuilder:validation:Required
 	AuthorizedEmail string `json:"authorizedEmail"`
 	// First name of the user who authorized to updated the Backup Compliance Policy settings.
+	// +kubebuilder:validation:Required
 	AuthorizedUserFirstName string `json:"authorizedUserFirstName"`
 	// Last name of the user who authorized to updated the Backup Compliance Policy settings.
+	// +kubebuilder:validation:Required
 	AuthorizedUserLastName string `json:"authorizedUserLastName"`
 	// Flag that indicates whether to prevent cluster users from deleting backups copied to other regions, even if those additional snapshot regions are removed.
 	// +kubebuilder:validation:default:=false
-	CopyProtectionEnabled bool `json:"copyProtectionEnabled"`
+	CopyProtectionEnabled bool `json:"copyProtectionEnabled,omitempty"`
 	// Flag that indicates whether Encryption at Rest using Customer Key Management is required for all clusters with a Backup Compliance Policy.
 	// +kubebuilder:validation:default:=false
-	EncryptionAtRestEnabled bool `json:"encryptionAtRestEnabled"`
+	EncryptionAtRestEnabled bool `json:"encryptionAtRestEnabled,omitempty"`
 	// Flag that indicates whether to overwrite non complying backup policies with the new data protection settings or not.
-	OverwriteBackupPolicies bool `json:"overwriteBackupPolicies"`
+	OverwriteBackupPolicies bool `json:"overwriteBackupPolicies,omitempty"`
 	// Flag that indicates whether the cluster uses Continuous Cloud Backups with a Backup Compliance Policy.
 	// +kubebuilder:validation:default:=false
-	PITEnabled bool `json:"pointInTimeEnabled"`
+	PITEnabled bool `json:"pointInTimeEnabled,omitempty"`
 	// Number of previous days that you can restore back to with Continuous Cloud Backup with a Backup Compliance Policy. This parameter applies only to Continuous Cloud Backups with a Backup Compliance Policy.
-	RestoreWindowDays int `json:"restoreWindowDays"`
+	RestoreWindowDays int `json:"restoreWindowDays,omitempty"`
 	// List that contains the specifications for one scheduled policy.
-	ScheduledPolicyItems []AtlasBackupPolicyItem `json:"scheduledPolicyItems"`
+	ScheduledPolicyItems []AtlasBackupPolicyItem `json:"scheduledPolicyItems,omitempty"`
 	// Specifications for on-demand policy.
-	OnDemandPolicy AtlasOnDemandPolicy `json:"onDemandPolicy"`
+	OnDemandPolicy AtlasOnDemandPolicy `json:"onDemandPolicy,omitempty"`
 }
 
 type AtlasOnDemandPolicy struct {
 	// Scope of the backup policy item: days, weeks, or months
 	// +kubebuilder:validation:Enum:=days;weeks;months
+	// +kubebuilder:validation:Required
 	RetentionUnit string `json:"retentionUnit"`
 
 	// Value to associate with RetentionUnit
+	// +kubebuilder:validation:Required
 	RetentionValue int `json:"retentionValue"`
 }
 
