@@ -8,9 +8,13 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasBackupCompliancePolicy
     listKind: AtlasBackupCompliancePolicyList
     plural: atlasbackupcompliancepolicies
+    shortNames:
+    - abcp
     singular: atlasbackupcompliancepolicy
   scope: Namespaced
   versions:
