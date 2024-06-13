@@ -3,6 +3,7 @@ package dbuser
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -64,14 +65,15 @@ func DiffSpecs(specUser, atlasUser *User) []string {
 }
 
 func normalize(user *User) (*User, error) {
-	cmp.NormalizeSlice(user.Roles, func(i, j int) bool {
-		return user.Roles[i].RoleName < user.Roles[j].RoleName &&
-			user.Roles[i].DatabaseName < user.Roles[j].DatabaseName &&
-			user.Roles[i].CollectionName < user.Roles[j].CollectionName
+	cmp.NormalizeSlice(user.Roles, func(a, b akov2.RoleSpec) int {
+		return strings.Compare(
+			a.RoleName+a.DatabaseName+a.CollectionName,
+			b.RoleName+b.DatabaseName+b.CollectionName)
 	})
-	cmp.NormalizeSlice(user.Scopes, func(i, j int) bool {
-		return user.Scopes[i].Name < user.Scopes[j].Name &&
-			user.Scopes[i].Type < user.Scopes[j].Type
+	cmp.NormalizeSlice(user.Scopes, func(a, b akov2.ScopeSpec) int {
+		return strings.Compare(
+			a.Name+string(a.Type),
+			b.Name+string(b.Type))
 	})
 	if user.DeleteAfterDate != "" { // enforce date format
 		operatorDeleteDate, err := timeutil.ParseISO8601(user.DeleteAfterDate)
@@ -79,17 +81,6 @@ func normalize(user *User) (*User, error) {
 			return nil, err
 		}
 		user.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
-	}
-	// Ensure comparisons succeed on default value
-	// TODO: Check if this is required after updating the Helm Chart CRDs
-	if user.X509Type == "" {
-		user.X509Type = "NONE"
-	}
-	if user.OIDCAuthType == "" {
-		user.OIDCAuthType = "NONE"
-	}
-	if user.AWSIAMType == "" {
-		user.AWSIAMType = "NONE"
 	}
 	return user, nil
 }
