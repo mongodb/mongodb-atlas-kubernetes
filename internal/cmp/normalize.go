@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"slices"
 	"sort"
 )
 
@@ -24,11 +25,11 @@ func SemanticEqual[T Normalizer[T]](this, that T) (bool, error) {
 	return reflect.DeepEqual(thisResult, thatResult), nil
 }
 
-func NormalizeSlice[S ~[]E, E any](slice S, less func(i, j int) bool) S {
+func NormalizeSlice[S ~[]E, E any](slice S, cmp func(a, b E) int) S {
 	if len(slice) == 0 {
 		return nil
 	}
-	sort.SliceStable(slice, less)
+	slices.SortStableFunc(slice, cmp)
 	return slice
 }
 
