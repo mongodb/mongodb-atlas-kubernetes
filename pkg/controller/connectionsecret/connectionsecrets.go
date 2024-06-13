@@ -169,7 +169,7 @@ func FillPrivateConns(conn deployment.Connection, data *ConnectionData) {
 }
 
 // FillPrivateConnStrings fills private conn urls from connection strings
-// TODO: remove once all usages move over to FillPrivateConns instead
+// TODO: (CLOUDP-253951) remove once all usages move over to FillPrivateConns instead
 // Right now only advanced deployment is using this one
 func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *ConnectionData) {
 	if connStrings.Private != "" {
