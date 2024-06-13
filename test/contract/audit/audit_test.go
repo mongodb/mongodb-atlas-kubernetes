@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/launcher"
@@ -60,9 +62,11 @@ func TestDefaultAuditingGet(t *testing.T) {
 
 func defaultAtlasAuditing() *audit.AuditConfig {
 	return &audit.AuditConfig{
-		Enabled:                   false,
-		AuditAuthorizationSuccess: false,
-		AuditFilter:               "",
+		Auditing: &akov2.Auditing{
+			Enabled:                   false,
+			AuditAuthorizationSuccess: false,
+			AuditFilter:               "",
+		},
 	}
 }
 
@@ -74,49 +78,61 @@ func TestSyncs(t *testing.T) {
 		{
 			title: "Just enabled",
 			auditing: &audit.AuditConfig{
-				Enabled:                   true,
-				AuditAuthorizationSuccess: false,
-				AuditFilter:               "{}", // must sent empty JSON to overwrite previous state
+				Auditing: &akov2.Auditing{
+					Enabled:                   true,
+					AuditAuthorizationSuccess: false,
+					AuditFilter:               "{}", // must sent empty JSON to overwrite previous state
+				},
 			},
 		},
 		{
 			title: "Auth success logs as well",
 			auditing: &audit.AuditConfig{
-				Enabled:                   true,
-				AuditAuthorizationSuccess: true,
-				AuditFilter:               "{}",
+				Auditing: &akov2.Auditing{
+					Enabled:                   true,
+					AuditAuthorizationSuccess: true,
+					AuditFilter:               "{}",
+				},
 			},
 		},
 		{
 			title: "With a filter",
 			auditing: &audit.AuditConfig{
-				Enabled:                   true,
-				AuditAuthorizationSuccess: false,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				Auditing: &akov2.Auditing{
+					Enabled:                   true,
+					AuditAuthorizationSuccess: false,
+					AuditFilter:               `{"atype":"authenticate"}`,
+				},
 			},
 		},
 		{
 			title: "With a filter and success logs",
 			auditing: &audit.AuditConfig{
-				Enabled:                   true,
-				AuditAuthorizationSuccess: true,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				Auditing: &akov2.Auditing{
+					Enabled:                   true,
+					AuditAuthorizationSuccess: true,
+					AuditFilter:               `{"atype":"authenticate"}`,
+				},
 			},
 		},
 		{
 			title: "All set but disabled",
 			auditing: &audit.AuditConfig{
-				Enabled:                   false,
-				AuditAuthorizationSuccess: true,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				Auditing: &akov2.Auditing{
+					Enabled:                   false,
+					AuditAuthorizationSuccess: true,
+					AuditFilter:               `{"atype":"authenticate"}`,
+				},
 			},
 		},
 		{
 			title: "Default (disabled) case",
 			auditing: &audit.AuditConfig{
-				Enabled:                   false,
-				AuditAuthorizationSuccess: false,
-				AuditFilter:               "{}",
+				Auditing: &akov2.Auditing{
+					Enabled:                   false,
+					AuditAuthorizationSuccess: false,
+					AuditFilter:               "{}",
+				},
 			},
 		},
 	}

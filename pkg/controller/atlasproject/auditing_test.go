@@ -1,121 +1,273 @@
 package atlasproject
 
 import (
+	"context"
+	"errors"
+	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"go.uber.org/zap/zaptest"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func TestAuditingInSync(t *testing.T) {
-	type args struct {
-		atlas *mongodbatlas.Auditing
-		spec  *akov2.Auditing
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
+func TestAuditController_reconcile(t *testing.T) {
+	tests := map[string]struct {
+		service            audit.AuditLogService
+		audit              *akov2.Auditing
+		expectedResult     workflow.Result
+		expectedConditions []api.Condition
 	}{
-		{
-			name: "Atlas and Operator Auditing are empty",
-			args: args{
-				atlas: nil,
-				spec:  nil,
+		"should fail to retrieve audit config from Atlas": {
+			service: &translation.AuditLogMock{
+				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
+					return nil, errors.New("failed to get audit log config")
+				},
 			},
-			want: true,
+			expectedResult: workflow.Terminate(workflow.Internal, "failed to get audit log config"),
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.AuditingReadyType).
+					WithReason(string(workflow.Internal)).
+					WithMessageRegexp("failed to get audit log config"),
+			},
 		},
-		{
-			name: "Atlas Auditing is empty and Operator doesn't",
-			args: args{
-				atlas: nil,
-				spec:  &akov2.Auditing{Enabled: true},
+		"should fail to configure audit config in Atlas": {
+			service: &translation.AuditLogMock{
+				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
+					return &audit.AuditConfig{
+						Auditing:          &akov2.Auditing{},
+						ConfigurationType: audit.None,
+					}, nil
+				},
+				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+					return errors.New("failed to set audit log config")
+				},
 			},
-			want: false,
+			audit: &akov2.Auditing{
+				Enabled: true,
+			},
+			expectedResult: workflow.Terminate(workflow.ProjectAuditingReady, "failed to set audit log config"),
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.AuditingReadyType).
+					WithReason(string(workflow.ProjectAuditingReady)).
+					WithMessageRegexp("failed to set audit log config"),
+			},
 		},
-		{
-			name: "Operator Auditing is empty and Atlas doesn't",
-			args: args{
-				atlas: &mongodbatlas.Auditing{Enabled: pointer.MakePtr(true)},
-				spec:  nil,
+		"should successfully configure audit config in Atlas": {
+			service: &translation.AuditLogMock{
+				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
+					return &audit.AuditConfig{
+						Auditing:          &akov2.Auditing{},
+						ConfigurationType: audit.None,
+					}, nil
+				},
+				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+					return nil
+				},
 			},
-			want: false,
+			audit: &akov2.Auditing{
+				Enabled: true,
+			},
+			expectedResult: workflow.OK(),
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.AuditingReadyType),
+			},
 		},
-		{
-			name: "Operator Auditing has different config from Atlas",
-			args: args{
-				atlas: &mongodbatlas.Auditing{
-					AuditAuthorizationSuccess: pointer.MakePtr(false),
-					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-					ConfigurationType:         "ReadOnly",
-					Enabled:                   pointer.MakePtr(true),
+		"should be ready when not change is applied": {
+			service: &translation.AuditLogMock{
+				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
+					return &audit.AuditConfig{
+						Auditing: &akov2.Auditing{
+							Enabled: true,
+						},
+						ConfigurationType: audit.None,
+					}, nil
 				},
-				spec: &akov2.Auditing{
-					AuditAuthorizationSuccess: true,
-					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-					Enabled:                   true,
+				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+					return nil
 				},
 			},
-			want: false,
+			audit: &akov2.Auditing{
+				Enabled: true,
+			},
+			expectedResult: workflow.OK(),
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.AuditingReadyType),
+			},
 		},
-		{
-			name: "Operator Auditing has different config filter from Atlas",
-			args: args{
-				atlas: &mongodbatlas.Auditing{
-					AuditAuthorizationSuccess: pointer.MakePtr(false),
-					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-					ConfigurationType:         "ReadOnly",
-					Enabled:                   pointer.MakePtr(true),
+		"should unmanage when unset in AKO and disable in Atlas": {
+			service: &translation.AuditLogMock{
+				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
+					return &audit.AuditConfig{
+						Auditing:          &akov2.Auditing{},
+						ConfigurationType: audit.None,
+					}, nil
 				},
-				spec: &akov2.Auditing{
-					AuditAuthorizationSuccess: false,
-					AuditFilter:               `{"atype":"authenticate","param":{"db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-					Enabled:                   true,
+				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+					return nil
 				},
 			},
-			want: false,
+			expectedResult:     workflow.OK(),
+			expectedConditions: []api.Condition{},
 		},
-		{
-			name: "Operator Auditing are Equal",
-			args: args{
-				atlas: &mongodbatlas.Auditing{
-					AuditAuthorizationSuccess: pointer.MakePtr(false),
-					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-					ConfigurationType:         "ReadOnly",
-					Enabled:                   pointer.MakePtr(true),
+		"should disable audit config in Atlas when unset in AKO": {
+			service: &translation.AuditLogMock{
+				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
+					return &audit.AuditConfig{
+						Auditing: &akov2.Auditing{
+							Enabled: true,
+						},
+						ConfigurationType: audit.None,
+					}, nil
 				},
-				spec: &akov2.Auditing{
-					AuditAuthorizationSuccess: false,
-					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-					Enabled:                   true,
-				},
-			},
-			want: true,
-		},
-		{
-			name: "Operator Auditing are Equal when filter has newline in the end",
-			args: args{
-				atlas: &mongodbatlas.Auditing{
-					AuditAuthorizationSuccess: pointer.MakePtr(false),
-					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-					ConfigurationType:         "ReadOnly",
-					Enabled:                   pointer.MakePtr(true),
-				},
-				spec: &akov2.Auditing{
-					AuditAuthorizationSuccess: false,
-					AuditFilter:               "{\"atype\":\"authenticate\",\"param\":{\"user\":\"auditReadOnly\",\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}\n",
-					Enabled:                   true,
+				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+					return nil
 				},
 			},
-			want: true,
+			expectedResult:     workflow.OK(),
+			expectedConditions: []api.Condition{},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, auditingInSync(tt.args.atlas, tt.args.spec), "auditingInSync(%v, %v)", tt.args.atlas, tt.args.spec)
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			a := &auditController{
+				ctx: &workflow.Context{
+					Context: context.Background(),
+					Log:     zaptest.NewLogger(t).Sugar(),
+				},
+				project: &akov2.AtlasProject{
+					Spec: akov2.AtlasProjectSpec{
+						Auditing: tt.audit,
+					},
+				},
+				service: tt.service,
+			}
+
+			result := a.reconcile()
+			assert.Equal(t, tt.expectedResult, result)
+			assert.True(t, cmp.Equal(tt.expectedConditions, a.ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
+		})
+	}
+}
+
+func TestHandleAudit(t *testing.T) {
+	tests := map[string]struct {
+		audit              *akov2.Auditing
+		expectedCalls      func(api *mockadmin.AuditingApi) admin.AuditingApi
+		expectedResult     workflow.Result
+		expectedConditions []api.Condition
+	}{
+		"should successfully handle audit reconciliation": {
+			audit: &akov2.Auditing{
+				Enabled:                   true,
+				AuditAuthorizationSuccess: true,
+			},
+			expectedCalls: func(api *mockadmin.AuditingApi) admin.AuditingApi {
+				api.EXPECT().GetAuditingConfiguration(context.Background(), "project-id").
+					Return(admin.GetAuditingConfigurationApiRequest{ApiService: api})
+				api.EXPECT().GetAuditingConfigurationExecute(mock.AnythingOfType("admin.GetAuditingConfigurationApiRequest")).
+					Return(
+						&admin.AuditLog{
+							AuditAuthorizationSuccess: pointer.MakePtr(false),
+							ConfigurationType:         pointer.MakePtr("NONE"),
+							Enabled:                   pointer.MakePtr(false),
+						},
+						&http.Response{},
+						nil,
+					)
+				api.EXPECT().UpdateAuditingConfiguration(context.Background(), "project-id", mock.AnythingOfType("*admin.AuditLog")).
+					Return(admin.UpdateAuditingConfigurationApiRequest{ApiService: api})
+				api.EXPECT().UpdateAuditingConfigurationExecute(mock.AnythingOfType("admin.UpdateAuditingConfigurationApiRequest")).
+					Return(
+						&admin.AuditLog{
+							AuditAuthorizationSuccess: pointer.MakePtr(true),
+							ConfigurationType:         pointer.MakePtr("FILTER_JSON"),
+							Enabled:                   pointer.MakePtr(true),
+						},
+						&http.Response{},
+						nil,
+					)
+
+				return api
+			},
+			expectedResult: workflow.OK(),
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.AuditingReadyType),
+			},
+		},
+		"should fail to handle audit reconciliation": {
+			audit: &akov2.Auditing{
+				Enabled:                   true,
+				AuditAuthorizationSuccess: true,
+			},
+			expectedCalls: func(api *mockadmin.AuditingApi) admin.AuditingApi {
+				api.EXPECT().GetAuditingConfiguration(context.Background(), "project-id").
+					Return(admin.GetAuditingConfigurationApiRequest{ApiService: api})
+				api.EXPECT().GetAuditingConfigurationExecute(mock.AnythingOfType("admin.GetAuditingConfigurationApiRequest")).
+					Return(
+						&admin.AuditLog{
+							AuditAuthorizationSuccess: pointer.MakePtr(false),
+							ConfigurationType:         pointer.MakePtr("NONE"),
+							Enabled:                   pointer.MakePtr(false),
+						},
+						&http.Response{},
+						nil,
+					)
+				api.EXPECT().UpdateAuditingConfiguration(context.Background(), "project-id", mock.AnythingOfType("*admin.AuditLog")).
+					Return(admin.UpdateAuditingConfigurationApiRequest{ApiService: api})
+				api.EXPECT().UpdateAuditingConfigurationExecute(mock.AnythingOfType("admin.UpdateAuditingConfigurationApiRequest")).
+					Return(
+						nil,
+						&http.Response{},
+						errors.New("failed to configure audit log"),
+					)
+
+				return api
+			},
+			expectedResult: workflow.Terminate(workflow.ProjectAuditingReady, "failed to configure audit log"),
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.AuditingReadyType).
+					WithReason(string(workflow.ProjectAuditingReady)).
+					WithMessageRegexp("failed to configure audit log"),
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctx := &workflow.Context{
+				Context:   context.Background(),
+				Log:       zaptest.NewLogger(t).Sugar(),
+				SdkClient: &admin.APIClient{AuditingApi: tt.expectedCalls(mockadmin.NewAuditingApi(t))},
+			}
+			project := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					Auditing: tt.audit,
+				},
+				Status: status.AtlasProjectStatus{
+					ID: "project-id",
+				},
+			}
+
+			result := handleAudit(ctx, project)
+			assert.Equal(t, tt.expectedResult, result)
+			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
 		})
 	}
 }
