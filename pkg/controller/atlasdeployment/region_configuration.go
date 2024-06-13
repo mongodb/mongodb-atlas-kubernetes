@@ -20,11 +20,10 @@ func syncRegionConfiguration(deploymentSpec *akov2.AdvancedDeploymentSpec, atlas
 		return
 	}
 
-	for _, regionSpec := range deploymentSpec.ReplicationSpecs[0].RegionConfigs {
-		// When disc auto-scaling is enabled and there's no updated on disk size, unset disc size letting auto-scaling config control it
-		if isDiskAutoScalingEnabled(regionSpec.AutoScaling) && !hasDiskSizeChanged(deploymentSpec.DiskSizeGB, atlasCluster.DiskSizeGB) {
-			deploymentSpec.DiskSizeGB = nil
-		}
+	// If there is no updated on disk size, unset disc size.
+	// The Update (via PATCH) can leave out unchanged fields
+	if !hasDiskSizeChanged(deploymentSpec.DiskSizeGB, atlasCluster.DiskSizeGB) {
+		deploymentSpec.DiskSizeGB = nil
 	}
 
 	// when editing a region, normalize change compute configuration
@@ -63,10 +62,6 @@ func syncRegionConfiguration(deploymentSpec *akov2.AdvancedDeploymentSpec, atlas
 
 func isComputeAutoScalingEnabled(autoScalingSpec *akov2.AdvancedAutoScalingSpec) bool {
 	return autoScalingSpec != nil && autoScalingSpec.Compute != nil && autoScalingSpec.Compute.Enabled != nil && *autoScalingSpec.Compute.Enabled
-}
-
-func isDiskAutoScalingEnabled(autoScalingSpec *akov2.AdvancedAutoScalingSpec) bool {
-	return autoScalingSpec != nil && autoScalingSpec.DiskGB != nil && autoScalingSpec.DiskGB.Enabled != nil && *autoScalingSpec.DiskGB.Enabled
 }
 
 func hasDiskSizeChanged(deploymentDiskSize *int, clusterDiskSize *float64) bool {
