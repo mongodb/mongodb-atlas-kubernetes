@@ -634,6 +634,86 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		},
 		{
+			name: "should unset disc size for existing region with disc autoscaling disabled but disk size has not been set",
+			deployment: &akov2.AdvancedDeploymentSpec{
+				DiskSizeGB: pointer.MakePtr(20),
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "EU_WEST2",
+								ElectableSpecs: &akov2.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(3),
+								},
+								ReadOnlySpecs: &akov2.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(1),
+								},
+								AnalyticsSpecs: &akov2.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(1),
+								},
+								Priority: pointer.MakePtr(7),
+							},
+						},
+					},
+				},
+			},
+			atlasCluster: &mongodbatlas.AdvancedCluster{
+				DiskSizeGB: pointer.MakePtr(20.0),
+				ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "EU_WEST2",
+								ElectableSpecs: &mongodbatlas.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(3),
+								},
+								ReadOnlySpecs: &mongodbatlas.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(1),
+								},
+								AnalyticsSpecs: &mongodbatlas.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(1),
+								},
+								Priority: pointer.MakePtr(7),
+							},
+						},
+					},
+				},
+			},
+			expected: &akov2.AdvancedDeploymentSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "EU_WEST2",
+								ElectableSpecs: &akov2.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(3),
+								},
+								ReadOnlySpecs: &akov2.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(1),
+								},
+								AnalyticsSpecs: &akov2.Specs{
+									InstanceSize: "M10",
+									NodeCount:    pointer.MakePtr(1),
+								},
+								Priority: pointer.MakePtr(7),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "should keep disc size for existing region with disc autoscaling enabled but disk size has be changed",
 			deployment: &akov2.AdvancedDeploymentSpec{
 				DiskSizeGB: pointer.MakePtr(30),
