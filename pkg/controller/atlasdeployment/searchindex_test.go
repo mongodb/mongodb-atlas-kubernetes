@@ -60,7 +60,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		}
 
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
-			CreateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+			CreateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
 					ID:     pointer.MakePtr("testID"),
 					Status: pointer.MakePtr("NOT STARTED"),
@@ -118,7 +118,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		}
 
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
-			CreateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+			CreateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
 					ID:     pointer.MakePtr("testID"),
 					Status: pointer.MakePtr("NOT STARTED"),
@@ -285,7 +285,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		}
 
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
-			DeleteIndexFn: func(_ context.Context, _, _, _ string) error {
+			DeleteIndexFunc: func(_ context.Context, _, _, _ string) error {
 				return nil
 			},
 		}
@@ -343,7 +343,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		}
 
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
-			DeleteIndexFn: func(_ context.Context, _, _, _ string) error {
+			DeleteIndexFunc: func(_ context.Context, _, _, _ string) error {
 				return errors.New(http.StatusText(http.StatusInternalServerError))
 			},
 		}
@@ -457,7 +457,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 	t.Run("UPDATE: Must trigger index update if state in AKO and in Atlas is different", func(t *testing.T) {
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
-			UpdateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+			UpdateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
 					Status: pointer.MakePtr("NOT STARTED"),
 				}, nil
@@ -518,7 +518,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 	t.Run("UPDATE: Must terminate if API call returned anything but 201 or 200", func(t *testing.T) {
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
-			UpdateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+			UpdateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
 					Status: pointer.MakePtr("NOT STARTED"),
 				}, errors.New(http.StatusText(http.StatusInternalServerError))

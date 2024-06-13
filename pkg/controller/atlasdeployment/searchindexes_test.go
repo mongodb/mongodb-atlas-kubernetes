@@ -194,7 +194,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			&deployment.Spec.DeploymentSpec.SearchIndexes[0],
 			&searchIndexConfig.Spec)
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
-			GetIndexFn: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
+			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
 				return idxToReturn, nil
 			},
 		}
@@ -226,7 +226,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 
 	t.Run("Should proceed with the index Type Search: CREATE INDEX", func(t *testing.T) {
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
-			CreateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+			CreateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
 					Status: pointer.MakePtr("NOT STARTED"),
 				}, nil
@@ -305,7 +305,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 
 	t.Run("Should proceed with index Type Search if it cannot be found: CREATE INDEX", func(t *testing.T) {
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
-			GetIndexFn: func(_ context.Context, _, _, _, indexID string) (*searchindex.SearchIndex, error) {
+			GetIndexFunc: func(_ context.Context, _, _, _, indexID string) (*searchindex.SearchIndex, error) {
 				if indexID == "123" {
 					return &searchindex.SearchIndex{
 						SearchIndex: akov2.SearchIndex{
@@ -321,7 +321,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				}
 				return nil, fmt.Errorf("unexpected")
 			},
-			CreateIndexFn: func(_ context.Context, _, _ string, idx *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+			CreateIndexFunc: func(_ context.Context, _, _ string, idx *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				if idx.Name == "Index1" {
 					return &searchindex.SearchIndex{
 						SearchIndex: akov2.SearchIndex{
@@ -469,10 +469,10 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			Status: pointer.MakePtr(IndexStatusActive),
 		}
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
-			GetIndexFn: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
+			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
 				return &sampleIndex, nil
 			},
-			UpdateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+			UpdateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &sampleIndex, nil
 			},
 		}
@@ -568,10 +568,10 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			Status: pointer.MakePtr(IndexStatusActive),
 		}
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
-			GetIndexFn: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
+			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
 				return &sampleIndex, nil
 			},
-			UpdateIndexFn: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
+			UpdateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &sampleIndex, nil
 			},
 		}
@@ -657,7 +657,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 
 	t.Run("Should proceed with the index Type Search: DELETE INDEX", func(t *testing.T) {
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
-			GetIndexFn: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
+			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
 					SearchIndex: akov2.SearchIndex{
 						Name:           "testName",
@@ -669,7 +669,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 					Status: pointer.MakePtr(IndexStatusActive),
 				}, nil
 			},
-			DeleteIndexFn: func(_ context.Context, _, _, _ string) error {
+			DeleteIndexFunc: func(_ context.Context, _, _, _ string) error {
 				return nil
 			},
 		}
