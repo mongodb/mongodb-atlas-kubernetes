@@ -21,7 +21,6 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=atlas,shortName=abcp
-
 type AtlasBackupCompliancePolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -133,6 +132,9 @@ func NewBCPFromAtlas(in *admin.DataProtectionSettings20231001) *AtlasBackupCompl
 
 func (s *AtlasBackupCompliancePolicySpec) Normalize() (*AtlasBackupCompliancePolicySpec, error) {
 	err := cmp.Normalize(s)
+	if s != nil {
+		s.OverwriteBackupPolicies = false
+	}
 	return s, err
 }
 

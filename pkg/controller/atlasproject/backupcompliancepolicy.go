@@ -17,6 +17,7 @@ limitations under the License.
 package atlasproject
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -28,6 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -97,6 +99,17 @@ func (b *backupComplianceController) handleUpserting() workflow.Result {
 	if err != nil {
 		return b.terminate(workflow.Internal, err)
 	}
+	if equal {
+		lastApplied, ok := akoBCP.GetAnnotations()[customresource.AnnotationLastAppliedConfiguration]
+		if ok {
+			temp := &akov2.AtlasBackupCompliancePolicy{}
+			err = json.Unmarshal([]byte(lastApplied), temp)
+			if err != nil {
+				return b.terminate(workflow.Internal, err)
+			}
+			equal = (akoBCP.Spec.OverwriteBackupPolicies == temp.Spec.OverwriteBackupPolicies)
+		}
+	}
 
 	switch {
 	case !equal:
@@ -121,10 +134,22 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 		return b.terminate(workflow.Internal, err)
 	}
 
-	equal, err := cmp.SemanticEqual(&akoBCP.Spec, akov2.NewBCPFromAtlas(atlasBCP))
+	equal, err := cmp.SemanticEqual(akoBCP.Spec.DeepCopy(), akov2.NewBCPFromAtlas(atlasBCP))
 	if err != nil {
 		return b.terminate(workflow.Internal, err)
 	}
+	if equal {
+		lastApplied, ok := akoBCP.GetAnnotations()[customresource.AnnotationLastAppliedConfiguration]
+		if ok {
+			temp := &akov2.AtlasBackupCompliancePolicy{}
+			err = json.Unmarshal([]byte(lastApplied), temp)
+			if err != nil {
+				return b.terminate(workflow.Internal, err)
+			}
+			equal = (akoBCP.Spec.OverwriteBackupPolicies == temp.Spec.OverwriteBackupPolicies)
+		}
+	}
+
 	if !equal {
 		atlasBCP, _, err = b.ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
 		if err != nil {
