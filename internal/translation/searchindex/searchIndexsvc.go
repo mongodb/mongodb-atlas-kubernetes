@@ -59,7 +59,7 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 		return nil, fmt.Errorf("failed to create index: %w, status: %d", err, httpResp.StatusCode)
 	}
 	if resp == nil {
-		return nil, fmt.Errorf("returned an empty index as a result of creation")
+		return nil, errors.New("returned an empty index as a result of creation")
 	}
 	akoIndex, err := fromAtlas(*resp)
 	if err != nil {
