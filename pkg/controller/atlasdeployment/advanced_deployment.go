@@ -98,7 +98,7 @@ func (r *AtlasDeploymentReconciler) advancedDeploymentIdle(
 		}
 	}
 
-	searchService := searchindex.NewProductionAtlasSearch(ctx.SdkClient.AtlasSearchApi)
+	searchService := searchindex.NewSearchIndexes(ctx.SdkClient.AtlasSearchApi)
 	result := handleSearchIndexes(ctx, r.Client, searchService, deployment, project.ID())
 	if !result.IsOk() {
 		return atlasDeploymentAsAtlas, result

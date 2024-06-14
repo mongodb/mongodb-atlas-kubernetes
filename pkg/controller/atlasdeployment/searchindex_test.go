@@ -181,7 +181,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		mockSearchAPI.EXPECT().
 			CreateAtlasSearchIndexExecute(admin.CreateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
 			Return(nil, &http.Response{StatusCode: http.StatusOK}, nil)
-		atlasSearch := searchindex.NewProductionAtlasSearch(mockSearchAPI)
+		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
@@ -232,7 +232,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
-		atlasSearch := searchindex.NewProductionAtlasSearch(mockSearchAPI)
+		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
@@ -589,7 +589,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 				nil,
 				&http.Response{StatusCode: http.StatusCreated}, nil,
 			)
-		atlasSearch := searchindex.NewProductionAtlasSearch(mockSearchAPI)
+		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
 		testCluster := &akov2.AtlasDeployment{
 			TypeMeta: metav1.TypeMeta{},
@@ -646,7 +646,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 
 	t.Run("UPDATE: Must terminate if index equality can not be confirmed", func(t *testing.T) {
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
-		atlasSearch := searchindex.NewProductionAtlasSearch(mockSearchAPI)
+		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
 		testCluster := &akov2.AtlasDeployment{
 			TypeMeta: metav1.TypeMeta{},

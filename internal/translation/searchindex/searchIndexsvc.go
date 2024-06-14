@@ -7,11 +7,6 @@ import (
 	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
 var (
@@ -26,23 +21,15 @@ type AtlasSearchIdxService interface {
 	UpdateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error)
 }
 
-type ProductionAtlasSearch struct {
+type SearchIndexes struct {
 	searchAPI admin.AtlasSearchApi
 }
 
-func NewAtlasDatabaseUsersService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*ProductionAtlasSearch, error) {
-	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
-	if err != nil {
-		return nil, err
-	}
-	return NewProductionAtlasSearch(client.AtlasSearchApi), nil
+func NewSearchIndexes(api admin.AtlasSearchApi) *SearchIndexes {
+	return &SearchIndexes{searchAPI: api}
 }
 
-func NewProductionAtlasSearch(api admin.AtlasSearchApi) *ProductionAtlasSearch {
-	return &ProductionAtlasSearch{searchAPI: api}
-}
-
-func (si *ProductionAtlasSearch) GetIndex(ctx context.Context, projectID, clusterName, indexName, indexID string) (*SearchIndex, error) {
+func (si *SearchIndexes) GetIndex(ctx context.Context, projectID, clusterName, indexName, indexID string) (*SearchIndex, error) {
 	resp, httpResp, err := si.searchAPI.GetAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
 	if err != nil {
 		if httpResp.StatusCode == http.StatusNotFound {
@@ -62,7 +49,7 @@ func (si *ProductionAtlasSearch) GetIndex(ctx context.Context, projectID, cluste
 	return stateInAtlas, nil
 }
 
-func (si *ProductionAtlasSearch) CreateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
+func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
 	atlasIndex, err := index.toAtlas()
 	if err != nil {
 		return nil, err
@@ -81,7 +68,7 @@ func (si *ProductionAtlasSearch) CreateIndex(ctx context.Context, projectID, clu
 	return akoIndex, nil
 }
 
-func (si *ProductionAtlasSearch) DeleteIndex(ctx context.Context, projectID, clusterName, indexID string) error {
+func (si *SearchIndexes) DeleteIndex(ctx context.Context, projectID, clusterName, indexID string) error {
 	_, resp, err := si.searchAPI.DeleteAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusNotFound || err != nil {
 		return fmt.Errorf("failed to delete index: %w, status: %d", err, resp.StatusCode)
@@ -89,7 +76,7 @@ func (si *ProductionAtlasSearch) DeleteIndex(ctx context.Context, projectID, clu
 	return nil
 }
 
-func (si *ProductionAtlasSearch) UpdateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
+func (si *SearchIndexes) UpdateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
 	atlasIndex, err := index.toAtlas()
 	if err != nil {
 		return nil, fmt.Errorf("unable to convert index to AKO: %w", err)
