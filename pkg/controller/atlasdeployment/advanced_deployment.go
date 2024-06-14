@@ -19,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -97,7 +98,8 @@ func (r *AtlasDeploymentReconciler) advancedDeploymentIdle(
 		}
 	}
 
-	result := handleSearchIndexes(ctx, r.Client, deployment, project.ID())
+	searchService := searchindex.NewSearchIndexes(ctx.SdkClient.AtlasSearchApi)
+	result := handleSearchIndexes(ctx, r.Client, searchService, deployment, project.ID())
 	if !result.IsOk() {
 		return atlasDeploymentAsAtlas, result
 	}

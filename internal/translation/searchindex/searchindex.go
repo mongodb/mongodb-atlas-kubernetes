@@ -36,10 +36,10 @@ func (s *SearchIndex) GetStatus() string {
 	return pointer.GetOrDefault(s.Status, "")
 }
 
-// NewSearchIndexFromAKO requires both parts of search index: data-related part from a Deployment, and
+// NewSearchIndex requires both parts of search index: data-related part from a Deployment, and
 // index configuration represented in a separate CRD. Partial construction is disabled as it won't work
 // for comparing indexes between each other.
-func NewSearchIndexFromAKO(index *akov2.SearchIndex, config *akov2.AtlasSearchIndexConfigSpec) *SearchIndex {
+func NewSearchIndex(index *akov2.SearchIndex, config *akov2.AtlasSearchIndexConfigSpec) *SearchIndex {
 	if index == nil || config == nil {
 		return nil
 	}
@@ -49,9 +49,9 @@ func NewSearchIndexFromAKO(index *akov2.SearchIndex, config *akov2.AtlasSearchIn
 	}
 }
 
-// NewSearchIndexFromAtlas returns internal representation of the SearchIndex converted from Atlas
+// fromAtlas returns internal representation of the SearchIndex converted from Atlas
 // internals. It can return an error in case some fields are not valid JSON.
-func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, error) {
+func fromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, error) {
 	convertVectorFields := func(in *[]map[string]interface{}) (*apiextensionsv1.JSON, error) {
 		if in == nil {
 			return nil, nil
@@ -322,8 +322,8 @@ func (s *SearchIndex) Normalize() (*SearchIndex, error) {
 	return s, err
 }
 
-// ToAtlas converts internal SearchIndex representation to the Atlas structure used for API calls
-func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
+// toAtlas converts internal SearchIndex representation to the Atlas structure used for API calls
+func (s *SearchIndex) toAtlas() (*admin.ClusterSearchIndex, error) {
 	convertJSONToListOfMaps := func(in *apiextensionsv1.JSON) (*[]map[string]interface{}, error) {
 		if in == nil {
 			return nil, nil

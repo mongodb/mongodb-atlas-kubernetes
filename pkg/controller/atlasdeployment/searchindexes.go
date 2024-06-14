@@ -5,6 +5,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -44,21 +45,23 @@ func verifyAllIndexesNamesAreUnique(indexes []akov2.SearchIndex) bool {
 }
 
 type searchIndexesReconciler struct {
-	ctx        *workflow.Context
-	deployment *akov2.AtlasDeployment
-	k8sClient  client.Client
-	projectID  string
+	ctx           *workflow.Context
+	deployment    *akov2.AtlasDeployment
+	k8sClient     client.Client
+	projectID     string
+	searchService searchindex.AtlasSearchIdxService
 }
 
-func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
+func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, searchService searchindex.AtlasSearchIdxService, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
 	ctx.Log.Debug("starting indexes processing")
 	defer ctx.Log.Debug("finished indexes processing")
 
 	reconciler := &searchIndexesReconciler{
-		ctx:        ctx,
-		k8sClient:  k8sClient,
-		deployment: deployment,
-		projectID:  projectID,
+		ctx:           ctx,
+		k8sClient:     k8sClient,
+		deployment:    deployment,
+		projectID:     projectID,
+		searchService: searchService,
 	}
 
 	return reconciler.Reconcile()
@@ -106,11 +109,12 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	results := make([]workflow.Result, 0, len(allIndexes))
 	for indexName, val := range allIndexes {
 		results = append(results, (&searchIndexReconciler{
-			ctx:        sr.ctx,
-			deployment: sr.deployment,
-			k8sClient:  sr.k8sClient,
-			projectID:  sr.projectID,
-			indexName:  indexName,
+			ctx:           sr.ctx,
+			deployment:    sr.deployment,
+			k8sClient:     sr.k8sClient,
+			projectID:     sr.projectID,
+			indexName:     indexName,
+			searchService: sr.searchService,
 		}).Reconcile(val.spec, val.previous))
 	}
 
