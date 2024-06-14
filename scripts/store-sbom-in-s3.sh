@@ -9,6 +9,14 @@ set -euo pipefail
 # S3 bucket:                kubernetes-operators-sboms
 # Canonical path in bucket:
 # s3://kubernetes-operators-sboms/sboms/{lite|augmented}]/atlas-kubernetes-operator-linux-${arch}/${version}/linux-${arch}.json
+#
+# Usage:
+#  AWS_... SILK_ASSET_GROUP=... store_ ${VERSION} ${TARGET_ARCH}
+# Where:
+#   AWS_... means the AWS credentials for the mongodb-mms-testing account need to be present for S3 access to work
+#   SILK_ASSET_GROUP is the environment variable with the silk assert group common prefix
+#   VERSION is the version of the SBOM lites to store and expected from Silk
+#   TARGET_ARCH is the architecture to download from Silk
 ###
 
 # Constants
@@ -16,7 +24,9 @@ base_s3_dir="kubernetes-operators-sboms/sboms"
 
 # Arguments
 version=$1
+[ -z "${version}" ] && echo "Missing version parameter #1" && exit 1
 arch=$2
+[ -z "${arch}" ] && echo "Missing arch parameter #2" && exit 1
 
 # Environment inputs
 asset_group_prefix="${SILK_ASSET_GROUP}"

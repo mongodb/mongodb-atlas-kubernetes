@@ -3,9 +3,15 @@
 set -euo pipefail
 
 ###
-# This script is responsible for uploading SBOM lite assets to Silk
+# This script is responsible for uploading SBOM lite to Silk
 #
 # See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/commands/UPLOAD
+#
+# Usage:
+#  SILK_ASSET_GROUP=... store_ ${SBOM_JSON_LITE_PATH}
+# Where:
+#   SILK_ASSET_GROUP is the environment variable with the silk assert group common prefix
+#   SBOM_JSON_LITE_PATH is the path to the SBOM lite json file to upload to Silk
 ###
 
 # Constants
@@ -15,6 +21,7 @@ docker_platform="linux/amd64"
 
 # Arguments
 sbom_lite_json=$1
+[ -z "${sbom_lite_json}" ] && echo "Missing SBOM lite JSON path parameter" && exit 1
 
 # Environment inputs
 artifactory_usr="${ARTIFACTORY_USERNAME}"
