@@ -38,12 +38,12 @@ func (si *SearchIndexes) GetIndex(ctx context.Context, projectID, clusterName, i
 		return nil, err
 	}
 	if resp == nil {
-		return nil, fmt.Errorf("received an empty index. Index: %s(%s). Status code: %d, E: %w",
+		return nil, fmt.Errorf("got empty index %s(%s), status code %d: %w",
 			indexName, indexID, httpResp.StatusCode, err)
 	}
 	stateInAtlas, err := fromAtlas(*resp)
 	if err != nil {
-		return nil, fmt.Errorf("unable to convert index to AKO. Index: %s(%s, E: %w",
+		return nil, fmt.Errorf("unable to convert index %s(%s): %w",
 			indexName, indexID, err)
 	}
 	return stateInAtlas, nil
@@ -56,14 +56,14 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 	}
 	resp, httpResp, err := si.searchAPI.CreateAtlasSearchIndex(ctx, projectID, clusterName, atlasIndex).Execute()
 	if err != nil || httpResp.StatusCode != http.StatusCreated && httpResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to create index: %w, status: %d", err, httpResp.StatusCode)
+		return nil, fmt.Errorf("failed to create index, status code %d: %w", httpResp.StatusCode, err)
 	}
 	if resp == nil {
-		return nil, errors.New("returned an empty index as a result of creation")
+		return nil, errors.New("empty response when creating index.")
 	}
 	akoIndex, err := fromAtlas(*resp)
 	if err != nil {
-		return nil, fmt.Errorf("unable to convert index to AKO: %w", err)
+		return nil, fmt.Errorf("error converting index: %w", err)
 	}
 	return akoIndex, nil
 }
@@ -71,7 +71,7 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 func (si *SearchIndexes) DeleteIndex(ctx context.Context, projectID, clusterName, indexID string) error {
 	_, resp, err := si.searchAPI.DeleteAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusNotFound || err != nil {
-		return fmt.Errorf("failed to delete index: %w, status: %d", err, resp.StatusCode)
+		return fmt.Errorf("error deleting index, status code %d: %w", resp.StatusCode, err)
 	}
 	return nil
 }
@@ -79,18 +79,18 @@ func (si *SearchIndexes) DeleteIndex(ctx context.Context, projectID, clusterName
 func (si *SearchIndexes) UpdateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
 	atlasIndex, err := index.toAtlas()
 	if err != nil {
-		return nil, fmt.Errorf("unable to convert index to AKO: %w", err)
+		return nil, fmt.Errorf("error converting index: %w", err)
 	}
 	resp, httpResp, err := si.searchAPI.UpdateAtlasSearchIndex(ctx, projectID, clusterName, index.GetID(), atlasIndex).Execute()
 	if httpResp.StatusCode != http.StatusCreated && httpResp.StatusCode != http.StatusOK || err != nil {
-		return nil, fmt.Errorf("failed to update index: %w, status: %d", err, httpResp.StatusCode)
+		return nil, fmt.Errorf("error updating index, status code %d: %w", httpResp.StatusCode, err)
 	}
 	if resp == nil {
 		return nil, fmt.Errorf("update returned an empty index: %w", err)
 	}
 	akoIndex, err := fromAtlas(*resp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert updated index to AKO: %w", err)
+		return nil, fmt.Errorf("error converting index: %w", err)
 	}
 	return akoIndex, nil
 }
