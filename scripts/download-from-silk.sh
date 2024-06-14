@@ -3,15 +3,16 @@
 set -euo pipefail
 
 ###
-# This script is responsible for uploading SBOM lite to Silk
+# This script is responsible for downloading augmented SBOM assets from Silk
 #
-# See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/commands/UPLOAD
+# See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/commands/DOWNLOAD
 #
 # Usage:
-#  SILK_ASSET_GROUP=... store_ ${SBOM_JSON_LITE_PATH}
+#  SILK_ASSET_GROUP=... download-from-silk ${TARGET_ARCH} ${TARGET_DIR}
 # Where:
 #   SILK_ASSET_GROUP is the environment variable with the silk assert group common prefix
-#   SBOM_JSON_LITE_PATH is the path to the SBOM lite json file to upload to Silk
+#   TARGET_ARCH is the architecture to download from Silk
+#   TARGET_DIR is the local directory in where to place the Silk downloaded SBOMs
 ###
 
 # Constants
@@ -20,8 +21,10 @@ silkbomb_img="${registry}/silkbomb:1.0"
 docker_platform="linux/amd64"
 
 # Arguments
-sbom_lite_json=$1
-[ -z "${sbom_lite_json}" ] && echo "Missing SBOM lite JSON path parameter" && exit 1
+arch=$1
+[ -z "${arch}" ] && echo "Missing arch parameter #1" && exit 1
+target_dir=$2
+[ -z "${target_dir}" ] && echo "Missing target directory parameter #2" && exit 1
 
 # Environment inputs
 artifactory_usr="${ARTIFACTORY_USERNAME}"
@@ -31,17 +34,18 @@ client_secret="${SILK_CLIENT_SECRET}"
 asset_group_prefix="${SILK_ASSET_GROUP}"
 
 # Computed values
-arch=$(jq -r < "${sbom_lite_json}" '.components[0].properties[] | select( .name == "syft:metadata:architecture" ) | .value')
 asset_group="${asset_group_prefix}-linux-${arch}"
+target="${target_dir}/linux-${arch}.sbom.json"
 
 echo "Computed Silk Asset Group: ${asset_group}"
 
 # Login to docker registry
 echo "${artifactory_pwd}" |docker login "${registry}" -u "${artifactory_usr}" --password-stdin
 
-# Upload
+# Download
+mkdir -p "${target_dir}"
 docker run --platform="${docker_platform}" -it --rm -v "${PWD}":/pwd \
   -e SILK_CLIENT_ID="${client_id}" -e SILK_CLIENT_SECRET="${client_secret}" \
-  "${silkbomb_img}" upload --silk_asset_group "${asset_group}" --sbom_in "/pwd/${sbom_lite_json}"
+  "${silkbomb_img}" download -o "/pwd/${target}" --silk_asset_group "${asset_group}"
 
-echo "${sbom_lite_json} uploaded to Silk"
+echo "${target} downloaded from Silk"
