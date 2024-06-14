@@ -2,6 +2,15 @@
 
 set -euo pipefail
 
+###
+# This script is responsible for uploading both the augmented SBOM from Silk and SBOM lites in S3
+#
+# AWS account:              mongodb-mms-testing
+# S3 bucket:                kubernetes-operators-sboms
+# Canonical path in bucket:
+# s3://kubernetes-operators-sboms/sboms/{lite|augmented}]/atlas-kubernetes-operator-linux-${arch}/${version}/linux-${arch}.json
+###
+
 # Constants
 base_s3_dir="kubernetes-operators-sboms/sboms"
 

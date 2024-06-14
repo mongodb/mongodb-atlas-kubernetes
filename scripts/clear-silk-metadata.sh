@@ -2,14 +2,14 @@
 
 set -eou pipefail
 
+###
+# This script is responsible for clearing the Silk asset metadata
+#
+# See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/SILK
+###
 
 asset_group="$1"
 [ -z "${asset_group}" ] && echo "Missing asset_group def" && exit 1
-
-# if [ ! -f "${asset_group}.asset-group.json" ]; then
-#     echo "Missing ${asset_group}.asset-group.json"
-#     exit 1
-# fi
 
 
 if [ -f "$HOME/.silk.env" ]; then

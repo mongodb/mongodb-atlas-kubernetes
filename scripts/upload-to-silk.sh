@@ -2,6 +2,12 @@
 
 set -euo pipefail
 
+###
+# This script is responsible for uploading SBOM lite assets to Silk
+#
+# See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/commands/UPLOAD
+###
+
 # Constants
 registry=artifactory.corp.mongodb.com/release-tools-container-registry-local
 silkbomb_img="${registry}/silkbomb:1.0"
