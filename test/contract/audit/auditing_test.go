@@ -4,19 +4,20 @@ import (
 	"context"
 	_ "embed"
 	"log"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/contract"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/launcher"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/contract"
 )
 
 //go:embed test.yml
@@ -32,15 +33,13 @@ func TestMain(m *testing.M) {
 		return
 	}
 	l := launcher.NewFromEnv(testVersion)
-	if err := l.Launch(
+	l.Launch(
 		testYml,
-		launcher.WaitReady("atlasprojects/my-project", time.Minute)); err != nil {
-		log.Fatalf("Failed to launch test bed: %v", err)
-	}
+		launcher.WaitReady("atlasprojects/my-project", 30*time.Second))
 	if !control.Enabled("SKIP_CLEANUP") { // allow to reuse Atlas resources for local tests
 		defer l.Cleanup()
 	}
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func TestDefaultAuditingGet(t *testing.T) {
@@ -51,9 +50,9 @@ func TestDefaultAuditingGet(t *testing.T) {
 	result, err := as.Get(ctx, testProjectID)
 
 	require.NoError(t, err)
-	if string(result.AuditFilter.Raw) == "{}" {
-		// Support re-runs, as we cannot get the filter back to empty
-		result.AuditFilter.Raw = ([]byte)("")
+	if result.AuditFilter != nil && string(result.AuditFilter.Raw) == "{}" {
+		// Support re-runs, as we cannot get the filter back to unset
+		result.AuditFilter = nil
 	}
 	assert.Equal(t, defaultAtlasAuditing(), result)
 }
@@ -62,7 +61,7 @@ func defaultAtlasAuditing() *v1alpha1.AtlasAuditingConfig {
 	return &v1alpha1.AtlasAuditingConfig{
 		Enabled:                   false,
 		AuditAuthorizationSuccess: false,
-		AuditFilter:               literalJSON(""),
+		AuditFilter:               nil,
 	}
 }
 
@@ -76,7 +75,7 @@ func TestSyncs(t *testing.T) {
 			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               literalJSON("{}"), // must sent empty JSON to overwrite previous state
+				AuditFilter:               jsonType("{}"), // must sent empty JSON to overwrite previous state
 			},
 		},
 		{
@@ -84,7 +83,7 @@ func TestSyncs(t *testing.T) {
 			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               literalJSON("{}"),
+				AuditFilter:               jsonType("{}"),
 			},
 		},
 		{
@@ -92,7 +91,7 @@ func TestSyncs(t *testing.T) {
 			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               literalJSON(`{"atype":"authenticate"}`),
+				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
 			},
 		},
 		{
@@ -100,7 +99,7 @@ func TestSyncs(t *testing.T) {
 			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               literalJSON(`{"atype":"authenticate"}`),
+				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
 			},
 		},
 		{
@@ -108,7 +107,7 @@ func TestSyncs(t *testing.T) {
 			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               literalJSON(`{"atype":"authenticate"}`),
+				AuditFilter:               jsonType(`{"atype":"authenticate"}`),
 			},
 		},
 		{
@@ -116,7 +115,7 @@ func TestSyncs(t *testing.T) {
 			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               literalJSON("{}"),
+				AuditFilter:               jsonType("{}"),
 			},
 		},
 	}
@@ -145,6 +144,6 @@ func mustReadProjectID() string {
 	return output
 }
 
-func literalJSON(js string) *apiextensionsv1.JSON {
-	return &apiextensionsv1.JSON{Raw: ([]byte)(js)}
+func jsonType(js string) *apiextensionsv1.JSON {
+	return &apiextensionsv1.JSON{Raw: []byte(js)}
 }

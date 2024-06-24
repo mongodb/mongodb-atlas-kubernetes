@@ -83,22 +83,16 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	project := &akov2.AtlasProject{}
 	result := customresource.PrepareResource(ctx, r.Client, req, project, log)
-	if result.IsOk() {
-		return r.reconcilev2(project, result, ctx, req)
+	if !result.IsOk() {
+		return result.ReconcileResult(), nil
 	}
-
-	return result.ReconcileResult(), nil
-}
-
-func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result workflow.Result, ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	if customresource.ReconciliationShouldBeSkipped(project) {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasProject reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", project.Spec)
 		if !project.GetDeletionTimestamp().IsZero() {
 			err := customresource.ManageFinalizer(ctx, r.Client, project, customresource.UnsetFinalizer)
 			if err != nil {
-				result := workflow.Terminate(workflow.Internal, err.Error())
+				result = workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("Failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
