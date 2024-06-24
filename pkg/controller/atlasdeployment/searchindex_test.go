@@ -28,7 +28,7 @@ import (
 )
 
 func Test_searchIndexReconciler(t *testing.T) {
-	t.Run("CREATE: Must reconcile index to create", func(t *testing.T) {
+	t.Run("create: must reconcile index to create", func(t *testing.T) {
 		sch := runtime.NewScheme()
 		assert.Nil(t, akov2.AddToScheme(sch))
 		assert.Nil(t, corev1.AddToScheme(sch))
@@ -86,7 +86,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		fmt.Println(testCluster.Status)
 	})
 
-	t.Run("CREATE: Must return an error if API call returns anything but StatusCreated", func(t *testing.T) {
+	t.Run("create: must return an error if API call returns anything but StatusCreated", func(t *testing.T) {
 		sch := runtime.NewScheme()
 		assert.Nil(t, akov2.AddToScheme(sch))
 		assert.Nil(t, corev1.AddToScheme(sch))
@@ -143,7 +143,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
 
-	t.Run("CREATE: Must return an error if API call returns an empty index in response", func(t *testing.T) {
+	t.Run("create: must return an error if API call returns an empty index in response", func(t *testing.T) {
 		sch := runtime.NewScheme()
 		assert.Nil(t, akov2.AddToScheme(sch))
 		assert.Nil(t, corev1.AddToScheme(sch))
@@ -200,7 +200,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
 
-	t.Run("CREATE: Must return an error if index can not be converted internal index", func(t *testing.T) {
+	t.Run("create: must return an error if index can not be converted internal index", func(t *testing.T) {
 		sch := runtime.NewScheme()
 		assert.Nil(t, akov2.AddToScheme(sch))
 		assert.Nil(t, corev1.AddToScheme(sch))
@@ -251,7 +251,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
 
-	t.Run("DELETE: Must reconcile index to delete", func(t *testing.T) {
+	t.Run("delete: must reconcile index to delete", func(t *testing.T) {
 		sch := runtime.NewScheme()
 		assert.Nil(t, akov2.AddToScheme(sch))
 		assert.Nil(t, corev1.AddToScheme(sch))
@@ -309,7 +309,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		fmt.Println(testCluster.Status)
 	})
 
-	t.Run("DELETE: Must terminate if API call return anything but 202 or 404", func(t *testing.T) {
+	t.Run("delete: must terminate if API call return anything but 202 or 404", func(t *testing.T) {
 		sch := runtime.NewScheme()
 		assert.Nil(t, akov2.AddToScheme(sch))
 		assert.Nil(t, corev1.AddToScheme(sch))
@@ -366,7 +366,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
 
-	t.Run("DELETE: Must reconcile if AKO index ID is nil", func(t *testing.T) {
+	t.Run("delete: must reconcile if AKO index ID is nil", func(t *testing.T) {
 		sch := runtime.NewScheme()
 		assert.Nil(t, akov2.AddToScheme(sch))
 		assert.Nil(t, corev1.AddToScheme(sch))
@@ -415,7 +415,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, result.IsOk())
 	})
 
-	t.Run("Must return InProgress if index status is anything but ACTIVE", func(t *testing.T) {
+	t.Run("must return InProgress if index status is anything but ACTIVE", func(t *testing.T) {
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
 				Log:       zap.S(),
@@ -432,7 +432,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, result.IsInProgress())
 	})
 
-	t.Run("UPDATE: Must not call update API if indexes are equal", func(t *testing.T) {
+	t.Run("update: must not call update API if indexes are equal", func(t *testing.T) {
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
 				Log:       zap.S(),
@@ -455,7 +455,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, result.IsOk())
 	})
 
-	t.Run("UPDATE: Must trigger index update if state in AKO and in Atlas is different", func(t *testing.T) {
+	t.Run("update: must trigger index update if state in AKO and in Atlas is different", func(t *testing.T) {
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
 			UpdateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
@@ -516,7 +516,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, result.IsInProgress())
 	})
 
-	t.Run("UPDATE: Must terminate if API call returned anything but 201 or 200", func(t *testing.T) {
+	t.Run("update: must terminate if API call returned anything but 201 or 200", func(t *testing.T) {
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
 			UpdateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
@@ -578,7 +578,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
 
-	t.Run("UPDATE: Must terminate if API call returned an empty index", func(t *testing.T) {
+	t.Run("update: must terminate if API call returned an empty index", func(t *testing.T) {
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
 		mockSearchAPI.EXPECT().
 			UpdateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -644,7 +644,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
 
-	t.Run("UPDATE: Must terminate if index equality can not be confirmed", func(t *testing.T) {
+	t.Run("update: must terminate if index equality can not be confirmed", func(t *testing.T) {
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
@@ -702,45 +702,54 @@ func Test_searchIndexReconciler(t *testing.T) {
 		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexStatusError))
 	})
 
-	t.Run("DROP: Must clear if the index disappeared from Atlas", func(t *testing.T) {
+	t.Run("drop: must clear if the index disappeared from Atlas", func(t *testing.T) {
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
+		for _, tc := range []struct {
+			title          string
+			atlasIndexName string
+		}{
+			{
+				title:          "when name present",
+				atlasIndexName: "testIndex",
+			},
+			{
+				title:          "when name missing",
+				atlasIndexName: "",
+			},
+		} {
+			t.Run(tc.title, func(t *testing.T) {
+				testCluster := &akov2.AtlasDeployment{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "testDeployment",
+						Namespace: "testNamespace",
+					},
+					Spec: akov2.AtlasDeploymentSpec{
+						DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+							Name: "testDeploymentName",
+						},
+					},
+					Status: status.AtlasDeploymentStatus{},
+				}
 
-		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
-			Spec: akov2.AtlasDeploymentSpec{
-				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-					Name: "testDeploymentName",
-				},
-			},
-			Status: status.AtlasDeploymentStatus{},
+				reconciler := &searchIndexReconciler{
+					ctx: &workflow.Context{
+						Log:     zap.S(),
+						OrgID:   "testOrgID",
+						Context: context.Background(),
+					},
+					deployment:    testCluster,
+					k8sClient:     nil,
+					projectID:     "",
+					indexName:     "testIndexName",
+					searchService: atlasSearch,
+				}
+				result := reconciler.reconcileInternal(tc.atlasIndexName, nil, nil)
+				assert.True(t, result.IsOk())
+				assert.True(t, result.IsDeleted())
+				assert.Empty(t, reconciler.ctx.Conditions())
+			})
 		}
-
-		reconciler := &searchIndexReconciler{
-			ctx: &workflow.Context{
-				Log:     zap.S(),
-				OrgID:   "testOrgID",
-				Context: context.Background(),
-			},
-			deployment:    testCluster,
-			k8sClient:     nil,
-			projectID:     "",
-			indexName:     "testIndexName",
-			searchService: atlasSearch,
-		}
-		// In previous status, but not found in Atlas now
-		idxInAtlas := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-			},
-		}
-		result := reconciler.reconcileInternal(idxInAtlas.Name, nil, nil)
-		assert.True(t, result.IsOk())
-		assert.True(t, result.IsDeleted())
-		assert.Empty(t, reconciler.ctx.Conditions())
 	})
 }

@@ -79,7 +79,7 @@ func (sr *searchIndexReconciler) Reconcile(spec *akov2.SearchIndex, previous *st
 	return sr.reconcileInternal(name, stateInAKO, stateInAtlas)
 }
 
-func (sr *searchIndexReconciler) reconcileInternal(idxName string, stateInAKO, stateInAtlas *searchindex.SearchIndex) workflow.Result {
+func (sr *searchIndexReconciler) reconcileInternal(indexName string, stateInAKO, stateInAtlas *searchindex.SearchIndex) workflow.Result {
 	sr.ctx.Log.Debugf("starting reconciliation for index '%s'", sr.indexName)
 	defer sr.ctx.Log.Debugf("finished reconciliation for index '%s'", sr.indexName)
 
@@ -103,7 +103,7 @@ func (sr *searchIndexReconciler) reconcileInternal(idxName string, stateInAKO, s
 	case inAtlas && !inSpec:
 		return sr.delete(stateInAtlas)
 	default: // not in Atlas or K8s, only if removed from Atlas from elsewhere
-		return sr.deleted(idxName)
+		return sr.deleted(indexName)
 	}
 }
 
