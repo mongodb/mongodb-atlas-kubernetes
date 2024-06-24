@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/audit"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"

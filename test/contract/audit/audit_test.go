@@ -8,14 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/launcher"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/contract"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/launcher"
 )
 
 //go:embed test.yml
@@ -45,84 +46,83 @@ func TestMain(m *testing.M) {
 func TestDefaultAuditingGet(t *testing.T) {
 	testProjectID := mustReadProjectID()
 	ctx := context.Background()
-	as := audit.NewAuditLog(contract.MustVersionedClient(t, ctx).AuditingApi)
+	as := audit.NewFromAuditingAPI(contract.MustVersionedClient(t, ctx).AuditingApi)
 
 	result, err := as.Get(ctx, testProjectID)
 
 	require.NoError(t, err)
-	result.ConfigurationType = "" // Do not expect the returned  cfg type to match
-	if result.AuditFilter == "{}" {
+	if string(result.AuditFilter.Raw) == "{}" {
 		// Support re-runs, as we cannot get the filter back to empty
-		result.AuditFilter = ""
+		result.AuditFilter.Raw = ([]byte)("")
 	}
 	assert.Equal(t, defaultAtlasAuditing(), result)
 }
 
-func defaultAtlasAuditing() *audit.AuditConfig {
-	return &audit.AuditConfig{
+func defaultAtlasAuditing() *v1alpha1.AtlasAuditingConfig {
+	return &v1alpha1.AtlasAuditingConfig{
 		Enabled:                   false,
 		AuditAuthorizationSuccess: false,
-		AuditFilter:               "",
+		AuditFilter:               literalJSON(""),
 	}
 }
 
 func TestSyncs(t *testing.T) {
 	testCases := []struct {
 		title    string
-		auditing *audit.AuditConfig
+		auditing *v1alpha1.AtlasAuditingConfig
 	}{
 		{
 			title: "Just enabled",
-			auditing: &audit.AuditConfig{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               "{}", // must sent empty JSON to overwrite previous state
+				AuditFilter:               literalJSON("{}"), // must sent empty JSON to overwrite previous state
 			},
 		},
 		{
 			title: "Auth success logs as well",
-			auditing: &audit.AuditConfig{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               "{}",
+				AuditFilter:               literalJSON("{}"),
 			},
 		},
 		{
 			title: "With a filter",
-			auditing: &audit.AuditConfig{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				AuditFilter:               literalJSON(`{"atype":"authenticate"}`),
 			},
 		},
 		{
 			title: "With a filter and success logs",
-			auditing: &audit.AuditConfig{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				AuditFilter:               literalJSON(`{"atype":"authenticate"}`),
 			},
 		},
 		{
 			title: "All set but disabled",
-			auditing: &audit.AuditConfig{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: true,
-				AuditFilter:               `{"atype":"authenticate"}`,
+				AuditFilter:               literalJSON(`{"atype":"authenticate"}`),
 			},
 		},
 		{
 			title: "Default (disabled) case",
-			auditing: &audit.AuditConfig{
+			auditing: &v1alpha1.AtlasAuditingConfig{
 				Enabled:                   false,
 				AuditAuthorizationSuccess: false,
-				AuditFilter:               "{}",
+				AuditFilter:               literalJSON("{}"),
 			},
 		},
 	}
 	testProjectID := mustReadProjectID()
 	ctx := context.Background()
-	as := audit.NewAuditLog(contract.MustVersionedClient(t, ctx).AuditingApi)
+	as := audit.NewFromAuditingAPI(contract.MustVersionedClient(t, ctx).AuditingApi)
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
@@ -131,7 +131,6 @@ func TestSyncs(t *testing.T) {
 
 			result, err := as.Get(ctx, testProjectID)
 			require.NoError(t, err)
-			result.ConfigurationType = "" // Do not expect the returned  cfg type to match
 			assert.Equal(t, tc.auditing, result)
 		})
 	}
@@ -144,4 +143,8 @@ func mustReadProjectID() string {
 		log.Fatalf("Failed to get test project id: %v", err)
 	}
 	return output
+}
+
+func literalJSON(js string) *apiextensionsv1.JSON {
+	return &apiextensionsv1.JSON{Raw: ([]byte)(js)}
 }

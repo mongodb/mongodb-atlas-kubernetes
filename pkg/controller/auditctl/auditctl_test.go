@@ -20,7 +20,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translayer/audit"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/auditctl"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"

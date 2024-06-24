@@ -1,57 +1,39 @@
 package audit
 
 import (
-	"fmt"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 )
 
-type AuditingConfigType string
-
-const (
-	None          AuditingConfigType = "NONE"
-	FilterBuilder AuditingConfigType = "FILTER_BUILDER"
-	FilterJSON    AuditingConfigType = "FILTER_JSON"
-)
-
-// AuditConfig represents the Atlas Project audit log config
-type AuditConfig struct {
-	Enabled                   bool
-	AuditAuthorizationSuccess bool
-	ConfigurationType         AuditingConfigType
-	AuditFilter               string
-}
-
-func toAtlas(auditing *AuditConfig) *admin.AuditLog {
+func toAtlas(cfg *v1alpha1.AtlasAuditingConfig) *admin.AuditLog {
 	return &admin.AuditLog{
-		Enabled:                   pointer.MakePtr(auditing.Enabled),
-		AuditAuthorizationSuccess: pointer.MakePtr(auditing.AuditAuthorizationSuccess),
-		AuditFilter:               pointer.MakePtr(auditing.AuditFilter),
-		// ConfigurationType is not set on the PATCH operation to Atlas
+		Enabled:                   pointer.MakePtr(cfg.Enabled),
+		AuditAuthorizationSuccess: pointer.MakePtr(cfg.AuditAuthorizationSuccess),
+		AuditFilter:               pointer.MakePtr(jsonToAtlas(cfg.AuditFilter)),
 	}
 }
 
-func fromAtlas(auditLog *admin.AuditLog) (*AuditConfig, error) {
-	cfgType, err := configTypeFromAtlas(auditLog.ConfigurationType)
-	if err != nil {
-		return nil, err
-	}
-	return &AuditConfig{
+func fromAtlas(auditLog *admin.AuditLog) *v1alpha1.AtlasAuditingConfig {
+	return &v1alpha1.AtlasAuditingConfig{
 		Enabled:                   pointer.GetOrDefault(auditLog.Enabled, false),
 		AuditAuthorizationSuccess: pointer.GetOrDefault(auditLog.AuditAuthorizationSuccess, false),
-		ConfigurationType:         cfgType,
-		AuditFilter:               pointer.GetOrDefault(auditLog.AuditFilter, ""),
-	}, nil
+		AuditFilter:               jsonFromAtlas(auditLog.AuditFilter),
+	}
 }
 
-func configTypeFromAtlas(configType *string) (AuditingConfigType, error) {
-	ct := pointer.GetOrDefault(configType, string(None))
-	switch ct {
-	case string(None), string(FilterBuilder), string(FilterJSON):
-		return AuditingConfigType(ct), nil
-	default:
-		return AuditingConfigType(ct), fmt.Errorf("unsupported Auditing Config type %q", ct)
+func jsonToAtlas(js *apiextensionsv1.JSON) string {
+	if js == nil {
+		return ""
 	}
+	return string(js.Raw)
+}
+
+func jsonFromAtlas(js *string) *apiextensionsv1.JSON {
+	if js == nil {
+		return nil
+	}
+	return &apiextensionsv1.JSON{Raw: ([]byte)(*js)}
 }
