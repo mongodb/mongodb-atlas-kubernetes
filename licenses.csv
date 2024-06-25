@@ -40,7 +40,7 @@ github.com/go-logr/zapr,https://github.com/go-logr/zapr/blob/v1.3.0/LICENSE,Apac
 github.com/go-openapi/jsonpointer,https://github.com/go-openapi/jsonpointer/blob/v0.19.6/LICENSE,Apache-2.0
 github.com/go-openapi/jsonreference,https://github.com/go-openapi/jsonreference/blob/v0.20.2/LICENSE,Apache-2.0
 github.com/go-openapi/swag,https://github.com/go-openapi/swag/blob/v0.22.3/LICENSE,Apache-2.0
-github.com/go-test/deep,https://github.com/go-test/deep/blob/v1.1.0/LICENSE,MIT
+github.com/go-test/deep,https://github.com/go-test/deep/blob/v1.1.1/LICENSE,MIT
 github.com/gogo/protobuf,https://github.com/gogo/protobuf/blob/v1.3.2/LICENSE,BSD-3-Clause
 github.com/golang-jwt/jwt/v4,https://github.com/golang-jwt/jwt/blob/v4.5.0/LICENSE,MIT
 github.com/golang-jwt/jwt/v5,https://github.com/golang-jwt/jwt/blob/v5.2.1/LICENSE,MIT
