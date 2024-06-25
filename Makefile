@@ -210,6 +210,7 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/v1/..." output:crd:artifacts:config=config/crd/bases
+	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/v1alpha1/..." output:crd:artifacts:config=config/crd/experimental/bases
 	@./scripts/split_roles_yaml.sh
 
 golangci-lint:
@@ -242,7 +243,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
+	@which controller-gen || go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
 
 .PHONY: generate
 generate: controller-gen ${GO_SOURCES} ## Generate code

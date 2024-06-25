@@ -29,7 +29,7 @@ const (
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
-func PrepareResource(ctx context.Context, client client.Client, request reconcile.Request, resource api.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
+func PrepareResource(ctx context.Context, client client.Reader, request reconcile.Request, resource api.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
 	err := client.Get(ctx, request.NamespacedName, resource)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
