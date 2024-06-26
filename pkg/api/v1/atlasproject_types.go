@@ -124,6 +124,10 @@ type AtlasProjectSpec struct {
 	// Teams enable you to grant project access roles to multiple users.
 	// +optional
 	Teams []Team `json:"teams,omitempty"`
+
+	// BackupCompliancePolicyRef is a reference to the backup compliance CR.
+	// +optional
+	BackupCompliancePolicyRef *common.ResourceRefNamespaced `json:"backupCompliancePolicyRef,omitempty"`
 }
 
 const hiddenField = "*** redacted ***"
@@ -263,6 +267,20 @@ func (p *AtlasProject) WithConnectionSecret(name string) *AtlasProject {
 func (p *AtlasProject) WithConnectionSecretNamespaced(name, namespace string) *AtlasProject {
 	if name != "" {
 		p.Spec.ConnectionSecret = &common.ResourceRefNamespaced{Name: name, Namespace: namespace}
+	}
+	return p
+}
+
+func (p *AtlasProject) WithBackupCompliancePolicy(name string) *AtlasProject {
+	if name != "" {
+		p.Spec.BackupCompliancePolicyRef = &common.ResourceRefNamespaced{Name: name, Namespace: p.Namespace}
+	}
+	return p
+}
+
+func (p *AtlasProject) WithBackupCompliancePolicyNamespaced(name, namespace string) *AtlasProject {
+	if name != "" {
+		p.Spec.BackupCompliancePolicyRef = &common.ResourceRefNamespaced{Name: name, Namespace: namespace}
 	}
 	return p
 }

@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,9 +18,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -537,4 +540,68 @@ func TestHasDependencies(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, ok)
 	})
+}
+
+func TestFindProjectsForBCP(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasDeployment{},
+			want: nil,
+		},
+		{
+			name: "test",
+			obj: &akov2.AtlasBackupCompliancePolicy{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-bcp", Namespace: "ns1"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns2"},
+					Spec: akov2.AtlasProjectSpec{
+						BackupCompliancePolicyRef: &common.ResourceRefNamespaced{Name: "test-bcp", Namespace: "ns1"},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-2", Namespace: "ns247"},
+					Spec: akov2.AtlasProjectSpec{
+						BackupCompliancePolicyRef: &common.ResourceRefNamespaced{Name: "test-bcp", Namespace: "ns1"},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-3", Namespace: "ns1"},
+					Spec: akov2.AtlasProjectSpec{
+						BackupCompliancePolicyRef: &common.ResourceRefNamespaced{Name: "different-test-bcp", Namespace: "ns1"},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "test-project", Namespace: "ns2"}},
+				{NamespacedName: types.NamespacedName{Name: "test-project-2", Namespace: "ns247"}},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			projectIndexer := indexer.NewAtlasProjectByBackupCompliancePolicyIndexer(zaptest.NewLogger(t))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(projectIndexer.Object(), projectIndexer.Name(), projectIndexer.Keys).
+				Build()
+			reconciler := &AtlasProjectReconciler{
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
+			}
+			got := reconciler.findProjectsForBCP(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", got, tc.want)
+			}
+		})
+	}
 }

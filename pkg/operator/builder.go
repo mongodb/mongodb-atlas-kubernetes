@@ -23,6 +23,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasbackupcompliancepolicy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
@@ -282,6 +283,17 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 	)
 	if err = searchINdexReconciler.SetupWithManager(mgr); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasSearchIndexConfig: %w", err)
+	}
+
+	bcpReconciler := atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(
+		mgr,
+		b.predicates,
+		b.atlasProvider,
+		b.deletionProtection,
+		b.logger,
+	)
+	if err = bcpReconciler.SetupWithManager(mgr); err != nil {
+		return nil, fmt.Errorf("unable to create controller AtlasBackupCompliancePolicy: %w", err)
 	}
 
 	return mgr, nil

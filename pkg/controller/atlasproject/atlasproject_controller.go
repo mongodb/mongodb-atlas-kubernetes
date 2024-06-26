@@ -28,11 +28,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -340,6 +343,11 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
+	if result = r.ensureBackupCompliance(workflowCtx, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(api.BackupComplianceReadyType), "")
+	}
+	results = append(results, result)
+
 	return results
 }
 
@@ -379,6 +387,11 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&akov2.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
 		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(&r.DeprecatedResourceWatcher)).
+		Watches(
+			&akov2.AtlasBackupCompliancePolicy{},
+			handler.EnqueueRequestsFromMapFunc(r.findProjectsForBCP),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
 		Complete(r)
 }
 
@@ -399,6 +412,42 @@ func NewAtlasProjectReconciler(
 		AtlasProvider:             atlasProvider,
 		ObjectDeletionProtection:  deletionProtection,
 	}
+}
+
+func (r *AtlasProjectReconciler) findProjectsForBCP(ctx context.Context, obj client.Object) []reconcile.Request {
+	bcp, ok := obj.(*akov2.AtlasBackupCompliancePolicy)
+	if !ok {
+		r.Log.Warnf("watching AtlasBackupCompliancePolicy but got %T", obj)
+		return nil
+	}
+
+	projects := &akov2.AtlasProjectList{}
+	listOpts := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasProjectByBackupCompliancePolicyIndex,
+			client.ObjectKeyFromObject(bcp).String(),
+		),
+	}
+	err := r.Client.List(ctx, projects, listOpts)
+	if err != nil {
+		r.Log.Errorf("failed to list Atlas projects: %e", err)
+		return []reconcile.Request{}
+	}
+
+	requests := make([]reconcile.Request, 0, len(projects.Items))
+	for i := range projects.Items {
+		item := projects.Items[i]
+		requests = append(
+			requests,
+			reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      item.Name,
+					Namespace: item.Namespace,
+				},
+			},
+		)
+	}
+	return requests
 }
 
 // setCondition sets the condition from the result and logs the warnings

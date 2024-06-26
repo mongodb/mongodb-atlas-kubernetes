@@ -49,6 +49,7 @@ const (
 	ProjectCustomRolesReadyType       ConditionType = "ProjectCustomRolesReady"
 	ProjectTeamsReadyType             ConditionType = "ProjectTeamsReady"
 	SearchIndexesReadyType            ConditionType = "AtlasSearchIndexesReady"
+	BackupComplianceReadyType         ConditionType = "BackupCompliancePolicyReady"
 )
 
 // AtlasDeployment condition types

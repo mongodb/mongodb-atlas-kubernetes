@@ -45,6 +45,15 @@ const (
 	ProjectTeamUnavailable                     ConditionReason = "ProjectTeamUnavailable"
 )
 
+// Atlas Backup Compliance Policy reasons
+const (
+	ProjectBackupCompliancePolicyNotMet            ConditionReason = "ProjectBackupCompliancePolicyNotMet"
+	ProjectBackupCompliancePolicyNotCreatedInAtlas ConditionReason = "ProjectBackupCompliancePolicyNotCreatedInAtlas"
+	ProjectBackupCompliancePolicyCannotDelete      ConditionReason = "ProjectBackupCompliancePolicyCannotDelete"
+	ProjectBackupCompliancePolicyUpdating          ConditionReason = "ProjectBackupCompliancePolicyUpdating"
+	ProjectBackupCompliancePolicyOperationAborted  ConditionReason = "ProjectBackupCompliancePolicyOperationAborted"
+)
+
 // Atlas Deployment reasons
 const (
 	DeploymentNotCreatedInAtlas           ConditionReason = "DeploymentNotCreatedInAtlas"

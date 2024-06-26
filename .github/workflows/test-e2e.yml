@@ -180,6 +180,7 @@ jobs:
             "reconcile-all",
             "reconcile-one",
             "reconcile-two",
+            "backup-compliance",
           ]
     steps:
       - name: Get repo files from cache
