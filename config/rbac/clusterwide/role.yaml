@@ -2,7 +2,6 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
 - apiGroups:
@@ -24,6 +23,26 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackupcompliancepolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackupcompliancepolicies/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - atlas.mongodb.com
   resources:
@@ -127,6 +146,26 @@ rules:
 - apiGroups:
   - atlas.mongodb.com
   resources:
+  - atlasfederatedauths
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasfederatedauths/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
   - atlasprojects
   verbs:
   - create
@@ -140,6 +179,66 @@ rules:
   - atlas.mongodb.com
   resources:
   - atlasprojects/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlassearchindexconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlassearchindexconfigs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasstreamconnections
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasstreamconnections/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasstreaminstances
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasstreaminstances/status
   verbs:
   - get
   - patch
@@ -164,84 +263,3 @@ rules:
   - get
   - patch
   - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasfederatedauths
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasfederatedauths/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-    - atlas.mongodb.com
-  resources:
-    - atlasstreamconnections
-  verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
-- apiGroups:
-    - atlas.mongodb.com
-  resources:
-    - atlasstreamconnections/status
-  verbs:
-    - get
-    - patch
-    - update
-- apiGroups:
-    - atlas.mongodb.com
-  resources:
-    - atlasstreaminstances
-  verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
-- apiGroups:
-    - atlas.mongodb.com
-  resources:
-    - atlasstreaminstances/status
-  verbs:
-    - get
-    - patch
-    - update
-
-- apiGroups:
-    - atlas.mongodb.com
-  resources:
-    - atlassearchindexconfigs
-  verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
-- apiGroups:
-    - atlas.mongodb.com
-  resources:
-    - atlassearchindexconfigs/status
-  verbs:
-    - get
-    - patch
-    - update
