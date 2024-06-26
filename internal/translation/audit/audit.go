@@ -30,7 +30,8 @@ func (s *AuditLog) Get(ctx context.Context, projectID string) (*AuditConfig, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to get audit log from Atlas: %w", err)
 	}
-	return fromAtlas(auditLog)
+
+	return fromAtlas(auditLog), nil
 }
 
 // Set an Atlas Project audit log configuration
