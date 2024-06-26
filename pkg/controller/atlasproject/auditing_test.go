@@ -6,23 +6,20 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -33,6 +30,21 @@ func TestAuditController_reconcile(t *testing.T) {
 		expectedResult     workflow.Result
 		expectedConditions []api.Condition
 	}{
+		"should unmanage audit config when unset on both Atlas and AKO": {
+			service: &translation.AuditLogMock{
+				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
+					return &audit.AuditConfig{
+						Auditing: &akov2.Auditing{
+							AuditFilter: "{}",
+						},
+						ConfigurationType: audit.ConfigTypeNone,
+					}, nil
+				},
+			},
+			audit:              nil,
+			expectedResult:     workflow.OK(),
+			expectedConditions: []api.Condition{},
+		},
 		"should fail to retrieve audit config from Atlas": {
 			service: &translation.AuditLogMock{
 				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
@@ -51,7 +63,7 @@ func TestAuditController_reconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
 					return &audit.AuditConfig{
 						Auditing:          &akov2.Auditing{},
-						ConfigurationType: audit.None,
+						ConfigurationType: audit.ConfigTypeNone,
 					}, nil
 				},
 				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
@@ -73,7 +85,7 @@ func TestAuditController_reconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
 					return &audit.AuditConfig{
 						Auditing:          &akov2.Auditing{},
-						ConfigurationType: audit.None,
+						ConfigurationType: audit.ConfigTypeNone,
 					}, nil
 				},
 				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
@@ -93,13 +105,11 @@ func TestAuditController_reconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
 					return &audit.AuditConfig{
 						Auditing: &akov2.Auditing{
-							Enabled: true,
+							Enabled:     true,
+							AuditFilter: "{}",
 						},
-						ConfigurationType: audit.None,
+						ConfigurationType: audit.ConfigTypeJSON,
 					}, nil
-				},
-				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
-					return nil
 				},
 			},
 			audit: &akov2.Auditing{
@@ -115,7 +125,7 @@ func TestAuditController_reconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
 					return &audit.AuditConfig{
 						Auditing:          &akov2.Auditing{},
-						ConfigurationType: audit.None,
+						ConfigurationType: audit.ConfigTypeNone,
 					}, nil
 				},
 				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
@@ -132,7 +142,7 @@ func TestAuditController_reconcile(t *testing.T) {
 						Auditing: &akov2.Auditing{
 							Enabled: true,
 						},
-						ConfigurationType: audit.None,
+						ConfigurationType: audit.ConfigTypeNone,
 					}, nil
 				},
 				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
