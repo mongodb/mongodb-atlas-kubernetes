@@ -37,7 +37,6 @@ func TestAuditController_reconcile(t *testing.T) {
 						Auditing: &akov2.Auditing{
 							AuditFilter: "{}",
 						},
-						ConfigurationType: audit.ConfigTypeNone,
 					}, nil
 				},
 			},
@@ -62,8 +61,7 @@ func TestAuditController_reconcile(t *testing.T) {
 			service: &translation.AuditLogMock{
 				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
 					return &audit.AuditConfig{
-						Auditing:          &akov2.Auditing{},
-						ConfigurationType: audit.ConfigTypeNone,
+						Auditing: &akov2.Auditing{},
 					}, nil
 				},
 				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
@@ -84,8 +82,7 @@ func TestAuditController_reconcile(t *testing.T) {
 			service: &translation.AuditLogMock{
 				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
 					return &audit.AuditConfig{
-						Auditing:          &akov2.Auditing{},
-						ConfigurationType: audit.ConfigTypeNone,
+						Auditing: &akov2.Auditing{},
 					}, nil
 				},
 				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
@@ -108,7 +105,6 @@ func TestAuditController_reconcile(t *testing.T) {
 							Enabled:     true,
 							AuditFilter: "{}",
 						},
-						ConfigurationType: audit.ConfigTypeJSON,
 					}, nil
 				},
 			},
@@ -124,8 +120,7 @@ func TestAuditController_reconcile(t *testing.T) {
 			service: &translation.AuditLogMock{
 				GetFunc: func(projectID string) (*audit.AuditConfig, error) {
 					return &audit.AuditConfig{
-						Auditing:          &akov2.Auditing{},
-						ConfigurationType: audit.ConfigTypeNone,
+						Auditing: &akov2.Auditing{},
 					}, nil
 				},
 				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
@@ -142,7 +137,6 @@ func TestAuditController_reconcile(t *testing.T) {
 						Auditing: &akov2.Auditing{
 							Enabled: true,
 						},
-						ConfigurationType: audit.ConfigTypeNone,
 					}, nil
 				},
 				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {

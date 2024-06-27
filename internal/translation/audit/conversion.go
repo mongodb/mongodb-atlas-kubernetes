@@ -9,25 +9,17 @@ import (
 type AuditingConfigType string
 
 const (
-	ConfigTypeNone    AuditingConfigType = "NONE"
-	ConfigTypeBuilder AuditingConfigType = "FILTER_BUILDER"
-	ConfigTypeJSON    AuditingConfigType = "FILTER_JSON"
-	FilterDefault                        = "{}"
+	FilterDefault = "{}"
 )
 
 // AuditConfig represents the Atlas Project audit log config
 type AuditConfig struct {
 	*akov2.Auditing
-
-	ConfigurationType AuditingConfigType
 }
 
 func NewAuditConfig(auditConfig *akov2.Auditing) *AuditConfig {
-	configType := ConfigTypeJSON
-
 	if auditConfig == nil {
 		auditConfig = &akov2.Auditing{}
-		configType = ConfigTypeNone
 	}
 
 	if auditConfig.AuditFilter == "" {
@@ -35,8 +27,7 @@ func NewAuditConfig(auditConfig *akov2.Auditing) *AuditConfig {
 	}
 
 	return &AuditConfig{
-		Auditing:          auditConfig,
-		ConfigurationType: configType,
+		Auditing: auditConfig,
 	}
 }
 
@@ -52,6 +43,7 @@ func toAtlas(auditing *AuditConfig) *admin.AuditLog {
 
 func fromAtlas(auditLog *admin.AuditLog) *AuditConfig {
 	auditFilter := FilterDefault
+
 	if auditLog.GetAuditFilter() != "" {
 		auditFilter = auditLog.GetAuditFilter()
 	}
@@ -62,21 +54,5 @@ func fromAtlas(auditLog *admin.AuditLog) *AuditConfig {
 			AuditAuthorizationSuccess: auditLog.GetAuditAuthorizationSuccess(),
 			AuditFilter:               auditFilter,
 		},
-		ConfigurationType: configTypeFromAtlas(auditLog),
-	}
-}
-
-func configTypeFromAtlas(auditLog *admin.AuditLog) AuditingConfigType {
-	ct := AuditingConfigType(auditLog.GetConfigurationType())
-
-	switch ct {
-	case ConfigTypeNone, ConfigTypeBuilder, ConfigTypeJSON:
-		return ct
-	default:
-		if auditLog.GetAuditFilter() == FilterDefault {
-			return ConfigTypeJSON
-		}
-
-		return ConfigTypeNone
 	}
 }
