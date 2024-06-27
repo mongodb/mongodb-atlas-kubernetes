@@ -103,7 +103,8 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, project, log, ctx)
+	conditions := akov2.InitCondition(project, api.FalseCondition(api.ReadyType))
+	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
 	if project.ConnectionSecretObjectKey() != nil {

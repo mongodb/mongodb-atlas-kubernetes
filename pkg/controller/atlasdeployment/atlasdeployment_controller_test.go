@@ -48,6 +48,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -456,7 +457,8 @@ func newTestDeploymentEnv(t *testing.T,
 	r := testDeploymentReconciler(logger, k8sclient, protected)
 
 	prevResult := testPrevResult()
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, deployment, logger, context.Background())
+	conditions := akov2.InitCondition(deployment, api.FalseCondition(api.ReadyType))
+	workflowCtx := workflow.NewContext(logger, conditions, context.Background())
 	workflowCtx.Client = atlasClient
 	return &testDeploymentEnv{
 		reconciler:  r,

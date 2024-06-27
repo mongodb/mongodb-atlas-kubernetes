@@ -52,7 +52,7 @@ func TestInitCondition(t *testing.T) {
 		want             []api.Condition
 	}{
 		{
-			name: "keep condition",
+			name: "do not keep condition",
 			resource: &resource{
 				conditions: []api.Condition{
 					{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "untouched"},
@@ -60,7 +60,7 @@ func TestInitCondition(t *testing.T) {
 			},
 			defaultCondition: api.Condition{Type: api.ReadyType, Status: corev1.ConditionFalse, Message: "default"},
 			want: []api.Condition{
-				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "untouched"},
+				{Type: api.ReadyType, Status: corev1.ConditionFalse, Message: "default"},
 			},
 		},
 		{

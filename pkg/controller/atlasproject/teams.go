@@ -10,7 +10,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -198,7 +197,8 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	}
 
 	log := r.Log.With("atlasteam", teamRef)
-	teamCtx := customresource.MarkReconciliationStarted(r.Client, team, log, ctx.Context)
+	conditions := akov2.InitCondition(team, api.FalseCondition(api.ReadyType))
+	teamCtx := workflow.NewContext(log, conditions, ctx.Context)
 
 	atlasClient, orgID, err := r.AtlasProvider.Client(teamCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {

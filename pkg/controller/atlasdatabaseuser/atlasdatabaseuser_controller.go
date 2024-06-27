@@ -85,7 +85,8 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, databaseUser, log, ctx)
+	conditions := akov2.InitCondition(databaseUser, api.FalseCondition(api.ReadyType))
+	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", databaseUser.Spec, "status", databaseUser.Status)
 	if databaseUser.Spec.PasswordSecret != nil {
 		workflowCtx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: "Secret", Resource: *databaseUser.PasswordSecretObjectKey()})
