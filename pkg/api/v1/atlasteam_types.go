@@ -29,7 +29,10 @@ var _ api.AtlasCustomResource = &AtlasTeam{}
 
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Atlas ID",type=string,JSONPath=`.status.id`
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=atlas,shortName=at
 
 // AtlasTeam is the Schema for the Atlas Teams API
 type AtlasTeam struct {

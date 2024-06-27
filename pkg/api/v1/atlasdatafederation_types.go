@@ -131,8 +131,10 @@ var _ api.AtlasCustomResource = &AtlasDataFederation{}
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
+// +kubebuilder:resource:categories=atlas,shortName=adf
 
 // AtlasDataFederation is the Schema for the Atlas Data Federation API
 type AtlasDataFederation struct {

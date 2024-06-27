@@ -532,6 +532,10 @@ var _ api.AtlasCustomResource = &AtlasDeployment{}
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Atlas State",type=string,JSONPath=`.status.stateName`
+// +kubebuilder:printcolumn:name="MongoDB Version",type=string,JSONPath=`.status.mongoDBVersion`
+// +kubebuilder:resource:categories=atlas,shortName=ad
 
 // AtlasDeployment is the Schema for the atlasdeployments API
 type AtlasDeployment struct {

@@ -12,10 +12,15 @@ func init() {
 	SchemeBuilder.Register(&AtlasSearchIndexConfig{}, &AtlasSearchIndexConfigList{})
 }
 
-// AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=atlas,shortName=asic
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+//
+// AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
+//
+//nolint:stylecheck
 type AtlasSearchIndexConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

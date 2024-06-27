@@ -64,6 +64,8 @@ type StreamsKafkaSecurity struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:categories=atlas,shortName=asc
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 
 // AtlasStreamConnection is the Schema for the atlasstreamconnections API
 type AtlasStreamConnection struct {

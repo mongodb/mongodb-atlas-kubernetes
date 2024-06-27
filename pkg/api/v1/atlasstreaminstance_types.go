@@ -39,6 +39,9 @@ type Config struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Atlas ID",type=string,JSONPath=`.status.id`
+// +kubebuilder:resource:categories=atlas,shortName=asi
 
 // AtlasStreamInstance is the Schema for the atlasstreaminstances API
 type AtlasStreamInstance struct {

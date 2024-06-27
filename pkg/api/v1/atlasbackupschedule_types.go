@@ -88,9 +88,14 @@ type CopySetting struct {
 
 var _ api.AtlasCustomResource = &AtlasBackupSchedule{}
 
-// AtlasBackupSchedule is the Schema for the atlasbackupschedules API
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=atlas,shortName=abs
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+//
+// AtlasBackupSchedule is the Schema for the atlasbackupschedules API
+//
+//nolint:stylecheck
 type AtlasBackupSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

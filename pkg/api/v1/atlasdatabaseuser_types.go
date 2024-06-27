@@ -117,8 +117,11 @@ var _ api.AtlasCustomResource = &AtlasDatabaseUser{}
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Username",type=string,JSONPath=`.spec.username`
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
+// +kubebuilder:resource:categories=atlas,shortName=adu
 
 // AtlasDatabaseUser is the Schema for the Atlas Database User API
 type AtlasDatabaseUser struct {
