@@ -5,11 +5,6 @@ import (
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
 // AuditLogService is the interface exposed by this translation layer over
@@ -24,15 +19,6 @@ type AuditLog struct {
 	auditAPI admin.AuditingApi
 }
 
-// NewAuditLogService creates an AuditLog from credentials and the atlas provider
-func NewAuditLogService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*AuditLog, error) {
-	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
-	if err != nil {
-		return nil, err
-	}
-	return NewAuditLog(client.AuditingApi), nil
-}
-
 // NewAuditLog wraps the SDK AuditingApi as an AuditLog
 func NewAuditLog(api admin.AuditingApi) *AuditLog {
 	return &AuditLog{auditAPI: api}
@@ -44,7 +30,8 @@ func (s *AuditLog) Get(ctx context.Context, projectID string) (*AuditConfig, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to get audit log from Atlas: %w", err)
 	}
-	return fromAtlas(auditLog)
+
+	return fromAtlas(auditLog), nil
 }
 
 // Set an Atlas Project audit log configuration

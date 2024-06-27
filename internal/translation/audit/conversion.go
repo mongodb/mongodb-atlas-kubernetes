@@ -1,57 +1,58 @@
 package audit
 
 import (
-	"fmt"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 type AuditingConfigType string
 
 const (
-	None          AuditingConfigType = "NONE"
-	FilterBuilder AuditingConfigType = "FILTER_BUILDER"
-	FilterJSON    AuditingConfigType = "FILTER_JSON"
+	FilterDefault = "{}"
 )
 
 // AuditConfig represents the Atlas Project audit log config
 type AuditConfig struct {
-	Enabled                   bool
-	AuditAuthorizationSuccess bool
-	ConfigurationType         AuditingConfigType
-	AuditFilter               string
+	*akov2.Auditing
+}
+
+func NewAuditConfig(auditConfig *akov2.Auditing) *AuditConfig {
+	if auditConfig == nil {
+		auditConfig = &akov2.Auditing{}
+	}
+
+	if auditConfig.AuditFilter == "" {
+		auditConfig.AuditFilter = FilterDefault
+	}
+
+	return &AuditConfig{
+		Auditing: auditConfig,
+	}
 }
 
 func toAtlas(auditing *AuditConfig) *admin.AuditLog {
-	return &admin.AuditLog{
-		Enabled:                   pointer.MakePtr(auditing.Enabled),
-		AuditAuthorizationSuccess: pointer.MakePtr(auditing.AuditAuthorizationSuccess),
-		AuditFilter:               pointer.MakePtr(auditing.AuditFilter),
-		// ConfigurationType is not set on the PATCH operation to Atlas
-	}
+	auditLog := admin.NewAuditLogWithDefaults()
+	auditLog.SetEnabled(auditing.Enabled)
+	auditLog.SetAuditAuthorizationSuccess(auditing.AuditAuthorizationSuccess)
+	auditLog.SetAuditFilter(auditing.AuditFilter)
+	// ConfigurationType is not set on the PATCH operation to Atlas
+
+	return auditLog
 }
 
-func fromAtlas(auditLog *admin.AuditLog) (*AuditConfig, error) {
-	cfgType, err := configTypeFromAtlas(auditLog.ConfigurationType)
-	if err != nil {
-		return nil, err
+func fromAtlas(auditLog *admin.AuditLog) *AuditConfig {
+	auditFilter := FilterDefault
+
+	if auditLog.GetAuditFilter() != "" {
+		auditFilter = auditLog.GetAuditFilter()
 	}
+
 	return &AuditConfig{
-		Enabled:                   pointer.GetOrDefault(auditLog.Enabled, false),
-		AuditAuthorizationSuccess: pointer.GetOrDefault(auditLog.AuditAuthorizationSuccess, false),
-		ConfigurationType:         cfgType,
-		AuditFilter:               pointer.GetOrDefault(auditLog.AuditFilter, ""),
-	}, nil
-}
-
-func configTypeFromAtlas(configType *string) (AuditingConfigType, error) {
-	ct := pointer.GetOrDefault(configType, string(None))
-	switch ct {
-	case string(None), string(FilterBuilder), string(FilterJSON):
-		return AuditingConfigType(ct), nil
-	default:
-		return AuditingConfigType(ct), fmt.Errorf("unsupported Auditing Config type %q", ct)
+		Auditing: &akov2.Auditing{
+			Enabled:                   auditLog.GetEnabled(),
+			AuditAuthorizationSuccess: auditLog.GetAuditAuthorizationSuccess(),
+			AuditFilter:               auditFilter,
+		},
 	}
 }

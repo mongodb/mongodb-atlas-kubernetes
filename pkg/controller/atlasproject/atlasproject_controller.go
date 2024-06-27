@@ -324,7 +324,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensureAuditing(workflowCtx, project); result.IsOk() {
+	if result = handleAudit(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.AuditingReadyType), "")
 	}
 	results = append(results, result)

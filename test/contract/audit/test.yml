@@ -3,4 +3,11 @@ kind: AtlasProject
 metadata:
   name: my-project
 spec:
-  name: Test Atlas Operator Project
+  name: Audit Contract Test Project
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: my-project2
+spec:
+  name: Audit Contract Test Project 2
