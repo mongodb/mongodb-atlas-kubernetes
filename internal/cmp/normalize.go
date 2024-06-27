@@ -29,7 +29,7 @@ func NormalizeSlice[S ~[]E, E any](slice S, cmp func(a, b E) int) S {
 	if len(slice) == 0 {
 		return nil
 	}
-	slices.SortFunc(slice, cmp)
+	slices.SortStableFunc(slice, cmp)
 	return slice
 }
 
