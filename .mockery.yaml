@@ -1,0 +1,9 @@
+with-expecter: true
+disable-version-string: true
+dir: internal/mocks/translation
+outpkg: translation
+filename: "{{ .InterfaceName | snakecase }}.go"
+mockname: "{{.InterfaceName}}Mock"
+all: true
+packages:
+  github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist:
