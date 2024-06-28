@@ -1,207 +1,133 @@
 package atlasproject
 
 import (
-	"fmt"
-	"strings"
-	"time"
+	"errors"
+	"reflect"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 const ipAccessStatusPending = "PENDING"
 const ipAccessStatusFailed = "FAILED"
 
-// ensureIPAccessList ensures that the state of the Atlas IP Access List matches the
-// state of the IP Access list specified in the project CR. Any Access Lists which exist
-// in Atlas but are not specified in the CR are deleted.
-func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessListStatus, akoProject *akov2.AtlasProject) workflow.Result {
-	desiredList, expiredList := filterActiveIPAccessLists(akoProject.Spec.ProjectIPAccessList)
-	service.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expiredList))
+type ipAccessListController struct {
+	ctx     *workflow.Context
+	project *akov2.AtlasProject
+	service ipaccesslist.IPAccessListService
+}
 
-	list, _, err := service.SdkClient.ProjectIPAccessListApi.ListProjectIpAccessLists(service.Context, akoProject.ID()).Execute()
+// reconcile dispatch state transitions
+func (i *ipAccessListController) reconcile() workflow.Result {
+	ialInAtlas, err := i.service.List(i.ctx.Context, i.project.ID())
 	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("failed to retrieve IP Access list: %s", err))
-		service.SetConditionFromResult(api.IPAccessListReadyType, result)
-
-		return result
+		return i.terminate(workflow.Internal, err)
 	}
 
-	currentList := mapToOperatorSpec(list.GetResults())
-	if cmp.Diff(currentList, akoProject.Spec.ProjectIPAccessList, cmpopts.EquateEmpty()) != "" {
-		err = syncIPAccessList(service, akoProject.ID(), currentList, desiredList)
+	isUnset := len(i.project.Spec.ProjectIPAccessList) == 0
+	ialInAKO, err := ipaccesslist.NewIPAccessEntries(i.project.Spec.ProjectIPAccessList)
+	if err != nil {
+		return i.terminate(workflow.Internal, err)
+	}
+
+	if !reflect.DeepEqual(ialInAKO.GetActives(), ialInAtlas) {
+		return i.configure(ialInAtlas, ialInAKO, isUnset)
+	}
+
+	if isUnset {
+		return i.unmanage()
+	}
+
+	return i.progress(ialInAKO)
+}
+
+// configure update Atlas with new ip access list
+func (i *ipAccessListController) configure(current, desired ipaccesslist.IPAccessEntries, isUnset bool) workflow.Result {
+	err := i.service.Add(i.ctx.Context, i.project.ID(), desired.GetActives())
+	if err != nil {
+		return i.terminate(workflow.ProjectIPNotCreatedInAtlas, err)
+	}
+
+	for key, entry := range current {
+		if _, ok := desired[key]; !ok {
+			err = i.service.Delete(i.ctx.Context, i.project.ID(), entry)
+			if err != nil {
+				return i.terminate(workflow.ProjectIPNotCreatedInAtlas, err)
+			}
+		}
+	}
+
+	if isUnset {
+		return i.unmanage()
+	}
+
+	return i.progress(desired)
+}
+
+// progress transitions to pending while ip access list are not active
+func (i *ipAccessListController) progress(ipAccessEntries ipaccesslist.IPAccessEntries) workflow.Result {
+	for _, entry := range ipAccessEntries.GetActives() {
+		stat, err := i.service.Status(i.ctx.Context, i.project.ID(), entry)
 		if err != nil {
-			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to sync desired state with Atlas: %s", err))
-			service.SetConditionFromResult(api.IPAccessListReadyType, result)
+			return i.terminate(workflow.Internal, err)
+		}
+
+		switch stat {
+		case ipAccessStatusPending:
+			result := workflow.InProgress(
+				workflow.ProjectIPAccessListNotActive,
+				"atlas is adding access. this entry may not apply to all cloud providers at the time of this request",
+			)
+			i.ctx.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 			return result
+		case ipAccessStatusFailed:
+			return i.terminate(workflow.ProjectIPNotCreatedInAtlas, errors.New("atlas didn't succeed in adding this access entry"))
 		}
 	}
 
-	for _, ipAccessList := range desiredList {
-		ipAccessStatus, err := statusFunc(service.Context, akoProject.ID(), mapToEntryValue(ipAccessList))
-		if err != nil {
-			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to check status in Atlas: %s", err))
-			service.SetConditionFromResult(api.IPAccessListReadyType, result)
+	return i.ready(ipAccessEntries)
+}
 
-			return result
-		}
+// ready transitions to ready state after successfully configure ip access list
+func (i *ipAccessListController) ready(ipAccessEntries ipaccesslist.IPAccessEntries) workflow.Result {
+	i.ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(ipaccesslist.ToAKO(ipAccessEntries.GetExpired())))
 
-		if ipAccessStatus == ipAccessStatusFailed {
-			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("configuration of %s failed in Atlas", mapToEntryValue(ipAccessList)))
-			service.SetConditionFromResult(api.IPAccessListReadyType, result)
+	result := workflow.OK()
+	i.ctx.SetConditionFromResult(api.IPAccessListReadyType, result)
 
-			return result
-		}
+	return result
+}
 
-		if ipAccessStatus == ipAccessStatusPending {
-			result := workflow.InProgress(workflow.ProjectIPAccessListNotActive, fmt.Sprintf("waiting Atlas to configure entry %s", mapToEntryValue(ipAccessList)))
-			service.SetConditionFromResult(api.IPAccessListReadyType, result)
+// terminate ends a state transition if an error occurred.
+func (i *ipAccessListController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+	i.ctx.Log.Error(err)
+	result := workflow.Terminate(reason, err.Error())
+	i.ctx.SetConditionFromResult(api.IPAccessListReadyType, result)
 
-			return result
-		}
-	}
+	return result
+}
 
-	service.SetConditionTrue(api.IPAccessListReadyType)
-
-	if len(akoProject.Spec.ProjectIPAccessList) == 0 {
-		service.UnsetCondition(api.IPAccessListReadyType)
-	}
+// unmanage transitions to unmanaged state if no ip access list config is set
+func (i *ipAccessListController) unmanage() workflow.Result {
+	i.ctx.UnsetCondition(api.IPAccessListReadyType)
 
 	return workflow.OK()
 }
 
-func mapToOperatorSpec(projectIPAccessList []admin.NetworkPermissionEntry) []project.IPAccessList {
-	ipAccessList := make([]project.IPAccessList, 0, len(projectIPAccessList))
+// handleIPAccessList prepare internal ip access list controller to handle states
+func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+	ctx.Log.Debug("starting ip access list processing")
+	defer ctx.Log.Debug("finished ip access list processing")
 
-	for _, projectIPAccess := range projectIPAccessList {
-		deleteAfterDate := ""
-		if deleteAfterDateFromAtlas, ok := projectIPAccess.GetDeleteAfterDateOk(); ok {
-			deleteAfterDate = timeutil.FormatISO8601(*deleteAfterDateFromAtlas)
-		}
-
-		ipAccessList = append(
-			ipAccessList,
-			project.IPAccessList{
-				AwsSecurityGroup: projectIPAccess.GetAwsSecurityGroup(),
-				CIDRBlock:        projectIPAccess.GetCidrBlock(),
-				Comment:          projectIPAccess.GetComment(),
-				DeleteAfterDate:  deleteAfterDate,
-				IPAddress:        projectIPAccess.GetIpAddress(),
-			},
-		)
+	c := ipAccessListController{
+		ctx:     ctx,
+		project: project,
+		service: ipaccesslist.NewIPAccessList(ctx.SdkClient.ProjectIPAccessListApi),
 	}
 
-	return ipAccessList
-}
-
-func syncIPAccessList(service *workflow.Context, projectID string, current, desired []project.IPAccessList) error {
-	currentMap := map[string]project.IPAccessList{}
-	for _, item := range current {
-		currentMap[genIPAccessListKey(item)] = item
-	}
-
-	desiredMap := map[string]project.IPAccessList{}
-	for _, item := range desired {
-		desiredMap[genIPAccessListKey(item)] = item
-	}
-
-	for key, ipAccessList := range currentMap {
-		if _, ok := desiredMap[key]; ok {
-			continue
-		}
-
-		_, _, err := service.SdkClient.ProjectIPAccessListApi.DeleteProjectIpAccessList(service.Context, projectID, mapToEntryValue(ipAccessList)).Execute()
-		if err != nil {
-			return err
-		}
-	}
-
-	toCreate := make([]admin.NetworkPermissionEntry, 0, len(desired))
-	for key, ipAccessList := range desiredMap {
-		if _, ok := currentMap[key]; !ok {
-			entry := admin.NetworkPermissionEntry{
-				AwsSecurityGroup: pointer.SetOrNil(ipAccessList.AwsSecurityGroup, ""),
-				CidrBlock:        pointer.SetOrNil(ipAccessList.CIDRBlock, ""),
-				Comment:          pointer.SetOrNil(ipAccessList.Comment, ""),
-				GroupId:          pointer.SetOrNil(projectID, ""),
-				IpAddress:        pointer.SetOrNil(ipAccessList.IPAddress, ""),
-			}
-			if ipAccessList.DeleteAfterDate != "" {
-				deleteAfterDate, err := timeutil.ParseISO8601(ipAccessList.DeleteAfterDate)
-				if err != nil {
-					return fmt.Errorf("error parsing deleteAfterDate: %w", err)
-				}
-				entry.SetDeleteAfterDate(deleteAfterDate)
-			}
-			toCreate = append(toCreate, entry)
-		}
-	}
-
-	if len(toCreate) == 0 {
-		return nil
-	}
-
-	_, _, err := service.SdkClient.ProjectIPAccessListApi.CreateProjectIpAccessList(service.Context, projectID, &toCreate).Execute()
-
-	return err
-}
-
-func mapToEntryValue(ipAccessList project.IPAccessList) string {
-	entry := ""
-
-	switch {
-	case ipAccessList.CIDRBlock != "":
-		entry = ipAccessList.CIDRBlock
-		quads := strings.Split(ipAccessList.CIDRBlock, "/")
-		if quads[1] == "32" {
-			entry = quads[0]
-		}
-	case ipAccessList.IPAddress != "":
-		ip := strings.Split(ipAccessList.IPAddress, "/")
-
-		entry = ip[0]
-	case ipAccessList.AwsSecurityGroup != "":
-		entry = ipAccessList.AwsSecurityGroup
-	}
-
-	return entry
-}
-
-func genIPAccessListKey(ipAccessList project.IPAccessList) string {
-	entry := mapToEntryValue(ipAccessList)
-
-	if ipAccessList.DeleteAfterDate != "" {
-		entry += "." + ipAccessList.DeleteAfterDate
-	}
-
-	return entry
-}
-
-func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IPAccessList, []project.IPAccessList) {
-	active := make([]project.IPAccessList, 0)
-	expired := make([]project.IPAccessList, 0)
-	for _, list := range accessLists {
-		if list.DeleteAfterDate != "" {
-			// We are ignoring the error as it will never happen due to validation check before
-			iso8601, _ := timeutil.ParseISO8601(list.DeleteAfterDate)
-			if iso8601.Before(time.Now()) {
-				expired = append(expired, list)
-				continue
-			}
-		}
-		// Either 'deleteAfterDate' field is not specified or it's higher than the current time
-		active = append(active, list)
-	}
-	return active, expired
+	return c.reconcile()
 }

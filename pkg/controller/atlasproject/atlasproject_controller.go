@@ -284,7 +284,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 
 	var result workflow.Result
-	if result = ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(workflowCtx.SdkClient), project); result.IsOk() {
+	if result = handleIPAccessList(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.IPAccessListReadyType), "")
 	}
 	results = append(results, result)
