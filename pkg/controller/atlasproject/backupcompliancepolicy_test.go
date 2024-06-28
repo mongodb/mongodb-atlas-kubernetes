@@ -39,7 +39,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func TestEnsureBackupCompliance2(t *testing.T) {
+func TestEnsureBackupCompliance(t *testing.T) {
 	testBCP := &akov2.AtlasBackupCompliancePolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-bcp",
