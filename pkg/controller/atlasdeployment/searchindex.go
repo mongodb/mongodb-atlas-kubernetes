@@ -28,20 +28,19 @@ type searchIndexReconciler struct {
 
 func (sr *searchIndexReconciler) Reconcile(spec *akov2.SearchIndex, previous *status.DeploymentSearchIndexStatus) workflow.Result {
 	var stateInAtlas, stateInAKO *searchindex.SearchIndex
+	name := ""
 
 	if previous != nil {
+		name = previous.Name
 		var err error
 		sr.ctx.Log.Debugf("restoring index %q from status", previous.Name)
 		stateInAtlas, err = sr.searchService.GetIndex(
 			sr.ctx.Context, sr.projectID, sr.deployment.GetDeploymentName(), previous.Name, previous.ID)
 		if err != nil {
-			if errors.Is(err, searchindex.ErrNotFound) {
-				// transition into deleted state to clear out any previous search indexes
-				sr.deleted(previous.Name)
-				// then immediately transition into terminated state to requeue
+			if !errors.Is(err, searchindex.ErrNotFound) {
 				return sr.terminate(stateInAtlas, err)
 			}
-			return sr.terminate(stateInAtlas, err)
+			stateInAtlas = nil // Not Found = not in Atlas
 		}
 	}
 
@@ -77,15 +76,15 @@ func (sr *searchIndexReconciler) Reconcile(spec *akov2.SearchIndex, previous *st
 		}
 	}
 
-	return sr.reconcileInternal(stateInAKO, stateInAtlas)
+	return sr.reconcileInternal(name, stateInAKO, stateInAtlas)
 }
 
-func (sr *searchIndexReconciler) reconcileInternal(stateInAKO, stateInAtlas *searchindex.SearchIndex) workflow.Result {
+func (sr *searchIndexReconciler) reconcileInternal(indexName string, stateInAKO, stateInAtlas *searchindex.SearchIndex) workflow.Result {
 	sr.ctx.Log.Debugf("starting reconciliation for index '%s'", sr.indexName)
 	defer sr.ctx.Log.Debugf("finished reconciliation for index '%s'", sr.indexName)
 
-	emptyInAtlas := stateInAtlas == nil
-	emptyInAKO := stateInAKO == nil
+	inAtlas := stateInAtlas != nil
+	inSpec := stateInAKO != nil
 
 	var currentStatus string
 	if stateInAtlas != nil && stateInAtlas.Status != nil {
@@ -97,14 +96,14 @@ func (sr *searchIndexReconciler) reconcileInternal(stateInAKO, stateInAtlas *sea
 	}
 
 	switch {
-	case emptyInAtlas && !emptyInAKO:
+	case !inAtlas && inSpec:
 		return sr.create(stateInAKO)
-	case !emptyInAtlas && !emptyInAKO:
-		return sr.update(stateInAKO, stateInAtlas)
-	case !emptyInAtlas && emptyInAKO:
+	case inAtlas && inSpec:
+		return sr.compare(stateInAKO, stateInAtlas)
+	case inAtlas && !inSpec:
 		return sr.delete(stateInAtlas)
-	default:
-		return workflow.OK()
+	default: // not in Atlas or K8s, only if removed from Atlas from elsewhere
+		return sr.deleted(indexName)
 	}
 }
 
@@ -179,8 +178,8 @@ func (sr *searchIndexReconciler) deleted(indexName string) workflow.Result {
 	return workflow.Deleted()
 }
 
-func (sr *searchIndexReconciler) update(akoIdx, atlasIdx *searchindex.SearchIndex) workflow.Result {
-	sr.ctx.Log.Debugf("[updating] index %s", akoIdx.Name)
+func (sr *searchIndexReconciler) compare(akoIdx, atlasIdx *searchindex.SearchIndex) workflow.Result {
+	sr.ctx.Log.Debugf("[syncing] index %s", akoIdx.Name)
 	defer sr.ctx.Log.Debugf("[update finished] for index %s", akoIdx.Name)
 
 	isEqual, err := akoIdx.EqualTo(atlasIdx)
@@ -188,10 +187,13 @@ func (sr *searchIndexReconciler) update(akoIdx, atlasIdx *searchindex.SearchInde
 		sr.terminate(atlasIdx, err)
 	}
 	if isEqual {
-		sr.ctx.Log.Debugf("index %s is already updated", akoIdx.Name)
+		sr.ctx.Log.Debugf("index %s is already up to date", akoIdx.Name)
 		return sr.idle(atlasIdx)
 	}
+	return sr.update(akoIdx, atlasIdx)
+}
 
+func (sr *searchIndexReconciler) update(akoIdx, atlasIdx *searchindex.SearchIndex) workflow.Result {
 	sr.ctx.Log.Debugf("updating index %s...", akoIdx.Name)
 	convertedIdx, err := sr.searchService.UpdateIndex(sr.ctx.Context, sr.projectID, sr.deployment.GetDeploymentName(), akoIdx)
 	if err != nil {
