@@ -229,7 +229,7 @@ func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *
 func userMatchesSpec(atlasUser *dbuser.User, specUser *akov2.AtlasDatabaseUserSpec) ([]string, error) {
 	userSpecCopy, err := dbuser.NewUser(specUser.DeepCopy(), "", "") // project and password will not be compared
 	if err != nil {
-		return []string{}, err
+		return []string{}, fmt.Errorf("failed to convert User Spec: %w", err)
 	}
 	return dbuser.DiffSpecs(userSpecCopy, atlasUser), nil
 }

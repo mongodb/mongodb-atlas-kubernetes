@@ -3,6 +3,7 @@ package dbuser
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
@@ -31,7 +32,7 @@ type ProductionAtlasUsers struct {
 func NewAtlasDatabaseUsersService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*ProductionAtlasUsers, error) {
 	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create versioned client: %w", err)
 	}
 	return NewProductionAtlasUsers(client.DatabaseUsersApi), nil
 }
@@ -46,7 +47,7 @@ func (dus *ProductionAtlasUsers) Get(ctx context.Context, db, projectID, usernam
 		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
 			return nil, errors.Join(ErrorNotFound, err)
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get database user %q: %w", username, err)
 	}
 	return fromAtlas(atlasDBUser)
 }

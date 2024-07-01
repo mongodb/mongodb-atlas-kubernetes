@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"context"
+	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -28,7 +29,7 @@ type ProductionAtlasDeployments struct {
 func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*ProductionAtlasDeployments, error) {
 	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create versioned client: %w", err)
 	}
 	return NewProductionAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi), nil
 }
@@ -41,7 +42,7 @@ func (ds *ProductionAtlasDeployments) ListClusterNames(ctx context.Context, proj
 	var deploymentNames []string
 	clusters, _, err := ds.clustersAPI.ListClusters(ctx, projectID).Execute()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list cluster names for project %s: %w", projectID, err)
 	}
 	if clusters.Results == nil {
 		return deploymentNames, nil
@@ -59,13 +60,13 @@ func (ds *ProductionAtlasDeployments) ListClusterNames(ctx context.Context, proj
 func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Context, projectID string) ([]Connection, error) {
 	clusters, _, err := ds.clustersAPI.ListClusters(ctx, projectID).Execute()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list clusters for project %s: %w", projectID, err)
 	}
 	clusterConns := clustersToConnections(clusters.GetResults())
 
 	serverless, _, err := ds.serverlessAPI.ListServerlessInstances(ctx, projectID).Execute()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list serverless deployments for project %s: %w", projectID, err)
 	}
 	serverlessConns := serverlessToConnections(serverless.GetResults())
 
@@ -78,7 +79,7 @@ func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, project
 		return false, nil
 	}
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get cluster %q: %w", clusterName, err)
 	}
 	return true, nil
 }
@@ -87,7 +88,7 @@ func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, pro
 	// although this is within the clusters API it seems to also reply for serverless deployments
 	clusterStatus, _, err := ds.clustersAPI.GetClusterStatus(ctx, projectID, deploymentName).Execute()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get cluster %q status %w", deploymentName, err)
 	}
 	return clusterStatus.GetChangeStatus() == string(mongodbatlas.ChangeStatusApplied), nil
 }

@@ -36,9 +36,6 @@ func clustersToConnections(clusters []admin.AdvancedClusterDescription) []Connec
 
 func fillClusterPrivateEndpoints(cpeList []admin.ClusterDescriptionConnectionStringsPrivateEndpoint) []PrivateEndpoint {
 	pes := []PrivateEndpoint{}
-	if len(cpeList) == 0 {
-		return pes
-	}
 	for _, cpe := range cpeList {
 		pes = append(pes, PrivateEndpoint{
 			URL:       cpe.GetConnectionString(),
@@ -65,9 +62,6 @@ func serverlessToConnections(serverless []admin.ServerlessInstanceDescription) [
 
 func fillServerlessPrivateEndpoints(cpeList []admin.ServerlessConnectionStringsPrivateEndpointList) []PrivateEndpoint {
 	pes := []PrivateEndpoint{}
-	if len(cpeList) == 0 {
-		return pes
-	}
 	for _, cpe := range cpeList {
 		pes = append(pes, PrivateEndpoint{
 			ServerURL: cpe.GetSrvConnectionString(),

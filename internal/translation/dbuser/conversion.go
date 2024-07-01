@@ -78,7 +78,7 @@ func normalize(user *User) (*User, error) {
 	if user.DeleteAfterDate != "" { // enforce date format
 		operatorDeleteDate, err := timeutil.ParseISO8601(user.DeleteAfterDate)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse %q to an ISO date: %w", user.DeleteAfterDate, err)
 		}
 		user.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
 	}
@@ -110,7 +110,7 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 	date, err := dateToAtlas(au.DeleteAfterDate)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse deleteAfterDate value: %w", err)
 	}
 	return &admin.CloudDatabaseUser{
 		DatabaseName:    au.DatabaseName,
@@ -132,7 +132,7 @@ func dateToAtlas(d string) (*time.Time, error) {
 	}
 	date, err := timeutil.ParseISO8601(d)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse %q to an ISO date: %w", d, err)
 	}
 	return pointer.MakePtr(date), nil
 }
@@ -184,7 +184,7 @@ func scopesFromAtlas(scopes []admin.UserScope) ([]akov2.ScopeSpec, error) {
 	for _, scope := range scopes {
 		scopeType, err := scopeTypeFromAtlas(scope.Type)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse atlas scopes: %w", err)
 		}
 		specScopes = append(specScopes, akov2.ScopeSpec{
 			Name: scope.Name,
