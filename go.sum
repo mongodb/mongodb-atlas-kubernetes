@@ -199,8 +199,8 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/mongodb-forks/digest v1.1.0 h1:7eUdsR1BtqLv0mdNm4OXs6ddWvR4X2/OsLwdKksrOoc=
 github.com/mongodb-forks/digest v1.1.0/go.mod h1:rb+EX8zotClD5Dj4NdgxnJXG9nwrlx3NWKJ8xttz1Dg=
-github.com/montanaflynn/stats v0.7.0 h1:r3y12KyNxj/Sb/iOE46ws+3mS1+MZca1wlHQFPsY/JU=
-github.com/montanaflynn/stats v0.7.0/go.mod h1:etXPPgVO6n31NxCd9KQUMvCM+ve0ruNzt6R8Bnaayow=
+github.com/montanaflynn/stats v0.7.1 h1:etflOAAHORrCC44V+aR6Ftzort912ZU+YLiSTuV8eaE=
+github.com/montanaflynn/stats v0.7.1/go.mod h1:etXPPgVO6n31NxCd9KQUMvCM+ve0ruNzt6R8Bnaayow=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/onsi/ginkgo/v2 v2.19.0 h1:9Cnnf7UHo57Hy3k6/m5k3dRfGTMXGvxhHFvkDTCTpvA=
@@ -256,8 +256,8 @@ go.mongodb.org/atlas-sdk/v20231115004 v20231115004.1.0 h1:vOvfk8bPedcphaTHIm6p8U
 go.mongodb.org/atlas-sdk/v20231115004 v20231115004.1.0/go.mod h1:FzD5DLz+WPB+z3OGgNBjXMPQJjJ7Y+hKn4iupXZuoOc=
 go.mongodb.org/atlas-sdk/v20231115008 v20231115008.5.0 h1:OuV1HfIpZUZa4+BKvtrvDlNqnilkCkdHspuZok6KAbM=
 go.mongodb.org/atlas-sdk/v20231115008 v20231115008.5.0/go.mod h1:0707RpWIrNFZ6Msy/dwRDCzC5JVDon61JoOqcbfCujg=
-go.mongodb.org/mongo-driver v1.15.1 h1:l+RvoUOoMXFmADTLfYDm7On9dRm7p4T80/lEQM+r7HU=
-go.mongodb.org/mongo-driver v1.15.1/go.mod h1:Vzb0Mk/pa7e6cWw85R4F/endUC3u0U9jGcNU603k65c=
+go.mongodb.org/mongo-driver v1.16.0 h1:tpRsfBJMROVHKpdGyc1BBEzzjDUWjItxbVSZ8Ls4BQ4=
+go.mongodb.org/mongo-driver v1.16.0/go.mod h1:oB6AhJQvFQL4LEHyXi6aJzQJtBiTQHiAd83l0GdFaiw=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 h1:4Pp6oUg3+e/6M4C0A/3kJ2VYa++dsWVTtGgLVj5xtHg=
