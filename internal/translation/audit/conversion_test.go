@@ -100,23 +100,23 @@ func TestConversionContructor(t *testing.T) {
 	}
 }
 
-func TestToAtlas(t *testing.T) {
+func TestToAndFromAtlas(t *testing.T) {
 	TrueBool := true
 	FalseBool := false
 	EmptyAudit := "{}"
 	testCases := []struct {
 		title          string
-		input          *AuditConfig
-		expectedOutput *admin.AuditLog
+		kubernetesSide *AuditConfig
+		atlasSide      *admin.AuditLog
 	}{
 		{
 			title: "Just enabled",
-			input: NewAuditConfig(
+			kubernetesSide: NewAuditConfig(
 				&akov2.Auditing{
 					Enabled: true,
 				},
 			),
-			expectedOutput: &admin.AuditLog{
+			atlasSide: &admin.AuditLog{
 				Enabled:                   &TrueBool,
 				AuditAuthorizationSuccess: &FalseBool,
 				AuditFilter:               &EmptyAudit,
@@ -124,13 +124,13 @@ func TestToAtlas(t *testing.T) {
 		},
 		{
 			title: "Auth success logs as well",
-			input: NewAuditConfig(
+			kubernetesSide: NewAuditConfig(
 				&akov2.Auditing{
 					Enabled:                   true,
 					AuditAuthorizationSuccess: true,
 				},
 			),
-			expectedOutput: &admin.AuditLog{
+			atlasSide: &admin.AuditLog{
 				AuditAuthorizationSuccess: &TrueBool,
 				Enabled:                   &TrueBool,
 				AuditFilter:               &EmptyAudit,
@@ -138,13 +138,13 @@ func TestToAtlas(t *testing.T) {
 		},
 		{
 			title: "With a filter",
-			input: NewAuditConfig(
+			kubernetesSide: NewAuditConfig(
 				&akov2.Auditing{
 					Enabled:     true,
 					AuditFilter: `{"atype":"authenticate"}`,
 				},
 			),
-			expectedOutput: &admin.AuditLog{
+			atlasSide: &admin.AuditLog{
 				AuditFilter: func() *string {
 					s := `{"atype":"authenticate"}`
 					return &s
@@ -155,14 +155,14 @@ func TestToAtlas(t *testing.T) {
 		},
 		{
 			title: "With a filter and success logs",
-			input: NewAuditConfig(
+			kubernetesSide: NewAuditConfig(
 				&akov2.Auditing{
 					Enabled:                   true,
 					AuditAuthorizationSuccess: true,
 					AuditFilter:               `{"atype":"authenticate"}`,
 				},
 			),
-			expectedOutput: &admin.AuditLog{
+			atlasSide: &admin.AuditLog{
 				AuditFilter: func() *string {
 					s := `{"atype":"authenticate"}`
 					return &s
@@ -173,13 +173,13 @@ func TestToAtlas(t *testing.T) {
 		},
 		{
 			title: "All set but disabled",
-			input: NewAuditConfig(
+			kubernetesSide: NewAuditConfig(
 				&akov2.Auditing{
 					AuditAuthorizationSuccess: true,
 					AuditFilter:               `{"atype":"authenticate"}`,
 				},
 			),
-			expectedOutput: &admin.AuditLog{
+			atlasSide: &admin.AuditLog{
 				AuditFilter: func() *string {
 					s := `{"atype":"authenticate"}`
 					return &s
@@ -190,10 +190,10 @@ func TestToAtlas(t *testing.T) {
 		},
 		{
 			title: "Default (disabled) case",
-			input: NewAuditConfig(
+			kubernetesSide: NewAuditConfig(
 				&akov2.Auditing{},
 			),
-			expectedOutput: &admin.AuditLog{
+			atlasSide: &admin.AuditLog{
 				AuditFilter: func() *string {
 					s := `{}`
 					return &s
@@ -203,121 +203,18 @@ func TestToAtlas(t *testing.T) {
 			},
 		},
 	}
+	//from Kuberenets to Atlas
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			actualResult := toAtlas(tc.input)
-			assert.Equal(t, tc.expectedOutput, actualResult)
+			actualResult := toAtlas(tc.kubernetesSide)
+			assert.Equal(t, tc.atlasSide, actualResult)
 		})
 	}
-}
-
-func TestFromAtlas(t *testing.T) {
-	TrueBool := true
-	FalseBool := false
-	EmptyAudit := "{}"
-	testCases := []struct {
-		title          string
-		expectedOutput *AuditConfig
-		input          *admin.AuditLog
-	}{
-		{
-			title: "Just enabled",
-			expectedOutput: NewAuditConfig(
-				&akov2.Auditing{
-					Enabled: true,
-				},
-			),
-			input: &admin.AuditLog{
-				Enabled:                   &TrueBool,
-				AuditAuthorizationSuccess: &FalseBool,
-				AuditFilter:               &EmptyAudit,
-			},
-		},
-		{
-			title: "Auth success logs as well",
-			expectedOutput: NewAuditConfig(
-				&akov2.Auditing{
-					Enabled:                   true,
-					AuditAuthorizationSuccess: true,
-				},
-			),
-			input: &admin.AuditLog{
-				AuditAuthorizationSuccess: &TrueBool,
-				Enabled:                   &TrueBool,
-				AuditFilter:               &EmptyAudit,
-			},
-		},
-		{
-			title: "With a filter",
-			expectedOutput: NewAuditConfig(
-				&akov2.Auditing{
-					Enabled:     true,
-					AuditFilter: `{"atype":"authenticate"}`,
-				},
-			),
-			input: &admin.AuditLog{
-				AuditFilter: func() *string {
-					s := `{"atype":"authenticate"}`
-					return &s
-				}(),
-				Enabled:                   &TrueBool,
-				AuditAuthorizationSuccess: &FalseBool,
-			},
-		},
-		{
-			title: "With a filter and success logs",
-			expectedOutput: NewAuditConfig(
-				&akov2.Auditing{
-					Enabled:                   true,
-					AuditAuthorizationSuccess: true,
-					AuditFilter:               `{"atype":"authenticate"}`,
-				},
-			),
-			input: &admin.AuditLog{
-				AuditFilter: func() *string {
-					s := `{"atype":"authenticate"}`
-					return &s
-				}(),
-				Enabled:                   &TrueBool,
-				AuditAuthorizationSuccess: &TrueBool,
-			},
-		},
-		{
-			title: "All set but disabled",
-			expectedOutput: NewAuditConfig(
-				&akov2.Auditing{
-					AuditAuthorizationSuccess: true,
-					AuditFilter:               `{"atype":"authenticate"}`,
-				},
-			),
-			input: &admin.AuditLog{
-				AuditFilter: func() *string {
-					s := `{"atype":"authenticate"}`
-					return &s
-				}(),
-				AuditAuthorizationSuccess: &TrueBool,
-				Enabled:                   &FalseBool,
-			},
-		},
-		{
-			title: "Default (disabled) case",
-			expectedOutput: NewAuditConfig(
-				&akov2.Auditing{},
-			),
-			input: &admin.AuditLog{
-				AuditFilter: func() *string {
-					s := `{}`
-					return &s
-				}(),
-				AuditAuthorizationSuccess: &FalseBool,
-				Enabled:                   &FalseBool,
-			},
-		},
-	}
+	//from Atlas to Kubernetes
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			actualResult := fromAtlas(tc.input)
-			assert.Equal(t, tc.expectedOutput, actualResult)
+			actualResult := fromAtlas(tc.atlasSide)
+			assert.Equal(t, tc.kubernetesSide, actualResult)
 		})
 	}
 }
