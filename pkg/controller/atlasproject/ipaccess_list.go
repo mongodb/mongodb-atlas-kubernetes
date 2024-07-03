@@ -33,7 +33,7 @@ func (i *ipAccessListController) reconcile() workflow.Result {
 		return i.terminate(workflow.Internal, err)
 	}
 
-	if !reflect.DeepEqual(ialInAKO.GetActives(), ialInAtlas) {
+	if !reflect.DeepEqual(ialInAKO.GetByStatus(false), ialInAtlas) {
 		return i.configure(ialInAtlas, ialInAKO, isUnset)
 	}
 
@@ -46,7 +46,7 @@ func (i *ipAccessListController) reconcile() workflow.Result {
 
 // configure update Atlas with new ip access list
 func (i *ipAccessListController) configure(current, desired ipaccesslist.IPAccessEntries, isUnset bool) workflow.Result {
-	err := i.service.Add(i.ctx.Context, i.project.ID(), desired.GetActives())
+	err := i.service.Add(i.ctx.Context, i.project.ID(), desired.GetByStatus(false))
 	if err != nil {
 		return i.terminate(workflow.ProjectIPNotCreatedInAtlas, err)
 	}
@@ -69,7 +69,7 @@ func (i *ipAccessListController) configure(current, desired ipaccesslist.IPAcces
 
 // progress transitions to pending while ip access list are not active
 func (i *ipAccessListController) progress(ipAccessEntries ipaccesslist.IPAccessEntries) workflow.Result {
-	for _, entry := range ipAccessEntries.GetActives() {
+	for _, entry := range ipAccessEntries.GetByStatus(false) {
 		stat, err := i.service.Status(i.ctx.Context, i.project.ID(), entry)
 		if err != nil {
 			return i.terminate(workflow.Internal, err)
@@ -94,7 +94,7 @@ func (i *ipAccessListController) progress(ipAccessEntries ipaccesslist.IPAccessE
 
 // ready transitions to ready state after successfully configure ip access list
 func (i *ipAccessListController) ready(ipAccessEntries ipaccesslist.IPAccessEntries) workflow.Result {
-	i.ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(ipaccesslist.ToAKO(ipAccessEntries.GetExpired())))
+	i.ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(ipaccesslist.FromInternal(ipAccessEntries.GetByStatus(true))))
 
 	result := workflow.OK()
 	i.ctx.SetConditionFromResult(api.IPAccessListReadyType, result)

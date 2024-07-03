@@ -27,20 +27,21 @@ func (i *IPAccessEntry) ID() string {
 	return i.AWSSecurityGroup
 }
 
-func (i *IPAccessEntry) IsExpired() bool {
+func (i *IPAccessEntry) IsExpired(at time.Time) bool {
 	if i.DeleteAfterDate == nil {
 		return false
 	}
 
-	return i.DeleteAfterDate.Before(time.Now())
+	return i.DeleteAfterDate.Before(at)
 }
 
 type IPAccessEntries map[string]*IPAccessEntry
 
-func (i IPAccessEntries) GetActives() IPAccessEntries {
+func (i IPAccessEntries) GetByStatus(expired bool) IPAccessEntries {
 	entries := make(IPAccessEntries, len(i))
+
 	for ix, entry := range i {
-		if !entry.IsExpired() {
+		if entry.IsExpired(time.Now()) == expired {
 			entries[ix] = entry
 		}
 	}
@@ -48,18 +49,7 @@ func (i IPAccessEntries) GetActives() IPAccessEntries {
 	return entries
 }
 
-func (i IPAccessEntries) GetExpired() IPAccessEntries {
-	entries := make(IPAccessEntries, len(i))
-	for ix, entry := range i {
-		if entry.IsExpired() {
-			entries[ix] = entry
-		}
-	}
-
-	return entries
-}
-
-func ToAKO(ipAccessEntries IPAccessEntries) []project.IPAccessList {
+func FromInternal(ipAccessEntries IPAccessEntries) []project.IPAccessList {
 	list := make([]project.IPAccessList, 0, len(ipAccessEntries))
 
 	for _, entry := range ipAccessEntries {
@@ -182,7 +172,7 @@ func parseIPNetwork(ip, cidr string) (string, error) {
 		var err error
 		_, parsedNet, err := net.ParseCIDR(cidr)
 		if err != nil {
-			return "", fmt.Errorf("cidr %s is invalid", cidr)
+			return "", fmt.Errorf("cidr %s is invalid: %w", cidr, err)
 		}
 
 		return parsedNet.String(), nil

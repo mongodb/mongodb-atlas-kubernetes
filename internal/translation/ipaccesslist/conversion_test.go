@@ -2,6 +2,8 @@ package ipaccesslist
 
 import (
 	"errors"
+	"fmt"
+	"net"
 	"testing"
 	"time"
 
@@ -48,7 +50,7 @@ func TestParseIPNetwork(t *testing.T) {
 			ip:       "",
 			cidr:     "wrong-cidr",
 			expected: "",
-			err:      errors.New("cidr wrong-cidr is invalid"),
+			err:      fmt.Errorf("cidr wrong-cidr is invalid: %w", &net.ParseError{Type: "CIDR address", Text: "wrong-cidr"}),
 		},
 	}
 
@@ -270,42 +272,30 @@ func TestIPAccessEntry_IsExpired(t *testing.T) {
 
 	for name, tt := range test {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.ipAccessEntry.IsExpired())
+			assert.Equal(t, tt.expected, tt.ipAccessEntry.IsExpired(time.Now()))
 		})
 	}
 }
 
 func TestIPAccessEntries(t *testing.T) {
-	t.Run("should filter expired and active entries", func(t *testing.T) {
-		expired := time.Now().UTC().Add(time.Minute * -1)
-		active := time.Now().UTC().Add(time.Minute * 1)
-		entries := IPAccessEntries{
-			"192.168.100.150/32": {
-				CIDR:            "192.168.100.150/32",
-				DeleteAfterDate: &expired,
-			},
-			"192.168.1.0/24": {
-				CIDR:            "192.168.1.0/24",
-				DeleteAfterDate: &active,
-			},
-			"sg-12345": {
-				AWSSecurityGroup: "sg-12345",
-			},
-		}
-
-		assert.Equal(
-			t,
-			IPAccessEntries{
+	expired := time.Now().UTC().Add(time.Minute * -1)
+	active := time.Now().UTC().Add(time.Minute * 1)
+	tests := map[string]struct {
+		expired  bool
+		expected IPAccessEntries
+	}{
+		"should filter expired entries": {
+			expired: true,
+			expected: IPAccessEntries{
 				"192.168.100.150/32": {
 					CIDR:            "192.168.100.150/32",
 					DeleteAfterDate: &expired,
 				},
 			},
-			entries.GetExpired(),
-		)
-		assert.Equal(
-			t,
-			IPAccessEntries{
+		},
+		"should filter active entries": {
+			expired: false,
+			expected: IPAccessEntries{
 				"192.168.1.0/24": {
 					CIDR:            "192.168.1.0/24",
 					DeleteAfterDate: &active,
@@ -314,9 +304,27 @@ func TestIPAccessEntries(t *testing.T) {
 					AWSSecurityGroup: "sg-12345",
 				},
 			},
-			entries.GetActives(),
-		)
-	})
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			entries := IPAccessEntries{
+				"192.168.100.150/32": {
+					CIDR:            "192.168.100.150/32",
+					DeleteAfterDate: &expired,
+				},
+				"192.168.1.0/24": {
+					CIDR:            "192.168.1.0/24",
+					DeleteAfterDate: &active,
+				},
+				"sg-12345": {
+					AWSSecurityGroup: "sg-12345",
+				},
+			}
+			assert.Equal(t, tt.expected, entries.GetByStatus(tt.expired))
+		})
+	}
 }
 
 func TestToAKO(t *testing.T) {
@@ -352,7 +360,7 @@ func TestToAKO(t *testing.T) {
 					AwsSecurityGroup: "sg-12345",
 				},
 			},
-			ToAKO(entries),
+			FromInternal(entries),
 		)
 	})
 }
