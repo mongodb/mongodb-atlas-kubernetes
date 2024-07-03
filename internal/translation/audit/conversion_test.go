@@ -99,7 +99,7 @@ func TestNewAuditConfig(t *testing.T) {
 	}
 }
 
-func TestConvesrion(t *testing.T) {
+func TestConversion(t *testing.T) {
 	testCases := []struct {
 		title        string
 		internalSide *AuditConfig
