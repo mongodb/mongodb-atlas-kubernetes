@@ -11,7 +11,7 @@ import (
 // the Atlas AuditLog
 type AuditLogService interface {
 	Get(ctx context.Context, projectID string) (*AuditConfig, error)
-	Set(ctx context.Context, projectID string, auditing *AuditConfig) error
+	Update(ctx context.Context, projectID string, auditing *AuditConfig) error
 }
 
 // AuditLog is the default implementation of the AuditLogService using the Atlas SDK
@@ -34,8 +34,8 @@ func (s *AuditLog) Get(ctx context.Context, projectID string) (*AuditConfig, err
 	return fromAtlas(auditLog), nil
 }
 
-// Set an Atlas Project audit log configuration
-func (s *AuditLog) Set(ctx context.Context, projectID string, auditing *AuditConfig) error {
+// Update an Atlas Project audit log configuration
+func (s *AuditLog) Update(ctx context.Context, projectID string, auditing *AuditConfig) error {
 	_, _, err := s.auditAPI.UpdateAuditingConfiguration(ctx, projectID, toAtlas(auditing)).Execute()
 	return err
 }

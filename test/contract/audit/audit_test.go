@@ -117,7 +117,7 @@ func TestSyncs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			err := as.Set(ctx, testProjectID, tc.auditing)
+			err := as.Update(ctx, testProjectID, tc.auditing)
 			require.NoError(t, err)
 
 			result, err := as.Get(ctx, testProjectID)

@@ -38,7 +38,7 @@ func (a *auditController) reconcile() workflow.Result {
 
 // configure update Atlas with new audit log configuration
 func (a *auditController) configure(auditConfig *audit.AuditConfig, isUnset bool) workflow.Result {
-	err := a.service.Set(a.ctx.Context, a.project.ID(), auditConfig)
+	err := a.service.Update(a.ctx.Context, a.project.ID(), auditConfig)
 	if err != nil {
 		return a.terminate(workflow.ProjectAuditingReady, err)
 	}
