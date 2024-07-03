@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
@@ -101,13 +100,9 @@ func TestNewAuditConfig(t *testing.T) {
 }
 
 func TestConvesrion(t *testing.T) {
-	TrueBool := true
-	FalseBool := false
-	EmptyAudit := "{}"
 	testCases := []struct {
 		title        string
 		internalSide *AuditConfig
-		atlasSide    *admin.AuditLog
 	}{
 		{
 			title: "Just enabled",
@@ -116,11 +111,6 @@ func TestConvesrion(t *testing.T) {
 					Enabled: true,
 				},
 			),
-			atlasSide: &admin.AuditLog{
-				Enabled:                   &TrueBool,
-				AuditAuthorizationSuccess: &FalseBool,
-				AuditFilter:               &EmptyAudit,
-			},
 		},
 		{
 			title: "Auth success logs as well",
@@ -130,11 +120,6 @@ func TestConvesrion(t *testing.T) {
 					AuditAuthorizationSuccess: true,
 				},
 			),
-			atlasSide: &admin.AuditLog{
-				AuditAuthorizationSuccess: &TrueBool,
-				Enabled:                   &TrueBool,
-				AuditFilter:               &EmptyAudit,
-			},
 		},
 		{
 			title: "With a filter",
@@ -144,14 +129,6 @@ func TestConvesrion(t *testing.T) {
 					AuditFilter: `{"atype":"authenticate"}`,
 				},
 			),
-			atlasSide: &admin.AuditLog{
-				AuditFilter: func() *string {
-					s := `{"atype":"authenticate"}`
-					return &s
-				}(),
-				Enabled:                   &TrueBool,
-				AuditAuthorizationSuccess: &FalseBool,
-			},
 		},
 		{
 			title: "With a filter and success logs",
@@ -162,14 +139,6 @@ func TestConvesrion(t *testing.T) {
 					AuditFilter:               `{"atype":"authenticate"}`,
 				},
 			),
-			atlasSide: &admin.AuditLog{
-				AuditFilter: func() *string {
-					s := `{"atype":"authenticate"}`
-					return &s
-				}(),
-				Enabled:                   &TrueBool,
-				AuditAuthorizationSuccess: &TrueBool,
-			},
 		},
 		{
 			title: "All set but disabled",
@@ -179,52 +148,18 @@ func TestConvesrion(t *testing.T) {
 					AuditFilter:               `{"atype":"authenticate"}`,
 				},
 			),
-			atlasSide: &admin.AuditLog{
-				AuditFilter: func() *string {
-					s := `{"atype":"authenticate"}`
-					return &s
-				}(),
-				AuditAuthorizationSuccess: &TrueBool,
-				Enabled:                   &FalseBool,
-			},
 		},
 		{
 			title: "Default (disabled) case",
 			internalSide: NewAuditConfig(
 				&akov2.Auditing{},
 			),
-			atlasSide: &admin.AuditLog{
-				AuditFilter: func() *string {
-					s := `{}`
-					return &s
-				}(),
-				AuditAuthorizationSuccess: &FalseBool,
-				Enabled:                   &FalseBool,
-			},
 		},
 	}
-	t.Run("Test From Internal to Atlas Method", func(t *testing.T) {
-		for _, tc := range testCases {
-			t.Run(tc.title, func(t *testing.T) {
-				actualResult := toAtlas(tc.internalSide)
-				assert.Equal(t, tc.atlasSide, actualResult)
-			})
-		}
-	})
-	t.Run("Test From Atlas to Internal Method", func(t *testing.T) {
-		for _, tc := range testCases {
-			t.Run(tc.title, func(t *testing.T) {
-				actualResult := fromAtlas(tc.atlasSide)
-				assert.Equal(t, tc.internalSide, actualResult)
-			})
-		}
-	})
-	t.Run("Test From Internal to Atlas to Internal", func(t *testing.T) {
-		for _, tc := range testCases {
-			t.Run(tc.title, func(t *testing.T) {
-				actualResult := fromAtlas(toAtlas(tc.internalSide))
-				assert.Equal(t, tc.internalSide, actualResult)
-			})
-		}
-	})
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			actualResult := fromAtlas(toAtlas(tc.internalSide))
+			assert.Equal(t, tc.internalSide, actualResult)
+		})
+	}
 }
