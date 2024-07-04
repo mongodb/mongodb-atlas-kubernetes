@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -106,12 +105,6 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	conditions := akov2.InitCondition(project, api.FalseCondition(api.ReadyType))
 	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
-
-	if project.ConnectionSecretObjectKey() != nil {
-		// Note, that we are not watching the global connection secret - seems there is no point in reconciling all
-		// the projects once that secret is changed
-		workflowCtx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: "Secret", Resource: *project.ConnectionSecretObjectKey()})
-	}
 
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer func() {
@@ -386,7 +379,7 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasProject").
 		For(&akov2.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
+		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findProjectsForSecret)).
 		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(&r.DeprecatedResourceWatcher)).
 		Watches(
 			&akov2.AtlasBackupCompliancePolicy{},
@@ -413,6 +406,42 @@ func NewAtlasProjectReconciler(
 		AtlasProvider:             atlasProvider,
 		ObjectDeletionProtection:  deletionProtection,
 	}
+}
+
+func (r *AtlasProjectReconciler) findProjectsForSecret(ctx context.Context, obj client.Object) []reconcile.Request {
+	secret, ok := obj.(*corev1.Secret)
+	if !ok {
+		r.Log.Warnf("watching AtlasBackupCompliancePolicy but got %T", obj)
+		return nil
+	}
+
+	projects := &akov2.AtlasProjectList{}
+	listOpts := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasProjectBySecretsIndex,
+			client.ObjectKeyFromObject(secret).String(),
+		),
+	}
+	err := r.Client.List(ctx, projects, listOpts)
+	if err != nil {
+		r.Log.Errorf("failed to list Atlas projects: %e", err)
+		return []reconcile.Request{}
+	}
+
+	requests := make([]reconcile.Request, 0, len(projects.Items))
+	for i := range projects.Items {
+		item := projects.Items[i]
+		requests = append(
+			requests,
+			reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      item.Name,
+					Namespace: item.Namespace,
+				},
+			},
+		)
+	}
+	return requests
 }
 
 func (r *AtlasProjectReconciler) findProjectsForBCP(ctx context.Context, obj client.Object) []reconcile.Request {

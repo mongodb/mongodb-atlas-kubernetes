@@ -605,3 +605,96 @@ func TestFindProjectsForBCP(t *testing.T) {
 		})
 	}
 }
+
+func TestFindProjectsForConnectionSecret(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasDeployment{},
+			want: nil,
+		},
+		{
+			name: "test",
+			obj: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-secret", Namespace: "ns1"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns1"},
+					Spec: akov2.AtlasProjectSpec{
+						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret"},
+						AlertConfigurations: []akov2.AlertConfiguration{
+							{
+								Notifications: []akov2.Notification{
+									{APITokenRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{APITokenRef: common.ResourceRefNamespaced{Name: "test-secret"}}, // double entry
+									{DatadogAPIKeyRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{FlowdockAPITokenRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{OpsGenieAPIKeyRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{ServiceKeyRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{VictorOpsSecretRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+								},
+							},
+						},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-2", Namespace: "ns2"},
+					Spec: akov2.AtlasProjectSpec{
+						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-3", Namespace: "ns3"},
+					Spec: akov2.AtlasProjectSpec{
+						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret"},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-4", Namespace: "ns4"},
+					Spec: akov2.AtlasProjectSpec{
+						AlertConfigurations: []akov2.AlertConfiguration{
+							{
+								Notifications: []akov2.Notification{
+									{APITokenRef: common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"}},
+									{APITokenRef: common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"}}, // double entry
+									{DatadogAPIKeyRef: common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"}},
+									{FlowdockAPITokenRef: common.ResourceRefNamespaced{Name: "test-secret2", Namespace: "ns1"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "test-project", Namespace: "ns1"}},
+				{NamespacedName: types.NamespacedName{Name: "test-project-2", Namespace: "ns2"}},
+				{NamespacedName: types.NamespacedName{Name: "test-project-4", Namespace: "ns4"}},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			projectIndexer := indexer.NewAtlasProjectByConnectionSecretIndexer(zaptest.NewLogger(t))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(projectIndexer.Object(), projectIndexer.Name(), projectIndexer.Keys).
+				Build()
+			reconciler := &AtlasProjectReconciler{
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
+			}
+			got := reconciler.findProjectsForSecret(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", tc.want, got)
+			}
+		})
+	}
+}
