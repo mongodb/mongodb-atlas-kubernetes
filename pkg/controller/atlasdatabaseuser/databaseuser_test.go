@@ -114,7 +114,7 @@ func TestHandleUserNameChange(t *testing.T) {
 		ctx := workflow.NewContext(zap.S(), []api.Condition{}, nil)
 		ctx.Context = context.Background()
 		testUserAPI := mockadmin.NewDatabaseUsersApi(t)
-		dus := dbuser.NewProductionAtlasUsers(testUserAPI)
+		dus := dbuser.NewAtlasUsers(testUserAPI)
 		testUserAPI.EXPECT().DeleteDatabaseUser(ctx.Context, projectID, "", username).Return(
 			admin.DeleteDatabaseUserApiRequest{ApiService: testUserAPI})
 		testUserAPI.EXPECT().DeleteDatabaseUserExecute(mock.Anything).Return(nil, nil, nil)

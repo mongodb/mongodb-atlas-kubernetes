@@ -25,23 +25,23 @@ type AtlasUsersService interface {
 	Update(ctx context.Context, au *User) error
 }
 
-type ProductionAtlasUsers struct {
+type AtlasUsers struct {
 	usersAPI admin.DatabaseUsersApi
 }
 
-func NewAtlasDatabaseUsersService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*ProductionAtlasUsers, error) {
+func NewAtlasDatabaseUsersService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*AtlasUsers, error) {
 	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create versioned client: %w", err)
 	}
-	return NewProductionAtlasUsers(client.DatabaseUsersApi), nil
+	return NewAtlasUsers(client.DatabaseUsersApi), nil
 }
 
-func NewProductionAtlasUsers(api admin.DatabaseUsersApi) *ProductionAtlasUsers {
-	return &ProductionAtlasUsers{usersAPI: api}
+func NewAtlasUsers(api admin.DatabaseUsersApi) *AtlasUsers {
+	return &AtlasUsers{usersAPI: api}
 }
 
-func (dus *ProductionAtlasUsers) Get(ctx context.Context, db, projectID, username string) (*User, error) {
+func (dus *AtlasUsers) Get(ctx context.Context, db, projectID, username string) (*User, error) {
 	atlasDBUser, _, err := dus.usersAPI.GetDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
@@ -52,7 +52,7 @@ func (dus *ProductionAtlasUsers) Get(ctx context.Context, db, projectID, usernam
 	return fromAtlas(atlasDBUser)
 }
 
-func (dus *ProductionAtlasUsers) Delete(ctx context.Context, db, projectID, username string) error {
+func (dus *AtlasUsers) Delete(ctx context.Context, db, projectID, username string) error {
 	_, _, err := dus.usersAPI.DeleteDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
@@ -63,7 +63,7 @@ func (dus *ProductionAtlasUsers) Delete(ctx context.Context, db, projectID, user
 	return nil
 }
 
-func (dus *ProductionAtlasUsers) Create(ctx context.Context, au *User) error {
+func (dus *AtlasUsers) Create(ctx context.Context, au *User) error {
 	u, err := toAtlas(au)
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (dus *ProductionAtlasUsers) Create(ctx context.Context, au *User) error {
 	return err
 }
 
-func (dus *ProductionAtlasUsers) Update(ctx context.Context, au *User) error {
+func (dus *AtlasUsers) Update(ctx context.Context, au *User) error {
 	u, err := toAtlas(au)
 	if err != nil {
 		return err
