@@ -11,7 +11,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -22,13 +21,6 @@ type TeamDataContainer struct {
 }
 
 func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
-	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
-
-	defer func() {
-		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
-		r.Log.Debugf("watching team resources: %v\r\n", r.DeprecatedResourceWatcher.WatchedResourcesSnapshot())
-	}()
-
 	teamsToAssign := map[string]*akov2.Team{}
 	for _, entry := range project.Spec.Teams {
 		assignedTeam := entry
@@ -52,11 +44,6 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 			workflowCtx.Log.Warnf("unable to reconcile team %s. skipping assignment. %s", assignedTeam.TeamRef.GetObject(""), err.Error())
 			continue
 		}
-
-		resourcesToWatch = append(
-			resourcesToWatch,
-			watch.WatchedObject{ResourceKind: team.Kind, Resource: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},
-		)
 
 		teamsToAssign[team.Status.ID] = &assignedTeam
 	}
