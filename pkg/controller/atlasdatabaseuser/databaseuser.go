@@ -65,16 +65,18 @@ func handleUserNameChange(ctx *workflow.Context, dus dbuser.AtlasUsersService, p
 		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", dbUser.Spec.Username, "oldUserName", dbUser.Status.UserName)
 
 		deleteAttempts := 3
+		var err error
 		for i := 1; i <= deleteAttempts; i++ {
-			err := dus.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
-			if errors.Is(err, dbuser.ErrorNotFound) {
-				break
+			err = dus.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
+			if err == nil || errors.Is(err, dbuser.ErrorNotFound) {
+				return workflow.OK()
 			}
 
 			// There may be some rare errors due to the databaseName change or maybe the user has already been removed - this
 			// is not-critical (the stale connection secret has already been removed) and we shouldn't retry to avoid infinite retries
 			ctx.Log.Errorf("Failed to remove user %s from Atlas (attempt %d/%d): %s", dbUser.Status.UserName, i, deleteAttempts, err)
 		}
+		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 	return workflow.OK()
 }

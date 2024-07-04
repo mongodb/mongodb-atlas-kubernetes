@@ -64,21 +64,24 @@ func TestHandleDeletion(t *testing.T) {
 			expectedOk:     false,
 			expectedResult: workflow.OK(),
 		},
+
 		{
 			title:          "Ready user gets deleted properly",
-			service:        fakeDeletionService(ctx, testDatabase, testProjectID, testUsername, nil),
+			service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, nil),
 			expectedOk:     true,
 			expectedResult: workflow.OK(),
 		},
+
 		{
 			title:          "Missing user is already deleted",
-			service:        fakeDeletionService(ctx, testDatabase, testProjectID, testUsername, dbuser.ErrorNotFound),
+			service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, dbuser.ErrorNotFound),
 			expectedOk:     true,
 			expectedResult: workflow.OK(),
 		},
+
 		{
 			title:          "Fails to delete user when returned error is unexpected",
-			service:        fakeDeletionService(ctx, testDatabase, testProjectID, testUsername, errRandom),
+			service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, errRandom),
 			expectedOk:     true,
 			expectedResult: workflow.Terminate(workflow.DatabaseUserNotDeletedInAtlas, errRandom.Error()),
 		},
@@ -94,10 +97,13 @@ func TestHandleDeletion(t *testing.T) {
 	}
 }
 
-func fakeDeletionService(ctx context.Context, db, projectID, username string, err error) dbuser.AtlasUsersService {
-	service := translationmock.AtlasUsersServiceMock{}
+func fakeUserDeletion(ctx context.Context, db, projectID, username string, err error) *translationmock.AtlasUsersServiceMock {
+	return withFakeUserDeletion(&translationmock.AtlasUsersServiceMock{}, ctx, db, projectID, username, err)
+}
+
+func withFakeUserDeletion(service *translationmock.AtlasUsersServiceMock, ctx context.Context, db, projectID, username string, err error) *translationmock.AtlasUsersServiceMock {
 	service.EXPECT().Delete(ctx, db, projectID, username).Return(err)
-	return &service
+	return service
 }
 
 func defaultTestProject() *akov2.AtlasProject {
