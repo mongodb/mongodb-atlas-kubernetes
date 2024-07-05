@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	translationmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	mocked "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -97,11 +97,11 @@ func TestHandleDeletion(t *testing.T) {
 	}
 }
 
-func fakeUserDeletion(ctx context.Context, db, projectID, username string, err error) *translationmock.AtlasUsersServiceMock {
-	return withFakeUserDeletion(&translationmock.AtlasUsersServiceMock{}, ctx, db, projectID, username, err)
+func fakeUserDeletion(ctx context.Context, db, projectID, username string, err error) *mocked.AtlasUsersServiceMock {
+	return withFakeUserDeletion(&mocked.AtlasUsersServiceMock{}, ctx, db, projectID, username, err)
 }
 
-func withFakeUserDeletion(service *translationmock.AtlasUsersServiceMock, ctx context.Context, db, projectID, username string, err error) *translationmock.AtlasUsersServiceMock {
+func withFakeUserDeletion(service *mocked.AtlasUsersServiceMock, ctx context.Context, db, projectID, username string, err error) *mocked.AtlasUsersServiceMock {
 	service.EXPECT().Delete(ctx, db, projectID, username).Return(err)
 	return service
 }

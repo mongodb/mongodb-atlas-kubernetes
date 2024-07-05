@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	tmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	mocked "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -356,40 +356,40 @@ func defaultTestPassword() *corev1.Secret {
 	}
 }
 
-func fakeGetUser(ctx context.Context, usr *dbuser.User, err error) *tmocks.AtlasUsersServiceMock {
-	service := tmocks.AtlasUsersServiceMock{}
+func fakeGetUser(ctx context.Context, usr *dbuser.User, err error) *mocked.AtlasUsersServiceMock {
+	service := mocked.AtlasUsersServiceMock{}
 	service.EXPECT().Get(ctx, testDatabase, testProjectID, testUsername).Return(usr, err)
 	return &service
 }
 
-func withFakeCreateUser(service *tmocks.AtlasUsersServiceMock, ctx context.Context, usr *dbuser.User, err error) *tmocks.AtlasUsersServiceMock {
+func withFakeCreateUser(service *mocked.AtlasUsersServiceMock, ctx context.Context, usr *dbuser.User, err error) *mocked.AtlasUsersServiceMock {
 	service.EXPECT().Create(ctx, usr).Return(err)
 	return service
 }
 
-func withFakeUpdateUser(service *tmocks.AtlasUsersServiceMock, ctx context.Context, usr *dbuser.User, err error) *tmocks.AtlasUsersServiceMock {
+func withFakeUpdateUser(service *mocked.AtlasUsersServiceMock, ctx context.Context, usr *dbuser.User, err error) *mocked.AtlasUsersServiceMock {
 	service.EXPECT().Update(ctx, usr).Return(err)
 	return service
 }
 
-func fakeClusterExists(ctx context.Context, projectID, clusterName string, exists bool, err error) *tmocks.AtlasDeploymentsServiceMock {
-	service := tmocks.AtlasDeploymentsServiceMock{}
+func fakeClusterExists(ctx context.Context, projectID, clusterName string, exists bool, err error) *mocked.AtlasDeploymentsServiceMock {
+	service := mocked.AtlasDeploymentsServiceMock{}
 	service.EXPECT().ClusterExists(ctx, projectID, clusterName).Return(exists, err)
 	return &service
 }
 
-func fakeListClusterNames(ctx context.Context, names []string, err error) *tmocks.AtlasDeploymentsServiceMock {
-	service := tmocks.AtlasDeploymentsServiceMock{}
+func fakeListClusterNames(ctx context.Context, names []string, err error) *mocked.AtlasDeploymentsServiceMock {
+	service := mocked.AtlasDeploymentsServiceMock{}
 	service.EXPECT().ListClusterNames(ctx, testProjectID).Return(names, err)
 	return &service
 }
 
-func withFakeDeploymentIsReady(service *tmocks.AtlasDeploymentsServiceMock, ctx context.Context) *tmocks.AtlasDeploymentsServiceMock {
+func withFakeDeploymentIsReady(service *mocked.AtlasDeploymentsServiceMock, ctx context.Context) *mocked.AtlasDeploymentsServiceMock {
 	service.EXPECT().DeploymentIsReady(ctx, testProjectID, testDeployment).Return(true, nil)
 	return service
 }
 
-func withFakeListDeploymentConnections(service *tmocks.AtlasDeploymentsServiceMock, ctx context.Context, err error) *tmocks.AtlasDeploymentsServiceMock {
+func withFakeListDeploymentConnections(service *mocked.AtlasDeploymentsServiceMock, ctx context.Context, err error) *mocked.AtlasDeploymentsServiceMock {
 	service.EXPECT().ListDeploymentConnections(ctx, testProjectID).Return(nil, err)
 	return service
 }

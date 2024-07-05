@@ -22,6 +22,9 @@ type User struct {
 
 // NewUser wraps a Kubernetes Atlas User Spec pointer augmenting it with projectID and password.
 func NewUser(spec *akov2.AtlasDatabaseUserSpec, projectID, password string) (*User, error) {
+	if spec == nil {
+		return nil, nil
+	}
 	return normalize(&User{AtlasDatabaseUserSpec: spec, ProjectID: projectID, Password: password})
 }
 
@@ -29,6 +32,15 @@ func NewUser(spec *akov2.AtlasDatabaseUserSpec, projectID, password string) (*Us
 // Non Spec fields are not compared. Inputs are dbuser.User so they are normalized
 func DiffSpecs(specUser, atlasUser *User) []string {
 	diffs := []string{}
+	if specUser == nil && atlasUser == nil {
+		return diffs
+	}
+	if specUser == nil || specUser.AtlasDatabaseUserSpec == nil {
+		return []string{"Spec user spec is nil or empty"}
+	}
+	if atlasUser == nil || atlasUser.AtlasDatabaseUserSpec == nil{
+		return []string{"Atlas user spec is nil or empty"}
+	}
 	if atlasUser.Username != specUser.Username {
 		diffs = append(diffs, fmt.Sprintf("Usernames differs from spec: %q <> %q\n",
 			atlasUser.Username, specUser.Username))
