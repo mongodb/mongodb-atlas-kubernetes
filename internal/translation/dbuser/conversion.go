@@ -38,7 +38,7 @@ func DiffSpecs(specUser, atlasUser *User) []string {
 	if specUser == nil || specUser.AtlasDatabaseUserSpec == nil {
 		return []string{"Spec user spec is nil or empty"}
 	}
-	if atlasUser == nil || atlasUser.AtlasDatabaseUserSpec == nil{
+	if atlasUser == nil || atlasUser.AtlasDatabaseUserSpec == nil {
 		return []string{"Atlas user spec is nil or empty"}
 	}
 	if atlasUser.Username != specUser.Username {
@@ -98,6 +98,9 @@ func normalize(user *User) (*User, error) {
 }
 
 func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
+	if dbUser == nil {
+		return nil, nil
+	}
 	scopes, err := scopesFromAtlas(dbUser.GetScopes())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse scopes: %w", err)
@@ -120,6 +123,9 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 }
 
 func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
+	if au == nil || au.AtlasDatabaseUserSpec == nil {
+		return nil, nil
+	}
 	date, err := dateToAtlas(au.DeleteAfterDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse deleteAfterDate value: %w", err)

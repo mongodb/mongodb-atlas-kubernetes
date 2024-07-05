@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -302,7 +303,7 @@ func TestDiffSpecs(t *testing.T) {
 		{
 			title: "Scope diffs are flagged",
 			spec: &dbuser.User{
-				AtlasDatabaseUserSpec:  func() *akov2.AtlasDatabaseUserSpec {
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
 					spec := defaultTestSpec()
 					spec.Scopes = []akov2.ScopeSpec{
 						{Name: "cluster1", Type: "CLUSTER"},
@@ -312,7 +313,7 @@ func TestDiffSpecs(t *testing.T) {
 				}(),
 			},
 			atlas: &dbuser.User{
-				AtlasDatabaseUserSpec:  func() *akov2.AtlasDatabaseUserSpec {
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
 					spec := defaultTestSpec()
 					spec.Scopes = []akov2.ScopeSpec{
 						{Name: "cluster1", Type: "CLUSTER"},
@@ -331,7 +332,7 @@ func TestDiffSpecs(t *testing.T) {
 		{
 			title: "Equal scopes show no diffs",
 			spec: &dbuser.User{
-				AtlasDatabaseUserSpec:  func() *akov2.AtlasDatabaseUserSpec {
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
 					spec := defaultTestSpec()
 					spec.Scopes = []akov2.ScopeSpec{
 						{Name: "cluster1", Type: "CLUSTER"},
@@ -343,7 +344,7 @@ func TestDiffSpecs(t *testing.T) {
 				}(),
 			},
 			atlas: &dbuser.User{
-				AtlasDatabaseUserSpec:  func() *akov2.AtlasDatabaseUserSpec {
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
 					spec := defaultTestSpec()
 					spec.Scopes = []akov2.ScopeSpec{
 						{Name: "cluster1", Type: "CLUSTER"},
