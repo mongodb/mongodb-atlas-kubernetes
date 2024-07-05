@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	AtlasProjectByBackupCompliancePolicyIndex = ""
+	AtlasProjectByBackupCompliancePolicyIndex = "atlasproject.spec.backupCompliancePolicyRef"
 )
 
 type AtlasProjectByBackupCompliancePolicyIndexer struct {
