@@ -64,7 +64,7 @@ func TestAuditController_reconcile(t *testing.T) {
 						Auditing: &akov2.Auditing{},
 					}, nil
 				},
-				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+				UpdateFunc: func(projectID string, auditing *audit.AuditConfig) error {
 					return errors.New("failed to set audit log config")
 				},
 			},
@@ -85,7 +85,7 @@ func TestAuditController_reconcile(t *testing.T) {
 						Auditing: &akov2.Auditing{},
 					}, nil
 				},
-				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+				UpdateFunc: func(projectID string, auditing *audit.AuditConfig) error {
 					return nil
 				},
 			},
@@ -123,7 +123,7 @@ func TestAuditController_reconcile(t *testing.T) {
 						Auditing: &akov2.Auditing{},
 					}, nil
 				},
-				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+				UpdateFunc: func(projectID string, auditing *audit.AuditConfig) error {
 					return nil
 				},
 			},
@@ -139,7 +139,7 @@ func TestAuditController_reconcile(t *testing.T) {
 						},
 					}, nil
 				},
-				SetFunc: func(projectID string, auditing *audit.AuditConfig) error {
+				UpdateFunc: func(projectID string, auditing *audit.AuditConfig) error {
 					return nil
 				},
 			},
