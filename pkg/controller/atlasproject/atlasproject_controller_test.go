@@ -29,7 +29,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
@@ -409,9 +408,8 @@ func TestHandleDeletion(t *testing.T) {
 
 		logger := zaptest.NewLogger(t).Sugar()
 		reconciler := AtlasProjectReconciler{
-			Client:                    k8sClient,
-			DeprecatedResourceWatcher: watch.DeprecatedResourceWatcher{},
-			Log:                       logger,
+			Client: k8sClient,
+			Log:    logger,
 			AtlasProvider: &atlasmocks.TestProvider{
 				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 					return legacyClient, "123", nil
@@ -594,13 +592,172 @@ func TestFindProjectsForBCP(t *testing.T) {
 				WithObjects(tc.initObjs...).
 				WithIndex(projectIndexer.Object(), projectIndexer.Name(), projectIndexer.Keys).
 				Build()
-			reconciler := &AtlasProjectReconciler{
-				Log:    zaptest.NewLogger(t).Sugar(),
-				Client: k8sClient,
-			}
-			got := reconciler.findProjectsForBCP(context.Background(), tc.obj)
+
+			find := newProjectsMapFunc[akov2.AtlasBackupCompliancePolicy](indexer.AtlasProjectByBackupCompliancePolicyIndex, k8sClient, zaptest.NewLogger(t).Sugar())
+			got := find(context.Background(), tc.obj)
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("want reconcile requests: %v, got %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestFindProjectsForConnectionSecret(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasDeployment{},
+			want: nil,
+		},
+		{
+			name: "test",
+			obj: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-secret", Namespace: "ns1"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns1"},
+					Spec: akov2.AtlasProjectSpec{
+						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret"},
+						AlertConfigurations: []akov2.AlertConfiguration{
+							{
+								Notifications: []akov2.Notification{
+									{APITokenRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{APITokenRef: common.ResourceRefNamespaced{Name: "test-secret"}}, // double entry
+									{DatadogAPIKeyRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{FlowdockAPITokenRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{OpsGenieAPIKeyRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{ServiceKeyRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+									{VictorOpsSecretRef: common.ResourceRefNamespaced{Name: "test-secret"}},
+								},
+							},
+						},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-2", Namespace: "ns2"},
+					Spec: akov2.AtlasProjectSpec{
+						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-3", Namespace: "ns3"},
+					Spec: akov2.AtlasProjectSpec{
+						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret"},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-4", Namespace: "ns4"},
+					Spec: akov2.AtlasProjectSpec{
+						AlertConfigurations: []akov2.AlertConfiguration{
+							{
+								Notifications: []akov2.Notification{
+									{APITokenRef: common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"}},
+									{APITokenRef: common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"}}, // double entry
+									{DatadogAPIKeyRef: common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"}},
+									{FlowdockAPITokenRef: common.ResourceRefNamespaced{Name: "test-secret2", Namespace: "ns1"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "test-project", Namespace: "ns1"}},
+				{NamespacedName: types.NamespacedName{Name: "test-project-2", Namespace: "ns2"}},
+				{NamespacedName: types.NamespacedName{Name: "test-project-4", Namespace: "ns4"}},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			projectIndexer := indexer.NewAtlasProjectByConnectionSecretIndexer(zaptest.NewLogger(t))
+
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(projectIndexer.Object(), projectIndexer.Name(), projectIndexer.Keys).
+				Build()
+
+			find := newProjectsMapFunc[corev1.Secret](indexer.AtlasProjectBySecretsIndex, k8sClient, zaptest.NewLogger(t).Sugar())
+			got := find(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestFindProjectsForTeams(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasDeployment{},
+			want: nil,
+		},
+		{
+			name: "test",
+			obj: &akov2.AtlasTeam{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-team", Namespace: "ns1"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns1"},
+					Spec: akov2.AtlasProjectSpec{
+						Teams: []akov2.Team{
+							{TeamRef: common.ResourceRefNamespaced{Name: "test-team"}},
+						},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-2", Namespace: "ns2"},
+					Spec: akov2.AtlasProjectSpec{
+						Teams: []akov2.Team{
+							{TeamRef: common.ResourceRefNamespaced{Name: "test-team", Namespace: "ns1"}},
+						},
+					},
+				},
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-project-3", Namespace: "ns3"},
+					Spec: akov2.AtlasProjectSpec{
+						Teams: []akov2.Team{
+							{TeamRef: common.ResourceRefNamespaced{Name: "test-team"}},
+						},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "test-project", Namespace: "ns1"}},
+				{NamespacedName: types.NamespacedName{Name: "test-project-2", Namespace: "ns2"}},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			projectIndexer := indexer.NewAtlasProjectByTeamIndexer(zaptest.NewLogger(t))
+
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(projectIndexer.Object(), projectIndexer.Name(), projectIndexer.Keys).
+				Build()
+
+			find := newProjectsMapFunc[akov2.AtlasTeam](indexer.AtlasProjectByTeamIndex, k8sClient, zaptest.NewLogger(t).Sugar())
+			got := find(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", tc.want, got)
 			}
 		})
 	}

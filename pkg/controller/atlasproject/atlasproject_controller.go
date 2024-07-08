@@ -46,15 +46,13 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
 type AtlasProjectReconciler struct {
-	Client client.Client
-	watch.DeprecatedResourceWatcher
+	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
 	GlobalPredicates            []predicate.Predicate
@@ -107,16 +105,9 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
-	if project.ConnectionSecretObjectKey() != nil {
-		// Note, that we are not watching the global connection secret - seems there is no point in reconciling all
-		// the projects once that secret is changed
-		workflowCtx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: "Secret", Resource: *project.ConnectionSecretObjectKey()})
-	}
-
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, project)
-		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, log, workflowCtx.ListResourcesToWatch()...)
 	}()
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, project, r.Log)
@@ -386,11 +377,18 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasProject").
 		For(&akov2.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
-		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(&r.DeprecatedResourceWatcher)).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(newProjectsMapFunc[corev1.Secret](indexer.AtlasProjectBySecretsIndex, r.Client, r.Log)),
+		).
+		Watches(
+			&akov2.AtlasTeam{},
+			handler.EnqueueRequestsFromMapFunc(newProjectsMapFunc[akov2.AtlasTeam](indexer.AtlasProjectByTeamIndex, r.Client, r.Log)),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
 		Watches(
 			&akov2.AtlasBackupCompliancePolicy{},
-			handler.EnqueueRequestsFromMapFunc(r.findProjectsForBCP),
+			handler.EnqueueRequestsFromMapFunc(newProjectsMapFunc[akov2.AtlasBackupCompliancePolicy](indexer.AtlasProjectByBackupCompliancePolicyIndex, r.Client, r.Log)),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		Complete(r)
@@ -404,51 +402,53 @@ func NewAtlasProjectReconciler(
 	logger *zap.Logger,
 ) *AtlasProjectReconciler {
 	return &AtlasProjectReconciler{
-		Scheme:                    mgr.GetScheme(),
-		Client:                    mgr.GetClient(),
-		EventRecorder:             mgr.GetEventRecorderFor("AtlasProject"),
-		DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
-		GlobalPredicates:          predicates,
-		Log:                       logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasProvider:             atlasProvider,
-		ObjectDeletionProtection:  deletionProtection,
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasProject"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
 	}
 }
 
-func (r *AtlasProjectReconciler) findProjectsForBCP(ctx context.Context, obj client.Object) []reconcile.Request {
-	bcp, ok := obj.(*akov2.AtlasBackupCompliancePolicy)
-	if !ok {
-		r.Log.Warnf("watching AtlasBackupCompliancePolicy but got %T", obj)
-		return nil
-	}
+func newProjectsMapFunc[T any](indexName string, kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		_, ok := any(obj).(*T)
+		if !ok {
+			var watchedObject T
+			logger.Warnf("watching %T but got %T", &watchedObject, obj)
+			return nil
+		}
 
-	projects := &akov2.AtlasProjectList{}
-	listOpts := &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasProjectByBackupCompliancePolicyIndex,
-			client.ObjectKeyFromObject(bcp).String(),
-		),
-	}
-	err := r.Client.List(ctx, projects, listOpts)
-	if err != nil {
-		r.Log.Errorf("failed to list Atlas projects: %e", err)
-		return []reconcile.Request{}
-	}
+		projects := &akov2.AtlasProjectList{}
+		listOpts := &client.ListOptions{
+			FieldSelector: fields.OneTermEqualSelector(
+				indexName,
+				client.ObjectKeyFromObject(obj).String(),
+			),
+		}
+		err := kubeClient.List(ctx, projects, listOpts)
+		if err != nil {
+			logger.Errorf("failed to list Atlas projects: %e", err)
+			return []reconcile.Request{}
+		}
 
-	requests := make([]reconcile.Request, 0, len(projects.Items))
-	for i := range projects.Items {
-		item := projects.Items[i]
-		requests = append(
-			requests,
-			reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      item.Name,
-					Namespace: item.Namespace,
+		requests := make([]reconcile.Request, 0, len(projects.Items))
+		for i := range projects.Items {
+			item := projects.Items[i]
+			requests = append(
+				requests,
+				reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      item.Name,
+						Namespace: item.Namespace,
+					},
 				},
-			},
-		)
+			)
+		}
+		return requests
 	}
-	return requests
 }
 
 // setCondition sets the condition from the result and logs the warnings
