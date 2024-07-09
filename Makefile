@@ -105,6 +105,7 @@ GOMOD_LICENSES_SHA := $(shell cat $(LICENSES_GOMOD_SHA_FILE))
 OPERATOR_NAMESPACE=atlas-operator
 OPERATOR_POD_NAME=mongodb-atlas-operator
 RUN_YAML= # Set to the YAML to run when calling make run
+RUN_LOG_LEVEL ?= debug
 
 LOCAL_IMAGE=mongodb-atlas-kubernetes-operator:compiled
 CONTAINER_SPEC=.spec.template.spec.containers[0]
@@ -533,7 +534,7 @@ ifdef RUN_YAML
 endif
 	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
-	bin/manager --object-deletion-protection=false --log-level=debug \
+	bin/manager --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
 	--atlas-domain=$(ATLAS_DOMAIN) \
 	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME)
 
