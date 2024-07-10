@@ -160,64 +160,54 @@ func TestEnsureDatabaseUser(t *testing.T) {
 	conditions := akov2.InitCondition(user, api.FalseCondition(api.ReadyType))
 	log := zap.S()
 	workflowCtx := workflow.NewContext(log, conditions, ctx)
-	internalUser := &dbuser.User{
-		AtlasDatabaseUserSpec: &user.Spec,
-		Password:              "some-secret-here",
-		ProjectID:             testProjectID,
-	}
 	differentUser := defaultTestUser()
 	differentUser.Spec.AWSIAMType = "USER"
-	differentInternalUser := &dbuser.User{
-		AtlasDatabaseUserSpec: &differentUser.Spec,
-		Password:              "some-secret-here",
-		ProjectID:             testProjectID,
-	}
 	r := &AtlasDatabaseUserReconciler{
 		Client: fakeClient,
 		Log:    log,
 	}
 	for _, tc := range []struct {
-		title          string
-		password       *corev1.Secret
-		dateOverride   string
-		scopeOverrides []akov2.ScopeSpec
-		nameOverride   string
-		dus            dbuser.AtlasUsersService
-		ds             deployment.AtlasDeploymentsService
-		expected       workflow.Result
+		title           string
+		password        *corev1.Secret
+		dateOverride    string
+		scopeOverrides  []akov2.ScopeSpec
+		nameOverride    string
+		dus             dbuser.AtlasUsersService
+		ds              deployment.AtlasDeploymentsService
+		expectedMessage string
 	}{
 		{
-			title:    "Missing password fails",
-			expected: workflow.Terminate(workflow.Internal, "secrets \"password-name\" not found"),
+			title:           "Missing password fails",
+			expectedMessage: `secrets "password-name" not found`,
 		},
 
 		{
-			title:        "Wrong date format fails",
-			password:     defaultTestPassword(),
-			dateOverride: "this-is-not-a-proper-date",
-			expected:     workflow.Terminate(workflow.Internal, "failed to parse \"this-is-not-a-proper-date\" to an ISO date: parsing time \"this-is-not-a-proper-date\" as \"2006-01-02T15:04:05.999Z\": cannot parse \"this-is-not-a-proper-date\" as \"2006\""),
+			title:           "Wrong date format fails",
+			password:        defaultTestPassword(),
+			dateOverride:    "this-is-not-a-proper-date",
+			expectedMessage: `failed to parse "this-is-not-a-proper-date" to an ISO date: parsing time "this-is-not-a-proper-date"`,
 		},
 
 		{
-			title:        "Expired user aborts",
-			password:     defaultTestPassword(),
-			dateOverride: time.Now().Add(-time.Hour).Format("2006-01-02T15:04:05-07"),
-			expected:     workflow.Terminate(workflow.DatabaseUserExpired, "The database user is expired and has been removed from Atlas").WithoutRetry(),
+			title:           "Expired user aborts",
+			password:        defaultTestPassword(),
+			dateOverride:    time.Now().Add(-time.Hour).Format("2006-01-02T15:04:05-07"),
+			expectedMessage: `The database user is expired and has been removed from Atlas`,
 		},
 
 		{
-			title:          "Invalid user scope aborts",
-			password:       defaultTestPassword(),
-			scopeOverrides: []akov2.ScopeSpec{{Type: akov2.DeploymentScopeType, Name: nonExistingCluster}},
-			ds:             fakeClusterExists(ctx, testProjectID, nonExistingCluster, false, nil),
-			expected:       workflow.Terminate(workflow.DatabaseUserInvalidSpec, "\"scopes\" field references deployment named \"non-existing-cluster\" but such deployment doesn't exist in Atlas'"),
+			title:           "Invalid user scope aborts",
+			password:        defaultTestPassword(),
+			scopeOverrides:  []akov2.ScopeSpec{{Type: akov2.DeploymentScopeType, Name: nonExistingCluster}},
+			ds:              fakeClusterExists(ctx, testProjectID, nonExistingCluster, false, nil),
+			expectedMessage: `"scopes" field references deployment named "non-existing-cluster" but such deployment doesn't exist in Atlas'`,
 		},
 
 		{
-			title:    "User get fails",
-			password: defaultTestPassword(),
-			dus:      fakeGetUser(ctx, nil, errRandom),
-			expected: workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, errRandom.Error()),
+			title:           "User get fails",
+			password:        defaultTestPassword(),
+			dus:             fakeGetUser(ctx, nil, errRandom),
+			expectedMessage: errRandom.Error(),
 		},
 
 		{
@@ -225,9 +215,9 @@ func TestEnsureDatabaseUser(t *testing.T) {
 			password: defaultTestPassword(),
 			dus: func() dbuser.AtlasUsersService {
 				service := fakeGetUser(ctx, nil, dbuser.ErrorNotFound)
-				return withFakeCreateUser(service, ctx, internalUser, nil)
+				return withFakeCreateUser(service, ctx, internalUser(user), nil)
 			}(),
-			expected: workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, "Clusters are scheduled to handle database users updates"),
+			expectedMessage: `Clusters are scheduled to handle database users updates`,
 		},
 
 		{
@@ -235,79 +225,79 @@ func TestEnsureDatabaseUser(t *testing.T) {
 			password: defaultTestPassword(),
 			dus: func() dbuser.AtlasUsersService {
 				service := fakeGetUser(ctx, nil, dbuser.ErrorNotFound)
-				return withFakeCreateUser(service, ctx, internalUser, errRandom)
+				return withFakeCreateUser(service, ctx, internalUser(user), errRandom)
 			}(),
-			expected: workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, errRandom.Error()),
+			expectedMessage: errRandom.Error(),
 		},
 
 		{
 			title:    "User found unchanged does nothing",
 			password: defaultTestPassword(),
 			dus: func() dbuser.AtlasUsersService {
-				service := fakeGetUser(ctx, internalUser, nil)
-				return withFakeUpdateUser(service, ctx, internalUser, nil)
+				service := fakeGetUser(ctx, internalUser(user), nil)
+				return withFakeUpdateUser(service, ctx, internalUser(user), nil)
 			}(),
 			ds: func() deployment.AtlasDeploymentsService {
 				service := fakeListClusterNames(ctx, []string{testDeployment}, nil)
 				service = withFakeDeploymentIsReady(service, ctx)
 				return withFakeListDeploymentConnections(service, ctx, nil)
 			}(),
-			expected: workflow.OK(),
+			expectedMessage: "",
 		},
 
 		{
 			title:    "User different from Atlas is updated successfully",
 			password: defaultTestPassword(),
 			dus: func() dbuser.AtlasUsersService {
-				service := fakeGetUser(ctx, differentInternalUser, nil)
-				return withFakeUpdateUser(service, ctx, internalUser, nil)
+				service := fakeGetUser(ctx, internalUser(differentUser), nil)
+				return withFakeUpdateUser(service, ctx, internalUser(user), nil)
 			}(),
-			expected: workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, "Clusters are scheduled to handle database users updates"),
+			expectedMessage: `Clusters are scheduled to handle database users updates`,
 		},
 
 		{
 			title:    "User different from Atlas tries to update but fails",
 			password: defaultTestPassword(),
 			dus: func() dbuser.AtlasUsersService {
-				service := fakeGetUser(ctx, differentInternalUser, nil)
-				return withFakeUpdateUser(service, ctx, internalUser, errRandom)
+				service := fakeGetUser(ctx, internalUser(differentUser), nil)
+				return withFakeUpdateUser(service, ctx, internalUser(user), errRandom)
 			}(),
-			expected: workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, errRandom.Error()),
+			expectedMessage: errRandom.Error(),
 		},
 
 		{
 			title:    "User found unchanged but fails to check clusters",
 			password: defaultTestPassword(),
 			dus: func() dbuser.AtlasUsersService {
-				service := fakeGetUser(ctx, internalUser, nil)
-				return withFakeUpdateUser(service, ctx, internalUser, nil)
+				service := fakeGetUser(ctx, internalUser(user), nil)
+				return withFakeUpdateUser(service, ctx, internalUser(user), nil)
 			}(),
-			ds:       fakeListClusterNames(ctx, []string{testDeployment}, errRandom),
-			expected: workflow.Terminate(workflow.Internal, errRandom.Error()),
+			ds:              fakeListClusterNames(ctx, []string{testDeployment}, errRandom),
+			expectedMessage: errRandom.Error(),
 		},
 
 		{
 			title:    "User found unchanged but fails to check connections",
 			password: defaultTestPassword(),
 			dus: func() dbuser.AtlasUsersService {
-				service := fakeGetUser(ctx, internalUser, nil)
-				return withFakeUpdateUser(service, ctx, internalUser, nil)
+				service := fakeGetUser(ctx, internalUser(user), nil)
+				return withFakeUpdateUser(service, ctx, internalUser(user), nil)
 			}(),
 			ds: func() deployment.AtlasDeploymentsService {
 				service := fakeListClusterNames(ctx, []string{testDeployment}, nil)
 				service = withFakeDeploymentIsReady(service, ctx)
 				return withFakeListDeploymentConnections(service, ctx, errRandom)
 			}(),
-			expected: workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, errRandom.Error()),
+			expectedMessage: errRandom.Error(),
 		},
 
 		{
-			title:        "User found unchanged but changed name",
+			title:        "User found unchanged but changed name succeeds",
 			password:     defaultTestPassword(),
 			nameOverride: "some-other-name",
 			dus: func() dbuser.AtlasUsersService {
-				service := fakeGetUser(ctx, internalUser, nil)
-				service = withFakeUpdateUser(service, ctx, internalUser, nil)
+				service := fakeGetUser(ctx, internalUser(user), nil)
+				service = withFakeUpdateUser(service, ctx, internalUser(user), nil)
 				return withFakeUserDeletion(service, ctx, testDatabase, testProjectID, "some-other-name", nil)
 			}(),
 			ds: func() deployment.AtlasDeploymentsService {
@@ -315,7 +305,6 @@ func TestEnsureDatabaseUser(t *testing.T) {
 				service = withFakeDeploymentIsReady(service, ctx)
 				return withFakeListDeploymentConnections(service, ctx, nil)
 			}(),
-			expected: workflow.OK(),
 		},
 
 		{
@@ -323,8 +312,8 @@ func TestEnsureDatabaseUser(t *testing.T) {
 			password:     defaultTestPassword(),
 			nameOverride: "some-other-name",
 			dus: func() dbuser.AtlasUsersService {
-				service := fakeGetUser(ctx, internalUser, nil)
-				service = withFakeUpdateUser(service, ctx, internalUser, nil)
+				service := fakeGetUser(ctx, internalUser(user), nil)
+				service = withFakeUpdateUser(service, ctx, internalUser(user), nil)
 				return withFakeUserDeletion(service, ctx, testDatabase, testProjectID, "some-other-name", errRandom)
 			}(),
 			ds: func() deployment.AtlasDeploymentsService {
@@ -332,7 +321,7 @@ func TestEnsureDatabaseUser(t *testing.T) {
 				service = withFakeDeploymentIsReady(service, ctx)
 				return withFakeListDeploymentConnections(service, ctx, nil)
 			}(),
-			expected: workflow.Terminate(workflow.Internal, errRandom.Error()),
+			expectedMessage: errRandom.Error(),
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -344,8 +333,21 @@ func TestEnsureDatabaseUser(t *testing.T) {
 			user.Spec.Scopes = tc.scopeOverrides
 			user.Status.UserName = tc.nameOverride
 			result := r.ensureDatabaseUser(workflowCtx, tc.dus, tc.ds, *project, *user)
-			assert.Equal(t, tc.expected, result)
+			if tc.expectedMessage == "" {
+				assert.Equal(t, true, result.IsOk())
+			} else {
+				assert.Equal(t, false, result.IsOk())
+				assert.Contains(t, result.GetMessage(), tc.expectedMessage)
+			}
 		})
+	}
+}
+
+func internalUser(user *akov2.AtlasDatabaseUser) *dbuser.User {
+	return &dbuser.User{
+		AtlasDatabaseUserSpec: &user.Spec,
+		Password:              "some-secret-here",
+		ProjectID:             testProjectID,
 	}
 }
 

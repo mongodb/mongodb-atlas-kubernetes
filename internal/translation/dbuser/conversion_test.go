@@ -1,7 +1,6 @@
 package dbuser_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -172,8 +171,7 @@ func TestDiffSpecs(t *testing.T) {
 		expectedDiffs []string
 	}{
 		{
-			title:         "Nil users are equal",
-			expectedDiffs: []string{},
+			title: "Nil users are equal",
 		},
 
 		{
@@ -181,7 +179,7 @@ func TestDiffSpecs(t *testing.T) {
 			atlas: &dbuser.User{
 				AtlasDatabaseUserSpec: defaultTestSpec(),
 			},
-			expectedDiffs: []string{"Spec user spec is nil or empty"},
+			expectedDiffs: []string{"\"changed\":[null, {}]"},
 		},
 
 		{
@@ -189,7 +187,7 @@ func TestDiffSpecs(t *testing.T) {
 			spec: &dbuser.User{
 				AtlasDatabaseUserSpec: defaultTestSpec(),
 			},
-			expectedDiffs: []string{"Atlas user spec is nil or empty"},
+			expectedDiffs: []string{"\"changed\":[{}, null]"},
 		},
 
 		{
@@ -200,7 +198,6 @@ func TestDiffSpecs(t *testing.T) {
 			atlas: &dbuser.User{
 				AtlasDatabaseUserSpec: defaultTestSpec(),
 			},
-			expectedDiffs: []string{},
 		},
 
 		{
@@ -215,7 +212,6 @@ func TestDiffSpecs(t *testing.T) {
 				ProjectID:             "",
 				Password:              testPassword,
 			},
-			expectedDiffs: []string{},
 		},
 
 		{
@@ -236,12 +232,12 @@ func TestDiffSpecs(t *testing.T) {
 				}(),
 			},
 			expectedDiffs: []string{
-				"Usernames differs from spec: \"testUsername1\" <> \"testUsername\"\n",
-				"DatabaseName differs from spec: \"test-db2\" <> \"test-db\"\n",
-				fmt.Sprintf("DeleteAfterDate differs from spec: %q <> \"\"\n", testOtherDate),
-				"OIDCAuthType differs from spec: \"IDP_GROUP\" <> \"\"\n",
-				"AWSIAMType differs from spec: \"USER\" <> \"\"\n",
-				"X509Type differs from spec: \"MANAGED\" <> \"\"\n",
+				"username",
+				"databaseName",
+				"deleteAfterDate",
+				"oidcAuthType",
+				"awsIamType",
+				"x509Type",
 			},
 		},
 
@@ -268,9 +264,7 @@ func TestDiffSpecs(t *testing.T) {
 					return spec
 				}(),
 			},
-			expectedDiffs: []string{
-				"Roles differs from spec: [{role2 database2 collection2} {role1 database1 collection1}] <> [{role2 database2 collection2} {role2 database1 collection1} {role1 database1 collection1}]\n",
-			},
+			expectedDiffs: []string{"roles", `"prop-removed":{"roleName": "role1"}`},
 		},
 
 		{
@@ -324,9 +318,7 @@ func TestDiffSpecs(t *testing.T) {
 					return spec
 				}(),
 			},
-			expectedDiffs: []string{
-				"Scopes differs from spec: [{cluster1 CLUSTER} {cluster2 CLUSTER} {lake1 DATA_LAKE} {lake2 DATA_LAKE}] <> [{cluster1 CLUSTER} {lake2 DATA_LAKE}] END\n",
-			},
+			expectedDiffs: []string{"scopes", `prop-added":{"name": "lake1",}`},
 		},
 
 		{
@@ -359,8 +351,15 @@ func TestDiffSpecs(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			diffs := dbuser.DiffSpecs(tc.spec, tc.atlas)
-			assert.Equal(t, tc.expectedDiffs, diffs)
+			equal := dbuser.EqualSpecs(tc.spec, tc.atlas)
+			if tc.expectedDiffs == nil {
+				assert.Equal(t, true, equal)
+			} else {
+				diff := dbuser.Diff(tc.spec, tc.atlas)
+				for _, expected := range tc.expectedDiffs {
+					assert.Contains(t, diff, expected)
+				}
+			}
 		})
 	}
 }

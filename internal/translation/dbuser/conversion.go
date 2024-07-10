@@ -8,6 +8,8 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/nsf/jsondiff"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
@@ -20,81 +22,59 @@ type User struct {
 	ProjectID string
 }
 
-// NewUser wraps a Kubernetes Atlas User Spec pointer augmenting it with projectID and password.
+// NewUser wraps and normalizes a Kubernetes Atlas User Spec pointer augmenting it with projectID and password.
 func NewUser(spec *akov2.AtlasDatabaseUserSpec, projectID, password string) (*User, error) {
 	if spec == nil {
 		return nil, nil
 	}
-	return normalize(&User{AtlasDatabaseUserSpec: spec, ProjectID: projectID, Password: password})
+	user := &User{AtlasDatabaseUserSpec: spec, ProjectID: projectID, Password: password}
+	if err := normalize(user.AtlasDatabaseUserSpec); err != nil {
+		return nil, fmt.Errorf("failed to create internal user type: %w", err)
+	}
+	return user, nil
 }
 
-// DiffSpecs returns all differences found in the user Spec fields or a spec user and an atlas user.
-// Non Spec fields are not compared. Inputs are dbuser.User so they are normalized
-func DiffSpecs(specUser, atlasUser *User) []string {
-	diffs := []string{}
-	if specUser == nil && atlasUser == nil {
-		return diffs
+// EqualSpecs returns true if the given users have the same specs
+func EqualSpecs(spec, atlas *User) bool {
+	if !spec.hasSpec() && !atlas.hasSpec() { // both missing spec are same
+		return true
 	}
-	if specUser == nil || specUser.AtlasDatabaseUserSpec == nil {
-		return []string{"Spec user spec is nil or empty"}
+	if !spec.hasSpec() || !atlas.hasSpec() { // only one missing spec are different
+		return false
 	}
-	if atlasUser == nil || atlasUser.AtlasDatabaseUserSpec == nil {
-		return []string{"Atlas user spec is nil or empty"}
-	}
-	if atlasUser.Username != specUser.Username {
-		diffs = append(diffs, fmt.Sprintf("Usernames differs from spec: %q <> %q\n",
-			atlasUser.Username, specUser.Username))
-	}
-	if atlasUser.DatabaseName != specUser.DatabaseName {
-		diffs = append(diffs, fmt.Sprintf("DatabaseName differs from spec: %q <> %q\n",
-			atlasUser.DatabaseName, specUser.DatabaseName))
-	}
-	if atlasUser.DeleteAfterDate != specUser.DeleteAfterDate {
-		diffs = append(diffs, fmt.Sprintf("DeleteAfterDate differs from spec: %q <> %q\n",
-			atlasUser.DeleteAfterDate, specUser.DeleteAfterDate))
-	}
-	if atlasUser.OIDCAuthType != specUser.OIDCAuthType {
-		diffs = append(diffs, fmt.Sprintf("OIDCAuthType differs from spec: %q <> %q\n",
-			atlasUser.OIDCAuthType, specUser.OIDCAuthType))
-	}
-	if atlasUser.AWSIAMType != specUser.AWSIAMType {
-		diffs = append(diffs, fmt.Sprintf("AWSIAMType differs from spec: %q <> %q\n",
-			atlasUser.AWSIAMType, specUser.AWSIAMType))
-	}
-	if atlasUser.X509Type != specUser.X509Type {
-		diffs = append(diffs, fmt.Sprintf("X509Type differs from spec: %q <> %q\n",
-			atlasUser.X509Type, specUser.X509Type))
-	}
-	if !reflect.DeepEqual(atlasUser.Roles, specUser.Roles) {
-		diffs = append(diffs, fmt.Sprintf("Roles differs from spec: %v <> %v\n",
-			atlasUser.Roles, specUser.Roles))
-	}
-	if !reflect.DeepEqual(atlasUser.Scopes, specUser.Scopes) {
-		diffs = append(diffs, fmt.Sprintf("Scopes differs from spec: %v <> %v END\n",
-			atlasUser.Scopes, specUser.Scopes))
-	}
-	return diffs
+	// note users are normalized at construction time
+	return reflect.DeepEqual(spec.AtlasDatabaseUserSpec, atlas.AtlasDatabaseUserSpec)
 }
 
-func normalize(user *User) (*User, error) {
-	cmp.NormalizeSlice(user.Roles, func(a, b akov2.RoleSpec) int {
+func (u *User) hasSpec() bool {
+	return u != nil && u.AtlasDatabaseUserSpec != nil
+}
+
+func Diff(a, b *User) string {
+	opts := jsondiff.DefaultJSONOptions()
+	_, result := jsondiff.Compare(cmp.JSONize(a), cmp.JSONize(b), &opts)
+	return result
+}
+
+func normalize(spec *akov2.AtlasDatabaseUserSpec) error {
+	cmp.NormalizeSlice(spec.Roles, func(a, b akov2.RoleSpec) int {
 		return strings.Compare(
 			a.RoleName+a.DatabaseName+a.CollectionName,
 			b.RoleName+b.DatabaseName+b.CollectionName)
 	})
-	cmp.NormalizeSlice(user.Scopes, func(a, b akov2.ScopeSpec) int {
+	cmp.NormalizeSlice(spec.Scopes, func(a, b akov2.ScopeSpec) int {
 		return strings.Compare(
 			a.Name+string(a.Type),
 			b.Name+string(b.Type))
 	})
-	if user.DeleteAfterDate != "" { // enforce date format
-		operatorDeleteDate, err := timeutil.ParseISO8601(user.DeleteAfterDate)
+	if spec.DeleteAfterDate != "" { // enforce date format
+		operatorDeleteDate, err := timeutil.ParseISO8601(spec.DeleteAfterDate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse %q to an ISO date: %w", user.DeleteAfterDate, err)
+			return fmt.Errorf("failed to parse %q to an ISO date: %w", spec.DeleteAfterDate, err)
 		}
-		user.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
+		spec.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
 	}
-	return user, nil
+	return nil
 }
 
 func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
@@ -119,7 +99,10 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 			X509Type:        dbUser.GetX509Type(),
 		},
 	}
-	return normalize(u)
+	if err := normalize(u.AtlasDatabaseUserSpec); err != nil {
+		return nil, fmt.Errorf("failed to normalize spec from Atlas: %w", err)
+	}
+	return u, nil
 }
 
 func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {

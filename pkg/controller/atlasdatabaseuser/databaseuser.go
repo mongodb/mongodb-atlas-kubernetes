@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -213,11 +214,14 @@ func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProjec
 }
 
 func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
-	diffs, err := userMatchesSpec(atlasUser, &operatorUser.Spec)
+	userSpecCopy, err := dbuser.NewUser(operatorUser.Spec.DeepCopy(), "", "") // project and password will not be compared
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to convert User Spec: %w", err)
 	}
-	if len(diffs) > 0 {
+	if !dbuser.EqualSpecs(atlasUser, userSpecCopy) {
+		if log.Level() == zapcore.DebugLevel {
+			log.Debugf("Atlas Database user differs from Spec: %v", dbuser.Diff(atlasUser, userSpecCopy))
+		}
 		return true, nil
 	}
 	// We need to check if the password has changed since the last time
@@ -226,12 +230,4 @@ func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *
 		log.Debug("Database User password has changed - making the request to Atlas")
 	}
 	return passwordsChanged, nil
-}
-
-func userMatchesSpec(atlasUser *dbuser.User, specUser *akov2.AtlasDatabaseUserSpec) ([]string, error) {
-	userSpecCopy, err := dbuser.NewUser(specUser.DeepCopy(), "", "") // project and password will not be compared
-	if err != nil {
-		return []string{}, fmt.Errorf("failed to convert User Spec: %w", err)
-	}
-	return dbuser.DiffSpecs(userSpecCopy, atlasUser), nil
 }
