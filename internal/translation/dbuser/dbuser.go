@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
@@ -49,6 +51,7 @@ func (dus *AtlasUsers) Get(ctx context.Context, db, projectID, username string) 
 		}
 		return nil, fmt.Errorf("failed to get database user %q: %w", username, err)
 	}
+	log.Printf("FROM Atlas:\n%v\n=========", cmp.JSONize(atlasDBUser))
 	return fromAtlas(atlasDBUser)
 }
 

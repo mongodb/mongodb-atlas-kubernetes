@@ -10,6 +10,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
 const (
@@ -349,13 +350,48 @@ func TestDiffSpecs(t *testing.T) {
 			},
 			expectedDiffs: []string{},
 		},
+
+		{
+			title: "Scopes with different references show no diffs",
+			spec: &dbuser.User{
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
+					spec := defaultTestSpec()
+					spec.Scopes = []akov2.ScopeSpec{
+						{Name: "cluster1", Type: "CLUSTER"},
+						{Name: "cluster2", Type: "CLUSTER"},
+						{Name: "lake1", Type: "DATA_LAKE"},
+						{Name: "lake2", Type: "DATA_LAKE"},
+					}
+					spec.Project.Name = "some-project"
+					spec.Project.Namespace = "some-namespace"
+					spec.PasswordSecret = &common.ResourceRef{Name: "some-secret-ref"}
+					return spec
+				}(),
+			},
+			atlas: &dbuser.User{
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
+					spec := defaultTestSpec()
+					spec.Scopes = []akov2.ScopeSpec{
+						{Name: "cluster1", Type: "CLUSTER"},
+						{Name: "cluster2", Type: "CLUSTER"},
+						{Name: "lake1", Type: "DATA_LAKE"},
+						{Name: "lake2", Type: "DATA_LAKE"},
+					}
+					spec.Project.Name = "another-project"
+					spec.Project.Namespace = "another-namespace"
+					spec.PasswordSecret = &common.ResourceRef{Name: "another-secret-ref"}
+					return spec
+				}(),
+			},
+			expectedDiffs: []string{},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			equal := dbuser.EqualSpecs(tc.spec, tc.atlas)
 			if tc.expectedDiffs == nil {
 				assert.Equal(t, true, equal)
 			} else {
-				diff := dbuser.Diff(tc.spec, tc.atlas)
+				diff := dbuser.DiffSpecs(tc.spec, tc.atlas)
 				for _, expected := range tc.expectedDiffs {
 					assert.Contains(t, diff, expected)
 				}

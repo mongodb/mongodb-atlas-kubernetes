@@ -2,6 +2,7 @@ package dbuser
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -43,17 +44,31 @@ func EqualSpecs(spec, atlas *User) bool {
 		return false
 	}
 	// note users are normalized at construction time
-	return reflect.DeepEqual(spec.AtlasDatabaseUserSpec, atlas.AtlasDatabaseUserSpec)
+	return reflect.DeepEqual(spec.clearedSpecClone(), atlas.clearedSpecClone())
+}
+
+func DiffSpecs(a, b *User) string {
+	opts := jsondiff.DefaultJSONOptions()
+	_, result := jsondiff.Compare(
+		cmp.JSON(a.clearedSpecClone()),
+		cmp.JSON(b.clearedSpecClone()),
+		&opts)
+	return result
 }
 
 func (u *User) hasSpec() bool {
 	return u != nil && u.AtlasDatabaseUserSpec != nil
 }
 
-func Diff(a, b *User) string {
-	opts := jsondiff.DefaultJSONOptions()
-	_, result := jsondiff.Compare(cmp.JSONize(a), cmp.JSONize(b), &opts)
-	return result
+func (u *User) clearedSpecClone() *akov2.AtlasDatabaseUserSpec {
+	if u == nil || u.AtlasDatabaseUserSpec == nil {
+		return nil
+	}
+	clone := *u.AtlasDatabaseUserSpec
+	clone.Project.Name = ""
+	clone.Project.Namespace = ""
+	clone.PasswordSecret = nil
+	return &clone
 }
 
 func normalize(spec *akov2.AtlasDatabaseUserSpec) error {
@@ -99,9 +114,11 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 			X509Type:        dbUser.GetX509Type(),
 		},
 	}
+	log.Printf("BEFORE normalize:\n%v\n=========", cmp.JSONize(u.AtlasDatabaseUserSpec))
 	if err := normalize(u.AtlasDatabaseUserSpec); err != nil {
 		return nil, fmt.Errorf("failed to normalize spec from Atlas: %w", err)
 	}
+	log.Printf("AFTER normalize:\n%v\n=========", cmp.JSONize(u.AtlasDatabaseUserSpec))
 	return u, nil
 }
 
