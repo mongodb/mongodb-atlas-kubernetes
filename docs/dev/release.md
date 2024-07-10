@@ -195,6 +195,52 @@ git push
 
 If the release is a new minor version, then the CLI must be updated with the new version (and any new CRDs) [here](https://github.com/mongodb/mongodb-atlas-cli/blob/master/internal/kubernetes/operator/features/crds.go).
 
+# Updating the ROSA cluster
+
+For the Openshift upgrade tests we rely on a service account to be present in the OpenShift cluster and its login token to be present in CI.
+
+## Setup Kubectl against the new cluster
+
+1. Go to https://console.redhat.com/openshift
+1. Use your RedHat account credentials to log in, see Pre-requisites on the RedHat Connect account you need to setup before this.
+1. Form the list of Clusters, click of the name of the one to be used now.
+1. CLick the `Open Console` in the top right of the page.
+1. Use the cluster `htpasswd` credentials you should have been given beforehand to login to the cluster itself.
+1. On the landing page, click the account drop down on the top right corner if the page and click on `Copy login command` there.
+1. Login again with the `htpasswd`credentials.
+1. On the white page click `Display token`.
+1. Copy the `oc` command there and run it. You need to have [oc installed](https://docs.openshift.com/container-platform/4.8/cli_reference/openshift_cli/getting-started-cli.html) for this step to work.
+
+After that if you do `kubectl config current-context` it should display you are connected to your new cluster.
+
+## Create the cluster managing service account
+
+Using the kubectl context against the new cluster, create the service account and its token:
+
+```shell
+$ kubectl create ns atlas-upgrade-test-tokens
+$ kubectl -n atlas-upgrade-test-tokens create serviceaccount atlas-operator-upgrade-test
+$ oc create token --duration=87600h -n atlas-upgrade-test-tokens atlas-operator-upgrade-test >token.txt
+```
+
+Give this service account enough permissions, currently this is cluster-admin:
+
+```shell
+$ oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:atlas-upgrade-test-tokens:atlas-operator-upgrade-test
+```
+
+Copy & Paste token.txt into the `OPENSHIFT_UPGRADE_TOKEN` secret in Github Actions.
+
+Run `kubectl cluster-info` Eg:
+
+```shell
+% kubectl cluster-info
+Kubernetes control plane is running at https://***somehostname***.com:6443
+...
+```
+
+And use the URL there to set `OPENSHIFT_UPGRADE_SERVER_API` so that openshift upgrade tests to run successfully.
+
 ## Troubleshooting
 
 ### Major version issues when executing the "Create Release Branch" workflow
