@@ -235,7 +235,7 @@ Run `kubectl cluster-info` Eg:
 
 ```shell
 % kubectl cluster-info
-Kubernetes control plane is running at https://api.kubehosted.9h9y.p1.openshiftapps.com:6443
+Kubernetes control plane is running at https://***somehostname***.com:6443
 ...
 ```
 
