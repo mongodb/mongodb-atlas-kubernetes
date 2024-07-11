@@ -2,7 +2,6 @@ package dbuser
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -114,11 +113,9 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 			X509Type:        dbUser.GetX509Type(),
 		},
 	}
-	log.Printf("BEFORE normalize:\n%v\n=========", cmp.JSONize(u.AtlasDatabaseUserSpec))
 	if err := normalize(u.AtlasDatabaseUserSpec); err != nil {
 		return nil, fmt.Errorf("failed to normalize spec from Atlas: %w", err)
 	}
-	log.Printf("AFTER normalize:\n%v\n=========", cmp.JSONize(u.AtlasDatabaseUserSpec))
 	return u, nil
 }
 

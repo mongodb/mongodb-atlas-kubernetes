@@ -11,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
@@ -118,13 +117,11 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus db
 
 	// Try to find the user
 	au, err := dus.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
-	fmt.Printf("|<<<< Got User:\n%v\n|<<<<", cmp.JSONize(au))
 	if errors.Is(err, dbuser.ErrorNotFound) {
 		log.Debugw("User doesn't exist. Create new user", "dbUser", dbUser)
 		if err = dus.Create(ctx.Context, apiUser); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 		}
-		fmt.Printf("|>>>> Created User:\n%v\n|<<<<", cmp.JSONize(apiUser))
 		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
 
 		ctx.Log.Infow("Created Atlas Database User", "name", dbUser.Spec.Username)
@@ -141,7 +138,6 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus db
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
-		fmt.Printf("|>>>> Updated User:\n%v\n|<<<<", cmp.JSONize(apiUser))
 		// Update the status password resource version so that next time no API update call happened
 		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
 
