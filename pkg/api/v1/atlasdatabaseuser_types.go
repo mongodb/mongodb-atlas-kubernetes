@@ -22,7 +22,6 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
-	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -214,20 +213,6 @@ func (p *AtlasDatabaseUser) ReadPassword(ctx context.Context, kubeClient client.
 		}
 	}
 	return "", nil
-}
-
-// ToAtlas converts the AtlasDatabaseUser to native Atlas client format. Reads the password from the Secret
-func (p AtlasDatabaseUser) ToAtlas(ctx context.Context, kubeClient client.Client) (*mongodbatlas.DatabaseUser, error) {
-	password, err := p.ReadPassword(ctx, kubeClient)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &mongodbatlas.DatabaseUser{}
-	err = compat.JSONCopy(result, p.Spec)
-	result.Password = password
-
-	return result, err
 }
 
 // ToAtlasSDK is clone of ToAtlas used temporarily for test migrations

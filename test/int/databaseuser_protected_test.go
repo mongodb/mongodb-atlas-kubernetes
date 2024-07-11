@@ -84,7 +84,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 	})
 
 	Describe("Operator is running with deletion protection enabled", func() {
-		It("Adds database users and protect them to be deleted when operator doesn't own resource", func() {
+		It("Adds database users and protect them to be deleted when operator doesn't own resource", Label("unowned-protected"), func() {
 			By("First without setting atlas-resource-policy annotation", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
@@ -189,7 +189,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Adds database users and manage them when operator take ownership of existing resources", func() {
+		It("Adds database users and manage them when operator take ownership of existing resources", Label("owning-protected"), func() {
 			By("First without setting atlas-resource-policy annotation", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
