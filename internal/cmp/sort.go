@@ -49,3 +49,15 @@ func marshalJSON[T any](obj T) (string, error) {
 	}
 	return string(jObj), nil
 }
+
+func JSON[T any](obj T) []byte {
+	jObj, err := json.MarshalIndent(obj, "  ", "  ")
+	if err != nil {
+		return ([]byte)(err.Error())
+	}
+	return jObj
+}
+
+func JSONize[T any](obj T) string {
+	return string(JSON(obj))
+}

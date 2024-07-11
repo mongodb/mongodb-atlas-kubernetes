@@ -6,25 +6,26 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
-	apiUser, err := dbUser.ToAtlas(ctx.Context, r.Client)
+func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, dus dbuser.AtlasUsersService, ds deployment.AtlasDeploymentsService, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+	password, err := dbUser.ReadPassword(ctx.Context, r.Client)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+	apiUser, err := dbuser.NewUser(dbUser.Spec.DeepCopy(), project.ID(), password)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -33,24 +34,24 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return result
 	}
 
-	if err = validateScopes(ctx, project.ID(), dbUser); err != nil {
+	if err := validateScopes(ctx, ds, project.ID(), dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
 	}
 
-	if result := performUpdateInAtlas(ctx, r.Client, project, dbUser, apiUser); !result.IsOk() {
+	if result := performUpdateInAtlas(ctx, r.Client, dus, project, &dbUser, apiUser); !result.IsOk() {
 		return result
 	}
 
-	if result := checkDeploymentsHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
+	if result := checkDeploymentsHaveReachedGoalState(ctx, ds, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
-	if result := connectionsecret.CreateOrUpdateConnectionSecrets(ctx, r.Client, r.EventRecorder, project, dbUser); !result.IsOk() {
+	if result := connectionsecret.CreateOrUpdateConnectionSecrets(ctx, r.Client, ds, r.EventRecorder, project, dbUser); !result.IsOk() {
 		return result
 	}
 
 	// We need to remove the old Atlas User right after all the connection secrets are ensured if username has changed.
-	if result := handleUserNameChange(ctx, project.ID(), dbUser); !result.IsOk() {
+	if result := handleUserNameChange(ctx, dus, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
@@ -60,21 +61,23 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	return workflow.OK()
 }
 
-func handleUserNameChange(ctx *workflow.Context, projectID string, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+func handleUserNameChange(ctx *workflow.Context, dus dbuser.AtlasUsersService, projectID string, dbUser akov2.AtlasDatabaseUser) workflow.Result {
 	if dbUser.Spec.Username != dbUser.Status.UserName && dbUser.Status.UserName != "" {
 		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", dbUser.Spec.Username, "oldUserName", dbUser.Status.UserName)
 
 		deleteAttempts := 3
+		var err error
 		for i := 1; i <= deleteAttempts; i++ {
-			_, err := ctx.Client.DatabaseUsers.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
-			if err == nil {
-				break
+			err = dus.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
+			if err == nil || errors.Is(err, dbuser.ErrorNotFound) {
+				return workflow.OK()
 			}
 
 			// There may be some rare errors due to the databaseName change or maybe the user has already been removed - this
 			// is not-critical (the stale connection secret has already been removed) and we shouldn't retry to avoid infinite retries
 			ctx.Log.Errorf("Failed to remove user %s from Atlas (attempt %d/%d): %s", dbUser.Status.UserName, i, deleteAttempts, err)
 		}
+		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 	return workflow.OK()
 }
@@ -97,7 +100,7 @@ func checkUserExpired(ctx context.Context, log *zap.SugaredLogger, k8sClient cli
 	return workflow.OK()
 }
 
-func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser, apiUser *mongodbatlas.DatabaseUser) workflow.Result {
+func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus dbuser.AtlasUsersService, project akov2.AtlasProject, dbUser *akov2.AtlasDatabaseUser, apiUser *dbuser.User) workflow.Result {
 	log := ctx.Log
 
 	secret := &corev1.Secret{}
@@ -113,27 +116,25 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, "Clusters are scheduled to handle database users updates")
 
 	// Try to find the user
-	u, _, err := ctx.Client.DatabaseUsers.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
-	if err != nil {
-		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.UsernameNotFound {
-			log.Debugw("User doesn't exist. Create new user", "apiUser", apiUser)
-			if _, _, err = ctx.Client.DatabaseUsers.Create(ctx.Context, project.ID(), apiUser); err != nil {
-				return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
-			}
-			ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
-
-			ctx.Log.Infow("Created Atlas Database User", "name", dbUser.Spec.Username)
-			return retryAfterUpdate
-		} else {
+	au, err := dus.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
+	if errors.Is(err, dbuser.ErrorNotFound) {
+		log.Debugw("User doesn't exist. Create new user", "dbUser", dbUser)
+		if err = dus.Create(ctx.Context, apiUser); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 		}
+		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
+
+		ctx.Log.Infow("Created Atlas Database User", "name", dbUser.Spec.Username)
+		return retryAfterUpdate
+	}
+	if err != nil {
+		return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 	}
 	// Update if the spec has changed
-	if shouldUpdate, err := shouldUpdate(ctx.Log, u, dbUser, currentPasswordResourceVersion); err != nil {
+	if shouldUpdate, err := shouldUpdate(ctx.Log, au, dbUser, currentPasswordResourceVersion); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	} else if shouldUpdate {
-		_, _, err = ctx.Client.DatabaseUsers.Update(ctx.Context, project.ID(), dbUser.Spec.Username, apiUser)
+		err = dus.Update(ctx.Context, apiUser)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
@@ -148,19 +149,21 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 	return workflow.OK()
 }
 
-func validateScopes(ctx *workflow.Context, projectID string, user akov2.AtlasDatabaseUser) error {
+func validateScopes(ctx *workflow.Context, ds deployment.AtlasDeploymentsService, projectID string, user akov2.AtlasDatabaseUser) error {
 	for _, s := range user.GetScopes(akov2.DeploymentScopeType) {
-		var apiError *mongodbatlas.ErrorResponse
-		_, _, advancedErr := ctx.Client.AdvancedClusters.Get(ctx.Context, projectID, s)
-		if errors.As(advancedErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+		exists, err := ds.ClusterExists(ctx.Context, projectID, s)
+		if !exists {
 			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
-	allDeploymentNames, err := atlasdeployment.GetAllDeploymentNames(ctx.Context, ctx.Client, projectID)
+func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, ds deployment.AtlasDeploymentsService, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
+	allDeploymentNames, err := ds.ListClusterNames(ctx.Context, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -175,7 +178,7 @@ func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, projectID strin
 
 	readyDeployments := 0
 	for _, c := range deploymentsToCheck {
-		ready, err := deploymentIsReady(ctx.Context, ctx.Client, projectID, c)
+		ready, err := ds.DeploymentIsReady(ctx.Context, projectID, c)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -191,14 +194,6 @@ func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, projectID strin
 	}
 
 	return workflow.OK()
-}
-
-func deploymentIsReady(ctx context.Context, client *mongodbatlas.Client, projectID, deploymentName string) (bool, error) {
-	resourceStatus, _, err := client.Clusters.Status(ctx, projectID, deploymentName)
-	if err != nil {
-		return false, err
-	}
-	return resourceStatus.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
 }
 
 func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProject []string) []string {
@@ -218,52 +213,21 @@ func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProjec
 	return deploymentsToCheck
 }
 
-func shouldUpdate(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUser, operatorDBUser akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
-	matches, err := userMatchesSpec(log, atlasSpec, operatorDBUser.Spec)
+func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
+	userSpecCopy, err := dbuser.NewUser(operatorUser.Spec.DeepCopy(), "", "") // project and password will not be compared
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to convert User Spec: %w", err)
 	}
-	if !matches {
+	if !dbuser.EqualSpecs(userSpecCopy, atlasUser) {
+		if log.Level() == zapcore.DebugLevel {
+			log.Debugf("Atlas Database user differs from Spec: %v", dbuser.DiffSpecs(userSpecCopy, atlasUser))
+		}
 		return true, nil
 	}
 	// We need to check if the password has changed since the last time
-	passwordsChanged := operatorDBUser.Status.PasswordVersion != currentPasswordResourceVersion
+	passwordsChanged := operatorUser.Status.PasswordVersion != currentPasswordResourceVersion
 	if passwordsChanged {
 		log.Debug("Database User password has changed - making the request to Atlas")
 	}
 	return passwordsChanged, nil
-}
-
-// TODO move to a separate utils (reuse from deployments)
-func userMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUser, operatorSpec akov2.AtlasDatabaseUserSpec) (bool, error) {
-	userMerged := mongodbatlas.DatabaseUser{}
-	if err := compat.JSONCopy(&userMerged, atlasSpec); err != nil {
-		return false, err
-	}
-
-	if err := compat.JSONCopy(&userMerged, operatorSpec); err != nil {
-		return false, err
-	}
-
-	// performing some normalization of dates
-	if atlasSpec.DeleteAfterDate != "" {
-		atlasDeleteDate, err := timeutil.ParseISO8601(atlasSpec.DeleteAfterDate)
-		if err != nil {
-			return false, err
-		}
-		atlasSpec.DeleteAfterDate = timeutil.FormatISO8601(atlasDeleteDate)
-	}
-	if operatorSpec.DeleteAfterDate != "" {
-		operatorDeleteDate, err := timeutil.ParseISO8601(operatorSpec.DeleteAfterDate)
-		if err != nil {
-			return false, err
-		}
-		userMerged.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
-	}
-	d := cmp.Diff(*atlasSpec, userMerged, cmpopts.EquateEmpty())
-	if d != "" {
-		log.Debugf("Users differs from spec: %s", d)
-	}
-
-	return d == "", nil
 }

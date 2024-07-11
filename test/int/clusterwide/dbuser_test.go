@@ -59,7 +59,6 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 				// While developing tests we need to reuse the same project
 				createdProject.Spec.Name = "dev-test atlas-project"
 			}
-
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType))
