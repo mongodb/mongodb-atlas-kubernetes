@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,8 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -126,15 +125,17 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	dus, err := dbuser.NewAtlasDatabaseUsersService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	atlasClient, orgID, err := r.AtlasProvider.Client(ctx, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 
 		return result.ReconcileResult(), nil
 	}
+	workflowCtx.OrgID = orgID
+	workflowCtx.Client = atlasClient
 
-	deletionRequest, result := r.handleDeletion(ctx, databaseUser, project, dus, log)
+	deletionRequest, result := r.handleDeletion(ctx, databaseUser, project, atlasClient, log)
 	if deletionRequest {
 		return result.ReconcileResult(), nil
 	}
@@ -156,15 +157,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	ds, err := deployment.NewAtlasDeploymentsService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
-	if err != nil {
-		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
-
-		return result.ReconcileResult(), nil
-	}
-
-	result = r.ensureDatabaseUser(workflowCtx, dus, ds, *project, *databaseUser)
+	result = r.ensureDatabaseUser(workflowCtx, *project, *databaseUser)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 
@@ -219,7 +212,7 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 	ctx context.Context,
 	dbUser *akov2.AtlasDatabaseUser,
 	project *akov2.AtlasProject,
-	dus dbuser.AtlasUsersService,
+	atlasClient *mongodbatlas.Client,
 	log *zap.SugaredLogger,
 ) (bool, workflow.Result) {
 	if dbUser.GetDeletionTimestamp().IsZero() {
@@ -244,11 +237,14 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 		return true, workflow.OK()
 	}
 
-	err := dus.Delete(ctx, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
-	if errors.Is(err, dbuser.ErrorNotFound) {
+	_, err := atlasClient.DatabaseUsers.Delete(ctx, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
+	if err != nil {
+		var apiError *mongodbatlas.ErrorResponse
+		if errors.As(err, &apiError) && apiError.ErrorCode != atlas.UsernameNotFound {
+			return true, workflow.Terminate(workflow.DatabaseUserNotDeletedInAtlas, err.Error())
+		}
+
 		log.Info("Database user doesn't exist or is already deleted")
-	} else if err != nil {
-		return true, workflow.Terminate(workflow.DatabaseUserNotDeletedInAtlas, err.Error())
 	}
 
 	err = customresource.ManageFinalizer(ctx, r.Client, dbUser, customresource.UnsetFinalizer)

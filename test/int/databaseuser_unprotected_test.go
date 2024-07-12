@@ -84,7 +84,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 	})
 
 	Describe("Operator is running with deletion protection disabled", func() {
-		It("Adds database users and allow them to be deleted", Label("user-removable"), func() {
+		It("Adds database users and allow them to be deleted", func() {
 			By("Creating a database user previously on Atlas", func() {
 				dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), dbUserName3)
 				dbUser.SetPassword("mypass")
@@ -214,7 +214,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Adds an user and manage roles", Label("user-manage-roles"), func() {
+		It("Adds an user and manage roles", func() {
 			By("Creating an user with clusterMonitor role", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
@@ -276,7 +276,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Adds connection secret when new deployment is created", Label("user-add-secret"), func() {
+		It("Adds connection secret when new deployment is created", func() {
 			secondDeployment := &akov2.AtlasDeployment{}
 
 			By("Creating a database user", func() {
@@ -333,7 +333,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Watches password secret", Label("user-watch-secret"), func() {
+		It("Watches password secret", func() {
 			By("Creating a database user", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
@@ -384,7 +384,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Remove stale secrets", Label("user-gc-secrets"), func() {
+		It("Remove stale secrets", func() {
 			secondTestDeployment := &akov2.AtlasDeployment{}
 
 			By("Creating a second deployment", func() {
@@ -474,7 +474,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Validates user date expiration", Label("user-date-expiration"), func() {
+		It("Validates user date expiration", func() {
 			By("Creating expired user", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
@@ -533,7 +533,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Skips reconciliations.", Label("user-skip-reconciliation"), func() {
+		It("Skips reconciliations.", func() {
 			By("Creating a database user", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
