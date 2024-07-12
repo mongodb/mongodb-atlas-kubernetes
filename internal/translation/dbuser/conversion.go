@@ -14,6 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
 type User struct {
@@ -71,6 +72,9 @@ func (u *User) clearedSpecClone() *akov2.AtlasDatabaseUserSpec {
 }
 
 func normalize(spec *akov2.AtlasDatabaseUserSpec) error {
+	cmp.NormalizeSlice(spec.Labels, func(a, b common.LabelSpec) int {
+		return strings.Compare(a.Key+a.Value, b.Key+b.Value)
+	})
 	cmp.NormalizeSlice(spec.Roles, func(a, b akov2.RoleSpec) int {
 		return strings.Compare(
 			a.RoleName+a.DatabaseName+a.CollectionName,
@@ -105,6 +109,7 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 		AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
 			DatabaseName:    dbUser.DatabaseName,
 			DeleteAfterDate: dateFromAtlas(dbUser.DeleteAfterDate),
+			Labels:          labelsFromAtlas(dbUser.Labels),
 			Roles:           rolesFromAtlas(dbUser.GetRoles()),
 			Scopes:          scopes,
 			Username:        dbUser.Username,
@@ -133,6 +138,7 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 		X509Type:        pointer.MakePtrOrNil(au.X509Type),
 		AwsIAMType:      pointer.MakePtrOrNil(au.AWSIAMType),
 		GroupId:         au.ProjectID,
+		Labels:          labelsToAtlas(au.Labels),
 		Roles:           rolesToAtlas(au.Roles),
 		Scopes:          scopesToAtlas(au.Scopes),
 		Username:        au.Username,
@@ -233,4 +239,32 @@ func rolesFromAtlas(roles []admin.DatabaseUserRole) []akov2.RoleSpec {
 		})
 	}
 	return specRoles
+}
+
+func labelsToAtlas(labels []common.LabelSpec) *[]admin.ComponentLabel {
+	if len(labels) == 0 {
+		return nil
+	}
+	atlasLabels := make([]admin.ComponentLabel, 0, len(labels))
+	for _, label := range labels {
+		atlasLabels = append(atlasLabels, admin.ComponentLabel{
+			Key:   pointer.MakePtr(label.Key),
+			Value: pointer.MakePtr(label.Value),
+		})
+	}
+	return &atlasLabels
+}
+
+func labelsFromAtlas(atlasLabels *[]admin.ComponentLabel) []common.LabelSpec {
+	if atlasLabels == nil || len(*atlasLabels) == 0 {
+		return nil
+	}
+	labels := make([]common.LabelSpec, 0, len(*atlasLabels))
+	for _, atlasLabel := range *atlasLabels {
+		labels = append(labels, common.LabelSpec{
+			Key:   pointer.GetOrDefault(atlasLabel.Key, ""),
+			Value: pointer.GetOrDefault(atlasLabel.Value, ""),
+		})
+	}
+	return labels
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	dbuserController "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
@@ -59,6 +60,10 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 						data.WithSecretRef("dbuser-secret-u1"),
 						data.WithReadWriteRole(),
 						data.WithNamespace(config.DefaultOperatorNS),
+						data.WithLabels([]common.LabelSpec{
+							{Key: "type", Value: "e2e-test"},
+							{Key: "context", Value: "cloud"},
+						}),
 					),
 				)
 			testData.Resources.Namespace = config.DefaultOperatorNS

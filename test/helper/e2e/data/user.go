@@ -98,3 +98,9 @@ func WithProject(project *akov2.AtlasProject) func(user *akov2.AtlasDatabaseUser
 		}
 	}
 }
+
+func WithLabels(labels []common.LabelSpec) func(user *akov2.AtlasDatabaseUser) {
+	return func(user *akov2.AtlasDatabaseUser) {
+		user.Spec.Labels = labels
+	}
+}

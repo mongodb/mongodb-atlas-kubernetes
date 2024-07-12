@@ -150,6 +150,34 @@ func TestNewUser(t *testing.T) {
 				Password:  testPassword,
 			},
 		},
+
+		{
+			title: "Spec with unordered labels renders a normalized user with ordered entries",
+			spec: func() *akov2.AtlasDatabaseUserSpec {
+				spec := defaultTestSpec()
+				spec.Labels = []common.LabelSpec{
+					{Key: "label3", Value: "value3"},
+					{Key: "label2", Value: "value2"},
+					{Key: "label1", Value: "value1"},
+				}
+				return spec
+			}(),
+			projectID: testProjectID,
+			password:  testPassword,
+			expectedUser: &dbuser.User{
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
+					spec := defaultTestSpec()
+					spec.Labels = []common.LabelSpec{
+						{Key: "label1", Value: "value1"},
+						{Key: "label2", Value: "value2"},
+						{Key: "label3", Value: "value3"},
+					}
+					return spec
+				}(),
+				ProjectID: testProjectID,
+				Password:  testPassword,
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			user, err := dbuser.NewUser(tc.spec, tc.projectID, tc.password)
@@ -385,10 +413,61 @@ func TestDiffSpecs(t *testing.T) {
 			},
 			expectedDiffs: []string{},
 		},
+
+		{
+			title: "Different Labels fail comparison",
+			spec: &dbuser.User{
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
+					spec := defaultTestSpec()
+					spec.Labels = []common.LabelSpec{
+						{Key: "label1", Value: "value1"},
+						{Key: "label2", Value: "value2"},
+					}
+					return spec
+				}(),
+			},
+			atlas: &dbuser.User{
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
+					spec := defaultTestSpec()
+					spec.Labels = []common.LabelSpec{
+						{Key: "label1", Value: "value1"},
+						{Key: "label2", Value: "value2"},
+						{Key: "label3", Value: "value3"},
+					}
+					return spec
+				}(),
+			},
+			expectedDiffs: []string{"labels", `prop-added":{"value": "value3"}`},
+		},
+
+		{
+			title: "Same Labels show no diffs",
+			spec: &dbuser.User{
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
+					spec := defaultTestSpec()
+					spec.Labels = []common.LabelSpec{
+						{Key: "label1", Value: "value1"},
+						{Key: "label2", Value: "value2"},
+					}
+					return spec
+				}(),
+			},
+			atlas: &dbuser.User{
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
+					spec := defaultTestSpec()
+					spec.Labels = []common.LabelSpec{
+						{Key: "label1", Value: "value1"},
+						{Key: "label2", Value: "value2"},
+					}
+					return spec
+				}(),
+			},
+			expectedDiffs: []string{},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			equal := dbuser.EqualSpecs(tc.spec, tc.atlas)
-			if tc.expectedDiffs == nil {
+			if len(tc.expectedDiffs) == 0 {
 				assert.Equal(t, true, equal)
 			} else {
 				diff := dbuser.DiffSpecs(tc.spec, tc.atlas)
