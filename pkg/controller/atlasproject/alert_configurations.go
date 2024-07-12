@@ -302,7 +302,7 @@ func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec ak
 		return false
 	}
 
-	atlasMatchers := []akov2.Matcher{}
+	var atlasMatchers []akov2.Matcher
 	err := compat.JSONCopy(atlasMatchers, atlasAlertConfig.GetMatchers())
 	if err != nil {
 		logger.Errorf("unable to convert matchers to structured type: %s", err)

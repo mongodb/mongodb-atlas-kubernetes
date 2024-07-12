@@ -16,4 +16,4 @@ export MCLI_PUBLIC_API_KEY="${public_key}"
 export MCLI_PRIVATE_API_KEY="${private_key}"
 export MCLI_ORG_ID="${org_id}"
 
-AKO_INT_TEST=1 ginkgo run --race --label-filter="${label}" --timeout 80m -v ./test/int ./test/int/clusterwide -coverprofile cover.out
+AKO_INT_TEST=1 ginkgo --race --label-filter="${label}" --timeout 80m -v ./test/int -coverprofile cover.out
