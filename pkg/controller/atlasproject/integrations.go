@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -81,11 +82,11 @@ func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, 
 			ctx.Log.Warnw("Update Integrations", "Can not convert kube integration", err)
 			return workflow.Terminate(workflow.ProjectIntegrationInternal, "Update Integrations: Can not convert kube integration")
 		}
-		specIntegration := (*aliasThirdPartyIntegration)(kubeIntegration)
-		if !areIntegrationsEqual(specIntegration, &atlasIntegration) {
+		t := mongodbatlas.ThirdPartyIntegration(atlasIntegration)
+		if &t != kubeIntegration {
 			ctx.Log.Debugf("Try to update integration: %s", kubeIntegration.Type)
 			if _, _, err := ctx.Client.Integrations.Replace(ctx.Context, projectID, kubeIntegration.Type, kubeIntegration); err != nil {
-				return workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Can not apply integration: %v", err))
+				return workflow.Terminate(workflow.ProjectIntegrationRequest, "Can not convert integration")
 			}
 		}
 	}
@@ -135,7 +136,7 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 		} else {
 			specAsAtlas, _ := spec.ToAtlas(ctx.Context, r.Client, namespace)
 			specAlias := aliasThirdPartyIntegration(*specAsAtlas)
-			areEqual = integrationsApplied(&atlas, &specAlias)
+			areEqual = AreIntegrationsEqual(&atlas, &specAlias)
 		}
 		ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "spec", spec, "areEqual", areEqual)
 
@@ -147,21 +148,41 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 	return true
 }
 
-func integrationsApplied(_, _ *aliasThirdPartyIntegration) bool {
-	// As integration secrets are redacted from Alas, we cannot properly compare them,
-	// so as a simple fix here we assume changes were applied correctly as we would
-	// have otherwise errored out as are always needed
-	// TODO: remove and replace calls to this with areIntegrationsEqual when
-	//       that code is properly comparing fields
-	return true
+func AreIntegrationsEqual(atlas, specAsAtlas *aliasThirdPartyIntegration) bool {
+	return reflect.DeepEqual(cleanCopyToCompare(atlas), cleanCopyToCompare(specAsAtlas))
 }
 
-func areIntegrationsEqual(_, _ *aliasThirdPartyIntegration) bool {
-	// As integration secrets are redacted from Alas, we cannot properly compare them,
-	// so as a simple fix we assume changes are always needed
-	// TODO: Compare using Atlas redacted fields with checksums if accepted OR
-	//       move to implicit state checks if Atlas cannot help with this.
-	return false
+func cleanCopyToCompare(input *aliasThirdPartyIntegration) *aliasThirdPartyIntegration {
+	if input == nil {
+		return input
+	}
+
+	result := *input
+	keepLastFourChars(&result.APIKey)
+	keepLastFourChars(&result.APIToken)
+	keepLastFourChars(&result.LicenseKey)
+	keepLastFourChars(&result.Password)
+	keepLastFourChars(&result.ReadToken)
+	keepLastFourChars(&result.RoutingKey)
+	keepLastFourChars(&result.Secret)
+	keepLastFourChars(&result.ServiceKey)
+	keepLastFourChars(&result.WriteToken)
+
+	return &result
+}
+
+func keepLastFourChars(strPtr *string) {
+	if strPtr == nil {
+		return
+	}
+
+	charCount := 4
+	str := *strPtr
+	if len(str) <= charCount {
+		return
+	}
+
+	*strPtr = str[len(str)-charCount:]
 }
 
 type aliasThirdPartyIntegration mongodbatlas.ThirdPartyIntegration
