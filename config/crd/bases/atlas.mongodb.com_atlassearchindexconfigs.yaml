@@ -59,7 +59,6 @@ spec:
                   - changing words to their base form (lemmatization) MongoDB Cloud uses the selected process to build the Atlas Search index
                 enum:
                 - lucene.standard
-                - lucene.standard
                 - lucene.simple
                 - lucene.whitespace
                 - lucene.keyword
@@ -175,7 +174,6 @@ spec:
                 description: Method applied to identify words when searching this
                   index
                 enum:
-                - lucene.standard
                 - lucene.standard
                 - lucene.simple
                 - lucene.whitespace
