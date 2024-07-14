@@ -456,6 +456,9 @@ func (r *AtlasDeploymentReconciler) handleAdvancedOptions(
 }
 
 func (r *AtlasDeploymentReconciler) readProjectResource(ctx context.Context, deployment *akov2.AtlasDeployment, project *akov2.AtlasProject) workflow.Result {
+	//if deployment.Spec.ProjectID != "" {
+	//	err :=
+	//}
 	if err := r.Client.Get(ctx, deployment.AtlasProjectObjectKey(), project); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}

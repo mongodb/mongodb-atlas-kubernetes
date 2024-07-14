@@ -51,9 +51,17 @@ const (
 
 // AtlasDeploymentSpec defines the desired state of AtlasDeployment
 // Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined
+// +kubebuilder:validation:XValidation:rule="(!has(self.projectID) && has(self.projectRef)) || (has(self.projectID) && !has(self.projectRef))"
 type AtlasDeploymentSpec struct {
-	// Project is a reference to AtlasProject resource the deployment belongs to
+	// Project is a reference to AtlasProject resource the deployment belongs to. Mutually exclusive with ProjectID field
+	// +optional
 	Project common.ResourceRefNamespaced `json:"projectRef"`
+
+	// ProjectID used to specify the Atlas ID of the Project directly, without referencing to existing AtlasProject CR.
+	// Use it attach the deployment to already existing Project in Atlas. Mutually exclusive with ProjectRef field
+	// +optional
+	// +kubebuilder:validation:Pattern:="^([a-f0-9]{24})$"
+	ProjectID string `json:"projectID"`
 
 	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
 	// +optional

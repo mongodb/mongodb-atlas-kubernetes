@@ -626,9 +626,17 @@ spec:
                     format: int64
                     type: integer
                 type: object
+              projectID:
+                description: |-
+                  ProjectID used to specify the Atlas ID of the Project directly, without referencing to existing AtlasProject CR.
+                  Use it attach the deployment to already existing Project in Atlas. Mutually exclusive with ProjectRef field
+                  // +kubebuilder:validation:XValidation:rule="has(self.spec.deploymentSpec.projectID) && !has(self.spec.deploymentSpec.projectRef)"
+                pattern: ^([a-f0-9]{24})$
+                type: string
               projectRef:
-                description: Project is a reference to AtlasProject resource the deployment
-                  belongs to
+                description: |-
+                  Project is a reference to AtlasProject resource the deployment belongs to. Mutually exclusive with ProjectID field
+                  //+kubebuilder:validation:XValidation:rule="!has(self.spec.deploymentSpec.projectID) && has(self.spec.deploymentSpec.projectRef)"
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource
@@ -816,9 +824,10 @@ spec:
                 - name
                 - providerSettings
                 type: object
-            required:
-            - projectRef
             type: object
+            x-kubernetes-validations:
+            - rule: (!has(self.projectID) && has(self.projectRef)) || (has(self.projectID)
+                && !has(self.projectRef))
           status:
             description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
             properties:
