@@ -7,3 +7,5 @@ mockname: "{{.InterfaceName}}Mock"
 all: true
 packages:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist:
+  github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser:
+  github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment:
