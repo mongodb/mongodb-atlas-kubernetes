@@ -12,13 +12,27 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasDeployment
     listKind: AtlasDeploymentList
     plural: atlasdeployments
+    shortNames:
+    - ad
     singular: atlasdeployment
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.stateName
+      name: Atlas State
+      type: string
+    - jsonPath: .status.mongoDBVersion
+      name: MongoDB Version
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: AtlasDeployment is the Schema for the atlasdeployments API

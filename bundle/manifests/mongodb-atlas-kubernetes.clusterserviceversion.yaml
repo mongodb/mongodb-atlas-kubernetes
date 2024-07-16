@@ -168,7 +168,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Database
-    createdAt: "2024-06-10T11:59:18Z"
+    createdAt: "2024-07-16T07:12:48Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -179,17 +179,20 @@ metadata:
     features.operators.openshift.io/token-auth-gcp: "false"
     operators.operatorframework.io/builder: operator-sdk-v1.34.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.3.1
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.4.0
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.3.1
+  name: mongodb-atlas-kubernetes.v2.4.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
+      - kind: AtlasBackupCompliancePolicy
+        name: atlasbackupcompliancepolicies.atlas.mongodb.com
+        version: v1
       - description: AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
         displayName: Atlas Backup Policy
         kind: AtlasBackupPolicy
@@ -300,6 +303,26 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
+                - atlasbackupcompliancepolicies
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasbackupcompliancepolicies/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
                 - atlasbackuppolicies
               verbs:
                 - create
@@ -400,6 +423,26 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
+                - atlasfederatedauths
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasfederatedauths/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
                 - atlasprojects
               verbs:
                 - create
@@ -420,7 +463,7 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
-                - atlasteams
+                - atlassearchindexconfigs
               verbs:
                 - create
                 - delete
@@ -432,27 +475,7 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
-                - atlasteams/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasfederatedauths
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasfederatedauths/status
+                - atlassearchindexconfigs/status
               verbs:
                 - get
                 - patch
@@ -500,7 +523,7 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
-                - atlassearchindexconfigs
+                - atlasteams
               verbs:
                 - create
                 - delete
@@ -512,7 +535,7 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
-                - atlassearchindexconfigs/status
+                - atlasteams/status
               verbs:
                 - get
                 - patch
@@ -562,7 +585,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.3.1
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.4.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -646,5 +669,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.3.1
-  replaces: mongodb-atlas-kubernetes.v2.3.0
+  version: 2.4.0
+  replaces: mongodb-atlas-kubernetes.v2.3.1

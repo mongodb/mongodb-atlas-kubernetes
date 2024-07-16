@@ -12,15 +12,25 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasProject
     listKind: AtlasProjectList
     plural: atlasprojects
+    shortNames:
+    - ap
     singular: atlasproject
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
     - jsonPath: .spec.name
-      name: Name
+      name: Atlas Name
+      type: string
+    - jsonPath: .status.id
+      name: Atlas ID
       type: string
     name: v1
     schema:
@@ -310,6 +320,19 @@ spec:
                     description: Denotes whether or not the project associated with
                       the {GROUP-ID} has database auditing enabled.
                     type: boolean
+                type: object
+              backupCompliancePolicyRef:
+                description: BackupCompliancePolicyRef is a reference to the backup
+                  compliance CR.
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
                 type: object
               cloudProviderAccessRoles:
                 description: |-

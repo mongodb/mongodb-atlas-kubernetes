@@ -12,15 +12,25 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasStreamInstance
     listKind: AtlasStreamInstanceList
     plural: atlasstreaminstances
+    shortNames:
+    - asi
     singular: atlasstreaminstance
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.name
       name: Name
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.id
+      name: Atlas ID
       type: string
     name: v1
     schema:

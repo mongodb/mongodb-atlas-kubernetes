@@ -12,13 +12,21 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasSearchIndexConfig
     listKind: AtlasSearchIndexConfigList
     plural: atlassearchindexconfigs
+    shortNames:
+    - asic
     singular: atlassearchindexconfig
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig
@@ -54,7 +62,6 @@ spec:
                   - reducing words to their root form (stemming)
                   - changing words to their base form (lemmatization) MongoDB Cloud uses the selected process to build the Atlas Search index
                 enum:
-                - lucene.standard
                 - lucene.standard
                 - lucene.simple
                 - lucene.whitespace
@@ -171,7 +178,6 @@ spec:
                 description: Method applied to identify words when searching this
                   index
                 enum:
-                - lucene.standard
                 - lucene.standard
                 - lucene.simple
                 - lucene.whitespace
