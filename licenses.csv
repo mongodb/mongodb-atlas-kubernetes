@@ -4,7 +4,7 @@ cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/
 cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.27.3/compute/LICENSE,Apache-2.0
 cloud.google.com/go/compute/metadata,https://github.com/googleapis/google-cloud-go/blob/compute/metadata/v0.4.0/compute/metadata/LICENSE,Apache-2.0
 cloud.google.com/go/iam,https://github.com/googleapis/google-cloud-go/blob/iam/v1.1.10/iam/LICENSE,Apache-2.0
-cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v1.18.2/kms/LICENSE,Apache-2.0
+cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v1.18.3/kms/LICENSE,Apache-2.0
 cloud.google.com/go/longrunning,https://github.com/googleapis/google-cloud-go/blob/longrunning/v0.5.9/longrunning/LICENSE,Apache-2.0
 github.com/Azure/azure-sdk-for-go,https://github.com/Azure/azure-sdk-for-go/blob/v68.0.0/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/azcore,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azcore/v1.12.0/sdk/azcore/LICENSE.txt,MIT
