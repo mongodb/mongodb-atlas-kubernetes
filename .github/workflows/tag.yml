@@ -47,7 +47,7 @@ jobs:
   sboms-pr:
     needs:
     - tag
-    uses: ./.github/workflows/sboms.yml
+    uses: ./.github/workflows/sboms-pr.yaml
     secrets: inherit
     with:
       version: ${{ needs.tag.outputs.version }}
