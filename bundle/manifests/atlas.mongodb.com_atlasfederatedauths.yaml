@@ -12,13 +12,21 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasFederatedAuth
     listKind: AtlasFederatedAuthList
     plural: atlasfederatedauths
+    shortNames:
+    - afa
     singular: atlasfederatedauth
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: AtlasFederatedAuth is the Schema for the Atlasfederatedauth API

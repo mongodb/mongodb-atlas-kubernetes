@@ -12,13 +12,21 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasStreamConnection
     listKind: AtlasStreamConnectionList
     plural: atlasstreamconnections
+    shortNames:
+    - asc
     singular: atlasstreamconnection
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: AtlasStreamConnection is the Schema for the atlasstreamconnections

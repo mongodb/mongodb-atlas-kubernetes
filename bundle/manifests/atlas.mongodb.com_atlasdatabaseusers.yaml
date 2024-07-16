@@ -12,15 +12,25 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasDatabaseUser
     listKind: AtlasDatabaseUserList
     plural: atlasdatabaseusers
+    shortNames:
+    - adu
     singular: atlasdatabaseuser
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.name
       name: Name
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .spec.username
+      name: Username
       type: string
     name: v1
     schema:

@@ -12,13 +12,21 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
+    categories:
+    - atlas
     kind: AtlasBackupSchedule
     listKind: AtlasBackupScheduleList
     plural: atlasbackupschedules
+    shortNames:
+    - abs
     singular: atlasbackupschedule
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: AtlasBackupSchedule is the Schema for the atlasbackupschedules
