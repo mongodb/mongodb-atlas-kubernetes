@@ -131,6 +131,8 @@ oc_login() {
   echo "Logging in to the cluster..."
   expect_success_silent "oc login --token=${OC_TOKEN} --server=${CLUSTER_API_URL}"
   echo "Logged in to the cluster"
+  kubectl version
+  oc get clusterversion/version
 }
 
 prepare_test_namespace() {
