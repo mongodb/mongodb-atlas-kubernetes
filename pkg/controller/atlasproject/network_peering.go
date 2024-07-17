@@ -190,24 +190,24 @@ func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, log
 		switch peerStatus.ProviderName {
 		case provider.ProviderGCP:
 			if peerStatus.Status != StatusReady {
-				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
+				logger.Debugf("network peer %s is not ready .%s. obj: %v", peerStatus.VPC, peerStatus.Status, peerStatus)
 				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
 					api.NetworkPeerReadyType
 			}
 			if peerStatus.AtlasNetworkName == "" || peerStatus.AtlasGCPProjectID == "" { // We need this information to create the network peer connection
-				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
+				logger.Debugf("network peer %s is not ready .%s. obj: %v", peerStatus.VPC, peerStatus.Status, peerStatus)
 				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
 					api.NetworkPeerReadyType
 			}
 		case provider.ProviderAzure:
 			if peerStatus.Status != StatusReady {
-				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
+				logger.Debugf("network peer %s is not ready .%s. obj: %v", peerStatus.VPC, peerStatus.Status, peerStatus)
 				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
 					api.NetworkPeerReadyType
 			}
 		default:
 			if peerStatus.StatusName != StatusReady {
-				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.StatusName)
+				logger.Debugf("network peer %s is not ready .%s. obj: %v", peerStatus.VPC, peerStatus.StatusName, peerStatus)
 				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
 					api.NetworkPeerReadyType
 			}

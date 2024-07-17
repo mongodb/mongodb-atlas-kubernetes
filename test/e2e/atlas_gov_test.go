@@ -258,14 +258,14 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			awsAccountID, err := awsHelper.GetAccountID()
 			Expect(err).ToNot(HaveOccurred())
 
-			AwsVpcID, err := awsHelper.InitNetwork(projectName, "10.0.0.0/24", "us-east-1", map[string]string{"subnet-1": "10.0.0.0/24"}, false)
+			AwsVpcID, err := awsHelper.InitNetwork(projectName, "10.0.0.0/24", "us-west-1", map[string]string{"subnet-1": "10.0.0.0/24"}, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.NetworkPeers = []akov2.NetworkPeer{
 				{
 					ProviderName:        "AWS",
-					AccepterRegionName:  "us-east-1",
+					AccepterRegionName:  "us-west-1",
 					AtlasCIDRBlock:      "192.168.224.0/21",
 					AWSAccountID:        awsAccountID,
 					RouteTableCIDRBlock: "10.0.0.0/24",
@@ -280,7 +280,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 				g.Expect(testData.Project.Status.NetworkPeers[0].StatusName).Should(Equal("PENDING_ACCEPTANCE"))
 			}).WithTimeout(time.Minute * 15).WithPolling(time.Second * 20).Should(Succeed())
 
-			Expect(awsHelper.AcceptVpcPeeringConnection(testData.Project.Status.NetworkPeers[0].ConnectionID, "us-east-1")).To(Succeed())
+			Expect(awsHelper.AcceptVpcPeeringConnection(testData.Project.Status.NetworkPeers[0].ConnectionID, "us-west-1")).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -294,7 +294,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			awsRoleARN := testData.Project.Status.CloudProviderIntegrations[0].IamAssumedRoleArn
 			atlasRoleID := testData.Project.Status.CloudProviderIntegrations[0].RoleID
 
-			customerMasterKeyID, err := awsHelper.CreateKMS(fmt.Sprintf("%s-kms", projectName), "us-east-1", atlasAccountARN, awsRoleARN)
+			customerMasterKeyID, err := awsHelper.CreateKMS(fmt.Sprintf("%s-kms", projectName), "us-west-1", atlasAccountARN, awsRoleARN)
 			Expect(err).ToNot(HaveOccurred())
 
 			secret := &corev1.Secret{
@@ -319,7 +319,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			testData.Project.Spec.EncryptionAtRest = &akov2.EncryptionAtRest{
 				AwsKms: akov2.AwsKms{
 					Enabled: pointer.MakePtr(true),
-					Region:  "US_EAST_1",
+					Region:  "US_WEST_1",
 					SecretRef: common.ResourceRefNamespaced{
 						Name:      "aws-secret",
 						Namespace: testData.Resources.Namespace,
@@ -339,7 +339,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			testData.Project.Spec.PrivateEndpoints = []akov2.PrivateEndpoint{
 				{
 					Provider: "AWS",
-					Region:   "us-east-1",
+					Region:   "us-west-1",
 				},
 			}
 			Expect(testData.K8SClient.Update(ctx, testData.Project)).To(Succeed())
@@ -353,7 +353,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			peID, err := awsHelper.CreatePrivateEndpoint(
 				testData.Project.Status.PrivateEndpoints[0].ServiceName,
 				fmt.Sprintf("pe-%s-gov", testData.Project.Status.PrivateEndpoints[0].ID),
-				"us-east-1",
+				"us-west-1",
 			)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -482,7 +482,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 										},
 										Priority:     pointer.MakePtr(7),
 										ProviderName: "AWS",
-										RegionName:   "US_EAST_1",
+										RegionName:   "US_WEST_1",
 									},
 								},
 							},
@@ -629,7 +629,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 							BackingProviderName: "AWS",
 							ProviderName:        "SERVERLESS",
-							RegionName:          "US_GOV_EAST_1",
+							RegionName:          "US_GOV_WEST_1",
 						},
 						TerminationProtectionEnabled: false,
 					},
