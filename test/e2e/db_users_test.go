@@ -14,7 +14,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
@@ -64,10 +63,6 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 						data.WithSecretRef("dbuser-secret-u1"),
 						data.WithReadWriteRole(),
 						data.WithNamespace(config.DefaultOperatorNS),
-						data.WithLabels([]common.LabelSpec{
-							{Key: "type", Value: "e2e-test"},
-							{Key: "context", Value: "cloud"},
-						}),
 					),
 					data.BasicUser(
 						"reader2",

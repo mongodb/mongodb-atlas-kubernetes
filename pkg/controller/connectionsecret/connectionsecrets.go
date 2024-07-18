@@ -12,40 +12,75 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 
-func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, ds deployment.AtlasDeploymentsService, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
-	conns, err := ds.ListDeploymentConnections(ctx.Context, project.ID())
+func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+	advancedDeployments, _, err := ctx.Client.AdvancedClusters.List(ctx.Context, project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
+	var deploymentSecrets []deploymentSecret
+	for _, c := range advancedDeployments.Results {
+		deploymentSecrets = append(deploymentSecrets, deploymentSecret{
+			name:              c.Name,
+			connectionStrings: c.ConnectionStrings,
+		})
+	}
+
+	serverlessDeployments, err := GetAllServerless(ctx, project.ID())
+	if err != nil {
+		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
+	}
+	for _, c := range serverlessDeployments {
+		found := false
+
+		for _, advancedDeployment := range advancedDeployments.Results {
+			if advancedDeployment.Name == c.Name {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			deploymentSecrets = append(deploymentSecrets, deploymentSecret{
+				name:              c.Name,
+				connectionStrings: c.ConnectionStrings,
+			})
+		}
+	}
+
 	// ensure secrets for both deployments and advanced deployment.
-	if result := createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx, k8sClient, recorder, project, dbUser, conns); !result.IsOk() {
+	if result := createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx, k8sClient, recorder, project, dbUser, deploymentSecrets); !result.IsOk() {
 		return result
 	}
 
 	return workflow.OK()
 }
 
-func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser, conns []deployment.Connection) workflow.Result {
+// deploymentSecret holds the information required to ensure a secret for a user in a given deployment.
+type deploymentSecret struct {
+	name              string
+	connectionStrings *mongodbatlas.ConnectionStrings
+}
+
+func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser, deploymentSecrets []deploymentSecret) workflow.Result {
 	requeue := false
 	secrets := make([]string, 0)
 
-	for _, di := range conns {
+	for _, ds := range deploymentSecrets {
 		scopes := dbUser.GetScopes(akov2.DeploymentScopeType)
-		if len(scopes) != 0 && !stringutil.Contains(scopes, di.Name) {
+		if len(scopes) != 0 && !stringutil.Contains(scopes, ds.name) {
 			continue
 		}
 		// Deployment may be not ready yet, so no connection urls - skipping
 		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
-		if di.SrvConnURL == "" {
-			ctx.Log.Debugw("Deployment is not ready yet - not creating a connection Secret", "deployment", di.Name)
+		if ds.connectionStrings == nil || ds.connectionStrings.StandardSrv == "" {
+			ctx.Log.Debugw("Deployment is not ready yet - not creating a connection Secret", "deployment", ds.name)
 			requeue = true
 			continue
 		}
@@ -56,13 +91,13 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 		data := ConnectionData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
-			ConnURL:    di.ConnURL,
-			SrvConnURL: di.SrvConnURL,
+			ConnURL:    ds.connectionStrings.Standard,
+			SrvConnURL: ds.connectionStrings.StandardSrv,
 		}
-		FillPrivateConns(di, &data)
+		FillPrivateConnStrings(ds.connectionStrings, &data)
 
 		var secretName string
-		if secretName, err = Ensure(ctx.Context, k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), di.Name, data); err != nil {
+		if secretName, err = Ensure(ctx.Context, k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), ds.name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		secrets = append(secrets, secretName)
@@ -143,34 +178,6 @@ func RemoveStaleSecretsByUserName(ctx context.Context, k8sClient client.Client, 
 	return lastError
 }
 
-func FillPrivateConns(conn deployment.Connection, data *ConnectionData) {
-	if conn.PrivateURL != "" {
-		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-			PvtConnURL:    conn.PrivateURL,
-			PvtSrvConnURL: conn.SrvPrivateURL,
-		})
-	}
-
-	if conn.Serverless {
-		for _, pe := range conn.PrivateEndpoints {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-				PvtSrvConnURL: pe.ServerURL,
-			})
-		}
-	} else {
-		for _, pe := range conn.PrivateEndpoints {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-				PvtConnURL:      pe.URL,
-				PvtSrvConnURL:   pe.ServerURL,
-				PvtShardConnURL: pe.ShardURL,
-			})
-		}
-	}
-}
-
-// FillPrivateConnStrings fills private conn urls from connection strings
-// TODO: (CLOUDP-253951) remove once all usages move over to FillPrivateConns instead
-// Right now only advanced deployment is using this one
 func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *ConnectionData) {
 	if connStrings.Private != "" {
 		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
