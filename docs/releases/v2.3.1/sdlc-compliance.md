@@ -19,7 +19,6 @@ Overview:
 - **Dependency Information**
   - See SBOMS Lite manifests (CycloneDX in JSON format) for `Intel` and `ARM` are to be found [here](.)
   - See [instructions on how the SBOMs are generated or how to generate them manually](../../dev/image-sboms.md)
-  - [Internal compliance folder](https://drive.google.com/drive/folders/1k0TsPgJcMwgj2muSPHU0FHHBjPT0dkS0?usp=drive_link)
 
 - **Static Analysis Report**
   - No SAST findings. Our CI system blocks merges on any SAST findings.
