@@ -29,7 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
+var _ = Describe("Atlas for Government", Label("atlas-gov"), Ordered, func() {
 	var awsHelper *cloud.AwsAction
 	var testData *model.TestDataProvider
 	var managerStop context.CancelFunc
