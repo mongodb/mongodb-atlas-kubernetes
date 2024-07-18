@@ -13,6 +13,11 @@ import (
 func CommonPredicates() predicate.Funcs {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
+			if e.ObjectOld.GetResourceVersion() == e.ObjectNew.GetResourceVersion() {
+				// resource version didn't change, so this is a resync, allow reconciliation.
+				return true
+			}
+
 			if e.ObjectOld.GetGeneration() == e.ObjectNew.GetGeneration() && reflect.DeepEqual(e.ObjectNew.GetFinalizers(), e.ObjectOld.GetFinalizers()) {
 				return false
 			}
