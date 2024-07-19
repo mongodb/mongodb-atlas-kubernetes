@@ -1,97 +1,67 @@
 package atlasdeployment
 
 import (
+	"errors"
 	"fmt"
-	"net/http"
+	"reflect"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-
-	"go.mongodb.org/atlas/mongodbatlas"
-
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(workflowCtx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment) (atlasDeployment *mongodbatlas.Cluster, _ workflow.Result) {
-	if deployment == nil || deployment.Spec.ServerlessSpec == nil {
-		return nil, workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty")
-	}
-	serverlessSpec := deployment.Spec.ServerlessSpec
-	atlasDeployment, resp, err := workflowCtx.Client.ServerlessInstances.Get(workflowCtx.Context, project.Status.ID, serverlessSpec.Name)
-	if err != nil {
-		if resp == nil {
-			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
+func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Serverless) (ctrl.Result, error) {
+	if deploymentInAtlas == nil {
+		ctx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", deploymentInAKO.GetName())
+		newServerlessDeployment, err := r.deploymentService.CreateDeployment(ctx.Context, deploymentInAKO)
+		if err != nil {
+			return r.terminate(ctx, workflow.DeploymentNotCreatedInAtlas, err)
 		}
 
-		if resp.StatusCode != http.StatusNotFound {
-			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
-		}
-
-		atlasDeployment, err = serverlessSpec.ToAtlas()
-		if err != nil {
-			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
-		}
-		workflowCtx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", serverlessSpec.Name)
-		atlasDeployment, _, err = workflowCtx.Client.ServerlessInstances.Create(workflowCtx.Context, project.Status.ID, &mongodbatlas.ServerlessCreateRequestParams{
-			Name: serverlessSpec.Name,
-			ProviderSettings: &mongodbatlas.ServerlessProviderSettings{
-				BackingProviderName: serverlessSpec.ProviderSettings.BackingProviderName,
-				ProviderName:        string(serverlessSpec.ProviderSettings.ProviderName),
-				RegionName:          serverlessSpec.ProviderSettings.RegionName,
-			},
-			Tag: atlasDeployment.Tags,
-		})
-		if err != nil {
-			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
-		}
+		deploymentInAtlas = newServerlessDeployment.(*deployment.Serverless)
 	}
 
-	switch atlasDeployment.StateName {
+	switch deploymentInAtlas.GetState() {
 	case status.StateIDLE:
-		convertedDeployment, err := serverlessSpec.ToAtlas()
-		if err != nil {
-			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
-		}
-		if convertedDeployment.Tags == nil {
-			convertedDeployment.Tags = &[]*mongodbatlas.Tag{}
-		}
-		if !isTagsEqual(*(atlasDeployment.Tags), *(convertedDeployment.Tags)) {
-			atlasDeployment, _, err = workflowCtx.Client.ServerlessInstances.Update(workflowCtx.Context, project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
-				Tag: convertedDeployment.Tags,
-				ServerlessBackupOptions: &mongodbatlas.ServerlessBackupOptions{
-					ServerlessContinuousBackupEnabled: &serverlessSpec.BackupOptions.ServerlessContinuousBackupEnabled,
-				},
-				TerminationProtectionEnabled: &serverlessSpec.TerminationProtectionEnabled,
-			})
+		if !reflect.DeepEqual(deploymentInAKO.ServerlessSpec, deploymentInAtlas.ServerlessSpec) {
+			_, err := r.deploymentService.UpdateDeployment(ctx.Context, deploymentInAKO)
 			if err != nil {
-				return atlasDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
+				return r.terminate(ctx, workflow.DeploymentNotUpdatedInAtlas, err)
 			}
-			return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
+
+			return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentUpdating, "deployment is updating")
 		}
-		result := ensureServerlessPrivateEndpoints(workflowCtx, project.ID(), deployment)
-		return atlasDeployment, result
+
+		err := r.ensureConnectionSecrets(ctx, deploymentInAKO, deploymentInAtlas.GetConnection())
+		if err != nil {
+			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
+		}
+
+		// Note: Serverless Private endpoints keep theirs flows without translation layer (yet)
+		result := ensureServerlessPrivateEndpoints(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource())
+
+		switch {
+		case result.IsInProgress():
+			return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.ServerlessPrivateEndpointInProgress, result.GetMessage())
+		case !result.IsOk():
+			return r.terminate(ctx, workflow.ServerlessPrivateEndpointFailed, errors.New(result.GetMessage()))
+		}
+
+		err = customresource.ApplyLastConfigApplied(ctx.Context, deploymentInAKO.GetCustomResource(), r.Client)
+		if err != nil {
+			return r.terminate(ctx, workflow.Internal, err)
+		}
+
+		return r.ready(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas)
 
 	case status.StateCREATING:
-		return atlasDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
-
+		return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentCreating, "deployment is provisioning")
 	case status.StateUPDATING, status.StateREPAIRING:
-		return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
-
-	// TODO: add "DELETING", "DELETED", handle 404 on delete
-
+		return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentUpdating, "deployment is updating")
 	default:
-		return atlasDeployment, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown deployment state %q", atlasDeployment.StateName))
+		return r.terminate(ctx, workflow.Internal, fmt.Errorf("unknown deployment state: %s", deploymentInAtlas.GetState()))
 	}
-}
-
-func isTagsEqual(a []*mongodbatlas.Tag, c []*mongodbatlas.Tag) bool {
-	if len(a) == len(c) {
-		for i, aTags := range a {
-			if aTags.Key != c[i].Key || aTags.Value != c[i].Value {
-				return false
-			}
-		}
-		return true
-	}
-	return false
 }
