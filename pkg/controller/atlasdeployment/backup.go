@@ -29,7 +29,6 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	service *workflow.Context,
 	projectID string,
 	deployment *akov2.AtlasDeployment,
-	isEnabled bool,
 ) error {
 	if deployment.Spec.BackupScheduleRef.Name == "" {
 		r.Log.Debug("no backup schedule configured for the deployment")
@@ -41,7 +40,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		return nil
 	}
 
-	if !isEnabled {
+	if deployment.Spec.DeploymentSpec.BackupEnabled == nil || !*deployment.Spec.DeploymentSpec.BackupEnabled {
 		return fmt.Errorf("can not proceed with backup configuration. Backups are not enabled for cluster %s", deployment.GetDeploymentName())
 	}
 

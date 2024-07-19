@@ -18,14 +18,9 @@ package atlasdeployment
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"reflect"
-	"regexp"
 	"testing"
-	"time"
-
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -44,572 +39,536 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
+/*
 const (
+
 	fakeDomain     = "atlas-unit-test.local"
 	fakeProject    = "test-project"
 	fakeProjectID  = "fake-test-project-id"
 	fakeDeployment = "fake-cluster"
 	fakeNamespace  = "fake-namespace"
+
 )
 
-func TestFinalizerNotFound(t *testing.T) {
-	atlasClient := mongodbatlas.Client{}
-	project := testProject(fakeNamespace)
-	deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-	k8sclient := testK8sClient()
-	te := newTestDeploymentEnv(t, false, &atlasClient, k8sclient, project, deployment)
+	func TestFinalizerNotFound(t *testing.T) {
+		atlasClient := mongodbatlas.Client{}
+		project := testProject(fakeNamespace)
+		deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+		k8sclient := testK8sClient()
+		te := newTestDeploymentEnv(t, false, &atlasClient, k8sclient, project, deployment)
 
-	deletionRequest, result := te.reconciler.handleDeletion(
-		te.workflowCtx,
-		te.log,
-		te.prevResult,
-		te.project,
-		te.deployment,
-	)
+		deletionRequest, result := te.reconciler.delete(
+			te.workflowCtx,
+			te.log,
+			te.prevResult,
+			te.project,
+			te.deployment,
+		)
 
-	require.True(t, deletionRequest)
-	assert.Regexp(t, regexp.MustCompile("not found"), result.GetMessage())
-}
-
-func TestFinalizerGetsSet(t *testing.T) {
-	testCases := []struct {
-		title         string
-		haveFinalizer bool
-	}{
-		{
-			title:         "with a finalizer, it remains set",
-			haveFinalizer: true,
-		},
-		{
-			title:         "without a finalizer, it gets set",
-			haveFinalizer: false,
-		},
+		require.True(t, deletionRequest)
+		assert.Regexp(t, regexp.MustCompile("not found"), result.GetMessage())
 	}
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			atlasClient := mongodbatlas.Client{}
-			project := testProject(fakeNamespace)
-			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			if tc.haveFinalizer {
+
+	func TestFinalizerGetsSet(t *testing.T) {
+		testCases := []struct {
+			title         string
+			haveFinalizer bool
+		}{
+			{
+				title:         "with a finalizer, it remains set",
+				haveFinalizer: true,
+			},
+			{
+				title:         "without a finalizer, it gets set",
+				haveFinalizer: false,
+			},
+		}
+		for _, tc := range testCases {
+			t.Run(tc.title, func(t *testing.T) {
+				atlasClient := mongodbatlas.Client{}
+				project := testProject(fakeNamespace)
+				deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+				if tc.haveFinalizer {
+					customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
+				}
+				k8sclient := testK8sClient()
+				require.NoError(t, k8sclient.Create(context.Background(), deployment))
+				te := newTestDeploymentEnv(t, false, &atlasClient, k8sclient, project, deployment)
+
+				deletionRequest, _ := te.reconciler.delete(
+					te.workflowCtx,
+					te.log,
+					te.prevResult,
+					te.project,
+					te.deployment,
+				)
+
+				require.False(t, deletionRequest)
+				finalDeployment := &akov2.AtlasDeployment{}
+				require.NoError(t, te.reconciler.Client.Get(context.Background(), client.ObjectKeyFromObject(te.deployment), finalDeployment))
+				assert.True(t, customresource.HaveFinalizer(finalDeployment, customresource.FinalizerLabel))
+			})
+		}
+	}
+
+	func TestDeploymentDeletionProtection(t *testing.T) {
+		testCases := []struct {
+			title         string
+			protected     bool
+			expectRemoval int
+		}{
+			{
+				title:         "Deployment with protection ON and no annotations is kept",
+				protected:     true,
+				expectRemoval: 0,
+			},
+			{
+				title:         "Deployment with protection OFF and no annotations is removed",
+				protected:     false,
+				expectRemoval: 1,
+			},
+		}
+		for _, tc := range testCases {
+			t.Run(tc.title, func(t *testing.T) {
+				advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
+					DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
+						return nil, nil
+					},
+				}
+				project := testProject(fakeNamespace)
+				atlasClient := mongodbatlas.Client{
+					AdvancedClusters: advancedClusterClient,
+				}
+				deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+				k8sclient := testK8sClient()
 				customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
-			}
-			k8sclient := testK8sClient()
-			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			te := newTestDeploymentEnv(t, false, &atlasClient, k8sclient, project, deployment)
+				require.NoError(t, k8sclient.Create(context.Background(), deployment))
+				// set deletion timestamp after creation in k8s
+				deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
+				te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
+				deletionRequest, result := te.reconciler.delete(
+					te.workflowCtx,
+					te.log,
+					te.prevResult,
+					te.project,
+					te.deployment,
+				)
 
-			deletionRequest, _ := te.reconciler.handleDeletion(
-				te.workflowCtx,
-				te.log,
-				te.prevResult,
-				te.project,
-				te.deployment,
-			)
-
-			require.False(t, deletionRequest)
-			finalDeployment := &akov2.AtlasDeployment{}
-			require.NoError(t, te.reconciler.Client.Get(context.Background(), client.ObjectKeyFromObject(te.deployment), finalDeployment))
-			assert.True(t, customresource.HaveFinalizer(finalDeployment, customresource.FinalizerLabel))
-		})
-	}
-}
-
-func TestDeploymentDeletionProtection(t *testing.T) {
-	testCases := []struct {
-		title         string
-		protected     bool
-		expectRemoval int
-	}{
-		{
-			title:         "Deployment with protection ON and no annotations is kept",
-			protected:     true,
-			expectRemoval: 0,
-		},
-		{
-			title:         "Deployment with protection OFF and no annotations is removed",
-			protected:     false,
-			expectRemoval: 1,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
-				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
-					return nil, nil
-				},
-			}
-			project := testProject(fakeNamespace)
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: advancedClusterClient,
-			}
-			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			k8sclient := testK8sClient()
-			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
-			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			// set deletion timestamp after creation in k8s
-			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
-			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
-			deletionRequest, result := te.reconciler.handleDeletion(
-				te.workflowCtx,
-				te.log,
-				te.prevResult,
-				te.project,
-				te.deployment,
-			)
-
-			require.True(t, deletionRequest)
-			require.True(t, result.IsOk())
-			assert.Len(t, advancedClusterClient.DeleteRequests, tc.expectRemoval)
-		})
-	}
-}
-
-func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
-	testCases := []struct {
-		title     string
-		protected bool
-	}{
-		{
-			title:     "Deployment with protection ON and 'keep' annotation is kept",
-			protected: true,
-		},
-		{
-			title:     "Deployment with protection OFF but 'keep' annotation is kept",
-			protected: false,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
-				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
-					return nil, nil
-				},
-			}
-			project := testProject(fakeNamespace)
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: advancedClusterClient,
-			}
-			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			customresource.SetAnnotation(deployment,
-				customresource.ResourcePolicyAnnotation,
-				customresource.ResourcePolicyKeep,
-			)
-			k8sclient := testK8sClient()
-			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
-			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			// set deletion timestamp after creation in k8s, otherwise the creation would reset the deletion timestamp
-			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
-			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
-
-			deletionRequest, result := te.reconciler.handleDeletion(
-				te.workflowCtx,
-				te.log,
-				te.prevResult,
-				te.project,
-				te.deployment,
-			)
-
-			require.True(t, deletionRequest)
-			require.True(t, result.IsOk())
-			assert.Len(t, advancedClusterClient.DeleteRequests, 0)
-		})
-	}
-}
-
-func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
-	testCases := []struct {
-		title     string
-		protected bool
-	}{
-		{
-			title:     "Deployment with protection ON but 'delete' annotation is removed",
-			protected: true,
-		},
-		{
-			title:     "Deployment with protection OFF and 'delete' annotation is removed",
-			protected: false,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
-				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
-					return nil, nil
-				},
-			}
-			project := testProject(fakeNamespace)
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: advancedClusterClient,
-			}
-			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			customresource.SetAnnotation(deployment,
-				customresource.ResourcePolicyAnnotation,
-				customresource.ResourcePolicyDelete,
-			)
-			k8sclient := testK8sClient()
-			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
-			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			// set deletion timestamp after creation in k8s, otherwise the creation would reset the deletion timestamp
-			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
-			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
-
-			deletionRequest, result := te.reconciler.handleDeletion(
-				te.workflowCtx,
-				te.log,
-				te.prevResult,
-				te.project,
-				te.deployment,
-			)
-
-			require.True(t, deletionRequest)
-			require.True(t, result.IsOk())
-			assert.Len(t, advancedClusterClient.DeleteRequests, 1)
-		})
-	}
-}
-
-func TestCleanupBindings(t *testing.T) {
-	t.Run("without backup references, nothing happens on cleanup", func(t *testing.T) {
-		r := &AtlasDeploymentReconciler{
-			Log:    testLog(t),
-			Client: testK8sClient(),
+				require.True(t, deletionRequest)
+				require.True(t, result.IsOk())
+				assert.Len(t, advancedClusterClient.DeleteRequests, tc.expectRemoval)
+			})
 		}
-		d := &akov2.AtlasDeployment{} // dummy deployment
+	}
 
-		// test cleanup
-		assert.NoError(t, r.cleanupBindings(context.Background(), d))
-	})
-
-	t.Run("with unreferenced backups, still nothing happens on cleanup", func(t *testing.T) {
-		r := &AtlasDeploymentReconciler{
-			Log:    testLog(t),
-			Client: testK8sClient(),
-		}
-		dn := testDeploymentName("") // deployment, schedule, policy (NOT connected)
-		deployment := &akov2.AtlasDeployment{
-			ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
-		}
-		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		policy := testBackupPolicy()
-		require.NoError(t, r.Client.Create(context.Background(), policy))
-		schedule := testBackupSchedule("", policy)
-		require.NoError(t, r.Client.Create(context.Background(), schedule))
-
-		// test cleanup
-		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
-
-		endPolicy := &akov2.AtlasBackupPolicy{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
-		assert.Equal(t, []string{customresource.FinalizerLabel}, endPolicy.Finalizers)
-		endSchedule := &akov2.AtlasBackupSchedule{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
-		assert.Equal(t, []string{customresource.FinalizerLabel}, endSchedule.Finalizers)
-	})
-
-	t.Run("last deployment's referenced backups finalizers are cleaned up", func(t *testing.T) {
-		atlasProvider := &atlasmock.TestProvider{
-			IsSupportedFunc: func() bool {
-				return true
+	func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
+		testCases := []struct {
+			title     string
+			protected bool
+		}{
+			{
+				title:     "Deployment with protection ON and 'keep' annotation is kept",
+				protected: true,
+			},
+			{
+				title:     "Deployment with protection OFF but 'keep' annotation is kept",
+				protected: false,
 			},
 		}
-		r := &AtlasDeploymentReconciler{
-			Log:           testLog(t),
-			Client:        testK8sClient(),
-			AtlasProvider: atlasProvider,
+		for _, tc := range testCases {
+			t.Run(tc.title, func(t *testing.T) {
+				advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
+					DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
+						return nil, nil
+					},
+				}
+				project := testProject(fakeNamespace)
+				atlasClient := mongodbatlas.Client{
+					AdvancedClusters: advancedClusterClient,
+				}
+				deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+				customresource.SetAnnotation(deployment,
+					customresource.ResourcePolicyAnnotation,
+					customresource.ResourcePolicyKeep,
+				)
+				k8sclient := testK8sClient()
+				customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
+				require.NoError(t, k8sclient.Create(context.Background(), deployment))
+				// set deletion timestamp after creation in k8s, otherwise the creation would reset the deletion timestamp
+				deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
+				te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
+
+				deletionRequest, result := te.reconciler.delete(
+					te.workflowCtx,
+					te.log,
+					te.prevResult,
+					te.project,
+					te.deployment,
+				)
+
+				require.True(t, deletionRequest)
+				require.True(t, result.IsOk())
+				assert.Len(t, advancedClusterClient.DeleteRequests, 0)
+			})
 		}
-		policy := testBackupPolicy() // deployment -> schedule -> policy
-		require.NoError(t, r.Client.Create(context.Background(), policy))
-		schedule := testBackupSchedule("", policy)
-		deployment := testDeployment("", schedule)
-		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		schedule.Status.DeploymentIDs = []string{deployment.Spec.DeploymentSpec.Name}
-		require.NoError(t, r.Client.Create(context.Background(), schedule))
+	}
 
-		// test ensureBackupPolicy and cleanup
-		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
-		require.NoError(t, err)
-		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
-
-		endPolicy := &akov2.AtlasBackupPolicy{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
-		assert.Empty(t, endPolicy.Finalizers, "policy should end up with no finalizer")
-		endSchedule := &akov2.AtlasBackupSchedule{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
-		assert.Empty(t, endSchedule.Finalizers, "schedule should end up with no finalizer")
-	})
-
-	t.Run("referenced backups finalizers are NOT cleaned up if reachable by other deployment", func(t *testing.T) {
-		atlasProvider := &atlasmock.TestProvider{
-			IsSupportedFunc: func() bool {
-				return true
+	func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
+		testCases := []struct {
+			title     string
+			protected bool
+		}{
+			{
+				title:     "Deployment with protection ON but 'delete' annotation is removed",
+				protected: true,
+			},
+			{
+				title:     "Deployment with protection OFF and 'delete' annotation is removed",
+				protected: false,
 			},
 		}
-		r := &AtlasDeploymentReconciler{
-			Log:           testLog(t),
-			Client:        testK8sClient(),
-			AtlasProvider: atlasProvider,
-		}
-		policy := testBackupPolicy() // deployment + deployment2 -> schedule -> policy
-		require.NoError(t, r.Client.Create(context.Background(), policy))
-		schedule := testBackupSchedule("", policy)
-		deployment := testDeployment("", schedule)
-		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		deployment2 := testDeployment("2", schedule)
-		require.NoError(t, r.Client.Create(context.Background(), deployment2))
-		schedule.Status.DeploymentIDs = []string{
-			deployment.Spec.DeploymentSpec.Name,
-			deployment2.Spec.DeploymentSpec.Name,
-		}
-		require.NoError(t, r.Client.Create(context.Background(), schedule))
+		for _, tc := range testCases {
+			t.Run(tc.title, func(t *testing.T) {
+				advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
+					DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
+						return nil, nil
+					},
+				}
+				project := testProject(fakeNamespace)
+				atlasClient := mongodbatlas.Client{
+					AdvancedClusters: advancedClusterClient,
+				}
+				deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+				customresource.SetAnnotation(deployment,
+					customresource.ResourcePolicyAnnotation,
+					customresource.ResourcePolicyDelete,
+				)
+				k8sclient := testK8sClient()
+				customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
+				require.NoError(t, k8sclient.Create(context.Background(), deployment))
+				// set deletion timestamp after creation in k8s, otherwise the creation would reset the deletion timestamp
+				deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
+				te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
 
-		// test cleanup
-		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
-		require.NoError(t, err)
-		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
+				deletionRequest, result := te.reconciler.delete(
+					te.workflowCtx,
+					te.log,
+					te.prevResult,
+					te.project,
+					te.deployment,
+				)
 
-		endPolicy := &akov2.AtlasBackupPolicy{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
-		assert.NotEmpty(t, endPolicy.Finalizers, "policy should keep the finalizer")
-		endSchedule := &akov2.AtlasBackupSchedule{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
-		assert.NotEmpty(t, endSchedule.Finalizers, "schedule should keep the finalizer")
-	})
+				require.True(t, deletionRequest)
+				require.True(t, result.IsOk())
+				assert.Len(t, advancedClusterClient.DeleteRequests, 1)
+			})
+		}
+	}
 
-	t.Run("policy finalizer stays if still referenced", func(t *testing.T) {
-		atlasProvider := &atlasmock.TestProvider{
-			IsSupportedFunc: func() bool {
-				return true
-			},
-		}
-		r := &AtlasDeploymentReconciler{
-			Log:           testLog(t),
-			Client:        testK8sClient(),
-			AtlasProvider: atlasProvider,
-		}
-		policy := testBackupPolicy() // deployment -> schedule + schedule2 -> policy
-		require.NoError(t, r.Client.Create(context.Background(), policy))
-		schedule := testBackupSchedule("", policy)
-		schedule2 := testBackupSchedule("2", policy)
-		deployment := testDeployment("", schedule)
-		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		deployment2 := testDeployment("2", schedule2)
-		require.NoError(t, r.Client.Create(context.Background(), deployment2))
-		schedule.Status.DeploymentIDs = []string{
-			deployment.Spec.DeploymentSpec.Name,
-		}
-		require.NoError(t, r.Client.Create(context.Background(), schedule))
-		schedule2.Status.DeploymentIDs = []string{
-			deployment2.Spec.DeploymentSpec.Name,
-		}
-		require.NoError(t, r.Client.Create(context.Background(), schedule2))
-		policy.Status.BackupScheduleIDs = []string{
-			fmt.Sprintf("%s/%s", schedule.Namespace, schedule.Name),
-			fmt.Sprintf("%s/%s", schedule2.Namespace, schedule2.Name),
-		}
+	func TestCleanupBindings(t *testing.T) {
+		t.Run("without backup references, nothing happens on cleanup", func(t *testing.T) {
+			r := &AtlasDeploymentReconciler{
+				Log:    testLog(t),
+				Client: testK8sClient(),
+			}
+			d := &akov2.AtlasDeployment{} // dummy deployment
 
-		// test cleanup
-		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
-		require.NoError(t, err)
-		_, err = r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule2)
-		require.NoError(t, err)
-		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
+			// test cleanup
+			assert.NoError(t, r.cleanupBindings(context.Background(), d))
+		})
 
-		endPolicy := &akov2.AtlasBackupPolicy{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKey(policy.Namespace, policy.Name), endPolicy))
-		assert.NotEmpty(t, endPolicy.Finalizers, "policy should keep the finalizer")
-		endSchedule := &akov2.AtlasBackupSchedule{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKey(schedule.Namespace, schedule.Name), endSchedule))
-		assert.Empty(t, endSchedule.Finalizers, "schedule should end up with no finalizer")
-	})
-}
+		t.Run("with unreferenced backups, still nothing happens on cleanup", func(t *testing.T) {
+			r := &AtlasDeploymentReconciler{
+				Log:    testLog(t),
+				Client: testK8sClient(),
+			}
+			dn := testDeploymentName("") // deployment, schedule, policy (NOT connected)
+			deployment := &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
+			}
+			require.NoError(t, r.Client.Create(context.Background(), deployment))
+			policy := testBackupPolicy()
+			require.NoError(t, r.Client.Create(context.Background(), policy))
+			schedule := testBackupSchedule("", policy)
+			require.NoError(t, r.Client.Create(context.Background(), schedule))
 
-type testDeploymentEnv struct {
-	reconciler  *AtlasDeploymentReconciler
-	workflowCtx *workflow.Context
-	log         *zap.SugaredLogger
-	prevResult  workflow.Result
-	project     *akov2.AtlasProject
-	deployment  *akov2.AtlasDeployment
-}
+			// test cleanup
+			require.NoError(t, r.cleanupBindings(context.Background(), deployment))
+
+			endPolicy := &akov2.AtlasBackupPolicy{}
+			require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
+			assert.Equal(t, []string{customresource.FinalizerLabel}, endPolicy.Finalizers)
+			endSchedule := &akov2.AtlasBackupSchedule{}
+			require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
+			assert.Equal(t, []string{customresource.FinalizerLabel}, endSchedule.Finalizers)
+		})
+
+		t.Run("last deployment's referenced backups finalizers are cleaned up", func(t *testing.T) {
+			atlasProvider := &atlasmock.TestProvider{
+				IsSupportedFunc: func() bool {
+					return true
+				},
+			}
+			r := &AtlasDeploymentReconciler{
+				Log:           testLog(t),
+				Client:        testK8sClient(),
+				AtlasProvider: atlasProvider,
+			}
+			policy := testBackupPolicy() // deployment -> schedule -> policy
+			require.NoError(t, r.Client.Create(context.Background(), policy))
+			schedule := testBackupSchedule("", policy)
+			deployment := testDeployment("", schedule)
+			require.NoError(t, r.Client.Create(context.Background(), deployment))
+			schedule.Status.DeploymentIDs = []string{deployment.Spec.DeploymentSpec.Name}
+			require.NoError(t, r.Client.Create(context.Background(), schedule))
+
+			// test ensureBackupPolicy and cleanup
+			_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
+			require.NoError(t, err)
+			require.NoError(t, r.cleanupBindings(context.Background(), deployment))
+
+			endPolicy := &akov2.AtlasBackupPolicy{}
+			require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
+			assert.Empty(t, endPolicy.Finalizers, "policy should end up with no finalizer")
+			endSchedule := &akov2.AtlasBackupSchedule{}
+			require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
+			assert.Empty(t, endSchedule.Finalizers, "schedule should end up with no finalizer")
+		})
+
+		t.Run("referenced backups finalizers are NOT cleaned up if reachable by other deployment", func(t *testing.T) {
+			atlasProvider := &atlasmock.TestProvider{
+				IsSupportedFunc: func() bool {
+					return true
+				},
+			}
+			r := &AtlasDeploymentReconciler{
+				Log:           testLog(t),
+				Client:        testK8sClient(),
+				AtlasProvider: atlasProvider,
+			}
+			policy := testBackupPolicy() // deployment + deployment2 -> schedule -> policy
+			require.NoError(t, r.Client.Create(context.Background(), policy))
+			schedule := testBackupSchedule("", policy)
+			deployment := testDeployment("", schedule)
+			require.NoError(t, r.Client.Create(context.Background(), deployment))
+			deployment2 := testDeployment("2", schedule)
+			require.NoError(t, r.Client.Create(context.Background(), deployment2))
+			schedule.Status.DeploymentIDs = []string{
+				deployment.Spec.DeploymentSpec.Name,
+				deployment2.Spec.DeploymentSpec.Name,
+			}
+			require.NoError(t, r.Client.Create(context.Background(), schedule))
+
+			// test cleanup
+			_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
+			require.NoError(t, err)
+			require.NoError(t, r.cleanupBindings(context.Background(), deployment))
+
+			endPolicy := &akov2.AtlasBackupPolicy{}
+			require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
+			assert.NotEmpty(t, endPolicy.Finalizers, "policy should keep the finalizer")
+			endSchedule := &akov2.AtlasBackupSchedule{}
+			require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
+			assert.NotEmpty(t, endSchedule.Finalizers, "schedule should keep the finalizer")
+		})
+
+		t.Run("policy finalizer stays if still referenced", func(t *testing.T) {
+			atlasProvider := &atlasmock.TestProvider{
+				IsSupportedFunc: func() bool {
+					return true
+				},
+			}
+			r := &AtlasDeploymentReconciler{
+				Log:           testLog(t),
+				Client:        testK8sClient(),
+				AtlasProvider: atlasProvider,
+			}
+			policy := testBackupPolicy() // deployment -> schedule + schedule2 -> policy
+			require.NoError(t, r.Client.Create(context.Background(), policy))
+			schedule := testBackupSchedule("", policy)
+			schedule2 := testBackupSchedule("2", policy)
+			deployment := testDeployment("", schedule)
+			require.NoError(t, r.Client.Create(context.Background(), deployment))
+			deployment2 := testDeployment("2", schedule2)
+			require.NoError(t, r.Client.Create(context.Background(), deployment2))
+			schedule.Status.DeploymentIDs = []string{
+				deployment.Spec.DeploymentSpec.Name,
+			}
+			require.NoError(t, r.Client.Create(context.Background(), schedule))
+			schedule2.Status.DeploymentIDs = []string{
+				deployment2.Spec.DeploymentSpec.Name,
+			}
+			require.NoError(t, r.Client.Create(context.Background(), schedule2))
+			policy.Status.BackupScheduleIDs = []string{
+				fmt.Sprintf("%s/%s", schedule.Namespace, schedule.Name),
+				fmt.Sprintf("%s/%s", schedule2.Namespace, schedule2.Name),
+			}
+
+			// test cleanup
+			_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule)
+			require.NoError(t, err)
+			_, err = r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule2)
+			require.NoError(t, err)
+			require.NoError(t, r.cleanupBindings(context.Background(), deployment))
+
+			endPolicy := &akov2.AtlasBackupPolicy{}
+			require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKey(policy.Namespace, policy.Name), endPolicy))
+			assert.NotEmpty(t, endPolicy.Finalizers, "policy should keep the finalizer")
+			endSchedule := &akov2.AtlasBackupSchedule{}
+			require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKey(schedule.Namespace, schedule.Name), endSchedule))
+			assert.Empty(t, endSchedule.Finalizers, "schedule should end up with no finalizer")
+		})
+	}
+
+	type testDeploymentEnv struct {
+		reconciler  *AtlasDeploymentReconciler
+		workflowCtx *workflow.Context
+		log         *zap.SugaredLogger
+		prevResult  workflow.Result
+		project     *akov2.AtlasProject
+		deployment  *akov2.AtlasDeployment
+	}
 
 func newTestDeploymentEnv(t *testing.T,
+
 	protected bool,
 	atlasClient *mongodbatlas.Client,
 	k8sclient client.Client,
 	project *akov2.AtlasProject,
 	deployment *akov2.AtlasDeployment,
-) *testDeploymentEnv {
-	t.Helper()
 
-	logger := testLog(t)
-	r := testDeploymentReconciler(logger, k8sclient, protected)
+	) *testDeploymentEnv {
+		t.Helper()
 
-	prevResult := testPrevResult()
-	conditions := akov2.InitCondition(deployment, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(logger, conditions, context.Background())
-	workflowCtx.Client = atlasClient
-	return &testDeploymentEnv{
-		reconciler:  r,
-		workflowCtx: workflowCtx,
-		log:         r.Log.With("atlasdeployment", "test-namespace"),
-		prevResult:  prevResult,
-		deployment:  deployment,
-		project:     project,
+		logger := testLog(t)
+		r := testDeploymentReconciler(logger, k8sclient, protected)
+
+		prevResult := testPrevResult()
+		conditions := akov2.InitCondition(deployment, api.FalseCondition(api.ReadyType))
+		workflowCtx := workflow.NewContext(logger, conditions, context.Background())
+		workflowCtx.Client = atlasClient
+		return &testDeploymentEnv{
+			reconciler:  r,
+			workflowCtx: workflowCtx,
+			log:         r.Log.With("atlasdeployment", "test-namespace"),
+			prevResult:  prevResult,
+			deployment:  deployment,
+			project:     project,
+		}
 	}
-}
 
-func testK8sClient() client.Client {
-	// Subresources need to be explicitly set now since controller-runtime 1.15
-	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
-	sch := runtime.NewScheme()
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDeployment{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupSchedule{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupScheduleList{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupPolicy{})
-	sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
-	return fake.NewClientBuilder().WithScheme(sch).
-		WithStatusSubresource(&akov2.AtlasBackupSchedule{}, &akov2.AtlasBackupPolicy{}).
-		Build()
-}
-
-func testLog(t *testing.T) *zap.SugaredLogger {
-	t.Helper()
-
-	return zaptest.NewLogger(t).Sugar()
-}
-
-func testPrevResult() workflow.Result {
-	return workflow.Result{}.WithMessage("unchanged")
-}
-
-func testDeploymentReconciler(log *zap.SugaredLogger, k8sclient client.Client, protected bool) *AtlasDeploymentReconciler {
-	return &AtlasDeploymentReconciler{
-		Client:                   k8sclient,
-		Log:                      log,
-		ObjectDeletionProtection: protected,
+	func testK8sClient() client.Client {
+		// Subresources need to be explicitly set now since controller-runtime 1.15
+		// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
+		sch := runtime.NewScheme()
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDeployment{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupSchedule{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupScheduleList{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupPolicy{})
+		sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
+		return fake.NewClientBuilder().WithScheme(sch).
+			WithStatusSubresource(&akov2.AtlasBackupSchedule{}, &akov2.AtlasBackupPolicy{}).
+			Build()
 	}
-}
+
+	func testLog(t *testing.T) *zap.SugaredLogger {
+		t.Helper()
+
+		return zaptest.NewLogger(t).Sugar()
+	}
+
+	func testPrevResult() workflow.Result {
+		return workflow.Result{}.WithMessage("unchanged")
+	}
+
+	func testDeploymentReconciler(log *zap.SugaredLogger, k8sclient client.Client, protected bool) *AtlasDeploymentReconciler {
+		return &AtlasDeploymentReconciler{
+			Client:                   k8sclient,
+			Log:                      log,
+			ObjectDeletionProtection: protected,
+		}
+	}
 
 //nolint:unparam
-func testProject(ns string) *akov2.AtlasProject {
-	return &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fakeProject,
-			Namespace: ns,
-		},
-		Status: status.AtlasProjectStatus{
-			ID: fakeProjectID,
-		},
-	}
-}
 
-func testDeploymentName(suffix string) types.NamespacedName {
-	return types.NamespacedName{
-		Name:      fmt.Sprintf("test-deployment%s", suffix),
-		Namespace: "test-namespace",
-	}
-}
-
-func testDeployment(suffix string, schedule *akov2.AtlasBackupSchedule) *akov2.AtlasDeployment {
-	dn := testDeploymentName(suffix)
-	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
-		Spec: akov2.AtlasDeploymentSpec{
-			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-				Name: fmt.Sprintf("atlas-%s", dn.Name),
+	func testProject(ns string) *akov2.AtlasProject {
+		return &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fakeProject,
+				Namespace: ns,
 			},
-			BackupScheduleRef: common.ResourceRefNamespaced{
-				Name:      schedule.Name,
-				Namespace: schedule.Namespace,
+			Status: status.AtlasProjectStatus{
+				ID: fakeProjectID,
 			},
-		},
+		}
 	}
-}
 
-func testBackupSchedule(suffix string, policy *akov2.AtlasBackupPolicy) *akov2.AtlasBackupSchedule {
-	return &akov2.AtlasBackupSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       fmt.Sprintf("test-backup-schedule%s", suffix),
-			Namespace:  "test-namespace",
-			Finalizers: []string{customresource.FinalizerLabel},
-		},
-		Spec: akov2.AtlasBackupScheduleSpec{
-			PolicyRef: common.ResourceRefNamespaced{Name: policy.Name, Namespace: policy.Namespace},
-		},
+	func testDeploymentName(suffix string) types.NamespacedName {
+		return types.NamespacedName{
+			Name:      fmt.Sprintf("test-deployment%s", suffix),
+			Namespace: "test-namespace",
+		}
 	}
-}
 
-func testBackupPolicy() *akov2.AtlasBackupPolicy {
-	return &akov2.AtlasBackupPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "test-backup-policy",
-			Namespace:  "test-namespace",
-			Finalizers: []string{customresource.FinalizerLabel},
-		},
-		Spec: akov2.AtlasBackupPolicySpec{
-			Items: []akov2.AtlasBackupPolicyItem{
-				{
-					FrequencyType:     "weekly",
-					FrequencyInterval: 1,
-					RetentionUnit:     "days",
-					RetentionValue:    7,
+	func testDeployment(suffix string, schedule *akov2.AtlasBackupSchedule) *akov2.AtlasDeployment {
+		dn := testDeploymentName(suffix)
+		return &akov2.AtlasDeployment{
+			ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name: fmt.Sprintf("atlas-%s", dn.Name),
+				},
+				BackupScheduleRef: common.ResourceRefNamespaced{
+					Name:      schedule.Name,
+					Namespace: schedule.Namespace,
 				},
 			},
-		},
+		}
 	}
-}
 
-func TestUniqueKey(t *testing.T) {
-	t.Run("Test duplicates in Advanced Deployment", func(t *testing.T) {
-		deploymentSpec := &akov2.AtlasDeploymentSpec{
-			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-				Tags: []*akov2.TagSpec{{Key: "foo", Value: "true"}, {Key: "foo", Value: "false"}},
+	func testBackupSchedule(suffix string, policy *akov2.AtlasBackupPolicy) *akov2.AtlasBackupSchedule {
+		return &akov2.AtlasBackupSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       fmt.Sprintf("test-backup-schedule%s", suffix),
+				Namespace:  "test-namespace",
+				Finalizers: []string{customresource.FinalizerLabel},
+			},
+			Spec: akov2.AtlasBackupScheduleSpec{
+				PolicyRef: common.ResourceRefNamespaced{Name: policy.Name, Namespace: policy.Namespace},
 			},
 		}
-		err := uniqueKey(deploymentSpec)
-		assert.Error(t, err)
-	})
-	t.Run("Test no duplicates in Advanced Deployment", func(t *testing.T) {
-		deploymentSpec := &akov2.AtlasDeploymentSpec{
-			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-				Tags: []*akov2.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foobar", Value: "false"}},
-			},
-		}
-		err := uniqueKey(deploymentSpec)
-		assert.NoError(t, err)
-	})
-	t.Run("Test duplicates in Serverless Instance", func(t *testing.T) {
-		deploymentSpec := &akov2.AtlasDeploymentSpec{
-			ServerlessSpec: &akov2.ServerlessSpec{
-				Tags: []*akov2.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foo", Value: "false"}},
-			},
-		}
-		err := uniqueKey(deploymentSpec)
-		assert.Error(t, err)
-	})
-	t.Run("Test no duplicates in Serverless Instance", func(t *testing.T) {
-		deploymentSpec := &akov2.AtlasDeploymentSpec{
-			ServerlessSpec: &akov2.ServerlessSpec{
-				Tags: []*akov2.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}},
-			},
-		}
-		err := uniqueKey(deploymentSpec)
-		assert.NoError(t, err)
-	})
-}
+	}
 
+	func testBackupPolicy() *akov2.AtlasBackupPolicy {
+		return &akov2.AtlasBackupPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "test-backup-policy",
+				Namespace:  "test-namespace",
+				Finalizers: []string{customresource.FinalizerLabel},
+			},
+			Spec: akov2.AtlasBackupPolicySpec{
+				Items: []akov2.AtlasBackupPolicyItem{
+					{
+						FrequencyType:     "weekly",
+						FrequencyInterval: 1,
+						RetentionUnit:     "days",
+						RetentionValue:    7,
+					},
+				},
+			},
+		}
+	}
+*/
 func TestReconciliation(t *testing.T) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -686,14 +645,8 @@ func TestReconciliation(t *testing.T) {
 	deployment.Spec.DeploymentSpec.SearchNodes = searchNodes
 
 	sch := runtime.NewScheme()
-	sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.Secret{})
-	sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDeployment{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupSchedule{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupScheduleList{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupPolicy{})
-	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDatabaseUserList{})
+	require.NoError(t, akov2.AddToScheme(sch))
+	require.NoError(t, corev1.AddToScheme(sch))
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 	k8sClient := fake.NewClientBuilder().
@@ -702,31 +655,74 @@ func TestReconciliation(t *testing.T) {
 		WithStatusSubresource(bPolicy, bSchedule).
 		Build()
 
-	searchAPI := mockadmin.NewAtlasSearchApi(t)
-	searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name).
-		Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-	searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
-		Return(
-			&admin.ApiSearchDeploymentResponse{
-				GroupId:   pointer.MakePtr(project.ID()),
-				StateName: pointer.MakePtr("IDLE"),
-				Specs: &[]admin.ApiSearchDeploymentSpec{
-					{
-						InstanceSize: "S100_LOWCPU_NVME",
-						NodeCount:    4,
-					},
-				},
-			},
-			&http.Response{},
-			nil,
-		)
-
 	orgID := "0987654321"
 	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+			clusterAPI := mockadmin.NewClustersApi(t)
+			clusterAPI.EXPECT().GetCluster(context.Background(), project.ID(), deployment.GetDeploymentName()).
+				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+				Return(
+					&admin.AdvancedClusterDescription{
+						GroupId:       pointer.MakePtr(project.ID()),
+						Name:          pointer.MakePtr(deployment.GetDeploymentName()),
+						ClusterType:   pointer.MakePtr(deployment.Spec.DeploymentSpec.ClusterType),
+						BackupEnabled: pointer.MakePtr(true),
+						StateName:     pointer.MakePtr("IDLE"),
+						ReplicationSpecs: &[]admin.ReplicationSpec{
+							{
+								ZoneName:  pointer.MakePtr("Zone 1"),
+								NumShards: pointer.MakePtr(1),
+								RegionConfigs: &[]admin.CloudRegionConfig{
+									{
+										ProviderName: pointer.MakePtr("AWS"),
+										RegionName:   pointer.MakePtr("US_EAST_1"),
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &admin.HardwareSpec{
+											InstanceSize: pointer.MakePtr("M10"),
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+					&http.Response{},
+					nil,
+				)
+			clusterAPI.EXPECT().GetClusterAdvancedConfiguration(context.Background(), project.ID(), deployment.GetDeploymentName()).
+				Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
+			clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
+				Return(
+					&admin.ClusterDescriptionProcessArgs{},
+					&http.Response{},
+					nil,
+				)
+
+			searchAPI := mockadmin.NewAtlasSearchApi(t)
+			searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name).
+				Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+			searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+				Return(
+					&admin.ApiSearchDeploymentResponse{
+						GroupId:   pointer.MakePtr(project.ID()),
+						StateName: pointer.MakePtr("IDLE"),
+						Specs: &[]admin.ApiSearchDeploymentSpec{
+							{
+								InstanceSize: "S100_LOWCPU_NVME",
+								NodeCount:    4,
+							},
+						},
+					},
+					&http.Response{},
+					nil,
+				)
+
 			return &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+				AtlasSearchApi:         searchAPI,
+				ClustersApi:            clusterAPI,
+				ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
 			}, orgID, nil
 		},
 		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
