@@ -86,7 +86,7 @@ var _ = Describe("Sync Period test", Label("int", "sync-period"), func() {
 			time.Sleep(syncInterval * 2)
 		})
 
-		By("Project generation should be different", func() {
+		By("Project resource version should be different", func() {
 			var currentResourceVersion string
 			Eventually(func(g Gomega) bool {
 				if !resources.ReadAtlasResource(context.Background(), k8sClient, createdProject) {
