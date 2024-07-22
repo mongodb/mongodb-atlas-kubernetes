@@ -4,29 +4,31 @@ import (
 	"context"
 	"fmt"
 
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 // AtlasFederatedAuthReconciler reconciles an AtlasFederatedAuth object
 type AtlasFederatedAuthReconciler struct {
-	watch.DeprecatedResourceWatcher
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
@@ -104,8 +106,48 @@ func (r *AtlasFederatedAuthReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasFederatedAuth").
 		For(&akov2.AtlasFederatedAuth{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(r.findAtlasFederatedAuthForSecret),
+		).
 		Complete(r)
+}
+
+func (r *AtlasFederatedAuthReconciler) findAtlasFederatedAuthForSecret(ctx context.Context, obj client.Object) []reconcile.Request {
+	secret, ok := obj.(*corev1.Secret)
+	if !ok {
+		r.Log.Warnf("watching Secret but got %T", obj)
+		return nil
+	}
+
+	auths := &akov2.AtlasFederatedAuthList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasFederatedAuthBySecretsIndex,
+			client.ObjectKeyFromObject(secret).String(),
+		),
+	}
+	err := r.Client.List(ctx, auths, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list AtlasFederatedAuth: %e", err)
+		return []reconcile.Request{}
+	}
+
+	requests := make([]reconcile.Request, 0, len(auths.Items))
+	for i := range auths.Items {
+		item := auths.Items[i]
+		requests = append(
+			requests,
+			reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      item.Name,
+					Namespace: item.Namespace,
+				},
+			},
+		)
+	}
+
+	return requests
 }
 
 func NewAtlasFederatedAuthReconciler(
@@ -116,14 +158,13 @@ func NewAtlasFederatedAuthReconciler(
 	logger *zap.Logger,
 ) *AtlasFederatedAuthReconciler {
 	return &AtlasFederatedAuthReconciler{
-		Scheme:                    mgr.GetScheme(),
-		Client:                    mgr.GetClient(),
-		EventRecorder:             mgr.GetEventRecorderFor("AtlasFederatedAuth"),
-		DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
-		GlobalPredicates:          predicates,
-		Log:                       logger.Named("controllers").Named("AtlasFederatedAuth").Sugar(),
-		AtlasProvider:             atlasProvider,
-		ObjectDeletionProtection:  deletionProtection,
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasFederatedAuth"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasFederatedAuth").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
 	}
 }
 
