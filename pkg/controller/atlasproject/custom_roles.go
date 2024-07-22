@@ -33,8 +33,8 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 	}
 
 	akoRoles := make([]customroles.CustomRole, len(project.Spec.CustomRoles))
-	for i, role := range project.Spec.CustomRoles {
-		akoRoles[i] = customroles.NewCustomRole(&role)
+	for i := range project.Spec.CustomRoles {
+		akoRoles[i] = customroles.NewCustomRole(&project.Spec.CustomRoles[i])
 	}
 
 	ops := calculateChanges(currentCustomRoles, akoRoles)
