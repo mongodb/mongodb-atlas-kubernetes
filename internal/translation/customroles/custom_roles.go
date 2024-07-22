@@ -8,7 +8,7 @@ import (
 )
 
 type CustomRoleService interface {
-	Get(ctx context.Context, projectID string, roleName string) (*CustomRole, error)
+	Get(ctx context.Context, projectID string, roleName string) (CustomRole, error)
 	List(ctx context.Context, projectID string) ([]CustomRole, error)
 	Create(ctx context.Context, projectID string, role CustomRole) error
 	Update(ctx context.Context, projectID string, roleName string, role CustomRole) error
@@ -23,10 +23,10 @@ func NewCustomRoles(api admin.CustomDatabaseRolesApi) *CustomRoles {
 	return &CustomRoles{roleAPI: api}
 }
 
-func (s *CustomRoles) Get(ctx context.Context, projectID string, roleName string) (*CustomRole, error) {
+func (s *CustomRoles) Get(ctx context.Context, projectID string, roleName string) (CustomRole, error) {
 	customRole, _, err := s.roleAPI.GetCustomDatabaseRole(ctx, projectID, roleName).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get custom roles from Atlas: %w", err)
+		return CustomRole{}, fmt.Errorf("failed to get custom roles from Atlas: %w", err)
 	}
 
 	return fromAtlas(customRole), err
@@ -40,8 +40,8 @@ func (s *CustomRoles) List(ctx context.Context, projectID string) ([]CustomRole,
 
 	customRoles := make([]CustomRole, len(atlasRoles))
 
-	for i, r := range atlasRoles {
-		customRoles[i] = *fromAtlas(&r)
+	for i := range atlasRoles {
+		customRoles[i] = fromAtlas(&atlasRoles[i])
 	}
 
 	return customRoles, nil

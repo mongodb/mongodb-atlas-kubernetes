@@ -5,14 +5,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func TestEnsureCustomRoles(t *testing.T) {

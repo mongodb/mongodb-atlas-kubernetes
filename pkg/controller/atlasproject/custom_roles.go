@@ -16,7 +16,7 @@ import (
 
 type roleController struct {
 	ctx     *workflow.Context
-	project *akov2.AtlasProject // TODO: Should this be a translation layer type?
+	project *akov2.AtlasProject
 	service customroles.CustomRoleService
 }
 
@@ -34,7 +34,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 
 	akoRoles := make([]customroles.CustomRole, len(project.Spec.CustomRoles))
 	for i, role := range project.Spec.CustomRoles {
-		akoRoles[i] = *customroles.NewCustomRole(&role)
+		akoRoles[i] = customroles.NewCustomRole(&role)
 	}
 
 	ops := calculateChanges(currentCustomRoles, akoRoles)
