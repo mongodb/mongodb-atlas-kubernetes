@@ -84,7 +84,6 @@ ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
-GO_LICENSES = go-licenses
 DISALLOWED_LICENSES = restricted,reciprocal
 
 # golangci-lint
@@ -125,10 +124,7 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
-go-licenses:
-	@echo 'Already Installed'
-
-licenses.csv: go-licenses go.mod ## Track licenses in a CSV file
+licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
 	@echo "========================================"
 	GOOS=linux GOARCH=amd64 go mod download
@@ -145,7 +141,7 @@ licenses-up-to-date:
 	else echo "licenses.csv is OK! (up to date)"; fi
 
 .PHONY: check-licenses
-check-licenses: go-licenses licenses-up-to-date ## Check licenses are compliant with our restrictions
+check-licenses: licenses-up-to-date ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
 	# https://github.com/google/go-licenses/issues/244
@@ -241,11 +237,6 @@ $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
 .PHONY: vet
 vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
-.PHONY: controller-gen
-controller-gen: ## Download controller-gen locally if necessary
-	@echo "test"
-	@echo "test"
-
 .PHONY: generate
 generate: controller-gen ${GO_SOURCES} ## Generate code
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
@@ -272,8 +263,6 @@ validate-manifests: generate manifests check-missing-files
 
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary
-		@echo "Kustomize already installed"
-
 # go-get-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-get-tool
@@ -462,30 +451,24 @@ sign: ## Sign an AKO multi-architecture image
 	@echo "Signing multi-architecture image $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
 
-cosign:
-	@echo "cosign already installed"
-
 ./ako.pem:
 	curl $(AKO_SIGN_PUBKEY) > $@
 
 .PHONY: verify 
-verify: cosign ./ako.pem ## Verify an AKO multi-architecture image's signature
+verify:./ako.pem ## Verify an AKO multi-architecture image's signature
 	@echo "Verifying multi-architecture image signature $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"
 
-govulncheck:
-	@echo "govulncheck already installed"
-
 .PHONY: vulncheck
-vulncheck: govulncheck ## Run govulncheck to find vulnerabilities in code
+vulncheck: ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
 
 envsubst:
 	@which envsubst 
 
 .PHONY: generate-sboms
-generate-sboms: cosign ./ako.pem ## Generate a released version SBOMs
+generate-sboms: ./ako.pem ## Generate a released version SBOMs
 	mkdir -p docs/releases/v$(VERSION) && \
 	./scripts/generate_upload_sbom.sh -i $(RELEASED_OPERATOR_IMAGE):$(VERSION) -o docs/releases/v$(VERSION) && \
 	ls -l docs/releases/v$(VERSION)
@@ -537,12 +520,9 @@ endif
 local-docker-build:
 	docker build -t $(LOCAL_IMAGE) .
 
-.PHONY: yq
-yq:
-	@echo "yq already installed"
 
 .PHONY: prepare-all-in-one
-prepare-all-in-one: yq local-docker-build run-kind
+prepare-all-in-one: local-docker-build run-kind
 	kubectl create namespace mongodb-atlas-system || echo "Namespace already in place"
 	kind load docker-image $(LOCAL_IMAGE)
 
