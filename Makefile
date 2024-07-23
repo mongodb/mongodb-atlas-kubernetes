@@ -24,7 +24,7 @@ CHANNELS ?= beta
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
 endif
-
+GO_LICENSES = go-licenses
 # Used by the olm-deploy if you running on Mac and deploy to K8S/Openshift
 ifndef TARGET_ARCH
 TARGET_ARCH := $(shell go env GOARCH)
