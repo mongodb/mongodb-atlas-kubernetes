@@ -86,9 +86,6 @@ ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 DISALLOWED_LICENSES = restricted,reciprocal
 
-# golangci-lint
-GOLANGCI_LINT_VERSION := v1.54.2
-
 REPORT_TYPE = flakiness
 SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
 
@@ -209,11 +206,9 @@ manifests: fmt controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 
-golangci-lint:
-	@echo "test"
 
 .PHONY: lint
-lint: golangci-lint
+lint: ## Run the lint against the code
 	golangci-lint run --timeout 10m
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
@@ -263,18 +258,7 @@ validate-manifests: generate manifests check-missing-files
 
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary
-# go-get-tool will 'go install' any package $2 and install it to $1.
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-define go-get-tool
-@[ -f $(1) ] || { \
-set -e ;\
-TMP_DIR=$$(mktemp -d) ;\
-cd $$TMP_DIR ;\
-echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
-rm -rf $$TMP_DIR ;\
-}
-endef
+KUSTOMIZE = $(shell pwd)/bin/kustomize
 
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
@@ -520,6 +504,9 @@ endif
 local-docker-build:
 	docker build -t $(LOCAL_IMAGE) .
 
+.PHONY: yq
+yq:
+        which yq
 
 .PHONY: prepare-all-in-one
 prepare-all-in-one: local-docker-build run-kind
