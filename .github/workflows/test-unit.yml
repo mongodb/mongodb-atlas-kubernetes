@@ -21,13 +21,7 @@ jobs:
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-
-      - run: go version
+      - run: nix-shell --run 'go version'
 
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e') -coverprofile=coverage.out
