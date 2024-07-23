@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -165,6 +167,9 @@ func TestEnsureDatabaseUser(t *testing.T) {
 	r := &AtlasDatabaseUserReconciler{
 		Client: fakeClient,
 		Log:    log,
+		AtlasProvider: &atlas.TestProvider{
+			IsCloudGovFunc: func() bool { return false },
+		},
 	}
 	for _, tc := range []struct {
 		title           string

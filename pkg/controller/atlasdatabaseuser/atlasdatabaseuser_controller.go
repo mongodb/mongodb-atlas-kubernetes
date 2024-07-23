@@ -156,7 +156,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	ds, err := deployment.NewAtlasDeploymentsService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	ds, err := deployment.NewAtlasDeploymentsService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log, r.AtlasProvider.IsCloudGov())
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
