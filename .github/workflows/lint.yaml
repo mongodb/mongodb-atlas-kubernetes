@@ -21,7 +21,8 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
-
+      - name: Install go mods
+        run: nix-shell --run 'go mod download'
       - name: lint
         run: nix-shell --run 'make lint'
 
