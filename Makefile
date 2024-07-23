@@ -24,7 +24,7 @@ CHANNELS ?= beta
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
 endif
-
+GO_LICENSES = go-licenses
 # Used by the olm-deploy if you running on Mac and deploy to K8S/Openshift
 ifndef TARGET_ARCH
 TARGET_ARCH := $(shell go env GOARCH)
@@ -84,7 +84,6 @@ ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
-GO_LICENSES = go-licenses
 DISALLOWED_LICENSES = restricted,reciprocal
 
 # golangci-lint
@@ -125,10 +124,7 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
-go-licenses:
-	go install github.com/google/go-licenses@latest
-
-licenses.csv: go-licenses go.mod ## Track licenses in a CSV file
+licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
 	@echo "========================================"
 	GOOS=linux GOARCH=amd64 go mod download
@@ -145,7 +141,7 @@ licenses-up-to-date:
 	else echo "licenses.csv is OK! (up to date)"; fi
 
 .PHONY: check-licenses
-check-licenses: go-licenses licenses-up-to-date ## Check licenses are compliant with our restrictions
+check-licenses: licenses-up-to-date ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
 	# https://github.com/google/go-licenses/issues/244
@@ -209,15 +205,13 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
-manifests: fmt controller-gen ## Generate manifests e.g. CRD, RBAC etc.
+manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 
-golangci-lint:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 .PHONY: lint
-lint: golangci-lint
+lint: ## Run the lint against the code
 	golangci-lint run --timeout 10m
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
@@ -241,12 +235,8 @@ $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
 .PHONY: vet
 vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
-.PHONY: controller-gen
-controller-gen: ## Download controller-gen locally if necessary
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
-
 .PHONY: generate
-generate: controller-gen ${GO_SOURCES} ## Generate code
+generate: ${GO_SOURCES} ## Generate code
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
 	$(MAKE) fmt
 
@@ -270,27 +260,8 @@ endif
 validate-manifests: generate manifests check-missing-files
 
 .PHONY: kustomize
-KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary
-ifeq ("$(wildcard $(KUSTOMIZE))", "")
-	rm -f ./kustomize
-	wget "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" -O kinstall.sh
-	chmod +x ./kinstall.sh && bash -c ./kinstall.sh && mv ./kustomize $(GOBIN)/kustomize
-	rm -f ./kinstall.sh
-endif
-
-# go-get-tool will 'go install' any package $2 and install it to $1.
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-define go-get-tool
-@[ -f $(1) ] || { \
-set -e ;\
-TMP_DIR=$$(mktemp -d) ;\
-cd $$TMP_DIR ;\
-echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
-rm -rf $$TMP_DIR ;\
-}
-endef
+KUSTOMIZE = $(shell pwd)/bin/kustomize
 
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
@@ -467,30 +438,24 @@ sign: ## Sign an AKO multi-architecture image
 	@echo "Signing multi-architecture image $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
 
-cosign:
-	@which cosign || go install github.com/sigstore/cosign/v2/cmd/cosign@latest
-
 ./ako.pem:
 	curl $(AKO_SIGN_PUBKEY) > $@
 
 .PHONY: verify 
-verify: cosign ./ako.pem ## Verify an AKO multi-architecture image's signature
+verify:./ako.pem ## Verify an AKO multi-architecture image's signature
 	@echo "Verifying multi-architecture image signature $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"
 
-govulncheck:
-	go install golang.org/x/vuln/cmd/govulncheck@latest
-
 .PHONY: vulncheck
-vulncheck: govulncheck ## Run govulncheck to find vulnerabilities in code
+vulncheck: ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
 
 envsubst:
-	@which envsubst || go install github.com/drone/envsubst/cmd/envsubst@latest
+	@which envsubst 
 
 .PHONY: generate-sboms
-generate-sboms: cosign ./ako.pem ## Generate a released version SBOMs
+generate-sboms: ./ako.pem ## Generate a released version SBOMs
 	mkdir -p docs/releases/v$(VERSION) && \
 	./scripts/generate_upload_sbom.sh -i $(RELEASED_OPERATOR_IMAGE):$(VERSION) -o docs/releases/v$(VERSION) && \
 	ls -l docs/releases/v$(VERSION)
@@ -544,10 +509,10 @@ local-docker-build:
 
 .PHONY: yq
 yq:
-	which yq || go install github.com/mikefarah/yq/v4@latest
+	which yq
 
 .PHONY: prepare-all-in-one
-prepare-all-in-one: yq local-docker-build run-kind
+prepare-all-in-one: local-docker-build run-kind
 	kubectl create namespace mongodb-atlas-system || echo "Namespace already in place"
 	kind load docker-image $(LOCAL_IMAGE)
 
