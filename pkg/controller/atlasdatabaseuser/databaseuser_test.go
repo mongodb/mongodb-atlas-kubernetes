@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
