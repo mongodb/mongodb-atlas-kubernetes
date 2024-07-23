@@ -126,7 +126,7 @@ help: ## Show this help screen
 all: manager ## Build all binaries
 
 go-licenses:
-	go install github.com/google/go-licenses@latest
+	@echo 'Already Installed'
 
 licenses.csv: go-licenses go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
@@ -214,7 +214,7 @@ manifests: fmt controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	@./scripts/split_roles_yaml.sh
 
 golangci-lint:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	@echo "test"
 
 .PHONY: lint
 lint: golangci-lint
@@ -243,7 +243,8 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
+	@echo "test"
+	@echo "test"
 
 .PHONY: generate
 generate: controller-gen ${GO_SOURCES} ## Generate code
@@ -270,14 +271,8 @@ endif
 validate-manifests: generate manifests check-missing-files
 
 .PHONY: kustomize
-KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary
-ifeq ("$(wildcard $(KUSTOMIZE))", "")
-	rm -f ./kustomize
-	wget "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" -O kinstall.sh
-	chmod +x ./kinstall.sh && bash -c ./kinstall.sh && mv ./kustomize $(GOBIN)/kustomize
-	rm -f ./kinstall.sh
-endif
+		@echo "Kustomize already installed"
 
 # go-get-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -468,7 +463,7 @@ sign: ## Sign an AKO multi-architecture image
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
 
 cosign:
-	@which cosign || go install github.com/sigstore/cosign/v2/cmd/cosign@latest
+	@echo "cosign already installed"
 
 ./ako.pem:
 	curl $(AKO_SIGN_PUBKEY) > $@
@@ -480,14 +475,14 @@ verify: cosign ./ako.pem ## Verify an AKO multi-architecture image's signature
 	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"
 
 govulncheck:
-	go install golang.org/x/vuln/cmd/govulncheck@latest
+	@echo "govulncheck already installed"
 
 .PHONY: vulncheck
 vulncheck: govulncheck ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
 
 envsubst:
-	@which envsubst || go install github.com/drone/envsubst/cmd/envsubst@latest
+	@which envsubst 
 
 .PHONY: generate-sboms
 generate-sboms: cosign ./ako.pem ## Generate a released version SBOMs
@@ -544,7 +539,7 @@ local-docker-build:
 
 .PHONY: yq
 yq:
-	which yq || go install github.com/mikefarah/yq/v4@latest
+	@echo "yq already installed"
 
 .PHONY: prepare-all-in-one
 prepare-all-in-one: yq local-docker-build run-kind

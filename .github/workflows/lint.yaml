@@ -19,11 +19,14 @@ jobs:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
 
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
       - name: lint
-        run: make lint
+        run: nix-shell --run 'make lint'
 
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
 
       - name: Run govulncheck
-        run: make vulncheck
+        run: nix-shell --run 'make vulncheck'

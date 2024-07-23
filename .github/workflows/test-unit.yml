@@ -19,7 +19,8 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
-
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -32,7 +33,7 @@ jobs:
         run: CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e') -coverprofile=coverage.out
 
       - name: Test tools
-        run: make test-tools
+        run: nix-shell --run 'make test-tools'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

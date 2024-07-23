@@ -12,6 +12,8 @@ jobs:
         with:
           ref: ${{github.event.pull_request.head.sha}}
 
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Cache multiple paths
         uses: actions/cache@v4
         with:
@@ -19,7 +21,6 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
-
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -29,4 +30,4 @@ jobs:
       - run: go version
 
       - name: Run testing
-        run: make check-licenses
+        run: nix-shell --run "make check-licenses"
