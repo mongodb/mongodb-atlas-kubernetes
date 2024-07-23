@@ -506,7 +506,7 @@ local-docker-build:
 
 .PHONY: yq
 yq:
-    which yq
+	which yq
 
 .PHONY: prepare-all-in-one
 prepare-all-in-one: local-docker-build run-kind
