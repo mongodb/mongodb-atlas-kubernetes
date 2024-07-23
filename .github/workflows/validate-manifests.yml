@@ -11,7 +11,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.sha}}
-
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Cache multiple paths
         uses: actions/cache@v4
         with:
@@ -20,14 +21,8 @@ jobs:
             ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-
       - name: Install dependencies
         run: go install golang.org/x/tools/cmd/goimports@latest
 
       - name: Run testing
-        run: make validate-manifests
+        run: nix-shell --run 'make validate-manifests'
