@@ -23,13 +23,17 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
@@ -41,8 +45,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 //nolint:stylecheck
@@ -50,7 +54,6 @@ var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authent
 
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
-	watch.DeprecatedResourceWatcher
 	Client                        client.Client
 	Log                           *zap.SugaredLogger
 	Scheme                        *runtime.Scheme
@@ -89,12 +92,8 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	conditions := akov2.InitCondition(databaseUser, api.FalseCondition(api.ReadyType))
 	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", databaseUser.Spec, "status", databaseUser.Status)
-	if databaseUser.Spec.PasswordSecret != nil {
-		workflowCtx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: "Secret", Resource: *databaseUser.PasswordSecretObjectKey()})
-	}
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, databaseUser)
-		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, log, workflowCtx.ListResourcesToWatch()...)
 	}()
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, databaseUser, r.Log)
@@ -263,8 +262,49 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDatabaseUser").
 		For(&akov2.AtlasDatabaseUser{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(r.findAtlasDatabaseUserForSecret),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		Complete(r)
+}
+
+func (r *AtlasDatabaseUserReconciler) findAtlasDatabaseUserForSecret(ctx context.Context, obj client.Object) []reconcile.Request {
+	secret, ok := obj.(*corev1.Secret)
+	if !ok {
+		r.Log.Warnf("watching Secret but got %T", obj)
+		return nil
+	}
+
+	users := &akov2.AtlasDatabaseUserList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasDatabaseUserBySecretsIndex,
+			client.ObjectKeyFromObject(secret).String(),
+		),
+	}
+	err := r.Client.List(ctx, users, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list AtlasDatabaseUser: %e", err)
+		return []reconcile.Request{}
+	}
+
+	requests := make([]reconcile.Request, 0, len(users.Items))
+	for i := range users.Items {
+		item := users.Items[i]
+		requests = append(
+			requests,
+			reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      item.Name,
+					Namespace: item.Namespace,
+				},
+			},
+		)
+	}
+
+	return requests
 }
 
 func NewAtlasDatabaseUserReconciler(
@@ -279,7 +319,6 @@ func NewAtlasDatabaseUserReconciler(
 		Scheme:                        mgr.GetScheme(),
 		Client:                        mgr.GetClient(),
 		EventRecorder:                 mgr.GetEventRecorderFor("AtlasDatabaseUser"),
-		DeprecatedResourceWatcher:     watch.NewDeprecatedResourceWatcher(),
 		GlobalPredicates:              predicates,
 		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		AtlasProvider:                 atlasProvider,

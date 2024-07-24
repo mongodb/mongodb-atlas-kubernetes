@@ -3,24 +3,31 @@ package atlasdatabaseuser
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mocked "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 const (
@@ -123,5 +130,71 @@ func defaultTestUser() *akov2.AtlasDatabaseUser {
 			DatabaseName: testDatabase,
 			Username:     testUsername,
 		},
+	}
+}
+
+func TestFindAtlasDatabaseUserForSecret(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasProject{},
+			want: nil,
+		},
+		{
+			name: "same namespace",
+			obj: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "secret", Namespace: "ns"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasDatabaseUser{
+					ObjectMeta: metav1.ObjectMeta{Name: "user1", Namespace: "ns"},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						PasswordSecret: &common.ResourceRef{Name: "secret"},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "user1", Namespace: "ns"}},
+			},
+		},
+		{
+			name: "different namespace",
+			obj: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns2"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasDatabaseUser{
+					ObjectMeta: metav1.ObjectMeta{Name: "user1", Namespace: "ns"},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						PasswordSecret: &common.ResourceRef{Name: "secret"},
+					},
+				},
+			},
+			want: []reconcile.Request{},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			indexer := indexer.NewAtlasDatabaseUserBySecretsIndexer(zaptest.NewLogger(t))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(indexer.Object(), indexer.Name(), indexer.Keys).
+				Build()
+			reconciler := &AtlasDatabaseUserReconciler{
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
+			}
+			got := reconciler.findAtlasDatabaseUserForSecret(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", got, tc.want)
+			}
+		})
 	}
 }
