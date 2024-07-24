@@ -24,18 +24,19 @@ type AtlasDeploymentsService interface {
 type ProductionAtlasDeployments struct {
 	clustersAPI   admin.ClustersApi
 	serverlessAPI admin.ServerlessInstancesApi
+	isGov         bool
 }
 
-func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*ProductionAtlasDeployments, error) {
+func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger, isGov bool) (*ProductionAtlasDeployments, error) {
 	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create versioned client: %w", err)
 	}
-	return NewProductionAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi), nil
+	return NewProductionAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, isGov), nil
 }
 
-func NewProductionAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi) *ProductionAtlasDeployments {
-	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI}
+func NewProductionAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, isGov bool) *ProductionAtlasDeployments {
+	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, isGov: isGov}
 }
 
 func (ds *ProductionAtlasDeployments) ListClusterNames(ctx context.Context, projectID string) ([]string, error) {
@@ -64,8 +65,12 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 	}
 	clusterConns := clustersToConnections(clusters.GetResults())
 
-	serverless, _, err := ds.serverlessAPI.ListServerlessInstances(ctx, projectID).Execute()
-	if err != nil {
+	if ds.isGov {
+		return clusterConns, nil
+	}
+
+	serverless, _, serverlessErr := ds.serverlessAPI.ListServerlessInstances(ctx, projectID).Execute()
+	if serverlessErr != nil {
 		return nil, fmt.Errorf("failed to list serverless deployments for project %s: %w", projectID, err)
 	}
 	serverlessConns := serverlessToConnections(serverless.GetResults())

@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mocked "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
@@ -165,6 +166,9 @@ func TestEnsureDatabaseUser(t *testing.T) {
 	r := &AtlasDatabaseUserReconciler{
 		Client: fakeClient,
 		Log:    log,
+		AtlasProvider: &atlas.TestProvider{
+			IsCloudGovFunc: func() bool { return false },
+		},
 	}
 	for _, tc := range []struct {
 		title           string
