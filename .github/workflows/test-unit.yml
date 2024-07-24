@@ -20,8 +20,8 @@ jobs:
             ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
           
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: DeterminateSystems/magic-nix-cache-action@v7
       - run: nix-shell --run 'go version'
 
       - name: Run testing
@@ -36,3 +36,4 @@ jobs:
           name: unit-tests
           files: coverage.out
           verbose: true
+          

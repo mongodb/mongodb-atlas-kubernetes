@@ -14,8 +14,8 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
 
 
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: DeterminateSystems/magic-nix-cache-action@v7
 
       - name: Run lint
         run: nix-shell --run 'make lint'
@@ -25,3 +25,4 @@ jobs:
 
       - name: Run govulncheck
         run: nix-shell --run 'make vulncheck'
+        
