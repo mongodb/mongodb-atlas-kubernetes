@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -140,6 +139,12 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 			if customresource.IsResourcePolicyKeepOrDefault(dataFederation, r.ObjectDeletionProtection) {
 				log.Info("Not removing AtlasDataFederation from Atlas as per configuration")
 			} else {
+				if err = r.deleteConnectionSecrets(context, dataFederation); err != nil {
+					log.Errorf("failed to remove DataFederation connection secrets from Atlas: %s", err)
+					result = workflow.Terminate(workflow.Internal, err.Error())
+					ctx.SetConditionFromResult(api.DataFederationReadyType, result)
+					return result.ReconcileResult(), nil
+				}
 				if err = r.deleteDataFederationFromAtlas(context, atlasClient, dataFederation, project, log); err != nil {
 					log.Errorf("failed to remove DataFederation from Atlas: %s", err)
 					result = workflow.Terminate(workflow.Internal, err.Error())
@@ -199,7 +204,6 @@ func (r *AtlasDataFederationReconciler) readProjectResource(ctx context.Context,
 func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDataFederation").
-		Watches(&akov2.AtlasDataFederation{}, &watch.EventHandlerWithDelete{Controller: r}, builder.WithPredicates(r.GlobalPredicates...)).
 		For(&akov2.AtlasDataFederation{}, builder.WithPredicates(r.GlobalPredicates...)).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
@@ -224,17 +228,8 @@ func NewAtlasDataFederationReconciler(
 	}
 }
 
-// Delete implements a handler for the Delete event
-func (r *AtlasDataFederationReconciler) Delete(ctx context.Context, e event.DeleteEvent) error {
-	dataFederation, ok := e.Object.(*akov2.AtlasDataFederation)
-	if !ok {
-		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &akov2.AtlasDeployment{}, e.Object)
-		return nil
-	}
-
+func (r *AtlasDataFederationReconciler) deleteConnectionSecrets(ctx context.Context, dataFederation *akov2.AtlasDataFederation) error {
 	log := r.Log.With("atlasdatafederation", kube.ObjectKeyFromObject(dataFederation))
-
-	log.Infow("-> Starting AtlasDataFederation deletion", "spec", dataFederation.Spec)
 
 	project := &akov2.AtlasProject{}
 
