@@ -203,6 +203,46 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	return &namespace, managerCancelFunc
 }
 
+func prepareControllersWithSyncPeriod(deletionProtection bool, syncPeriod time.Duration) (*corev1.Namespace, context.CancelFunc) {
+	var ctx context.Context
+	ctx, managerCancelFunc = context.WithCancel(context.Background())
+	namespace = corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:    "test",
+			GenerateName: "test",
+		},
+	}
+
+	By("Creating the namespace " + namespace.GenerateName + "...")
+	Expect(k8sClient.Create(ctx, &namespace)).ToNot(HaveOccurred())
+	Expect(namespace.Name).ToNot(BeEmpty())
+	GinkgoWriter.Printf("Generated namespace %q\n", namespace.Name)
+
+	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
+	ctrl.SetLogger(zapr.NewLogger(logger))
+
+	// shallow copy global config
+	managerCfg := *cfg
+	managerCfg.UserAgent = "AKO"
+	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), scheme.Scheme).
+		WithConfig(&managerCfg).
+		WithNamespaces(namespace.Name).
+		WithLogger(logger).
+		WithAtlasDomain(atlasDomain).
+		WithSyncPeriod(syncPeriod).
+		WithAPISecret(client.ObjectKey{Name: "atlas-operator-api-key", Namespace: namespace.Name}).
+		WithDeletionProtection(deletionProtection).
+		Build(ctx)
+	Expect(err).ToNot(HaveOccurred())
+
+	go func() {
+		err = mgr.Start(ctx)
+		Expect(err).ToNot(HaveOccurred())
+	}()
+
+	return &namespace, managerCancelFunc
+}
+
 func removeControllersAndNamespace() {
 	// end the manager
 	managerCancelFunc()
