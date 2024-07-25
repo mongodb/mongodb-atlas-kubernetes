@@ -24,7 +24,7 @@ pkgs.mkShell {
     pkgs.go
     pkgs.kubectl
     pkgs.kubernetes-controller-tools
-    pkgs.kustomize
+    pkgs.kustomize_4
     pkgs.git
     pkgs.envsubst
     pkgs.wget
