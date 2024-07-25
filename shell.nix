@@ -19,7 +19,7 @@ in
 pkgs.mkShell {
   buildInputs = [
     golangci-lint-private
-    pkgs.yq_4_27
+    pkgs.yq
     pkgs.jq
     pkgs.go
     pkgs.kubectl
