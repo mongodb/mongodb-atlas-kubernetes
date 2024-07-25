@@ -19,7 +19,7 @@ in
 pkgs.mkShell {
   buildInputs = [
     golangci-lint-private
-    pkgs.yq
+    pkgs.yq_4_27
     pkgs.jq
     pkgs.go
     pkgs.kubectl
@@ -33,6 +33,8 @@ pkgs.mkShell {
     pkgs.gotools
     pkgs.go-licenses
     pkgs.ginkgo
+    pkgs.operator-sdk
+    pkgs.openshift
   ];
 
   shellHook = ''
@@ -42,6 +44,7 @@ pkgs.mkShell {
     export PATH=$PATH:${pkgs.yq}/bin
     export PATH=$PATH:${pkgs.wget}/bin
     export PATH=$PATH:${pkgs.envsubst}/bin
+    export PATH=$PATH:${pkgs.openshift}/bin
     export PATH=$PATH:${pkgs.git}/bin
     export PATH=$PATH:${pkgs.jq}/bin
     export PATH=$PATH:${pkgs.kubernetes-controller-tools}/bin
@@ -50,5 +53,6 @@ pkgs.mkShell {
     export PATH=$PATH:${pkgs.govulncheck}/bin
     export PATH=$PATH:${pkgs.gotools}/bin
     export PATH=$PATH:${pkgs.ginkgo}/bin
+    export PATH=$PATH:${pkgs.operator-sdk}/bin
   '';
 }
