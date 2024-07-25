@@ -19,7 +19,7 @@ in
 pkgs.mkShell {
   buildInputs = [
     golangci-lint-private
-    pkgs.yq
+    pkgs.yq-go
     pkgs.jq
     pkgs.go
     pkgs.kubectl
@@ -41,7 +41,7 @@ pkgs.mkShell {
     export PATH=$PATH:${pkgs.go}/bin
     export PATH=$PATH:${pkgs.cosign}/bin
     export PATH=$PATH:${pkgs.go-licenses}/bin
-    export PATH=$PATH:${pkgs.yq}/bin
+    export PATH=$PATH:${pkgs.yq-go}/bin
     export PATH=$PATH:${pkgs.wget}/bin
     export PATH=$PATH:${pkgs.envsubst}/bin
     export PATH=$PATH:${pkgs.openshift}/bin
