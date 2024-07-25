@@ -76,12 +76,15 @@ jobs:
           opm version
           oc version
           operator-sdk version
+      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: DeterminateSystems/magic-nix-cache-action@v7
+      - run: nix-shell --run 'go version'
       - name: Install Go dependencies
-        run: go install golang.org/x/tools/cmd/goimports@latest
+        run: nix-shell --run 'go install golang.org/x/tools/cmd/goimports@latest'
       - name: Login to registry
         run: docker login -u="${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_PASSWORD }}" quay.io
       - name: Run openshift upgrade test
-        run: cd scripts && ./openshift-upgrade-test.sh
+        run: nix-shell --run 'cd scripts && ./openshift-upgrade-test.sh'
         env:
           OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
           CLUSTER_API_URL: ${{ secrets.OPENSHIFT_UPGRADE_SERVER_API }}
