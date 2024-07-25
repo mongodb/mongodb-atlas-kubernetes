@@ -32,6 +32,7 @@ pkgs.mkShell {
     pkgs.govulncheck
     pkgs.gotools
     pkgs.go-licenses
+    pkgs.ginkgo
   ];
 
   shellHook = ''
@@ -48,5 +49,6 @@ pkgs.mkShell {
     export PATH=$PATH:${pkgs.kustomize}/bin
     export PATH=$PATH:${pkgs.govulncheck}/bin
     export PATH=$PATH:${pkgs.gotools}/bin
+    export PATH=$PATH:${pkgs.ginkgo}/bin
   '';
 }
