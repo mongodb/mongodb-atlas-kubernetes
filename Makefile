@@ -24,7 +24,6 @@ CHANNELS ?= beta
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
 endif
-GO_LICENSES = go-licenses
 # Used by the olm-deploy if you running on Mac and deploy to K8S/Openshift
 ifndef TARGET_ARCH
 TARGET_ARCH := $(shell go env GOARCH)
@@ -76,6 +75,7 @@ endif
 TMPDIR ?= /tmp
 TIMESTAMPS_DIR := $(TMPDIR)/mongodb-atlas-kubernetes
 GO_SOURCES = $(shell find . -type f -name '*.go' -not -path './vendor/*')
+KUSTOMIZE = $(shell pwd)/bin/kustomize
 
 # Defaults for make run
 OPERATOR_POD_NAME = mongodb-atlas-operator
@@ -129,7 +129,7 @@ licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "========================================"
 	GOOS=linux GOARCH=amd64 go mod download
 	# https://github.com/google/go-licenses/issues/244
-	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
+	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 go-licenses csv --include_tests $(BASE_GO_PACKAGE)/... > $@
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
 recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was changed)
@@ -145,7 +145,7 @@ check-licenses: licenses-up-to-date ## Check licenses are compliant with our res
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
 	# https://github.com/google/go-licenses/issues/244
-	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests \
+	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 go-licenses check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
 	@echo "Licenses check: PASS"
@@ -188,11 +188,11 @@ bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
 manager: generate fmt vet bin/manager recompute-licenses ## Build manager binary
 
 .PHONY: install
-install: manifests kustomize ## Install CRDs from a cluster
+install: manifests ## Install CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
 .PHONY: uninstall
-uninstall: manifests kustomize ## Uninstall CRDs from a cluster
+uninstall: manifests ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 .PHONY: deploy
@@ -256,12 +256,9 @@ endif
 .PHONY: validate-manifests
 validate-manifests: generate manifests check-missing-files
 
-.PHONY: kustomize
-kustomize: ## Download kustomize locally if necessary
-KUSTOMIZE = $(shell pwd)/bin/kustomize
 
 .PHONY: bundle
-bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
+bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
 	operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
@@ -441,7 +438,7 @@ sign: ## Sign an AKO multi-architecture image
 	curl $(AKO_SIGN_PUBKEY) > $@
 
 .PHONY: verify 
-verify:./ako.pem ## Verify an AKO multi-architecture image's signature
+verify: ./ako.pem ## Verify an AKO multi-architecture image's signature
 	@echo "Verifying multi-architecture image signature $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"
@@ -449,9 +446,7 @@ verify:./ako.pem ## Verify an AKO multi-architecture image's signature
 .PHONY: vulncheck
 vulncheck: ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
-
-envsubst:
-	@which envsubst 
+ 
 
 .PHONY: generate-sboms
 generate-sboms: ./ako.pem ## Generate a released version SBOMs
@@ -460,7 +455,7 @@ generate-sboms: ./ako.pem ## Generate a released version SBOMs
 	ls -l docs/releases/v$(VERSION)
 
 .PHONY: gen-sdlc-checklist
-gen-sdlc-checklist: envsubst ## Generate the SDLC checklist
+gen-sdlc-checklist: ## Generate the SDLC checklist
 	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" ./scripts/gen-sdlc-checklist.sh
 
 # TODO: avoid leaving leftovers in the first place
@@ -505,10 +500,6 @@ endif
 .PHONY: local-docker-build
 local-docker-build:
 	docker build -f fast.Dockerfile -t $(LOCAL_IMAGE) .
-
-.PHONY: yq
-yq:
-	which yq
 
 .PHONY: prepare-all-in-one
 prepare-all-in-one: local-docker-build run-kind

@@ -25,4 +25,3 @@ jobs:
 
       - name: Run govulncheck
         run: nix-shell --run 'make vulncheck'
-        
