@@ -1,9 +1,5 @@
 package v1
 
-import (
-	"go.mongodb.org/atlas/mongodbatlas"
-)
-
 type CustomRole struct {
 	// Human-readable label that identifies the role. This name must be unique for this custom role in this project.
 	Name string `json:"name"`
@@ -36,43 +32,4 @@ type Resource struct {
 	Database *string `json:"database,omitempty"`
 	// Human-readable label that identifies the collection on which you grant the action to one MongoDB user.
 	Collection *string `json:"collection,omitempty"`
-}
-
-func (in *CustomRole) ToAtlas() *mongodbatlas.CustomDBRole {
-	actions := make([]mongodbatlas.Action, 0, len(in.Actions))
-
-	for _, action := range in.Actions {
-		resources := make([]mongodbatlas.Resource, 0, len(action.Resources))
-
-		for _, resource := range action.Resources {
-			if resource.Cluster != nil && !*resource.Cluster {
-				resource.Cluster = nil
-			}
-			resources = append(resources, mongodbatlas.Resource{
-				Collection: resource.Collection,
-				DB:         resource.Database,
-				Cluster:    resource.Cluster,
-			})
-		}
-
-		actions = append(actions, mongodbatlas.Action{
-			Action:    action.Name,
-			Resources: resources,
-		})
-	}
-
-	inheritedRoles := make([]mongodbatlas.InheritedRole, 0, len(in.InheritedRoles))
-
-	for _, inheritedRole := range in.InheritedRoles {
-		inheritedRoles = append(inheritedRoles, mongodbatlas.InheritedRole{
-			Db:   inheritedRole.Database,
-			Role: inheritedRole.Name,
-		})
-	}
-
-	return &mongodbatlas.CustomDBRole{
-		Actions:        actions,
-		InheritedRoles: inheritedRoles,
-		RoleName:       in.Name,
-	}
 }

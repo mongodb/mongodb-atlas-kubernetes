@@ -1,210 +1,194 @@
 package atlasproject
 
 import (
+	"context"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.uber.org/zap/zaptest"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func TestCalculateChanges(t *testing.T) {
-	desired := []akov2.CustomRole{
+func TestEnsureCustomRoles(t *testing.T) {
+	testRole := []akov2.CustomRole{
 		{
-			Name: "cr-1",
-		},
-		{
-			Name: "cr-3",
+			Name: "test-role",
 			InheritedRoles: []akov2.Role{
+				{Name: "role1", Database: "db1"},
+				{Name: "role2", Database: "db2"},
+			},
+			Actions: []akov2.Action{
 				{
-					Name:     "admin",
-					Database: "test",
+					Name: "action1",
+					Resources: []akov2.Resource{
+						{Cluster: pointer.MakePtr(true)},
+						{Database: pointer.MakePtr("db1")},
+					},
 				},
-			},
-		},
-		{
-			Name: "cr-4",
-		},
-	}
-	current := []akov2.CustomRole{
-		{
-			Name: "cr-1",
-		},
-		{
-			Name: "cr-2",
-		},
-		{
-			Name: "cr-3",
-		},
-	}
-
-	assert.Equal(
-		t,
-		CustomRolesOperations{
-			Create: map[string]akov2.CustomRole{
-				"cr-4": {
-					Name: "cr-4",
-				},
-			},
-			Update: map[string]akov2.CustomRole{
-				"cr-3": {
-					Name: "cr-3",
-					InheritedRoles: []akov2.Role{
+				{
+					Name: "action2",
+					Resources: []akov2.Resource{
 						{
-							Name:     "admin",
-							Database: "test",
+							Database:   pointer.MakePtr("db2"),
+							Collection: pointer.MakePtr("test-collection"),
 						},
 					},
 				},
 			},
-			Delete: map[string]akov2.CustomRole{
-				"cr-2": {
-					Name: "cr-2",
-				},
-			},
 		},
-		calculateChanges(current, desired),
-	)
-}
+	}
 
-func TestSyncCustomRolesStatus(t *testing.T) {
-	t.Run("sync status when all operations were done successfully", func(t *testing.T) {
-		desired := []akov2.CustomRole{
-			{
-				Name: "cr-1",
-			},
-			{
-				Name: "cr-3",
-				InheritedRoles: []akov2.Role{
-					{
-						Name:     "admin",
-						Database: "test",
-					},
-				},
-			},
-			{
-				Name: "cr-4",
-			},
-		}
-		created := map[string]status.CustomRole{
-			"cr-4": {
-				Name:   "cr-4",
-				Status: status.CustomRoleStatusOK,
-			},
-		}
-		updated := map[string]status.CustomRole{
-			"cr-3": {
-				Name:   "cr-3",
-				Status: status.CustomRoleStatusOK,
-			},
-		}
-		deleted := map[string]status.CustomRole{
-			"cr-2": {
-				Name:   "cr-2",
-				Status: status.CustomRoleStatusOK,
-			},
-		}
-		ctx := workflow.NewContext(zap.S(), []api.Condition{}, nil)
+	for _, tc := range []struct {
+		name string
 
-		assert.Equal(
-			t,
-			workflow.OK(),
-			syncCustomRolesStatus(ctx, desired, created, updated, deleted),
-		)
+		roles []akov2.CustomRole
 
-		option := ctx.StatusOptions()[0].(status.AtlasProjectStatusOption)
-		projectStatus := status.AtlasProjectStatus{}
-		option(&projectStatus)
-		assert.Equal(
-			t,
-			[]status.CustomRole{
-				{
-					Name:   "cr-1",
-					Status: status.CustomRoleStatusOK,
-				},
-				{
-					Name:   "cr-3",
-					Status: status.CustomRoleStatusOK,
-				},
-				{
-					Name:   "cr-4",
-					Status: status.CustomRoleStatusOK,
-				},
-			},
-			projectStatus.CustomRoles,
-		)
-	})
+		roleAPI *mockadmin.CustomDatabaseRolesApi
 
-	t.Run("sync status when a operation fails", func(t *testing.T) {
-		desired := []akov2.CustomRole{
-			{
-				Name: "cr-1",
-			},
-			{
-				Name: "cr-3",
-				InheritedRoles: []akov2.Role{
-					{
-						Name:     "admin",
-						Database: "test",
-					},
+		isOK bool
+	}{
+		{
+			name: "No Roles in AKO or Atlas (no op)",
+			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
+				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+					Return(
+						[]admin.UserCustomDBRole{},
+						&http.Response{},
+						nil,
+					)
+				return roleAPI
+			}(),
+			isOK: true,
+		},
+		{
+			name:  "Roles in AKO, but not Atlas (Create)",
+			roles: testRole,
+			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
+				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+					Return(
+						[]admin.UserCustomDBRole{},
+						&http.Response{},
+						nil,
+					)
+				roleAPI.EXPECT().CreateCustomDatabaseRole(context.Background(), "", mock.AnythingOfType("*admin.UserCustomDBRole")).
+					Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().CreateCustomDatabaseRoleExecute(mock.Anything).
+					Return(
+						&admin.UserCustomDBRole{},
+						&http.Response{},
+						nil,
+					)
+				return roleAPI
+			}(),
+			isOK: true,
+		},
+		{
+			name:  "Roles in AKO and in Atlas (Update)",
+			roles: testRole,
+			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
+				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+					Return(
+						[]admin.UserCustomDBRole{
+							{
+								RoleName: "test-role",
+								InheritedRoles: &[]admin.DatabaseInheritedRole{
+									{Role: "role3", Db: "db1"},
+								},
+								Actions: &[]admin.DatabasePrivilegeAction{
+									{
+										Action: "action1",
+										Resources: &[]admin.DatabasePermittedNamespaceResource{
+											{Db: "db2"},
+										},
+									},
+								},
+							},
+						},
+						&http.Response{},
+						nil,
+					)
+				roleAPI.EXPECT().UpdateCustomDatabaseRole(context.Background(), "", "test-role", mock.AnythingOfType("*admin.UpdateCustomDBRole")).
+					Return(admin.UpdateCustomDatabaseRoleApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().UpdateCustomDatabaseRoleExecute(mock.Anything).
+					Return(
+						&admin.UserCustomDBRole{},
+						&http.Response{},
+						nil,
+					)
+				return roleAPI
+			}(),
+			isOK: true,
+		},
+		{
+			name: "Roles not in AKO but are in Atlas (Delete)",
+			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
+				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+					Return(
+						[]admin.UserCustomDBRole{
+							{
+								RoleName: "test-role",
+								InheritedRoles: &[]admin.DatabaseInheritedRole{
+									{Role: "role3", Db: "db1"},
+								},
+								Actions: &[]admin.DatabasePrivilegeAction{
+									{
+										Action: "action1",
+										Resources: &[]admin.DatabasePermittedNamespaceResource{
+											{Db: "db2"},
+										},
+									},
+								},
+							},
+						},
+						&http.Response{},
+						nil,
+					)
+				roleAPI.EXPECT().DeleteCustomDatabaseRole(context.Background(), "", "test-role").
+					Return(admin.DeleteCustomDatabaseRoleApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().DeleteCustomDatabaseRoleExecute(mock.Anything).
+					Return(
+						&http.Response{},
+						nil,
+					)
+				return roleAPI
+			}(),
+			isOK: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			workflowCtx := &workflow.Context{
+				SdkClient: &admin.APIClient{
+					CustomDatabaseRolesApi: tc.roleAPI,
 				},
-			},
-			{
-				Name: "cr-4",
-			},
-		}
-		created := map[string]status.CustomRole{
-			"cr-4": {
-				Name:   "cr-4",
-				Status: status.CustomRoleStatusOK,
-			},
-		}
-		updated := map[string]status.CustomRole{
-			"cr-3": {
-				Name:   "cr-3",
-				Status: status.CustomRoleStatusFailed,
-				Error:  "server failed",
-			},
-		}
-		deleted := map[string]status.CustomRole{
-			"cr-2": {
-				Name:   "cr-2",
-				Status: status.CustomRoleStatusOK,
-			},
-		}
-		ctx := workflow.NewContext(zap.S(), []api.Condition{}, nil)
+				Context: context.Background(),
+				Log:     zaptest.NewLogger(t).Sugar(),
+			}
 
-		assert.Equal(
-			t,
-			workflow.Terminate(workflow.ProjectCustomRolesReady, "failed to apply changes to custom roles: server failed"),
-			syncCustomRolesStatus(ctx, desired, created, updated, deleted),
-		)
+			project := akov2.DefaultProject("test-namespace", "test-connnection")
+			project.Spec.CustomRoles = tc.roles
 
-		option := ctx.StatusOptions()[0].(status.AtlasProjectStatusOption)
-		projectStatus := status.AtlasProjectStatus{}
-		option(&projectStatus)
-		assert.Equal(
-			t,
-			[]status.CustomRole{
-				{
-					Name:   "cr-1",
-					Status: status.CustomRoleStatusOK,
-				},
-				{
-					Name:   "cr-3",
-					Status: status.CustomRoleStatusFailed,
-					Error:  "server failed",
-				},
-				{
-					Name:   "cr-4",
-					Status: status.CustomRoleStatusOK,
-				},
-			},
-			projectStatus.CustomRoles,
-		)
-	})
+			result := ensureCustomRoles(workflowCtx, project)
+
+			assert.Equal(t, tc.isOK, result.IsOk())
+		})
+	}
 }
