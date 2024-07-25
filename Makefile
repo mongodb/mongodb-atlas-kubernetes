@@ -75,7 +75,6 @@ endif
 TMPDIR ?= /tmp
 TIMESTAMPS_DIR := $(TMPDIR)/mongodb-atlas-kubernetes
 GO_SOURCES = $(shell find . -type f -name '*.go' -not -path './vendor/*')
-KUSTOMIZE = $(shell pwd)/bin/kustomize
 
 # Defaults for make run
 OPERATOR_POD_NAME = mongodb-atlas-operator
@@ -189,11 +188,11 @@ manager: generate fmt vet bin/manager recompute-licenses ## Build manager binary
 
 .PHONY: install
 install: manifests ## Install CRDs from a cluster
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+	kustomize build config/crd | kubectl apply -f -
 
 .PHONY: uninstall
 uninstall: manifests ## Uninstall CRDs from a cluster
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
+	kustomize build config/crd | kubectl delete -f -
 
 .PHONY: deploy
 deploy: generate manifests run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
@@ -261,8 +260,8 @@ validate-manifests: generate manifests check-missing-files
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
 	operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	cd config/manager && kustomize edit set image controller=$(IMG)
+	kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 
 .PHONY: image
