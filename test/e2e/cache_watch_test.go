@@ -144,7 +144,7 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 //   See `test/helper/e2e/k8s.CreateNewClient()`
 
 var _ = Describe("Reconciles test:", func() {
-	DescribeTable("Reconciles",
+	DescribeTable("Reconciles", Ordered,
 		func(ctx context.Context, testCase *tc) {
 			testData := model.DataProvider(
 				fmt.Sprintf("reconcile-%s", CurrentSpecReport().LeafNodeLabels[0]),
@@ -190,7 +190,7 @@ var _ = Describe("Reconciles test:", func() {
 							Type:    "ProjectReady",
 							Status:  "False",
 							Reason:  "ProjectNotCreatedInAtlas",
-							Message: "projectName is invalid because must be set",
+							Message: "An invalid group ID byName was specified",
 						}
 						By("Verify Kubernetes status got the expected error", func() {
 							Eventually(func(g Gomega) bool {

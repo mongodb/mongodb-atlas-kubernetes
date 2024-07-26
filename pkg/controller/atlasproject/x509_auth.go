@@ -7,63 +7,78 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/authmode"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) (authmode.AuthModes, workflow.Result) {
-	log := ctx.Log
+func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, atlasProject *akov2.AtlasProject) error {
+	atlasProject.Status.AuthModes.AddAuthMode(authmode.Scram)
 
-	var specCert string
-	var err error
-	authModes := project.Status.AuthModes
-	if key := project.X509SecretObjectKey(); key != nil {
-		specCert, err = readX509CertFromSecret(ctx.Context, r.Client, *key, log)
-		if err != nil {
-			return authModes, workflow.Terminate(workflow.Internal, err.Error())
-		}
+	hasAuthModesX509 := atlasProject.Status.AuthModes.CheckAuthMode(authmode.X509)
+	hasX509Cert := atlasProject.X509SecretObjectKey() != nil
+
+	switch {
+	case hasX509Cert:
+		return r.enableX509Authentication(ctx, atlasProject)
+	case !hasX509Cert && hasAuthModesX509:
+		return r.disableX509Authentication(ctx, atlasProject)
+	default:
+		ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(atlasProject.Status.AuthModes))
 	}
 
-	if authModes.CheckAuthMode(authmode.X509) && specCert == "" {
-		log.Infow("Disable x509 auth", "projectID", projectID)
-		_, err := ctx.Client.X509AuthDBUsers.DisableCustomerX509(ctx.Context, projectID)
-		if err != nil {
-			return authModes, workflow.Terminate(workflow.Internal, err.Error())
-		}
-		authModes.RemoveAuthMode(authmode.X509)
-		return authModes, workflow.OK()
-	}
+	return nil
+}
 
-	customer, _, err := ctx.Client.X509AuthDBUsers.GetCurrentX509Conf(ctx.Context, projectID)
+func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) error {
+	specCert, err := readX509CertFromSecret(ctx.Context, r.Client, *atlasProject.X509SecretObjectKey(), r.Log)
 	if err != nil {
-		return authModes, workflow.Terminate(workflow.Internal, err.Error())
+		return err
 	}
 
-	if specCert != customer.Cas {
-		conf := mongodbatlas.CustomerX509{
-			Cas: specCert,
-		}
-		log.Infow("Saving new x509 cert", "projectID", projectID)
-		log.Debugw("New customer", "conf", conf)
+	ldapConfig, _, err := ctx.SdkClient.LDAPConfigurationApi.GetLDAPConfiguration(ctx.Context, atlasProject.ID()).Execute()
+	if err != nil {
+		return err
+	}
 
-		_, _, err := ctx.Client.X509AuthDBUsers.SaveConfiguration(ctx.Context, projectID, &conf)
+	customerX509 := ldapConfig.GetCustomerX509()
+	if specCert != customerX509.GetCas() {
+		conf := admin.UserSecurity{
+			CustomerX509: &admin.DBUserTLSX509Settings{
+				Cas: &specCert,
+			},
+		}
+		r.Log.Infow("Saving new x509 cert", "projectID", atlasProject.ID())
+
+		_, _, err = ctx.SdkClient.LDAPConfigurationApi.SaveLDAPConfiguration(ctx.Context, atlasProject.ID(), &conf).Execute()
 		if err != nil {
-			return authModes, workflow.Terminate(workflow.Internal, err.Error())
+			return err
 		}
 	}
 
-	if !authModes.CheckAuthMode(authmode.X509) && specCert != "" {
-		log.Debugw("Adding new AuthMode to the status", "mode", authmode.X509)
-		authModes.AddAuthMode(authmode.X509)
+	atlasProject.Status.AuthModes.AddAuthMode(authmode.X509)
+	ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(atlasProject.Status.AuthModes))
+
+	return nil
+}
+
+func (r *AtlasProjectReconciler) disableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) error {
+	r.Log.Infow("Disable x509 auth", "projectID", atlasProject.ID())
+	_, _, err := ctx.SdkClient.X509AuthenticationApi.DisableCustomerManagedX509(ctx.Context, atlasProject.ID()).Execute()
+	if err != nil {
+		return err
 	}
 
-	return authModes, workflow.OK()
+	atlasProject.Status.AuthModes.RemoveAuthMode(authmode.X509)
+	ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(atlasProject.Status.AuthModes))
+
+	return nil
 }
 
 func readX509CertFromSecret(ctx context.Context, kubeClient client.Client, secretRef client.ObjectKey, log *zap.SugaredLogger) (string, error) {

@@ -2,42 +2,171 @@ package atlasproject
 
 import (
 	"errors"
+	"fmt"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"k8s.io/apimachinery/pkg/fields"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
-// ensureProjectExists creates the project if it doesn't exist yet. Returns the project ID
-func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, project *akov2.AtlasProject) (string, workflow.Result) {
-	// Try to find the project
-	p, _, err := ctx.Client.Projects.GetOneProjectByName(ctx.Context, project.Spec.Name)
+// handleProject creates the project if it doesn't exist yet. Returns the project ID
+func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
+	projectInAtlas, err := r.projectService.GetProjectByName(ctx.Context, atlasProject.Spec.Name)
 	if err != nil {
-		ctx.Log.Infow("Error", "err", err.Error())
-		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
-			// Project doesn't exist? Try to create it
-			p = &mongodbatlas.Project{
-				OrgID:                     ctx.OrgID,
-				Name:                      project.Spec.Name,
-				WithDefaultAlertsSettings: &project.Spec.WithDefaultAlertsSettings,
-				RegionUsageRestrictions:   project.Spec.RegionUsageRestrictions,
-			}
-			if p, _, err = ctx.Client.Projects.Create(ctx.Context, p, &mongodbatlas.CreateProjectOptions{}); err != nil {
-				return "", workflow.Terminate(workflow.ProjectNotCreatedInAtlas, err.Error())
-			}
-			ctx.Log.Infow("Created Atlas Project", "name", project.Spec.Name, "id", p.ID)
-		} else {
-			return "", workflow.Terminate(workflow.ProjectNotCreatedInAtlas, err.Error())
+		return r.terminate(ctx, workflow.ProjectNotCreatedInAtlas, err)
+	}
+
+	wasDeleted := !atlasProject.GetDeletionTimestamp().IsZero()
+	existInAtlas := projectInAtlas != nil
+
+	switch {
+	case !existInAtlas && !wasDeleted:
+		return r.create(ctx, orgID, atlasProject)
+	case existInAtlas && wasDeleted:
+		return r.delete(ctx, orgID, atlasProject)
+	case !existInAtlas && wasDeleted:
+		return r.release(ctx, atlasProject)
+	case existInAtlas && !wasDeleted && atlasProject.Status.ID == "":
+		return r.manage(ctx, atlasProject, projectInAtlas.ID)
+	}
+
+	if err = r.ensureX509(ctx, atlasProject); err != nil {
+		return r.terminate(ctx, workflow.Internal, err)
+	}
+
+	ctx.SetConditionTrue(api.ProjectReadyType)
+	r.EventRecorder.Event(atlasProject, "Normal", string(api.ProjectReadyType), "")
+
+	results := r.ensureProjectResources(ctx, atlasProject)
+	for i := range results {
+		if !results[i].IsOk() {
+			logIfWarning(ctx, results[i])
+
+			return results[i].ReconcileResult(), nil
 		}
 	}
 
-	if p == nil || p.ID == "" {
-		ctx.Log.Error("Project or its project ID are empty")
-		return "", workflow.Terminate(workflow.Internal, "")
+	err = customresource.ApplyLastConfigApplied(ctx.Context, atlasProject, r.Client)
+	if err != nil {
+		return r.terminate(ctx, workflow.Internal, err)
 	}
 
-	return p.ID, workflow.OK()
+	return r.ready(ctx, projectInAtlas.ID)
+}
+
+func (r *AtlasProjectReconciler) create(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
+	projectInAKO := project.NewProject(atlasProject, orgID)
+	err := r.projectService.CreateProject(ctx.Context, projectInAKO)
+	if err != nil {
+		return r.terminate(ctx, workflow.ProjectNotCreatedInAtlas, err)
+	}
+
+	err = customresource.ApplyLastConfigApplied(ctx.Context, atlasProject, r.Client)
+	if err != nil {
+		return r.terminate(ctx, workflow.Internal, err)
+	}
+
+	return r.manage(ctx, atlasProject, projectInAKO.ID)
+}
+
+func (r *AtlasProjectReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
+	r.Log.Error(err)
+	terminated := workflow.Terminate(errorCondition, err.Error())
+	ctx.SetConditionFromResult(api.ProjectReadyType, terminated)
+
+	return terminated.ReconcileResult(), nil
+}
+
+func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
+	hasDeps, err := r.hasDependencies(ctx, atlasProject)
+	if err != nil {
+		return r.terminate(ctx, workflow.Internal, fmt.Errorf("failed to determine if project has dependencies: %w", err))
+	}
+
+	if hasDeps {
+		return r.terminate(ctx, workflow.Internal, errors.New("the project cannot be deleted until dependencies were removed"))
+	}
+
+	if customresource.HaveFinalizer(atlasProject, customresource.FinalizerLabel) {
+		if customresource.IsResourcePolicyKeepOrDefault(atlasProject, r.ObjectDeletionProtection) {
+			r.Log.Info("Not removing Project from Atlas as per configuration")
+		} else {
+			if result := DeleteAllPrivateEndpoints(ctx, atlasProject.ID()); !result.IsOk() {
+				return r.terminate(ctx, workflow.ServerlessPrivateEndpointReady, errors.New(result.GetMessage()))
+			}
+			if result := DeleteAllNetworkPeers(ctx.Context, atlasProject.ID(), ctx.SdkClient.NetworkPeeringApi, ctx.Log); !result.IsOk() {
+				return r.terminate(ctx, workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New(result.GetMessage()))
+			}
+
+			err = r.syncAssignedTeams(ctx, atlasProject.ID(), atlasProject, nil)
+			if err != nil {
+				ctx.SetConditionFalse(api.ProjectTeamsReadyType)
+				return r.terminate(ctx, workflow.TeamNotCleaned, err)
+			}
+
+			if err = r.projectService.DeleteProject(ctx.Context, project.NewProject(atlasProject, orgID)); err != nil {
+				return r.terminate(ctx, workflow.Internal, err)
+			}
+		}
+
+		if err = customresource.ManageFinalizer(ctx.Context, r.Client, atlasProject, customresource.UnsetFinalizer); err != nil {
+			return r.terminate(ctx, workflow.AtlasFinalizerNotRemoved, err)
+		}
+	}
+
+	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasProjectReconciler) ready(ctx *workflow.Context, projectID string) (ctrl.Result, error) {
+	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
+	result := workflow.OK()
+	ctx.SetConditionFromResult(api.ProjectReadyType, result)
+	ctx.SetConditionFromResult(api.ReadyType, result)
+
+	return result.ReconcileResult(), nil
+}
+
+func (r *AtlasProjectReconciler) release(ctx *workflow.Context, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
+	if err := customresource.ManageFinalizer(ctx.Context, r.Client, atlasProject, customresource.UnsetFinalizer); err != nil {
+		return r.terminate(ctx, workflow.AtlasFinalizerNotRemoved, err)
+	}
+
+	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasProjectReconciler) manage(ctx *workflow.Context, atlasProject *akov2.AtlasProject, projectID string) (ctrl.Result, error) {
+	r.Log.Debugw("Add deletion finalizer", "name", customresource.FinalizerLabel)
+	if err := customresource.ManageFinalizer(ctx.Context, r.Client, atlasProject, customresource.SetFinalizer); err != nil {
+		return r.terminate(ctx, workflow.AtlasFinalizerNotSet, err)
+	}
+
+	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
+	result := workflow.InProgress(workflow.ProjectBeingConfiguredInAtlas, "configuring project in Atlas")
+	ctx.SetConditionFromResult(api.ProjectReadyType, result)
+
+	return result.ReconcileResult(), nil
+}
+
+func (r *AtlasProjectReconciler) hasDependencies(ctx *workflow.Context, project *akov2.AtlasProject) (bool, error) {
+	streamInstances := &akov2.AtlasStreamInstanceList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasStreamInstanceByProjectIndex,
+			client.ObjectKeyFromObject(project).String(),
+		),
+	}
+	err := r.Client.List(ctx.Context, streamInstances, listOps)
+	if err != nil {
+		return false, err
+	}
+
+	return len(streamInstances.Items) > 0, nil
 }

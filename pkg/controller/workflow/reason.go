@@ -20,6 +20,7 @@ const (
 // Atlas Project reasons
 const (
 	ProjectNotCreatedInAtlas                   ConditionReason = "ProjectNotCreatedInAtlas"
+	ProjectBeingConfiguredInAtlas              ConditionReason = "ProjectBeingConfiguredInAtlas"
 	ProjectIPAccessInvalid                     ConditionReason = "ProjectIPAccessListInvalid"
 	ProjectIPNotCreatedInAtlas                 ConditionReason = "ProjectIPAccessListNotCreatedInAtlas"
 	ProjectWindowInvalid                       ConditionReason = "ProjectWindowInvalid"
