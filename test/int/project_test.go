@@ -598,6 +598,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate(g))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
+				// TODO: Refactor check functions to use Eventually assertion
 				time.Sleep(10 * time.Second)
 				checkAtlasProjectIsReady()
 				checkMaintenanceWindowInAtlas()

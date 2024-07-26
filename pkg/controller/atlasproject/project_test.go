@@ -288,11 +288,6 @@ func TestHandleProject(t *testing.T) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
 					},
 				}
-				customRoles := &atlasmocks.CustomRolesClientMock{
-					ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
-						return nil, nil, nil
-					},
-				}
 				projectAPI := &atlasmocks.ProjectsClientMock{
 					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 						return &mongodbatlas.TeamsAssigned{}, nil, nil
@@ -302,7 +297,6 @@ func TestHandleProject(t *testing.T) {
 				return &mongodbatlas.Client{
 					Integrations:      integrations,
 					EncryptionsAtRest: encryptionAtRest,
-					CustomDBRoles:     customRoles,
 					Projects:          projectAPI,
 				}
 			},
@@ -331,6 +325,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetAuditingConfigurationApiRequest{ApiService: audit})
 				audit.EXPECT().GetAuditingConfigurationExecute(mock.AnythingOfType("admin.GetAuditingConfigurationApiRequest")).
 					Return(nil, nil, nil)
+				customRoles := mockadmin.NewCustomDatabaseRolesApi(t)
+				customRoles.EXPECT().ListCustomDatabaseRoles(context.Background(), "projectID").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: customRoles})
+				customRoles.EXPECT().ListCustomDatabaseRolesExecute(mock.AnythingOfType("admin.ListCustomDatabaseRolesApiRequest")).
+					Return(nil, nil, nil)
 				projectAPI := mockadmin.NewProjectsApi(t)
 				projectAPI.EXPECT().GetProjectSettings(context.Background(), "projectID").
 					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
@@ -347,6 +346,7 @@ func TestHandleProject(t *testing.T) {
 					PrivateEndpointServicesApi: privateEndpoints,
 					NetworkPeeringApi:          networkPeering,
 					AuditingApi:                audit,
+					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
 				}
@@ -390,11 +390,6 @@ func TestHandleProject(t *testing.T) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
 					},
 				}
-				customRoles := &atlasmocks.CustomRolesClientMock{
-					ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
-						return nil, nil, nil
-					},
-				}
 				projectAPI := &atlasmocks.ProjectsClientMock{
 					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 						return &mongodbatlas.TeamsAssigned{}, nil, nil
@@ -404,7 +399,6 @@ func TestHandleProject(t *testing.T) {
 				return &mongodbatlas.Client{
 					Integrations:      integrations,
 					EncryptionsAtRest: encryptionAtRest,
-					CustomDBRoles:     customRoles,
 					Projects:          projectAPI,
 				}
 			},
@@ -433,6 +427,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetAuditingConfigurationApiRequest{ApiService: audit})
 				audit.EXPECT().GetAuditingConfigurationExecute(mock.AnythingOfType("admin.GetAuditingConfigurationApiRequest")).
 					Return(nil, nil, nil)
+				customRoles := mockadmin.NewCustomDatabaseRolesApi(t)
+				customRoles.EXPECT().ListCustomDatabaseRoles(context.Background(), "projectID").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: customRoles})
+				customRoles.EXPECT().ListCustomDatabaseRolesExecute(mock.AnythingOfType("admin.ListCustomDatabaseRolesApiRequest")).
+					Return(nil, nil, nil)
 				projectAPI := mockadmin.NewProjectsApi(t)
 				projectAPI.EXPECT().GetProjectSettings(context.Background(), "projectID").
 					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
@@ -449,6 +448,7 @@ func TestHandleProject(t *testing.T) {
 					PrivateEndpointServicesApi: privateEndpoints,
 					NetworkPeeringApi:          networkPeering,
 					AuditingApi:                audit,
+					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
 				}
@@ -494,11 +494,6 @@ func TestHandleProject(t *testing.T) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
 					},
 				}
-				customRoles := &atlasmocks.CustomRolesClientMock{
-					ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
-						return nil, nil, nil
-					},
-				}
 				projectAPI := &atlasmocks.ProjectsClientMock{
 					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 						return &mongodbatlas.TeamsAssigned{}, nil, nil
@@ -508,7 +503,6 @@ func TestHandleProject(t *testing.T) {
 				return &mongodbatlas.Client{
 					Integrations:      integrations,
 					EncryptionsAtRest: encryptionAtRest,
-					CustomDBRoles:     customRoles,
 					Projects:          projectAPI,
 				}
 			},
@@ -537,6 +531,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetAuditingConfigurationApiRequest{ApiService: audit})
 				audit.EXPECT().GetAuditingConfigurationExecute(mock.AnythingOfType("admin.GetAuditingConfigurationApiRequest")).
 					Return(nil, nil, nil)
+				customRoles := mockadmin.NewCustomDatabaseRolesApi(t)
+				customRoles.EXPECT().ListCustomDatabaseRoles(context.Background(), "projectID").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: customRoles})
+				customRoles.EXPECT().ListCustomDatabaseRolesExecute(mock.AnythingOfType("admin.ListCustomDatabaseRolesApiRequest")).
+					Return(nil, nil, nil)
 				projectAPI := mockadmin.NewProjectsApi(t)
 				projectAPI.EXPECT().GetProjectSettings(context.Background(), "projectID").
 					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
@@ -553,6 +552,7 @@ func TestHandleProject(t *testing.T) {
 					PrivateEndpointServicesApi: privateEndpoints,
 					NetworkPeeringApi:          networkPeering,
 					AuditingApi:                audit,
+					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
 				}
