@@ -45,7 +45,7 @@ func (i PrivateEndpoint) Identifier() interface{} {
 	return string(i.Provider) + status.TransformRegionToID(i.Region)
 }
 
-func (endpoints GCPEndpoints) ConvertToAtlas() []admin.CreateGCPForwardingRuleRequest {
+func (endpoints GCPEndpoints) ConvertToAtlas() *[]admin.CreateGCPForwardingRuleRequest {
 	if len(endpoints) == 0 {
 		return nil
 	}
@@ -56,5 +56,5 @@ func (endpoints GCPEndpoints) ConvertToAtlas() []admin.CreateGCPForwardingRuleRe
 			IpAddress:    pointer.SetOrNil(e.IPAddress, ""),
 		})
 	}
-	return result
+	return &result
 }
