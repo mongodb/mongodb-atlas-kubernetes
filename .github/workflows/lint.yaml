@@ -16,8 +16,6 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@v13
       - uses: DeterminateSystems/magic-nix-cache-action@v7
-      - name: Run `nix build`
-        run: nix build
       - name: Run lint
         run: make lint
 
