@@ -16,15 +16,12 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@v13
       - uses: DeterminateSystems/magic-nix-cache-action@v7
-      
-      - name: Setup nix
-        run: nix-shell shell.nix
 
       - name: Run lint
-        run: make lint
+        run: nix-shell  --run'make lint'
 
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
 
       - name: Run govulncheck
-        run: make vulncheck
+        run: nix-shell --run'make vulncheck'
