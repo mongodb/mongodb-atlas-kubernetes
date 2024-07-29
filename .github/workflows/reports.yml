@@ -16,14 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
+      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: DeterminateSystems/magic-nix-cache-action@v7
 
       - name: Send Regressions Report
-        run: make slack-report REPORT_TYPE=regressions
+        run: nix-shell --run 'make slack-report REPORT_TYPE=regressions'
 
       - name: Send Flakiness Report
-        run: make slack-report REPORT_TYPE=flakiness
+        run: nix-shell --run 'make slack-report REPORT_TYPE=flakiness'

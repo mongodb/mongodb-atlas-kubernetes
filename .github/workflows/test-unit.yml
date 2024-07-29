@@ -11,21 +11,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.sha}}
-
-      - name: Cache multiple paths
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
           
       - uses: DeterminateSystems/nix-installer-action@v13
       - uses: DeterminateSystems/magic-nix-cache-action@v7
-      - run: nix-shell --run 'go version'
 
       - name: Run testing
-        run: CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e') -coverprofile=coverage.out
+        run: nix-shell --run 'CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e') -coverprofile=coverage.out'
 
       - name: Test tools
         run: nix-shell --run 'make test-tools'
