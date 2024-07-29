@@ -32,9 +32,8 @@ RUN nix-channel --update
 RUN nix-shell shell.nix --run "go mod download && go install golang.org/x/tools/cmd/goimports@latest && make manager"
 
 # Final image
-FROM registry.access.redhat.com/ubi9/ubi:9.2 as ubi-certs
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
-
+FROM registry.access.redhat.com/ubi9/ubi:9.2 as ubi-certs
 # Metadata
 LABEL name="MongoDB Atlas Operator" \
       maintainer="support@mongodb.com" \
