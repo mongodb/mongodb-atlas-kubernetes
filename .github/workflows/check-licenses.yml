@@ -21,8 +21,6 @@ jobs:
         
       - uses: DeterminateSystems/nix-installer-action@v13
       - uses: DeterminateSystems/magic-nix-cache-action@v7
-      - name: Run `nix build`
-        run: nix build
       - run: go version
 
       - name: Run testing
