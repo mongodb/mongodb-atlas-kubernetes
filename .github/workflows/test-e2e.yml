@@ -246,7 +246,7 @@ jobs:
           nix-shell --run 'kubectl version'
       - name: Print kubectl version
         run: |
-          nix-shell --run ' kubectl version'
+          nix-shell --run 'kubectl version'
       - name: Install CRDs if needed
         if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'helm-ns' || matrix.test == 'bundle-test' ) }}
         run: |

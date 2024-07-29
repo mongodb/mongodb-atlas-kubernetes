@@ -29,7 +29,7 @@ ENV TARGET_OS=${TARGETOS}
 RUN nix-channel --update
 
 # Install Go tools and build the manager binary using nix-shell
-RUN nix-shell shell.nix --run "go mod download && go install golang.org/x/tools/cmd/goimports@latest && make manager"
+RUN nix-shell shell.nix --run 'go mod download && go install golang.org/x/tools/cmd/goimports@latest && make manager'
 
 # Final image
 FROM registry.access.redhat.com/ubi9/ubi:9.2 as ubi-certs

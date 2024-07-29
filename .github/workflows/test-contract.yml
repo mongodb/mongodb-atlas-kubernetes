@@ -31,4 +31,4 @@ jobs:
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-        run: nix-shell --run'make contract-tests'
+        run: nix-shell --run 'make contract-tests'
