@@ -28,6 +28,7 @@ ENV TARGET_OS=${TARGETOS}
 
 RUN make manager
 
+FROM registry.access.redhat.com/ubi9/ubi:9.2 as ubi-certs
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
 
 LABEL name="MongoDB Atlas Operator" \
@@ -46,7 +47,7 @@ LABEL name="MongoDB Atlas Operator" \
 WORKDIR /
 COPY --from=builder /workspace/bin/manager .
 COPY hack/licenses licenses
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+COPY --from=ubi-certs /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 USER 1001:0
 ENTRYPOINT ["/manager"]
