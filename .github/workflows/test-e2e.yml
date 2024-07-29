@@ -31,7 +31,7 @@ jobs:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
     env:
-      GHCR_REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
+      REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
@@ -56,12 +56,23 @@ jobs:
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
-          repository: ${{ env.GHCR_REPO }}
+          repository: ghcr.io/${{ env.REPOSITORY }}
           version: ${{ steps.prepare.outputs.tag }}
-          tags: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
+          tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
           forked: ${{ inputs.forked }}
+      - name: Do preflight-check on test image
+        uses: ./.github/actions/certify-openshift-images
+        with:
+          registry: ghcr.io
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ env.REPOSITORY }}
+          version: ${{ steps.prepare.outputs.tag }}
+          rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
+          rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
+          submit: false
+
   prepare-e2e-bundle:
     name: Prepare E2E Bundle configuration and image
     runs-on: ubuntu-latest
