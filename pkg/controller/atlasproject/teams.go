@@ -194,12 +194,16 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	teamCtx.Client = atlasClient
 
 	if len(assignedProjects) == 0 {
-		log.Debugf("team %s has no project associated to it. removing from atlas.", team.Spec.Name)
-		_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(ctx.Context, orgID, team.Status.ID)
-		if err != nil {
-			return err
+		if r.ObjectDeletionProtection {
+			log.Debug("team %s has no project associated, "+
+				"skipping deletion from Atlas due to ObjectDeletionProtection being set", team.Spec.Name)
+		} else {
+			log.Debugf("team %s has no project associated to it. removing from atlas.", team.Spec.Name)
+			_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(ctx.Context, orgID, team.Status.ID)
+			if err != nil {
+				return err
+			}
 		}
-
 		teamCtx.EnsureStatusOption(status.AtlasTeamUnsetID())
 	}
 
