@@ -142,11 +142,17 @@ The direct link, at the time of writing is https://connect.redhat.com/component/
 Copy the **certified** image SHAs of the **amd64** and the **arm64** image:
 
 ![img.png](certified-image-sha.png)
-
+> **NOTE**
+> 
+> In case you can't see the images tags in the https://connect.redhat.com go to the https://quay.io/repository/mongodb/mongodb-atlas-kubernetes-operator?tab=tags
+and select the latest released tag that ends with `-certified` e.g. `2.4.0-certified`. Then click on `manifest` link for the selected image.
+You should see two available manifests for `amd64` and `arm64` that you can use. Here is the example: https://quay.io/repository/mongodb/mongodb-atlas-kubernetes-operator/manifest/sha256:20740f06db3b6e768b40562ee50c729aba9870a9051045b4fc49d0c404cc18f6
+![img.png](img.png)
 ```
 export IMG_SHA_AMD64=sha256:c997f8ab49ed5680c258ee4a3e6a9e5bbd8d8d0eef26574345d4c78a4f728186
 export IMG_SHA_ARM64=sha256:aa3ed7b73f8409dda9ac32375dfddb25ee52d7ea172e08a54ecd144d52fe44da
 ```
+
 
  - Use the version of the release as `VERSION`, remember the SEMVER x.y.z version without the `v`prefix.
 
