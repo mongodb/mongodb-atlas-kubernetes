@@ -177,7 +177,7 @@ func listAtLeastNTeams(ctx context.Context, aClient *atlas.Atlas, minTeams int) 
 	results := []admin.TeamResponse{}
 	teamsReply, _, err := aClient.Client.TeamsApi.ListOrganizationTeams(ctx, aClient.OrgID).Execute()
 	if err != nil {
-		return results, fmt.Errorf("failed to list teams: %v", err)
+		return results, fmt.Errorf("failed to list teams: %w", err)
 	}
 	total, ok := teamsReply.GetTotalCountOk()
 	if !ok {
@@ -192,13 +192,7 @@ func listAtLeastNTeams(ctx context.Context, aClient *atlas.Atlas, minTeams int) 
 func clearAtlasTeams(teams []akov2.Team, atlasTeams []admin.TeamResponse, aClient *atlas.Atlas, userData *model.TestDataProvider) error {
 	var errs error
 	for _, team := range teams {
-		var foundAtlasTeam *admin.TeamResponse
-		for _, atlasTeam := range atlasTeams {
-			if team.TeamRef.Name == atlasTeam.GetName() {
-				foundAtlasTeam = &atlasTeam
-				break
-			}
-		}
+		foundAtlasTeam := findTeam(atlasTeams, team.TeamRef.Name)
 		if foundAtlasTeam == nil {
 			errs = errors.Join(errs, fmt.Errorf("failed to find expected Atlas team %s (was it wrongly removed?)", team.TeamRef.Name))
 		}
@@ -208,4 +202,13 @@ func clearAtlasTeams(teams []akov2.Team, atlasTeams []admin.TeamResponse, aClien
 		}
 	}
 	return errs
+}
+
+func findTeam(atlasTeams []admin.TeamResponse, teamName string) *admin.TeamResponse {
+	for _, atlasTeam := range atlasTeams {
+		if teamName == atlasTeam.GetName() {
+			return &atlasTeam
+		}
+	}
+	return nil
 }
