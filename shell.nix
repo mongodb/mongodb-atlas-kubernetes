@@ -36,7 +36,6 @@ pkgs.mkShell {
     pkgs.go-licenses
     pkgs.ginkgo
     pkgs.operator-sdk
-    pkgs.openshift
   ];
 
   shellHook = ''
@@ -47,7 +46,6 @@ pkgs.mkShell {
     export PATH=$PATH:${pkgs.yq-go}/bin
     export PATH=$PATH:${pkgs.wget}/bin
     export PATH=$PATH:${pkgs.envsubst}/bin
-    export PATH=$PATH:${pkgs.openshift}/bin
     export PATH=$PATH:${pkgs.git}/bin
     export PATH=$PATH:${pkgs.jq}/bin
     export PATH=$PATH:${pkgs.kubernetes-controller-tools}/bin
