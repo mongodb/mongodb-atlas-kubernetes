@@ -49,3 +49,13 @@ jobs:
           else
             echo 'Clean nothing to do'
           fi
+
+      - name: Remove retest Label
+        uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: retest
+
+      - name: Add retest label
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: retest
