@@ -15,15 +15,15 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.13
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Masterminds/semver v1.5.0
-	github.com/aws/aws-sdk-go v1.55.0
+	github.com/aws/aws-sdk-go v1.55.4
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
-	github.com/onsi/ginkgo/v2 v2.19.0
-	github.com/onsi/gomega v1.33.1
+	github.com/onsi/ginkgo/v2 v2.19.1
+	github.com/onsi/gomega v1.34.0
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/atlas v0.36.0
@@ -71,7 +71,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.27.3
+	cloud.google.com/go/compute v1.27.4
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
