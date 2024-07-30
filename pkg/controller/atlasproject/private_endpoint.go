@@ -263,7 +263,7 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 				EndpointGroupName:        pointer.SetOrNil(specPeService.EndpointGroupName, ""),
 				GcpProjectId:             pointer.SetOrNil(specPeService.GCPProjectID, ""),
 			}
-			interfaceConn.Endpoints = pointer.GetOrNilIfEmpty(specPeService.Endpoints.ConvertToAtlas())
+			interfaceConn.Endpoints = specPeService.Endpoints.ConvertToAtlas()
 
 			privateEndpoint, response, err := ctx.SdkClient.PrivateEndpointServicesApi.CreatePrivateEndpointWithParams(ctx.Context, &admin.CreatePrivateEndpointApiParams{
 				GroupId:               projectID,
