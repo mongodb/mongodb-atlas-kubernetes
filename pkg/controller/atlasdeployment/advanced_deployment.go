@@ -63,7 +63,6 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		if !r.AtlasProvider.IsCloudGov() {
 			searchNodeResult := handleSearchNodes(ctx, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
 			if !searchNodeResult.IsOk() {
-				// TODO fix return
 				return r.terminate(ctx, workflow.Internal, errors.New(searchNodeResult.GetMessage()))
 			}
 		}
@@ -71,7 +70,6 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		searchService := searchindex.NewSearchIndexes(ctx.SdkClient.AtlasSearchApi)
 		result := handleSearchIndexes(ctx, r.Client, searchService, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
 		if !result.IsOk() {
-			// TODO fix return
 			return r.terminate(ctx, workflow.Internal, errors.New(result.GetMessage()))
 		}
 
@@ -82,7 +80,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			deploymentInAKO.GetName(),
 		)
 		if !result.IsOk() {
-			return r.terminate(ctx, workflow.CustomZoneMappingReady, errors.New(result.GetMessage()))
+			return r.terminate(ctx, workflow.Internal, errors.New(result.GetMessage()))
 		}
 
 		result = EnsureManagedNamespaces(
@@ -93,7 +91,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			deploymentInAKO.GetName(),
 		)
 		if !result.IsOk() {
-			return r.terminate(ctx, workflow.ManagedNamespacesReady, errors.New(result.GetMessage()))
+			return r.terminate(ctx, workflow.Internal, errors.New(result.GetMessage()))
 		}
 
 		err = customresource.ApplyLastConfigApplied(ctx.Context, deploymentInAKO.GetCustomResource(), r.Client)
