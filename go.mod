@@ -22,8 +22,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
-	github.com/onsi/ginkgo/v2 v2.19.0
-	github.com/onsi/gomega v1.33.1
+	github.com/onsi/ginkgo/v2 v2.19.1
+	github.com/onsi/gomega v1.34.0
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/atlas v0.36.0
