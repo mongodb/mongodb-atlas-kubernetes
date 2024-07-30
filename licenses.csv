@@ -74,7 +74,7 @@ github.com/montanaflynn/stats,https://github.com/montanaflynn/stats/blob/v0.7.1/
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
 github.com/nsf/jsondiff,https://github.com/nsf/jsondiff/blob/43f6cf3098c1/LICENSE,MIT
 github.com/onsi/ginkgo/v2,https://github.com/onsi/ginkgo/blob/v2.19.1/LICENSE,MIT
-github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.34.0/LICENSE,MIT
+github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.34.1/LICENSE,MIT
 github.com/pkg/browser,https://github.com/pkg/browser/blob/5ac0b6a4141c/LICENSE,BSD-2-Clause
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
 github.com/pmezard/go-difflib/difflib,https://github.com/pmezard/go-difflib/blob/v1.0.0/LICENSE,BSD-3-Clause
@@ -104,7 +104,7 @@ go.opentelemetry.io/otel/trace,https://github.com/open-telemetry/opentelemetry-g
 go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.11.0/LICENSE.txt,MIT
 go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.27.0/LICENSE,MIT
 golang.org/x/crypto,https://cs.opensource.google/go/x/crypto/+/v0.25.0:LICENSE,BSD-3-Clause
-golang.org/x/exp,https://cs.opensource.google/go/x/exp/+/2e198f4a:LICENSE,BSD-3-Clause
+golang.org/x/exp,https://cs.opensource.google/go/x/exp/+/8a7402ab:LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.27.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.21.0:LICENSE,BSD-3-Clause
 golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/v0.7.0:LICENSE,BSD-3-Clause
