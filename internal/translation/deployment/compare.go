@@ -211,14 +211,10 @@ func regionConfigAreEqual(desired, current *akov2.AdvancedRegionConfig, autoscal
 	}
 
 	if desired.ProviderName == string(provider.ProviderTenant) {
-		return true
+		return desired.BackingProviderName == current.BackingProviderName
 	}
 
 	if desired.RegionName != current.RegionName {
-		return false
-	}
-
-	if desired.BackingProviderName != current.BackingProviderName {
 		return false
 	}
 
