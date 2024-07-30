@@ -19,6 +19,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -149,14 +150,32 @@ func TestUpdateTeamState(t *testing.T) {
 		for _, tc := range []struct {
 			title              string
 			deletionProtection bool
+			keepFlag           bool
+			expectRemoval      bool
 		}{
 			{
 				title:              "with deletion protection unassigned teams are not removed",
 				deletionProtection: true,
+				keepFlag:           false,
+				expectRemoval:      false,
 			},
 			{
 				title:              "without deletion protection unassigned teams are removed",
 				deletionProtection: false,
+				keepFlag:           false,
+				expectRemoval:      true,
+			},
+			{
+				title:              "with deletion protection & keep flag teams are not removed",
+				deletionProtection: false,
+				keepFlag:           true,
+				expectRemoval:      false,
+			},
+			{
+				title:              "without deletion protection but keep flag teams are not removed",
+				deletionProtection: true,
+				keepFlag:           true,
+				expectRemoval:      false,
 			},
 		} {
 			t.Run(tc.title, func(t *testing.T) {
@@ -192,11 +211,15 @@ func TestUpdateTeamState(t *testing.T) {
 					AtlasProvider:            atlasProvider,
 					ObjectDeletionProtection: tc.deletionProtection,
 				}
+				if tc.keepFlag {
+					customresource.SetAnnotation(project,
+						customresource.ResourcePolicyAnnotation, customresource.ResourcePolicyKeep)
+				}
 				err := reconciler.updateTeamState(workflowCtx, project, reference(team), true)
 				assert.NoError(t, err)
-				expectedRemovals := 1
-				if tc.deletionProtection {
-					expectedRemovals = 0
+				expectedRemovals := 0
+				if tc.expectRemoval {
+					expectedRemovals = 1
 				}
 				assert.Len(t, teamsMock.RemoveTeamFromOrganizationRequests, expectedRemovals)
 			})

@@ -10,6 +10,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -194,7 +195,7 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	teamCtx.Client = atlasClient
 
 	if len(assignedProjects) == 0 {
-		if r.ObjectDeletionProtection {
+		if customresource.IsResourcePolicyKeepOrDefault(project, r.ObjectDeletionProtection) {
 			log.Debug("team %s has no project associated, "+
 				"skipping deletion from Atlas due to ObjectDeletionProtection being set", team.Spec.Name)
 		} else {
