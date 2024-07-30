@@ -79,7 +79,6 @@ type Serverless struct {
 	State          string
 	MongoDBVersion string
 	Connection     *status.ConnectionStrings
-	ProcessArgs    *akov2.ProcessArgs
 
 	customResource *akov2.AtlasDeployment
 }
