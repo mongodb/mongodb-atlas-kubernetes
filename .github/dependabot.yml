@@ -10,6 +10,7 @@ updates:
       - "helderjs" 
       - "josvazg"
       - "roothorp"
+      - "s-urbaniak"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -20,3 +21,37 @@ updates:
       - "helderjs" 
       - "josvazg"
       - "roothorp"
+      - "s-urbaniak"
+  - package-ecosystem: gomod
+    directory: "/tools/clean"
+    schedule:
+      interval: weekly
+      day: tuesday
+    reviewers:
+      - "igor-karpukhin"
+      - "helderjs" 
+      - "josvazg"
+      - "roothorp"
+      - "s-urbaniak"
+  - package-ecosystem: gomod
+    directory: "/tools/makejwt"
+    schedule:
+      interval: weekly
+      day: tuesday
+    reviewers:
+      - "igor-karpukhin"
+      - "helderjs" 
+      - "josvazg"
+      - "roothorp"
+      - "s-urbaniak"
+  - package-ecosystem: gomod
+    directory: "/tools/metrics"
+    schedule:
+      interval: weekly
+      day: tuesday
+    reviewers:
+      - "igor-karpukhin"
+      - "helderjs" 
+      - "josvazg"
+      - "roothorp"
+      - "s-urbaniak"
