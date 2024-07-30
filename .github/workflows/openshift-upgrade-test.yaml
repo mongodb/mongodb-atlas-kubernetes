@@ -28,7 +28,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   e2e-tests:
-    name: Prepare E2E configuration and image
+    name: Upgrade test on Openshift
     runs-on: ubuntu-latest
     if: ${{ vars.SKIP_OPENSHIFT != 'true' }}
     steps:
