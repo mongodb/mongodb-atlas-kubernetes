@@ -52,6 +52,14 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v13
       - name: Install Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Download tools for openshift test
+        run: |
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
+          tar xvf opm.tar.gz
+          chmod +x opm && sudo mv opm /usr/local/bin/opm
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
+          tar xvf openshift.tar.gz
+          chmod +x oc && sudo mv oc /usr/local/bin/oc
       - name: Install Go dependencies
         run: nix-shell --run 'go install golang.org/x/tools/cmd/goimports@latest'
       - name: Login to registry
