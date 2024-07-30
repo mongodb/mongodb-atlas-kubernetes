@@ -32,4 +32,6 @@ const (
 
 	// Backup Compliance Policy rejected, as there are existing backup policies which do not meet the requirements
 	BackupComplianceNotMet = "BACKUP_POLICIES_NOT_MEETING_BACKUP_COMPLIANCE_POLICY_REQUIREMENTS"
+
+	ProviderUnsupported = "PROVIDER_UNSUPPORTED"
 )

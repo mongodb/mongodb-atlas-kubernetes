@@ -121,7 +121,7 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		return serverlessFromAtlas(serverless), err
 	}
 
-	if !admin.IsErrorCode(err, atlas.ServerlessInstanceNotFound) {
+	if !admin.IsErrorCode(err, atlas.ServerlessInstanceNotFound) && !admin.IsErrorCode(err, atlas.ProviderUnsupported) {
 		return nil, err
 	}
 
