@@ -48,37 +48,10 @@ jobs:
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-      - name: Download tools for openshift test
-        run: |
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
-          tar xvf opm.tar.gz
-          chmod +x opm && sudo mv opm /usr/local/bin/opm
-
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
-          tar xvf openshift.tar.gz
-          chmod +x oc && sudo mv oc /usr/local/bin/oc
-
-          wget https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv4.5.7/kustomize_v4.5.7_linux_amd64.tar.gz -O kustomize.tar.gz -q
-          tar xvf kustomize.tar.gz
-          chmod +x kustomize && mkdir -p ./bin/ && mv kustomize ./bin/kustomize
-
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.34.1/operator-sdk_linux_amd64 -O operator-sdk -q
-          chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/operator-sdk
-
-          wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O yq -q
-          chmod +x yq && sudo mv yq /usr/local/bin/yq
-
-          opm version
-          oc version
-          operator-sdk version
-      - uses: DeterminateSystems/nix-installer-action@v13
-      - uses: DeterminateSystems/magic-nix-cache-action@v7
-      - run: nix-shell --run 'go version'
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+      - name: Install Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
       - name: Install Go dependencies
         run: nix-shell --run 'go install golang.org/x/tools/cmd/goimports@latest'
       - name: Login to registry

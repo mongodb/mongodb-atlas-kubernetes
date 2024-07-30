@@ -20,10 +20,10 @@ jobs:
           version: v0.22.0
           config: test/helper/e2e/config/kind.yaml
           node_image: kindest/node:v1.29.2
-
-      - uses: DeterminateSystems/nix-installer-action@v13
-      - uses: DeterminateSystems/magic-nix-cache-action@v7
-
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+      - name: Install Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
       - name: Run Contract Testing
         env:
           AKO_CONTRACT_TEST: 1

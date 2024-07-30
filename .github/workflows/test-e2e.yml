@@ -209,8 +209,10 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
-      - uses: DeterminateSystems/nix-installer-action@v13
-      - uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+      - name: Install Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
@@ -241,9 +243,6 @@ jobs:
           node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
           cluster_name: ${{ matrix.test }}
           wait: 180s
-      - name: Print kubectl version
-        run: |
-          nix-shell --run 'kubectl version'
       - name: Print kubectl version
         run: |
           nix-shell --run 'kubectl version'

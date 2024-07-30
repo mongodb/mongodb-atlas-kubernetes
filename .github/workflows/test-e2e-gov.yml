@@ -21,8 +21,10 @@ jobs:
           config: test/helper/e2e/config/kind.yaml
           cluster_name: "atlas-gov-e2e-test"
           wait: 180s
-      - uses: DeterminateSystems/nix-installer-action@v13
-      - uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+      - name: Install Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
       - name: Install CRDs
         run: nix-shell --run 'make install'
       - name: Run e2e test

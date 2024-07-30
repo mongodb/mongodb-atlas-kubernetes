@@ -30,8 +30,10 @@ jobs:
         with:
           ref: ${{ env.BRANCH }}
 
-      - uses: DeterminateSystems/nix-installer-action@v13
-      - uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+      - name: Install Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
       
       - name: Recompute licenses
         run: nix-shell --run 'make recompute-licenses'
