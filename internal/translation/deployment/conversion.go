@@ -535,6 +535,11 @@ func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec) []*akov2
 }
 
 func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs) *akov2.ProcessArgs {
+	oplogMinRetentionHours := ""
+	if config.GetOplogMinRetentionHours() > 0 {
+		oplogMinRetentionHours = strconv.FormatFloat(config.GetOplogMinRetentionHours(), 'f', -1, 64)
+	}
+
 	return &akov2.ProcessArgs{
 		DefaultReadConcern:               config.GetDefaultReadConcern(),
 		DefaultWriteConcern:              config.GetDefaultWriteConcern(),
@@ -545,7 +550,7 @@ func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs) *akov2.Pr
 		OplogSizeMB:                      pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.OplogSizeMB, 0))),
 		SampleSizeBIConnector:            pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.SampleSizeBIConnector, 0))),
 		SampleRefreshIntervalBIConnector: pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.SampleRefreshIntervalBIConnector, 0))),
-		OplogMinRetentionHours:           strconv.FormatFloat(config.GetOplogMinRetentionHours(), 'f', -1, 64),
+		OplogMinRetentionHours:           oplogMinRetentionHours,
 	}
 }
 
