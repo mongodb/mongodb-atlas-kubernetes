@@ -2,33 +2,33 @@ linters:
   disable-all: true
   enable:
     #- bodyclose
-    - depguard
-    - dogsled
-    - dupl
-    - errcheck
-    - errorlint
-    - exportloopref
+    - depguard # 49s
+    - dogsled # 42s
+    - dupl # 43s
+    - errcheck # 42s
+    - errorlint # 42s
+    - exportloopref # 41s
     #- gocritic
-    - gocyclo
-    - goimports
-    - goprintffuncname
-    - gosec
-    - gosimple
-    - govet
-    - gofmt
-    - ineffassign
-    - misspell
-    - noctx
-    - prealloc
-    - rowserrcheck
-    - staticcheck
-    - stylecheck
-    - typecheck
-    - unconvert
-    - unparam
-    - unused
-    - whitespace
-    - importas
+    - gocyclo # 42s
+    #- goimports # 5m23s
+    - goprintffuncname # 46s
+    - gosec # 44s
+    - gosimple # 43s
+    - govet # 42s
+    - gofmt # 44s
+    - ineffassign # 42s
+    - misspell # 42s
+    - noctx # 43s
+    - prealloc # 43s
+    - rowserrcheck # 41s
+    - staticcheck # 43s
+    - stylecheck # 44s
+    - typecheck # 42s
+    - unconvert # 41s
+    - unparam # 43s
+    - unused # 42s
+    - whitespace # 42s
+    - importas # 44s
 
 linters-settings:
   misspell:

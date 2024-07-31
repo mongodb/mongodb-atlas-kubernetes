@@ -19,11 +19,14 @@ jobs:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
 
-      - name: lint
-        run: make lint
-
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
 
       - name: Run govulncheck
         run: make vulncheck
+
+      - name: lint
+        run: make lint
+
+      - name: goimports
+        run: make fmt
