@@ -19,19 +19,14 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func TestUpdateTeamState(t *testing.T) {
 	t.Run("should not duplicate projects listed", func(t *testing.T) {
 		logger := zaptest.NewLogger(t).Sugar()
-		workflowCtx := &workflow.Context{
-			Context: context.Background(),
-			Log:     logger,
-		}
-		testScheme := runtime.NewScheme()
-		akov2.AddToScheme(testScheme)
-		corev1.AddToScheme(testScheme)
+		workflowCtx := defaultTestWorkflow(logger)
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-secret",
@@ -74,24 +69,17 @@ func TestUpdateTeamState(t *testing.T) {
 				return &mongodbatlas.Client{}, "0987654321", nil
 			},
 		}
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(secret, project, team).
-			Build()
+		k8sClient := buildFakeKubernetesClient(secret, project, team)
 		reconciler := &AtlasProjectReconciler{
 			Client:        k8sClient,
 			Log:           logger,
 			AtlasProvider: atlasProvider,
 		}
-		teamRef := &common.ResourceRefNamespaced{
-			Name:      team.Name,
-			Namespace: "testNS",
-		}
 		// check we have exactly 1 project in status
 		assert.Equal(t, 1, len(team.Status.Projects))
 
 		// "reconcile" the team state and check we still have 1 project in status
-		err := reconciler.updateTeamState(workflowCtx, project, teamRef, false)
+		err := reconciler.updateTeamState(workflowCtx, project, reference(team), false)
 		assert.NoError(t, err)
 		k8sClient.Get(context.Background(), types.NamespacedName{Name: team.ObjectMeta.Name, Namespace: team.ObjectMeta.Namespace}, team)
 		assert.Equal(t, 1, len(team.Status.Projects))
@@ -99,13 +87,7 @@ func TestUpdateTeamState(t *testing.T) {
 
 	t.Run("must remove a team from Atlas is a team is unassigned", func(t *testing.T) {
 		logger := zaptest.NewLogger(t).Sugar()
-		workflowCtx := &workflow.Context{
-			Context: context.Background(),
-			Log:     logger,
-		}
-		testScheme := runtime.NewScheme()
-		akov2.AddToScheme(testScheme)
-		corev1.AddToScheme(testScheme)
+		workflowCtx := defaultTestWorkflow(logger)
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-secret",
@@ -151,23 +133,124 @@ func TestUpdateTeamState(t *testing.T) {
 				}, "0987654321", nil
 			},
 		}
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(secret, project, team).
-			Build()
+		k8sClient := buildFakeKubernetesClient(secret, project, team)
 		reconciler := &AtlasProjectReconciler{
 			Client:        k8sClient,
 			Log:           logger,
 			AtlasProvider: atlasProvider,
 		}
-		teamRef := &common.ResourceRefNamespaced{
-			Name:      team.Name,
-			Namespace: "testNS",
-		}
 
-		err := reconciler.updateTeamState(workflowCtx, project, teamRef, true)
+		err := reconciler.updateTeamState(workflowCtx, project, reference(team), true)
 		assert.NoError(t, err)
 		k8sClient.Get(context.Background(), types.NamespacedName{Name: team.ObjectMeta.Name, Namespace: team.ObjectMeta.Namespace}, team)
 		assert.Len(t, teamsMock.RemoveTeamFromOrganizationRequests, 1)
 	})
+
+	t.Run("must honor deletion protection flag for Teams", func(t *testing.T) {
+		for _, tc := range []struct {
+			title              string
+			deletionProtection bool
+			keepFlag           bool
+			expectRemoval      bool
+		}{
+			{
+				title:              "with deletion protection unassigned teams are not removed",
+				deletionProtection: true,
+				keepFlag:           false,
+				expectRemoval:      false,
+			},
+			{
+				title:              "without deletion protection unassigned teams are removed",
+				deletionProtection: false,
+				keepFlag:           false,
+				expectRemoval:      true,
+			},
+			{
+				title:              "with deletion protection & keep flag teams are not removed",
+				deletionProtection: false,
+				keepFlag:           true,
+				expectRemoval:      false,
+			},
+			{
+				title:              "without deletion protection but keep flag teams are not removed",
+				deletionProtection: true,
+				keepFlag:           true,
+				expectRemoval:      false,
+			},
+		} {
+			t.Run(tc.title, func(t *testing.T) {
+				logger := zaptest.NewLogger(t).Sugar()
+				workflowCtx := defaultTestWorkflow(logger)
+				project := &akov2.AtlasProject{
+					Spec: akov2.AtlasProjectSpec{
+						Name: "projectName",
+					},
+				}
+				team := &akov2.AtlasTeam{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "testTeam",
+						Namespace: "testNS",
+					},
+				}
+				teamsMock := &atlas.TeamsClientMock{
+					RemoveTeamFromOrganizationFunc: func(orgID string, teamID string) (*mongodbatlas.Response, error) {
+						return nil, nil
+					},
+					RemoveTeamFromOrganizationRequests: map[string]struct{}{},
+				}
+				atlasProvider := &atlas.TestProvider{
+					ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+						return &mongodbatlas.Client{
+							Teams: teamsMock,
+						}, "0987654321", nil
+					},
+				}
+				reconciler := &AtlasProjectReconciler{
+					Client:                   buildFakeKubernetesClient(project, team),
+					Log:                      logger,
+					AtlasProvider:            atlasProvider,
+					ObjectDeletionProtection: tc.deletionProtection,
+				}
+				if tc.keepFlag {
+					customresource.SetAnnotation(project,
+						customresource.ResourcePolicyAnnotation, customresource.ResourcePolicyKeep)
+				}
+				err := reconciler.updateTeamState(workflowCtx, project, reference(team), true)
+				assert.NoError(t, err)
+				expectedRemovals := 0
+				if tc.expectRemoval {
+					expectedRemovals = 1
+				}
+				assert.Len(t, teamsMock.RemoveTeamFromOrganizationRequests, expectedRemovals)
+			})
+		}
+	})
+}
+
+func defaultTestWorkflow(logger *zap.SugaredLogger) *workflow.Context {
+	return &workflow.Context{
+		Context: context.Background(),
+		Log:     logger,
+	}
+}
+
+func defaultTestScheme() *runtime.Scheme {
+	scheme := runtime.NewScheme()
+	akov2.AddToScheme(scheme)
+	corev1.AddToScheme(scheme)
+	return scheme
+}
+
+func buildFakeKubernetesClient(objects ...client.Object) client.WithWatch {
+	return fake.NewClientBuilder().
+		WithScheme(defaultTestScheme()).
+		WithObjects(objects...).
+		Build()
+}
+
+func reference(obj client.Object) *common.ResourceRefNamespaced {
+	return &common.ResourceRefNamespaced{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}
 }
