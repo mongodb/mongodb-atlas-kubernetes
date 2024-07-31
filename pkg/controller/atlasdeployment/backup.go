@@ -29,29 +29,29 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	service *workflow.Context,
 	projectID string,
 	deployment *akov2.AtlasDeployment,
-) error {
+) transitionFn {
 	if deployment.Spec.BackupScheduleRef.Name == "" {
 		r.Log.Debug("no backup schedule configured for the deployment")
 
 		err := r.garbageCollectBackupResource(service.Context, deployment.GetDeploymentName())
 		if err != nil {
-			return err
+			return r.transitionFromLegacy(service, deployment, false, err)
 		}
-		return nil
+		return r.transitionFromLegacy(service, deployment, false, nil)
 	}
 
 	if deployment.Spec.DeploymentSpec.BackupEnabled == nil || !*deployment.Spec.DeploymentSpec.BackupEnabled {
-		return fmt.Errorf("can not proceed with backup configuration. Backups are not enabled for cluster %s", deployment.GetDeploymentName())
+		return r.transitionFromLegacy(service, deployment, false, fmt.Errorf("can not proceed with backup configuration. Backups are not enabled for cluster %s", deployment.GetDeploymentName()))
 	}
 
 	bSchedule, err := r.ensureBackupSchedule(service, deployment)
 	if err != nil {
-		return err
+		return r.transitionFromLegacy(service, deployment, false, err)
 	}
 
 	bPolicy, err := r.ensureBackupPolicy(service, bSchedule)
 	if err != nil {
-		return err
+		return r.transitionFromLegacy(service, deployment, false, err)
 	}
 
 	return r.updateBackupScheduleAndPolicy(service.Context, service, projectID, deployment, bSchedule, bPolicy)
@@ -168,17 +168,17 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	deployment *akov2.AtlasDeployment,
 	bSchedule *akov2.AtlasBackupSchedule,
 	bPolicy *akov2.AtlasBackupPolicy,
-) error {
+) transitionFn {
 	clusterName := deployment.GetDeploymentName()
 	currentSchedule, response, err := service.Client.CloudProviderSnapshotBackupPolicies.Get(ctx, projectID, clusterName)
 	if err != nil {
 		errMessage := "unable to get current backup configuration for project"
 		r.Log.Debugf("%s: %s:%s, %v", errMessage, projectID, clusterName, err)
-		return fmt.Errorf("%s: %s:%s, %w", errMessage, projectID, clusterName, err)
+		return r.transitionFromLegacy(service, deployment, false, fmt.Errorf("%s: %s:%s, %w", errMessage, projectID, clusterName, err))
 	}
 
 	if currentSchedule == nil && response != nil {
-		return fmt.Errorf("can not get сurrent backup configuration. response status: %s", response.Status)
+		return r.transitionFromLegacy(service, deployment, false, fmt.Errorf("can not get сurrent backup configuration. response status: %s", response.Status))
 	}
 
 	r.Log.Debugf("successfully received backup configuration: %v", currentSchedule)
@@ -192,20 +192,20 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 
 	equal, err := backupSchedulesAreEqual(currentSchedule, apiScheduleReq)
 	if err != nil {
-		return fmt.Errorf("can not compare BackupSchedule resources: %w", err)
+		return r.transitionFromLegacy(service, deployment, false, fmt.Errorf("can not compare BackupSchedule resources: %w", err))
 	}
 
 	if equal {
 		r.Log.Debug("backup schedules are equal, nothing to change")
-		return nil
+		return r.transitionFromLegacy(service, deployment, false, nil)
 	}
 
 	r.Log.Debugf("applying backup configuration: %v", *bSchedule)
 	if _, _, err := service.Client.CloudProviderSnapshotBackupPolicies.Update(ctx, projectID, clusterName, apiScheduleReq); err != nil {
-		return fmt.Errorf("unable to create backup schedule %s. e: %w", client.ObjectKeyFromObject(bSchedule).String(), err)
+		return r.transitionFromLegacy(service, deployment, false, fmt.Errorf("unable to create backup schedule %s. e: %w", client.ObjectKeyFromObject(bSchedule).String(), err))
 	}
 	r.Log.Infof("successfully updated backup configuration for deployment %v", clusterName)
-	return nil
+	return r.transitionFromLegacy(service, deployment, true, nil)
 }
 
 func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (bool, error) {

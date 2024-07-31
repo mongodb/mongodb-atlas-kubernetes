@@ -18,6 +18,7 @@ package atlasdeployment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -170,6 +171,8 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	switch {
 	case existsInAtlas && wasDeleted:
 		return r.delete(ctx, deploymentInAKO)
+	case !existsInAtlas && wasDeleted:
+		return r.unmanage(ctx, atlasDeployment)
 	case !wasDeleted && isServerless:
 		var serverlessDeployment *deployment.Serverless
 		if existsInAtlas {
@@ -285,6 +288,40 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 	return nil
 }
 
+type transitionFn func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error)
+
+func (r *AtlasDeploymentReconciler) transitionFromLegacy(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, update bool, err error) transitionFn {
+	if err != nil {
+		return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+			return r.terminate(ctx, reason, err)
+		}
+	}
+
+	if update {
+		return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+			return r.inProgress(ctx, atlasDeployment, deploymentInAtlas, reason, "deployment is updating")
+		}
+	}
+
+	return nil
+}
+
+func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, result workflow.Result) transitionFn {
+	if result.IsInProgress() {
+		return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+			return r.inProgress(ctx, atlasDeployment, deploymentInAtlas, reason, "deployment is updating")
+		}
+	}
+
+	if !result.IsOk() {
+		return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+			return r.terminate(ctx, reason, errors.New(result.GetMessage()))
+		}
+	}
+
+	return nil
+}
+
 func (r *AtlasDeploymentReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err.Error())
@@ -318,6 +355,15 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment
 		EnsureStatusOption(status.AtlasDeploymentReplicaSet(deploymentInAtlas.GetReplicaSet())).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
+
+	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasDeploymentReconciler) unmanage(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment) (ctrl.Result, error) {
+	err := r.removeDeletionFinalizer(ctx.Context, atlasDeployment)
+	if err != nil {
+		return r.terminate(ctx, workflow.AtlasFinalizerNotRemoved, err)
+	}
 
 	return workflow.OK().ReconcileResult(), nil
 }

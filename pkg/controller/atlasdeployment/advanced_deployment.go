@@ -1,7 +1,6 @@
 package atlasdeployment
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -45,32 +44,32 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), updatedDeployment, workflow.DeploymentUpdating, "deployment is updating")
 		}
 
-		err := r.ensureBackupScheduleAndPolicy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource())
-		if err != nil {
-			return r.terminate(ctx, workflow.Internal, err)
+		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource())
+		if transition != nil {
+			return transition(workflow.Internal, deploymentInAtlas)
 		}
 
-		err = r.ensureAdvancedOptions(ctx, deploymentInAKO, deploymentInAtlas)
-		if err != nil {
-			return r.terminate(ctx, workflow.DeploymentAdvancedOptionsReady, err)
+		transition = r.ensureAdvancedOptions(ctx, deploymentInAKO, deploymentInAtlas)
+		if transition != nil {
+			return transition(workflow.DeploymentAdvancedOptionsReady, deploymentInAtlas)
 		}
 
-		err = r.ensureConnectionSecrets(ctx, deploymentInAKO, deploymentInAtlas.GetConnection())
+		err := r.ensureConnectionSecrets(ctx, deploymentInAKO, deploymentInAtlas.GetConnection())
 		if err != nil {
 			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
 		if !r.AtlasProvider.IsCloudGov() {
 			searchNodeResult := handleSearchNodes(ctx, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
-			if !searchNodeResult.IsOk() {
-				return r.terminate(ctx, workflow.Internal, errors.New(searchNodeResult.GetMessage()))
+			if transition = r.transitionFromResult(ctx, deploymentInAKO.GetCustomResource(), searchNodeResult); transition != nil {
+				return transition(workflow.Internal, deploymentInAtlas)
 			}
 		}
 
 		searchService := searchindex.NewSearchIndexes(ctx.SdkClient.AtlasSearchApi)
 		result := handleSearchIndexes(ctx, r.Client, searchService, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
-		if !result.IsOk() {
-			return r.terminate(ctx, workflow.Internal, errors.New(result.GetMessage()))
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal, deploymentInAtlas)
 		}
 
 		result = EnsureCustomZoneMapping(
@@ -79,8 +78,8 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.CustomZoneMapping,
 			deploymentInAKO.GetName(),
 		)
-		if !result.IsOk() {
-			return r.terminate(ctx, workflow.Internal, errors.New(result.GetMessage()))
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal, deploymentInAtlas)
 		}
 
 		result = EnsureManagedNamespaces(
@@ -90,8 +89,8 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.ManagedNamespaces,
 			deploymentInAKO.GetName(),
 		)
-		if !result.IsOk() {
-			return r.terminate(ctx, workflow.Internal, errors.New(result.GetMessage()))
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal, deploymentInAtlas)
 		}
 
 		err = customresource.ApplyLastConfigApplied(ctx.Context, deploymentInAKO.GetCustomResource(), r.Client)
@@ -192,24 +191,26 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 	return nil
 }
 
-func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Cluster) error {
+func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Cluster) transitionFn {
 	if deploymentInAKO.IsTenant() {
-		return nil
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), false, nil)
 	}
 
 	err := r.deploymentService.ClusterWithProcessArgs(ctx.Context, deploymentInAtlas)
 	if err != nil {
-		return err
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), false, err)
 	}
 
 	if deploymentInAKO.ProcessArgs != nil && !reflect.DeepEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
 		err = r.deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
 		if err != nil {
-			return err
+			return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), false, err)
 		}
+
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), true, nil)
 	}
 
-	return nil
+	return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), false, nil)
 }
 
 func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, projectRef *client.ObjectKey) bool {
