@@ -44,6 +44,52 @@ A new PR should have been created titled `Add SBOMs for version ...`. Please rev
 - `linux-amd64.sbom.json`
 - `linux-arm64.sbom.json`
 
+## Manual SSDLC steps
+
+### Process Overview
+
+The SSDLC process requirements are as follows.
+
+1. Sign our images with a MongoDB owned signature
+1. Produce SBOM (Software Bill Of Materials) for each platform we support: `linux-amd64` & `linux-arm64`
+1. Upload the plain SBOMs to a MongoDB internal Silk service instance.
+1. Download the augmented SBOMS, including vulnerability metadata, from Silk.
+1. Store both sets of SBOM files for internal reference.
+
+The first two steps are semi-automated as documented here. The rest is fully manual.
+
+Right now we are only using **one Silk asset group per platform**:
+- `atlas-kubernetes-operator-linux-amd64`
+- `atlas-kubernetes-operator-linux-arm64`
+
+This means only the latest version is tracked by Silk. Note each upload will replace the SBOM document tracked on each asset group.
+
+For more details about credentials required, to to `MongoDB Confluence` and look for page:
+`Kubernetes Atlas Operator SSDLC Compliance Manual`
+
+What follows is a quick reference of the make rules involved, assuming the credential setup is already completed and the process is already familiar.
+
+### Upload SBOMs to Silk
+
+```shell
+make upload-sbom-to-silk SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_amd64.sbom.json"
+make upload-sbom-to-silk SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
+```
+
+### Download SBOMs from Silk
+
+```shell
+make download-from-silk TARGET_ARCH=arm64
+make download-from-silk TARGET_ARCH=amd64
+```
+
+### Register SBOMs internally
+
+```shell
+make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=amd64
+make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=arm64
+```
+
 ## Edit the Release Notes and publish the release
 
 Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file. Before publishing the release, keep the release in Draft and get an approval from the team and Product Management. Once approved, publish the release.
