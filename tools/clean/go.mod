@@ -5,7 +5,7 @@ go 1.22.1
 toolchain go1.22.5
 
 require (
-	cloud.google.com/go/compute v1.27.2
+	cloud.google.com/go/compute v1.27.4
 	cloud.google.com/go/kms v1.18.4
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.13.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
