@@ -290,20 +290,14 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 
 type transitionFn func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error)
 
-func (r *AtlasDeploymentReconciler) transitionFromLegacy(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, update bool, err error) transitionFn {
-	if err != nil {
-		return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) transitionFromLegacy(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, err error) transitionFn {
+	return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+		if err != nil {
 			return r.terminate(ctx, reason, err)
 		}
-	}
 
-	if update {
-		return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
-			return r.inProgress(ctx, atlasDeployment, deploymentInAtlas, reason, "deployment is updating")
-		}
+		return r.inProgress(ctx, atlasDeployment, deploymentInAtlas, reason, "deployment is updating")
 	}
-
-	return nil
 }
 
 func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, result workflow.Result) transitionFn {

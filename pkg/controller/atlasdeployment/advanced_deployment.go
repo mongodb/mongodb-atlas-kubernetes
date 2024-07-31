@@ -193,24 +193,24 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 
 func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Cluster) transitionFn {
 	if deploymentInAKO.IsTenant() {
-		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), false, nil)
+		return nil
 	}
 
 	err := r.deploymentService.ClusterWithProcessArgs(ctx.Context, deploymentInAtlas)
 	if err != nil {
-		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), false, err)
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), err)
 	}
 
 	if deploymentInAKO.ProcessArgs != nil && !reflect.DeepEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
 		err = r.deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
 		if err != nil {
-			return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), false, err)
+			return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), err)
 		}
 
-		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), true, nil)
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), nil)
 	}
 
-	return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), false, nil)
+	return nil
 }
 
 func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, projectRef *client.ObjectKey) bool {
