@@ -27,6 +27,3 @@ jobs:
 
       - name: lint
         run: make lint
-
-      - name: goimports
-        run: make fmt

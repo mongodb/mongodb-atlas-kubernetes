@@ -218,7 +218,7 @@ golangci-lint:
 
 .PHONY: lint
 lint: golangci-lint
-	golangci-lint run --timeout 10m
+	golangci-lint run --timeout 10m --verbose
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
 	@echo "goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -l -w \$$(GO_SOURCES)"
