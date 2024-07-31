@@ -6,7 +6,7 @@ toolchain go1.22.5
 
 require (
 	github.com/google/go-github/v57 v57.0.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
