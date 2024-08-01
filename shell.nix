@@ -23,7 +23,7 @@ pkgs.mkShell {
     pkgs.kubebuilder
     pkgs.jq
     pkgs.go
-    phgs.act
+    pkgs.act
     pkgs.kubectl
     pkgs.docker
     pkgs.kubernetes-controller-tools
