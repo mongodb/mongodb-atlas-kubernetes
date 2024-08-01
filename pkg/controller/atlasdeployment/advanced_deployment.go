@@ -46,12 +46,12 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 
 		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource())
 		if transition != nil {
-			return transition(workflow.Internal, deploymentInAtlas)
+			return transition(workflow.Internal)
 		}
 
 		transition = r.ensureAdvancedOptions(ctx, deploymentInAKO, deploymentInAtlas)
 		if transition != nil {
-			return transition(workflow.DeploymentAdvancedOptionsReady, deploymentInAtlas)
+			return transition(workflow.DeploymentAdvancedOptionsReady)
 		}
 
 		err := r.ensureConnectionSecrets(ctx, deploymentInAKO, deploymentInAtlas.GetConnection())
@@ -61,15 +61,15 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 
 		if !r.AtlasProvider.IsCloudGov() {
 			searchNodeResult := handleSearchNodes(ctx, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
-			if transition = r.transitionFromResult(ctx, deploymentInAKO.GetCustomResource(), searchNodeResult); transition != nil {
-				return transition(workflow.Internal, deploymentInAtlas)
+			if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), searchNodeResult); transition != nil {
+				return transition(workflow.Internal)
 			}
 		}
 
 		searchService := searchindex.NewSearchIndexes(ctx.SdkClient.AtlasSearchApi)
 		result := handleSearchIndexes(ctx, r.Client, searchService, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
-		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetCustomResource(), result); transition != nil {
-			return transition(workflow.Internal, deploymentInAtlas)
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal)
 		}
 
 		result = EnsureCustomZoneMapping(
@@ -78,8 +78,8 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.CustomZoneMapping,
 			deploymentInAKO.GetName(),
 		)
-		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetCustomResource(), result); transition != nil {
-			return transition(workflow.Internal, deploymentInAtlas)
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal)
 		}
 
 		result = EnsureManagedNamespaces(
@@ -89,8 +89,8 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.ManagedNamespaces,
 			deploymentInAKO.GetName(),
 		)
-		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetCustomResource(), result); transition != nil {
-			return transition(workflow.Internal, deploymentInAtlas)
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal)
 		}
 
 		err = customresource.ApplyLastConfigApplied(ctx.Context, deploymentInAKO.GetCustomResource(), r.Client)
@@ -198,16 +198,16 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context,
 
 	err := r.deploymentService.ClusterWithProcessArgs(ctx.Context, deploymentInAtlas)
 	if err != nil {
-		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), err)
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
 	}
 
 	if deploymentInAKO.ProcessArgs != nil && !reflect.DeepEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
 		err = r.deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
 		if err != nil {
-			return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), err)
+			return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
 		}
 
-		return r.transitionFromLegacy(ctx, deploymentInAKO.GetCustomResource(), nil)
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), nil)
 	}
 
 	return nil

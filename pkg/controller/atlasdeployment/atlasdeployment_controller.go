@@ -288,27 +288,37 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 	return nil
 }
 
-type transitionFn func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error)
+type transitionFn func(reason workflow.ConditionReason) (ctrl.Result, error)
 
-func (r *AtlasDeploymentReconciler) transitionFromLegacy(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, err error) transitionFn {
-	return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) transitionFromLegacy(ctx *workflow.Context, projectID string, atlasDeployment *akov2.AtlasDeployment, err error) transitionFn {
+	return func(reason workflow.ConditionReason) (ctrl.Result, error) {
 		if err != nil {
 			return r.terminate(ctx, reason, err)
 		}
 
-		return r.inProgress(ctx, atlasDeployment, deploymentInAtlas, reason, "deployment is updating")
+		deploymentInAtlas, err := r.deploymentService.GetDeployment(ctx.Context, projectID, atlasDeployment.GetDeploymentName())
+		if err != nil {
+			return r.terminate(ctx, workflow.Internal, err)
+		}
+
+		return r.inProgress(ctx, atlasDeployment, deploymentInAtlas, workflow.DeploymentUpdating, "deployment is updating")
 	}
 }
 
-func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, result workflow.Result) transitionFn {
+func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, projectID string, atlasDeployment *akov2.AtlasDeployment, result workflow.Result) transitionFn {
 	if result.IsInProgress() {
-		return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
-			return r.inProgress(ctx, atlasDeployment, deploymentInAtlas, reason, "deployment is updating")
+		return func(reason workflow.ConditionReason) (ctrl.Result, error) {
+			deploymentInAtlas, err := r.deploymentService.GetDeployment(ctx.Context, projectID, atlasDeployment.GetDeploymentName())
+			if err != nil {
+				return r.terminate(ctx, workflow.Internal, err)
+			}
+
+			return r.inProgress(ctx, atlasDeployment, deploymentInAtlas, workflow.DeploymentUpdating, "deployment is updating")
 		}
 	}
 
 	if !result.IsOk() {
-		return func(reason workflow.ConditionReason, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+		return func(reason workflow.ConditionReason) (ctrl.Result, error) {
 			return r.terminate(ctx, reason, errors.New(result.GetMessage()))
 		}
 	}

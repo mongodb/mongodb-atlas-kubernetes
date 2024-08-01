@@ -171,14 +171,17 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	}
 
-	checkAdvancedDeploymentOptions := func(specOptions *akov2.ProcessArgs) {
+	checkAdvancedDeploymentOptions := func(ctx context.Context, projectID string, atlasDeployment *akov2.AtlasDeployment) {
 		By("Checking that Atlas Advanced Options are equal to the Spec Options", func() {
-			atlasOptions, _, err := atlasClient.ClustersApi.
-				GetClusterAdvancedConfiguration(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
-				Execute()
+			deploymentInAKO := deployment.NewDeployment(projectID, atlasDeployment).(*deployment.Cluster)
+			deploymentInAtlas, err := deploymentService.GetDeployment(ctx, projectID, atlasDeployment.GetDeploymentName())
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(specOptions.IsEqual(atlasOptions)).To(BeTrue())
+			cluster := deploymentInAtlas.(*deployment.Cluster)
+			err = deploymentService.ClusterWithProcessArgs(ctx, cluster)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(cluster.ProcessArgs).To(Equal(deploymentInAKO.ProcessArgs))
 		})
 	}
 
@@ -1229,7 +1232,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				performCreate(createdDeployment, 30*time.Minute)
 
 				doDeploymentStatusChecks()
-				checkAdvancedDeploymentOptions(createdDeployment.Spec.ProcessArgs)
+				checkAdvancedDeploymentOptions(ctx, createdProject.ID(), createdDeployment)
 			})
 
 			By("Updating Advanced Deployment Options", func() {
@@ -1237,7 +1240,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment.Spec.ProcessArgs.JavascriptEnabled = pointer.MakePtr(false)
 				})
 				doDeploymentStatusChecks()
-				checkAdvancedDeploymentOptions(createdDeployment.Spec.ProcessArgs)
+				checkAdvancedDeploymentOptions(ctx, createdProject.ID(), createdDeployment)
 			})
 		})
 	})

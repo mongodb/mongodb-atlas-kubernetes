@@ -212,6 +212,7 @@ func normalizeClusterDeployment(cluster *Cluster) {
 	})
 
 	normalizeReplicationSpecs(cluster, isTenant)
+	normalizeProcessArgs(cluster.ProcessArgs)
 }
 
 func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
@@ -261,6 +262,24 @@ func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
 	cmp.NormalizeSlice(cluster.ReplicationSpecs, func(a, b *akov2.AdvancedReplicationSpec) int {
 		return strings.Compare(a.ZoneName, b.ZoneName)
 	})
+}
+
+func normalizeProcessArgs(args *akov2.ProcessArgs) {
+	if args == nil {
+		return
+	}
+
+	if args.JavascriptEnabled == nil {
+		args.JavascriptEnabled = pointer.MakePtr(true)
+	}
+
+	if args.MinimumEnabledTLSProtocol == "" {
+		args.MinimumEnabledTLSProtocol = "TLS1_2"
+	}
+
+	if args.NoTableScan == nil {
+		args.NoTableScan = pointer.MakePtr(false)
+	}
 }
 
 func getAutoscalingOverride(replications []*akov2.AdvancedReplicationSpec) (bool, bool, string) {
@@ -540,10 +559,10 @@ func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs) *akov2.Pr
 		oplogMinRetentionHours = strconv.FormatFloat(config.GetOplogMinRetentionHours(), 'f', -1, 64)
 	}
 
-	return &akov2.ProcessArgs{
+	args := akov2.ProcessArgs{
 		DefaultReadConcern:               config.GetDefaultReadConcern(),
 		DefaultWriteConcern:              config.GetDefaultWriteConcern(),
-		MinimumEnabledTLSProtocol:        pointer.GetOrDefault(config.MinimumEnabledTlsProtocol, "TLS1_2"),
+		MinimumEnabledTLSProtocol:        config.GetMinimumEnabledTlsProtocol(),
 		FailIndexKeyTooLong:              config.FailIndexKeyTooLong,
 		JavascriptEnabled:                config.JavascriptEnabled,
 		NoTableScan:                      pointer.MakePtr(pointer.GetOrDefault(config.NoTableScan, false)),
@@ -552,6 +571,9 @@ func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs) *akov2.Pr
 		SampleRefreshIntervalBIConnector: pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.SampleRefreshIntervalBIConnector, 0))),
 		OplogMinRetentionHours:           oplogMinRetentionHours,
 	}
+	normalizeProcessArgs(&args)
+
+	return &args
 }
 
 func diskSizeToAtlas(value *int) *float64 {
@@ -757,7 +779,7 @@ func serverlessFromAtlas(instance *admin.ServerlessInstanceDescription) *Serverl
 			})
 	}
 
-	return &Serverless{
+	s := &Serverless{
 		ProjectID: instance.GetGroupId(),
 		ServerlessSpec: &akov2.ServerlessSpec{
 			Name: instance.GetName(),
@@ -779,6 +801,9 @@ func serverlessFromAtlas(instance *admin.ServerlessInstanceDescription) *Serverl
 			PrivateEndpoint: pes,
 		},
 	}
+	normalizeServerlessDeployment(s)
+
+	return s
 }
 
 func serverlessCreateToAtlas(serverless *Serverless) *admin.ServerlessInstanceDescriptionCreate {

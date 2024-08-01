@@ -203,6 +203,7 @@ func TestNewDeployment(t *testing.T) {
 				ProcessArgs: &akov2.ProcessArgs{
 					MinimumEnabledTLSProtocol: "TLS1_2",
 					JavascriptEnabled:         pointer.MakePtr(true),
+					NoTableScan:               pointer.MakePtr(false),
 				},
 				//nolint:dupl
 				customResource: &akov2.AtlasDeployment{
