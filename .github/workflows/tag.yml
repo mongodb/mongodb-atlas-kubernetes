@@ -46,7 +46,7 @@ jobs:
 
   sboms-pr:
     needs:
-    - tag
+    - release-post-merge
     uses: ./.github/workflows/sboms-pr.yaml
     secrets: inherit
     with:
