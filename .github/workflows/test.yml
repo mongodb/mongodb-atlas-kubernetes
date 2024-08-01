@@ -16,6 +16,7 @@ on:
       - 'docs/**'
   merge_group:
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: test-${{ github.head_ref || github.ref_name }}
