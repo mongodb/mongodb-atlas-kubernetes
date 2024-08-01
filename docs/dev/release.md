@@ -17,9 +17,23 @@ Most tools are automatically installed for you. Most of them are Go binaries and
 - [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) for autogenerating the SDLC checklist. Install manually, else makefile automation will install it using `go install`.
 - [Docker SBOM plugin](https://github.com/docker/sbom-cli-plugin/) for generating SBOM files. It is available as an experimental feature on Docker for Mac or can be installed manually by [following the official instructions](https://github.com/docker/sbom-cli-plugin/?tab=readme-ov-file#getting-started). Another option is a [helper install script](../../scripts/sudo-install-docker-sbom-plugin.sh). Note: the helper scripts executes command using `sudo` privileges.
 
+## Before starting the Release
+
+- Create a draft of the release notes in a Google Document and share with Product and the Docs team.
+- Ensure as well that supporting documents for new features are in review.
+- Wait for approval of the release notes and availability of the associated documents.
+
+**DO NOT** start the release process until the release notes are approved and associated documentation is, at least, in review state. Always seek explicit approval by Product and/or Management.
+
+The reason for this preparatory step is to avoid customers getting new or breaking changes before their supporting documentation.
+
 ## Create the release branch
 
-Use the GitHub UI to create the new "Create Release Branch" workflow. Specify the `version` to be released in the text box and the author or `authors` involved in the release.
+Once the release notes and documentation are ready and got explicit approval to start the release:
+
+- Use the GitHub UI to create the new "Create Release Branch" workflow.
+- Specify the `version` to be released in the text box and the author or `authors` involved in the release.
+
 The deployment scripts (K8s configs, OLM bundle) will be generated and PR will be created with new changes on behalf
 of the `github-actions` bot.
 
@@ -92,7 +106,7 @@ make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=arm64
 
 ## Edit the Release Notes and publish the release
 
-Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file. Before publishing the release, keep the release in Draft and get an approval from the team and Product Management. Once approved, publish the release.
+Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file. Paste the release notes content approved before the release was started. Once the image is out, publish the release notes draft as soon as possible.
 
 ## Synchronize configuration changes with the Helm Charts
 
