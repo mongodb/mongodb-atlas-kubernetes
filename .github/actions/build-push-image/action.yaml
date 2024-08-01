@@ -71,7 +71,8 @@ runs:
         platforms: ${{ inputs.platforms }}
     - uses: DeterminateSystems/nix-installer-action@v13
     - uses: DeterminateSystems/magic-nix-cache-action@v7
-    - run: nix-shell --run 'go mod download'
+    - name: Go mod download
+        run: nix-shell --run 'go mod download'
     - name: Build all platforms
       shell: bash
       env:
