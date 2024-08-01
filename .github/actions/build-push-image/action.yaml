@@ -75,7 +75,7 @@ runs:
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
-      run:  nix-shell --run 'make all-platforms-docker'
+      run:  nix-shell --run 'make all-platforms'
     - name: Login to docker registry
       if: ${{ inputs.push_to_docker == 'true' }}
       uses: docker/login-action@v3
