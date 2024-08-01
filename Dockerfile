@@ -51,7 +51,7 @@ LABEL name="MongoDB Atlas Operator" \
 WORKDIR /
 
 # Copy the built binary from the appropriate builder stage
-COPY --from=go-builder /workspace/bin/manager /manager
+COPY --from=builder /workspace/bin/manager /manager
 
 # Copy certificates
 COPY --from=ubi-certs /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
