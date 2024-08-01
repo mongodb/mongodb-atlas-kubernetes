@@ -17,7 +17,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  update-licenses:
+  run:
     name: Recompute licenses & update PR
     runs-on: ubuntu-latest
     env:
@@ -49,8 +49,3 @@ jobs:
           else
             echo 'Clean nothing to do'
           fi
-
-  re-run-tests:
-    needs:
-      - update-licenses
-    uses: ./.github/workflows/test.yml
