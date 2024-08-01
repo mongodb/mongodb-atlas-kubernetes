@@ -83,6 +83,8 @@ ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
+GO_LICENSES = go-licenses
+KUSTOMIZE = kustomize
 DISALLOWED_LICENSES = restricted,reciprocal
 
 # golangci-lint
@@ -128,7 +130,7 @@ licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "========================================"
 	GOOS=linux GOARCH=amd64 go mod download
 	# https://github.com/google/go-licenses/issues/244
-	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 go-licenses csv --include_tests $(BASE_GO_PACKAGE)/... > $@
+	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
 recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was changed)
@@ -144,7 +146,7 @@ check-licenses: licenses-up-to-date ## Check licenses are compliant with our res
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
 	# https://github.com/google/go-licenses/issues/244
-	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 go-licenses check --include_tests \
+	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
 	@echo "Licenses check: PASS"
@@ -191,11 +193,11 @@ manager: generate fmt vet bin/manager recompute-licenses ## Build manager binary
 
 .PHONY: install
 install: manifests ## Install CRDs from a cluster
-	kustomize build config/crd | kubectl apply -f -
+	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
 .PHONY: uninstall
 uninstall: manifests ## Uninstall CRDs from a cluster
-	kustomize build config/crd | kubectl delete -f -
+	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 .PHONY: deploy
 deploy: generate manifests run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
@@ -262,9 +264,9 @@ validate-manifests: generate manifests check-missing-files
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
-	operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
-	cd config/manager && kustomize edit set image controller=$(IMG)
-	kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=pkg/api
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 
 .PHONY: image
