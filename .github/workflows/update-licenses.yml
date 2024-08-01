@@ -17,12 +17,13 @@ permissions:
   pull-requests: write
 
 jobs:
-  run:
+  update-licenses:
     name: Recompute licenses & update PR
     runs-on: ubuntu-latest
     env:
       BRANCH: ${{ inputs.branch || github.ref_name  }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      JWT_APP_ID: ${{ secrets.AKO_RELEASER_APP_ID }}
+      JWT_RSA_PEM_KEY_BASE64: ${{ secrets.AKO_RELEASER_RSA_KEY_BASE64 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,6 +40,8 @@ jobs:
 
       - name: Commit as needed
         run: |
+          make tools/makejwt/makejwt
+          export GITHUB_TOKEN=$(make github-token)
           if [[ $(git diff --stat) != '' ]]; then
             echo 'Committing changes'
             git config user.email "akobot@ako-team-fake.mongodb.com"
@@ -47,15 +50,12 @@ jobs:
             git commit -m "Fix licenses after dependabot changes" -m "[dependabot skip]"
             git push
           else
-            echo 'Clean nothing to do'
+            # echo 'Clean nothing to do'
+            echo 'Committing dummy changes to kick off tests'
+            git config user.email "akobot@ako-team-fake.mongodb.com"
+            git config user.name "AKOBot"
+            date -u --iso-8601=seconds > force-compile.timestamp
+            git add .
+            git commit -m "Force re-testing after dependabot changes" -m "[dependabot skip]"
+            git push
           fi
-
-      - name: Remove retest Label
-        uses: actions-ecosystem/action-remove-labels@v1
-        with:
-          labels: retest
-
-      - name: Add retest label
-        uses: actions-ecosystem/action-add-labels@v1
-        with:
-          labels: retest
