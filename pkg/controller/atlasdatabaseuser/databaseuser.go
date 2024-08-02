@@ -152,11 +152,11 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus db
 func validateScopes(ctx *workflow.Context, ds deployment.AtlasDeploymentsService, projectID string, user akov2.AtlasDatabaseUser) error {
 	for _, s := range user.GetScopes(akov2.DeploymentScopeType) {
 		exists, err := ds.ClusterExists(ctx.Context, projectID, s)
-		if !exists {
-			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
-		}
 		if err != nil {
 			return err
+		}
+		if !exists {
+			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
 		}
 	}
 	return nil
