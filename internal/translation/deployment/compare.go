@@ -1,10 +1,7 @@
 package deployment
 
 import (
-	"fmt"
 	"reflect"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -12,12 +9,6 @@ import (
 )
 
 func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
-	// TODO - debug only, remove when implementation is done
-	a := cmp.Diff(desired.AdvancedDeploymentSpec, current.AdvancedDeploymentSpec)
-	if a != "" {
-		fmt.Println(a)
-	}
-
 	// Paused is special case that must be handled individually from other changes
 	if !areEqual(desired.Paused, current.Paused) {
 		return &Cluster{
