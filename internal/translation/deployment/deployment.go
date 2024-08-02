@@ -80,7 +80,10 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 
 func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error) {
 	_, _, err := ds.clustersAPI.GetCluster(ctx, projectID, clusterName).Execute()
-	if admin.IsErrorCode(err, atlas.ClusterNotFound) {
+	if admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) {
+		_, _, err = ds.serverlessAPI.GetServerlessInstance(ctx, projectID, clusterName).Execute()
+	}
+	if admin.IsErrorCode(err, atlas.ClusterNotFound) || admin.IsErrorCode(err, atlas.ServerlessInstanceNotFound) {
 		return false, nil
 	}
 	if err != nil {
