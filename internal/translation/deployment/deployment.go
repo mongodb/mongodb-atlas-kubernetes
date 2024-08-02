@@ -87,14 +87,12 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 }
 
 func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error) {
-	_, _, err := ds.clustersAPI.GetCluster(ctx, projectID, clusterName).Execute()
-	if admin.IsErrorCode(err, atlas.ClusterNotFound) {
-		return false, nil
-	}
+	d, err := ds.GetDeployment(ctx, projectID, clusterName)
 	if err != nil {
-		return false, fmt.Errorf("failed to get cluster %q: %w", clusterName, err)
+		return false, err
 	}
-	return true, nil
+
+	return d != nil, nil
 }
 
 func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error) {

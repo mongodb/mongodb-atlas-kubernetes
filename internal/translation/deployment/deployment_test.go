@@ -64,6 +64,160 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 	})
 }
 
+func TestClusterExists(t *testing.T) {
+	tests := map[string]struct {
+		deployment Deployment
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi)
+		gov        bool
+		result     bool
+		err        error
+	}{
+		"should fail to assert a cluster exists in atlas": {
+			deployment: geoShardedCluster(),
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "cluster0").
+					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+					Return(nil, nil, errors.New("failed to get cluster from atlas"))
+
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+
+				return clusterAPI, serverlessInstanceAPI
+			},
+			err: errors.New("failed to get cluster from atlas"),
+		},
+		"should fail to assert a serverless instance exists in atlas": {
+			deployment: serverlessInstance(),
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
+					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+					Return(nil, nil, atlasAPIError(atlas.ClusterNotFound))
+
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").
+					Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessInstanceAPI})
+				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
+					Return(nil, nil, errors.New("failed to get serverless instance from atlas"))
+
+				return clusterAPI, serverlessInstanceAPI
+			},
+			err: errors.New("failed to get serverless instance from atlas"),
+		},
+		"should return false when cluster doesn't exist": {
+			deployment: geoShardedCluster(),
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "cluster0").
+					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+					Return(nil, nil, atlasAPIError(atlas.ClusterNotFound))
+
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "cluster0").
+					Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessInstanceAPI})
+				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
+					Return(nil, nil, atlasAPIError(atlas.ProviderUnsupported))
+
+				return clusterAPI, serverlessInstanceAPI
+			},
+		},
+		"should return false when serverless instance doesn't exist": {
+			deployment: serverlessInstance(),
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
+					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceFromClusterAPI))
+
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").
+					Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessInstanceAPI})
+				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
+					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceNotFound))
+
+				return clusterAPI, serverlessInstanceAPI
+			},
+		},
+		"should return a cluster exists": {
+			deployment: geoShardedCluster(),
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "cluster0").
+					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+					Return(
+						atlasGeoShardedCluster(),
+						nil,
+						nil,
+					)
+
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+
+				return clusterAPI, serverlessInstanceAPI
+			},
+			result: true,
+		},
+		"should return a serverless instance exists": {
+			deployment: serverlessInstance(),
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
+					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceFromClusterAPI))
+
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").
+					Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessInstanceAPI})
+				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
+					Return(
+						atlasServerlessInstance(),
+						nil,
+						nil,
+					)
+
+				return clusterAPI, serverlessInstanceAPI
+			},
+			result: true,
+		},
+		"should return false when asserting serverless instance exists in gov": {
+			deployment: serverlessInstance(),
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
+					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceFromClusterAPI))
+
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").
+					Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessInstanceAPI})
+				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
+					Return(nil, nil, atlasAPIError(atlas.ProviderUnsupported))
+
+				return clusterAPI, serverlessInstanceAPI
+			},
+			gov:    true,
+			result: false,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			clusterAPI, serverlessInstanceAPI := tt.apiMocker()
+			service := NewProductionAtlasDeployments(clusterAPI, serverlessInstanceAPI, tt.gov)
+
+			result, err := service.ClusterExists(context.Background(), tt.deployment.GetProjectID(), tt.deployment.GetName())
+			require.Equal(t, tt.err, err)
+			assert.Equal(t, tt.result, result)
+		})
+	}
+}
+
 func TestGetDeployment(t *testing.T) {
 	tests := map[string]struct {
 		deployment Deployment
