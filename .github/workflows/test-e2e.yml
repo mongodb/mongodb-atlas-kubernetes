@@ -59,7 +59,7 @@ jobs:
           file: fast.Dockerfile
           repository: ghcr.io/${{ env.REPOSITORY }}
           version: ${{ steps.prepare.outputs.tag }}
-          file: fast.dockerfile
+          file: fast.Dockerfile
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
@@ -144,7 +144,7 @@ jobs:
           file: fast.Dockerfile
           repository: ${{ env.GHCR_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
-          file: fast.dockerfile
+          file: fast.Dockerfile
           tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
