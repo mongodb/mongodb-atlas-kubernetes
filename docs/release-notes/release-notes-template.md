@@ -10,6 +10,8 @@
 
 > Mention shipped things in this particular order. In any improvements need migration guides, please include them here as well.
 
+* Fix databaseuser validateScopes for serverless instances
+
 ## Deprecations and removals
 
 > First deprecations and then removals.
