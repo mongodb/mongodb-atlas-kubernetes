@@ -87,16 +87,19 @@ runs:
     - name: Set up Nix Shell
       run: nix-shell --run 'go version'
       if: ${{ inputs.nix-build == 'true' }}
+      shell: bash
 
     - name: Download Go build dependencies (Nix)
       run: nix-shell --run 'go mod download'
       if: ${{ inputs.nix-build == 'true' }}
+      shell: bash
 
     - name: Build all platforms (Nix)
       env:
         VERSION: ${{ inputs.version }}
       run: nix-shell --run 'make all-platforms'
       if: ${{ inputs.nix-build == 'true' }}
+      shell: bash
 
     # Non-Nix setup steps
     - name: Set up Go
