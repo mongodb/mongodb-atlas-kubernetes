@@ -174,6 +174,10 @@ func normalizeClusterDeployment(cluster *Cluster) {
 	cluster.instanceSizeOverride = instanceSizeOverride
 	cluster.isTenant = isTenant
 
+	if cluster.ClusterType == "" {
+		cluster.ClusterType = "REPLICASET"
+	}
+
 	cluster.Paused = pointer.GetOrPointerToDefault(cluster.Paused, false)
 	if cluster.VersionReleaseSystem == "" {
 		cluster.VersionReleaseSystem = "LTS"
