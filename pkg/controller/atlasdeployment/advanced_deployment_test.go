@@ -312,6 +312,409 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 					WithMessageRegexp("deployment is updating"),
 			},
 		},
+		"cluster is updating in atlas": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M20",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Cluster{
+				ProjectID: "project-id",
+				State:     "UPDATING",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:        "cluster0",
+					ClusterType: "REPLICASET",
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_WEST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M20",
+										NodeCount:    pointer.MakePtr(3),
+									},
+								},
+							},
+						},
+					},
+					Tags: []*akov2.TagSpec{},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.DeploymentUpdating)).
+					WithMessageRegexp("deployment is updating"),
+			},
+		},
+		"cluster was deleted in atlas": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M20",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Cluster{
+				ProjectID: "project-id",
+				State:     "DELETING",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:        "cluster0",
+					ClusterType: "REPLICASET",
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_WEST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M20",
+										NodeCount:    pointer.MakePtr(3),
+									},
+								},
+							},
+						},
+					},
+					Tags: []*akov2.TagSpec{},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult:     ctrl.Result{},
+			expectedConditions: nil,
+		},
+		"cluster has an unknown state in atlas": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M20",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Cluster{
+				ProjectID: "project-id",
+				State:     "LOST",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:        "cluster0",
+					ClusterType: "REPLICASET",
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_WEST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M20",
+										NodeCount:    pointer.MakePtr(3),
+									},
+								},
+							},
+						},
+					},
+					Tags: []*akov2.TagSpec{},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.Internal)).
+					WithMessageRegexp("unknown deployment state: LOST"),
+			},
+		},
+		"fail to update a cluster process args": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M10",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+					ProcessArgs: &akov2.ProcessArgs{
+						JavascriptEnabled:         pointer.MakePtr(true),
+						MinimumEnabledTLSProtocol: "TLS1_2",
+						DefaultReadConcern:        "available",
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Cluster{
+				ProjectID: "project-id",
+				State:     "IDLE",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:                     "cluster0",
+					ClusterType:              "REPLICASET",
+					BackupEnabled:            pointer.MakePtr(false),
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_WEST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M10",
+										NodeCount:    pointer.MakePtr(3),
+									},
+								},
+							},
+						},
+					},
+					Tags: []*akov2.TagSpec{},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ClusterWithProcessArgs(context.Background(), mock.AnythingOfType("*deployment.Cluster")).
+					Return(errors.New("failed to get process args"))
+
+				return service
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.DeploymentAdvancedOptionsReady)).
+					WithMessageRegexp("failed to get process args"),
+			},
+		},
+		"update a cluster process args": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M10",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+					ProcessArgs: &akov2.ProcessArgs{
+						JavascriptEnabled:         pointer.MakePtr(true),
+						MinimumEnabledTLSProtocol: "TLS1_2",
+						DefaultReadConcern:        "available",
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Cluster{
+				ProjectID: "project-id",
+				State:     "IDLE",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:                     "cluster0",
+					ClusterType:              "REPLICASET",
+					BackupEnabled:            pointer.MakePtr(false),
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_WEST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M10",
+										NodeCount:    pointer.MakePtr(3),
+									},
+								},
+							},
+						},
+					},
+					Tags: []*akov2.TagSpec{},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ClusterWithProcessArgs(context.Background(), mock.AnythingOfType("*deployment.Cluster")).
+					RunAndReturn(func(_ context.Context, cluster *deployment.Cluster) error {
+						cluster.ProcessArgs = &akov2.ProcessArgs{
+							JavascriptEnabled:         pointer.MakePtr(true),
+							MinimumEnabledTLSProtocol: "LTS1_2",
+							NoTableScan:               pointer.MakePtr(false),
+							DefaultReadConcern:        "available",
+						}
+						return nil
+					})
+				service.EXPECT().UpdateProcessArgs(context.Background(), mock.AnythingOfType("*deployment.Cluster")).
+					RunAndReturn(func(_ context.Context, cluster *deployment.Cluster) error {
+						cluster.ProcessArgs = &akov2.ProcessArgs{
+							JavascriptEnabled:         pointer.MakePtr(true),
+							MinimumEnabledTLSProtocol: "LTS1_2",
+							NoTableScan:               pointer.MakePtr(false),
+						}
+						return nil
+					})
+				service.EXPECT().GetDeployment(context.Background(), "project-id", "cluster0").
+					Return(
+						&deployment.Cluster{
+							ProjectID: "project-id",
+							State:     "UPDATING",
+							AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+								Name:        "cluster0",
+								ClusterType: "REPLICASET",
+								ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+									{
+										RegionConfigs: []*akov2.AdvancedRegionConfig{
+											{
+												ProviderName: "AWS",
+												RegionName:   "US_WEST_1",
+												Priority:     pointer.MakePtr(7),
+												ElectableSpecs: &akov2.Specs{
+													InstanceSize: "M10",
+													NodeCount:    pointer.MakePtr(3),
+												},
+											},
+										},
+									},
+								},
+								BackupEnabled:            pointer.MakePtr(false),
+								EncryptionAtRestProvider: "NONE",
+							},
+						},
+						nil,
+					)
+
+				return service
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.DeploymentUpdating)).
+					WithMessageRegexp("deployment is updating"),
+			},
+		},
 	}
 
 	for name, tt := range tests {
@@ -338,7 +741,6 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			result, err := reconciler.handleAdvancedDeployment(ctx, deploymentInAKO, tt.deploymentInAtlas)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
-			//assert.Equal(t, tt.expectedConditions, ctx.Conditions())
 			assert.True(
 				t,
 				cmp.Equal(
