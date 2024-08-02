@@ -50,12 +50,30 @@ jobs:
             json_releases=$(echo "${{ github.event.inputs.releases }}" |tr "," "\n" |xargs -n1 |awk '{print "\""$1"\""}' |tr "\n" "," |sed 's/,$//' |awk '{print "["$1"]"}')
             echo "releases=$json_releases" | tee -a $GITHUB_OUTPUT
           fi
-  
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ env.PLATFORMS }}
+      - name: Login to docker registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to quay.io registry
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ env.QUAY_ROBOT_NAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
   build-and-publish-image:
     environment: release
     runs-on: ubuntu-latest
     needs:
       - read-versions
+      - setup
     env:
       IMAGE_REPOSITORY:  ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }}
       QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
@@ -78,22 +96,6 @@ jobs:
           ref: "v${{ matrix.version }}"
           submodules: true
           fetch-depth: 0
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-      - name: Setup cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
-      - name: Download go build dependencies
-        shell: bash
-        run: |
-          go mod download
       - name: Choose Dockerfile & patch as needed
         id: pick-dockerfile
         run: |
@@ -121,13 +123,43 @@ jobs:
       - name: Check signing supported
         id: check-signing-support
         run: |
-            if test -f "./scripts/sign-multiarch.sh"; then
-              echo "sign=true" >> $GITHUB_OUTPUT
-            else
-              echo "sign=false" >> $GITHUB_OUTPUT
-            fi
-      - name: Build all platforms & check version
-        if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
+          if test -f "./scripts/sign-multiarch.sh"; then
+            echo "sign=true" >> $GITHUB_OUTPUT
+          else
+            echo "sign=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Check for Nix
+        id: nix-check
+        run: |
+          if test -f "shell.nix"; then
+            echo "nix-build=true" >> $GITHUB_OUTPUT
+          else
+            echo "nix-build=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Set up Go (Non Nix)
+        uses: actions/setup-go@v5
+        if: steps.nix-check.outputs.nix-build == 'false'
+        with:
+          go-version-file: "${{ github.workspace }}/go.mod"
+          cache: false
+
+      - name: Setup cache (Non Nix)
+        uses: actions/cache@v4
+        if: steps.nix-check.outputs.nix-build == 'false'
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
+
+      - name: Download go build dependencies (Non Nix)
+        if: steps.nix-check.outputs.nix-build == 'false'
+        shell: bash
+        run: |
+          go mod download
+
+      - name: Build all platforms & check version (Non Nix)
+        if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile' && steps.nix-check.outputs.nix-build == 'false'
         run: |
           make all-platforms VERSION=${{ matrix.version }}
           # not all versions Makefiles support the version check
@@ -137,21 +169,41 @@ jobs:
           else
             echo "Skipped version check"
           fi
-      - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v3
-        with:
-          platforms: ${{ env.PLATFORMS }}
-      - name: Login to docker registry
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Login to quay.io registry
-        uses: docker/login-action@v3
-        with:
-          registry: quay.io
-          username: ${{ env.QUAY_ROBOT_NAME }}
-          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+        if: steps.nix-check.outputs.nix-build == 'true'
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
+        if: steps.nix-check.outputs.nix-build == 'true'
+
+      - name: Set up Nix Shell
+        run: nix-shell --run 'go version'
+        if: steps.nix-check.outputs.nix-build == 'true'
+        shell: bash
+
+      - name: Download Go build dependencies (Nix)
+        run: nix-shell --run 'go mod download'
+        if: steps.nix-check.outputs.nix-build == 'true'
+        shell: bash
+
+      - name: Build all platforms & check version (Nix)
+        run: | 
+          nix-shell --run '
+            make all-platforms VERSION=${VERSION}
+            # Not all versions of Makefiles support the version check
+            if make -n | grep -q check-version; then
+              echo "Checking version..."
+              make check-version VERSION=${VERSION}
+            else
+              echo "Skipped version check"
+            fi'
+        env: 
+          VERSION: ${{ matrix.version }}
+      
+        if: steps.nix-check.outputs.nix-build == 'true'
+        shell: bash
       - name: Build and push operator to the DockerHub (daily-tag & release-tag)
         uses: docker/build-push-action@v6
         with:
@@ -175,8 +227,8 @@ jobs:
           registry: artifactory.corp.mongodb.com
           username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
           password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
-      - name: Sign images
-        if: steps.check-signing-support.outputs.sign == 'true'
+      - name: Sign images (Non Nix)
+        if: steps.check-signing-support.outputs.sign == 'true' && steps.nix-check.outputs.nix-build == 'false'
         env:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
@@ -185,8 +237,9 @@ jobs:
           make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
           make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
           make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures
-      - name: Self-verify images
-        if: steps.check-signing-support.outputs.sign == 'true'
+
+      - name: Self-verify images (Non Nix)
+        if: steps.check-signing-support.outputs.sign == 'true' && steps.nix-check.outputs.nix-build == 'false'
         env:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
@@ -195,3 +248,28 @@ jobs:
           make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
           make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
           make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures
+      
+      - name: Sign images (Nix)
+        if: steps.check-signing-support.outputs.sign == 'true' && steps.nix-check.outputs.nix-build == 'true'
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
+        run: |
+          nix-shell --run '
+          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures
+          '
+      - name: Self-verify images (Nix)
+        if: steps.check-signing-support.outputs.sign == 'true' && steps.nix-check.outputs.nix-build == 'true'
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
+        run: |
+          nix-shell --run '
+          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures
+          '
