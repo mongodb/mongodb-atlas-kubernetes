@@ -17,8 +17,10 @@ jobs:
       - name: Install Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@v7
       - name: Run lint
-        run: nix-shell --run 'make lint'
+        shell: nix-shell
+        run: make lint
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
       - name: Run govulncheck
-        run: nix-shell --run 'make vulncheck'
+        shell: nix-shell
+        run: make vulncheck
