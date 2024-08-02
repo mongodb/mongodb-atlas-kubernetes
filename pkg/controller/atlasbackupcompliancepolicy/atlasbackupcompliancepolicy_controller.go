@@ -63,11 +63,11 @@ func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, r
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, bcp, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid)
+		return r.invalidate(isValid), nil
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(bcp) {
-		return r.unsupport(workflowCtx)
+		return r.unsupport(workflowCtx), nil
 	}
 
 	return r.ensureAtlasBackupCompliancePolicy(workflowCtx, bcp)
@@ -155,18 +155,18 @@ func (r *AtlasBackupCompliancePolicyReconciler) skip(ctx context.Context, log *z
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
+func (r *AtlasBackupCompliancePolicyReconciler) invalidate(invalid workflow.Result) ctrl.Result {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasBackupCompliancePolicy is invalid: %v", invalid)
-	return invalid.ReconcileResult(), nil
+	return invalid.ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
+func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, "the AtlasBackupCompliancePolicy is not supported by Atlas for government").
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.ReadyType, unsupported)
-	return unsupported.ReconcileResult(), nil
+	return unsupported.ReconcileResult()
 }
 
 func (r *AtlasBackupCompliancePolicyReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {

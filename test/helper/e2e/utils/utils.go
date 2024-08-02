@@ -37,11 +37,11 @@ func UserSecretPassword() string {
 }
 
 func SaveToFile(path string, data []byte) error {
-	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	err := os.MkdirAll(filepath.Dir(path), 0750)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(path, data, os.ModePerm)
+	err = os.WriteFile(path, data, 0600)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func GenID() string {
 
 func CopyFile(source, target string) {
 	data, _ := os.ReadFile(filepath.Clean(source))
-	err := os.WriteFile(target, data, os.ModePerm)
+	err := os.WriteFile(target, data, 0600)
 	if err != nil {
 		panic(err)
 	}

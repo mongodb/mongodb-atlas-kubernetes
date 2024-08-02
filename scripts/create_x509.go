@@ -32,7 +32,7 @@ func generateCert() error {
 		basePath += "/"
 	}
 
-	if err := os.MkdirAll(basePath, os.ModePerm); err != nil {
+	if err := os.MkdirAll(basePath, 0750); err != nil {
 		return fmt.Errorf("failed to create path: %w", err)
 	}
 

@@ -104,7 +104,7 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
 			fmt.Sprintf("failed to delete unused containers: %s", err)), api.NetworkPeerReadyType
 	}
-	return ensurePeerStatus(peerStatuses, len(peerSpecs), logger)
+	return ensurePeerStatus(peerStatuses, len(peerSpecs), logger), api.NetworkPeerReadyType
 }
 
 func UpdateStatuses(context context.Context, containerService admin.NetworkPeeringApi,
@@ -180,10 +180,9 @@ func formVPC(peer admin.BaseNetworkPeeringConnectionSettings) string {
 	}
 }
 
-func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, logger *zap.SugaredLogger) (workflow.Result, api.ConditionType) {
+func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, logger *zap.SugaredLogger) workflow.Result {
 	if len(peerStatuses) != lenOfSpec {
-		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
-			api.NetworkPeerReadyType
+		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
 	}
 
 	for _, peerStatus := range peerStatuses {
@@ -191,29 +190,25 @@ func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, log
 		case provider.ProviderGCP:
 			if peerStatus.Status != StatusReady {
 				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
-				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
-					api.NetworkPeerReadyType
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
 			}
 			if peerStatus.AtlasNetworkName == "" || peerStatus.AtlasGCPProjectID == "" { // We need this information to create the network peer connection
 				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
-				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
-					api.NetworkPeerReadyType
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
 			}
 		case provider.ProviderAzure:
 			if peerStatus.Status != StatusReady {
 				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
-				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
-					api.NetworkPeerReadyType
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
 			}
 		default:
 			if peerStatus.StatusName != StatusReady {
 				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.StatusName)
-				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
-					api.NetworkPeerReadyType
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
 			}
 		}
 	}
-	return workflow.OK(), api.NetworkPeerReadyType
+	return workflow.OK()
 }
 
 func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, groupID string, peers []akov2.NetworkPeer, logger *zap.SugaredLogger) []status.AtlasNetworkPeer {

@@ -78,12 +78,12 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 	// check if stream instance is in "invalid" state
 	isValid := customresource.ValidateResourceVersion(workflowCtx, akoStreamInstance, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid)
+		return r.invalidate(isValid), nil
 	}
 
 	// check if stream instance is in "unsupported" state
 	if !r.AtlasProvider.IsResourceSupported(akoStreamInstance) {
-		return r.unsupport(workflowCtx)
+		return r.unsupport(workflowCtx), nil
 	}
 
 	project := akov2.AtlasProject{}

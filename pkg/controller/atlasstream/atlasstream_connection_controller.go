@@ -68,11 +68,11 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, akoStreamConnection, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid)
+		return r.invalidate(isValid), nil
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(akoStreamConnection) {
-		return r.unsupport(workflowCtx)
+		return r.unsupport(workflowCtx), nil
 	}
 
 	streamInstances := &akov2.AtlasStreamInstanceList{}
@@ -159,18 +159,18 @@ func (r *AtlasStreamsConnectionReconciler) skip(ctx context.Context, log *zap.Su
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasStreamsConnectionReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
+func (r *AtlasStreamsConnectionReconciler) invalidate(invalid workflow.Result) ctrl.Result {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasStreamConnection is invalid: %v", invalid)
-	return invalid.ReconcileResult(), nil
+	return invalid.ReconcileResult()
 }
 
-func (r *AtlasStreamsConnectionReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
+func (r *AtlasStreamsConnectionReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, "the AtlasStreamConnection is not supported by Atlas for government").
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.ReadyType, unsupported)
-	return unsupported.ReconcileResult(), nil
+	return unsupported.ReconcileResult()
 }
 
 func (r *AtlasStreamsConnectionReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
