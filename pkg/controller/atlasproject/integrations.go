@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -64,8 +64,8 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 	return workflow.OK()
 }
 
-func fetchIntegrations(ctx *workflow.Context, projectID string) (*mongodbatlas.ThirdPartyIntegrations, error) {
-	integrationsInAtlas, _, err := ctx.Client.Integrations.List(ctx.Context, projectID)
+func fetchIntegrations(ctx *workflow.Context, projectID string) (*admin.PaginatedIntegration, error) {
+	integrationsInAtlas, _, err := ctx.SdkClient.ThirdPartyIntegrationsApi.ListThirdPartyIntegrations(ctx.Context, projectID).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 	return true
 }
 
-type aliasThirdPartyIntegration mongodbatlas.ThirdPartyIntegration
+type aliasThirdPartyIntegration admin.ThirdPartyIntegration
 
 func (i aliasThirdPartyIntegration) Identifier() interface{} {
 	return i.Type
