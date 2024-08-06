@@ -193,7 +193,6 @@ func (r *AtlasStreamsInstanceReconciler) skip(ctx context.Context, log *zap.Suga
 	return workflow.OK().ReconcileResult()
 }
 
-// nolint:unparam
 // transitions back to pending state setting an terminate state
 func (r *AtlasStreamsInstanceReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
@@ -201,7 +200,6 @@ func (r *AtlasStreamsInstanceReconciler) invalidate(invalid workflow.Result) (ct
 	return invalid.ReconcileResult(), nil
 }
 
-// nolint:unparam
 // transitions back to pending setting unsupported state
 func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(

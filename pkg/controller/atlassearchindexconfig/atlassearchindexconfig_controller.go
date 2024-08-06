@@ -161,13 +161,11 @@ func (r *AtlasSearchIndexConfigReconciler) skip(ctx context.Context, log *zap.Su
 	return workflow.OK().ReconcileResult()
 }
 
-// nolint:unparam
 func (r *AtlasSearchIndexConfigReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
 	r.Log.Debugf("AtlasSearchIndexConfig is invalid: %v", invalid)
 	return invalid.ReconcileResult(), nil
 }
 
-// nolint:unparam
 // In case it is not going to be supported
 func (r *AtlasSearchIndexConfigReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(

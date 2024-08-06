@@ -155,14 +155,12 @@ func (r *AtlasBackupCompliancePolicyReconciler) skip(ctx context.Context, log *z
 	return workflow.OK().ReconcileResult()
 }
 
-// nolint:unparam
 func (r *AtlasBackupCompliancePolicyReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasBackupCompliancePolicy is invalid: %v", invalid)
 	return invalid.ReconcileResult(), nil
 }
 
-// nolint:unparam
 func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, "the AtlasBackupCompliancePolicy is not supported by Atlas for government").
