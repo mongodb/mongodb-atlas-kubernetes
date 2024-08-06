@@ -191,19 +191,17 @@ jobs:
       - name: Build all platforms & check version (Nix)
         run: | 
           nix-shell --run '
-            make all-platforms VERSION=${VERSION}
+            make all-platforms VERSION=${{ matrix.version }}
             # Not all versions of Makefiles support the version check
             if make -n | grep -q check-version; then
               echo "Checking version..."
-              make check-version VERSION=${VERSION}
+              make check-version VERSION=${{ matrix.version }}
             else
               echo "Skipped version check"
             fi'
-        env: 
-          VERSION: ${{ matrix.version }}
-      
         if: steps.nix-check.outputs.nix-build == 'true'
         shell: bash
+        
       - name: Build and push operator to the DockerHub (daily-tag & release-tag)
         uses: docker/build-push-action@v6
         with:
