@@ -66,11 +66,11 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, atlasSearchIndexConfig, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid), nil
+		return r.invalidate(isValid)
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(atlasSearchIndexConfig) {
-		return r.unsupport(workflowCtx), nil
+		return r.unsupport(workflowCtx)
 	}
 
 	deployments := &akov2.AtlasDeploymentList{}
@@ -161,18 +161,20 @@ func (r *AtlasSearchIndexConfigReconciler) skip(ctx context.Context, log *zap.Su
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasSearchIndexConfigReconciler) invalidate(invalid workflow.Result) ctrl.Result {
+// nolint:unparam
+func (r *AtlasSearchIndexConfigReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
 	r.Log.Debugf("AtlasSearchIndexConfig is invalid: %v", invalid)
-	return invalid.ReconcileResult()
+	return invalid.ReconcileResult(), nil
 }
 
+// nolint:unparam
 // In case it is not going to be supported
-func (r *AtlasSearchIndexConfigReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, "the AtlasSearchIndexConfig is not supported by Atlas for government").
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.ReadyType, unsupported)
-	return unsupported.ReconcileResult()
+	return unsupported.ReconcileResult(), nil
 }
 
 func (r *AtlasSearchIndexConfigReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
