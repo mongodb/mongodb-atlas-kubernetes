@@ -301,8 +301,8 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	operator-sdk bundle validate ./bundle
 
 .PHONY: image
-image: ## Build the operator image
-	$(CONTAINER_ENGINE) build --build-arg VERSION=$(VERSION) -t $(OPERATOR_IMAGE) .
+image: manager ## Build the operator image
+	$(CONTAINER_ENGINE) build -f fast.Dockerfile --build-arg VERSION=$(VERSION) -t $(OPERATOR_IMAGE) .
 	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
 
 .PHONY: bundle-build
@@ -393,6 +393,11 @@ clean: ## Clean built binaries
 
 .PHONY: all-platforms
 all-platforms:
+	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64 VERSION=$(VERSION)
+	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64 VERSION=$(VERSION)
+
+.PHONY: all-platforms-manager
+all-platforms-manager: manager
 	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64 VERSION=$(VERSION)
 	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64 VERSION=$(VERSION)
 

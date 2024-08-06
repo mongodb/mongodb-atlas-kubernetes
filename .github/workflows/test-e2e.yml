@@ -53,9 +53,18 @@ jobs:
         uses: ./.github/actions/set-tag
       - name: Log in to ghcr.io registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Choose Dockerfile
+        id: pick-dockerfile
+        run: |
+          if test -f "fast.Dockerfile"; then
+            echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
+          else
+            echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
+          fi
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
+          file: ${{ steps.pick-dockerfile.outputs.dockerfile }}
           repository: ghcr.io/${{ env.REPOSITORY }}
           version: ${{ steps.prepare.outputs.tag }}
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
@@ -121,6 +130,7 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum', '**/go.mod') }}
+        
       - name: Get go dependencies if cache is missed
         if: steps.cache-go.outputs.cache-hit != 'true'
         run: |
@@ -135,9 +145,18 @@ jobs:
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
       - name: Log in to ghcr.io registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Choose Dockerfile
+        id: pick-dockerfile
+        run: |
+          if test -f "fast.Dockerfile"; then
+            echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
+          else
+            echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
+          fi
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
+          file: ${{ steps.pick-dockerfile.outputs.dockerfile }}
           repository: ${{ env.GHCR_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
           tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
