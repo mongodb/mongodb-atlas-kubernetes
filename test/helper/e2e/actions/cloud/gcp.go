@@ -362,7 +362,7 @@ func (a *GCPAction) randomIP(subnet string) string {
 	for {
 		randNumberBig, err := rand.Int(rand.Reader, big.NewInt(maxRandValue))
 		if err != nil {
-			panic(fmt.Errorf("failed to generate a random number: %w", err))
+			a.t.Error(err)
 		}
 		randNumber := randNumberBig.String()
 		ipParts[3] = randNumber
