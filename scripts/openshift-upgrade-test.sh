@@ -161,6 +161,7 @@ cleanup_previous_installation() {
 build_and_publish_image_and_bundle() {
   echo "Building bundle"
   cd ../
+  VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make manager
   VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make all-platforms
   echo "Adding REPLACE parameter to the CSV"
   value="v1.0.0" yq e -i '.spec.replaces = env(value)' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
