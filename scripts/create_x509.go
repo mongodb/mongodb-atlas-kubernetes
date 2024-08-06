@@ -40,7 +40,7 @@ func generateCert() error {
 	// save private key
 	pkey := x509.MarshalPKCS1PrivateKey(privatekey)
 	pkeyPath := filepath.Join(basePath, "private.key")
-	if err := os.WriteFile(pkeyPath, pkey, fs.ModePerm); err != nil {
+	if err := os.WriteFile(pkeyPath, pkey, 0600); err != nil {
 		return err
 	}
 	fmt.Println("private key saved to", pkeyPath)
@@ -48,7 +48,7 @@ func generateCert() error {
 	// save public key
 	pubkey, _ := x509.MarshalPKIXPublicKey(publickey)
 	pubkeyPath := filepath.Join(basePath, "public.key")
-	if err := os.WriteFile(pubkeyPath, pubkey, fs.ModePerm); err != nil {
+	if err := os.WriteFile(pubkeyPath, pubkey, 0600); err != nil {
 		return err
 	}
 	fmt.Println("public key saved to", pubkeyPath)
