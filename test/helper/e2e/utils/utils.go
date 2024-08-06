@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"math/big"
 	"os"
@@ -37,11 +38,11 @@ func UserSecretPassword() string {
 }
 
 func SaveToFile(path string, data []byte) error {
-	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	err := os.MkdirAll(filepath.Dir(path), fs.ModePerm)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(path, data, os.ModePerm)
+	err = os.WriteFile(path, data, fs.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -118,7 +119,7 @@ func GenID() string {
 
 func CopyFile(source, target string) {
 	data, _ := os.ReadFile(filepath.Clean(source))
-	err := os.WriteFile(target, data, os.ModePerm)
+	err := os.WriteFile(target, data, fs.ModePerm)
 	if err != nil {
 		panic(err)
 	}

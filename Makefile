@@ -88,7 +88,7 @@ GO_LICENSES = go-licenses
 DISALLOWED_LICENSES = restricted,reciprocal
 
 # golangci-lint
-GOLANGCI_LINT_VERSION := v1.54.2
+GOLANGCI_LINT_VERSION := v1.59
 
 REPORT_TYPE = flakiness
 SLACK_WEBHOOK ?= https://hooks.slack.com/services/...

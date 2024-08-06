@@ -105,6 +105,7 @@ issues:
       linters:
         - prealloc
         - dupl
+        - unparam
     - path: pkg/controller/atlasdatabaseuser/connectionsecrets
       linters:
         - prealloc

@@ -2,11 +2,11 @@ package cloud
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand/v2"
+	"math/big"
 	"net"
-	"strconv"
 	"strings"
 	"time"
 
@@ -358,9 +358,14 @@ func (a *GCPAction) randomIP(subnet string) string {
 	if len(ipParts) != 4 {
 		panic(fmt.Errorf("failed to parse IPv4 %q into 4 byte parts", ip))
 	}
-
+	const maxRandValue = 256
 	for {
-		ipParts[3] = strconv.Itoa(rand.IntN(255))
+		randNumberBig, err := rand.Int(rand.Reader, big.NewInt(maxRandValue))
+		if err != nil {
+			a.t.Error(err)
+		}
+		randNumber := randNumberBig.String()
+		ipParts[3] = randNumber
 		genIP := net.ParseIP(strings.Join(ipParts, "."))
 
 		if network.Contains(genIP) {
