@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/big"
 	"net"
-	"strconv"
 	"strings"
 	"time"
 
@@ -359,17 +358,14 @@ func (a *GCPAction) randomIP(subnet string) string {
 	if len(ipParts) != 4 {
 		panic(fmt.Errorf("failed to parse IPv4 %q into 4 byte parts", ip))
 	}
-
+	const maxRandValue = 256
 	for {
-		const maxRandValue = 256
-
 		randNumberBig, err := rand.Int(rand.Reader, big.NewInt(maxRandValue))
 		if err != nil {
 			panic(fmt.Errorf("failed to generate a random number: %w", err))
 		}
-
-		randNumber := int(randNumberBig.Int64())
-		ipParts[3] = strconv.Itoa(randNumber)
+		randNumber := randNumberBig.String()
+		ipParts[3] = randNumber
 		genIP := net.ParseIP(strings.Join(ipParts, "."))
 
 		if network.Contains(genIP) {
