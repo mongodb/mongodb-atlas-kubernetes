@@ -162,7 +162,6 @@ func (r *AtlasStreamsConnectionReconciler) skip(ctx context.Context, log *zap.Su
 func (r *AtlasStreamsConnectionReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasStreamConnection is invalid: %v", invalid)
-	// note: Nil error return for convention purpose
 	return invalid.ReconcileResult(), nil
 }
 

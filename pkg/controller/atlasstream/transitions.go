@@ -206,7 +206,6 @@ func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.
 		workflow.AtlasGovUnsupported, "the AtlasStreamInstance is not supported by Atlas for government").
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.StreamInstanceReadyType, unsupported)
-	// note: Nil error return for convention purpose
 	return unsupported.ReconcileResult(), nil
 }
 
