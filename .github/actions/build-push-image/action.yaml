@@ -74,58 +74,62 @@ runs:
       uses: docker/setup-buildx-action@v3
       with:
         platforms: ${{ inputs.platforms }}
-
-    - name: Setup and Build (Nix)
+        
+    # Nix setup steps
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@v13
       if: ${{ inputs.nix-build == 'true' }}
-      steps:
-        - name: Install Nix
-          uses: DeterminateSystems/nix-installer-action@v13
 
-        - name: Setup Magic Nix Cache
-          uses: DeterminateSystems/magic-nix-cache-action@v7
+    - name: Setup Magic Nix Cache
+      uses: DeterminateSystems/magic-nix-cache-action@v7
+      if: ${{ inputs.nix-build == 'true' }}
 
-        - name: Set up Nix Shell
-          run: nix-shell --run 'go version'
-          shell: bash
+    - name: Set up Nix Shell
+      run: nix-shell --run 'go version'
+      if: ${{ inputs.nix-build == 'true' }}
+      shell: bash
 
-        - name: Download Go build dependencies
-          run: nix-shell --run 'go mod download'
-          shell: bash
+    - name: Download Go build dependencies (Nix)
+      run: nix-shell --run 'go mod download'
+      if: ${{ inputs.nix-build == 'true' }}
+      shell: bash
 
-        - name: Build all platforms
-          env:
-            VERSION: ${{ inputs.version }}
-          run: nix-shell --run 'make all-platforms'
-          shell: bash
+    - name: Build all platforms (Nix)
+      env:
+        VERSION: ${{ inputs.version }}
+      run: nix-shell --run 'make all-platforms'
+      if: ${{ inputs.nix-build == 'true' }}
+      shell: bash
 
-    - name: Setup and Build (Non-Nix)
+    # Non-Nix setup steps
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: "${{ github.workspace }}/go.mod"
+        cache: false
       if: ${{ inputs.nix-build == 'false' }}
-      steps:
-        - name: Set up Go
-          uses: actions/setup-go@v4
-          with:
-            go-version-file: "${{ github.workspace }}/go.mod"
-            cache: false
 
-        - name: Setup cache
-          if: ${{ inputs.get-existing-cache == 'false' }}
-          uses: actions/cache@v4
-          with:
-            path: |
-              ~/.cache/go-build
-              ~/go/pkg/mod
-            key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
+    - name: Setup cache
+      if: ${{ inputs.get-existing-cache == 'false' && inputs.nix-build == 'false' }}
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
 
-        - name: Download go build dependencies
-          shell: bash
-          run: |
-            go mod download
+    - name: Download go build dependencies (Non-Nix)
+      shell: bash
+      run: |
+        go mod download
+      if: ${{ inputs.nix-build == 'false' }}
 
-        - name: Build all platforms
-          shell: bash
-          env:
-            VERSION: ${{ inputs.version }}
-          run: make all-platforms
+    - name: Build all platforms (Non-Nix)
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: make all-platforms
+      if: ${{ inputs.nix-build == 'false' }}
 
     - name: Login to docker registry
       if: ${{ inputs.push_to_docker == 'true' }}
