@@ -540,7 +540,7 @@ endif
 
 .PHONY: local-docker-build
 local-docker-build:
-	docker build -t $(LOCAL_IMAGE) .
+	docker build -f fast.Dockerfile -t $(LOCAL_IMAGE) .
 
 .PHONY: yq
 yq:
