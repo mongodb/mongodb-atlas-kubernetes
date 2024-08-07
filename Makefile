@@ -301,8 +301,8 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	operator-sdk bundle validate ./bundle
 
 .PHONY: image
-image: ## Build the operator image
-	$(CONTAINER_ENGINE) build --build-arg VERSION=$(VERSION) -t $(OPERATOR_IMAGE) .
+image: manager ## Build the operator image
+	$(CONTAINER_ENGINE) build -f fast.Dockerfile --build-arg VERSION=$(VERSION) -t $(OPERATOR_IMAGE) .
 	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
 
 .PHONY: bundle-build
@@ -540,7 +540,7 @@ endif
 
 .PHONY: local-docker-build
 local-docker-build:
-	docker build -t $(LOCAL_IMAGE) .
+	docker build -f fast.Dockerfile -t $(LOCAL_IMAGE) .
 
 .PHONY: yq
 yq:
