@@ -1,24 +1,7 @@
 { pkgs ? import <nixpkgs> { } }:
-let
-  golangci-lint-private = pkgs.buildGoModule rec {
-    pname = "golangci-lint";
-    version = "1.54.0";
-
-    src = pkgs.fetchFromGitHub {
-      owner = "golangci";
-      repo = "golangci-lint";
-      rev = "v${version}";
-      sha256 = "1d5jqm21jvb6lqx2aizv28fqdx747sa8i98hpkpgsdjjvn07jwsi";
-    };
-
-    vendorHash = "sha256-jUlK/A0HxBrIby2C0zYFtnxQX1bgKVyypI3QdH4u/rg=";
-
-    subPackages = [ "cmd/golangci-lint" ];
-  };
-in
 pkgs.mkShell {
   buildInputs = [
-    golangci-lint-private
+    pkgs.golangci-lint
     pkgs.yq-go
     pkgs.kubebuilder
     pkgs.jq
