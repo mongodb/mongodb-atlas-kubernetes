@@ -14,6 +14,9 @@ const (
 	// Error indicates that the database user doesn't exist
 	UsernameNotFound = "USERNAME_NOT_FOUND"
 
+	// Error indicates that the database user doesn't exist
+	UserNotfound = "USER_NOT_FOUND"
+
 	// Error indicates that the cluster doesn't exist
 	ClusterNotFound = "CLUSTER_NOT_FOUND"
 
