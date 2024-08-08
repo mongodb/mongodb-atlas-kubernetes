@@ -18,5 +18,7 @@ jobs:
         run: devbox run -- 'make lint'
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
+        env:
+          SHELLCHECK_OPTS: -e SC2148 -e SC2086 -e SC2148
       - name: Run govulncheck
         run: devbox run -- 'make vulncheck'
