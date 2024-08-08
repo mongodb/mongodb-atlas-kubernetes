@@ -57,10 +57,9 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
+          nix-build: true
           repository: ghcr.io/${{ env.REPOSITORY }}
           version: ${{ steps.prepare.outputs.tag }}
-          file: fast.Dockerfile
-          nix-build: true
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
@@ -116,20 +115,6 @@ jobs:
           path: |
             ./*
           key: ${{ github.sha }}
-      - name: Check go dependencies
-        id: cache-go
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum', '**/go.mod') }}
-        
-      - name: Get go dependencies if cache is missed
-        if: steps.cache-go.outputs.cache-hit != 'true'
-        run: |
-          cd cmd/manager
-          go get -d
       - name: Prepare docker tag
         id: prepare-docker-bundle-tag
         run: |
@@ -143,10 +128,9 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
+          nix-build: true
           repository: ${{ env.GHCR_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
-          file: fast.Dockerfile
-          nix-build: true
           tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
@@ -214,10 +198,8 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v13
-      - name: Install Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v7
+      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: DeterminateSystems/magic-nix-cache-action@v7
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
@@ -251,6 +233,9 @@ jobs:
       - name: Print kubectl version
         run: |
           nix-shell --run 'kubectl version'
+      - name: Print kubectl version
+        run: |
+          nix-shell --run ' kubectl version'
       - name: Install CRDs if needed
         if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'helm-ns' || matrix.test == 'bundle-test' ) }}
         run: |
