@@ -13,7 +13,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1
 	github.com/aws/aws-sdk-go v1.45.25
 	github.com/jedib0t/go-pretty/v6 v6.5.9
-	go.mongodb.org/atlas-sdk/v20231115008 v20231115008.1.0
+	go.mongodb.org/atlas-sdk/v20231115008 v20231115008.5.0
 	google.golang.org/api v0.190.0
 )
 
@@ -38,7 +38,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/mongodb-forks/digest v1.0.5 // indirect
+	github.com/mongodb-forks/digest v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
