@@ -54,6 +54,9 @@ func TestAtlasUsersGet(t *testing.T) {
 	db := "database"
 	username := "test-user"
 
+	notFoundErr := &admin.GenericOpenAPIError{}
+	notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("USERNAME_NOT_FOUND")})
+
 	tests := []struct {
 		name         string
 		setupMock    func(mockUsersAPI *mockadmin.DatabaseUsersApi)
@@ -78,14 +81,11 @@ func TestAtlasUsersGet(t *testing.T) {
 			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersApi) {
 				mockUsersAPI.EXPECT().GetDatabaseUser(ctx, projectID, db, username).Return(
 					admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI})
-
-				notFoundErr := &admin.GenericOpenAPIError{}
-				notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("USERNAME_NOT_FOUND")})
 				mockUsersAPI.EXPECT().GetDatabaseUserExecute(admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI}).Return(
 					nil, &http.Response{StatusCode: http.StatusNotFound}, notFoundErr)
 			},
 			expectedUser: nil,
-			expectedErr:  errors.New("database user not found\n"),
+			expectedErr:  errors.Join(ErrorNotFound, notFoundErr),
 		},
 		{
 			name: "API error",
@@ -99,7 +99,7 @@ func TestAtlasUsersGet(t *testing.T) {
 					nil, &http.Response{StatusCode: http.StatusInternalServerError}, errors.New("some error"))
 			},
 			expectedUser: nil,
-			expectedErr:  errors.New("failed to get database user some error"),
+			expectedErr:  fmt.Errorf("failed to get database user %q: %w", username, errors.New("some error")),
 		},
 	}
 
@@ -112,7 +112,6 @@ func TestAtlasUsersGet(t *testing.T) {
 				usersAPI: mockUsersAPI,
 			}
 			user, err := dus.Get(ctx, db, projectID, username)
-
 			require.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedUser, user)
 		})
@@ -123,11 +122,12 @@ func TestAtlasUsersDelete(t *testing.T) {
 	projectID := "project-id"
 	db := "database"
 	username := "test-user"
-
+	notFoundErr := &admin.GenericOpenAPIError{}
+	notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("USER_NOT_FOUND")})
 	tests := []struct {
 		name        string
 		setupMock   func(mockUsersAPI *mockadmin.DatabaseUsersApi)
-		expectedErr string
+		expectedErr error
 	}{
 		{
 			name: "User successfully deleted",
@@ -137,7 +137,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
 					Return(nil, &http.Response{StatusCode: http.StatusOK}, nil)
 			},
-			expectedErr: "",
+			expectedErr: nil,
 		},
 		{
 			name: "User not found",
@@ -145,12 +145,10 @@ func TestAtlasUsersDelete(t *testing.T) {
 				mockUsersAPI.EXPECT().DeleteDatabaseUser(ctx, projectID, db, username).Return(
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 
-				notFoundErr := &admin.GenericOpenAPIError{}
-				notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("USER_NOT_FOUND")})
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
 					Return(nil, &http.Response{StatusCode: http.StatusNotFound}, notFoundErr)
 			},
-			expectedErr: "database user not found\n",
+			expectedErr: errors.Join(ErrorNotFound, notFoundErr),
 		},
 		{
 			name: "API error",
@@ -161,9 +159,9 @@ func TestAtlasUsersDelete(t *testing.T) {
 				internalServerError := &admin.GenericOpenAPIError{}
 				internalServerError.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("500")})
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
-					Return(nil, &http.Response{StatusCode: http.StatusInternalServerError}, fmt.Errorf("some problem"))
+					Return(nil, &http.Response{StatusCode: http.StatusInternalServerError}, fmt.Errorf("some error"))
 			},
-			expectedErr: "some problem",
+			expectedErr: errors.New("some error"),
 		},
 	}
 
@@ -171,17 +169,11 @@ func TestAtlasUsersDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockUsersAPI := mockadmin.NewDatabaseUsersApi(t)
 			tt.setupMock(mockUsersAPI)
-
 			dus := &AtlasUsers{
 				usersAPI: mockUsersAPI,
 			}
 			err := dus.Delete(ctx, db, projectID, username)
-
-			if tt.expectedErr != "" {
-				require.Equal(t, tt.expectedErr, err.Error())
-			} else {
-				require.NoError(t, err)
-			}
+			require.Equal(t, tt.expectedErr, err)
 		})
 	}
 }
