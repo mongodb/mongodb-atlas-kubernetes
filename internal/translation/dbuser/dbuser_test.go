@@ -17,6 +17,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func TestNewAtlasDatabaseUsersService(t *testing.T) {
@@ -56,8 +57,8 @@ func TestAtlasUsersGet(t *testing.T) {
 	tests := []struct {
 		name         string
 		setupMock    func(mockUsersAPI *mockadmin.DatabaseUsersApi)
-		expectedUser *admin.CloudDatabaseUser // Replace with actual user type
-		expectedErr  string
+		expectedUser *User
+		expectedErr  error
 	}{
 		{
 			name: "User found",
@@ -69,8 +70,8 @@ func TestAtlasUsersGet(t *testing.T) {
 				mockUsersAPI.EXPECT().GetDatabaseUserExecute(admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI}).Return(
 					expectedUser, &http.Response{StatusCode: http.StatusOK}, nil)
 			},
-			expectedUser: &admin.CloudDatabaseUser{DatabaseName: db, GroupId: projectID, Username: username},
-			expectedErr:  "",
+			expectedUser: &User{AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{DatabaseName: db, Username: username}, ProjectID: projectID},
+			expectedErr:  nil,
 		},
 		{
 			name: "User not found",
@@ -84,7 +85,7 @@ func TestAtlasUsersGet(t *testing.T) {
 					nil, &http.Response{StatusCode: http.StatusNotFound}, notFoundErr)
 			},
 			expectedUser: nil,
-			expectedErr:  "database user not found\n",
+			expectedErr:  errors.New("database user not found\n"),
 		},
 		{
 			name: "API error",
@@ -95,10 +96,10 @@ func TestAtlasUsersGet(t *testing.T) {
 				internalServerError := &admin.GenericOpenAPIError{}
 				internalServerError.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("500")})
 				mockUsersAPI.EXPECT().GetDatabaseUserExecute(admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI}).Return(
-					nil, &http.Response{StatusCode: http.StatusInternalServerError}, fmt.Errorf("some problem"))
+					nil, &http.Response{StatusCode: http.StatusInternalServerError}, errors.New("some error"))
 			},
 			expectedUser: nil,
-			expectedErr:  fmt.Sprintf("failed to get database user %q: %s", username, "some problem"),
+			expectedErr:  errors.New("failed to get database user some error"),
 		},
 	}
 
@@ -112,13 +113,8 @@ func TestAtlasUsersGet(t *testing.T) {
 			}
 			user, err := dus.Get(ctx, db, projectID, username)
 
-			if tt.expectedErr != "" {
-				require.Equal(t, tt.expectedErr, err.Error())
-			} else {
-				require.NoError(t, err)
-			}
-			kubUser, _ := fromAtlas(tt.expectedUser)
-			assert.Equal(t, kubUser, user)
+			require.Equal(t, tt.expectedErr, err)
+			assert.Equal(t, tt.expectedUser, user)
 		})
 	}
 }
