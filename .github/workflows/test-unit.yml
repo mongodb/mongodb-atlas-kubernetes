@@ -12,16 +12,14 @@ jobs:
         with:
           ref: ${{github.event.pull_request.head.sha}}
           
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v13
-      - name: Install Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
 
       - name: Run testing
-        run: nix-shell --run 'CGO_ENABLED=0 go test -v $(go list ./... | grep -v "test/int\|test/e2e") -coverprofile=coverage.out'
+        run: devbox run -- 'CGO_ENABLED=0 go test -v $(go list ./... | grep -v "test/int\|test/e2e") -coverprofile=coverage.out'
 
       - name: Test tools
-        run: nix-shell --run 'make test-tools'
+        run: devbox run -- 'make test-tools'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

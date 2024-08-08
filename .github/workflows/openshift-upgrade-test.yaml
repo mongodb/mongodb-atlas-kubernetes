@@ -48,10 +48,8 @@ jobs:
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v13
-      - name: Install Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
       - name: Download tools for openshift test
         run: |
           wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
@@ -61,11 +59,11 @@ jobs:
           tar xvf openshift.tar.gz
           chmod +x oc && sudo mv oc /usr/local/bin/oc
       - name: Install Go dependencies
-        run: nix-shell --run 'go install golang.org/x/tools/cmd/goimports@latest'
+        run: devbox run -- 'go install golang.org/x/tools/cmd/goimports@latest'
       - name: Login to registry
         run: docker login -u="${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_PASSWORD }}" quay.io
       - name: Run openshift upgrade test
-        run: nix-shell --run 'cd scripts && ./openshift-upgrade-test.sh'
+        run: devbox run -- 'cd scripts && ./openshift-upgrade-test.sh'
         env:
           OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
           CLUSTER_API_URL: ${{ secrets.OPENSHIFT_UPGRADE_SERVER_API }}

@@ -57,7 +57,7 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          nix-build: true
+          devbox-build: true
           repository: ghcr.io/${{ env.REPOSITORY }}
           version: ${{ steps.prepare.outputs.tag }}
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
@@ -128,7 +128,7 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          nix-build: true
+          devbox-build: true
           repository: ${{ env.GHCR_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
           tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
@@ -197,8 +197,8 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
-      - uses: DeterminateSystems/nix-installer-action@v13
-      - uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
@@ -231,14 +231,14 @@ jobs:
           wait: 180s
       - name: Print kubectl version
         run: |
-          nix-shell --run 'kubectl version'
+          devbox run -- 'kubectl version'
       - name: Print kubectl version
         run: |
-          nix-shell --run ' kubectl version'
+          devbox run -- ' kubectl version'
       - name: Install CRDs if needed
         if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'helm-ns' || matrix.test == 'bundle-test' ) }}
         run: |
-          nix-shell --run 'kubectl apply -f deploy/crds'
+          devbox run -- 'kubectl apply -f deploy/crds'
       - name: Run e2e test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
@@ -266,7 +266,7 @@ jobs:
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
         run: |
-         nix-shell --run '
+         devbox run -- '
          helm version &&
          go version &&
          GOWORK=off 

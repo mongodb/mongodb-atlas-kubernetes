@@ -49,8 +49,8 @@ inputs:
   tags:
     description: A list of tags applied to the image
     required: true
-  nix-build:
-    description: The repo should be ran using nix
+  devbox-build:
+    description: The repo should be ran using Devbox
     required: false
     default: "false"
 
@@ -75,42 +75,32 @@ runs:
       with:
         platforms: ${{ inputs.platforms }}
         
-    # Nix setup steps
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@v13
-      if: ${{ inputs.nix-build == 'true' }}
+    # Devbox setup steps
+    - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
 
-    - name: Setup Magic Nix Cache
-      uses: DeterminateSystems/magic-nix-cache-action@v7
-      if: ${{ inputs.nix-build == 'true' }}
-
-    - name: Set up Nix Shell
-      run: nix-shell --run 'go version'
-      if: ${{ inputs.nix-build == 'true' }}
+    - name: Download Go build dependencies (Devbox)
+      run: devbox run -- go mod download
+      if: ${{ inputs.devbox-build == 'true' }}
       shell: bash
 
-    - name: Download Go build dependencies (Nix)
-      run: nix-shell --run 'go mod download'
-      if: ${{ inputs.nix-build == 'true' }}
-      shell: bash
-
-    - name: Build all platforms (Nix)
+    - name: Build all platforms (Devbox)
       env:
         VERSION: ${{ inputs.version }}
-      run: nix-shell --run 'make all-platforms'
-      if: ${{ inputs.nix-build == 'true' }}
+      run: devbox run -- 'make all-platforms'
+      if: ${{ inputs.devbox-build == 'true' }}
       shell: bash
 
-    # Non-Nix setup steps
+    # Non-Devbox setup steps
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version-file: "${{ github.workspace }}/go.mod"
         cache: false
-      if: ${{ inputs.nix-build == 'false' }}
+      if: ${{ inputs.devbox-build == 'false' }}
 
     - name: Setup cache
-      if: ${{ inputs.get-existing-cache == 'false' && inputs.nix-build == 'false' }}
+      if: ${{ inputs.get-existing-cache == 'false' && inputs.devbox-build == 'false' }}
       uses: actions/cache@v4
       with:
         path: |
@@ -118,18 +108,18 @@ runs:
           ~/go/pkg/mod
         key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
 
-    - name: Download go build dependencies (Non-Nix)
+    - name: Download go build dependencies (Non-Devbox)
       shell: bash
       run: |
         go mod download
-      if: ${{ inputs.nix-build == 'false' }}
+      if: ${{ inputs.devbox-build == 'false' }}
 
-    - name: Build all platforms (Non-Nix)
+    - name: Build all platforms (Non-Devbox)
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
       run: make all-platforms
-      if: ${{ inputs.nix-build == 'false' }}
+      if: ${{ inputs.devbox-build == 'false' }}
 
     - name: Login to docker registry
       if: ${{ inputs.push_to_docker == 'true' }}

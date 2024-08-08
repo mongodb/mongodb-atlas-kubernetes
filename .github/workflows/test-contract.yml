@@ -20,10 +20,8 @@ jobs:
           version: v0.22.0
           config: test/helper/e2e/config/kind.yaml
           node_image: kindest/node:v1.29.2
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v13
-      - name: Install Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
       - name: Run Contract Testing
         env:
           AKO_CONTRACT_TEST: 1
@@ -31,4 +29,4 @@ jobs:
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-        run: nix-shell --run 'make contract-tests'
+        run: devbox run -- 'make contract-tests'

@@ -37,10 +37,8 @@ jobs:
         with:
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v13
-      - name: Install Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
       - name: Run testing
         env:
           ATLAS_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
@@ -51,7 +49,7 @@ jobs:
           GO111MODULE: on
           GINKGO_EDITOR_INTEGRATION: "true"
         run: |
-          nix-shell --run '
+          devbox run -- '
           sudo curl -Lo setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh &&
           sudo mkdir -p /usr/local/kubebuilder/bin && 
           sudo /bin/bash -c "source setup-envtest.sh && fetch_envtest_tools /usr/local/kubebuilder" &&

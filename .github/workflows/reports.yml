@@ -16,13 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v13
-      - name: Install Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
 
       - name: Send Regressions Report
-        run: nix-shell --run 'make slack-report REPORT_TYPE=regressions'
+        run: devbox run -- 'make slack-report REPORT_TYPE=regressions'
 
       - name: Send Flakiness Report
-        run: nix-shell --run 'make slack-report REPORT_TYPE=flakiness'
+        run: devbox run -- 'make slack-report REPORT_TYPE=flakiness'

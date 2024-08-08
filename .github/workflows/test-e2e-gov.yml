@@ -21,12 +21,10 @@ jobs:
           config: test/helper/e2e/config/kind.yaml
           cluster_name: "atlas-gov-e2e-test"
           wait: 180s
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v13
-      - name: Install Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v7
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
       - name: Install CRDs
-        run: nix-shell --run 'make install'
+        run: devbox run -- 'make install'
       - name: Run e2e test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_GOV_PUBLIC_KEY }}
@@ -38,7 +36,7 @@ jobs:
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
         run: |
-          nix-shell --run '
+          devbox run -- '
           GOWORK=off &&
           cd test/e2e &&
           ginkgo labels &&
