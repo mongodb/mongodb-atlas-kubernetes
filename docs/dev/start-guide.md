@@ -19,7 +19,12 @@
 11. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
 
 Some more details about using `act` can be found in [HOWTO.md](../../.github/HOWTO.md)
-
+### IDE setup with Nix
+For VSCode
+1. Install the extension [[Nix Environment Selector](https://marketplace.visualstudio.com/items?itemName=arrterian.nix-env-selector)] 
+2. Restart the IDE and press (Control + Shift + P) and search for Nix-Env: Select Environment command.
+3. Choose the Nix environment from the repo (shell.nix) and wait for it to build.
+4. Start using VSCode with everything installed.
 # How-To
 ## Run integration tests
 
