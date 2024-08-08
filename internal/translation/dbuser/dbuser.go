@@ -44,7 +44,7 @@ func NewAtlasUsers(api admin.DatabaseUsersApi) *AtlasUsers {
 func (dus *AtlasUsers) Get(ctx context.Context, db, projectID, username string) (*User, error) {
 	atlasDBUser, _, err := dus.usersAPI.GetDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
-		if admin.IsErrorCode(err, atlas.UsernameNotFound) || admin.IsErrorCode(err, atlas.UserNotfound) {
+		if admin.IsErrorCode(err, atlas.UsernameNotFound) {
 			return nil, errors.Join(ErrorNotFound, err)
 		}
 		return nil, fmt.Errorf("failed to get database user %q: %w", username, err)
@@ -55,7 +55,7 @@ func (dus *AtlasUsers) Get(ctx context.Context, db, projectID, username string) 
 func (dus *AtlasUsers) Delete(ctx context.Context, db, projectID, username string) error {
 	_, _, err := dus.usersAPI.DeleteDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
-		if admin.IsErrorCode(err, atlas.UsernameNotFound) || admin.IsErrorCode(err, atlas.UserNotfound) {
+		if admin.IsErrorCode(err, atlas.UserNotfound) {
 			return errors.Join(ErrorNotFound, err)
 		}
 		return err
