@@ -18,10 +18,6 @@ package v1
 
 import (
 	"errors"
-	"fmt"
-	"reflect"
-	"regexp"
-	"strconv"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -171,21 +167,6 @@ func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymen
 		}
 	}
 	return result
-}
-
-func LessAD(a, b interface{}) bool {
-	switch a.(type) {
-	case *AdvancedReplicationSpec:
-		return a.(*AdvancedReplicationSpec).ZoneName < b.(*AdvancedReplicationSpec).ZoneName
-	case *AdvancedRegionConfig:
-		return a.(*AdvancedRegionConfig).RegionName < b.(*AdvancedRegionConfig).RegionName
-	case ManagedNamespace:
-		return a.(ManagedNamespace).Collection < b.(ManagedNamespace).Collection
-	case CustomZoneMapping:
-		return a.(CustomZoneMapping).Zone < b.(CustomZoneMapping).Zone
-	default:
-		return false
-	}
 }
 
 // ServerlessSpec defines the desired state of Atlas Serverless Instance
@@ -387,74 +368,6 @@ type ProcessArgs struct {
 	SampleSizeBIConnector            *int64 `json:"sampleSizeBIConnector,omitempty"`
 	SampleRefreshIntervalBIConnector *int64 `json:"sampleRefreshIntervalBIConnector,omitempty"`
 	OplogMinRetentionHours           string `json:"oplogMinRetentionHours,omitempty"`
-}
-
-func (specArgs ProcessArgs) ToAtlas() (*mongodbatlas.ProcessArgs, error) {
-	result := &mongodbatlas.ProcessArgs{}
-	if err := convertOplogMinRetentionHours(&specArgs, result); err != nil {
-		return nil, err
-	}
-
-	err := compat.JSONCopy(result, specArgs)
-	return result, err
-}
-
-func convertOplogMinRetentionHours(specArgs *ProcessArgs, atlasArgs *mongodbatlas.ProcessArgs) error {
-	if specArgs != nil && specArgs.OplogMinRetentionHours != "" {
-		OplogMinRetentionHours, err := strconv.ParseFloat(specArgs.OplogMinRetentionHours, 64)
-		if err != nil {
-			return err
-		}
-
-		atlasArgs.OplogMinRetentionHours = &OplogMinRetentionHours
-		specArgs.OplogMinRetentionHours = ""
-	}
-
-	return nil
-}
-
-func (specArgs ProcessArgs) IsEqual(newArgs interface{}) bool {
-	specV := reflect.ValueOf(specArgs)
-	newV := reflect.Indirect(reflect.ValueOf(newArgs))
-	typeOfSpec := specV.Type()
-	for i := 0; i < specV.NumField(); i++ {
-		name := typeOfSpec.Field(i).Name
-		specValue := specV.FieldByName(name)
-		newValue := newV.FieldByName(name)
-
-		if specValue.IsZero() {
-			continue
-		}
-		if newValue.IsZero() {
-			return false
-		}
-
-		if specValue.Kind() == reflect.Ptr {
-			if specValue.IsNil() {
-				continue
-			}
-			specValue = specValue.Elem()
-		}
-
-		if newValue.Kind() == reflect.Ptr {
-			if newValue.IsNil() {
-				return false
-			}
-			newValue = newValue.Elem()
-		}
-
-		if stringValue(specValue.Interface()) != stringValue(newValue.Interface()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-var TrailingZerosRegex = regexp.MustCompile(`\.[0]*$`)
-
-func stringValue(v interface{}) string {
-	return TrailingZerosRegex.ReplaceAllString(fmt.Sprint(v), "")
 }
 
 // Check compatibility with library type.

@@ -1,333 +1,128 @@
 package atlasdeployment
 
 import (
-	"context"
 	"fmt"
-	"net/http"
-	"slices"
+	"reflect"
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 const FreeTier = "M0"
 
-func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	advancedDeploymentSpec := deployment.Spec.DeploymentSpec
-
-	advancedDeployment, resp, err := ctx.Client.AdvancedClusters.Get(ctx.Context, project.Status.ID, advancedDeploymentSpec.Name)
-
-	if err != nil {
-		if resp == nil {
-			return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
-		}
-
-		if resp.StatusCode != http.StatusNotFound {
-			return advancedDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
-		}
-
-		advancedDeployment, err = advancedDeploymentSpec.ToAtlas()
+func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Cluster) (ctrl.Result, error) {
+	if deploymentInAtlas == nil {
+		ctx.Log.Infof("Advanced Deployment %s doesn't exist in Atlas - creating", deploymentInAKO.GetName())
+		newDeployment, err := r.deploymentService.CreateDeployment(ctx.Context, deploymentInAKO)
 		if err != nil {
-			return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
+			return r.terminate(ctx, workflow.DeploymentNotCreatedInAtlas, err)
 		}
 
-		ctx.Log.Infof("Advanced Deployment %s doesn't exist in Atlas - creating", advancedDeploymentSpec.Name)
-		advancedDeployment, _, err = ctx.Client.AdvancedClusters.Create(ctx.Context, project.Status.ID, advancedDeployment)
+		deploymentInAtlas = newDeployment.(*deployment.Cluster)
+	}
+
+	switch deploymentInAtlas.GetState() {
+	case status.StateIDLE:
+		if changes, occurred := deployment.ComputeChanges(deploymentInAKO, deploymentInAtlas); occurred {
+			updatedDeployment, err := r.deploymentService.UpdateDeployment(ctx.Context, changes)
+			if err != nil {
+				return r.terminate(ctx, workflow.DeploymentNotUpdatedInAtlas, err)
+			}
+
+			return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), updatedDeployment, workflow.DeploymentUpdating, "deployment is updating")
+		}
+
+		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource())
+		if transition != nil {
+			return transition(workflow.Internal)
+		}
+
+		transition = r.ensureAdvancedOptions(ctx, deploymentInAKO, deploymentInAtlas)
+		if transition != nil {
+			return transition(workflow.DeploymentAdvancedOptionsReady)
+		}
+
+		err := r.ensureConnectionSecrets(ctx, deploymentInAKO, deploymentInAtlas.GetConnection())
 		if err != nil {
-			return advancedDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
+			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
-	}
 
-	result := EnsureCustomZoneMapping(ctx, project.ID(), deployment.Spec.DeploymentSpec.CustomZoneMapping, advancedDeployment.Name)
-	if !result.IsOk() {
-		return advancedDeployment, result
-	}
+		if !r.AtlasProvider.IsCloudGov() {
+			searchNodeResult := handleSearchNodes(ctx, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
+			if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), searchNodeResult); transition != nil {
+				return transition(workflow.Internal)
+			}
+		}
 
-	result = EnsureManagedNamespaces(ctx, project.ID(), deployment.Spec.DeploymentSpec.ClusterType, deployment.Spec.DeploymentSpec.ManagedNamespaces, advancedDeployment.Name)
-	if !result.IsOk() {
-		return advancedDeployment, result
-	}
+		searchService := searchindex.NewSearchIndexes(ctx.SdkClient.AtlasSearchApi)
+		result := handleSearchIndexes(ctx, r.Client, searchService, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal)
+		}
 
-	switch advancedDeployment.StateName {
-	case "IDLE":
-		return r.advancedDeploymentIdle(ctx, project, deployment, advancedDeployment)
+		result = EnsureCustomZoneMapping(
+			ctx,
+			deploymentInAKO.GetProjectID(),
+			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.CustomZoneMapping,
+			deploymentInAKO.GetName(),
+		)
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal)
+		}
 
-	case "CREATING":
-		return advancedDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
+		result = EnsureManagedNamespaces(
+			ctx,
+			deploymentInAKO.GetProjectID(),
+			deploymentInAKO.ClusterType,
+			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.ManagedNamespaces,
+			deploymentInAKO.GetName(),
+		)
+		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+			return transition(workflow.Internal)
+		}
 
-	case "UPDATING", "REPAIRING":
-		return advancedDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
+		err = customresource.ApplyLastConfigApplied(ctx.Context, deploymentInAKO.GetCustomResource(), r.Client)
+		if err != nil {
+			return r.terminate(ctx, workflow.Internal, err)
+		}
 
-	// TODO: add "DELETING", "DELETED", handle 404 on delete
-
+		return r.ready(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas)
+	case status.StateCREATING:
+		return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentCreating, "deployment is provisioning")
+	case status.StateUPDATING, status.StateREPAIRING:
+		return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentUpdating, "deployment is updating")
+	case status.StateDELETING, status.StateDELETED:
+		return workflow.OK().ReconcileResult(), nil
 	default:
-		return advancedDeployment, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown deployment state %q", advancedDeployment.StateName))
+		return r.terminate(ctx, workflow.Internal, fmt.Errorf("unknown deployment state: %s", deploymentInAtlas.GetState()))
 	}
 }
 
-func (r *AtlasDeploymentReconciler) advancedDeploymentIdle(
-	ctx *workflow.Context,
-	project *akov2.AtlasProject,
-	deployment *akov2.AtlasDeployment,
-	atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster,
-) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.DeploymentSpec)
-	if err != nil {
-		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
-	}
-
-	if !r.AtlasProvider.IsCloudGov() {
-		searchNodeResult := handleSearchNodes(ctx, deployment, project.ID())
-		if !searchNodeResult.IsOk() {
-			return atlasDeploymentAsAtlas, searchNodeResult
-		}
-	}
-
-	searchService := searchindex.NewSearchIndexes(ctx.SdkClient.AtlasSearchApi)
-	result := handleSearchIndexes(ctx, r.Client, searchService, deployment, project.ID())
-	if !result.IsOk() {
-		return atlasDeploymentAsAtlas, result
-	}
-
-	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, &specDeployment, &atlasDeployment); areEqual {
-		return atlasDeploymentAsAtlas, workflow.OK()
-	}
-
-	if specDeployment.Paused != nil {
-		if atlasDeployment.Paused == nil || *atlasDeployment.Paused != *specDeployment.Paused {
-			// paused is different from Atlas
-			// we need to first send a special (un)pause request before reconciling everything else
-			specDeployment = akov2.AdvancedDeploymentSpec{
-				Paused: deployment.Spec.DeploymentSpec.Paused,
-			}
-		} else {
-			// otherwise, don't send the paused field
-			specDeployment.Paused = nil
-		}
-	}
-
-	syncRegionConfiguration(&specDeployment, atlasDeploymentAsAtlas)
-
-	deploymentAsAtlas, err := specDeployment.ToAtlas()
-	if err != nil {
-		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
-	}
-
-	// TODO: Potential bug with disabling autoscaling if it was previously enabled
-
-	atlasDeploymentAsAtlas, _, err = ctx.Client.AdvancedClusters.Update(ctx.Context, project.Status.ID, deployment.Spec.DeploymentSpec.Name, deploymentAsAtlas)
-	if err != nil {
-		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
-	}
-
-	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
-}
-
-// MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
-func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluster, specDeployment akov2.AdvancedDeploymentSpec) (mergedDeployment akov2.AdvancedDeploymentSpec, atlasDeployment akov2.AdvancedDeploymentSpec, err error) {
-	if IsFreeTierAdvancedDeployment(&atlasDeploymentAsAtlas) {
-		atlasDeploymentAsAtlas.DiskSizeGB = nil
-	}
-
-	atlasDeployment, err = AdvancedDeploymentFromAtlas(atlasDeploymentAsAtlas)
-	if err != nil {
-		return
-	}
-
-	normalizeSpecs(specDeployment.ReplicationSpecs[0].RegionConfigs)
-
-	mergedDeployment = akov2.AdvancedDeploymentSpec{}
-
-	if err = compat.JSONCopy(&mergedDeployment, atlasDeployment); err != nil {
-		return
-	}
-
-	if err = compat.JSONCopy(&mergedDeployment, specDeployment); err != nil {
-		return
-	}
-
-	for i, replicationSpec := range atlasDeployment.ReplicationSpecs {
-		for k, v := range replicationSpec.RegionConfigs {
-			// the response does not return backing provider names in some situations.
-			// if this is the case, we want to strip these fields so they do not cause a bad comparison.
-			if v.BackingProviderName == "" && k < len(mergedDeployment.ReplicationSpecs[i].RegionConfigs) {
-				mergedDeployment.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
-			}
-		}
-	}
-
-	atlasDeployment.MongoDBVersion = ""
-	mergedDeployment.MongoDBVersion = ""
-
-	atlasDeployment = sortReplicationSpecs(atlasDeployment)
-	mergedDeployment = sortReplicationSpecs(mergedDeployment)
-
-	return
-}
-
-func sortReplicationSpecs(spec akov2.AdvancedDeploymentSpec) akov2.AdvancedDeploymentSpec {
-	slices.SortFunc(spec.ReplicationSpecs, func(a, b *akov2.AdvancedReplicationSpec) int {
-		return strings.Compare(a.ZoneName, b.ZoneName)
-	})
-	for _, r := range spec.ReplicationSpecs {
-		slices.SortFunc(r.RegionConfigs, func(a, b *akov2.AdvancedRegionConfig) int {
-			if !(*a.Priority == *b.Priority) {
-				return *a.Priority - *b.Priority
-			} else if !strings.EqualFold(a.ProviderName, b.ProviderName) {
-				return strings.Compare(a.ProviderName, b.ProviderName)
-			} else {
-				return strings.Compare(a.RegionName, b.RegionName)
-			}
-		})
-	}
-	return spec
-}
-
-func IsFreeTierAdvancedDeployment(deployment *mongodbatlas.AdvancedCluster) bool {
-	if deployment != nil && deployment.ReplicationSpecs != nil {
-		for _, replicationSpec := range deployment.ReplicationSpecs {
-			if replicationSpec.RegionConfigs != nil {
-				for _, regionConfig := range replicationSpec.RegionConfigs {
-					if regionConfig != nil &&
-						regionConfig.ElectableSpecs != nil &&
-						regionConfig.ElectableSpecs.InstanceSize == FreeTier {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
-func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (akov2.AdvancedDeploymentSpec, error) {
-	result := akov2.AdvancedDeploymentSpec{}
-
-	convertDiskSizeField(&result, &advancedDeployment)
-	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
-		return result, err
-	}
-
-	return result, nil
-}
-
-func convertDiskSizeField(result *akov2.AdvancedDeploymentSpec, atlas *mongodbatlas.AdvancedCluster) {
-	var value *int
-	if atlas.DiskSizeGB != nil && *atlas.DiskSizeGB >= 1 {
-		value = pointer.MakePtr(int(*atlas.DiskSizeGB))
-	}
-	result.DiskSizeGB = value
-	atlas.DiskSizeGB = nil
-}
-
-// AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *akov2.AdvancedDeploymentSpec, deploymentAtlas *akov2.AdvancedDeploymentSpec) (areEqual bool, diff string) {
-	expected := deploymentOperator.DeepCopy()
-	actualCleaned := cleanupFieldsToCompare(deploymentAtlas.DeepCopy(), expected)
-
-	// Ignore Atlas Search and Search Nodes
-	expected.SearchNodes = nil
-	// Ignore differences on auto-scaled region configs
-	for _, rs := range expected.ReplicationSpecs {
-		for _, rc := range rs.RegionConfigs {
-			if isComputeAutoScalingEnabled(rc.AutoScaling) {
-				ignoreInstanceSize(rc)
-			}
-		}
-	}
-
-	// Cleanup search index as it is not part of the Deployment struct in Atlas
-	expected.SearchIndexes = nil
-
-	d := cmp.Diff(actualCleaned, expected, cmpopts.EquateEmpty(), cmpopts.SortSlices(akov2.LessAD))
-	if d != "" {
-		log.Debugf("Deployments are different: %s", d)
-	}
-
-	return d == "", d
-}
-
-func cleanupFieldsToCompare(atlas, operator *akov2.AdvancedDeploymentSpec) *akov2.AdvancedDeploymentSpec {
-	if atlas.ReplicationSpecs == nil {
-		return atlas
-	}
-
-	for specIdx, replicationSpec := range atlas.ReplicationSpecs {
-		if replicationSpec.RegionConfigs == nil {
-			continue
-		}
-
-		for configIdx, regionConfig := range replicationSpec.RegionConfigs {
-			if regionConfig.AnalyticsSpecs == nil || regionConfig.AnalyticsSpecs.NodeCount == nil || *regionConfig.AnalyticsSpecs.NodeCount == 0 {
-				if configIdx < len(operator.ReplicationSpecs[specIdx].RegionConfigs) {
-					regionConfig.AnalyticsSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].AnalyticsSpecs
-				}
-			}
-
-			if regionConfig.ElectableSpecs == nil || regionConfig.ElectableSpecs.NodeCount == nil || *regionConfig.ElectableSpecs.NodeCount == 0 {
-				if configIdx < len(operator.ReplicationSpecs[specIdx].RegionConfigs) {
-					regionConfig.ElectableSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ElectableSpecs
-				}
-			}
-
-			if regionConfig.ReadOnlySpecs == nil || regionConfig.ReadOnlySpecs.NodeCount == nil || *regionConfig.ReadOnlySpecs.NodeCount == 0 {
-				if configIdx < len(operator.ReplicationSpecs[specIdx].RegionConfigs) {
-					regionConfig.ReadOnlySpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ReadOnlySpecs
-				}
-			}
-
-			if isComputeAutoScalingEnabled(regionConfig.AutoScaling) {
-				ignoreInstanceSize(regionConfig)
-			}
-		}
-	}
-
-	return atlas
-}
-
-// GetAllDeploymentNames returns all deployment names including regular and advanced deployment.
-func GetAllDeploymentNames(ctx context.Context, client *mongodbatlas.Client, projectID string) ([]string, error) {
-	var deploymentNames []string
-
-	advancedDeployments, _, err := client.AdvancedClusters.List(ctx, projectID, &mongodbatlas.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, d := range advancedDeployments.Results {
-		deploymentNames = append(deploymentNames, d.Name)
-	}
-
-	return deploymentNames, nil
-}
-
-func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *akov2.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *akov2.AtlasDeployment) workflow.Result {
+func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, deploymentInAKO deployment.Deployment, connection *status.ConnectionStrings) error {
 	databaseUsers := akov2.AtlasDatabaseUserList{}
 	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return err
 	}
 
+	atlasDeployment := deploymentInAKO.GetCustomResource()
 	secrets := make([]string, 0)
 	for i := range databaseUsers.Items {
 		dbUser := databaseUsers.Items[i]
 
-		if !dbUserBelongsToProject(&dbUser, project) {
+		if !dbUserBelongsToProject(&dbUser, atlasDeployment.Spec.Project.GetObject(atlasDeployment.Namespace)) {
 			continue
 		}
 
@@ -345,49 +140,89 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 		}
 
 		scopes := dbUser.GetScopes(akov2.DeploymentScopeType)
-		if len(scopes) != 0 && !stringutil.Contains(scopes, name) {
+		if len(scopes) != 0 && !stringutil.Contains(scopes, deploymentInAKO.GetName()) {
 			continue
 		}
 
 		password, err := dbUser.ReadPassword(ctx.Context, r.Client)
 		if err != nil {
-			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
+			return err
 		}
 
 		data := connectionsecret.ConnectionData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
-			ConnURL:    connectionStrings.Standard,
-			SrvConnURL: connectionStrings.StandardSrv,
+			ConnURL:    connection.Standard,
+			SrvConnURL: connection.StandardSrv,
 		}
-		connectionsecret.FillPrivateConnStrings(connectionStrings, &data)
+		if connection.Private != "" {
+			data.PrivateConnURLs = append(data.PrivateConnURLs, connectionsecret.PrivateLinkConnURLs{
+				PvtConnURL:    connection.Private,
+				PvtSrvConnURL: connection.PrivateSrv,
+			})
+		}
+
+		for _, pe := range connection.PrivateEndpoint {
+			data.PrivateConnURLs = append(data.PrivateConnURLs, connectionsecret.PrivateLinkConnURLs{
+				PvtConnURL:      pe.ConnectionString,
+				PvtSrvConnURL:   pe.SRVConnectionString,
+				PvtShardConnURL: pe.SRVShardOptimizedConnectionString,
+			})
+		}
+
+		project := akov2.AtlasProject{}
+		err = r.Client.Get(ctx.Context, *atlasDeployment.Spec.Project.GetObject(atlasDeployment.Namespace), &project)
+		if err != nil {
+			return err
+		}
 
 		ctx.Log.Debugw("Creating a connection Secret", "data", data)
-
-		secretName, err := connectionsecret.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), name, data)
+		secretName, err := connectionsecret.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Spec.Name, deploymentInAKO.GetProjectID(), deploymentInAKO.GetName(), data)
 		if err != nil {
-			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
+			return err
 		}
 		secrets = append(secrets, secretName)
 	}
 
 	if len(secrets) > 0 {
-		r.EventRecorder.Eventf(deploymentResource, "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+		r.EventRecorder.Eventf(deploymentInAKO.GetCustomResource(), "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
 	}
 
-	return workflow.OK()
+	return nil
 }
 
-func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, project *akov2.AtlasProject) bool {
-	if dbUser.Spec.Project.Name != project.Name {
+func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Cluster) transitionFn {
+	if deploymentInAKO.IsTenant() {
+		return nil
+	}
+
+	err := r.deploymentService.ClusterWithProcessArgs(ctx.Context, deploymentInAtlas)
+	if err != nil {
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
+	}
+
+	if deploymentInAKO.ProcessArgs != nil && !reflect.DeepEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
+		err = r.deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
+		if err != nil {
+			return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
+		}
+
+		return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), nil)
+	}
+
+	return nil
+}
+
+func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, projectRef *client.ObjectKey) bool {
+	if dbUser.Spec.Project.Name != projectRef.Name {
 		return false
 	}
 
-	if dbUser.Spec.Project.Namespace == "" && dbUser.Namespace != project.Namespace {
+	if dbUser.Spec.Project.Namespace == "" && dbUser.Namespace != projectRef.Namespace {
 		return false
 	}
 
-	if dbUser.Spec.Project.Namespace != "" && dbUser.Spec.Project.Namespace != project.Namespace {
+	if dbUser.Spec.Project.Namespace != "" && dbUser.Spec.Project.Namespace != projectRef.Namespace {
 		return false
 	}
 

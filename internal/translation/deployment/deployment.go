@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -19,6 +20,13 @@ type AtlasDeploymentsService interface {
 	ListDeploymentConnections(ctx context.Context, projectID string) ([]Connection, error)
 	ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error)
 	DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error)
+
+	GetDeployment(ctx context.Context, projectID, name string) (Deployment, error)
+	CreateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
+	UpdateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
+	DeleteDeployment(ctx context.Context, deployment Deployment) error
+	ClusterWithProcessArgs(ctx context.Context, cluster *Cluster) error
+	UpdateProcessArgs(ctx context.Context, cluster *Cluster) error
 }
 
 type ProductionAtlasDeployments struct {
@@ -79,14 +87,12 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 }
 
 func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error) {
-	_, _, err := ds.clustersAPI.GetCluster(ctx, projectID, clusterName).Execute()
-	if admin.IsErrorCode(err, atlas.ClusterNotFound) {
-		return false, nil
-	}
+	d, err := ds.GetDeployment(ctx, projectID, clusterName)
 	if err != nil {
-		return false, fmt.Errorf("failed to get cluster %q: %w", clusterName, err)
+		return false, err
 	}
-	return true, nil
+
+	return d != nil, nil
 }
 
 func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error) {
@@ -96,4 +102,116 @@ func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, pro
 		return false, fmt.Errorf("failed to get cluster %q status %w", deploymentName, err)
 	}
 	return clusterStatus.GetChangeStatus() == string(mongodbatlas.ChangeStatusApplied), nil
+}
+
+func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, projectID, name string) (Deployment, error) {
+	cluster, _, err := ds.clustersAPI.GetCluster(ctx, projectID, name).Execute()
+	if err == nil {
+		return clusterFromAtlas(cluster), nil
+	}
+
+	if !admin.IsErrorCode(err, atlas.ClusterNotFound) && !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) {
+		return nil, err
+	}
+
+	serverless, _, err := ds.serverlessAPI.GetServerlessInstance(ctx, projectID, name).Execute()
+	if err == nil {
+		return serverlessFromAtlas(serverless), err
+	}
+
+	if !admin.IsErrorCode(err, atlas.ServerlessInstanceNotFound) && !admin.IsErrorCode(err, atlas.ProviderUnsupported) {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (ds *ProductionAtlasDeployments) CreateDeployment(ctx context.Context, deployment Deployment) (Deployment, error) {
+	switch d := deployment.(type) {
+	case *Cluster:
+		cluster, _, err := ds.clustersAPI.CreateCluster(ctx, deployment.GetProjectID(), clusterCreateToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		return clusterFromAtlas(cluster), nil
+	case *Serverless:
+		serverless, _, err := ds.serverlessAPI.CreateServerlessInstance(ctx, deployment.GetProjectID(), serverlessCreateToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		return serverlessFromAtlas(serverless), nil
+	}
+
+	return nil, errors.New("unable to create deployment: unknown type")
+}
+
+func (ds *ProductionAtlasDeployments) UpdateDeployment(ctx context.Context, deployment Deployment) (Deployment, error) {
+	switch d := deployment.(type) {
+	case *Cluster:
+		cluster, _, err := ds.clustersAPI.UpdateCluster(ctx, deployment.GetProjectID(), deployment.GetName(), clusterUpdateToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		return clusterFromAtlas(cluster), nil
+	case *Serverless:
+		serverless, _, err := ds.serverlessAPI.UpdateServerlessInstance(ctx, deployment.GetProjectID(), deployment.GetName(), serverlessUpdateToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		return serverlessFromAtlas(serverless), nil
+	}
+
+	return nil, errors.New("unable to create deployment: unknown type")
+}
+
+func (ds *ProductionAtlasDeployments) DeleteDeployment(ctx context.Context, deployment Deployment) error {
+	var err error
+
+	switch deployment.(type) {
+	case *Cluster:
+		_, err = ds.clustersAPI.DeleteCluster(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
+	case *Serverless:
+		_, _, err = ds.serverlessAPI.DeleteServerlessInstance(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
+	}
+
+	if err != nil {
+		if admin.IsErrorCode(err, atlas.ClusterNotFound) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+func (ds *ProductionAtlasDeployments) ClusterWithProcessArgs(ctx context.Context, cluster *Cluster) error {
+	config, _, err := ds.clustersAPI.GetClusterAdvancedConfiguration(ctx, cluster.GetProjectID(), cluster.GetName()).Execute()
+	if err != nil {
+		return err
+	}
+
+	cluster.ProcessArgs = processArgsFromAtlas(config)
+
+	return nil
+}
+
+func (ds *ProductionAtlasDeployments) UpdateProcessArgs(ctx context.Context, cluster *Cluster) error {
+	processArgs, err := processArgsToAtlas(cluster.ProcessArgs)
+	if err != nil {
+		return err
+	}
+
+	config, _, err := ds.clustersAPI.UpdateClusterAdvancedConfiguration(ctx, cluster.GetProjectID(), cluster.GetName(), processArgs).Execute()
+	if err != nil {
+		return err
+	}
+
+	cluster.ProcessArgs = processArgsFromAtlas(config)
+
+	return nil
 }
