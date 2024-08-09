@@ -77,7 +77,7 @@ runs:
         
     # Devbox setup steps
     - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.11.0
+      uses: jetify-com/devbox-install-action@v0.11.0
 
     - name: Download Go build dependencies (Devbox)
       run: devbox run -- go mod download
