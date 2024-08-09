@@ -1,0 +1,26 @@
+{
+  "packages": [
+    "yq-go@latest",
+    "kubebuilder@latest",
+    "jq@latest",
+    "go@latest",
+    "gotests@latest",
+    "act@latest",
+    "kubectl@latest",
+    "docker@latest",
+    "kubernetes-controller-tools@latest",
+    "kustomize@4.3",
+    "git@latest",
+    "gettext@latest",
+    "wget@latest",
+    "cosign@latest",
+    "kubernetes-helm@latest",
+    "govulncheck@latest",
+    "gotools@latest",
+    "go-licenses@latest",
+    "ginkgo@latest",
+    "operator-sdk@latest",
+    "shellcheck@latest",
+    "golangci-lint@latest"
+  ]
+}

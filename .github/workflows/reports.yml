@@ -16,14 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
         with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
+          enable-cache: 'true'
 
       - name: Send Regressions Report
-        run: make slack-report REPORT_TYPE=regressions
+        run: devbox run -- 'make slack-report REPORT_TYPE=regressions'
 
       - name: Send Flakiness Report
-        run: make slack-report REPORT_TYPE=flakiness
+        run: devbox run -- 'make slack-report REPORT_TYPE=flakiness'
