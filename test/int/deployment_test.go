@@ -903,7 +903,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 			checkNumberOfConnectionSecrets(k8sClient, *createdProject, namespace.Name, 0)
 
-			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				performCreate(createdDeployment, 30*time.Minute)
 
@@ -921,7 +921,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	Describe("Create deployment, user, delete deployment and check secrets are removed", func() {
 		It("Should Succeed", func() {
-			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
