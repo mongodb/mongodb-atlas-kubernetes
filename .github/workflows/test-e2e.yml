@@ -234,7 +234,7 @@ jobs:
           devbox run -- 'kubectl version'
       - name: Print kubectl version
         run: |
-          devbox run -- ' kubectl version'
+          devbox run -- 'kubectl version'
       - name: Install CRDs if needed
         if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'helm-ns' || matrix.test == 'bundle-test' ) }}
         run: |
@@ -271,7 +271,6 @@ jobs:
          go version &&
          GOWORK=off 
          cd test/e2e &&
-         # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
          [[ $TEST_NAME == "long-run" ]] && filter="long-run && !broken" || filter="$TEST_NAME && !long-run && !broken" &&
          echo "Running: AKO_E2E_TEST=1 ginkgo --label-filter=\"${filter}\" --timeout 120m --nodes=10 --race --cover --v" &&
          AKO_E2E_TEST=1 ginkgo --output-interceptor-mode=none --label-filter="${filter}" --timeout 120m --nodes=10 --flake-attempts=1 --race --cover --v --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...'
