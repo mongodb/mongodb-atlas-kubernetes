@@ -50,6 +50,8 @@ jobs:
         uses: ./.github/actions/set-tag
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          enable-cache: 'true'
       - name: Download tools for openshift test
         run: |
           wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q

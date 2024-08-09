@@ -31,6 +31,8 @@ jobs:
           ref: ${{ env.BRANCH }}
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          enable-cache: 'true'
       
       - name: Recompute licenses
         run: devbox run -- 'make recompute-licenses'

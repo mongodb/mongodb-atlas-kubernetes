@@ -23,6 +23,8 @@ jobs:
           wait: 180s
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          enable-cache: 'true'
       - name: Install CRDs
         run: devbox run -- 'make install'
       - name: Run e2e test

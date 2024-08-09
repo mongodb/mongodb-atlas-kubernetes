@@ -199,6 +199,8 @@ jobs:
           fetch-depth: 0
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          enable-cache: 'true'
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag

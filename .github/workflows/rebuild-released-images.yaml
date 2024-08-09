@@ -153,6 +153,8 @@ jobs:
 
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          enable-cache: 'true'
         if: steps.check-devbox.outputs.devbox-build == 'true'
 
       - name: Download Go build dependencies (Devbox)

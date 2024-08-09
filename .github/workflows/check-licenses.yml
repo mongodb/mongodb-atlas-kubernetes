@@ -13,5 +13,7 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          enable-cache: 'true'
       - name: Run testing
         run: devbox run -- 'make check-licenses'
