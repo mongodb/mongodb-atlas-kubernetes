@@ -61,7 +61,7 @@ jobs:
           version: ${{ steps.prepare.outputs.tag }}
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
-          push_to_docker: false
+          push_to_docker: true
           forked: ${{ inputs.forked }}
       - name: Do preflight-check on test image
         uses: ./.github/actions/certify-openshift-images
