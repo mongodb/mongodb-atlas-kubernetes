@@ -11,25 +11,25 @@ version: 2
 before:
   hooks:
     - go mod tidy
+    - go build
 
 builds:
   - env:
       - CGO_ENABLED=0
     goos:
       - linux
+      - windows
+      - darwin
     goarch:
       - amd64
+      - arm64
     main: ./cmd/manager/main.go  # Adjust this path to your main package
     ldflags:
       - -s -w -X main.version={{.Version}}
 
 dockers:
   - image_templates:
-      - 'ghcr.io/filipcirtog/filipcirtog:latest-arm64'
+      - "docker.io/filipcirtog/filip1:3"
     dockerfile: fast.Dockerfile
     skip_push: false  # Skip pushing in local tests, override via environment
     use: buildx
-    build_flag_templates:
-      - --platform={{- join .Builds "linux/amd64,linux/arm64" }}
-    ids:
-      - operator
