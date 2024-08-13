@@ -59,7 +59,7 @@ jobs:
           file: fast.Dockerfile
           repository: ghcr.io/${{ env.REPOSITORY }}
           version: ${{ steps.prepare.outputs.tag }}
-          tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
+          tags: v3
           platforms: linux/amd64
           gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
