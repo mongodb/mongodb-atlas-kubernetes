@@ -30,7 +30,7 @@ dockers:
   - image_templates:
       - "docker.io/filipcirtog/filip1:3"
     dockerfile: fast.Dockerfile
-    skip_push: true  # Skip pushing in local tests, override via environment
+    skip_push: false  # Skip pushing in local tests, override via environment
     use: buildx
     build_flag_templates:
       - --platform={{- join .Builds "linux/amd64,linux/arm64" }}
