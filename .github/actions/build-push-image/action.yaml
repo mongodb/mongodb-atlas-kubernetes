@@ -93,7 +93,7 @@ runs:
     - name: Build all platforms
       env:
         VERSION: ${{ inputs.version }}
-      run: make all-platforms
+      run: make image
       shell: bash
     - name: Login to docker registry
       if: ${{ inputs.push_to_docker == 'true' }}
