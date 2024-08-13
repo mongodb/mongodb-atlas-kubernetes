@@ -31,5 +31,3 @@ dockers:
     use: buildx
     build_flag_templates:
       - --platform={{- join .Builds "linux/amd64,linux/arm64" }}
-    ids:
-      - operator
