@@ -106,7 +106,7 @@ runs:
     - name: Set up GoReleaser
       uses: goreleaser/goreleaser-action@v4
       with:
-        version: ${{ inputs.version }}
+        version: latest
         args: release
       env:
         GITHUB_TOKEN: ${{ inputs.gh_pat }}
