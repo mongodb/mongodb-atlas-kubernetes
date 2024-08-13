@@ -29,3 +29,7 @@ dockers:
     dockerfile: fast.Dockerfile
     skip_push: false  # Skip pushing in local tests, override via environment
     use: buildx
+    build_flag_templates:
+      - --platform={{- join .Builds "linux/amd64,linux/arm64" }}
+    ids:
+      - operator
