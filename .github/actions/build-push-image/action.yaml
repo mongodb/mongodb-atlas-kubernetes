@@ -105,10 +105,10 @@ runs:
         username: ${{ inputs.quay_username }}
         password: ${{ inputs.quay_password }}
     - name: Set up GoReleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          version: latest
-          args: release --rm-dist
+      uses: goreleaser/goreleaser-action@v4
+      with:
+        version: latest
+        args: release --rm-dist
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
