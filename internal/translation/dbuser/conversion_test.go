@@ -391,8 +391,10 @@ func TestDiffSpecs(t *testing.T) {
 						{Name: "lake1", Type: "DATA_LAKE"},
 						{Name: "lake2", Type: "DATA_LAKE"},
 					}
-					spec.Project.Name = "some-project"
-					spec.Project.Namespace = "some-namespace"
+					spec.Project = &common.ResourceRefNamespaced{
+						Name:      "some-project",
+						Namespace: "some-namespace",
+					}
 					spec.PasswordSecret = &common.ResourceRef{Name: "some-secret-ref"}
 					spec.ConnectionSecret = &api.LocalObjectReference{Name: "some-local-secret-ref"}
 					return spec
@@ -407,8 +409,10 @@ func TestDiffSpecs(t *testing.T) {
 						{Name: "lake1", Type: "DATA_LAKE"},
 						{Name: "lake2", Type: "DATA_LAKE"},
 					}
-					spec.Project.Name = "another-project"
-					spec.Project.Namespace = "another-namespace"
+					spec.Project = &common.ResourceRefNamespaced{
+						Name:      "another-project",
+						Namespace: "another-namespace",
+					}
 					spec.PasswordSecret = &common.ResourceRef{Name: "another-secret-ref"}
 					spec.ConnectionSecret = &api.LocalObjectReference{Name: "another-local-secret-ref"}
 					return spec

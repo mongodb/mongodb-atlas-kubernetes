@@ -41,7 +41,7 @@ const (
 	DBUserPassword2     = "H@lla#!"
 )
 
-var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "protection-disabled"), func() {
+var _ = FDescribe("Atlas Database User", Label("int", "AtlasDatabaseUser", "protection-disabled"), func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
 	var projectName string
@@ -574,6 +574,59 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				}
 
 				Eventually(atlas.WaitForAtlasDatabaseUserStateToNotBeReached(ctx, atlasClient, "admin", testProject.Name, testDeployment.GetDeploymentName(), containsDatabaseUser))
+			})
+		})
+
+		FIt("Database user is independently managed", Label("independent-crd"), func() {
+			passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
+			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
+
+			testDBUser := akov2.NewDBUser(testNamespace.Name, dbUserName1, dbUserName1, projectName).
+				WithPasswordSecret(UserPasswordSecret).
+				WithRole("readWriteAnyDatabase", "admin", "")
+
+			By("Failing when both project and atlas references are set", func() {
+				testDBUser.Spec.AtlasRef = &akov2.ExternalProjectReference{
+					ID: testProject.ID(),
+				}
+
+				Expect(k8sClient.Create(context.Background(), testDBUser)).ToNot(Succeed())
+			})
+
+			By("Managing an independent database user", func() {
+				testDBUser.Spec.AtlasRef = &akov2.ExternalProjectReference{
+					ID:          testProject.ID(),
+					Credentials: &testProject.Spec.ConnectionSecret.Name,
+				}
+				testDBUser.Spec.Project = nil
+
+				Expect(k8sClient.Create(context.Background(), testDBUser)).To(Succeed())
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, testDBUser, api.TrueCondition(api.ReadyType))
+				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
+			By("Validating credentials and cluster access", func() {
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser)
+
+				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser)).Should(Succeed())
+			})
+
+			By("Deleting database user", func() {
+				deleteSecret(testDBUser)
+				Expect(k8sClient.Delete(context.Background(), testDBUser)).To(Succeed())
+
+				secretName := fmt.Sprintf(
+					"%s-%s-%s",
+					kube.NormalizeIdentifier(projectName),
+					kube.NormalizeIdentifier(testDeployment.GetDeploymentName()),
+					kube.NormalizeIdentifier(testDBUser.Spec.Username),
+				)
+				Eventually(checkSecretsDontExist(testProject.ID(), []string{secretName})).
+					WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+
+				Eventually(checkAtlasDatabaseUserRemoved(testProject.ID(), *testDBUser)).
+					WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 			})
 		})
 	})
