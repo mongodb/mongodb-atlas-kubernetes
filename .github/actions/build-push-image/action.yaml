@@ -115,4 +115,4 @@ runs:
         cache-to: type=gha,mode=max
         sbom: true
         push: true
-        tags: docker.io/filipcirtog:test
+        tags: docker.io/filipcirtog/filipcirtog:test
