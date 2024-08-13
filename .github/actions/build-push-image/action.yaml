@@ -104,15 +104,13 @@ runs:
         registry: quay.io
         username: ${{ inputs.quay_username }}
         password: ${{ inputs.quay_password }}
-    - name: Build and Push Operator to ${{ inputs.tags }}
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ${{ inputs.file }}
-        build-args: VERSION=${{ inputs.version }}
-        platforms: ${{ inputs.platforms }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        sbom: true
-        push: true
-        tags: docker.io/filipcirtog/filipcirtog:test
+    - name: Set up GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          version: latest
+          args: release --rm-dist
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
