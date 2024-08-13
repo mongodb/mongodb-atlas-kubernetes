@@ -757,7 +757,7 @@ func TestDbUserBelongsToProjects(t *testing.T) {
 	t.Run("Database User refer to a different project name", func(*testing.T) {
 		dbUser := &akov2.AtlasDatabaseUser{
 			Spec: akov2.AtlasDatabaseUserSpec{
-				Project: common.ResourceRefNamespaced{
+				Project: &common.ResourceRefNamespaced{
 					Name: "project2",
 				},
 			},
@@ -775,7 +775,7 @@ func TestDbUserBelongsToProjects(t *testing.T) {
 				Namespace: "ns-2",
 			},
 			Spec: akov2.AtlasDatabaseUserSpec{
-				Project: common.ResourceRefNamespaced{
+				Project: &common.ResourceRefNamespaced{
 					Name: "project1",
 				},
 			},
@@ -791,7 +791,7 @@ func TestDbUserBelongsToProjects(t *testing.T) {
 	t.Run("Database User refer to a project with same name but in another namespace", func(*testing.T) {
 		dbUser := &akov2.AtlasDatabaseUser{
 			Spec: akov2.AtlasDatabaseUserSpec{
-				Project: common.ResourceRefNamespaced{
+				Project: &common.ResourceRefNamespaced{
 					Name:      "project1",
 					Namespace: "ns-2",
 				},
@@ -808,7 +808,7 @@ func TestDbUserBelongsToProjects(t *testing.T) {
 	t.Run("Database User refer to a valid project and namespace", func(*testing.T) {
 		dbUser := &akov2.AtlasDatabaseUser{
 			Spec: akov2.AtlasDatabaseUserSpec{
-				Project: common.ResourceRefNamespaced{
+				Project: &common.ResourceRefNamespaced{
 					Name:      "project1",
 					Namespace: "ns-1",
 				},

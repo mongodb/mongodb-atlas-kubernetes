@@ -65,10 +65,10 @@ func (u *User) clearedSpecClone() *akov2.AtlasDatabaseUserSpec {
 		return nil
 	}
 	clone := *u.AtlasDatabaseUserSpec
-	clone.Project.Name = ""
-	clone.Project.Namespace = ""
+	clone.Project = nil
 	clone.PasswordSecret = nil
 	clone.ConnectionSecret = nil
+	clone.AtlasRef = nil
 	return &clone
 }
 

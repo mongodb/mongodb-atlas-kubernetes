@@ -8,6 +8,7 @@ import (
 
 type ProjectService interface {
 	GetProjectByName(ctx context.Context, name string) (*Project, error)
+	GetProject(ctx context.Context, ID string) (*Project, error)
 	CreateProject(ctx context.Context, project *Project) error
 	DeleteProject(ctx context.Context, project *Project) error
 }
@@ -23,6 +24,15 @@ func (a *ProjectAPI) GetProjectByName(ctx context.Context, name string) (*Projec
 			return nil, nil
 		}
 
+		return nil, err
+	}
+
+	return fromAtlas(group), err
+}
+
+func (a *ProjectAPI) GetProject(ctx context.Context, ID string) (*Project, error) {
+	group, _, err := a.projectAPI.GetProject(ctx, ID).Execute()
+	if err != nil {
 		return nil, err
 	}
 

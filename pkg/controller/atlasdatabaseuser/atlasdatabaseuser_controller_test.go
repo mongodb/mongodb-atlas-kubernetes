@@ -3,9 +3,9 @@ package atlasdatabaseuser
 import (
 	"context"
 	"errors"
-	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"reflect"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -19,126 +19,19 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
 
-	mocked "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
-
-const (
-	testProject = "project"
-
-	testProjectID = "12345"
-
-	testDatabase = "db"
-
-	testUsername = "user"
-)
-
-var (
-	errRandom = errors.New("random error")
-)
-
-/*
-*
-
-	func TestHandleDeletion(t *testing.T) {
-		ctx := context.Background()
-		scheme := runtime.NewScheme()
-		utilruntime.Must(corev1.AddToScheme(scheme))
-		utilruntime.Must(akov2.AddToScheme(scheme))
-		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
-		user := defaultTestUser()
-		require.NoError(t, fakeClient.Create(ctx, user))
-		defer fakeClient.Delete(ctx, user)
-		log := zap.S()
-		r := &AtlasDatabaseUserReconciler{
-			Client: fakeClient,
-			Log:    log,
-		}
-		for _, tc := range []struct {
-			title          string
-			skipDeletion   bool
-			service        dbuser.AtlasUsersService
-			expectedOk     bool
-			expectedResult workflow.Result
-		}{
-			{
-				title:          "User without deletion timestamp is not deleted",
-				skipDeletion:   true,
-				expectedOk:     false,
-				expectedResult: workflow.OK(),
-			},
-
-			{
-				title:          "Ready user gets deleted properly",
-				service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, nil),
-				expectedOk:     true,
-				expectedResult: workflow.OK(),
-			},
-
-			{
-				title:          "Missing user is already deleted",
-				service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, dbuser.ErrorNotFound),
-				expectedOk:     true,
-				expectedResult: workflow.OK(),
-			},
-
-			{
-				title:          "Fails to delete user when returned error is unexpected",
-				service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, errRandom),
-				expectedOk:     true,
-				expectedResult: workflow.Terminate(workflow.DatabaseUserNotDeletedInAtlas, errRandom.Error()),
-			},
-		} {
-			t.Run(tc.title, func(t *testing.T) {
-				if !tc.skipDeletion {
-					user.DeletionTimestamp = pointer.MakePtr(metav1.NewTime(time.Now()))
-				}
-				done, result := r.handleDeletion(ctx, user, defaultTestProject(), tc.service, log)
-				assert.Equal(t, tc.expectedOk, done)
-				assert.Equal(t, tc.expectedResult, result)
-			})
-		}
-	}
-*/
-func fakeUserDeletion(ctx context.Context, db, projectID, username string, err error) *mocked.AtlasUsersServiceMock {
-	return withFakeUserDeletion(&mocked.AtlasUsersServiceMock{}, ctx, db, projectID, username, err)
-}
-
-func withFakeUserDeletion(service *mocked.AtlasUsersServiceMock, ctx context.Context, db, projectID, username string, err error) *mocked.AtlasUsersServiceMock {
-	service.EXPECT().Delete(ctx, db, projectID, username).Return(err)
-	return service
-}
-
-func defaultTestProject() *akov2.AtlasProject {
-	return &akov2.AtlasProject{
-		TypeMeta:   metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{Name: testProject},
-		Status: status.AtlasProjectStatus{
-			ID: testProjectID,
-		},
-	}
-}
-
-func defaultTestUser() *akov2.AtlasDatabaseUser {
-	return &akov2.AtlasDatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{Name: testUsername},
-		Spec: akov2.AtlasDatabaseUserSpec{
-			DatabaseName: testDatabase,
-			Username:     testUsername,
-		},
-	}
-}
 
 func TestReconcile(t *testing.T) {
 	tests := map[string]struct {
@@ -153,7 +46,7 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: common.ResourceRefNamespaced{
+					Project: &common.ResourceRefNamespaced{
 						Name:      "my-project",
 						Namespace: "default",
 					},
@@ -178,7 +71,7 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: common.ResourceRefNamespaced{
+					Project: &common.ResourceRefNamespaced{
 						Name:      "my-project",
 						Namespace: "default",
 					},
@@ -201,7 +94,7 @@ func TestReconcile(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: common.ResourceRefNamespaced{
+					Project: &common.ResourceRefNamespaced{
 						Name:      "my-project",
 						Namespace: "default",
 					},
@@ -221,7 +114,7 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: common.ResourceRefNamespaced{
+					Project: &common.ResourceRefNamespaced{
 						Name:      "my-project",
 						Namespace: "default",
 					},

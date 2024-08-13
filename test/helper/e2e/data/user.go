@@ -23,7 +23,7 @@ func BasicUser(crName, atlasUserName string, add ...func(user *akov2.AtlasDataba
 			Name: crName,
 		},
 		Spec: akov2.AtlasDatabaseUserSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
 			Username: atlasUserName,
@@ -93,7 +93,7 @@ func WithOIDCEnabled() func(user *akov2.AtlasDatabaseUser) {
 
 func WithProject(project *akov2.AtlasProject) func(user *akov2.AtlasDatabaseUser) {
 	return func(user *akov2.AtlasDatabaseUser) {
-		user.Spec.Project = common.ResourceRefNamespaced{
+		user.Spec.Project = &common.ResourceRefNamespaced{
 			Name:      project.Name,
 			Namespace: project.Namespace,
 		}
