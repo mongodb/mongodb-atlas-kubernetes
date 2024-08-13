@@ -114,6 +114,7 @@ runs:
         version: latest
         args: release
       env:
+        GITHUB_TAGS: ${{ inputs.tags}}
         GITHUB_TOKEN: ${{ inputs.gh_pat }}
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
