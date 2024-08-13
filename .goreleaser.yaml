@@ -25,7 +25,7 @@ builds:
 
 dockers:
   - image_templates:
-      - "docker.io/filipcirtog/filip1:3"
+      - 'ghcr.io/filipcirtog/filipcirtog:latest-arm64'
     dockerfile: fast.Dockerfile
     skip_push: false  # Skip pushing in local tests, override via environment
     use: buildx
