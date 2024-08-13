@@ -17,11 +17,8 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
-      - darwin
     goarch:
       - amd64
-      - arm64
     main: ./cmd/manager/main.go  # Adjust this path to your main package
     ldflags:
       - -s -w -X main.version={{.Version}}
