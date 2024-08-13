@@ -61,6 +61,7 @@ jobs:
           version: ${{ steps.prepare.outputs.tag }}
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
+          gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           forked: ${{ inputs.forked }}
