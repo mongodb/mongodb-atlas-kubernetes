@@ -1,16 +1,17 @@
+
 # .goreleaser.yml
 builds:
-- env: [CGO_ENABLED=0]
+- env: 
+  - CGO_ENABLED=0
+  - gtags={{ .Env.GITHUB_TAGS }}
   goos:
   - linux
-  - windows
-  - darwin
   goarch:
   - amd64
   - arm64
   main: ./cmd/manager/main.go  
 dockers:
-- image_templates: ["ghcr.io/filipcirtog/{{ .ProjectName }}:{{ .Version }}-amd64"]
+- image_templates: [gtags]
   dockerfile: fast.Dockerfile
   use: buildx
   build_flag_templates:
