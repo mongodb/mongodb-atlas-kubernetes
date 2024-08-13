@@ -4,6 +4,10 @@ FROM golang:1.22 as certs-source
 FROM registry.access.redhat.com/ubi9/ubi:9.2 as ubi-certs
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
 
+ARG TARGETOS
+ARG TARGETARCH
+ENV TARGET_ARCH=${TARGETARCH}
+ENV TARGET_OS=${TARGETOS}
 
 LABEL name="MongoDB Atlas Operator" \
   maintainer="support@mongodb.com" \
@@ -18,7 +22,8 @@ LABEL name="MongoDB Atlas Operator" \
   License="Apache-2.0"
 
 WORKDIR /
-COPY bin/manager .
+COPY bin/${TARGET_OS}/${TARGET_ARCH}/manager .
+COPY hack/licenses licenses
 COPY --from=ubi-certs /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 USER 1001:0
