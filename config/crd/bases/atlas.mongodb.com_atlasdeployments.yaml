@@ -905,6 +905,8 @@ spec:
                           description: Private-endpoint-aware mongodb+srv:// connection
                             string for this private endpoint.
                           type: string
+                        srvShardOptimizedConnectionString:
+                          type: string
                         type:
                           description: |-
                             Type of MongoDB process that you connect to with the connection strings

@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -92,6 +93,11 @@ func GetDeploymentStatusCondition(ctx context.Context, k8sClient client.Client, 
 	if err != nil {
 		return "", err
 	}
+
+	if deployment.GetObjectMeta().GetGeneration() != deployment.GetStatus().GetObservedGeneration() {
+		return "", errors.New("object is not updated")
+	}
+
 	for _, condition := range deployment.Status.Conditions {
 		if condition.Type == statusType {
 			return string(condition.Status), nil

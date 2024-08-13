@@ -81,6 +81,159 @@ func (_c *AtlasDeploymentsServiceMock_ClusterExists_Call) RunAndReturn(run func(
 	return _c
 }
 
+// ClusterWithProcessArgs provides a mock function with given fields: ctx, cluster
+func (_m *AtlasDeploymentsServiceMock) ClusterWithProcessArgs(ctx context.Context, cluster *deployment.Cluster) error {
+	ret := _m.Called(ctx, cluster)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ClusterWithProcessArgs")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *deployment.Cluster) error); ok {
+		r0 = rf(ctx, cluster)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ClusterWithProcessArgs'
+type AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call struct {
+	*mock.Call
+}
+
+// ClusterWithProcessArgs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - cluster *deployment.Cluster
+func (_e *AtlasDeploymentsServiceMock_Expecter) ClusterWithProcessArgs(ctx interface{}, cluster interface{}) *AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call {
+	return &AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call{Call: _e.mock.On("ClusterWithProcessArgs", ctx, cluster)}
+}
+
+func (_c *AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call) Run(run func(ctx context.Context, cluster *deployment.Cluster)) *AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*deployment.Cluster))
+	})
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call) Return(_a0 error) *AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call) RunAndReturn(run func(context.Context, *deployment.Cluster) error) *AtlasDeploymentsServiceMock_ClusterWithProcessArgs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateDeployment provides a mock function with given fields: ctx, _a1
+func (_m *AtlasDeploymentsServiceMock) CreateDeployment(ctx context.Context, _a1 deployment.Deployment) (deployment.Deployment, error) {
+	ret := _m.Called(ctx, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateDeployment")
+	}
+
+	var r0 deployment.Deployment
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) (deployment.Deployment, error)); ok {
+		return rf(ctx, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) deployment.Deployment); ok {
+		r0 = rf(ctx, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(deployment.Deployment)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, deployment.Deployment) error); ok {
+		r1 = rf(ctx, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AtlasDeploymentsServiceMock_CreateDeployment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateDeployment'
+type AtlasDeploymentsServiceMock_CreateDeployment_Call struct {
+	*mock.Call
+}
+
+// CreateDeployment is a helper method to define mock.On call
+//   - ctx context.Context
+//   - _a1 deployment.Deployment
+func (_e *AtlasDeploymentsServiceMock_Expecter) CreateDeployment(ctx interface{}, _a1 interface{}) *AtlasDeploymentsServiceMock_CreateDeployment_Call {
+	return &AtlasDeploymentsServiceMock_CreateDeployment_Call{Call: _e.mock.On("CreateDeployment", ctx, _a1)}
+}
+
+func (_c *AtlasDeploymentsServiceMock_CreateDeployment_Call) Run(run func(ctx context.Context, _a1 deployment.Deployment)) *AtlasDeploymentsServiceMock_CreateDeployment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(deployment.Deployment))
+	})
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_CreateDeployment_Call) Return(_a0 deployment.Deployment, _a1 error) *AtlasDeploymentsServiceMock_CreateDeployment_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_CreateDeployment_Call) RunAndReturn(run func(context.Context, deployment.Deployment) (deployment.Deployment, error)) *AtlasDeploymentsServiceMock_CreateDeployment_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteDeployment provides a mock function with given fields: ctx, _a1
+func (_m *AtlasDeploymentsServiceMock) DeleteDeployment(ctx context.Context, _a1 deployment.Deployment) error {
+	ret := _m.Called(ctx, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteDeployment")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) error); ok {
+		r0 = rf(ctx, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// AtlasDeploymentsServiceMock_DeleteDeployment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteDeployment'
+type AtlasDeploymentsServiceMock_DeleteDeployment_Call struct {
+	*mock.Call
+}
+
+// DeleteDeployment is a helper method to define mock.On call
+//   - ctx context.Context
+//   - _a1 deployment.Deployment
+func (_e *AtlasDeploymentsServiceMock_Expecter) DeleteDeployment(ctx interface{}, _a1 interface{}) *AtlasDeploymentsServiceMock_DeleteDeployment_Call {
+	return &AtlasDeploymentsServiceMock_DeleteDeployment_Call{Call: _e.mock.On("DeleteDeployment", ctx, _a1)}
+}
+
+func (_c *AtlasDeploymentsServiceMock_DeleteDeployment_Call) Run(run func(ctx context.Context, _a1 deployment.Deployment)) *AtlasDeploymentsServiceMock_DeleteDeployment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(deployment.Deployment))
+	})
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_DeleteDeployment_Call) Return(_a0 error) *AtlasDeploymentsServiceMock_DeleteDeployment_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_DeleteDeployment_Call) RunAndReturn(run func(context.Context, deployment.Deployment) error) *AtlasDeploymentsServiceMock_DeleteDeployment_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeploymentIsReady provides a mock function with given fields: ctx, projectID, deploymentName
 func (_m *AtlasDeploymentsServiceMock) DeploymentIsReady(ctx context.Context, projectID string, deploymentName string) (bool, error) {
 	ret := _m.Called(ctx, projectID, deploymentName)
@@ -135,6 +288,66 @@ func (_c *AtlasDeploymentsServiceMock_DeploymentIsReady_Call) Return(_a0 bool, _
 }
 
 func (_c *AtlasDeploymentsServiceMock_DeploymentIsReady_Call) RunAndReturn(run func(context.Context, string, string) (bool, error)) *AtlasDeploymentsServiceMock_DeploymentIsReady_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetDeployment provides a mock function with given fields: ctx, projectID, name
+func (_m *AtlasDeploymentsServiceMock) GetDeployment(ctx context.Context, projectID string, name string) (deployment.Deployment, error) {
+	ret := _m.Called(ctx, projectID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDeployment")
+	}
+
+	var r0 deployment.Deployment
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (deployment.Deployment, error)); ok {
+		return rf(ctx, projectID, name)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) deployment.Deployment); ok {
+		r0 = rf(ctx, projectID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(deployment.Deployment)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, projectID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AtlasDeploymentsServiceMock_GetDeployment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDeployment'
+type AtlasDeploymentsServiceMock_GetDeployment_Call struct {
+	*mock.Call
+}
+
+// GetDeployment is a helper method to define mock.On call
+//   - ctx context.Context
+//   - projectID string
+//   - name string
+func (_e *AtlasDeploymentsServiceMock_Expecter) GetDeployment(ctx interface{}, projectID interface{}, name interface{}) *AtlasDeploymentsServiceMock_GetDeployment_Call {
+	return &AtlasDeploymentsServiceMock_GetDeployment_Call{Call: _e.mock.On("GetDeployment", ctx, projectID, name)}
+}
+
+func (_c *AtlasDeploymentsServiceMock_GetDeployment_Call) Run(run func(ctx context.Context, projectID string, name string)) *AtlasDeploymentsServiceMock_GetDeployment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_GetDeployment_Call) Return(_a0 deployment.Deployment, _a1 error) *AtlasDeploymentsServiceMock_GetDeployment_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_GetDeployment_Call) RunAndReturn(run func(context.Context, string, string) (deployment.Deployment, error)) *AtlasDeploymentsServiceMock_GetDeployment_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -253,6 +466,112 @@ func (_c *AtlasDeploymentsServiceMock_ListDeploymentConnections_Call) Return(_a0
 }
 
 func (_c *AtlasDeploymentsServiceMock_ListDeploymentConnections_Call) RunAndReturn(run func(context.Context, string) ([]deployment.Connection, error)) *AtlasDeploymentsServiceMock_ListDeploymentConnections_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateDeployment provides a mock function with given fields: ctx, _a1
+func (_m *AtlasDeploymentsServiceMock) UpdateDeployment(ctx context.Context, _a1 deployment.Deployment) (deployment.Deployment, error) {
+	ret := _m.Called(ctx, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateDeployment")
+	}
+
+	var r0 deployment.Deployment
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) (deployment.Deployment, error)); ok {
+		return rf(ctx, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) deployment.Deployment); ok {
+		r0 = rf(ctx, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(deployment.Deployment)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, deployment.Deployment) error); ok {
+		r1 = rf(ctx, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AtlasDeploymentsServiceMock_UpdateDeployment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateDeployment'
+type AtlasDeploymentsServiceMock_UpdateDeployment_Call struct {
+	*mock.Call
+}
+
+// UpdateDeployment is a helper method to define mock.On call
+//   - ctx context.Context
+//   - _a1 deployment.Deployment
+func (_e *AtlasDeploymentsServiceMock_Expecter) UpdateDeployment(ctx interface{}, _a1 interface{}) *AtlasDeploymentsServiceMock_UpdateDeployment_Call {
+	return &AtlasDeploymentsServiceMock_UpdateDeployment_Call{Call: _e.mock.On("UpdateDeployment", ctx, _a1)}
+}
+
+func (_c *AtlasDeploymentsServiceMock_UpdateDeployment_Call) Run(run func(ctx context.Context, _a1 deployment.Deployment)) *AtlasDeploymentsServiceMock_UpdateDeployment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(deployment.Deployment))
+	})
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_UpdateDeployment_Call) Return(_a0 deployment.Deployment, _a1 error) *AtlasDeploymentsServiceMock_UpdateDeployment_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_UpdateDeployment_Call) RunAndReturn(run func(context.Context, deployment.Deployment) (deployment.Deployment, error)) *AtlasDeploymentsServiceMock_UpdateDeployment_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateProcessArgs provides a mock function with given fields: ctx, cluster
+func (_m *AtlasDeploymentsServiceMock) UpdateProcessArgs(ctx context.Context, cluster *deployment.Cluster) error {
+	ret := _m.Called(ctx, cluster)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateProcessArgs")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *deployment.Cluster) error); ok {
+		r0 = rf(ctx, cluster)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// AtlasDeploymentsServiceMock_UpdateProcessArgs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateProcessArgs'
+type AtlasDeploymentsServiceMock_UpdateProcessArgs_Call struct {
+	*mock.Call
+}
+
+// UpdateProcessArgs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - cluster *deployment.Cluster
+func (_e *AtlasDeploymentsServiceMock_Expecter) UpdateProcessArgs(ctx interface{}, cluster interface{}) *AtlasDeploymentsServiceMock_UpdateProcessArgs_Call {
+	return &AtlasDeploymentsServiceMock_UpdateProcessArgs_Call{Call: _e.mock.On("UpdateProcessArgs", ctx, cluster)}
+}
+
+func (_c *AtlasDeploymentsServiceMock_UpdateProcessArgs_Call) Run(run func(ctx context.Context, cluster *deployment.Cluster)) *AtlasDeploymentsServiceMock_UpdateProcessArgs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*deployment.Cluster))
+	})
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_UpdateProcessArgs_Call) Return(_a0 error) *AtlasDeploymentsServiceMock_UpdateProcessArgs_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_UpdateProcessArgs_Call) RunAndReturn(run func(context.Context, *deployment.Cluster) error) *AtlasDeploymentsServiceMock_UpdateProcessArgs_Call {
 	_c.Call.Return(run)
 	return _c
 }

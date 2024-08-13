@@ -23,6 +23,22 @@ func GetOrDefault[T any](ptr *T, defaultValue T) T {
 	return defaultValue
 }
 
+// GetOrPointerToDefault returns the value of a pointer or a pointer to default value
+func GetOrPointerToDefault[T any](ptr *T, defaultValue T) *T {
+	if ptr != nil {
+		return ptr
+	}
+	return &defaultValue
+}
+
+// NonZeroOrDefault returns the address of the given value or defaultValue when it has zero value
+func NonZeroOrDefault[T comparable](val T, defaultValue T) *T {
+	if val == *new(T) {
+		return &defaultValue
+	}
+	return &val
+}
+
 // MakePtr returns a pointer to the given value
 func MakePtr[T any](value T) *T {
 	return &value
