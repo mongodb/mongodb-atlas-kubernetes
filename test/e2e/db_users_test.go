@@ -16,6 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -26,7 +27,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
 const (
@@ -90,9 +90,9 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			testData.Resources.Namespace = config.DefaultOperatorNS
 		})
 		By("Running operator watching global namespace", func() {
-			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, config.DefaultOperatorNS)).NotTo(HaveOccurred())
+			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, config.DefaultOperatorNS)).To(Succeed())
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
-			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)).NotTo(HaveOccurred())
+			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)).To(Succeed())
 			publicKey, privateKey, err := localCredentials()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(
@@ -118,20 +118,19 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 				return ctx
 			}(testData.Context)
 		})
-		By("Creating project and database users resources", func() {
+		By("Creating the project", func() {
 			deploy.CreateProject(testData)
+		})
+		By("Failing when an user has both project and atlas references are set", func() {
+			testData.Users[0].Spec.AtlasRef = &akov2.ExternalProjectReference{
+				ID: testData.Project.ID(),
+			}
+
+			Expect(testData.K8SClient.Create(testData.Context, testData.Users[0])).ToNot(Succeed())
+		})
+		By("Creating a linked and a standalone users", func() {
+			data.WithAtlasRef(testData.Project.ID(), nil)(testData.Users[0])
 			deploy.CreateUsers(testData)
-
-			Eventually(func(g Gomega) bool {
-				for i := range testData.Users {
-					dbUser := testData.Users[i]
-
-					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(dbUser), dbUser)).To(Succeed())
-					g.Expect(resources.CheckCondition(testData.K8SClient, dbUser, api.TrueCondition(api.ReadyType))).To(BeTrue())
-				}
-
-				return true
-			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 
 			Expect(countConnectionSecrets(testData.K8SClient, testData.Project.Spec.Name)).To(Equal(0))
 		})

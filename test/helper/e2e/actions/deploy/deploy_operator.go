@@ -97,14 +97,19 @@ func CreateUsers(testData *model.TestDataProvider) {
 		for _, user := range testData.Users {
 			if user.Namespace == "" {
 				user.Namespace = testData.Resources.Namespace
+			}
+
+			if user.Spec.Project != nil {
 				user.Spec.Project.Namespace = testData.Resources.Namespace
 			}
+
 			if user.Spec.PasswordSecret != nil {
 				secret := utils.UserSecretPassword()
 				Expect(k8s.CreateUserSecret(testData.Context, testData.K8SClient, secret,
 					user.Spec.PasswordSecret.Name, user.Namespace)).Should(Succeed(),
 					"Create user secret failed")
 			}
+
 			err := testData.K8SClient.Create(testData.Context, user)
 			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("User was not created: %v", user))
 			Eventually(func(g Gomega) {
