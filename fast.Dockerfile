@@ -23,7 +23,6 @@ LABEL name="MongoDB Atlas Operator" \
 
 WORKDIR /
 COPY bin/${TARGET_OS}/${TARGET_ARCH}/manager .
-COPY hack/licenses licenses
 COPY --from=ubi-certs /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 USER 1001:0
