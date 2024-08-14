@@ -117,7 +117,7 @@ runs:
       shell: bash
       run: |
         docker image ls --format "${{ inputs.tags}}" | \
-        grep -e "$GITHUB_REPOSITORY:.*$(git rev-parse --short HEAD).*" | \
+        grep -e "${{ inputs.repository}}:.*$(git rev-parse --short HEAD).*" | \
         paste -sd ' ' /dev/stdin > images
     - name: Push snapshot images
       shell: bash
@@ -126,6 +126,6 @@ runs:
     - name: Create and push manifest for :snapshot tag
       shell: bash
       run: |
-        docker manifest create $GITHUB_REPOSITORY:snapshot $(cat images)
-        docker manifest push $GITHUB_REPOSITORY:snapshot
+        docker manifest create ${{ inputs.repository}}:snapshot $(cat images)
+        docker manifest push ${{ inputs.repository}}:snapshot
     
