@@ -126,17 +126,15 @@ runs:
       shell: bash
       run: |
         # Create Docker manifest
-        docker manifest create ${{ inputs.tags}} \
-          ${{ inputs.tags}}-amd64 \
-          ${{ inputs.tags}}-arm64
-
+        docker manifest create ${{ inputs.tags }} \
+          ${{ inputs.tags }}-amd64 \
+          ${{ inputs.tags }}-arm64
+    
         # Annotate the manifest
-        docker manifest annotate ${{ github.event.inputs.tags }} \
-          ${{ inputs.tags}}-amd64 --os linux --arch amd64
-
-        docker manifest annotate ${{ github.event.inputs.tags }} \
-          ${{ inputs.tags}}-arm64 --os linux --arch arm64
-
+        docker manifest annotate ${{ inputs.tags }}-amd64 --os linux --arch amd64
+        docker manifest annotate ${{ inputs.tags }}-arm64 --os linux --arch arm64
+    
         # Push the manifest
-        docker manifest push ${{ inputs.tags}}
+        docker manifest push ${{ inputs.tags }}
+
     
