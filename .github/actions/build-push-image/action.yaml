@@ -113,4 +113,19 @@ runs:
         GITHUB_TOKEN: ${{ inputs.gh_pat }}
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
+    - name: List snapshot images
+      shell: bash
+      run: |
+        docker image ls --format "${{ inputs.tags}}" | \
+        grep -e "$GITHUB_REPOSITORY:.*$(git rev-parse --short HEAD).*" | \
+        paste -sd ' ' /dev/stdin > images
+    - name: Push snapshot images
+      shell: bash
+      run: |
+        cat images | xargs -d ' ' -I{} -n1 sh -c "docker push {}"
+    - name: Create and push manifest for :snapshot tag
+      shell: bash
+      run: |
+        docker manifest create $GITHUB_REPOSITORY:snapshot $(cat images)
+        docker manifest push $GITHUB_REPOSITORY:snapshot
     
