@@ -23,11 +23,11 @@ on:
       image_repo:
         type: choice
         description: "Target image repository for built images"
-        default: mongodb/mongodb-atlas-kubernetes-operator-prerelease
+        default: filipcirtog/mongodb-atlas-kubernetes-operator-prerelease
         required: true
         options:
-        - mongodb/mongodb-atlas-kubernetes-operator-prerelease
-        - mongodb/mongodb-atlas-kubernetes-operator
+        - filipcirtog/mongodb-atlas-kubernetes-operator-prerelease
+        - filipcirtog/mongodb-atlas-kubernetes-operator
       release_helm:
         type: choice
         description: "Whether or not to trigger the Helm release as well. Skip by default for tests"
@@ -77,10 +77,10 @@ jobs:
           prerelease_tail=$(echo "${version}" | awk -F'-' '{print $2}')
           if [[ "$prerelease_tail" == "" ]]; then
             echo "Releasing version $version..."
-            repo="mongodb/mongodb-atlas-kubernetes-operator"
+            repo="filipcirtog/mongodb-atlas-kubernetes-operator"
           else
             echo "Pre-releasing version $version..."
-            repo="mongodb/mongodb-atlas-kubernetes-operator-prerelease"
+            repo="filipcirtog/mongodb-atlas-kubernetes-operator-prerelease"
             RELEASE_HELM=false
             CERTIFY=false
             RELEASE_TO_GITHUB=false
