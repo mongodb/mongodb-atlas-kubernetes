@@ -138,5 +138,5 @@ runs:
           ${{ inputs.tags}}-arm64 --os linux --arch arm64
 
         # Push the manifest
-        docker manifest push ${{ github.event.inputs.tags }}
+        docker manifest push ${{ ${{ inputs.tags}} }}
     
