@@ -62,7 +62,7 @@ jobs:
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
       TAG: ${{ inputs.tag || github.head_ref || github.ref_name }}
-      REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-release
+      REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Free disk space
         run: | 
