@@ -58,7 +58,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     env:
-      RELEASE_HELM: ${{ github.event.inputs.release_helm || 'true' }}
+      RELEASE_HELM: false
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
       TAG: ${{ inputs.tag || github.head_ref || github.ref_name }}
