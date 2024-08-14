@@ -35,9 +35,3 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
-
-docker_manifests:
-  - name_template: "{{ .Env.GITHUB_TAGS }}"
-    image_templates:
-      - "{{ .Env.GITHUB_TAGS }}"
-      - "{{ .Env.GITHUB_TAGS }}"
