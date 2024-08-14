@@ -131,14 +131,6 @@ jobs:
             else
               echo "sign=false" >> $GITHUB_OUTPUT
             fi
-      - name: Build all platforms & check version
-        if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
-        run: |
-          make all-platforms VERSION=${{ steps.tag.outputs.version }}
-          # not all versions Makefiles support the version check
-          if make | grep -q check-version; then
-            make check-version VERSION=${{ steps.tag.outputs.version }}
-          fi
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
@@ -151,7 +143,7 @@ jobs:
           gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: ghcr.io/filipcirtog/mongodb-atlas-kubernetes-operator-release:${{ steps.tag.outputs.version }}
+          tags: ghcr.io/filipcirtog/mongodb-atlas-kubernetes/mongodb-atlas-kubernetes-operator-release:${{ steps.tag.outputs.version }}
       - name: Certify Openshift images
         if: ${{ steps.tag.outputs.certify == 'true' }}
         uses: ./.github/actions/certify-openshift-images
