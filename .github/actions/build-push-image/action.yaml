@@ -113,19 +113,30 @@ runs:
         GITHUB_TOKEN: ${{ inputs.gh_pat }}
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
-    - name: List snapshot images
+    
+    - name: Push Docker Image amd
       shell: bash
       run: |
-        docker image ls --format "${{ inputs.tags}}" | \
-        grep -e "${{ inputs.repository}}:.*$(git rev-parse --short HEAD).*" | \
-        paste -sd ' ' /dev/stdin > images
-    - name: Push snapshot images
+       docker push ${{ inputs.tags}}-amd64
+    - name: Push Docker Image arm
       shell: bash
       run: |
-        cat images | xargs -d ' ' -I{} -n1 sh -c "docker push {}"
-    - name: Create and push manifest for :snapshot tag
+       docker push ${{ inputs.tags}}-arm64
+    - name: Create and push Docker manifest
       shell: bash
       run: |
-        docker manifest create ${{ inputs.repository}}:snapshot $(cat images)
-        docker manifest push ${{ inputs.repository}}:snapshot
+        # Create Docker manifest
+        docker manifest create ${{ inputs.tags}} \
+          ${{ inputs.tags}}-amd64 \
+          ${{ inputs.tags}}-arm64
+
+        # Annotate the manifest
+        docker manifest annotate ${{ github.event.inputs.tags }} \
+          ${{ inputs.tags}}-amd64 --os linux --arch amd64
+
+        docker manifest annotate ${{ github.event.inputs.tags }} \
+          ${{ inputs.tags}}-arm64 --os linux --arch arm64
+
+        # Push the manifest
+        docker manifest push ${{ github.event.inputs.tags }}
     
