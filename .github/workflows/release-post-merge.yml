@@ -147,15 +147,10 @@ jobs:
           version: ${{ steps.tag.outputs.version }}
           certified_version: ${{ steps.tag.outputs.certified_version }}
           platforms: linux/amd64,linux/arm64
+          release: true
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          push_to_quay: true
-          quay_username: mongodb+mongodb_atlas_kubernetes
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
-          tags: |
-            ${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
-            quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
-            quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}-certified
+          tags: ghcr.io/${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
       - name: Certify Openshift images
         if: ${{ steps.tag.outputs.certify == 'true' }}
         uses: ./.github/actions/certify-openshift-images
