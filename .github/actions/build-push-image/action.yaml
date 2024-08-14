@@ -113,3 +113,6 @@ runs:
         GITHUB_TOKEN: ${{ inputs.gh_pat }}
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
+   - name: Push Docker Image
+     run: |
+      docker push 
