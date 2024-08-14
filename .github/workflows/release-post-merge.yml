@@ -62,6 +62,7 @@ jobs:
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
       TAG: ${{ inputs.tag || github.head_ref || github.ref_name }}
+      REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-release
     steps:
       - name: Free disk space
         run: | 
@@ -143,7 +144,7 @@ jobs:
           gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: ghcr.io/filipcirtog/mongodb-atlas-kubernetes/mongodb-atlas-kubernetes-operator-release:${{ steps.tag.outputs.version }}
+          tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.tag.outputs.version }}
       - name: Certify Openshift images
         if: ${{ steps.tag.outputs.certify == 'true' }}
         uses: ./.github/actions/certify-openshift-images
