@@ -151,7 +151,7 @@ jobs:
           gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.tag.outputs.version }}
+          tags: ghcr.io/filipcirtog/mongodb-atlas-kubernetes-operator-release:${{ steps.tag.outputs.version }}
       - name: Certify Openshift images
         if: ${{ steps.tag.outputs.certify == 'true' }}
         uses: ./.github/actions/certify-openshift-images
