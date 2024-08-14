@@ -116,4 +116,4 @@ runs:
     - name: Push Docker Image
       shell: bash
       run: |
-       docker push 
+       docker push ${{ inputs.tags}}
