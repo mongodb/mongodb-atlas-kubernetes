@@ -148,6 +148,7 @@ jobs:
           certified_version: ${{ steps.tag.outputs.certified_version }}
           platforms: linux/amd64,linux/arm64
           release: true
+          gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           tags: ghcr.io/${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
