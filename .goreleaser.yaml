@@ -25,3 +25,5 @@ dockers:
   - --label=org.opencontainers.image.licenses=MIT
 docker_manifests:
 - name_template: ["{{ .Env.GITHUB_TAGS }}"]
+  image_templates:
+    - {{ .Env.GITHUB_TAGS }}
