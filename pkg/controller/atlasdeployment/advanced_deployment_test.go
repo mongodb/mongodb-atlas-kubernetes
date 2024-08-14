@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -23,7 +22,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -751,74 +749,4 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			)
 		})
 	}
-}
-
-func TestDbUserBelongsToProjects(t *testing.T) {
-	t.Run("Database User refer to a different project name", func(*testing.T) {
-		dbUser := &akov2.AtlasDatabaseUser{
-			Spec: akov2.AtlasDatabaseUserSpec{
-				Project: &common.ResourceRefNamespaced{
-					Name: "project2",
-				},
-			},
-		}
-		project := &client.ObjectKey{
-			Name: "project1",
-		}
-
-		assert.False(t, dbUserBelongsToProject(dbUser, project))
-	})
-
-	t.Run("Database User is no", func(*testing.T) {
-		dbUser := &akov2.AtlasDatabaseUser{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "ns-2",
-			},
-			Spec: akov2.AtlasDatabaseUserSpec{
-				Project: &common.ResourceRefNamespaced{
-					Name: "project1",
-				},
-			},
-		}
-		project := &client.ObjectKey{
-			Name:      "project1",
-			Namespace: "ns-1",
-		}
-
-		assert.False(t, dbUserBelongsToProject(dbUser, project))
-	})
-
-	t.Run("Database User refer to a project with same name but in another namespace", func(*testing.T) {
-		dbUser := &akov2.AtlasDatabaseUser{
-			Spec: akov2.AtlasDatabaseUserSpec{
-				Project: &common.ResourceRefNamespaced{
-					Name:      "project1",
-					Namespace: "ns-2",
-				},
-			},
-		}
-		project := &client.ObjectKey{
-			Name:      "project1",
-			Namespace: "ns-1",
-		}
-
-		assert.False(t, dbUserBelongsToProject(dbUser, project))
-	})
-
-	t.Run("Database User refer to a valid project and namespace", func(*testing.T) {
-		dbUser := &akov2.AtlasDatabaseUser{
-			Spec: akov2.AtlasDatabaseUserSpec{
-				Project: &common.ResourceRefNamespaced{
-					Name:      "project1",
-					Namespace: "ns-1",
-				},
-			},
-		}
-		project := &client.ObjectKey{
-			Name:      "project1",
-			Namespace: "ns-1",
-		}
-
-		assert.True(t, dbUserBelongsToProject(dbUser, project))
-	})
 }

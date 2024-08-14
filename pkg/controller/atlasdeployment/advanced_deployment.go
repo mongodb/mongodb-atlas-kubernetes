@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 const FreeTier = "M0"
@@ -112,20 +114,32 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 
 func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, deploymentInAKO deployment.Deployment, connection *status.ConnectionStrings) error {
 	databaseUsers := akov2.AtlasDatabaseUserList{}
-	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
+
+	// list using resource name
+	atlasDeployment := deploymentInAKO.GetCustomResource()
+	listOpts := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProjectsIndex, atlasDeployment.Spec.Project.GetObject(atlasDeployment.Namespace).String()),
+	}
+	err := r.Client.List(ctx.Context, &databaseUsers, listOpts)
 	if err != nil {
 		return err
 	}
 
-	atlasDeployment := deploymentInAKO.GetCustomResource()
+	dbUsers := databaseUsers.Items
+
+	// list using project id
+	listOpts = &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProjectsIndex, deploymentInAKO.GetProjectID()),
+	}
+	err = r.Client.List(ctx.Context, &databaseUsers, listOpts)
+	if err != nil {
+		return err
+	}
+
+	dbUsers = append(dbUsers, databaseUsers.Items...)
+
 	secrets := make([]string, 0)
-	for i := range databaseUsers.Items {
-		dbUser := databaseUsers.Items[i]
-
-		if !dbUserBelongsToProject(&dbUser, atlasDeployment.Spec.Project.GetObject(atlasDeployment.Namespace)) {
-			continue
-		}
-
+	for _, dbUser := range dbUsers {
 		found := false
 		for _, c := range dbUser.Status.Conditions {
 			if c.Type == api.ReadyType && c.Status == v1.ConditionTrue {
@@ -211,20 +225,4 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context,
 	}
 
 	return nil
-}
-
-func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, projectRef *client.ObjectKey) bool {
-	if dbUser.Spec.Project.Name != projectRef.Name {
-		return false
-	}
-
-	if dbUser.Spec.Project.Namespace == "" && dbUser.Namespace != projectRef.Namespace {
-		return false
-	}
-
-	if dbUser.Spec.Project.Namespace != "" && dbUser.Spec.Project.Namespace != projectRef.Namespace {
-		return false
-	}
-
-	return true
 }
