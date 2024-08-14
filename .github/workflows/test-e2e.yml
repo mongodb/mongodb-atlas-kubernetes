@@ -80,8 +80,8 @@ jobs:
     name: Prepare E2E Bundle configuration and image
     runs-on: ubuntu-latest
     env:
-      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+      GHCR_REPO: ghcr.io/filipcirtog/mongodb-atlas-kubernetes-operator-prerelease
+      GHCR_BUNDLES_REPO: ghcr.io/filipcirtog/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
