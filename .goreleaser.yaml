@@ -3,7 +3,6 @@
 builds:
 - env: 
   - CGO_ENABLED=0
-  - gtags={{ .Env.GITHUB_TAGS }}
   goos:
   - linux
   goarch:
