@@ -107,7 +107,7 @@ runs:
       uses: goreleaser/goreleaser-action@v4
       with:
         version: latest
-        args: release
+        args: release --snapshot
       env:
         GITHUB_TAGS: ${{ inputs.tags}}
         GITHUB_TOKEN: ${{ inputs.gh_pat }}
