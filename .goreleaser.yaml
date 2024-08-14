@@ -6,23 +6,9 @@ builds:
   goos:
   - linux
   goarch:
-  - amd64
   - arm64
   main: ./cmd/manager/main.go  
 dockers:
-- image_templates: ["{{ .Env.GITHUB_TAGS }}"]
-  dockerfile: fast.Dockerfile
-  use: buildx
-  build_flag_templates:
-  - --platform=linux/amd64
-  - --label=org.opencontainers.image.title={{ .ProjectName }}
-  - --label=org.opencontainers.image.description={{ .ProjectName }}
-  - --label=org.opencontainers.image.url=https://github.com/filipcirtog/{{ .ProjectName }}
-  - --label=org.opencontainers.image.source=https://github.com/filipcirtog/{{ .ProjectName }}
-  - --label=org.opencontainers.image.version={{ .Version }}
-  - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-  - --label=org.opencontainers.image.revision={{ .FullCommit }}
-  - --label=org.opencontainers.image.licenses=MIT
 - image_templates: ["{{ .Env.GITHUB_TAGS }}"]
   goarch: arm64
   dockerfile: fast.Dockerfile
@@ -38,11 +24,4 @@ dockers:
   - --label=org.opencontainers.image.revision={{ .FullCommit }}
   - --label=org.opencontainers.image.licenses=MIT
 docker_manifests:
-- name_template: ghcr.io/filipcirtog/{{ .ProjectName }}:{{ .Version }}
-  image_templates:
-  - ghcr.io/filipcirtog/{{ .ProjectName }}:{{ .Version }}-amd64
-  - ghcr.io/filipcirtog/{{ .ProjectName }}:{{ .Version }}-arm64v8
-- name_template: ghcr.io/filipcirtog/{{ .ProjectName }}:latest
-  image_templates:
-  - ghcr.io/filipcirtog/{{ .ProjectName }}:{{ .Version }}-amd64
-  - ghcr.io/filipcirtog/{{ .ProjectName }}:{{ .Version }}-arm64v8
+- name_template: ["{{ .Env.GITHUB_TAGS }}"]
