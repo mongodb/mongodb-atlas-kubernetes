@@ -135,27 +135,15 @@ jobs:
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
-          repository: ${{ steps.tag.outputs.repo }}
+          repository: ${{ env.REPOSITORY }}
           file: ${{ steps.pick-dockerfile.outputs.dockerfile }}
           version: ${{ steps.tag.outputs.version }}
-          certified_version: ${{ steps.tag.outputs.certified_version }}
           platforms: linux/amd64,linux/arm64
           release: true
           gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.tag.outputs.version }}
-      - name: Certify Openshift images
-        if: ${{ steps.tag.outputs.certify == 'true' }}
-        uses: ./.github/actions/certify-openshift-images
-        with:
-          registry: quay.io
-          registry_password: ${{ secrets.QUAY_PASSWORD }}
-          repository: ${{ steps.tag.outputs.repo }}
-          version: ${{ steps.tag.outputs.certified_version }}
-          rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
-          rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
-          submit: true
       - name: Create configuration package
         run: |
           set -x
