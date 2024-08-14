@@ -7,29 +7,61 @@
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
 version: 2
-
 before:
   hooks:
     - go mod tidy
-
 builds:
-  - env:
-      - CGO_ENABLED=0
+  - main: ./cmd/manager/main.go
     goos:
       - linux
     goarch:
+      - arm64
       - amd64
-    main: ./cmd/manager/main.go  # Adjust this path to your main package
-    ldflags:
-      - -s -w -X main.version={{.Version}}
+    env:
+      - CGO_ENABLED=0
+archives:
+- format: zip
 
+  # Include version in archive only for release builds and not for snapshot builds.
+  # Snapshot archives must have a stable file name such that the artifacts in the nightly
+  # release are automatically overwritten. If the snapshot version is included in the
+  # file name then additional logic to clean up older builds would be needed.
+  name_template: 'databricks_cli_{{ if not .IsSnapshot }}{{ .Version }}_{{ end }}{{ .Os }}_{{ .Arch }}'
+  
 dockers:
   - image_templates:
-      - "docker.io/filipcirtog/filip1:3"
+      - "{{ .Env.GITHUB_TAGS }}-arm64"
+    goarch: arm64
     dockerfile: fast.Dockerfile
-    skip_push: false  # Skip pushing in local tests, override via environment
     use: buildx
     build_flag_templates:
-      - --platform={{- join .Builds "linux/amd64,linux/arm64" }}
-    ids:
-      - operator
+      - --platform=linux/arm64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/filipcirtog/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/filipcirtog/{{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+  - image_templates:
+      - "{{ .Env.GITHUB_TAGS }}-amd64"
+    goarch: amd64
+    dockerfile: fast.Dockerfile
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/filipcirtog/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/filipcirtog/{{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+
+docker_manifests:
+  - name_template: "{{ .Env.GITHUB_TAGS }}"
+    image_templates:
+      - "{{ .Env.GITHUB_TAGS }}-amd64"
+      - "{{ .Env.GITHUB_TAGS }}-arm64"

@@ -53,6 +53,10 @@ inputs:
     description: the ghpat
     required: false
     default: "false"
+  release:
+    description: if it is a release or not
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -104,11 +108,53 @@ runs:
         username: ${{ inputs.quay_username }}
         password: ${{ inputs.quay_password }}
     - name: Set up GoReleaser
+      if: ${{ inputs.release == 'false' }}
+      uses: goreleaser/goreleaser-action@v4
+      with:
+        version: latest
+        args: release --snapshot
+      env:
+        GITHUB_TAGS: ${{ inputs.tags}}
+        GITHUB_TOKEN: ${{ inputs.gh_pat }}
+        DOCKER_USERNAME: ${{ inputs.docker_username }}
+        DOCKER_PASSWORD: ${{ inputs.docker_password }}
+    - name: Set up GoReleaser
+      if: ${{ inputs.release == 'true' }}
       uses: goreleaser/goreleaser-action@v4
       with:
         version: latest
         args: release
       env:
+        GITHUB_TAGS: ${{ inputs.tags}}
         GITHUB_TOKEN: ${{ inputs.gh_pat }}
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
+    
+    - name: Push Docker Image amd
+      if: ${{ inputs.release == 'false' }}
+      shell: bash
+      run: |
+       docker push ${{ inputs.tags}}-amd64
+    - name: Push Docker Image arm
+      if: ${{ inputs.release == 'false' }}
+      shell: bash
+      run: |
+       docker push ${{ inputs.tags}}-arm64
+    - name: Create and push Docker manifest
+      if: ${{ inputs.release == 'false' }}
+      shell: bash
+      run: |
+        # Create Docker manifest
+        docker manifest create ${{ inputs.tags }} \
+          ${{ inputs.tags }}-amd64 \
+          ${{ inputs.tags }}-arm64
+        
+        # Annotate the manifest
+        docker manifest annotate ${{ inputs.tags }} ${{ inputs.tags }}-amd64 --os linux --arch amd64
+        docker manifest annotate ${{ inputs.tags }} ${{ inputs.tags }}-arm64 --os linux --arch arm64
+        
+        # Push the manifest
+        docker manifest push ${{ inputs.tags }}
+
+
+    

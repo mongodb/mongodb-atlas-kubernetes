@@ -57,9 +57,9 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          repository: ghcr.io/${{ env.REPOSITORY }}
+          repository: ${{ env.REPOSITORY }}
           version: ${{ steps.prepare.outputs.tag }}
-          tags: v3
+          tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
@@ -80,8 +80,8 @@ jobs:
     name: Prepare E2E Bundle configuration and image
     runs-on: ubuntu-latest
     env:
-      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+      GHCR_REPO: ghcr.io/filipcirtog/mongodb-atlas-kubernetes-operator-prerelease
+      GHCR_BUNDLES_REPO: ghcr.io/filipcirtog/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
