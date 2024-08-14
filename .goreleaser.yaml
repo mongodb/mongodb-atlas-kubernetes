@@ -1,29 +1,43 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
 
-# .goreleaser.yml
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+before:
+  hooks:
+    - go mod tidy
 builds:
-- env: 
-  - CGO_ENABLED=0
-  goos:
-  - linux
-  goarch:
-  - arm64
-  main: ./cmd/manager/main.go  
+  - main: ./cmd/manager/main.go
+    goos:
+      - linux
+    goarch:
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
 dockers:
-- image_templates: ["{{ .Env.GITHUB_TAGS }}"]
-  goarch: arm64
-  dockerfile: fast.Dockerfile
-  use: buildx
-  build_flag_templates:
-  - --platform=linux/arm64/v8
-  - --label=org.opencontainers.image.title={{ .ProjectName }}
-  - --label=org.opencontainers.image.description={{ .ProjectName }}
-  - --label=org.opencontainers.image.url=https://github.com/filipcirtog/{{ .ProjectName }}
-  - --label=org.opencontainers.image.source=https://github.com/filipcirtog/{{ .ProjectName }}
-  - --label=org.opencontainers.image.version={{ .Version }}
-  - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-  - --label=org.opencontainers.image.revision={{ .FullCommit }}
-  - --label=org.opencontainers.image.licenses=MIT
+  - image_templates:
+      - "{{ .Env.GITHUB_TAGS }}"
+    goarch: arm64
+    dockerfile: fast.Dockerfile
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/arm64/v8
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/filipcirtog/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/filipcirtog/{{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+
 docker_manifests:
-- name_template: ["{{ .Env.GITHUB_TAGS }}"]
-  image_templates:
-    - {{ .Env.GITHUB_TAGS }}
+  - name_template: "{{ .Env.GITHUB_TAGS }}"
+    image_templates:
+      - "{{ .Env.GITHUB_TAGS }}"
+      - "{{ .Env.GITHUB_TAGS }}"
