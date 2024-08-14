@@ -363,19 +363,22 @@ func TestRegularClusterReconciliation(t *testing.T) {
 	}
 	d.Spec.DeploymentSpec.SearchNodes = searchNodes
 
+	logger := zaptest.NewLogger(t)
+
 	sch := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(sch))
 	require.NoError(t, corev1.AddToScheme(sch))
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
+	dbUserIndexer := indexer.NewAtlasDatabaseUserByProjectsIndexer(logger)
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(sch).
 		WithObjects(secret, project, bPolicy, bSchedule, d).
 		WithStatusSubresource(bPolicy, bSchedule).
+		WithIndex(dbUserIndexer.Object(), dbUserIndexer.Name(), dbUserIndexer.Keys).
 		Build()
 
 	orgID := "0987654321"
-	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
@@ -522,7 +525,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 
 	reconciler := &AtlasDeploymentReconciler{
 		Client:                      k8sClient,
-		Log:                         logger,
+		Log:                         logger.Sugar(),
 		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
@@ -576,18 +579,21 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	}
 	d := akov2.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
 
+	logger := zaptest.NewLogger(t)
+
 	sch := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(sch))
 	require.NoError(t, corev1.AddToScheme(sch))
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
+	dbUserIndexer := indexer.NewAtlasDatabaseUserByProjectsIndexer(logger)
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(sch).
 		WithObjects(secret, project, d).
+		WithIndex(dbUserIndexer.Object(), dbUserIndexer.Name(), dbUserIndexer.Keys).
 		Build()
 
 	orgID := "0987654321"
-	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			err := &admin.GenericOpenAPIError{}
@@ -646,7 +652,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 
 	reconciler := &AtlasDeploymentReconciler{
 		Client:                      k8sClient,
-		Log:                         logger,
+		Log:                         logger.Sugar(),
 		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
