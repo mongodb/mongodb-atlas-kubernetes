@@ -25,8 +25,9 @@ jobs:
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
+
       - run: go version
-      
+
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e') -coverprofile=coverage.out
 
