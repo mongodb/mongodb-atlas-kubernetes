@@ -65,3 +65,27 @@ docker_manifests:
     image_templates:
       - "{{ .Env.GITHUB_TAGS }}-amd64"
       - "{{ .Env.GITHUB_TAGS }}-arm64"
+
+release:
+  draft: true
+  header: |
+    # MongoDB Atlas Operator x.y.z
+
+    > See the internal "Release Note Authoring Guidance" Wiki page for details
+
+    ## Warnings
+
+    > Put here anything that user needs to know to use this version. In most cases, this section will be empty and removed.
+
+    ## New features, improvements and bug fixes
+
+    > Mention shipped things in this particular order. In any improvements need migration guides, please include them here as well.
+
+    ## Deprecations and removals
+
+    > First deprecations and then removals.
+
+    Images can be found at: https://quay.io/mongodb/mongodb-atlas-kubernetes-operator
+
+    Supported Kubernetes versions: `e.g. 1.27-1.29`
+    Supported OpenShift versions: `e.g 4.14`
