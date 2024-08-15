@@ -30,6 +30,8 @@ jobs:
       - name: Echo the Draft Release TAG
         run: echo ${{ env.DRAFT_RELEASE_TAG }}
       - name: Get Draft Release URL
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASE_URL=$(gh release view ${{ env.DRAFT_RELEASE_TAG }} --repo "${{ github.repository }}" --json url --jq '.url')
           echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
