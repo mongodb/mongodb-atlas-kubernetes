@@ -89,5 +89,3 @@ release:
 
     Supported Kubernetes versions: `e.g. 1.27-1.29`
     Supported OpenShift versions: `e.g 4.14`
-  extra_files:
-    - glob: ./atlas-operator-all-in-one-{{ .Version }}.tar.gz
