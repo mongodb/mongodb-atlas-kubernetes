@@ -25,7 +25,6 @@ jobs:
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
-
       - run: go version
       
       - name: Run testing
