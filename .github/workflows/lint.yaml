@@ -25,7 +25,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DRAFT_RELEASE_URL=$(gh release list --limit 1 --repo "${{ github.repository }}" --json url --jq '.[0].name')
+          DRAFT_RELEASE_URL=$(gh release list --limit 1 --repo "${{ github.repository }}" --json name --jq '.[0].name')
           echo "DRAFT_RELEASE_URL=$DRAFT_RELEASE_URL" >> $GITHUB_ENV
       - name: Echo the Draft Release URL
         run: echo ${{ env.DRAFT_RELEASE_URL }}
