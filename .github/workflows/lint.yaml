@@ -1,0 +1,29 @@
+# Check for every push
+name: Lint
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "${{ github.workspace }}/go.mod"
+          cache: false
+
+      - name: lint
+        run: make lint
+
+      - name: Run ShellCheck
+        uses: bewuethr/shellcheck-action@v2
+
+      - name: Run govulncheck
+        run: make vulncheck
