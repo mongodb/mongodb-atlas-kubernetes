@@ -133,6 +133,10 @@ jobs:
             fi
       - name: Log in to ghcr.io registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Create configuration package
+        run: |
+          set -x
+          tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
@@ -145,10 +149,6 @@ jobs:
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           tags: ghcr.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
-      - name: Create configuration package
-        run: |
-          set -x
-          tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
       - name: Create Release
         if: steps.tag.outputs.release_to_github == 'true'
         id: create_release
