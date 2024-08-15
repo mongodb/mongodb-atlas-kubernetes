@@ -62,7 +62,6 @@ jobs:
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
       TAG: ${{ inputs.tag || github.head_ref || github.ref_name }}
-      REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Free disk space
         run: | 
@@ -145,7 +144,7 @@ jobs:
           gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.tag.outputs.version }}
+          tags: ghcr.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
       - name: Create configuration package
         run: |
           set -x
