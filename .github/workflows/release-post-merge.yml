@@ -153,7 +153,7 @@ jobs:
           DRAFT_RELEASE_URL=$(gh release list --limit 1 --repo "${{ github.repository }}" --json url --jq '.[0].url')
           echo "DRAFT_RELEASE_URL=$DRAFT_RELEASE_URL" >> $GITHUB_ENV
       - name: Echo the Draft Release URL
-        run: echo ${{ env.DRAFT_RELEASE_URL }
+        run: echo ${{ env.DRAFT_RELEASE_URL }}
       - name: Create configuration package
         run: |
           set -x
