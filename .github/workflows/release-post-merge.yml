@@ -133,10 +133,6 @@ jobs:
             fi
       - name: Log in to ghcr.io registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-      - name: Create configuration package
-        run: |
-          set -x
-          tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
@@ -149,18 +145,19 @@ jobs:
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           tags: ghcr.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
-      - name: Create Release
-        if: steps.tag.outputs.release_to_github == 'true'
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.TAG }}
-          release_name: ${{ env.TAG }}
-          body_path: docs/release-notes/release-notes-template.md
-          draft: true
-          prerelease: false
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh -y
+      - name: Get Draft Release URL
+        id: get_draft_release_url
+        run: |
+          DRAFT_RELEASE_URL=$(gh release list --limit 1 --repo "${{ github.repository }}" --json url --jq '.[0].url')
+          echo "DRAFT_RELEASE_URL=$DRAFT_RELEASE_URL" >> $GITHUB_ENV
+      - name: Echo the Draft Release URL
+        run: echo ${{ env.DRAFT_RELEASE_URL }
+      - name: Create configuration package
+        run: |
+          set -x
+          tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
       - name: Upload Release Asset
         if: steps.tag.outputs.release_to_github == 'true'
         id: upload-release-asset
@@ -168,7 +165,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          upload_url: ${{ env.DRAFT_RELEASE_URL}} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: ./atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_name: atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_content_type: application/tgz
