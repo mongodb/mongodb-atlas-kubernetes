@@ -21,12 +21,18 @@ jobs:
       - name: Install GitHub CLI
         run: sudo apt-get install gh -y
       - name: Get Draft Release URL
-        id: get_draft_release_url
+        id: get_draft_release_tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DRAFT_RELEASE_URL=$(gh release list --limit 1 --repo "${{ github.repository }}" --json name --jq '.[0].name')
-          echo "DRAFT_RELEASE_URL=$DRAFT_RELEASE_URL" >> $GITHUB_ENV
+          DRAFT_RELEASE_TAG=$(gh release list --limit 1 --repo "${{ github.repository }}" --json name --jq '.[0].name')
+          echo "DRAFT_RELEASE_TAG=$DRAFT_RELEASE_TAG" >> $GITHUB_ENV
+      - name: Echo the Draft Release TAG
+        run: echo ${{ env.DRAFT_RELEASE_TAG }}
+      - name: Get Draft Release URL
+        run: |
+          RELEASE_URL=$(gh release view ${{ env.DRAFT_RELEASE_TAG }} --repo "${{ github.repository }}" --json url --jq '.url')
+          echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
       - name: Echo the Draft Release URL
-        run: echo ${{ env.DRAFT_RELEASE_URL }}
+        run: echo ${{ env.RELEASE_URL }}
 
