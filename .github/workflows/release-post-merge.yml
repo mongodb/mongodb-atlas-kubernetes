@@ -160,7 +160,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DRAFT_RELEASE_URL=$(gh release view ${{ env.DRAFT_RELEASE_TAG }} --repo "${{ github.repository }}" --json url --jq '.url')
+          DRAFT_RELEASE_URL=$(gh release view ${{ env.DRAFT_RELEASE_TAG }} --repo "${{ github.repository }}" --json uploadUrl --jq '.uploadUrl')
           echo "DRAFT_RELEASE_URL=$DRAFT_RELEASE_URL" >> $GITHUB_ENV
       - name: Echo the Draft Release URL
         run: echo ${{ env.DRAFT_RELEASE_URL }}
