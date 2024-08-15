@@ -18,4 +18,15 @@ jobs:
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh -y
+      - name: Get Draft Release URL
+        id: get_draft_release_url
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DRAFT_RELEASE_URL=$(gh release list --limit 1 --repo "${{ github.repository }}" --json url --jq '.[0].url')
+          echo "DRAFT_RELEASE_URL=$DRAFT_RELEASE_URL" >> $GITHUB_ENV
+      - name: Echo the Draft Release URL
+        run: echo ${{ env.DRAFT_RELEASE_URL }}
 
