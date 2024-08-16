@@ -53,6 +53,9 @@ inputs:
     description: if it is a release or not
     required: false
     default: "false"
+  github_token:
+    description: The github token
+    required: false
 runs:
   using: "composite"
   steps:
@@ -123,6 +126,7 @@ runs:
       env:
         REPOSITORY: ${{inputs.repository}}
         VERSION: ${{ inputs.version}}
+        GITHUB_TOKEN: ${{ inputs.github_token}}
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
     

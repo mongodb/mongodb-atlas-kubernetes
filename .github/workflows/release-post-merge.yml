@@ -136,15 +136,13 @@ jobs:
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
-          repository: ${{ env.REPOSITORY }}
+          repository: ${{ steps.tag.outputs.repo }}
           file: ${{ steps.pick-dockerfile.outputs.dockerfile }}
           version: ${{ steps.tag.outputs.version }}
-          platforms: linux/amd64,linux/arm64
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           release: true
-          gh_pat: ${{ secrets.GH_PAT }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: ghcr.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
       - name: Install GitHub CLI
         run: sudo apt-get install gh -y
       - name: Get Draft Release URL
