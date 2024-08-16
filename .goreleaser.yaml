@@ -30,7 +30,7 @@ archives:
   
 dockers:
   - image_templates:
-      - "{{ if not .IsSnapshot }}{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64{{ end }}"
+      - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64{{ end }}"
     goarch: arm64
     dockerfile: fast.Dockerfile
     use: buildx
@@ -38,7 +38,7 @@ dockers:
       - --build-arg=ARCH=arm64
       - --platform=linux/arm64
   - image_templates:
-      - "{{ if not .IsSnapshot }}{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64{{ end }}"
+      - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64{{ end }}"
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
@@ -95,7 +95,7 @@ dockers:
       - --platform=linux/amd64
 
 docker_manifests:
-  - name_template: "{{ if not .IsSnapshot }}{{.Env.REPOSITORY}}:{{ .Env.VERSION }}{{ end }}"
+  - name_template: "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}{{ end }}"
     image_templates:
       - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
       - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
