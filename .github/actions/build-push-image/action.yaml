@@ -146,11 +146,11 @@ runs:
           "ghcr.io/${{ inputs.repository }}${{ inputs.version }}-amd64"
         
         # Annotate the manifest
-        docker manifest annotate "ghcr.io/${{ inputs.repository }}${{ inputs.version }}" "ghcr.io/${{ inputs.repository }}${{ inputs.version }}-amd64 --os linux --arch amd64"
-        docker manifest annotate "ghcr.io/${{ inputs.repository }}${{ inputs.version }}" "ghcr.io/${{ inputs.repository }}${{ inputs.version }}-arm64 --os linux --arch arm64"
+        docker manifest annotate "ghcr.io/${{ inputs.repository }}${{ inputs.version }}" "ghcr.io/${{ inputs.repository }}${{ inputs.version }}-amd64" --os linux --arch amd64
+        docker manifest annotate "ghcr.io/${{ inputs.repository }}${{ inputs.version }}" "ghcr.io/${{ inputs.repository }}${{ inputs.version }}-arm64" --os linux --arch arm64
         
         # Push the manifest
-        docker manifest push "ghcr.io/${{ inputs.repository }}${{ inputs.version }}""
+        docker manifest push "ghcr.io/${{ inputs.repository }}${{ inputs.version }}"
 
 
     
