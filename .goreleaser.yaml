@@ -29,7 +29,6 @@ archives:
   name_template: 'mongodb-atlas-kubernetes-operator-{{ if not .IsSnapshot }}{{ .Version }}_{{ end }}{{ .Os }}_{{ .Arch }}'
   
 dockers:
-  #No repo
   - image_templates:
       - "{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
     goarch: arm64
@@ -40,7 +39,6 @@ dockers:
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
-  #Quay repo
   - image_templates:
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
     goarch: arm64
@@ -51,7 +49,6 @@ dockers:
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
-  #Quay repo certified
   - image_templates:
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-arm64"
     goarch: arm64
@@ -62,7 +59,6 @@ dockers:
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
-  #Ghcr repo 
   - image_templates:
       - "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
     goarch: arm64
@@ -75,22 +71,18 @@ dockers:
     use: buildx
 
 docker_manifests:
-  #No repo
   - name_template: "{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
     image_templates:
       - "{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
       - "{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
-  #Quay repo
   - name_template: "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
     image_templates:
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
-  #Quay repo certified
    - name_template: "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified"
     image_templates:
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-arm64"
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-amd64"
-  #Ghcr repo
    - name_template: "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
     image_templates:
       - "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
