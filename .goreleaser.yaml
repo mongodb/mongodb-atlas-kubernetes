@@ -30,63 +30,63 @@ archives:
   
 dockers:
   - image_templates:
-      - "{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
+      - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
     goarch: arm64
     dockerfile: fast.Dockerfile
     use: buildx
   - image_templates:
-      - "{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
+      - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
   - image_templates:
-      - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
+      - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
     goarch: arm64
     dockerfile: fast.Dockerfile
     use: buildx
   - image_templates:
-      - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
+      - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
   - image_templates:
-      - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-arm64"
+      - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-certified-arm64"
     goarch: arm64
     dockerfile: fast.Dockerfile
     use: buildx
   - image_templates:
-      - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-amd64"
+      - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-certified-amd64"
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
   - image_templates:
-      - "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
+      - "ghcr.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
     goarch: arm64
     dockerfile: fast.Dockerfile
     use: buildx
   - image_templates:
-      - "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
+      - "ghcr.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
 
 docker_manifests:
-  - name_template: "{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
+  - name_template: "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}"
     image_templates:
-      - "{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
-      - "{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
-  - name_template: "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
+      - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
+      - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
+  - name_template: "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}"
     image_templates:
-      - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
-      - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
-  - name_template: "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified"
+      - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
+      - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
+  - name_template: "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-certified"
     image_templates:
-      - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-arm64"
-      - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-amd64"
+      - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-certified-arm64"
+      - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-certified-amd64"
   - name_template: "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
     image_templates:
-      - "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
-      - "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
+      - "ghcr.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
+      - "ghcr.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
 
 
 release:
