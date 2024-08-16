@@ -7,7 +7,7 @@ inputs:
     default: 'false'
   platforms:
     description: The list of platforms for which the image will be built
-    required: true
+    required: false
   version:
     description: The version of the operator will be built
     required: true
@@ -48,11 +48,7 @@ inputs:
     default: "false"
   tags:
     description: A list of tags applied to the image
-    required: true
-  gh_pat:
-    description: the ghpat
     required: false
-    default: "false"
   release:
     description: if it is a release or not
     required: false
@@ -114,8 +110,8 @@ runs:
         version: latest
         args: release --snapshot
       env:
-        GITHUB_TAGS: ${{ inputs.tags}}
-        GITHUB_TOKEN: ${{ inputs.gh_pat }}
+        REPOSITORY: ${{inputs.repository}}
+        VERSION: ${{ inputs.version}}
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
     - name: Set up GoReleaser
@@ -125,8 +121,8 @@ runs:
         version: latest
         args: release
       env:
-        GITHUB_TAGS: ${{ inputs.tags}}
-        GITHUB_TOKEN: ${{ inputs.gh_pat }}
+        REPOSITORY: ${{inputs.repository}}
+        VERSION: ${{ inputs.version}}
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
     
@@ -134,27 +130,27 @@ runs:
       if: ${{ inputs.release == 'false' }}
       shell: bash
       run: |
-       docker push ${{ inputs.tags}}-amd64
+       docker push ghcr.io/{{inputs.repository}}{{inputs.version}}-amd64
     - name: Push Docker Image arm
       if: ${{ inputs.release == 'false' }}
       shell: bash
       run: |
-       docker push ${{ inputs.tags}}-arm64
+        docker push ghcr.io/{{inputs.repository}}{{inputs.version}}-arm64
     - name: Create and push Docker manifest
       if: ${{ inputs.release == 'false' }}
       shell: bash
       run: |
         # Create Docker manifest
         docker manifest create ${{ inputs.tags }} \
-          ${{ inputs.tags }}-amd64 \
-          ${{ inputs.tags }}-arm64
+          ghcr.io/{{inputs.repository}}{{inputs.version}}-arm64 \
+          ghcr.io/{{inputs.repository}}{{inputs.version}}-amd64
         
         # Annotate the manifest
-        docker manifest annotate ${{ inputs.tags }} ${{ inputs.tags }}-amd64 --os linux --arch amd64
-        docker manifest annotate ${{ inputs.tags }} ${{ inputs.tags }}-arm64 --os linux --arch arm64
+        docker manifest annotate ${{ ighcr.io/{{inputs.repository}}{{inputs.version}} }} ${{ ghcr.io/{{inputs.repository}}{{inputs.version}} }}-amd64 --os linux --arch amd64
+        docker manifest annotate ${{ ighcr.io/{{inputs.repository}}{{inputs.version}} }} ${{ ghcr.io/{{inputs.repository}}{{inputs.version}} }}-arm64 --os linux --arch arm64
         
         # Push the manifest
-        docker manifest push ${{ inputs.tags }}
+        docker manifest push ghcr.io/{{inputs.repository}}{{inputs.version}}
 
 
     
