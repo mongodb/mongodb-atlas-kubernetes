@@ -79,14 +79,15 @@ docker_manifests:
     image_templates:
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
-   - name_template: "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified"
+  - name_template: "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified"
     image_templates:
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-arm64"
       - "quay.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-certified-amd64"
-   - name_template: "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
+  - name_template: "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
     image_templates:
       - "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-arm64"
       - "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}-amd64"
+
 
 release:
   draft: true
