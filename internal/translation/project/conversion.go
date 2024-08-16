@@ -13,7 +13,7 @@ type Project struct {
 	Name                      string
 	RegionUsageRestrictions   string
 	WithDefaultAlertsSettings bool
-	Tags                      []tag.Tag
+	Tags                      []*akov2.TagSpec
 }
 
 func NewProject(project *akov2.AtlasProject, orgID string) *Project {
