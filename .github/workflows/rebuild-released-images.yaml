@@ -242,11 +242,10 @@ jobs:
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
         run: |
-          devbox run -- '
-          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures
-          '
+          devbox run -- 'make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          devbox run -- 'make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          devbox run -- 'make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures'
+          
       - name: Self-verify images (Devbox)
         if: steps.check-signing-support.outputs.sign == 'true' && steps.check-devbox.outputs.devbox-build == 'true'
         env:
@@ -254,8 +253,7 @@ jobs:
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
         run: |
-          devbox run -- '
-          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures
-          '
+          devbox run -- 'make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          devbox run -- 'make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          devbox run -- 'make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures'
+          
