@@ -30,6 +30,16 @@ archives:
   
 dockers:
   - image_templates:
+      - "{{ if not .IsSnapshot }}{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64{{ end }}"
+    goarch: arm64
+    dockerfile: fast.Dockerfile
+    use: buildx
+  - image_templates:
+      - "{{ if not .IsSnapshot }}{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64{{ end }}"
+    goarch: amd64
+    dockerfile: fast.Dockerfile
+    use: buildx
+  - image_templates:
       - "ghcr.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
     goarch: arm64
     dockerfile: fast.Dockerfile
@@ -41,6 +51,10 @@ dockers:
     use: buildx
 
 docker_manifests:
+  - name_template: "{{ if not .IsSnapshot }}{{.Env.REPOSITORY}}:{{ .Env.VERSION }}{{ end }}"
+    image_templates:
+      - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
+      - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
   - name_template: "ghcr.io/{{.Env.REPOSITORY}}{{ .Env.VERSION }}"
     image_templates:
       - "ghcr.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
