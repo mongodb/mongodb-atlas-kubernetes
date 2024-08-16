@@ -34,11 +34,13 @@ dockers:
     goarch: arm64
     dockerfile: fast.Dockerfile
     use: buildx
+    skip: true
   - image_templates:
       - "{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-amd64"
     goarch: amd64
     dockerfile: fast.Dockerfile
     use: buildx
+    skip: true
   - image_templates:
       - "quay.io/{{.Env.REPOSITORY}}:{{ .Env.VERSION }}-arm64"
     goarch: arm64
