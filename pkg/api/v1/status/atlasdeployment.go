@@ -1,9 +1,6 @@
 package status
 
 import (
-	"go.mongodb.org/atlas/mongodbatlas"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 )
 
@@ -88,6 +85,8 @@ type PrivateEndpoint struct {
 	// Private-endpoint-aware mongodb+srv:// connection string for this private endpoint.
 	SRVConnectionString string `json:"srvConnectionString,omitempty"`
 
+	SRVShardOptimizedConnectionString string `json:"srvShardOptimizedConnectionString,omitempty"`
+
 	// Type of MongoDB process that you connect to with the connection strings
 	//
 	// Atlas returns:
@@ -155,20 +154,9 @@ func AtlasDeploymentMongoDBVersionOption(mongoDBVersion string) AtlasDeploymentS
 	}
 }
 
-func AtlasDeploymentConnectionStringsOption(connectionStrings *mongodbatlas.ConnectionStrings) AtlasDeploymentStatusOption {
+func AtlasDeploymentConnectionStringsOption(connStr *ConnectionStrings) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
-		cs := ConnectionStrings{}
-		err := compat.JSONCopy(&cs, connectionStrings)
-		if err != nil {
-			return
-		}
-		s.ConnectionStrings = &cs
-	}
-}
-
-func AtlasDeploymentMongoURIUpdatedOption(mongoURIUpdated string) AtlasDeploymentStatusOption {
-	return func(s *AtlasDeploymentStatus) {
-		s.MongoURIUpdated = mongoURIUpdated
+		s.ConnectionStrings = connStr
 	}
 }
 

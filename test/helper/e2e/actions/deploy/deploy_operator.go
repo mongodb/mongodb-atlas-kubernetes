@@ -109,6 +109,7 @@ func CreateUsers(testData *model.TestDataProvider) {
 			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("User was not created: %v", user))
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: user.GetName(), Namespace: user.GetNamespace()}, user))
+				g.Expect(user.Status.Conditions).ShouldNot(BeEmpty())
 				for _, condition := range user.Status.Conditions {
 					if condition.Type == api.ReadyType {
 						g.Expect(condition.Status).Should(Equal(corev1.ConditionTrue), "User should be ready")
