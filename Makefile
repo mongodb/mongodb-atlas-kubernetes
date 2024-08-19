@@ -302,6 +302,8 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 
 .PHONY: image
 image: manager ## Build the operator image
+	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64 VERSION=$(VERSION)
+	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64 VERSION=$(VERSION)
 	$(CONTAINER_ENGINE) build -f fast.Dockerfile --build-arg VERSION=$(VERSION) -t $(OPERATOR_IMAGE) .
 	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
 
