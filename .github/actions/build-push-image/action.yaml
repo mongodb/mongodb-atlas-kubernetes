@@ -58,14 +58,14 @@ runs:
   using: "composite"
   steps:
     - name: Check out code
-      uses: actions/checkout@v4
       if: ${{ inputs.forked == false }}
+      uses: actions/checkout@v4
       with:
         submodules: true
         fetch-depth: 0
     - name: Check out code for forked PR
-      uses: actions/checkout@v4
       if: ${{ inputs.forked == true }}
+      uses: actions/checkout@v4
       with:
         ref: ${{github.event.pull_request.head.sha}}
         repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -80,24 +80,24 @@ runs:
       uses: jetify-com/devbox-install-action@v0.11.0
 
     - name: Download Go build dependencies (Devbox)
-      run: devbox run -- go mod download
       if: ${{ inputs.devbox-build == 'true' }}
+      run: devbox run -- go mod download
       shell: bash
 
     - name: Build all platforms (Devbox)
+      if: ${{ inputs.devbox-build == 'true' }}
       env:
         VERSION: ${{ inputs.version }}
       run: devbox run -- 'make all-platforms'
-      if: ${{ inputs.devbox-build == 'true' }}
       shell: bash
 
     # Non-Devbox setup steps
     - name: Set up Go
+      if: ${{ inputs.devbox-build == 'false' }}
       uses: actions/setup-go@v4
       with:
         go-version-file: "${{ github.workspace }}/go.mod"
         cache: false
-      if: ${{ inputs.devbox-build == 'false' }}
 
     - name: Setup cache
       if: ${{ inputs.get-existing-cache == 'false' && inputs.devbox-build == 'false' }}
@@ -109,17 +109,17 @@ runs:
         key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
 
     - name: Download go build dependencies (Non-Devbox)
+      if: ${{ inputs.devbox-build == 'false' }}
       shell: bash
       run: |
         go mod download
-      if: ${{ inputs.devbox-build == 'false' }}
 
     - name: Build all platforms (Non-Devbox)
+      if: ${{ inputs.devbox-build == 'false' }}
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
       run: make all-platforms
-      if: ${{ inputs.devbox-build == 'false' }}
 
     - name: Login to docker registry
       if: ${{ inputs.push_to_docker == 'true' }}

@@ -3,7 +3,7 @@
     "yq-go@latest",
     "kubebuilder@latest",
     "jq@latest",
-    "go@latest",
+    "go@1.22.5",
     "gotests@latest",
     "act@latest",
     "kubectl@latest",
@@ -21,6 +21,6 @@
     "ginkgo@latest",
     "operator-sdk@latest",
     "shellcheck@latest",
-    "golangci-lint@latest"
+    "golangci-lint@1.59.1"
   ]
 }

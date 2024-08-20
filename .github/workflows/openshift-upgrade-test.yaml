@@ -60,8 +60,6 @@ jobs:
           wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
           tar xvf openshift.tar.gz
           chmod +x oc && sudo mv oc /usr/local/bin/oc
-      - name: Install Go dependencies
-        run: devbox run -- 'go install golang.org/x/tools/cmd/goimports@latest'
       - name: Login to registry
         run: docker login -u="${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_PASSWORD }}" quay.io
       - name: Run openshift upgrade test
