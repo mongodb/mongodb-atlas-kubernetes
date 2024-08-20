@@ -199,7 +199,7 @@ jobs:
       - name: Create configuration package
         run: |
           devbox run -- 'set -x'
-          devbox run -- 'tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz 
+          devbox run -- 'tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml'
       - name: Create Release
         if: steps.tag.outputs.release_to_github == 'true'
         id: create_release
