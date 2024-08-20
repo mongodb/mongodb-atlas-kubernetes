@@ -36,18 +36,17 @@ jobs:
         VERSION: ${{ env.VERSION }}
         ENV: prod
 
-    - name: Setup Go
-      uses: actions/setup-go@v5
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.11.0
       with:
-        go-version-file: "${{ github.workspace }}/go.mod"
-        cache: false
+        enable-cache: 'true'
 
     - name: Download dependencies
-      run: go mod download
+      run: devbox run -- 'go mod download'
 
     - name: Generate SDLC checklist files for released version
       run: |
-         make gen-sdlc-checklist VERSION=${{ env.VERSION }} AUTHORS=${{ env.AUTHORS }}
+         devbox run -- 'make gen-sdlc-checklist VERSION=${{ env.VERSION }} AUTHORS=${{ env.AUTHORS }}'
 
     - name: Configure Git
       run: |
@@ -57,7 +56,7 @@ jobs:
 
     - name: Create branch and push it
       run: |
-        make check-major-version
+        devbox run -- 'make check-major-version'
         BRANCH="release/${VERSION}"
         git checkout -b $BRANCH
         git add -f ./deploy ./bundle bundle.Dockerfile docs/releases
