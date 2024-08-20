@@ -98,23 +98,16 @@ jobs:
           submodules: true
           fetch-depth: 0
           ref: ${{ env.TAG }}
-      - name: Set up Go
-        if: ${{ steps.tag.outputs.release_helm == 'true' }}
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/tools/makejwt/go.mod"
-          cache: false
-      - name: Set up Go (skip JWT)
-        if: ${{ steps.tag.outputs.release_helm == 'false' }}
-        uses: actions/setup-go@v5
-        with:
-          cache: false
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
       - name: Trigger helm post release workflow
         if: ${{ steps.tag.outputs.release_helm == 'true' }}
         run: |
-          make release-helm JWT_RSA_PEM_KEY_BASE64="${{ secrets.AKO_RELEASER_RSA_KEY_BASE64 }}" \
+            nix-shell --run 'make release-helm JWT_RSA_PEM_KEY_BASE64="${{ secrets.AKO_RELEASER_RSA_KEY_BASE64 }}" \
             JWT_APP_ID="${{ secrets.AKO_RELEASER_APP_ID }}" \
-            VERSION="${{ steps.tag.outputs.version }}"
+            VERSION="${{ steps.tag.outputs.version }}"'
       - name: Choose Dockerfile
         id: pick-dockerfile
         run: |
@@ -134,11 +127,14 @@ jobs:
       - name: Build all platforms & check version
         if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
         run: |
-          make all-platforms VERSION=${{ steps.tag.outputs.version }}
-          # not all versions Makefiles support the version check
-          if make | grep -q check-version; then
-            make check-version VERSION=${{ steps.tag.outputs.version }}
-          fi
+          nix-shell --run 'make all-platforms VERSION=${{ steps.tag.outputs.version }}
+            # Not all versions of Makefiles support the version check
+            if make -n | grep -q check-version; then
+              echo "Checking version..."
+              make check-version VERSION=${{ steps.tag.outputs.version }}
+            else
+              echo "Skipped version check"
+            fi'
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
@@ -182,11 +178,11 @@ jobs:
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
           IMAGE_REPOSITORY: ${{ steps.tag.outputs.repo }}
         run: |
-          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=mongodb/signatures
-          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=mongodb/signatures
+          nix-shell --run 'make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          nix-shell --run 'make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          nix-shell --run 'make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          nix-shell --run 'make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=mongodb/signatures'
+          nix-shell --run 'make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=mongodb/signatures'
       - name: Self-verify images
         if: steps.check-signing-support.outputs.sign == 'true'
         env:
@@ -195,15 +191,15 @@ jobs:
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
           IMAGE_REPOSITORY: ${{ steps.tag.outputs.repo }}
         run: |
-          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=mongodb/signatures
-          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=mongodb/signatures
+          nix-shell --run 'make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          nix-shell --run 'make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          nix-shell --run 'make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
+          nix-shell --run 'make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=mongodb/signatures'
+          nix-shell --run 'make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=mongodb/signatures'
       - name: Create configuration package
         run: |
-          set -x
-          tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
+          nix-shell --run 'set -x'
+          nix-shell --run 'tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml'
       - name: Create Release
         if: steps.tag.outputs.release_to_github == 'true'
         id: create_release
