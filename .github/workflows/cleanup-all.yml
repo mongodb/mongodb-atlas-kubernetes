@@ -69,14 +69,14 @@ jobs:
       - name: Checkout codebase
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/tools/clean/go.mod"
-          cache: false
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+  
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
 
       - name: Build clean tool
-        run: (cd tools/clean && go build .)
+        run: nix-shell --run 'cd tools/clean && go build .'
 
       - name: Persist GCP credentials
         id: gcp-cred
@@ -103,4 +103,4 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: svet-test
           PROJECT_LIFETIME: ${{ inputs.lifetime || 1 }}
-        run: (cd tools/clean && ./clean atlas)
+        run: nix-shell --run 'cd tools/clean && ./clean atlas'

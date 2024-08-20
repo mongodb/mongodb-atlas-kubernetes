@@ -36,18 +36,17 @@ jobs:
         VERSION: ${{ env.VERSION }}
         ENV: prod
 
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: "${{ github.workspace }}/go.mod"
-        cache: false
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@v13
+    - name: Setup Magic Nix Cache
+      uses: DeterminateSystems/magic-nix-cache-action@v7
 
     - name: Download dependencies
-      run: go mod download
+      run: nix-shell --run 'go mod download'
 
     - name: Generate SDLC checklist files for released version
       run: |
-         make gen-sdlc-checklist VERSION=${{ env.VERSION }} AUTHORS=${{ env.AUTHORS }}
+         nix-shell --run 'make gen-sdlc-checklist VERSION=${{ env.VERSION }} AUTHORS=${{ env.AUTHORS }}''
 
     - name: Configure Git
       run: |
@@ -57,7 +56,7 @@ jobs:
 
     - name: Create branch and push it
       run: |
-        make check-major-version
+        nix-shell --run 'make check-major-version'
         BRANCH="release/${VERSION}"
         git checkout -b $BRANCH
         git add -f ./deploy ./bundle bundle.Dockerfile docs/releases
