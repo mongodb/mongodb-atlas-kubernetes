@@ -71,7 +71,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.27.4
+	cloud.google.com/go/compute v1.27.5
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
