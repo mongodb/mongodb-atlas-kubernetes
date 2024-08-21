@@ -88,8 +88,8 @@ runs:
       if: ${{ inputs.devbox-build == 'true' }}
       env:
         VERSION: ${{ inputs.version }}
-      run: make all-platforms
-      shell: devbox
+      run: devbox run -- 'make all-platforms'
+      shell: bash
 
     # Non-Devbox setup steps
     - name: Set up Go
