@@ -29,4 +29,3 @@ jobs:
           name: unit-tests
           files: coverage.out
           verbose: true
-          
