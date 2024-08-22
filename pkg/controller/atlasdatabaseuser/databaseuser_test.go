@@ -167,7 +167,8 @@ func TestEnsureDatabaseUser(t *testing.T) {
 		Client: fakeClient,
 		Log:    log,
 		AtlasProvider: &atlas.TestProvider{
-			IsCloudGovFunc: func() bool { return false },
+			IsCloudGovFunc:              func() bool { return false },
+			HasGlobalFallbackSecretFunc: func() bool { return true },
 		},
 	}
 	for _, tc := range []struct {

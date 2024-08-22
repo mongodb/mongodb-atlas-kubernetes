@@ -3,6 +3,7 @@ package customresource
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"go.uber.org/zap"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -138,4 +139,35 @@ func SetAnnotation(resource api.AtlasCustomResource, key, value string) {
 	}
 	annot[key] = value
 	resource.SetAnnotations(annot)
+}
+
+func ComputeSecretWithFallback[R api.ResourceWithCredentials](fallback bool, project *akov2.AtlasProject, resource R) (*client.ObjectKey, error) {
+	secret, err := resolveConnectionSecret(project, resource)
+	if fallback {
+		return secret, nil
+	}
+	return secret, err
+}
+
+func resolveConnectionSecret[R api.ResourceWithCredentials](project *akov2.AtlasProject, resource R) (*client.ObjectKey, error) {
+	if reflect.ValueOf(&resource).Elem().IsZero() {
+		return nil, fmt.Errorf("resource cannot be nil")
+	}
+	creds := resource.Credentials()
+	if creds != nil && creds.Name != "" {
+		return &client.ObjectKey{
+			Namespace: resource.GetNamespace(),
+			Name:      creds.Name,
+		}, nil
+	}
+
+	if project == nil {
+		return nil, fmt.Errorf("project cannot be nil")
+	}
+	secret := project.ConnectionSecretObjectKey()
+	if secret == nil {
+		return nil, fmt.Errorf("failed to find credentials secret neither from resource %q nor Project %q",
+			resource.GetName(), project.GetName())
+	}
+	return secret, nil
 }

@@ -26,6 +26,7 @@ func TestNewAtlasDatabaseUsersService(t *testing.T) {
 		SdkClientFunc: func(_ *client.ObjectKey, _ *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			return &admin.APIClient{}, "", nil
 		},
+		HasGlobalFallbackSecretFunc: func() bool { return true },
 	}
 	secretRef := &types.NamespacedName{}
 	log := zap.S()
@@ -41,6 +42,7 @@ func TestFailedNewAtlasDatabaseUsersService(t *testing.T) {
 		SdkClientFunc: func(_ *client.ObjectKey, _ *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			return nil, "", expectedErr
 		},
+		HasGlobalFallbackSecretFunc: func() bool { return true },
 	}
 	secretRef := &types.NamespacedName{}
 	log := zap.S()

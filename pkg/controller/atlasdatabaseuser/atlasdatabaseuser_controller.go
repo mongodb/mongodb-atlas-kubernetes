@@ -127,7 +127,17 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	dus, err := dbuser.NewAtlasDatabaseUsersService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	hasFallback := r.AtlasProvider.HasGlobalFallbackSecret()
+	credentialsSecret, err := customresource.ComputeSecretWithFallback(hasFallback, project, databaseUser)
+	if err != nil {
+		result = workflow.Terminate(workflow.Internal, err.Error())
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
+		log.Error(result.GetMessage())
+
+		return result.ReconcileResult(), nil
+	}
+
+	dus, err := dbuser.NewAtlasDatabaseUsersService(ctx, r.AtlasProvider, credentialsSecret, log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
@@ -157,7 +167,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	ds, err := deployment.NewAtlasDeploymentsService(ctx, r.AtlasProvider, project.ConnectionSecretObjectKey(), log, r.AtlasProvider.IsCloudGov())
+	ds, err := deployment.NewAtlasDeploymentsService(ctx, r.AtlasProvider, credentialsSecret, log, r.AtlasProvider.IsCloudGov())
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)

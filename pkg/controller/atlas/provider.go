@@ -32,6 +32,7 @@ type Provider interface {
 	SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
 	IsCloudGov() bool
 	IsResourceSupported(resource api.AtlasCustomResource) bool
+	HasGlobalFallbackSecret() bool
 }
 
 type ProductionProvider struct {
@@ -131,6 +132,10 @@ func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.Ob
 	}
 
 	return c, secretData.OrgID, nil
+}
+
+func (p *ProductionProvider) HasGlobalFallbackSecret() bool {
+	return p.globalSecretRef.Name != ""
 }
 
 func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (*credentialsSecret, error) {

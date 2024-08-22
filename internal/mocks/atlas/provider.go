@@ -12,10 +12,11 @@ import (
 )
 
 type TestProvider struct {
-	ClientFunc      func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
-	SdkClientFunc   func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
-	IsCloudGovFunc  func() bool
-	IsSupportedFunc func() bool
+	ClientFunc                  func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
+	SdkClientFunc               func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
+	IsCloudGovFunc              func() bool
+	IsSupportedFunc             func() bool
+	HasGlobalFallbackSecretFunc func() bool
 }
 
 func (f *TestProvider) Client(_ context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
@@ -32,4 +33,8 @@ func (f *TestProvider) IsCloudGov() bool {
 
 func (f *TestProvider) IsResourceSupported(_ api.AtlasCustomResource) bool {
 	return f.IsSupportedFunc()
+}
+
+func (f *TestProvider) HasGlobalFallbackSecret() bool {
+	return f.HasGlobalFallbackSecretFunc()
 }

@@ -36,7 +36,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
-func TestRenconcile(t *testing.T) {
+func TestReconcile(t *testing.T) {
 	tests := map[string]struct {
 		atlasClientMocker func() *mongodbatlas.Client
 		atlasSDKMocker    func() *admin.APIClient
@@ -145,6 +145,7 @@ func TestRenconcile(t *testing.T) {
 					SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 						return tt.atlasSDKMocker(), "", nil
 					},
+					HasGlobalFallbackSecretFunc: func() bool { return true },
 				},
 			}
 

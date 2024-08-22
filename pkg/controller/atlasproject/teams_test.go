@@ -68,6 +68,7 @@ func TestUpdateTeamState(t *testing.T) {
 			ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 				return &mongodbatlas.Client{}, "0987654321", nil
 			},
+			HasGlobalFallbackSecretFunc: func() bool { return true },
 		}
 		k8sClient := buildFakeKubernetesClient(secret, project, team)
 		reconciler := &AtlasProjectReconciler{
@@ -132,6 +133,7 @@ func TestUpdateTeamState(t *testing.T) {
 					Teams: teamsMock,
 				}, "0987654321", nil
 			},
+			HasGlobalFallbackSecretFunc: func() bool { return true },
 		}
 		k8sClient := buildFakeKubernetesClient(secret, project, team)
 		reconciler := &AtlasProjectReconciler{
@@ -204,6 +206,7 @@ func TestUpdateTeamState(t *testing.T) {
 							Teams: teamsMock,
 						}, "0987654321", nil
 					},
+					HasGlobalFallbackSecretFunc: func() bool { return true },
 				}
 				reconciler := &AtlasProjectReconciler{
 					Client:                   buildFakeKubernetesClient(project, team),
