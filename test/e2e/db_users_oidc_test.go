@@ -125,7 +125,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 						Namespace: testData.Users[0].Namespace,
 					}, currentUser)).NotTo(HaveOccurred())
 				for _, condition := range currentUser.Status.Conditions {
-					if condition.Type == api.ReadyType {
+					if condition.Type == api.DatabaseUserReadyType {
 						g.Expect(condition.Status).Should(Equal(corev1.ConditionFalse))
 						g.Expect(condition.Message).To(ContainSubstring(dbuserController.ErrOIDCNotEnabled.Error()))
 					}

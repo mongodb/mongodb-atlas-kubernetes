@@ -5,131 +5,282 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	mocked "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
+	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
-const (
-	testProject = "project"
-
-	testProjectID = "12345"
-
-	testDatabase = "db"
-
-	testUsername = "user"
-)
-
-var (
-	errRandom = errors.New("random error")
-)
-
-func TestHandleDeletion(t *testing.T) {
-	ctx := context.Background()
-	scheme := runtime.NewScheme()
-	utilruntime.Must(corev1.AddToScheme(scheme))
-	utilruntime.Must(akov2.AddToScheme(scheme))
-	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
-	user := defaultTestUser()
-	require.NoError(t, fakeClient.Create(ctx, user))
-	defer fakeClient.Delete(ctx, user)
-	log := zap.S()
-	r := &AtlasDatabaseUserReconciler{
-		Client: fakeClient,
-		Log:    log,
-	}
-	for _, tc := range []struct {
-		title          string
-		skipDeletion   bool
-		service        dbuser.AtlasUsersService
-		expectedOk     bool
-		expectedResult workflow.Result
+func TestReconcile(t *testing.T) {
+	tests := map[string]struct {
+		dbUser         *akov2.AtlasDatabaseUser
+		interceptors   interceptor.Funcs
+		expectedResult ctrl.Result
 	}{
-		{
-			title:          "User without deletion timestamp is not deleted",
-			skipDeletion:   true,
-			expectedOk:     false,
-			expectedResult: workflow.OK(),
+		"failed to retrieve user": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Project: common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			interceptors: interceptor.Funcs{
+				Get: func(ctx context.Context, client client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+					return errors.New("failed to get user")
+				},
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 		},
+		"user was not found": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user2",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Project: common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			expectedResult: ctrl.Result{},
+		},
+		"skip reconciliation": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+					Annotations: map[string]string{
+						"mongodb.com/atlas-reconciliation-policy": "skip",
+					},
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Project: common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			expectedResult: ctrl.Result{},
+		},
+		"handle user": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Project: common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+		},
+	}
 
-		{
-			title:          "Ready user gets deleted properly",
-			service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, nil),
-			expectedOk:     true,
-			expectedResult: workflow.OK(),
-		},
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tt.dbUser).
+				WithInterceptorFuncs(tt.interceptors).
+				Build()
+			r := &AtlasDatabaseUserReconciler{
+				Client: k8sClient,
+				AtlasProvider: &atlasmock.TestProvider{
+					IsSupportedFunc: func() bool {
+						return true
+					},
+					IsCloudGovFunc: func() bool {
+						return false
+					},
+					SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+						userAPI := mockadmin.NewDatabaseUsersApi(t)
+						userAPI.EXPECT().GetDatabaseUser(context.Background(), "", "admin", "user1").
+							Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
+						userAPI.EXPECT().GetDatabaseUserExecute(mock.AnythingOfType("admin.GetDatabaseUserApiRequest")).
+							Return(nil, nil, nil)
+						userAPI.EXPECT().CreateDatabaseUser(context.Background(), "", mock.AnythingOfType("*admin.CloudDatabaseUser")).
+							Return(admin.CreateDatabaseUserApiRequest{ApiService: userAPI})
+						userAPI.EXPECT().CreateDatabaseUserExecute(mock.AnythingOfType("admin.CreateDatabaseUserApiRequest")).
+							Return(&admin.CloudDatabaseUser{}, nil, nil)
 
-		{
-			title:          "Missing user is already deleted",
-			service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, dbuser.ErrorNotFound),
-			expectedOk:     true,
-			expectedResult: workflow.OK(),
-		},
+						clusterAPI := mockadmin.NewClustersApi(t)
 
-		{
-			title:          "Fails to delete user when returned error is unexpected",
-			service:        fakeUserDeletion(ctx, testDatabase, testProjectID, testUsername, errRandom),
-			expectedOk:     true,
-			expectedResult: workflow.Terminate(workflow.DatabaseUserNotDeletedInAtlas, errRandom.Error()),
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			if !tc.skipDeletion {
-				user.DeletionTimestamp = pointer.MakePtr(metav1.NewTime(time.Now()))
+						return &admin.APIClient{
+							ClustersApi:      clusterAPI,
+							DatabaseUsersApi: userAPI,
+						}, "", nil
+					},
+				},
+				EventRecorder: record.NewFakeRecorder(10),
+				Log:           zaptest.NewLogger(t).Sugar(),
 			}
-			done, result := r.handleDeletion(ctx, user, defaultTestProject(), tc.service, log)
-			assert.Equal(t, tc.expectedOk, done)
-			assert.Equal(t, tc.expectedResult, result)
+
+			result, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Name: "user1", Namespace: "default"}})
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
 }
 
-func fakeUserDeletion(ctx context.Context, db, projectID, username string, err error) *mocked.AtlasUsersServiceMock {
-	return withFakeUserDeletion(&mocked.AtlasUsersServiceMock{}, ctx, db, projectID, username, err)
+func TestNotFound(t *testing.T) {
+	t.Run("custom resource was not found", func(t *testing.T) {
+		core, logs := observer.New(zap.DebugLevel)
+		c := &AtlasDatabaseUserReconciler{
+			Log: zap.New(core).Sugar(),
+		}
+
+		assert.Equal(t, ctrl.Result{}, c.notFound(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}))
+		assert.Equal(t, 1, logs.Len())
+		assert.Equal(t, zapcore.Level(0), logs.All()[0].Level)
+		assert.Equal(t, "Object test/object doesn't exist, was it deleted after reconcile request?", logs.All()[0].Message)
+	})
 }
 
-func withFakeUserDeletion(service *mocked.AtlasUsersServiceMock, ctx context.Context, db, projectID, username string, err error) *mocked.AtlasUsersServiceMock {
-	service.EXPECT().Delete(ctx, db, projectID, username).Return(err)
-	return service
+func TestFail(t *testing.T) {
+	t.Run("failed to retrieve custom resource", func(t *testing.T) {
+		core, logs := observer.New(zap.DebugLevel)
+		c := &AtlasDatabaseUserReconciler{
+			Log: zap.New(core).Sugar(),
+		}
+
+		assert.Equal(
+			t,
+			ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			c.fail(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}, errors.New("failed to retrieve custom resource")),
+		)
+		assert.Equal(t, 1, logs.Len())
+		assert.Equal(t, zapcore.Level(2), logs.All()[0].Level)
+		assert.Equal(t, "Failed to query object test/object: failed to retrieve custom resource", logs.All()[0].Message)
+	})
 }
 
-func defaultTestProject() *akov2.AtlasProject {
-	return &akov2.AtlasProject{
-		TypeMeta:   metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{Name: testProject},
-		Status: status.AtlasProjectStatus{
-			ID: testProjectID,
+func TestSkip(t *testing.T) {
+	t.Run("skip reconciliation of custom resource", func(t *testing.T) {
+		core, logs := observer.New(zap.DebugLevel)
+		c := &AtlasDatabaseUserReconciler{
+			Log: zap.New(core).Sugar(),
+		}
+
+		assert.Equal(t, ctrl.Result{}, c.skip())
+		assert.Equal(t, 1, logs.Len())
+		assert.Equal(t, zapcore.Level(0), logs.All()[0].Level)
+		assert.Equal(t, "-> Skipping AtlasDatabaseUser reconciliation as annotation mongodb.com/atlas-reconciliation-policy=skip", logs.All()[0].Message)
+	})
+}
+
+func TestTerminate(t *testing.T) {
+	tests := map[string]struct {
+		object         akov2.AtlasCustomResource
+		condition      api.ConditionType
+		reason         workflow.ConditionReason
+		retry          bool
+		err            error
+		expectedResult ctrl.Result
+		expectedLogs   []string
+	}{
+		"terminates reconciliation with retry": {
+			object: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-project",
+					Namespace: "ns-test",
+				},
+			},
+			condition:      api.ProjectReadyType,
+			reason:         workflow.Internal,
+			retry:          true,
+			err:            errors.New("failed to reconcile project"),
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedLogs: []string{
+				"resource *v1.AtlasProject(ns-test/my-project) failed on condition ProjectReady: failed to reconcile project",
+			},
+		},
+		"terminates reconciliation without retry": {
+			object: &akov2.AtlasStreamInstance{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-project",
+					Namespace: "ns-test",
+				},
+			},
+			condition:      api.StreamInstanceReadyType,
+			reason:         workflow.StreamConnectionNotCreated,
+			retry:          false,
+			err:            errors.New("failed to reconcile stream instance"),
+			expectedResult: ctrl.Result{},
+			expectedLogs: []string{
+				"resource *v1.AtlasStreamInstance(ns-test/my-project) failed on condition StreamInstanceReady: failed to reconcile stream instance",
+			},
 		},
 	}
-}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			core, logs := observer.New(zap.DebugLevel)
+			c := &AtlasDatabaseUserReconciler{
+				Log: zap.New(core).Sugar(),
+			}
 
-func defaultTestUser() *akov2.AtlasDatabaseUser {
-	return &akov2.AtlasDatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{Name: testUsername},
-		Spec: akov2.AtlasDatabaseUserSpec{
-			DatabaseName: testDatabase,
-			Username:     testUsername,
-		},
+			assert.Equal(t, tt.expectedResult, c.terminate(&workflow.Context{}, tt.object, tt.condition, tt.reason, tt.retry, tt.err))
+			assert.Equal(t, len(tt.expectedLogs), logs.Len())
+			for ix, log := range logs.All() {
+				assert.Equal(t, zapcore.Level(2), log.Level)
+				assert.Equal(t, tt.expectedLogs[ix], log.Message)
+			}
+		})
 	}
 }
 
@@ -181,11 +332,11 @@ func TestFindAtlasDatabaseUserForSecret(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			testScheme := runtime.NewScheme()
 			assert.NoError(t, akov2.AddToScheme(testScheme))
-			indexer := indexer.NewAtlasDatabaseUserBySecretsIndexer(zaptest.NewLogger(t))
+			secretsIndexer := indexer.NewAtlasDatabaseUserBySecretsIndexer(zaptest.NewLogger(t))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tc.initObjs...).
-				WithIndex(indexer.Object(), indexer.Name(), indexer.Keys).
+				WithIndex(secretsIndexer.Object(), secretsIndexer.Name(), secretsIndexer.Keys).
 				Build()
 			reconciler := &AtlasDatabaseUserReconciler{
 				Log:    zaptest.NewLogger(t).Sugar(),
