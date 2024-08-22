@@ -22,7 +22,7 @@ func TestHandleCreate(t *testing.T) {
 		watcher := NewDeprecatedResourceWatcher()
 		handler := NewSecretHandler(&watcher)
 		createEvent := event.CreateEvent{Object: secret}
-		queue := controllertest.Queue{Interface: workqueue.New()}
+		queue := controllertest.Queue{TypedInterface: workqueue.NewTyped[reconcile.Request]()}
 
 		handler.Create(context.Background(), createEvent, &queue)
 		assert.Zero(t, queue.Len())
@@ -38,7 +38,7 @@ func TestHandleCreate(t *testing.T) {
 		handler := NewSecretHandler(&watcher)
 
 		createEvent := event.CreateEvent{Object: secret}
-		queue := controllertest.Queue{Interface: workqueue.New()}
+		queue := controllertest.Queue{TypedInterface: workqueue.NewTyped[reconcile.Request]()}
 
 		handler.Create(context.Background(), createEvent, &queue)
 		assert.Equal(t, queue.Len(), 1)
@@ -66,7 +66,7 @@ func TestHandleUpdate(t *testing.T) {
 		})
 		handler := NewSecretHandler(&watcher)
 		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
-		queue := controllertest.Queue{Interface: workqueue.New()}
+		queue := controllertest.Queue{TypedInterface: workqueue.NewTyped[reconcile.Request]()}
 
 		handler.Update(context.Background(), updateEvent, &queue)
 		assert.Zero(t, queue.Len())
@@ -87,7 +87,7 @@ func TestHandleUpdate(t *testing.T) {
 		handler := NewSecretHandler(&watcher)
 
 		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
-		queue := controllertest.Queue{Interface: workqueue.New()}
+		queue := controllertest.Queue{TypedInterface: workqueue.NewTyped[reconcile.Request]()}
 
 		handler.Update(context.Background(), updateEvent, &queue)
 		assert.Equal(t, queue.Len(), 1)

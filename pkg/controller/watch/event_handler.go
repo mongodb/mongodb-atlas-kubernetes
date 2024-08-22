@@ -6,8 +6,10 @@ import (
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
@@ -17,11 +19,11 @@ import (
 type EventHandlerWithDelete struct {
 	handler.EnqueueRequestForObject
 	Controller interface {
-		Delete(ctx context.Context, e event.DeleteEvent) error
+		Delete(ctx context.Context, e event.TypedDeleteEvent[client.Object]) error
 	}
 }
 
-func (d *EventHandlerWithDelete) Delete(ctx context.Context, e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
+func (d *EventHandlerWithDelete) Delete(ctx context.Context, e event.TypedDeleteEvent[client.Object], _ workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	objectKey := kube.ObjectKeyFromObject(e.Object)
 	log := zap.S().With("resource", objectKey)
 
