@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Masterminds/semver"
 	"go.uber.org/zap"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/Masterminds/semver"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -138,4 +137,21 @@ func SetAnnotation(resource api.AtlasCustomResource, key, value string) {
 	}
 	annot[key] = value
 	resource.SetAnnotations(annot)
+}
+
+func ComputeSecret(project *akov2.AtlasProject, resource api.ResourceWithCredentials) (*client.ObjectKey, error) {
+	if resource == nil {
+		return nil, fmt.Errorf("resource cannot be nil")
+	}
+	creds := resource.Credentials()
+	if creds != nil && creds.Name != "" {
+		return &client.ObjectKey{
+			Namespace: resource.GetNamespace(),
+			Name:      creds.Name,
+		}, nil
+	}
+	if project == nil {
+		return nil, fmt.Errorf("project cannot be nil")
+	}
+	return project.ConnectionSecretObjectKey(), nil
 }
