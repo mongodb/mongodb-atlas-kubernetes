@@ -209,7 +209,7 @@ func TestClusterExists(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI := tt.apiMocker()
-			service := NewProductionAtlasDeployments(clusterAPI, serverlessInstanceAPI, tt.gov)
+			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, tt.gov)
 
 			result, err := service.ClusterExists(context.Background(), tt.deployment.GetProjectID(), tt.deployment.GetName())
 			require.Equal(t, tt.err, err)
@@ -342,7 +342,7 @@ func TestGetDeployment(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI := tt.apiMocker()
-			service := NewProductionAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
+			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
 
 			result, err := service.GetDeployment(context.Background(), tt.deployment.GetProjectID(), tt.deployment.GetName())
 			require.Equal(t, tt.err, err)
@@ -431,7 +431,7 @@ func TestCreateDeployment(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI := tt.apiMocker()
-			service := NewProductionAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
+			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
 
 			result, err := service.CreateDeployment(context.Background(), tt.deployment)
 			require.Equal(t, tt.err, err)
@@ -520,7 +520,7 @@ func TestUpdateDeployment(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI := tt.apiMocker()
-			service := NewProductionAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
+			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
 
 			result, err := service.UpdateDeployment(context.Background(), tt.deployment)
 			require.Equal(t, tt.err, err)
@@ -601,7 +601,7 @@ func TestDeleteDeployment(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI := tt.apiMocker()
-			service := NewProductionAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
+			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
 
 			err := service.DeleteDeployment(context.Background(), tt.deployment)
 			require.Equal(t, tt.err, err)
@@ -708,7 +708,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI := tt.apiMocker()
-			service := NewProductionAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
+			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
 
 			cluster := tt.deployment.(*Cluster)
 			err := service.ClusterWithProcessArgs(context.Background(), cluster)
@@ -836,7 +836,7 @@ func TestUpdateProcessArgs(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI := tt.apiMocker()
-			service := NewProductionAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
+			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, false)
 
 			cluster := tt.deployment.(*Cluster)
 			err := service.UpdateProcessArgs(context.Background(), cluster)

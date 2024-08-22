@@ -65,7 +65,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		deploymentService = deployment.NewProductionAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, false)
+		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, false)
 		createdDeployment = &akov2.AtlasDeployment{}
 
 		manualDeletion = false
