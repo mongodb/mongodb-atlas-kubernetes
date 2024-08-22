@@ -243,7 +243,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.1
 
 .PHONY: generate
 generate: controller-gen ${GO_SOURCES} ## Generate code
