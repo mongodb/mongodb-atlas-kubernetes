@@ -40,10 +40,10 @@ func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, se
 	if err != nil {
 		return nil, fmt.Errorf("failed to create versioned client: %w", err)
 	}
-	return NewProductionAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, isGov), nil
+	return NewAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, isGov), nil
 }
 
-func NewProductionAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, isGov bool) *ProductionAtlasDeployments {
+func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, isGov bool) *ProductionAtlasDeployments {
 	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, isGov: isGov}
 }
 

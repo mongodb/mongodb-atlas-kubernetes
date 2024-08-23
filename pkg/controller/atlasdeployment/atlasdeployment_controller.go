@@ -156,7 +156,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return result.ReconcileResult(), nil
 	}
 	ctx.SdkClient = atlasSdkClient
-	r.deploymentService = deployment.NewProductionAtlasDeployments(atlasSdkClient.ClustersApi, atlasSdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+	r.deploymentService = deployment.NewAtlasDeployments(atlasSdkClient.ClustersApi, atlasSdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
 
 	deploymentInAKO := deployment.NewDeployment(project.ID(), atlasDeployment)
 	deploymentInAtlas, err := r.deploymentService.GetDeployment(ctx.Context, project.ID(), atlasDeployment.GetDeploymentName())
