@@ -60,6 +60,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 		WithAtlasDomain(config.AtlasDomain).
 		WithAPISecret(config.GlobalAPISecret).
 		WithDeletionProtection(config.ObjectDeletionProtection).
+		WithSkipNameValidation(true). // this is needed as this starts multiple controllers concurrently
 		Build(signalCancelledCtx)
 }
 

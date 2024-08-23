@@ -30,12 +30,14 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -372,7 +374,7 @@ func (r *AtlasDeploymentReconciler) unmanage(ctx *workflow.Context, atlasDeploym
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDeployment").
 		For(&akov2.AtlasDeployment{}, builder.WithPredicates(r.GlobalPredicates...)).
@@ -391,6 +393,7 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForSearchIndexConfig),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
+		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 

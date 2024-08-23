@@ -144,6 +144,8 @@ func TestBuildManager(t *testing.T) {
 			mgrMock := &managerMock{}
 			builder := NewBuilder(mgrMock, akoScheme)
 			tt.configure(builder)
+			// this is necessary for tests
+			builder.WithSkipNameValidation(true)
 			_, err := builder.Build(context.Background())
 			require.NoError(t, err)
 

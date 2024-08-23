@@ -71,6 +71,7 @@ type Builder struct {
 	atlasProvider      atlas.Provider
 	featureFlags       *featureflags.FeatureFlags
 	deletionProtection bool
+	skipNameValidation bool
 }
 
 func (b *Builder) WithConfig(config *rest.Config) *Builder {
@@ -135,6 +136,15 @@ func (b *Builder) WithFeatureFlags(featureFlags *featureflags.FeatureFlags) *Bui
 
 func (b *Builder) WithDeletionProtection(deletionProtection bool) *Builder {
 	b.deletionProtection = deletionProtection
+	return b
+}
+
+// WithSkipNameValidation skips name validation in controller-runtime
+// to prevent duplicate controller names.
+//
+// Note: use this in tests only, setting this to true in a production setup will cause faulty behavior.
+func (b *Builder) WithSkipNameValidation(skip bool) *Builder {
+	b.skipNameValidation = skip
 	return b
 }
 
@@ -203,7 +213,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = projectReconciler.SetupWithManager(mgr); err != nil {
+	if err = projectReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasProject: %w", err)
 	}
 
@@ -214,7 +224,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = deploymentReconciler.SetupWithManager(mgr); err != nil {
+	if err = deploymentReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasDeployment: %w", err)
 	}
 
@@ -226,7 +236,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.featureFlags,
 		b.logger,
 	)
-	if err = dbUserReconciler.SetupWithManager(mgr); err != nil {
+	if err = dbUserReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasDatabaseUser: %w", err)
 	}
 
@@ -237,7 +247,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = dataFedReconciler.SetupWithManager(mgr); err != nil {
+	if err = dataFedReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasDataFederation: %w", err)
 	}
 
@@ -248,7 +258,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = fedAuthReconciler.SetupWithManager(mgr); err != nil {
+	if err = fedAuthReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasFederatedAuth: %w", err)
 	}
 
@@ -259,7 +269,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = streamsInstanceReconiler.SetupWithManager(mgr); err != nil {
+	if err = streamsInstanceReconiler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasStreamsInstance: %w", err)
 	}
 
@@ -270,7 +280,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = streamsConnReconciler.SetupWithManager(mgr); err != nil {
+	if err = streamsConnReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasStreamsConnection: %w", err)
 	}
 
@@ -281,7 +291,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = searchINdexReconciler.SetupWithManager(mgr); err != nil {
+	if err = searchINdexReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasSearchIndexConfig: %w", err)
 	}
 
@@ -292,7 +302,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = bcpReconciler.SetupWithManager(mgr); err != nil {
+	if err = bcpReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasBackupCompliancePolicy: %w", err)
 	}
 
