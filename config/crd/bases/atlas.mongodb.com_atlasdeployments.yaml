@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasdeployments.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -513,6 +513,7 @@ spec:
                                 type: object
                               type: array
                           required:
+                          - mappings
                           - searchConfigurationRef
                           type: object
                         type:
@@ -527,11 +528,14 @@ spec:
                             fields:
                               description: Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
                               x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - fields
                           type: object
                       required:
                       - DBName
                       - collectionName
                       - name
+                      - type
                       type: object
                     type: array
                   searchNodes:
@@ -598,6 +602,8 @@ spec:
                     type: boolean
                   versionReleaseSystem:
                     type: string
+                required:
+                - name
                 type: object
               processArgs:
                 description: ProcessArgs allows to modify Advanced Configuration Options
@@ -911,12 +917,9 @@ spec:
                           description: |-
                             Type of MongoDB process that you connect to with the connection strings
 
-
                             Atlas returns:
 
-
                             • MONGOD for replica sets, or
-
 
                             • MONGOS for sharded clusters
                           type: string

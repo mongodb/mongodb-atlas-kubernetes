@@ -192,6 +192,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		WithSyncPeriod(30 * time.Minute).
 		WithAPISecret(client.ObjectKey{Name: "atlas-operator-api-key", Namespace: namespace.Name}).
 		WithDeletionProtection(deletionProtection).
+		WithSkipNameValidation(true). // this is needed as this starts multiple controllers concurrently
 		Build(ctx)
 	Expect(err).ToNot(HaveOccurred())
 

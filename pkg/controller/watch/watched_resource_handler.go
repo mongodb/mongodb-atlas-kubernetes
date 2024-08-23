@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -54,11 +55,11 @@ func NewAtlasTeamHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
 // Create handles the Create event for the resource.
 // Note that we implement Create in addition to Update to be able to handle cases when config map or secret is deleted
 // and then created again.
-func (c *ResourcesHandler) Create(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
+func (c *ResourcesHandler) Create(ctx context.Context, e event.TypedCreateEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	c.doHandle(ctx, e.Object.GetNamespace(), e.Object.GetName(), e.Object.GetObjectKind().GroupVersionKind().Kind, q)
 }
 
-func (c *ResourcesHandler) Update(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (c *ResourcesHandler) Update(ctx context.Context, e event.TypedUpdateEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	if !shouldHandleUpdate(e) {
 		zap.S().Debugf("resource watcher: skipping update for resource %v", e.ObjectNew.GetName())
 		return
@@ -86,7 +87,7 @@ func shouldHandleUpdate(e event.UpdateEvent) bool {
 	return true
 }
 
-func (c *ResourcesHandler) doHandle(_ context.Context, namespace, name, kind string, q workqueue.RateLimitingInterface) {
+func (c *ResourcesHandler) doHandle(_ context.Context, namespace, name, kind string, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	watchedResource := WatchedObject{
 		ResourceKind: kind,
 		Resource:     types.NamespacedName{Name: name, Namespace: namespace},
@@ -99,8 +100,8 @@ func (c *ResourcesHandler) doHandle(_ context.Context, namespace, name, kind str
 }
 
 // Delete (Seems we don't need to react on watched resources removal..)
-func (c *ResourcesHandler) Delete(context.Context, event.DeleteEvent, workqueue.RateLimitingInterface) {
+func (c *ResourcesHandler) Delete(context.Context, event.TypedDeleteEvent[client.Object], workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 }
 
-func (c *ResourcesHandler) Generic(context.Context, event.GenericEvent, workqueue.RateLimitingInterface) {
+func (c *ResourcesHandler) Generic(context.Context, event.TypedGenericEvent[client.Object], workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 }
