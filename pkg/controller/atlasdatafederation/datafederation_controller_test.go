@@ -2,23 +2,23 @@ package atlasdatafederation
 
 import (
 	"context"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
-
-	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap/zaptest"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
