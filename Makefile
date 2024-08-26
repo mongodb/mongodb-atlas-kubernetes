@@ -161,9 +161,6 @@ unit-test:
 .PHONY: int-test
 int-test: ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
 int-test: ENVTEST_K8S_VERSION = 1.26.1
-int-test: export ATLAS_ORG_ID=$(shell grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
-int-test: export ATLAS_PUBLIC_KEY=$(shell grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
-int-test: export ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
 # magical env that if specified makes the test output 0 on successful runs
 # https://github.com/onsi/ginkgo/blob/master/ginkgo/run_command.go#L130
 int-test: export GINKGO_EDITOR_INTEGRATION="true"
