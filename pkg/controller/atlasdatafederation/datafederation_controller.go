@@ -26,13 +26,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 // AtlasDataFederationReconciler reconciles an DataFederation object
 type AtlasDataFederationReconciler struct {
-	watch.DeprecatedResourceWatcher
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
@@ -221,14 +219,13 @@ func NewAtlasDataFederationReconciler(
 	logger *zap.Logger,
 ) *AtlasDataFederationReconciler {
 	return &AtlasDataFederationReconciler{
-		Scheme:                    mgr.GetScheme(),
-		Client:                    mgr.GetClient(),
-		EventRecorder:             mgr.GetEventRecorderFor("AtlasDataFederation"),
-		DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
-		GlobalPredicates:          predicates,
-		Log:                       logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
-		AtlasProvider:             atlasProvider,
-		ObjectDeletionProtection:  deletionProtection,
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasDataFederation"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
 	}
 }
 

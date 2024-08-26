@@ -10,7 +10,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 )
 
 // Context is a container for some information that is needed on all levels of function calls during reconciliation.
@@ -38,9 +37,6 @@ type Context struct {
 	// lastConditionWarn indicates if the last "terminal" condition was expected (for example wait for some resource)
 	// or unexpected (any errors)
 	lastConditionWarn bool
-
-	// A list of sub-resources to add to a resource watcher after the Reconcile loop
-	resourcesToWatch []watch.WatchedObject
 
 	// Go context, when appropriate
 	Context context.Context
@@ -146,12 +142,4 @@ func (c *Context) SetConditionTrueMsg(conditionType api.ConditionType, msg strin
 func (c *Context) UnsetCondition(conditionType api.ConditionType) *Context {
 	c.status.RemoveCondition(conditionType)
 	return c
-}
-
-func (c *Context) AddResourcesToWatch(resources ...watch.WatchedObject) {
-	c.resourcesToWatch = append(c.resourcesToWatch, resources...)
-}
-
-func (c *Context) ListResourcesToWatch() []watch.WatchedObject {
-	return c.resourcesToWatch
 }
