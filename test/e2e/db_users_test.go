@@ -2,6 +2,8 @@ package e2e
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -24,6 +26,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
+)
+
+const (
+	localSecretName = "local-secret"
 )
 
 var _ = Describe("Operator watch all namespace should create connection secrets for database users in any namespace", Label("users"), func() {
@@ -76,14 +82,21 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 						data.WithSecretRef("dbuser-secret-u2"),
 						data.WithReadWriteRole(),
 						data.WithNamespace(secondNamespace),
+						// user 2 access Atlas a local secret
+						data.WithCredentials(localSecretName),
 					),
 				)
 			testData.Resources.Namespace = config.DefaultOperatorNS
 		})
 		By("Running operator watching global namespace", func() {
-			k8s.CreateNamespace(testData.Context, testData.K8SClient, config.DefaultOperatorNS)
+			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, config.DefaultOperatorNS)).NotTo(HaveOccurred())
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
-			k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)
+			publicKey, privateKey, err := localCredentials()
+			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)).NotTo(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(
+				k8s.CreateSecret(testData.Context, testData.K8SClient, publicKey, privateKey, localSecretName, secondNamespace),
+			).ToNot(HaveOccurred())
 
 			mgr, err := k8s.BuildManager(&k8s.Config{
 				GlobalAPISecret: client.ObjectKey{
@@ -167,4 +180,21 @@ func countConnectionSecrets(k8sClient client.Client, projectName string) int {
 	}
 
 	return len(names)
+}
+
+func localCredentials() (string, string, error) {
+	publicKey := os.Getenv("ATLAS_LOCAL_PUBLIC_KEY")
+	privateKey := os.Getenv("ATLAS_LOCAL_PRIVATE_KEY")
+	missing := []string{}
+	if publicKey == "" {
+		missing = append(missing, "public key is missing")
+	}
+	if privateKey == "" {
+		missing = append(missing, "private key is missing")
+	}
+	if len(missing) > 0 {
+		return "", "",
+			fmt.Errorf("Check credentials ATLAS_LOCAL_...: %s", strings.Join(missing, ", "))
+	}
+	return publicKey, privateKey, nil
 }

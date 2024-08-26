@@ -1,6 +1,7 @@
 package data
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -102,5 +103,11 @@ func WithProject(project *akov2.AtlasProject) func(user *akov2.AtlasDatabaseUser
 func WithLabels(labels []common.LabelSpec) func(user *akov2.AtlasDatabaseUser) {
 	return func(user *akov2.AtlasDatabaseUser) {
 		user.Spec.Labels = labels
+	}
+}
+
+func WithCredentials(secretName string) func(user *akov2.AtlasDatabaseUser) {
+	return func(user *akov2.AtlasDatabaseUser) {
+		user.Spec.ConnectionSecret = &v1.LocalObjectReference{Name: secretName}
 	}
 }
