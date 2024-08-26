@@ -135,31 +135,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	}
 
 	if !dataFederation.GetDeletionTimestamp().IsZero() {
-		if customresource.HaveFinalizer(dataFederation, customresource.FinalizerLabel) {
-			if customresource.IsResourcePolicyKeepOrDefault(dataFederation, r.ObjectDeletionProtection) {
-				log.Info("Not removing AtlasDataFederation from Atlas as per configuration")
-			} else {
-				if err = r.deleteConnectionSecrets(context, dataFederation); err != nil {
-					log.Errorf("failed to remove DataFederation connection secrets from Atlas: %s", err)
-					result = workflow.Terminate(workflow.Internal, err.Error())
-					ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-					return result.ReconcileResult(), nil
-				}
-				if err = r.deleteDataFederationFromAtlas(context, atlasClient, dataFederation, project, log); err != nil {
-					log.Errorf("failed to remove DataFederation from Atlas: %s", err)
-					result = workflow.Terminate(workflow.Internal, err.Error())
-					ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-					return result.ReconcileResult(), nil
-				}
-			}
-			if err = customresource.ManageFinalizer(context, r.Client, dataFederation, customresource.UnsetFinalizer); err != nil {
-				result = workflow.Terminate(workflow.AtlasFinalizerNotRemoved, err.Error())
-				log.Errorw("failed to remove finalizer", "error", err)
-				return result.ReconcileResult(), nil
-			}
-		} else {
-			return result.ReconcileResult(), nil
-		}
+		return r.handleDelete(ctx, log, dataFederation, project, atlasClient).ReconcileResult(), nil
 	}
 
 	err = customresource.ApplyLastConfigApplied(context, project, r.Client)
@@ -173,6 +149,34 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 
 	ctx.SetConditionTrue(api.ReadyType)
 	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log *zap.SugaredLogger, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject, atlasClient *mongodbatlas.Client) workflow.Result {
+	if customresource.HaveFinalizer(dataFederation, customresource.FinalizerLabel) {
+		if customresource.IsResourcePolicyKeepOrDefault(dataFederation, r.ObjectDeletionProtection) {
+			log.Info("Not removing AtlasDataFederation from Atlas as per configuration")
+		} else {
+			if err := r.deleteConnectionSecrets(ctx.Context, dataFederation); err != nil {
+				log.Errorf("failed to remove DataFederation connection secrets from Atlas: %s", err)
+				result := workflow.Terminate(workflow.Internal, err.Error())
+				ctx.SetConditionFromResult(api.DataFederationReadyType, result)
+				return result
+			}
+			if err := r.deleteDataFederationFromAtlas(ctx.Context, atlasClient, dataFederation, project, log); err != nil {
+				log.Errorf("failed to remove DataFederation from Atlas: %s", err)
+				result := workflow.Terminate(workflow.Internal, err.Error())
+				ctx.SetConditionFromResult(api.DataFederationReadyType, result)
+				return result
+			}
+		}
+		if err := customresource.ManageFinalizer(ctx.Context, r.Client, dataFederation, customresource.UnsetFinalizer); err != nil {
+			result := workflow.Terminate(workflow.AtlasFinalizerNotRemoved, err.Error())
+			log.Errorw("failed to remove finalizer", "error", err)
+			return result
+		}
+	}
+
+	return workflow.OK()
 }
 
 func (r *AtlasDataFederationReconciler) deleteDataFederationFromAtlas(ctx context.Context, client *mongodbatlas.Client, df *akov2.AtlasDataFederation, project *akov2.AtlasProject, log *zap.SugaredLogger) error {
