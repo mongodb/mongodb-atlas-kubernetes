@@ -43,6 +43,8 @@ jobs:
         run: |
           make tools/makejwt/makejwt
           export GITHUB_TOKEN=$(make github-token)
+          export GH_TOKEN="${GH_TOKEN}"
+          echo "Credentials ready for GitHub App ID: ${JWT_APP_ID}"
           if [[ $(git diff --stat) != '' ]]; then
             echo 'Committing changes'
             git config user.email "akobot@ako-team-fake.mongodb.com"
