@@ -32,13 +32,13 @@ type Provider interface {
 	SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
 	IsCloudGov() bool
 	IsResourceSupported(resource api.AtlasCustomResource) bool
-	HasGlobalFallbackSecret() bool
+	GlobalFallbackSecret() *client.ObjectKey
 }
 
 type ProductionProvider struct {
 	k8sClient       client.Client
 	domain          string
-	globalSecretRef client.ObjectKey
+	globalSecretRef *client.ObjectKey
 }
 
 type credentialsSecret struct {
@@ -47,7 +47,7 @@ type credentialsSecret struct {
 	PrivateKey string
 }
 
-func NewProductionProvider(atlasDomain string, globalSecretRef client.ObjectKey, k8sClient client.Client) *ProductionProvider {
+func NewProductionProvider(atlasDomain string, globalSecretRef *client.ObjectKey, k8sClient client.Client) *ProductionProvider {
 	return &ProductionProvider{
 		k8sClient:       k8sClient,
 		domain:          atlasDomain,
@@ -94,7 +94,7 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 }
 
 func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-	secretData, err := getSecrets(ctx, p.k8sClient, secretRef, &p.globalSecretRef)
+	secretData, err := getSecrets(ctx, p.k8sClient, secretRef)
 	if err != nil {
 		return nil, "", err
 	}
@@ -114,7 +114,7 @@ func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.Objec
 }
 
 func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-	secretData, err := getSecrets(ctx, p.k8sClient, secretRef, &p.globalSecretRef)
+	secretData, err := getSecrets(ctx, p.k8sClient, secretRef)
 	if err != nil {
 		return nil, "", err
 	}
@@ -134,15 +134,14 @@ func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.Ob
 	return c, secretData.OrgID, nil
 }
 
-func (p *ProductionProvider) HasGlobalFallbackSecret() bool {
-	return p.globalSecretRef.Name != ""
+func (p *ProductionProvider) GlobalFallbackSecret() *client.ObjectKey {
+	return p.globalSecretRef
 }
 
-func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (*credentialsSecret, error) {
+func getSecrets(ctx context.Context, k8sClient client.Client, secretRef *client.ObjectKey) (*credentialsSecret, error) {
 	if secretRef == nil {
-		secretRef = fallbackRef
+		return nil, fmt.Errorf("secret reference cannot be nil")
 	}
-
 	secret := &corev1.Secret{}
 	if err := k8sClient.Get(ctx, *secretRef, secret); err != nil {
 		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)

@@ -298,7 +298,7 @@ func (p *AtlasDatabaseUser) WithDeleteAfterDate(date string) *AtlasDatabaseUser 
 	return p
 }
 
-func (p *AtlasDatabaseUser) Credentials() *corev1.LocalObjectReference {
+func (p *AtlasDatabaseUser) Credentials() *api.LocalObjectReference {
 	return p.Spec.Credentials()
 }
 

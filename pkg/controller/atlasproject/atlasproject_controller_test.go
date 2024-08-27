@@ -145,7 +145,7 @@ func TestReconcile(t *testing.T) {
 					SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 						return tt.atlasSDKMocker(), "", nil
 					},
-					HasGlobalFallbackSecretFunc: func() bool { return true },
+					GlobalFallbackSecretFunc: func() *client.ObjectKey { return nil },
 				},
 			}
 

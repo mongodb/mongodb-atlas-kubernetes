@@ -3,14 +3,12 @@ package customresource
 import (
 	"context"
 	"fmt"
-	"reflect"
 
+	"github.com/Masterminds/semver"
 	"go.uber.org/zap"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/Masterminds/semver"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -141,16 +139,23 @@ func SetAnnotation(resource api.AtlasCustomResource, key, value string) {
 	resource.SetAnnotations(annot)
 }
 
-func ComputeSecretWithFallback[R api.ResourceWithCredentials](fallback bool, project *akov2.AtlasProject, resource R) (*client.ObjectKey, error) {
+func ComputeSecret(globalSecret *client.ObjectKey, project *akov2.AtlasProject, resource api.ResourceWithCredentials) (*client.ObjectKey, error) {
 	secret, err := resolveConnectionSecret(project, resource)
-	if fallback {
+	if err != nil {
+		return nil, err
+	}
+	if secret != nil {
 		return secret, nil
 	}
-	return secret, err
+	if globalSecret != nil {
+		return globalSecret, nil
+	}
+	return nil, fmt.Errorf("failed to find credentials secret from resource %q, Project %q or global credentials",
+		resource.GetName(), project.GetName())
 }
 
-func resolveConnectionSecret[R api.ResourceWithCredentials](project *akov2.AtlasProject, resource R) (*client.ObjectKey, error) {
-	if reflect.ValueOf(&resource).Elem().IsZero() {
+func resolveConnectionSecret(project *akov2.AtlasProject, resource api.ResourceWithCredentials) (*client.ObjectKey, error) {
+	if resource == nil {
 		return nil, fmt.Errorf("resource cannot be nil")
 	}
 	creds := resource.Credentials()
@@ -160,14 +165,8 @@ func resolveConnectionSecret[R api.ResourceWithCredentials](project *akov2.Atlas
 			Name:      creds.Name,
 		}, nil
 	}
-
 	if project == nil {
 		return nil, fmt.Errorf("project cannot be nil")
 	}
-	secret := project.ConnectionSecretObjectKey()
-	if secret == nil {
-		return nil, fmt.Errorf("failed to find credentials secret neither from resource %q nor Project %q",
-			resource.GetName(), project.GetName())
-	}
-	return secret, nil
+	return project.ConnectionSecretObjectKey(), nil
 }

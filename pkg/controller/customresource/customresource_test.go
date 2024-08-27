@@ -13,7 +13,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -233,51 +232,51 @@ func TestResourceVersionIsValid(t *testing.T) {
 	}
 }
 
-func TestComputeSecretWithFallback(t *testing.T) {
+func TestComputeSecret(t *testing.T) {
 	for _, tt := range []struct {
-		name                 string
-		fallback             bool
-		project              *akov2.AtlasProject
-		resource             api.ResourceWithCredentials
-		expected             *types.NamespacedName
-		expectedErrorMessage string
+		name         string
+		globalSecret *client.ObjectKey
+		project      *akov2.AtlasProject
+		resource     api.ResourceWithCredentials
+		wantRef      *types.NamespacedName
+		wantErrorMsg string
 	}{
 		{
-			name:                 "nil inputs fails with project cannot be nil error without fallback",
-			expectedErrorMessage: "resource cannot be nil",
+			name:         "nil inputs fails with resource cannot be nil without global secret",
+			wantErrorMsg: "resource cannot be nil",
 		},
 
 		{
-			name: "nil project ignored if resource is set without fallback",
+			name: "nil project ignored if resource is set without global secret",
 			resource: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &corev1.LocalObjectReference{Name: "local-secret"},
+						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
 					},
 				},
 			},
-			expected: &client.ObjectKey{
+			wantRef: &client.ObjectKey{
 				Name:      "local-secret",
 				Namespace: "local",
 			},
 		},
 
 		{
-			name:                 "nil resource and empty project fails without fallback",
-			project:              &akov2.AtlasProject{},
-			expectedErrorMessage: "resource cannot be nil",
+			name:         "nil resource and empty project fails without global secret",
+			project:      &akov2.AtlasProject{},
+			wantErrorMsg: "resource cannot be nil",
 		},
 
 		{
-			name:                 "when both are set empty it fails without fallback",
-			project:              &akov2.AtlasProject{},
-			resource:             &akov2.AtlasDatabaseUser{},
-			expectedErrorMessage: "failed to find credentials secret neither from resource",
+			name:         "when both are set empty it fails without global secret",
+			project:      &akov2.AtlasProject{},
+			resource:     &akov2.AtlasDatabaseUser{},
+			wantErrorMsg: "failed to find credentials secret ",
 		},
 
 		{
-			name: "empty resource and proper project get creds from project without fallback",
+			name: "empty resource and proper project get creds from project without global secret",
 			project: &akov2.AtlasProject{
 				Spec: akov2.AtlasProjectSpec{
 					Name:                    "",
@@ -289,14 +288,14 @@ func TestComputeSecretWithFallback(t *testing.T) {
 				},
 			},
 			resource: &akov2.AtlasDatabaseUser{},
-			expected: &client.ObjectKey{
+			wantRef: &client.ObjectKey{
 				Name:      "project-secret",
 				Namespace: "some-namespace",
 			},
 		},
 
 		{
-			name: "when both are properly set the resource wins without fallback",
+			name: "when both are properly set the resource wins without global secret",
 			project: &akov2.AtlasProject{
 				Spec: akov2.AtlasProjectSpec{
 					Name:                    "",
@@ -311,54 +310,57 @@ func TestComputeSecretWithFallback(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &corev1.LocalObjectReference{Name: "local-secret"},
+						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
 					},
 				},
 			},
-			expected: &client.ObjectKey{
+			wantRef: &client.ObjectKey{
 				Name:      "local-secret",
 				Namespace: "local",
 			},
 		},
 
 		{
-			name:     "nil inputs renders nil with fallback",
-			fallback: true,
+			name:         "nil inputs fails with resource cannot be nil with global secret",
+			globalSecret: &client.ObjectKey{Name: "global-secret"},
+			wantErrorMsg: "resource cannot be nil",
 		},
 
 		{
-			name:     "nil project renders resource secret if set even with fallback",
-			fallback: true,
+			name:         "nil project renders resource secret if set even with global secret",
+			globalSecret: &client.ObjectKey{Name: "global-secret"},
 			resource: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &corev1.LocalObjectReference{Name: "local-secret"},
+						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
 					},
 				},
 			},
-			expected: &client.ObjectKey{
+			wantRef: &client.ObjectKey{
 				Name:      "local-secret",
 				Namespace: "local",
 			},
 		},
 
 		{
-			name:     "nil resource and empty project renders nil with fallback",
-			fallback: true,
-			project:  &akov2.AtlasProject{},
+			name:         "nil resource and empty project fails with resource cannot be nil with global secret",
+			globalSecret: &client.ObjectKey{Name: "global-secret"},
+			project:      &akov2.AtlasProject{},
+			wantErrorMsg: "resource cannot be nil",
 		},
 
 		{
-			name:     "when both are set empty it renders nil with fallback",
-			fallback: true,
-			project:  &akov2.AtlasProject{},
-			resource: &akov2.AtlasDatabaseUser{},
+			name:         "when both are set empty it renders the global secret",
+			globalSecret: &client.ObjectKey{Name: "global-secret"},
+			project:      &akov2.AtlasProject{},
+			resource:     &akov2.AtlasDatabaseUser{},
+			wantRef:      &types.NamespacedName{Name: "global-secret"},
 		},
 
 		{
-			name:     "empty resource and proper project get creds from project even with fallback",
-			fallback: true,
+			name:         "empty resource and proper project get creds from project even with global secret",
+			globalSecret: &client.ObjectKey{Name: "global-secret"},
 			project: &akov2.AtlasProject{
 				Spec: akov2.AtlasProjectSpec{
 					Name:                    "",
@@ -370,15 +372,15 @@ func TestComputeSecretWithFallback(t *testing.T) {
 				},
 			},
 			resource: &akov2.AtlasDatabaseUser{},
-			expected: &client.ObjectKey{
+			wantRef: &client.ObjectKey{
 				Name:      "project-secret",
 				Namespace: "some-namespace",
 			},
 		},
 
 		{
-			name:     "when both are properly set the resource wins even with fallback",
-			fallback: true,
+			name:         "when all are properly set the resource wins even with global secret",
+			globalSecret: &client.ObjectKey{Name: "global-secret"},
 			project: &akov2.AtlasProject{
 				Spec: akov2.AtlasProjectSpec{
 					Name:                    "",
@@ -393,23 +395,23 @@ func TestComputeSecretWithFallback(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &corev1.LocalObjectReference{Name: "local-secret"},
+						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
 					},
 				},
 			},
-			expected: &client.ObjectKey{
+			wantRef: &client.ObjectKey{
 				Name:      "local-secret",
 				Namespace: "local",
 			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ComputeSecretWithFallback(tt.fallback, tt.project, tt.resource)
-			if tt.expectedErrorMessage != "" {
+			result, err := ComputeSecret(tt.globalSecret, tt.project, tt.resource)
+			if tt.wantErrorMsg != "" {
 				assert.Nil(t, result, nil)
-				assert.ErrorContains(t, err, tt.expectedErrorMessage)
+				assert.ErrorContains(t, err, tt.wantErrorMsg)
 			} else {
-				assert.Equal(t, result, tt.expected)
+				assert.Equal(t, result, tt.wantRef)
 				assert.NoError(t, err)
 			}
 		})

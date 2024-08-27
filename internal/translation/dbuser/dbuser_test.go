@@ -22,13 +22,13 @@ import (
 
 func TestNewAtlasDatabaseUsersService(t *testing.T) {
 	ctx := context.Background()
+	secretRef := &types.NamespacedName{}
 	provider := &atlas.TestProvider{
 		SdkClientFunc: func(_ *client.ObjectKey, _ *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			return &admin.APIClient{}, "", nil
 		},
-		HasGlobalFallbackSecretFunc: func() bool { return true },
+		GlobalFallbackSecretFunc: func() *client.ObjectKey { return secretRef },
 	}
-	secretRef := &types.NamespacedName{}
 	log := zap.S()
 	users, err := NewAtlasDatabaseUsersService(ctx, provider, secretRef, log)
 	require.NoError(t, err)
@@ -38,13 +38,13 @@ func TestNewAtlasDatabaseUsersService(t *testing.T) {
 func TestFailedNewAtlasDatabaseUsersService(t *testing.T) {
 	expectedErr := errors.New("fake error")
 	ctx := context.Background()
+	secretRef := &types.NamespacedName{}
 	provider := &atlas.TestProvider{
 		SdkClientFunc: func(_ *client.ObjectKey, _ *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			return nil, "", expectedErr
 		},
-		HasGlobalFallbackSecretFunc: func() bool { return true },
+		GlobalFallbackSecretFunc: func() *client.ObjectKey { return secretRef },
 	}
-	secretRef := &types.NamespacedName{}
 	log := zap.S()
 	users, err := NewAtlasDatabaseUsersService(ctx, provider, secretRef, log)
 	require.Nil(t, users)

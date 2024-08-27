@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -167,8 +168,8 @@ func TestEnsureDatabaseUser(t *testing.T) {
 		Client: fakeClient,
 		Log:    log,
 		AtlasProvider: &atlas.TestProvider{
-			IsCloudGovFunc:              func() bool { return false },
-			HasGlobalFallbackSecretFunc: func() bool { return true },
+			IsCloudGovFunc:           func() bool { return false },
+			GlobalFallbackSecretFunc: func() *client.ObjectKey { return nil },
 		},
 	}
 	for _, tc := range []struct {

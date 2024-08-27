@@ -1,16 +1,12 @@
 package api
 
-import (
-	corev1 "k8s.io/api/core/v1"
-)
-
 type LocalRef string
 
 // +k8s:deepcopy-gen=false
 
 // CredentialsProvider gives access to custom local credentials
 type CredentialsProvider interface {
-	Credentials() *corev1.LocalObjectReference
+	Credentials() *LocalObjectReference
 }
 
 // +k8s:deepcopy-gen=false
@@ -24,9 +20,9 @@ type ResourceWithCredentials interface {
 
 // LocalCredentialHolder is to be embedded by Specs of CRDs using custom local credentials
 type LocalCredentialHolder struct {
-	ConnectionSecret *corev1.LocalObjectReference `json:"connectionSecret,omitempty"`
+	ConnectionSecret *LocalObjectReference `json:"connectionSecret,omitempty"`
 }
 
-func (ch *LocalCredentialHolder) Credentials() *corev1.LocalObjectReference {
+func (ch *LocalCredentialHolder) Credentials() *LocalObjectReference {
 	return ch.ConnectionSecret
 }
