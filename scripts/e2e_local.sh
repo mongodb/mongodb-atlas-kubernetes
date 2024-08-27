@@ -23,8 +23,9 @@ export INPUT_ENV=dev
 
 if [[ "${build}" == "true" ]]; then
     ./.github/actions/gen-install-scripts/entrypoint.sh
-    awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+    awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > yaml.tmp && mv yaml.tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
+    make all-platforms
     docker build -f fast.Dockerfile -t "${image}" .
     docker push "${image}"
 
