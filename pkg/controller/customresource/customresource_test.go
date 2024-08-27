@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -15,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestResourceShouldBeLeftInAtlas(t *testing.T) {
@@ -235,19 +234,18 @@ func TestResourceVersionIsValid(t *testing.T) {
 func TestComputeSecret(t *testing.T) {
 	for _, tt := range []struct {
 		name         string
-		globalSecret *client.ObjectKey
 		project      *akov2.AtlasProject
 		resource     api.ResourceWithCredentials
 		wantRef      *types.NamespacedName
 		wantErrorMsg string
 	}{
 		{
-			name:         "nil inputs fails with resource cannot be nil without global secret",
+			name:         "nil inputs fails with resource cannot be nil",
 			wantErrorMsg: "resource cannot be nil",
 		},
 
 		{
-			name: "nil project ignored if resource is set without global secret",
+			name: "nil project ignored if resource is set",
 			resource: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
 				Spec: akov2.AtlasDatabaseUserSpec{
@@ -263,20 +261,19 @@ func TestComputeSecret(t *testing.T) {
 		},
 
 		{
-			name:         "nil resource and empty project fails without global secret",
+			name:         "nil resource and empty project fails",
 			project:      &akov2.AtlasProject{},
 			wantErrorMsg: "resource cannot be nil",
 		},
 
 		{
-			name:         "when both are set empty it fails without global secret",
-			project:      &akov2.AtlasProject{},
-			resource:     &akov2.AtlasDatabaseUser{},
-			wantErrorMsg: "failed to find credentials secret ",
+			name:     "when both are set empty it renders nil",
+			project:  &akov2.AtlasProject{},
+			resource: &akov2.AtlasDatabaseUser{},
 		},
 
 		{
-			name: "empty resource and proper project get creds from project without global secret",
+			name: "empty resource and proper project get creds from project",
 			project: &akov2.AtlasProject{
 				Spec: akov2.AtlasProjectSpec{
 					Name:                    "",
@@ -295,92 +292,7 @@ func TestComputeSecret(t *testing.T) {
 		},
 
 		{
-			name: "when both are properly set the resource wins without global secret",
-			project: &akov2.AtlasProject{
-				Spec: akov2.AtlasProjectSpec{
-					Name:                    "",
-					RegionUsageRestrictions: "",
-					ConnectionSecret: &common.ResourceRefNamespaced{
-						Name:      "project-secret",
-						Namespace: "some-namespace",
-					},
-				},
-			},
-			resource: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
-					},
-				},
-			},
-			wantRef: &client.ObjectKey{
-				Name:      "local-secret",
-				Namespace: "local",
-			},
-		},
-
-		{
-			name:         "nil inputs fails with resource cannot be nil with global secret",
-			globalSecret: &client.ObjectKey{Name: "global-secret"},
-			wantErrorMsg: "resource cannot be nil",
-		},
-
-		{
-			name:         "nil project renders resource secret if set even with global secret",
-			globalSecret: &client.ObjectKey{Name: "global-secret"},
-			resource: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
-					},
-				},
-			},
-			wantRef: &client.ObjectKey{
-				Name:      "local-secret",
-				Namespace: "local",
-			},
-		},
-
-		{
-			name:         "nil resource and empty project fails with resource cannot be nil with global secret",
-			globalSecret: &client.ObjectKey{Name: "global-secret"},
-			project:      &akov2.AtlasProject{},
-			wantErrorMsg: "resource cannot be nil",
-		},
-
-		{
-			name:         "when both are set empty it renders the global secret",
-			globalSecret: &client.ObjectKey{Name: "global-secret"},
-			project:      &akov2.AtlasProject{},
-			resource:     &akov2.AtlasDatabaseUser{},
-			wantRef:      &types.NamespacedName{Name: "global-secret"},
-		},
-
-		{
-			name:         "empty resource and proper project get creds from project even with global secret",
-			globalSecret: &client.ObjectKey{Name: "global-secret"},
-			project: &akov2.AtlasProject{
-				Spec: akov2.AtlasProjectSpec{
-					Name:                    "",
-					RegionUsageRestrictions: "",
-					ConnectionSecret: &common.ResourceRefNamespaced{
-						Name:      "project-secret",
-						Namespace: "some-namespace",
-					},
-				},
-			},
-			resource: &akov2.AtlasDatabaseUser{},
-			wantRef: &client.ObjectKey{
-				Name:      "project-secret",
-				Namespace: "some-namespace",
-			},
-		},
-
-		{
-			name:         "when all are properly set the resource wins even with global secret",
-			globalSecret: &client.ObjectKey{Name: "global-secret"},
+			name: "when both are properly set the resource wins",
 			project: &akov2.AtlasProject{
 				Spec: akov2.AtlasProjectSpec{
 					Name:                    "",
@@ -406,7 +318,7 @@ func TestComputeSecret(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ComputeSecret(tt.globalSecret, tt.project, tt.resource)
+			result, err := ComputeSecret(tt.project, tt.resource)
 			if tt.wantErrorMsg != "" {
 				assert.Nil(t, result, nil)
 				assert.ErrorContains(t, err, tt.wantErrorMsg)

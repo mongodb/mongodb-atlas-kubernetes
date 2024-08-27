@@ -127,8 +127,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	globalSecret := r.AtlasProvider.GlobalFallbackSecret()
-	credentialsSecret, err := customresource.ComputeSecret(globalSecret, project, databaseUser)
+	credentialsSecret, err := customresource.ComputeSecret(project, databaseUser)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)

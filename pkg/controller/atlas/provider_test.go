@@ -20,7 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
 
-func TestProviderClient(t *testing.T) {
+func TestProvider_Client(t *testing.T) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "api-secret",
@@ -44,19 +44,19 @@ func TestProviderClient(t *testing.T) {
 		WithObjects(secret).
 		Build()
 
-	t.Run("should return Atlas API client and organization id from the passed in connection secret even with the global secret unset", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodb.com/", nil, k8sClient)
+	t.Run("should return Atlas API client and organization id using global secret", func(t *testing.T) {
+		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{Name: "api-secret", Namespace: "default"}, k8sClient)
 
-		c, id, err := p.Client(context.Background(), objectKey(secret), zaptest.NewLogger(t).Sugar())
+		c, id, err := p.Client(context.Background(), nil, zaptest.NewLogger(t).Sugar())
 		assert.NoError(t, err)
 		assert.Equal(t, "1234567890", id)
 		assert.NotNil(t, c)
 	})
 
-	t.Run("should return Atlas API client and organization id from the passed in connection secret even with the global secret set", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodb.com/", &client.ObjectKey{Name: "global-secret", Namespace: "default"}, k8sClient)
+	t.Run("should return Atlas API client and organization id using connection secret", func(t *testing.T) {
+		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{Name: "global-secret", Namespace: "default"}, k8sClient)
 
-		c, id, err := p.Client(context.Background(), objectKey(secret), zaptest.NewLogger(t).Sugar())
+		c, id, err := p.Client(context.Background(), &client.ObjectKey{Name: "api-secret", Namespace: "default"}, zaptest.NewLogger(t).Sugar())
 		assert.NoError(t, err)
 		assert.Equal(t, "1234567890", id)
 		assert.NotNil(t, c)
@@ -65,17 +65,17 @@ func TestProviderClient(t *testing.T) {
 
 func TestProvider_IsCloudGov(t *testing.T) {
 	t.Run("should return false for invalid domain", func(t *testing.T) {
-		p := NewProductionProvider("http://x:namedport", &client.ObjectKey{}, nil)
+		p := NewProductionProvider("http://x:namedport", client.ObjectKey{}, nil)
 		assert.False(t, p.IsCloudGov())
 	})
 
 	t.Run("should return false for commercial Atlas domain", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodb.com/", &client.ObjectKey{}, nil)
+		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{}, nil)
 		assert.False(t, p.IsCloudGov())
 	})
 
 	t.Run("should return true for Atlas for government domain", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodbgov.com/", &client.ObjectKey{}, nil)
+		p := NewProductionProvider("https://cloud.mongodbgov.com/", client.ObjectKey{}, nil)
 		assert.True(t, p.IsCloudGov())
 	})
 }
@@ -166,7 +166,7 @@ func TestProvider_IsResourceSupported(t *testing.T) {
 
 	for desc, data := range dataProvider {
 		t.Run(desc, func(t *testing.T) {
-			p := NewProductionProvider(data.domain, &client.ObjectKey{}, nil)
+			p := NewProductionProvider(data.domain, client.ObjectKey{}, nil)
 			assert.Equal(t, data.expectation, p.IsResourceSupported(data.resource))
 		})
 	}
@@ -209,11 +209,4 @@ func TestOperatorUserAgent(t *testing.T) {
 
 	require.Contains(t, userAgent, "MongoDBAtlasKubernetesOperator")
 	require.Contains(t, userAgent, version.Version)
-}
-
-func objectKey(obj client.Object) *client.ObjectKey {
-	return &client.ObjectKey{
-		Name:      obj.GetName(),
-		Namespace: obj.GetNamespace(),
-	}
 }

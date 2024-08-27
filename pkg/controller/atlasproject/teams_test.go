@@ -68,7 +68,6 @@ func TestUpdateTeamState(t *testing.T) {
 			ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 				return &mongodbatlas.Client{}, "0987654321", nil
 			},
-			GlobalFallbackSecretFunc: func() *client.ObjectKey { return objectKey(secret) },
 		}
 		k8sClient := buildFakeKubernetesClient(secret, project, team)
 		reconciler := &AtlasProjectReconciler{
@@ -133,7 +132,6 @@ func TestUpdateTeamState(t *testing.T) {
 					Teams: teamsMock,
 				}, "0987654321", nil
 			},
-			GlobalFallbackSecretFunc: func() *client.ObjectKey { return objectKey(secret) },
 		}
 		k8sClient := buildFakeKubernetesClient(secret, project, team)
 		reconciler := &AtlasProjectReconciler{
@@ -206,7 +204,6 @@ func TestUpdateTeamState(t *testing.T) {
 							Teams: teamsMock,
 						}, "0987654321", nil
 					},
-					GlobalFallbackSecretFunc: func() *client.ObjectKey { return nil },
 				}
 				reconciler := &AtlasProjectReconciler{
 					Client:                   buildFakeKubernetesClient(project, team),
@@ -253,13 +250,6 @@ func buildFakeKubernetesClient(objects ...client.Object) client.WithWatch {
 
 func reference(obj client.Object) *common.ResourceRefNamespaced {
 	return &common.ResourceRefNamespaced{
-		Name:      obj.GetName(),
-		Namespace: obj.GetNamespace(),
-	}
-}
-
-func objectKey(obj client.Object) *client.ObjectKey {
-	return &client.ObjectKey{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}
