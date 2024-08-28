@@ -52,6 +52,7 @@ jobs:
             git push
 
             echo 'Adding label retest'
+            gh pr edit ${{ env.BRANCH }} --remove-label retest
             gh pr edit ${{ env.BRANCH }} --add-label retest
           else
             echo 'Clean nothing to do'
