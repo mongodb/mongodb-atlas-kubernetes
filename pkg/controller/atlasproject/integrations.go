@@ -36,7 +36,7 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInternal, err.Error())
 	}
-	integrationsInAtlasAlias := toAliasThirdPartyIntegration(integrationsInAtlas.Results)
+	integrationsInAtlasAlias := toAliasThirdPartyIntegration(integrationsInAtlas.GetResults())
 
 	identifiersForDelete := set.Difference(integrationsInAtlasAlias, project.Spec.Integrations)
 	ctx.Log.Debugf("identifiersForDelete: %v", identifiersForDelete)
@@ -107,7 +107,7 @@ func (r *AtlasProjectReconciler) createIntegrationsInAtlas(ctx *workflow.Context
 			return workflow.Terminate(workflow.ProjectIntegrationInternal, fmt.Sprintf("cannot convert integration: %s", err.Error()))
 		}
 
-		_, resp, err := ctx.Client.Integrations.Create(ctx.Context, projectID, integration.Type, integration)
+		_, resp, err := ctx.SdkClient.ThirdPartyIntegrationsApi.CreateThirdPartyIntegration(ctx.Context, integration.GetType(), projectID, integration).Execute()
 		if resp.StatusCode != http.StatusOK {
 			ctx.Log.Debugw("Create request failed", "Status", resp.Status, "Integration", integration)
 		}
@@ -128,7 +128,7 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 		spec := integrationPair[1].(project.Integration)
 
 		var areEqual bool
-		if isPrometheusType(atlas.Type) {
+		if isPrometheusType(atlas.GetType()) {
 			areEqual = arePrometheusesEqual(atlas, spec)
 		} else {
 			// As integration secrets are redacted from Atlas, we cannot properly compare them,
@@ -146,41 +146,33 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 	return true
 }
 
-type aliasThirdPartyIntegration admin.ThirdPartyIntegration
-
-func (i aliasThirdPartyIntegration) Identifier() interface{} {
-	return i.Type
+type aliasThirdPartyIntegration struct {
+	admin.ThirdPartyIntegration
 }
 
-func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []aliasThirdPartyIntegration {
+func (i aliasThirdPartyIntegration) Identifier() interface{} {
+	return i.GetType()
+}
+
+func toAliasThirdPartyIntegration(list []admin.ThirdPartyIntegration) []aliasThirdPartyIntegration {
 	result := make([]aliasThirdPartyIntegration, len(list))
 	for i, item := range list {
-		if item == nil {
-			continue
-		}
-		result[i] = aliasThirdPartyIntegration(*item)
+		result[i] = aliasThirdPartyIntegration{item}
 	}
 	return result
 }
 
 func syncPrometheusStatus(ctx *workflow.Context, project *akov2.AtlasProject, integrationPairs [][]set.Identifiable) {
-	prometheusIntegration, found := searchAtlasIntegration(integrationPairs, isPrometheusType)
-	if !found {
-		ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(nil))
-		return
-	}
-
 	ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(&status.Prometheus{
-		Scheme:       prometheusIntegration.Scheme,
 		DiscoveryURL: buildPrometheusDiscoveryURL(ctx.Client.BaseURL, project.ID()),
 	}))
 }
 
-func searchAtlasIntegration(integrationPairs [][]set.Identifiable, filterFunc func(typeName string) bool) (integration mongodbatlas.ThirdPartyIntegration, found bool) {
+func searchAtlasIntegration(integrationPairs [][]set.Identifiable, filterFunc func(typeName string) bool) (integration admin.ThirdPartyIntegration, found bool) {
 	for _, pair := range integrationPairs {
 		integrationAlias := pair[0].(aliasThirdPartyIntegration)
-		if filterFunc(integrationAlias.Type) {
-			return mongodbatlas.ThirdPartyIntegration(integrationAlias), true
+		if filterFunc(integrationAlias.GetType()) {
+			return integrationAlias.ThirdPartyIntegration, true
 		}
 	}
 
@@ -188,10 +180,10 @@ func searchAtlasIntegration(integrationPairs [][]set.Identifiable, filterFunc fu
 }
 
 func arePrometheusesEqual(atlas aliasThirdPartyIntegration, spec project.Integration) bool {
-	return atlas.Type == spec.Type &&
-		atlas.UserName == spec.UserName &&
-		atlas.ServiceDiscovery == spec.ServiceDiscovery &&
-		atlas.Enabled == spec.Enabled
+	return atlas.GetType() == spec.Type &&
+		atlas.GetUsername() == spec.UserName &&
+		atlas.GetServiceDiscovery() == spec.ServiceDiscovery &&
+		atlas.GetEnabled() == spec.Enabled
 }
 
 func isPrometheusType(typeName string) bool {

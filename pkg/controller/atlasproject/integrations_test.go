@@ -6,10 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -24,13 +27,13 @@ const (
 var errTest = fmt.Errorf("fake test error")
 
 func TestToAlias(t *testing.T) {
-	sample := []*mongodbatlas.ThirdPartyIntegration{{
-		Type:   "DATADOG",
-		APIKey: "some",
-		Region: "EU",
+	sample := []admin.ThirdPartyIntegration{{
+		Type:   pointer.MakePtr("DATADOG"),
+		ApiKey: pointer.MakePtr("some"),
+		Region: pointer.MakePtr("EU"),
 	}}
 	result := toAliasThirdPartyIntegration(sample)
-	assert.Equal(t, sample[0].APIKey, result[0].APIKey)
+	assert.Equal(t, sample[0].ApiKey, result[0].ApiKey)
 	assert.Equal(t, sample[0].Type, result[0].Type)
 	assert.Equal(t, sample[0].Region, result[0].Region)
 }
@@ -40,7 +43,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 	for _, tc := range []struct {
 		title          string
 		toUpdate       [][]set.Identifiable
-		client         *mongodbatlas.Client
+		integrationAPI *mockadmin.ThirdPartyIntegrationsApi
 		expectedResult workflow.Result
 		expectedCalls  int
 	}{
@@ -60,10 +63,12 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 			toUpdate: set.Intersection(
 				[]aliasThirdPartyIntegration{
 					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
+						admin.ThirdPartyIntegration{
+							Type:                     pointer.MakePtr("MICROSOFT_TEAMS"),
+							Name:                     testNamespace,
+							MicrosoftTeamsWebhookUrl: pointer.MakePtr("https://somehost/somepath/somesecret"),
+							Enabled:                  pointer.MakePtr(true),
+						},
 					},
 				},
 				[]project.Integration{
