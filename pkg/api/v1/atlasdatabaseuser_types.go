@@ -57,8 +57,9 @@ type AtlasDatabaseUserSpec struct {
 
 	// Project is a reference to AtlasProject resource the user belongs to
 	Project *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
-	// AtlasRef holds the Atlas project ID the user belongs to
-	AtlasRef *ExternalProjectReference `json:"atlasRef,omitempty"`
+
+	// AtlasProjectRef holds the Atlas project ID the user belongs to
+	AtlasProjectRef *ExternalProjectReference `json:"atlasProjectRef,omitempty"`
 
 	// DatabaseName is a Database against which Atlas authenticates the user. Default value is 'admin'.
 	// +kubebuilder:default=admin

@@ -71,12 +71,6 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 
 func (r *AtlasDatabaseUserReconciler) independentFlow(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
 	var credsKey *client.ObjectKey
-	if atlasDatabaseUser.Spec.AtlasRef.Credentials != nil {
-		credsKey = &client.ObjectKey{
-			Namespace: atlasDatabaseUser.Namespace,
-			Name:      *atlasDatabaseUser.Spec.AtlasRef.Credentials,
-		}
-	}
 
 	sdkClient, _, err := r.AtlasProvider.SdkClient(ctx.Context, credsKey, r.Log)
 	if err != nil {
@@ -87,7 +81,7 @@ func (r *AtlasDatabaseUserReconciler) independentFlow(ctx *workflow.Context, atl
 	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
 
-	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.AtlasRef.ID)
+	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.AtlasProjectRef.ID)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
@@ -312,7 +306,7 @@ func (r *AtlasDatabaseUserReconciler) removeOldUser(ctx context.Context, project
 }
 
 func isIndependentResource(atlasDatabaseUser *akov2.AtlasDatabaseUser) bool {
-	return atlasDatabaseUser.Spec.AtlasRef != nil
+	return atlasDatabaseUser.Spec.AtlasProjectRef != nil
 }
 
 func canManageOIDC(isEnabled bool, oidcType string) bool {

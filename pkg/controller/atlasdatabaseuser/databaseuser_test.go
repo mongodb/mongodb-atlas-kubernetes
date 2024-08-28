@@ -227,9 +227,8 @@ func TestHandleDatabaseUser(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
-						ID:          "project-id",
-						Credentials: pointer.MakePtr("project-creds"),
+					AtlasProjectRef: &akov2.ExternalProjectReference{
+						ID: "project-id",
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -431,9 +430,8 @@ func TestIndependentFlow(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
-						ID:          "project-id",
-						Credentials: pointer.MakePtr("project-creds"),
+					AtlasProjectRef: &akov2.ExternalProjectReference{
+						ID: "project-id",
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -463,9 +461,8 @@ func TestIndependentFlow(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
-						ID:          "project-id",
-						Credentials: pointer.MakePtr("project-creds"),
+					AtlasProjectRef: &akov2.ExternalProjectReference{
+						ID: "project-id",
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -504,9 +501,8 @@ func TestIndependentFlow(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
-						ID:          "project-id",
-						Credentials: pointer.MakePtr("project-creds"),
+					AtlasProjectRef: &akov2.ExternalProjectReference{
+						ID: "project-id",
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1022,7 +1018,7 @@ func TestDbuLifeCycle(t *testing.T) {
 			},
 			expectedResult: ctrl.Result{},
 		},
-		"unamage an user": {
+		"unmanage an user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "user1",

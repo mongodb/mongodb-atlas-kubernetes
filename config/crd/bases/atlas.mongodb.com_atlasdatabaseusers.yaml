@@ -54,14 +54,10 @@ spec:
             description: AtlasDatabaseUserSpec defines the desired state of Database
               User in Atlas
             properties:
-              atlasRef:
-                description: AtlasRef holds the Atlas project ID the user belongs
+              atlasProjectRef:
+                description: AtlasProjectRef holds the Atlas project ID the user belongs
                   to
                 properties:
-                  credentials:
-                    description: Credentials is the name of the secret that holds
-                      the Atlas credentials
-                    type: string
                   id:
                     description: ID is the Atlas project ID
                     type: string
@@ -81,8 +77,8 @@ spec:
                 - ROLE
                 type: string
               connectionSecret:
-                description: A reference to an object in the same namespace as the
-                  referent
+                description: LocalObjectReference is a reference to an object in the
+                  same namespace as the referent
                 properties:
                   name:
                     description: |-

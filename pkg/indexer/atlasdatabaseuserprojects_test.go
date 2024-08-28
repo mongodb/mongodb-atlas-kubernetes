@@ -71,7 +71,7 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 			name: "should return nil when there is an empty reference for external project",
 			object: &akov2.AtlasDatabaseUser{
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{},
+					AtlasProjectRef: &akov2.ExternalProjectReference{},
 				},
 			},
 		},
@@ -79,7 +79,7 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 			name: "should return external project reference",
 			object: &akov2.AtlasDatabaseUser{
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
+					AtlasProjectRef: &akov2.ExternalProjectReference{
 						ID: "project-id",
 					},
 				},
