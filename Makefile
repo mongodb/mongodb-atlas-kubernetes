@@ -109,6 +109,8 @@ CONTAINER_SPEC=.spec.template.spec.containers[0]
 
 SILK_ASSET_GROUP="atlas-kubernetes-operator"
 
+GOPATH = $(shell go env GOPATH)
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -201,7 +203,7 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
-	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/..." output:crd:artifacts:config=config/crd/bases
+	$(GOPATH)/bin/controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 
 
@@ -230,9 +232,12 @@ $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
 .PHONY: vet
 vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
+controller-gen: # required as debbox is behind and 0.14 fails to ganerate on our codebase
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.1
+
 .PHONY: generate
-generate: ${GO_SOURCES} ## Generate code
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
+generate: controller-gen ${GO_SOURCES} ## Generate code
+	$(GOPATH)/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
 	$(MAKE) fmt
 
 FILES = $(shell git ls-files -o -m --directory --exclude-standard --no-empty-directory)
@@ -258,7 +263,7 @@ validate-manifests: generate manifests check-missing-files
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
-	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=pkg/api
+	operator-sdk generate $(KUSTOMIZE)
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
