@@ -8,7 +8,6 @@
     "act@latest",
     "kubectl@latest",
     "docker@latest",
-    "kubernetes-controller-tools@latest",
     "kustomize@4.3",
     "git@latest",
     "gettext@latest",
@@ -21,6 +20,7 @@
     "ginkgo@latest",
     "operator-sdk@latest",
     "shellcheck@latest",
-    "golangci-lint@1.59.1"
+    "golangci-lint@1.59.1",
+    "path:./flakes/k8s-controller-tools"
   ]
 }
