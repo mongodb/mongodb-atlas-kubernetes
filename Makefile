@@ -251,12 +251,9 @@ endif
 	@echo "--------------------"
 	@echo "Check: PASS"
 
-.PHONY: go-mod-tidy
-go-mod-tidy:
-	go mod tidy
-
 .PHONY: validate-manifests
-validate-manifests: go-mod-tidy generate manifests check-missing-files ## Validates manifests were correctly generated
+validate-manifests: generate manifests check-missing-files
+
 
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
