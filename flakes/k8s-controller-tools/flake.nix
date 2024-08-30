@@ -16,7 +16,7 @@
                     owner = "kubernetes-sigs";
                     repo = "controller-tools";
                     rev = "v${version}";
-                    sha256 = "0czfaaaxs7v7a7hy3cy83ph10r2lk4hlfn75whzp2njms5krvxh4";
+                    sha256 = "sha256-BPadZ9FVWnE/5OVYRyGZVGQQ4B3Is+HhUWcf3ZVS7jM=";
                 };
 
                 k8s-controller-tools = pkgs.buildGoModule rec {
