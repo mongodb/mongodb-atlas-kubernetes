@@ -276,8 +276,6 @@ jobs:
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
           MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
-          ATLAS_LOCAL_PUBLIC_KEY: ${{ secrets.ATLAS_LOCAL_PUBLIC_KEY }}
-          ATLAS_LOCAL_PRIVATE_KEY: ${{ secrets.ATLAS_LOCAL_PRIVATE_KEY }}
           IMAGE_URL: "${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}"
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
           IMAGE_PULL_SECRET_USERNAME: $

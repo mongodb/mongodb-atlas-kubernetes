@@ -3,7 +3,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -93,11 +92,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, config.DefaultOperatorNS)).NotTo(HaveOccurred())
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
 			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)).NotTo(HaveOccurred())
-			publicKey, privateKey, err := localCredentials()
-			Expect(err).ToNot(HaveOccurred())
-			Expect(
-				k8s.CreateSecret(testData.Context, testData.K8SClient, publicKey, privateKey, localSecretName, secondNamespace),
-			).ToNot(HaveOccurred())
+			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, localSecretName, secondNamespace)
 
 			mgr, err := k8s.BuildManager(&k8s.Config{
 				GlobalAPISecret: client.ObjectKey{
@@ -271,21 +266,4 @@ func countConnectionSecrets(k8sClient client.Client, projectName string) int {
 	}
 
 	return len(names)
-}
-
-func localCredentials() (string, string, error) {
-	publicKey := os.Getenv("ATLAS_LOCAL_PUBLIC_KEY")
-	privateKey := os.Getenv("ATLAS_LOCAL_PRIVATE_KEY")
-	missing := []string{}
-	if publicKey == "" {
-		missing = append(missing, "public key is missing")
-	}
-	if privateKey == "" {
-		missing = append(missing, "private key is missing")
-	}
-	if len(missing) > 0 {
-		return "", "",
-			fmt.Errorf("Check credentials ATLAS_LOCAL_...: %s", strings.Join(missing, ", "))
-	}
-	return publicKey, privateKey, nil
 }
