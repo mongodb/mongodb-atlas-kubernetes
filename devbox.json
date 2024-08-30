@@ -20,7 +20,6 @@
     "ginkgo@latest",
     "operator-sdk@latest",
     "shellcheck@latest",
-    "golangci-lint@1.59.1",
-    "path:./flakes/k8s-controller-tools"
+    "golangci-lint@1.59.1"
   ]
 }
