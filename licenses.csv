@@ -112,11 +112,11 @@ golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.23.0:LICENSE,BSD-3
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.17.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.6.0:LICENSE,BSD-3-Clause
 gomodules.xyz/jsonpatch/v2,https://github.com/gomodules/jsonpatch/blob/v2.4.0/v2/LICENSE,Apache-2.0
-google.golang.org/api,https://github.com/googleapis/google-api-go-client/blob/v0.194.0/LICENSE,BSD-3-Clause
-google.golang.org/api/internal/third_party/uritemplates,https://github.com/googleapis/google-api-go-client/blob/v0.194.0/internal/third_party/uritemplates/LICENSE,BSD-3-Clause
-google.golang.org/genproto/googleapis,https://github.com/googleapis/go-genproto/blob/ddb44dafa142/LICENSE,Apache-2.0
+google.golang.org/api,https://github.com/googleapis/google-api-go-client/blob/v0.195.0/LICENSE,BSD-3-Clause
+google.golang.org/api/internal/third_party/uritemplates,https://github.com/googleapis/google-api-go-client/blob/v0.195.0/internal/third_party/uritemplates/LICENSE,BSD-3-Clause
+google.golang.org/genproto/googleapis,https://github.com/googleapis/go-genproto/blob/4ba0660f739c/LICENSE,Apache-2.0
 google.golang.org/genproto/googleapis/api,https://github.com/googleapis/go-genproto/blob/ddb44dafa142/googleapis/api/LICENSE,Apache-2.0
-google.golang.org/genproto/googleapis/rpc,https://github.com/googleapis/go-genproto/blob/ddb44dafa142/googleapis/rpc/LICENSE,Apache-2.0
+google.golang.org/genproto/googleapis/rpc,https://github.com/googleapis/go-genproto/blob/4ba0660f739c/googleapis/rpc/LICENSE,Apache-2.0
 google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.65.0/LICENSE,Apache-2.0
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.34.2/LICENSE,BSD-3-Clause
 gopkg.in/evanphx/json-patch.v4,https://github.com/evanphx/json-patch/blob/v4.12.0/LICENSE,BSD-3-Clause
