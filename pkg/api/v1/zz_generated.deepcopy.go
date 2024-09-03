@@ -678,7 +678,6 @@ func (in *AtlasDatabaseUserList) DeepCopyObject() runtime.Object {
 func (in *AtlasDatabaseUserSpec) DeepCopyInto(out *AtlasDatabaseUserSpec) {
 	*out = *in
 	in.LocalCredentialHolder.DeepCopyInto(&out.LocalCredentialHolder)
-	out.Project = in.Project
 	if in.Project != nil {
 		in, out := &in.Project, &out.Project
 		*out = new(common.ResourceRefNamespaced)

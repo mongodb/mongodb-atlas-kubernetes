@@ -54,13 +54,18 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
 
-	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx.Context, atlasProject.ConnectionSecretObjectKey(), r.Log)
+	credentialsSecret, err := customresource.ComputeSecret(atlasProject, atlasDatabaseUser)
+	if err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
+	}
+
+	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx.Context, credentialsSecret, r.Log)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
 
 	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
-	r.deploymentService = deployment.NewProductionAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
 
 	return r.dbuLifeCycle(ctx, atlasDatabaseUser, project.NewProject(atlasProject, orgID))
 }
@@ -81,7 +86,7 @@ func (r *AtlasDatabaseUserReconciler) independentFlow(ctx *workflow.Context, atl
 
 	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
 	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
-	r.deploymentService = deployment.NewProductionAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
 
 	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.AtlasRef.ID)
 	if err != nil {
