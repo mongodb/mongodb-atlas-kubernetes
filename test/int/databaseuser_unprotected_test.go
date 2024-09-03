@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -785,7 +785,7 @@ func checkSecretsDontExist(namespace string, secretNames []string) func() bool {
 		for _, name := range secretNames {
 			s := corev1.Secret{}
 			err := k8sClient.Get(context.Background(), kube.ObjectKey(namespace, name), &s)
-			if err != nil && apiErrors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				nonExisting++
 			}
 		}

@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -50,7 +50,7 @@ func Ensure(ctx context.Context, client client.Client, namespace, projectName, p
 		Name:      formatSecretName(projectName, clusterName, data.DBUserName),
 		Namespace: namespace,
 	}}
-	if getError = client.Get(ctx, kube.ObjectKeyFromObject(s), s); getError != nil && !apiErrors.IsNotFound(getError) {
+	if getError = client.Get(ctx, kube.ObjectKeyFromObject(s), s); getError != nil && !apierrors.IsNotFound(getError) {
 		return "", getError
 	}
 	if err := fillSecret(s, projectID, clusterName, data); err != nil {
