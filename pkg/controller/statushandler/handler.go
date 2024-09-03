@@ -1,7 +1,7 @@
 package statushandler
 
 import (
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,7 +18,7 @@ func Update(ctx *workflow.Context, kubeClient client.Client, eventRecorder recor
 	}
 
 	if err := patchUpdateStatus(ctx, kubeClient, resource); err != nil {
-		if apiErrors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			ctx.Log.Infof("The resource %s no longer exists, not updating the status", kube.ObjectKey(resource.GetNamespace(), resource.GetName()))
 			return
 		}

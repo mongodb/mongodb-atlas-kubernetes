@@ -6,7 +6,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"go.uber.org/zap"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -31,7 +31,7 @@ const (
 func PrepareResource(ctx context.Context, client client.Client, request reconcile.Request, resource api.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
 	err := client.Get(ctx, request.NamespacedName, resource)
 	if err != nil {
-		if apiErrors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
 			log.Debugf("Object %s doesn't exist, was it deleted after reconcile request?", request.NamespacedName)
