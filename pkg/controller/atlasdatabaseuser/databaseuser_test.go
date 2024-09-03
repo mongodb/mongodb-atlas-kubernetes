@@ -41,7 +41,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 		dbUserInAKO        *akov2.AtlasDatabaseUser
 		dbUserSecret       *corev1.Secret
 		atlasProject       *akov2.AtlasProject
-		atlasProvider      func() atlas.Provider
+		atlasProvider      atlas.Provider
 		expectedResult     ctrl.Result
 		expectedConditions []api.Condition
 	}{
@@ -62,9 +62,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			atlasProvider: func() atlas.Provider {
-				return &atlasmock.TestProvider{}
-			},
+			atlasProvider:  &atlasmock.TestProvider{},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ResourceVersionStatus).
@@ -89,9 +87,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			atlasProvider: func() atlas.Provider {
-				return &atlasmock.TestProvider{}
-			},
+			atlasProvider:  &atlasmock.TestProvider{},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ResourceVersionStatus).
@@ -116,12 +112,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			atlasProvider: func() atlas.Provider {
-				return &atlasmock.TestProvider{
-					IsSupportedFunc: func() bool {
-						return false
-					},
-				}
+			atlasProvider: &atlasmock.TestProvider{
+				IsSupportedFunc: func() bool {
+					return false
+				},
 			},
 			expectedResult: ctrl.Result{},
 			expectedConditions: []api.Condition{
@@ -153,12 +147,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			atlasProvider: func() atlas.Provider {
-				return &atlasmock.TestProvider{
-					IsSupportedFunc: func() bool {
-						return true
-					},
-				}
+			atlasProvider: &atlasmock.TestProvider{
+				IsSupportedFunc: func() bool {
+					return true
+				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
@@ -199,15 +191,13 @@ func TestHandleDatabaseUser(t *testing.T) {
 					Name: "my-project",
 				},
 			},
-			atlasProvider: func() atlas.Provider {
-				return &atlasmock.TestProvider{
-					IsSupportedFunc: func() bool {
-						return true
-					},
-					SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-						return nil, "", errors.New("failed to create client")
-					},
-				}
+			atlasProvider: &atlasmock.TestProvider{
+				IsSupportedFunc: func() bool {
+					return true
+				},
+				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+					return nil, "", errors.New("failed to create client")
+				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
@@ -260,33 +250,31 @@ func TestHandleDatabaseUser(t *testing.T) {
 					Name: "my-project",
 				},
 			},
-			atlasProvider: func() atlas.Provider {
-				return &atlasmock.TestProvider{
-					IsSupportedFunc: func() bool {
-						return true
-					},
-					IsCloudGovFunc: func() bool {
-						return false
-					},
-					SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-						userAPI := mockadmin.NewDatabaseUsersApi(t)
-						userAPI.EXPECT().GetDatabaseUser(context.Background(), "", "admin", "user1").
-							Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
-						userAPI.EXPECT().GetDatabaseUserExecute(mock.AnythingOfType("admin.GetDatabaseUserApiRequest")).
-							Return(nil, nil, nil)
-						userAPI.EXPECT().CreateDatabaseUser(context.Background(), "", mock.AnythingOfType("*admin.CloudDatabaseUser")).
-							Return(admin.CreateDatabaseUserApiRequest{ApiService: userAPI})
-						userAPI.EXPECT().CreateDatabaseUserExecute(mock.AnythingOfType("admin.CreateDatabaseUserApiRequest")).
-							Return(&admin.CloudDatabaseUser{}, nil, nil)
+			atlasProvider: &atlasmock.TestProvider{
+				IsSupportedFunc: func() bool {
+					return true
+				},
+				IsCloudGovFunc: func() bool {
+					return false
+				},
+				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+					userAPI := mockadmin.NewDatabaseUsersApi(t)
+					userAPI.EXPECT().GetDatabaseUser(context.Background(), "", "admin", "user1").
+						Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
+					userAPI.EXPECT().GetDatabaseUserExecute(mock.AnythingOfType("admin.GetDatabaseUserApiRequest")).
+						Return(nil, nil, nil)
+					userAPI.EXPECT().CreateDatabaseUser(context.Background(), "", mock.AnythingOfType("*admin.CloudDatabaseUser")).
+						Return(admin.CreateDatabaseUserApiRequest{ApiService: userAPI})
+					userAPI.EXPECT().CreateDatabaseUserExecute(mock.AnythingOfType("admin.CreateDatabaseUserApiRequest")).
+						Return(&admin.CloudDatabaseUser{}, nil, nil)
 
-						clusterAPI := mockadmin.NewClustersApi(t)
+					clusterAPI := mockadmin.NewClustersApi(t)
 
-						return &admin.APIClient{
-							ClustersApi:      clusterAPI,
-							DatabaseUsersApi: userAPI,
-						}, "", nil
-					},
-				}
+					return &admin.APIClient{
+						ClustersApi:      clusterAPI,
+						DatabaseUsersApi: userAPI,
+					}, "", nil
+				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
@@ -320,7 +308,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
 				Client:        k8sClient.Build(),
-				AtlasProvider: tt.atlasProvider(),
+				AtlasProvider: tt.atlasProvider,
 				Log:           logger,
 			}
 			ctx := &workflow.Context{
@@ -761,7 +749,7 @@ func TestDbuLifeCycle(t *testing.T) {
 			},
 			expectedResult: ctrl.Result{},
 		},
-		"unamage an user": {
+		"unmanage an user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "user1",
