@@ -6,197 +6,313 @@ import (
 	"fmt"
 	"time"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
 
-func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, dus dbuser.AtlasUsersService, ds deployment.AtlasDeploymentsService, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
-	password, err := dbUser.ReadPassword(ctx.Context, r.Client)
+func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
+	valid, validationErr := customresource.ResourceVersionIsValid(atlasDatabaseUser)
+	switch {
+	case validationErr != nil:
+		return r.terminate(ctx, atlasDatabaseUser, api.ResourceVersionStatus, workflow.AtlasResourceVersionIsInvalid, true, validationErr)
+	case !valid:
+		return r.terminate(
+			ctx,
+			atlasDatabaseUser,
+			api.ResourceVersionStatus,
+			workflow.AtlasResourceVersionMismatch,
+			true,
+			fmt.Errorf("version of the resource '%s' is higher than the operator version '%s'", atlasDatabaseUser.GetName(), version.Version),
+		)
+	default:
+		ctx.SetConditionTrue(api.ResourceVersionStatus).
+			SetConditionTrue(api.ValidationSucceeded)
+	}
+
+	if !r.AtlasProvider.IsResourceSupported(atlasDatabaseUser) {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasGovUnsupported, false, fmt.Errorf("the %T is not supported by Atlas for government", atlasDatabaseUser))
+	}
+
+	atlasProject := &akov2.AtlasProject{}
+	if err := r.Client.Get(ctx.Context, atlasDatabaseUser.AtlasProjectObjectKey(), atlasProject); err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
+	}
+
+	credentialsSecret, err := customresource.ComputeSecret(atlasProject, atlasDatabaseUser)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
-	apiUser, err := dbuser.NewUser(dbUser.Spec.DeepCopy(), project.ID(), password)
+	sdkClient, _, err := r.AtlasProvider.SdkClient(ctx.Context, credentialsSecret, r.Log)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
 
-	if result := checkUserExpired(ctx.Context, ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
-		return result
-	}
+	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
 
-	if err := validateScopes(ctx, ds, project.ID(), dbUser); err != nil {
-		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
-	}
-
-	if result := performUpdateInAtlas(ctx, r.Client, dus, project, &dbUser, apiUser); !result.IsOk() {
-		return result
-	}
-
-	if result := checkDeploymentsHaveReachedGoalState(ctx, ds, project.ID(), dbUser); !result.IsOk() {
-		return result
-	}
-
-	if result := connectionsecret.CreateOrUpdateConnectionSecrets(ctx, r.Client, ds, r.EventRecorder, project, dbUser); !result.IsOk() {
-		return result
-	}
-
-	// We need to remove the old Atlas User right after all the connection secrets are ensured if username has changed.
-	if result := handleUserNameChange(ctx, dus, project.ID(), dbUser); !result.IsOk() {
-		return result
-	}
-
-	// We mark the status.Username only when everything is finished including connection secrets
-	ctx.EnsureStatusOption(status.AtlasDatabaseUserNameOption(dbUser.Spec.Username))
-
-	return workflow.OK()
+	return r.dbuLifeCycle(ctx, atlasDatabaseUser, atlasProject)
 }
 
-func handleUserNameChange(ctx *workflow.Context, dus dbuser.AtlasUsersService, projectID string, dbUser akov2.AtlasDatabaseUser) workflow.Result {
-	if dbUser.Spec.Username != dbUser.Status.UserName && dbUser.Status.UserName != "" {
-		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", dbUser.Spec.Username, "oldUserName", dbUser.Status.UserName)
-
-		deleteAttempts := 3
-		var err error
-		for i := 1; i <= deleteAttempts; i++ {
-			err = dus.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
-			if err == nil || errors.Is(err, dbuser.ErrorNotFound) {
-				return workflow.OK()
-			}
-
-			// There may be some rare errors due to the databaseName change or maybe the user has already been removed - this
-			// is not-critical (the stale connection secret has already been removed) and we shouldn't retry to avoid infinite retries
-			ctx.Log.Errorf("Failed to remove user %s from Atlas (attempt %d/%d): %s", dbUser.Status.UserName, i, deleteAttempts, err)
-		}
-		return workflow.Terminate(workflow.Internal, err.Error())
-	}
-	return workflow.OK()
-}
-
-func checkUserExpired(ctx context.Context, log *zap.SugaredLogger, k8sClient client.Client, projectID string, dbUser akov2.AtlasDatabaseUser) workflow.Result {
-	if dbUser.Spec.DeleteAfterDate == "" {
-		return workflow.OK()
+func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *akov2.AtlasProject) ctrl.Result {
+	databaseUserInAtlas, err := r.dbUserService.Get(ctx.Context, atlasDatabaseUser.Spec.DatabaseName, atlasProject.ID(), atlasDatabaseUser.Spec.Username)
+	if err != nil && !errors.Is(err, dbuser.ErrorNotFound) {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
 
-	deleteAfter, err := timeutil.ParseISO8601(dbUser.Spec.DeleteAfterDate)
+	expired, err := isExpired(atlasDatabaseUser)
 	if err != nil {
-		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error()).WithoutRetry()
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, false, err)
 	}
-	if deleteAfter.Before(time.Now()) {
-		if err = connectionsecret.RemoveStaleSecretsByUserName(ctx, k8sClient, projectID, dbUser.Spec.Username, dbUser, log); err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
-		}
-		return workflow.Terminate(workflow.DatabaseUserExpired, "The database user is expired and has been removed from Atlas").WithoutRetry()
-	}
-	return workflow.OK()
-}
-
-func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, dus dbuser.AtlasUsersService, project akov2.AtlasProject, dbUser *akov2.AtlasDatabaseUser, apiUser *dbuser.User) workflow.Result {
-	log := ctx.Log
-
-	secret := &corev1.Secret{}
-	passwordKey := dbUser.PasswordSecretObjectKey()
-	var currentPasswordResourceVersion string
-	if passwordKey != nil {
-		if err := k8sClient.Get(ctx.Context, *passwordKey, secret); err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
-		}
-		currentPasswordResourceVersion = secret.ResourceVersion
-	}
-
-	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, "Clusters are scheduled to handle database users updates")
-
-	// Try to find the user
-	au, err := dus.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
-	if errors.Is(err, dbuser.ErrorNotFound) {
-		log.Debugw("User doesn't exist. Create new user", "dbUser", dbUser)
-		if err = dus.Create(ctx.Context, apiUser); err != nil {
-			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
-		}
-		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
-
-		ctx.Log.Infow("Created Atlas Database User", "name", dbUser.Spec.Username)
-		return retryAfterUpdate
-	}
-	if err != nil {
-		return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
-	}
-	// Update if the spec has changed
-	if shouldUpdate, err := shouldUpdate(ctx.Log, au, dbUser, currentPasswordResourceVersion); err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
-	} else if shouldUpdate {
-		err = dus.Update(ctx.Context, apiUser)
+	if expired {
+		err = connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, atlasProject.ID(), atlasDatabaseUser.Spec.Username, *atlasDatabaseUser, r.Log)
 		if err != nil {
-			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
+			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
 		}
-		// Update the status password resource version so that next time no API update call happened
-		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
 
-		ctx.Log.Infow("Updated Atlas Database User", "name", dbUser.Spec.Username)
-		// after the successful update we'll retry reconciliation so that deployments had a chance to start working
-		return retryAfterUpdate
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserExpired, false, errors.New("an expired user cannot be managed"))
 	}
 
-	return workflow.OK()
-}
-
-func validateScopes(ctx *workflow.Context, ds deployment.AtlasDeploymentsService, projectID string, user akov2.AtlasDatabaseUser) error {
-	for _, s := range user.GetScopes(akov2.DeploymentScopeType) {
-		exists, err := ds.ClusterExists(ctx.Context, projectID, s)
-		if !exists {
-			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, ds deployment.AtlasDeploymentsService, projectID string, user akov2.AtlasDatabaseUser) workflow.Result {
-	allDeploymentNames, err := ds.ListClusterNames(ctx.Context, projectID)
+	scopesAreValid, err := r.areDeploymentScopesValid(ctx, atlasDatabaseUser, atlasProject)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, false, err)
+	}
+	if !scopesAreValid {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, false, errors.New("\"scopes\" field refer to one or more deployments that don't exist"))
 	}
 
-	var deploymentsToCheck []string
-	if user.Spec.Scopes != nil {
-		deploymentsToCheck = filterScopeDeployments(user, allDeploymentNames)
-	} else {
-		// otherwise we just take all the existing deployments
-		deploymentsToCheck = allDeploymentNames
+	dbUserExists := databaseUserInAtlas != nil
+	wasDeleted := !atlasDatabaseUser.DeletionTimestamp.IsZero()
+
+	switch {
+	case !dbUserExists && !wasDeleted:
+		return r.create(ctx, atlasDatabaseUser, atlasProject)
+	case dbUserExists && !wasDeleted:
+		return r.update(ctx, atlasDatabaseUser, atlasProject, databaseUserInAtlas)
+	case dbUserExists && wasDeleted:
+		return r.delete(ctx, atlasDatabaseUser, atlasProject)
+	default:
+		return r.unmanage(ctx, atlasDatabaseUser, atlasProject)
+	}
+}
+
+func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *akov2.AtlasProject) ctrl.Result {
+	if !canManageOIDC(r.FeaturePreviewOIDCAuthEnabled, atlasDatabaseUser.Spec.OIDCAuthType) {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, false, ErrOIDCNotEnabled)
+	}
+
+	userPassword, passwordVersion, err := r.readPassword(ctx.Context, atlasDatabaseUser)
+	if err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
+	}
+
+	databaseUserInAKO, err := dbuser.NewUser(atlasDatabaseUser.Spec.DeepCopy(), atlasProject.ID(), userPassword)
+	if err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
+	}
+
+	err = r.dbUserService.Create(ctx.Context, databaseUserInAKO)
+	if err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserNotCreatedInAtlas, true, err)
+	}
+
+	if wasRenamed(atlasDatabaseUser) {
+		err = connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, atlasProject.ID(), atlasDatabaseUser.Status.UserName, *atlasDatabaseUser, r.Log)
+		if err != nil {
+			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
+		}
+
+		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", atlasDatabaseUser.Spec.Username, "oldUserName", atlasDatabaseUser.Status.UserName)
+		if err = r.removeOldUser(ctx.Context, atlasDatabaseUser, atlasProject); err != nil {
+			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
+		}
+	}
+
+	return r.inProgress(ctx, atlasDatabaseUser, passwordVersion, "Clusters are scheduled to handle database users updates")
+}
+
+func (r *AtlasDatabaseUserReconciler) update(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *akov2.AtlasProject, databaseUserInAtlas *dbuser.User) ctrl.Result {
+	if !canManageOIDC(r.FeaturePreviewOIDCAuthEnabled, atlasDatabaseUser.Spec.OIDCAuthType) {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, false, ErrOIDCNotEnabled)
+	}
+
+	userPassword, passwordVersion, err := r.readPassword(ctx.Context, atlasDatabaseUser)
+	if err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
+	}
+
+	databaseUserInAKO, err := dbuser.NewUser(atlasDatabaseUser.Spec.DeepCopy(), atlasProject.ID(), userPassword)
+	if err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
+	}
+
+	if !hasChanged(databaseUserInAKO, databaseUserInAtlas, atlasDatabaseUser.Status.PasswordVersion, passwordVersion) {
+		return r.readiness(ctx, atlasDatabaseUser, atlasProject, passwordVersion)
+	}
+
+	r.Log.Debug(dbuser.DiffSpecs(databaseUserInAKO, databaseUserInAtlas))
+	err = r.dbUserService.Update(ctx.Context, databaseUserInAKO)
+	if err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserNotUpdatedInAtlas, true, err)
+	}
+
+	return r.inProgress(ctx, atlasDatabaseUser, passwordVersion, "Clusters are scheduled to handle database users updates")
+}
+
+func (r *AtlasDatabaseUserReconciler) delete(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *akov2.AtlasProject) ctrl.Result {
+	if customresource.IsResourcePolicyKeepOrDefault(atlasDatabaseUser, r.ObjectDeletionProtection) {
+		r.Log.Info("Not removing Atlas database user from Atlas as per configuration")
+
+		return r.unmanage(ctx, atlasDatabaseUser, atlasProject)
+	}
+
+	err := r.dbUserService.Delete(ctx.Context, atlasDatabaseUser.Spec.DatabaseName, atlasProject.ID(), atlasDatabaseUser.Spec.Username)
+	if err != nil {
+		if !errors.Is(err, dbuser.ErrorNotFound) {
+			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserNotDeletedInAtlas, true, err)
+		}
+
+		r.Log.Info("Database user doesn't exist or is already deleted")
+	}
+
+	return r.unmanage(ctx, atlasDatabaseUser, atlasProject)
+}
+
+func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *akov2.AtlasProject, passwordVersion string) ctrl.Result {
+	allDeploymentNames, err := r.deploymentService.ListClusterNames(ctx.Context, atlasProject.ID())
+	if err != nil {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
+	}
+
+	deploymentsToCheck := allDeploymentNames
+	if atlasDatabaseUser.Spec.Scopes != nil {
+		deploymentsToCheck = filterScopeDeployments(atlasDatabaseUser, allDeploymentNames)
 	}
 
 	readyDeployments := 0
 	for _, c := range deploymentsToCheck {
-		ready, err := ds.DeploymentIsReady(ctx.Context, projectID, c)
+		ready, err := r.deploymentService.DeploymentIsReady(ctx.Context, atlasProject.ID(), c)
 		if err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
+			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 		}
 		if ready {
 			readyDeployments++
 		}
 	}
-	msg := fmt.Sprintf("%d out of %d deployments have applied database user changes", readyDeployments, len(deploymentsToCheck))
-	ctx.Log.Debugf(msg)
 
 	if readyDeployments < len(deploymentsToCheck) {
-		return workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, msg)
+		return r.inProgress(
+			ctx,
+			atlasDatabaseUser,
+			passwordVersion,
+			fmt.Sprintf("%d out of %d deployments have applied database user changes", readyDeployments, len(deploymentsToCheck)),
+		)
 	}
 
-	return workflow.OK()
+	// TODO refactor connectionsecret package to follow state machine approach
+	result := connectionsecret.CreateOrUpdateConnectionSecrets(ctx, r.Client, r.deploymentService, r.EventRecorder, *atlasProject, *atlasDatabaseUser)
+	if !result.IsOk() {
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotCreated, true, errors.New(result.GetMessage()))
+	}
+
+	return r.ready(ctx, atlasDatabaseUser, passwordVersion)
 }
 
-func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProject []string) []string {
+func (r *AtlasDatabaseUserReconciler) readPassword(ctx context.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) (string, string, error) {
+	if atlasDatabaseUser.Spec.PasswordSecret == nil {
+		return "", "", nil
+	}
+
+	secret := &corev1.Secret{}
+	if err := r.Client.Get(ctx, *atlasDatabaseUser.PasswordSecretObjectKey(), secret); err != nil {
+		return "", "", err
+	}
+
+	p, exist := secret.Data["password"]
+	switch {
+	case !exist:
+		return "", "", fmt.Errorf("secret %s is invalid: it doesn't contain 'password' field", secret.Name)
+	case len(p) == 0:
+		return "", "", fmt.Errorf("secret %s is invalid: the 'password' field is empty", secret.Name)
+	default:
+		return string(p), secret.ResourceVersion, nil
+	}
+}
+
+func (r *AtlasDatabaseUserReconciler) areDeploymentScopesValid(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *akov2.AtlasProject) (bool, error) {
+	for _, s := range atlasDatabaseUser.GetScopes(akov2.DeploymentScopeType) {
+		exists, err := r.deploymentService.ClusterExists(ctx.Context, atlasProject.ID(), s)
+		if err != nil {
+			return false, err
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (r *AtlasDatabaseUserReconciler) removeOldUser(ctx context.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *akov2.AtlasProject) error {
+	deleteAttempts := 3
+	var err error
+	for i := 1; i <= deleteAttempts; i++ {
+		err = r.dbUserService.Delete(ctx, atlasDatabaseUser.Spec.DatabaseName, atlasProject.ID(), atlasDatabaseUser.Status.UserName)
+		if err == nil || errors.Is(err, dbuser.ErrorNotFound) {
+			return nil
+		}
+
+		// There may be some rare errors due to the databaseName change or maybe the user has already been removed - this
+		// is not-critical (the stale connection secret has already been removed) and we shouldn't retry to avoid infinite retries
+		r.Log.Errorf("Failed to remove user %s from Atlas (attempt %d/%d): %s", atlasDatabaseUser.Status.UserName, i, deleteAttempts, err)
+	}
+
+	return err
+}
+
+func canManageOIDC(isEnabled bool, oidcType string) bool {
+	if !isEnabled && (oidcType != "" && oidcType != "NONE") {
+		return false
+	}
+
+	return true
+}
+
+func isExpired(atlasDatabaseUser *akov2.AtlasDatabaseUser) (bool, error) {
+	if atlasDatabaseUser.Spec.DeleteAfterDate == "" {
+		return false, nil
+	}
+
+	deleteAfter, err := timeutil.ParseISO8601(atlasDatabaseUser.Spec.DeleteAfterDate)
+	if err != nil {
+		return false, err
+	}
+
+	if !deleteAfter.Before(time.Now()) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func hasChanged(databaseUserInAKO, databaseUserInAtlas *dbuser.User, currentPassVersion, passVersion string) bool {
+	return !dbuser.EqualSpecs(databaseUserInAKO, databaseUserInAtlas) || currentPassVersion != passVersion
+}
+
+func wasRenamed(atlasDatabaseUser *akov2.AtlasDatabaseUser) bool {
+	return atlasDatabaseUser.Status.UserName != "" && atlasDatabaseUser.Spec.Username != atlasDatabaseUser.Status.UserName
+}
+
+func filterScopeDeployments(user *akov2.AtlasDatabaseUser, allDeploymentsInProject []string) []string {
 	scopeDeployments := user.GetScopes(akov2.DeploymentScopeType)
 	var deploymentsToCheck []string
 	if len(scopeDeployments) > 0 {
@@ -211,23 +327,4 @@ func filterScopeDeployments(user akov2.AtlasDatabaseUser, allDeploymentsInProjec
 		}
 	}
 	return deploymentsToCheck
-}
-
-func shouldUpdate(log *zap.SugaredLogger, atlasUser *dbuser.User, operatorUser *akov2.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
-	userSpecCopy, err := dbuser.NewUser(operatorUser.Spec.DeepCopy(), "", "") // project and password will not be compared
-	if err != nil {
-		return false, fmt.Errorf("failed to convert User Spec: %w", err)
-	}
-	if !dbuser.EqualSpecs(userSpecCopy, atlasUser) {
-		if log.Level() == zapcore.DebugLevel {
-			log.Debugf("Atlas Database user differs from Spec: %v", dbuser.DiffSpecs(userSpecCopy, atlasUser))
-		}
-		return true, nil
-	}
-	// We need to check if the password has changed since the last time
-	passwordsChanged := operatorUser.Status.PasswordVersion != currentPasswordResourceVersion
-	if passwordsChanged {
-		log.Debug("Database User password has changed - making the request to Atlas")
-	}
-	return passwordsChanged, nil
 }
