@@ -22,7 +22,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
-	github.com/onsi/ginkgo/v2 v2.20.1
+	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.1
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.9.0
@@ -55,7 +55,7 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8 // indirect
+	github.com/google/pprof v0.0.0-20240827171923-fa2c70bbbfe5 // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
