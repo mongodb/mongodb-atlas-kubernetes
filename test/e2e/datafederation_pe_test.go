@@ -69,7 +69,7 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 		const dataFederationInstanceName = "test-data-federation-aws"
 
 		//nolint:dupl
-		By("Create privaye endpoint in AWS", func() {
+		By("Create private endpoint in AWS", func() {
 			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name,
 				Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
 
