@@ -66,18 +66,6 @@ spec:
                 - USER
                 - ROLE
                 type: string
-              connectionSecret:
-                description: A reference to an object in the same namespace as the
-                  referent
-                properties:
-                  name:
-                    description: |-
-                      Name of the resource being referred to
-                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                    type: string
-                required:
-                - name
-                type: object
               databaseName:
                 default: admin
                 description: DatabaseName is a Database against which Atlas authenticates

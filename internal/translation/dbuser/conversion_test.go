@@ -9,7 +9,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
@@ -394,7 +393,6 @@ func TestDiffSpecs(t *testing.T) {
 					spec.Project.Name = "some-project"
 					spec.Project.Namespace = "some-namespace"
 					spec.PasswordSecret = &common.ResourceRef{Name: "some-secret-ref"}
-					spec.ConnectionSecret = &api.LocalObjectReference{Name: "some-local-secret-ref"}
 					return spec
 				}(),
 			},
@@ -410,7 +408,6 @@ func TestDiffSpecs(t *testing.T) {
 					spec.Project.Name = "another-project"
 					spec.Project.Namespace = "another-namespace"
 					spec.PasswordSecret = &common.ResourceRef{Name: "another-secret-ref"}
-					spec.ConnectionSecret = &api.LocalObjectReference{Name: "another-local-secret-ref"}
 					return spec
 				}(),
 			},

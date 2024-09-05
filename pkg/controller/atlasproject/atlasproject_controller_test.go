@@ -36,7 +36,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
-func TestReconcile(t *testing.T) {
+func TestRenconcile(t *testing.T) {
 	tests := map[string]struct {
 		atlasClientMocker func() *mongodbatlas.Client
 		atlasSDKMocker    func() *admin.APIClient
