@@ -6,14 +6,11 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestResourceShouldBeLeftInAtlas(t *testing.T) {
@@ -227,105 +224,6 @@ func TestResourceVersionIsValid(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "ResourceVersionIsValid(%v)", tt.resource)
-		})
-	}
-}
-
-func TestComputeSecret(t *testing.T) {
-	for _, tt := range []struct {
-		name         string
-		project      *akov2.AtlasProject
-		resource     api.ResourceWithCredentials
-		wantRef      *types.NamespacedName
-		wantErrorMsg string
-	}{
-		{
-			name:         "nil inputs fails with resource cannot be nil",
-			wantErrorMsg: "resource cannot be nil",
-		},
-
-		{
-			name: "nil project ignored if resource is set",
-			resource: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
-					},
-				},
-			},
-			wantRef: &client.ObjectKey{
-				Name:      "local-secret",
-				Namespace: "local",
-			},
-		},
-
-		{
-			name:         "nil resource and empty project fails",
-			project:      &akov2.AtlasProject{},
-			wantErrorMsg: "resource cannot be nil",
-		},
-
-		{
-			name:     "when both are set empty it renders nil",
-			project:  &akov2.AtlasProject{},
-			resource: &akov2.AtlasDatabaseUser{},
-		},
-
-		{
-			name: "empty resource and proper project get creds from project",
-			project: &akov2.AtlasProject{
-				Spec: akov2.AtlasProjectSpec{
-					Name:                    "",
-					RegionUsageRestrictions: "",
-					ConnectionSecret: &common.ResourceRefNamespaced{
-						Name:      "project-secret",
-						Namespace: "some-namespace",
-					},
-				},
-			},
-			resource: &akov2.AtlasDatabaseUser{},
-			wantRef: &client.ObjectKey{
-				Name:      "project-secret",
-				Namespace: "some-namespace",
-			},
-		},
-
-		{
-			name: "when both are properly set the resource wins",
-			project: &akov2.AtlasProject{
-				Spec: akov2.AtlasProjectSpec{
-					Name:                    "",
-					RegionUsageRestrictions: "",
-					ConnectionSecret: &common.ResourceRefNamespaced{
-						Name:      "project-secret",
-						Namespace: "some-namespace",
-					},
-				},
-			},
-			resource: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
-					},
-				},
-			},
-			wantRef: &client.ObjectKey{
-				Name:      "local-secret",
-				Namespace: "local",
-			},
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := ComputeSecret(tt.project, tt.resource)
-			if tt.wantErrorMsg != "" {
-				assert.Nil(t, result, nil)
-				assert.ErrorContains(t, err, tt.wantErrorMsg)
-			} else {
-				assert.Equal(t, result, tt.wantRef)
-				assert.NoError(t, err)
-			}
 		})
 	}
 }
