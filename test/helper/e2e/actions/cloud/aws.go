@@ -372,16 +372,6 @@ func (a *AwsAction) createVPC(name, cidr, region string) (string, error) {
 		return "", err
 	}
 
-	_, err = ec2Client.ModifyVpcAttribute(&ec2.ModifyVpcAttributeInput{
-		EnableDnsHostnames: &ec2.AttributeBooleanValue{
-			Value: aws.Bool(true),
-		},
-		VpcId: result.Vpc.VpcId,
-	})
-	if err != nil {
-		return "", err
-	}
-
 	return *result.Vpc.VpcId, nil
 }
 
