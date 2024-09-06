@@ -9,14 +9,14 @@
     pre-commit install # from the root of the project
     ```
 4. Install [Kind] (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
-4. Clone the project to your workspace (note, that this doesn't need to be `GOPATH` as the project uses Go Modules)
-5. Copy the default Github Actions settings for local run: `cp .actrc.local.sample .actrc`
-6. Copy the default Github Actions environment for local run: `cp dotenv.sample .env`
-7. Update the .actrc - specify your Atlas connectivity data (orgId, keys)
-8. Build and deploy the Operator into the K8s cluster: `make deploy`
-9. Create an AtlasProject: `kubectl apply -f config/samples/atlas_v1_atlasproject.yaml` (note, that Atlas connection secrets are created during running `make deploy`)
-10. Create an AtlasDeployment: `kubectl apply -f config/samples/atlas_v1_atlasdeployment.yaml`
-11. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
+5. Clone the project to your workspace (note, that this doesn't need to be `GOPATH` as the project uses Go Modules)
+6. Copy the default Github Actions settings for local run: `cp .actrc.local.sample .actrc`
+7. Copy the default Github Actions environment for local run: `cp dotenv.sample .env`
+8. Update the .actrc - specify your Atlas connectivity data (orgId, keys)
+9. Build and deploy the Operator into the K8s cluster: `make deploy`
+10. Create an AtlasProject: `kubectl apply -f config/samples/atlas_v1_atlasproject.yaml` (note, that Atlas connection secrets are created during running `make deploy`)
+11. Create an AtlasDeployment: `kubectl apply -f config/samples/atlas_v1_atlasdeployment.yaml`
+12. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
 
 Some more details about using `act` can be found in [HOWTO.md](../../.github/HOWTO.md)
 ### IDE setup with Devbox
