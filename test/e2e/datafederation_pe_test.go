@@ -15,6 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
@@ -75,7 +76,11 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 
 			vpcId := providerAction.SetupNetwork(
 				"AWS",
-				cloud.WithAWSConfig(&cloud.AWSConfig{Region: config.AWSRegionEU}),
+				cloud.WithAWSConfig(&cloud.AWSConfig{
+					VPC:           utils.RandomName("datafederation-private-endpoint"),
+					Region:        config.AWSRegionEU,
+					EnableCleanup: true,
+				}),
 			)
 			pe = providerAction.SetupPrivateEndpoint(
 				&cloud.AWSPrivateEndpointRequest{

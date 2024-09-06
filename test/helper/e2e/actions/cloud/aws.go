@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/kms"
@@ -279,6 +281,34 @@ func (a *AwsAction) CreatePrivateEndpoint(serviceName, privateEndpointName, regi
 		_, err = ec2Client.DeleteVpcEndpoints(deleteInput)
 		if err != nil {
 			a.t.Error(err)
+		}
+
+		timeout := 10 * time.Minute
+		start := time.Now()
+		for {
+			a.t.Log(fmt.Sprintf("deleting VPC ID %q since %v", aws.StringValue(result.VpcEndpoint.VpcEndpointId), time.Since(start)))
+
+			output, err := ec2Client.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{
+				VpcEndpointIds: []*string{result.VpcEndpoint.VpcEndpointId},
+			})
+
+			var e awserr.Error
+			if (errors.As(err, &e) && e.Code() == "InvalidVpcEndpointId.NotFound") || len(output.VpcEndpoints) == 0 {
+				return
+			}
+
+			if err != nil {
+				a.t.Error(err)
+				return
+			}
+
+			if time.Since(start) > timeout {
+				a.t.Error(errors.New("timeout waiting for deletion of vpc endpoints"))
+				return
+			}
+
+			// we do know that deletion of VPC endpoints takes time
+			time.Sleep(3 * time.Second)
 		}
 	})
 
