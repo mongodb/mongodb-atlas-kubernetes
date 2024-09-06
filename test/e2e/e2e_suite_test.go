@@ -47,6 +47,10 @@ var _ = BeforeSuite(func() {
 	GinkgoWriter.Write([]byte("========================End of Before==============================\n"))
 })
 
+var _ = ReportAfterSuite("Ensure test suite was not empty", func(r Report) {
+	Expect(r.PreRunStats.SpecsThatWillRun > 0).To(BeTrue(), "Suite must run at least 1 test")
+})
+
 // checkUpEnvironment initial check setup
 func checkUpEnvironment() {
 	Expect(os.Getenv("MCLI_ORG_ID")).ShouldNot(BeEmpty(), "Please, setup MCLI_ORG_ID environment variable")
