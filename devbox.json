@@ -1,7 +1,7 @@
 {
   "packages": [
     "yq-go@latest",
-    "kubebuilder@latest",
+    "kubebuilder@4.1.1",
     "jq@latest",
     "go@1.22.5",
     "gotests@latest",
@@ -18,7 +18,7 @@
     "gotools@latest",
     "go-licenses@latest",
     "ginkgo@latest",
-    "operator-sdk@latest",
+    "operator-sdk@1.36.1",
     "shellcheck@latest",
     "golangci-lint@1.59.1",
     "path:./flakes/k8s-controller-tools"
