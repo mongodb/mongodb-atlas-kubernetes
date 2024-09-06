@@ -57,7 +57,6 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          devbox-build: true
           repository: ghcr.io/${{ env.REPOSITORY }}
           version: ${{ steps.prepare.outputs.tag }}
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
@@ -128,7 +127,6 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          devbox-build: true
           repository: ${{ env.GHCR_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
           tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}

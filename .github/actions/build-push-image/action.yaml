@@ -49,10 +49,6 @@ inputs:
   tags:
     description: A list of tags applied to the image
     required: true
-  devbox-build:
-    description: The repo should be ran using Devbox
-    required: false
-    default: "false"
 
 runs:
   using: "composite"
@@ -80,46 +76,14 @@ runs:
       uses: jetify-com/devbox-install-action@v0.11.0
 
     - name: Download Go build dependencies (Devbox)
-      if: ${{ inputs.devbox-build == 'true' }}
       run: devbox run -- go mod download
       shell: bash
 
     - name: Build all platforms (Devbox)
-      if: ${{ inputs.devbox-build == 'true' }}
       env:
         VERSION: ${{ inputs.version }}
       run: devbox run -- 'make all-platforms'
       shell: bash
-
-    # Non-Devbox setup steps
-    - name: Set up Go
-      if: ${{ inputs.devbox-build == 'false' }}
-      uses: actions/setup-go@v4
-      with:
-        go-version-file: "${{ github.workspace }}/go.mod"
-        cache: false
-
-    - name: Setup cache
-      if: ${{ inputs.get-existing-cache == 'false' && inputs.devbox-build == 'false' }}
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
-
-    - name: Download go build dependencies (Non-Devbox)
-      if: ${{ inputs.devbox-build == 'false' }}
-      shell: bash
-      run: |
-        go mod download
-
-    - name: Build all platforms (Non-Devbox)
-      if: ${{ inputs.devbox-build == 'false' }}
-      shell: bash
-      env:
-        VERSION: ${{ inputs.version }}
-      run: make all-platforms
 
     - name: Login to docker registry
       if: ${{ inputs.push_to_docker == 'true' }}

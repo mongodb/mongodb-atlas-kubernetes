@@ -124,7 +124,7 @@ jobs:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
 
-      - name: Setup cache (Non Dexbox)
+      - name: Setup cache (Non Devbox)
         uses: actions/cache@v4
         if: steps.check-devbox.outputs.devbox-build == 'false'
         with:
