@@ -187,7 +187,6 @@ jobs:
             "teams",
             "backup-config",
             "datafederation",
-            "deletion-protection",
             "atlas-search-nodes",
             "atlas-search-index",
             "cache-watch",
