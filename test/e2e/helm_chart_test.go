@@ -236,7 +236,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				releaseMajorVersion := strings.Split(releasedVersion, ".")[0]
 				if releaseMajorVersion != devMajorVersion {
 					skipped = true
-					Skip(fmt.Sprintf("cannot test upgrade from incompatible major release version %s to version %s",
+					Skip(fmt.Sprintf("cannot test upgrade from incompatible major release version %q to version %q",
 						releaseMajorVersion, devMajorVersion))
 				}
 			})

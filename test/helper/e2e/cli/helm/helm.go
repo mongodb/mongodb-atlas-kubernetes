@@ -276,7 +276,7 @@ func GetDevelopmentMayorVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(majorVersion), nil
+	return strings.TrimSpace(string(majorVersion)), nil
 }
 
 func packageChart(sPath, dPath string) {
