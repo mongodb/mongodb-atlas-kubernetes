@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -140,6 +141,15 @@ type AtlasDatabaseUserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AtlasDatabaseUser `json:"items"`
+}
+
+// ReconciliableRequests implements ReconciliableList for Database Users
+func (list *AtlasDatabaseUserList) ReconciliableRequests() []reconcile.Request {
+	requests := make([]reconcile.Request, 0, len(list.Items))
+	for _, item := range list.Items {
+		requests = append(requests, api.ToRequest(&item))
+	}
+	return requests
 }
 
 // RoleSpec allows the user to perform particular actions on the specified database.
