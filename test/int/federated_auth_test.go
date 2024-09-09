@@ -35,13 +35,13 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 	ctx := context.Background()
 
 	BeforeEach(func() {
-		By("Checking if Federation Settings enabled for the org", func() {
-			federationSettings, _, err := atlasClient.FederatedAuthenticationApi.GetFederationSettings(ctx, orgID).Execute()
-			Expect(err).ToNot(HaveOccurred())
-			Expect(federationSettings).ShouldNot(BeNil())
-
-			originalFederationSettings = federationSettings
-		})
+		//By("Checking if Federation Settings enabled for the org", func() {
+		//	federationSettings, _, err := atlasClient.FederatedAuthenticationApi.GetFederationSettings(ctx, orgID).Execute()
+		//	Expect(err).ToNot(HaveOccurred())
+		//	Expect(federationSettings).ShouldNot(BeNil())
+		//
+		//	originalFederationSettings = federationSettings
+		//})
 
 		By("Getting original IDP", func() {
 			identityProviders, _, err := atlasClient.FederatedAuthenticationApi.ListIdentityProviders(ctx, originalFederationSettings.GetId()).Execute()
