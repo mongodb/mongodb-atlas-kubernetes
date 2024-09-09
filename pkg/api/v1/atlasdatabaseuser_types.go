@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -52,6 +53,8 @@ const (
 
 // AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
 type AtlasDatabaseUserSpec struct {
+	api.LocalCredentialHolder `json:",inline"`
+
 	// Project is a reference to AtlasProject resource the user belongs to
 	Project common.ResourceRefNamespaced `json:"projectRef"`
 
@@ -138,6 +141,15 @@ type AtlasDatabaseUserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AtlasDatabaseUser `json:"items"`
+}
+
+// ReconciliableRequests implements ReconciliableList for Database Users
+func (list *AtlasDatabaseUserList) ReconciliableRequests() []reconcile.Request {
+	requests := make([]reconcile.Request, 0, len(list.Items))
+	for _, item := range list.Items {
+		requests = append(requests, api.ToRequest(&item))
+	}
+	return requests
 }
 
 // RoleSpec allows the user to perform particular actions on the specified database.
@@ -294,6 +306,10 @@ func (p *AtlasDatabaseUser) ClearScopes() *AtlasDatabaseUser {
 func (p *AtlasDatabaseUser) WithDeleteAfterDate(date string) *AtlasDatabaseUser {
 	p.Spec.DeleteAfterDate = date
 	return p
+}
+
+func (p AtlasDatabaseUser) Credentials() *api.LocalObjectReference {
+	return p.Spec.Credentials()
 }
 
 func DefaultDBUser(namespace, username, projectName string) *AtlasDatabaseUser {
