@@ -32,20 +32,20 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: github-actions[bot]
-          body-includes: 'https://app.codecov.io/github/mongodb/mongodb-atlas-kubernetes/commit'
+          body-includes: 'https://app.codecov.io/github/filipcirtog/filipcirtog/commit'
       - name: edit comment if exists
         if:  github.event_name == 'pull_request' && steps.find-bot-comment.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v4
         with:
           edit-mode: replace
           comment-id: ${{ steps.find-bot-comment.outputs.comment-id }}
-          body: https://app.codecov.io/github/mongodb/mongodb-atlas-kubernetes/commit/${{ github.event.pull_request.head.sha }}
+          body: https://app.codecov.io/github/filipcirtog/filipcirtog/commit/${{ github.event.pull_request.head.sha }}
       - name: comment PR
         if: github.event_name == 'pull_request' && steps.find-bot-comment.outputs.comment-id == ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} -R mongodb/mongodb-atlas-kubernetes -b "https://app.codecov.io/github/mongodb/mongodb-atlas-kubernetes/commit/${{ github.event.pull_request.head.sha }}"
+          gh pr comment ${{ github.event.pull_request.number }} -R filipcirtog/filipcirtog -b "https://app.codecov.io/github/filipcirtog/filipcirtog/commit/${{ github.event.pull_request.head.sha }}"
 
   int-tests:
     needs: allowed

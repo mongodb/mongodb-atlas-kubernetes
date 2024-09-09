@@ -1,14 +1,7 @@
-# TODO: Eventually replace main Dockerfile
-FROM golang:1.22 as certs-source
-
+FROM alpine
 FROM registry.access.redhat.com/ubi9/ubi:9.2 as ubi-certs
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
-
-ARG TARGETOS
-ARG TARGETARCH
-ENV TARGET_ARCH=${TARGETARCH}
-ENV TARGET_OS=${TARGETOS}
-
+ARG ARCH
 LABEL name="MongoDB Atlas Operator" \
   maintainer="support@mongodb.com" \
   vendor="MongoDB" \
@@ -20,11 +13,8 @@ LABEL name="MongoDB Atlas Operator" \
   io.openshift.tags="mongodb,atlas" \
   io.openshift.maintainer.product="MongoDB" \
   License="Apache-2.0"
-
 WORKDIR /
-COPY bin/${TARGET_OS}/${TARGET_ARCH}/manager .
-COPY hack/licenses licenses
 COPY --from=ubi-certs /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-
 USER 1001:0
-ENTRYPOINT ["/manager"]
+ENTRYPOINT ["/usr/bin/mongodb-atlas-kubernetes"]
+COPY mongodb-atlas-kubernetes /usr/bin/mongodb-atlas-kubernetes
