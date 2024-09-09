@@ -262,14 +262,14 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		return nil, fmt.Errorf("unable to create controller AtlasFederatedAuth: %w", err)
 	}
 
-	streamsInstanceReconiler := atlasstream.NewAtlasStreamsInstanceReconciler(
+	streamsInstanceReconciler := atlasstream.NewAtlasStreamsInstanceReconciler(
 		mgr,
 		b.predicates,
 		b.atlasProvider,
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = streamsInstanceReconiler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
+	if err = streamsInstanceReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasStreamsInstance: %w", err)
 	}
 
