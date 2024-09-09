@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -52,10 +53,10 @@ func (lc *LocalCredential) Keys(object client.Object) []string {
 		return nil
 	}
 
-	if localRef := credentialProvider.Credentials(); localRef != nil {
-		return []string{localRef.Name}
+	if localRef := credentialProvider.Credentials(); localRef != nil && localRef.Name != "" {
+		return []string{types.NamespacedName{Namespace: object.GetNamespace(), Name: localRef.Name}.String()}
 	}
-	return nil
+	return []string{}
 }
 
 func CredentialsIndexMapperFunc(indexerName string, list api.ReconciliableList, kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
@@ -74,8 +75,8 @@ func CredentialsIndexMapperFunc(indexerName string, list api.ReconciliableList, 
 		}
 		err := kubeClient.List(ctx, list, listOpts)
 		if err != nil {
-			logger.Errorf("failed to list Atlas projects: %e", err)
-			return []reconcile.Request{}
+			logger.Errorf("failed to list from indexer %s: %v", indexerName, err)
+			return nil
 		}
 		return list.ReconciliableRequests()
 	}
