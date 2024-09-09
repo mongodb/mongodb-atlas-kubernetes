@@ -14,7 +14,7 @@ func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: "my-project",
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{

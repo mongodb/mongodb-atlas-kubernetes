@@ -67,6 +67,18 @@ spec:
                 required:
                 - name
                 type: object
+              connectionSecret:
+                description: LocalObjectReference is a reference to an object in the
+                  same namespace as the referent
+                properties:
+                  name:
+                    description: |-
+                      Name of the resource being referred to
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                required:
+                - name
+                type: object
               deploymentSpec:
                 description: Configuration for the advanced (v1.5) deployment API
                   https://www.mongodb.com/docs/atlas/reference/api/clusters/
@@ -605,6 +617,16 @@ spec:
                 required:
                 - name
                 type: object
+              externalProjectRef:
+                description: ExternalProjectRef holds the Atlas project ID the user
+                  belongs to
+                properties:
+                  id:
+                    description: ID is the Atlas project ID
+                    type: string
+                required:
+                - id
+                type: object
               processArgs:
                 description: ProcessArgs allows to modify Advanced Configuration Options
                 properties:
@@ -822,9 +844,16 @@ spec:
                 - name
                 - providerSettings
                 type: object
-            required:
-            - projectRef
             type: object
+            x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
           status:
             description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
             properties:

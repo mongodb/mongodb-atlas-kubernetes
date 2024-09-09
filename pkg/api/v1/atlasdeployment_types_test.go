@@ -7,17 +7,17 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
-func TestProjectReference(t *testing.T) {
+func TestDeploymentProjectReference(t *testing.T) {
 	tests := projectReferenceTestCase{
 		"no project reference is set": {
-			object: &AtlasDatabaseUser{
-				Spec: AtlasDatabaseUserSpec{},
+			object: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{},
 			},
 			expectedErrors: []string{"spec: Invalid value: \"object\": must define only one project reference through externalProjectRef or projectRef"},
 		},
 		"both project references are set": {
-			object: &AtlasDatabaseUser{
-				Spec: AtlasDatabaseUserSpec{
+			object: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
@@ -32,8 +32,8 @@ func TestProjectReference(t *testing.T) {
 			},
 		},
 		"external project references is set": {
-			object: &AtlasDatabaseUser{
-				Spec: AtlasDatabaseUserSpec{
+			object: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
 					ExternalProjectRef: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
@@ -44,8 +44,8 @@ func TestProjectReference(t *testing.T) {
 			},
 		},
 		"kubernetes project references is set": {
-			object: &AtlasDatabaseUser{
-				Spec: AtlasDatabaseUserSpec{
+			object: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
@@ -54,14 +54,14 @@ func TestProjectReference(t *testing.T) {
 		},
 	}
 
-	assertProjectReference(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdatabaseusers.yaml", tests)
+	assertProjectReference(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdeployments.yaml", tests)
 }
 
-func TestExternalProjectReferenceConnectionSecret(t *testing.T) {
+func TestDeploymentExternalProjectReferenceConnectionSecret(t *testing.T) {
 	tests := projectReferenceTestCase{
 		"external project references is set without connection secret": {
-			object: &AtlasDatabaseUser{
-				Spec: AtlasDatabaseUserSpec{
+			object: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
 					ExternalProjectRef: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
@@ -72,8 +72,8 @@ func TestExternalProjectReferenceConnectionSecret(t *testing.T) {
 			},
 		},
 		"external project references is set with connection secret": {
-			object: &AtlasDatabaseUser{
-				Spec: AtlasDatabaseUserSpec{
+			object: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
 					ExternalProjectRef: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
@@ -86,8 +86,8 @@ func TestExternalProjectReferenceConnectionSecret(t *testing.T) {
 			},
 		},
 		"kubernetes project references is set without connection secret": {
-			object: &AtlasDatabaseUser{
-				Spec: AtlasDatabaseUserSpec{
+			object: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
@@ -95,8 +95,8 @@ func TestExternalProjectReferenceConnectionSecret(t *testing.T) {
 			},
 		},
 		"kubernetes project references is set with connection secret": {
-			object: &AtlasDatabaseUser{
-				Spec: AtlasDatabaseUserSpec{
+			object: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
@@ -110,5 +110,5 @@ func TestExternalProjectReferenceConnectionSecret(t *testing.T) {
 		},
 	}
 
-	assertExternalProjectReferenceConnectionSecret(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdatabaseusers.yaml", tests)
+	assertExternalProjectReferenceConnectionSecret(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdeployments.yaml", tests)
 }
