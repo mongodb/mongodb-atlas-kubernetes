@@ -340,22 +340,40 @@ func CheckUsersCanUseApp(data *model.TestDataProvider) {
 func CheckUsersCanUseOldApp(data *model.TestDataProvider) {
 	input := data.Resources
 	for i, user := range data.Resources.Users {
-		// data
-		port := strconv.Itoa(i + data.PortGroup)
-		key := port
-		expectedData := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+		By(fmt.Sprintf("Checking user %s (%d) can use old App", user.Spec.Username, i), func() {
+			// data
+			port := strconv.Itoa(i + data.PortGroup)
+			key := port
+			expectedData := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 
-		cli.Execute("kubectl", "delete", "pod", "-l", "app=test-app-"+user.Spec.Username, "-n", input.Namespace).Wait("2m")
-		WaitTestApplication(data, input.Namespace, "app", "test-app-"+user.Spec.Username)
+			By("Deleting pod to force an app restart and wait for it", func() {
+				cli.Execute(
+					"kubectl", "delete", "pod", "-l", "app=test-app-"+user.Spec.Username, "-n", input.Namespace,
+				).Wait("2m")
+				WaitTestApplication(data, input.Namespace, "app", "test-app-"+user.Spec.Username)
+			})
 
-		app := appclient.NewTestAppClient(port)
-		ExpectWithOffset(1, app.Get("")).Should(Equal("It is working"))
-		ExpectWithOffset(1, app.Get("/mongo/"+key)).Should(Equal(expectedData))
+			app := appclient.NewTestAppClient(port)
+			By("Test restarted App access", func() {
+				getRoot := app.Get("")
+				GinkgoWriter.Write([]byte(fmt.Sprintf("Test App GET: %q\n", getRoot)))
+				ExpectWithOffset(1, getRoot).Should(Equal("It is working"))
+				getKey := app.Get("/mongo/" + key)
+				GinkgoWriter.Write([]byte(fmt.Sprintf("Test App GET /mongo/%s: %q\n", key, getKey)))
+				ExpectWithOffset(1, getKey).Should(Equal(expectedData))
+			})
 
-		key = port + "up"
-		dataUpdated := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
-		ExpectWithOffset(1, app.Post(dataUpdated)).ShouldNot(HaveOccurred())
-		ExpectWithOffset(1, app.Get("/mongo/"+key)).Should(Equal(dataUpdated))
+			By("Test restarted App update", func() {
+				key = port + "up"
+				dataUpdated := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+				err := app.Post(dataUpdated)
+				GinkgoWriter.Write([]byte(fmt.Sprintf("Test App POST %v: %v\n", dataUpdated, err)))
+				ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+				getKey := app.Get("/mongo/" + key)
+				GinkgoWriter.Write([]byte(fmt.Sprintf("Test App GET /mongo/%s: %q\n", key, getKey)))
+				ExpectWithOffset(1, getKey).Should(Equal(dataUpdated))
+			})
+		})
 	}
 }
 

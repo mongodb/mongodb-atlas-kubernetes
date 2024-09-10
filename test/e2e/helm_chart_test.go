@@ -47,7 +47,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 			GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 			GinkgoWriter.Write([]byte("===============================================\n"))
 			if CurrentSpecReport().Failed() {
-				GinkgoWriter.Write([]byte("Resources wasn't clean"))
+				GinkgoWriter.Write([]byte("Resources wasn't clean\n"))
 				namespaceDeployment, err := k8s.GetDeployment("mongodb-atlas-operator", data.Resources.Namespace)
 				Expect(err).Should(BeNil())
 				namespaceDeploymentJSON, err := json.MarshalIndent(namespaceDeployment, "", "  ")
@@ -62,7 +62,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 
 				bytes, err := k8s.GetPodLogsByDeployment("mongodb-atlas-operator", config.DefaultOperatorNS, corev1.PodLogOptions{})
 				if err != nil {
-					GinkgoWriter.Write([]byte(err.Error()))
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%v\n", err)))
 				}
 				utils.SaveToFile(
 					fmt.Sprintf("output/%s/operator-logs-default.txt", data.Resources.Namespace),
@@ -70,7 +70,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				)
 				bytes, err = k8s.GetPodLogsByDeployment("mongodb-atlas-operator", data.Resources.Namespace, corev1.PodLogOptions{})
 				if err != nil {
-					GinkgoWriter.Write([]byte(err.Error()))
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%v\n", err)))
 				}
 				utils.SaveToFile(
 					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),

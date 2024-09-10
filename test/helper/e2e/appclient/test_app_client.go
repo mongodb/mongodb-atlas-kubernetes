@@ -34,7 +34,7 @@ func (app *App) Get(endpoint string) string {
 	res, err := http.Get(app.uri + endpoint)
 	if err != nil {
 		fmt.Print(err)
-		return ""
+		return err.Error()
 	}
 	defer res.Body.Close()
 	data, _ := io.ReadAll(res.Body)
