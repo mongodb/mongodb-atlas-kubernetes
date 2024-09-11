@@ -250,6 +250,7 @@ func UpgradeOperatorChart(input model.UserInputs) {
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--set", "objectDeletionProtection=false",
 		"--set", "subobjectDeletionProtection=false",
+		"--atomic",
 		"-n", input.Namespace,
 		// "--wait", "--timeout", "5m", // TODO helm upgrade do not exit
 	}
