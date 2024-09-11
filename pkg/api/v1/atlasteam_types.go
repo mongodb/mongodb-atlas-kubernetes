@@ -17,11 +17,12 @@ limitations under the License.
 package v1
 
 import (
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
-	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -87,8 +88,8 @@ func (in *AtlasTeam) UpdateStatus(conditions []api.Condition, options ...api.Opt
 	}
 }
 
-func (in *AtlasTeam) ToAtlas() (*mongodbatlas.Team, error) {
-	result := &mongodbatlas.Team{}
+func (in *AtlasTeam) ToAtlas() (*admin.Team, error) {
+	result := &admin.Team{}
 	err := compat.JSONCopy(result, in.Spec)
 
 	return result, err

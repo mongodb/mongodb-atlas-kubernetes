@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
@@ -27,14 +27,15 @@ type Team struct {
 	Roles []TeamRole `json:"roles"`
 }
 
-func (in *Team) ToAtlas(teamID string) *mongodbatlas.ProjectTeam {
-	result := &mongodbatlas.ProjectTeam{
-		TeamID:    teamID,
-		RoleNames: make([]string, 0, len(in.Roles)),
+func (in *Team) ToAtlas(teamID string) admin.TeamRole {
+	roleNames := make([]string, 0, len(in.Roles))
+	result := admin.TeamRole{
+		TeamId:    &teamID,
+		RoleNames: &roleNames,
 	}
 
 	for _, role := range in.Roles {
-		result.RoleNames = append(result.RoleNames, string(role))
+		*result.RoleNames = append(*result.RoleNames, string(role)) // SELFNOTE: need to track if these are being kept or totally dumped after this func
 	}
 
 	return result
