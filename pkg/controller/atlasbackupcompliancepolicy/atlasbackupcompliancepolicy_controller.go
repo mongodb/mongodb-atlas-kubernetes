@@ -47,7 +47,7 @@ type AtlasBackupCompliancePolicyReconciler struct {
 
 func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasbackupcompliancepolicy", req.NamespacedName)
-	log.Infow("-> Starting AtlasBackupCompliancePolicy reonciliation")
+	log.Infow("-> Starting AtlasBackupCompliancePolicy reconciliation")
 
 	bcp := &akov2.AtlasBackupCompliancePolicy{}
 	result := customresource.PrepareResource(ctx, r.Client, req, bcp, log)

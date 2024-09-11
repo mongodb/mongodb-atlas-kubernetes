@@ -54,6 +54,16 @@ spec:
             description: AtlasDatabaseUserSpec defines the desired state of Database
               User in Atlas
             properties:
+              atlasRef:
+                description: AtlasRef holds the Atlas project ID the user belongs
+                  to
+                properties:
+                  id:
+                    description: ID is the Atlas project ID
+                    type: string
+                required:
+                - id
+                type: object
               awsIamType:
                 default: NONE
                 description: |-
@@ -212,10 +222,13 @@ spec:
                 - CUSTOMER
                 type: string
             required:
-            - projectRef
             - roles
             - username
             type: object
+            x-kubernetes-validations:
+            - message: cannot define both atlasRef and projectRef at same time
+              rule: 'has(self.atlasRef) && !has(self.projectRef) ? true : !has(self.atlasRef)
+                && has(self.projectRef)'
           status:
             description: AtlasDatabaseUserStatus defines the observed state of AtlasProject
             properties:

@@ -117,6 +117,65 @@ func (_c *ProjectServiceMock_DeleteProject_Call) RunAndReturn(run func(context.C
 	return _c
 }
 
+// GetProject provides a mock function with given fields: ctx, ID
+func (_m *ProjectServiceMock) GetProject(ctx context.Context, ID string) (*project.Project, error) {
+	ret := _m.Called(ctx, ID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetProject")
+	}
+
+	var r0 *project.Project
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*project.Project, error)); ok {
+		return rf(ctx, ID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *project.Project); ok {
+		r0 = rf(ctx, ID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*project.Project)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, ID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ProjectServiceMock_GetProject_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetProject'
+type ProjectServiceMock_GetProject_Call struct {
+	*mock.Call
+}
+
+// GetProject is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ID string
+func (_e *ProjectServiceMock_Expecter) GetProject(ctx interface{}, ID interface{}) *ProjectServiceMock_GetProject_Call {
+	return &ProjectServiceMock_GetProject_Call{Call: _e.mock.On("GetProject", ctx, ID)}
+}
+
+func (_c *ProjectServiceMock_GetProject_Call) Run(run func(ctx context.Context, ID string)) *ProjectServiceMock_GetProject_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *ProjectServiceMock_GetProject_Call) Return(_a0 *project.Project, _a1 error) *ProjectServiceMock_GetProject_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *ProjectServiceMock_GetProject_Call) RunAndReturn(run func(context.Context, string) (*project.Project, error)) *ProjectServiceMock_GetProject_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetProjectByName provides a mock function with given fields: ctx, name
 func (_m *ProjectServiceMock) GetProjectByName(ctx context.Context, name string) (*project.Project, error) {
 	ret := _m.Called(ctx, name)

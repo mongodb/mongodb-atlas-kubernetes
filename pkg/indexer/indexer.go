@@ -35,6 +35,7 @@ func RegisterAll(ctx context.Context, mgr manager.Manager, logger *zap.Logger) e
 		NewAtlasFederatedAuthBySecretsIndexer(logger),
 		NewAtlasDatabaseUserBySecretsIndexer(logger),
 		NewLocalCredentialsIndexer(AtlasDatabaseUserCredentialsIndex, &akov2.AtlasDatabaseUser{}, logger),
+		NewAtlasDatabaseUserByProjectsIndexer(logger),
 	)
 }
 
