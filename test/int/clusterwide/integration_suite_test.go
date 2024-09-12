@@ -139,3 +139,7 @@ var _ = AfterSuite(func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 })
+
+var _ = ReportAfterSuite("Ensure test suite was not empty", func(r Report) {
+	Expect(r.PreRunStats.SpecsThatWillRun > 0).To(BeTrue(), "Suite must run at least 1 test")
+})

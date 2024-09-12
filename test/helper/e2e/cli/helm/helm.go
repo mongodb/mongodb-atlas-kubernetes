@@ -168,10 +168,18 @@ func InstallOperatorNamespacedSubmodule(input model.UserInputs) {
 func addPullSecret(installArgs []string, pullSecretPassword, namespace string) []string {
 	registry := os.Getenv("IMAGE_PULL_SECRET_REGISTRY")
 	pullSecretUsername := os.Getenv("IMAGE_PULL_SECRET_USERNAME")
-	secretName := fmt.Sprintf("ako-pull-secret-%s", registry)
+	secretName := pullSecretName(registry)
 	createPullSecret(secretName, namespace, registry, pullSecretUsername, pullSecretPassword)
+	return appendPullSecretArg(installArgs, secretName)
+}
+
+func pullSecretName(registry string) string {
+	return fmt.Sprintf("ako-pull-secret-%s", registry)
+}
+
+func appendPullSecretArg(installArgs []string, pullSecretName string) []string {
 	return append(installArgs,
-		"--set-string", fmt.Sprintf("imagePullSecrets[0].name=%s", secretName))
+		"--set-string", fmt.Sprintf("imagePullSecrets[0].name=%s", pullSecretName))
 }
 
 func createNamespace(namespace string) {
@@ -234,17 +242,21 @@ func InstallDeploymentRelease(input model.UserInputs) {
 func UpgradeOperatorChart(input model.UserInputs) {
 	repo, tag := splitDockerImage()
 	packageChart(config.AtlasOperatorCRDHelmChartPath, filepath.Join(config.AtlasOperatorHelmChartPath, "charts"))
-	Upgrade(
-		"atlas-operator-"+input.Project.GetProjectName(),
+	upgradeArgs := []string{
+		"atlas-operator-" + input.Project.GetProjectName(),
 		config.AtlasOperatorHelmChartPath,
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--set", "objectDeletionProtection=false",
 		"--set", "subobjectDeletionProtection=false",
+		"--atomic",
 		"-n", input.Namespace,
 		// "--wait", "--timeout", "5m", // TODO helm upgrade do not exit
-	)
+	}
+	registry := os.Getenv("IMAGE_PULL_SECRET_REGISTRY")
+	upgradeArgs = appendPullSecretArg(upgradeArgs, pullSecretName(registry))
+	Upgrade(upgradeArgs...)
 }
 
 func UpgradeAtlasDeploymentChartDev(input model.UserInputs) {
@@ -276,7 +288,7 @@ func GetDevelopmentMayorVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(majorVersion), nil
+	return strings.TrimSpace(string(majorVersion)), nil
 }
 
 func packageChart(sPath, dPath string) {

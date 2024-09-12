@@ -155,6 +155,10 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 	})
 })
 
+var _ = ReportAfterSuite("Ensure test suite was not empty", func(r Report) {
+	Expect(r.PreRunStats.SpecsThatWillRun > 0).To(BeTrue(), "Suite must run at least 1 test")
+})
+
 func defaultTimeouts() {
 	SetDefaultEventuallyTimeout(EventuallyTimeout)
 	SetDefaultEventuallyPollingInterval(PollingInterval)
