@@ -100,19 +100,17 @@ jobs:
           if test -f "fast.Dockerfile"; then
             echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
           else
-            echo > docker.patch <<-EOF
-              diff --git a/Dockerfile b/Dockerfile
-              index ffffa7bf..e82f0402 100644
-              --- a/Dockerfile
-              +++ b/Dockerfile
-              @@ -1,5 +1,6 @@
-               # Build the manager binary
-               FROM golang:1.21 as builder
-              +ARG GOTOOLCHAIN=auto
-
-               WORKDIR /workspace
-              # Copy the Go Modules manifests
-            EOF
+            echo "diff --git a/Dockerfile b/Dockerfile" > docker.patch
+            echo "index ffffa7bf..e82f0402 100644" >> docker.patch
+            echo "--- a/Dockerfile" >> docker.patch
+            echo "+++ b/Dockerfile" >> docker.patch
+            echo "@@ -1,5 +1,6 @@" >> docker.patch
+            echo " # Build the manager binary" >> docker.patch
+            echo " FROM golang:1.21 as builder" >> docker.patch
+            echo "+ARG GOTOOLCHAIN=auto" >> docker.patch
+            echo -n >> docker.patch
+            echo " WORKDIR /workspace" >> docker.patch
+            echo " # Copy the Go Modules manifests" >> docker.patch
             echo "-----------------"
             cat docker.patch
             echo "-----------------"
