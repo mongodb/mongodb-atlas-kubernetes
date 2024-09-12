@@ -60,18 +60,6 @@ jobs:
       IMAGE_REPOSITORY:  ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }}
       QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
       PLATFORMS: "linux/arm64,linux/amd64"
-      DOCKER_PATCH: |
-        diff --git a/Dockerfile b/Dockerfile
-        index ffffa7bf..e82f0402 100644
-        --- a/Dockerfile
-        +++ b/Dockerfile
-        @@ -1,5 +1,6 @@
-        # Build the manager binary
-        FROM golang:1.21 as builder
-        +ARG GOTOOLCHAIN=auto
-
-        WORKDIR /workspace
-        # Copy the Go Modules manifests
     strategy:
       matrix:
         version: ${{ fromJSON(needs.read-versions.outputs.releases) }}
@@ -112,7 +100,19 @@ jobs:
           if test -f "fast.Dockerfile"; then
             echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
           else
-            echo "${{ env.DOCKER_PATCH}}" | sed 's/^[\t ]*//g' | sed '$d' > docker.patch
+            echo > docker.patch <<-EOF
+            diff --git a/Dockerfile b/Dockerfile
+            index ffffa7bf..e82f0402 100644
+            --- a/Dockerfile
+            +++ b/Dockerfile
+            @@ -1,5 +1,6 @@
+             # Build the manager binary
+             FROM golang:1.21 as builder
+            +ARG GOTOOLCHAIN=auto
+ 
+             WORKDIR /workspace
+            # Copy the Go Modules manifests
+            EOF
             echo "-----------------"
             cat docker.patch
             echo "-----------------"
