@@ -112,7 +112,11 @@ jobs:
           if test -f "fast.Dockerfile"; then
             echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
           else
-            echo "${{ env.DOCKER_PATCH}}" | sed 's/^[\t ]*//g' | sed '$d' | tee docker.patch
+            echo "${{ env.DOCKER_PATCH}}" | sed 's/^[\t ]*//g' | sed '$d' > docker.patch
+            echo "-----------------"
+            cat docker.patch
+            echo "-----------------"
+            shasum -a 256 docker.patch
             patch Dockerfile docker.patch
             echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
           fi
