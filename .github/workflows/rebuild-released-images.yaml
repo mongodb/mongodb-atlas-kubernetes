@@ -108,7 +108,7 @@ jobs:
             echo " # Build the manager binary" >> docker.patch
             echo " FROM golang:1.21 as builder" >> docker.patch
             echo "+ARG GOTOOLCHAIN=auto" >> docker.patch
-            echo -n >> docker.patch
+            echo " " >> docker.patch
             echo " WORKDIR /workspace" >> docker.patch
             echo " # Copy the Go Modules manifests" >> docker.patch
             echo "-----------------"
