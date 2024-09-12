@@ -60,6 +60,18 @@ jobs:
       IMAGE_REPOSITORY:  ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }}
       QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
       PLATFORMS: "linux/arm64,linux/amd64"
+      DOCKER_PATCH: |
+        diff --git a/Dockerfile b/Dockerfile
+        index ffffa7bf..4854bf90 100644
+        --- a/Dockerfile
+        +++ b/Dockerfile
+        @@ -1,5 +1,6 @@
+        # Build the manager binary
+        FROM golang:1.21 as builder
+        +ARG GOTOOLCHAIN=auto
+
+        WORKDIR /workspace
+        # Copy the Go Modules manifests
     strategy:
       matrix:
         version: ${{ fromJSON(needs.read-versions.outputs.releases) }}
@@ -94,12 +106,14 @@ jobs:
         shell: bash
         run: |
           go mod download
-      - name: Choose Dockerfile
+      - name: Choose Dockerfile & patch as needed
         id: pick-dockerfile
         run: |
           if test -f "fast.Dockerfile"; then
             echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
           else
+            echo ${{ env.DOCKER_PATCH}} > docker.patch
+            patch Dockerfile docker.patch
             echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
           fi
       - name: Check signing supported
@@ -114,7 +128,7 @@ jobs:
         if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
         run: |
           make all-platforms VERSION=${{ matrix.version }}
-          # not all versiions Makefiles support the version check
+          # not all versions Makefiles support the version check
           if make |grep -q check-version; then
             echo "Checking version..."
             make check-version VERSION=${{ matrix.version }}
