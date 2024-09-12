@@ -62,7 +62,7 @@ jobs:
       PLATFORMS: "linux/arm64,linux/amd64"
       DOCKER_PATCH: |
         diff --git a/Dockerfile b/Dockerfile
-        index ffffa7bf..4854bf90 100644
+        index ffffa7bf..e82f0402 100644
         --- a/Dockerfile
         +++ b/Dockerfile
         @@ -1,5 +1,6 @@
