@@ -173,6 +173,9 @@ func (i aliasThirdPartyIntegration) Identifier() interface{} {
 func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []aliasThirdPartyIntegration {
 	result := make([]aliasThirdPartyIntegration, len(list))
 	for i, item := range list {
+		if item == nil {
+			continue
+		}
 		result[i] = aliasThirdPartyIntegration(*item)
 	}
 	return result
