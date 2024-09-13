@@ -80,29 +80,36 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
-	toDelete := make([]*admin.TeamRole, 0, len(*(atlasAssignedTeams.Results)))
-	for _, atlasAssignedTeam := range *(atlasAssignedTeams.Results) {
-		desiredTeam, ok := teamsToAssign[*atlasAssignedTeam.TeamId]
-		if !ok {
-			toDelete = append(toDelete, &atlasAssignedTeam)
+	toDelete := make([]*admin.TeamRole, 0)
 
-			continue
-		}
+	if atlasAssignedTeams != nil && atlasAssignedTeams.Results != nil {
+		for _, atlasAssignedTeam := range *(atlasAssignedTeams.Results) {
+			var desiredTeam *akov2.Team
+			var ok bool
+			if atlasAssignedTeam.TeamId != nil {
+				desiredTeam, ok = teamsToAssign[*atlasAssignedTeam.TeamId]
+				if !ok {
+					toDelete = append(toDelete, &atlasAssignedTeam)
 
-		if !hasTeamRolesChanged(*atlasAssignedTeam.RoleNames, desiredTeam.Roles) {
-			currentProjectsStatus[*atlasAssignedTeam.TeamId] = status.ProjectTeamStatus{
-				ID:      *atlasAssignedTeam.TeamId,
-				TeamRef: desiredTeam.TeamRef,
+					continue
+				}
 			}
-			delete(teamsToAssign, *atlasAssignedTeam.TeamId)
 
-			continue
-		}
+			if !hasTeamRolesChanged(*atlasAssignedTeam.RoleNames, desiredTeam.Roles) {
+				currentProjectsStatus[*atlasAssignedTeam.TeamId] = status.ProjectTeamStatus{
+					ID:      *atlasAssignedTeam.TeamId,
+					TeamRef: desiredTeam.TeamRef,
+				}
+				delete(teamsToAssign, *atlasAssignedTeam.TeamId)
 
-		ctx.Log.Debugf("removing team %s from project for later update", *atlasAssignedTeam.TeamId)
-		_, err = ctx.SdkClient.TeamsApi.RemoveProjectTeam(ctx.Context, projectID, *atlasAssignedTeam.TeamId).Execute()
-		if err != nil {
-			ctx.Log.Warnf("failed to remove team %s from project: %s", *atlasAssignedTeam.TeamId, err.Error())
+				continue
+			}
+
+			ctx.Log.Debugf("removing team %s from project for later update", *atlasAssignedTeam.TeamId)
+			_, err = ctx.SdkClient.TeamsApi.RemoveProjectTeam(ctx.Context, projectID, *atlasAssignedTeam.TeamId).Execute()
+			if err != nil {
+				ctx.Log.Warnf("failed to remove team %s from project: %s", *atlasAssignedTeam.TeamId, err.Error())
+			}
 		}
 	}
 

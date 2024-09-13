@@ -969,10 +969,6 @@ func TestDelete(t *testing.T) {
 					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamApi})
 				mockTeamApi.EXPECT().ListProjectTeamsExecute(mock.Anything).
 					Return(nil, &http.Response{}, nil)
-				mockTeamApi.EXPECT().DeleteTeam(context.Background(), mock.Anything, mock.Anything).
-					Return(admin.DeleteTeamApiRequest{ApiService: mockTeamApi})
-				mockTeamApi.EXPECT().DeleteTeamExecute(admin.DeleteTeamApiRequest{ApiService: mockTeamApi}).
-					Return(nil, &http.Response{}, nil)
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
 					NetworkPeeringApi:          mockPeeringEndpointAPI,
