@@ -69,7 +69,6 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		}
 		teamCtx.OrgID = orgID
 		teamCtx.SdkClient = atlasClient
-		// SELFNOTE: may need to include teamCtx.Client (ie old api client) if sdkAPI does not support all fields
 
 		teamID, result := ensureTeamState(teamCtx, team)
 		if !result.IsOk() {
@@ -191,7 +190,7 @@ func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team
 	}
 
 	atlasUsernamesMap := map[string]admin.CloudAppUser{}
-	for _, atlasUser := range *atlasUsers.Results { // SELFNOTE: intuitively, this doesn't feel right... * to *admin.PaginatedApiAppUser child *Results
+	for _, atlasUser := range *atlasUsers.Results {
 		atlasUsernamesMap[atlasUser.Username] = atlasUser
 	}
 
@@ -302,13 +301,12 @@ func renameTeam(workflowCtx *workflow.Context, atlasTeam *admin.Team, newName st
 	if err != nil {
 		return nil, err
 	}
-	atlasTeam.SetLinks(*atlasTeamResponse.Links)
-	// atlasTeam.SetId(*atlasTeamResponse.Id)  //SELFNOTE: see if id/links can change or if only new name needs to be changed
+
 	atlasTeam.SetName(*atlasTeamResponse.Name)
 	return atlasTeam, nil
 }
 
-func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker { // SELFNOTE: to check if get user work around is working properly (ie is the number of users accurately reflected in len(*atlasTeamUsers.Results) )
+func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
 	return func(resource api.AtlasCustomResource) (bool, error) {
 		team, ok := resource.(*akov2.AtlasTeam)
 		if !ok {
@@ -321,7 +319,7 @@ func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChec
 
 		atlasTeam, _, err := workflowCtx.SdkClient.TeamsApi.GetTeamById(workflowCtx.Context, workflowCtx.OrgID, team.Status.ID).Execute()
 		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse // SELFNOTE: Feels a little wrong to mix and match like this but admin.ApiError returns in `second argument to errors.As must be a non-nil pointer to either a type that implements error, or to any interface type` for line below
+			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
 				return false, nil
 			}
@@ -343,6 +341,11 @@ func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChec
 			usernames = append(usernames, string(username))
 		}
 
-		return cmp.Diff(usernames, *atlasTeamUsers.Results) != "", nil
+		atlasUsernames := make([]string, 0, len(*atlasTeamUsers.Results))
+		for _, user := range *atlasTeamUsers.Results {
+			atlasUsernames = append(atlasUsernames, string(user.Username))
+		}
+
+		return cmp.Diff(usernames, atlasUsernames) != "", nil
 	}
 }
