@@ -94,12 +94,28 @@ jobs:
         shell: bash
         run: |
           go mod download
-      - name: Choose Dockerfile
+      - name: Choose Dockerfile & patch as needed
         id: pick-dockerfile
         run: |
           if test -f "fast.Dockerfile"; then
             echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
           else
+            # This is ugly, but using a heredoc did not work
+            # An external file cannot be used as this code works on a older tag
+            # which is not the one holding this workflow version
+            # TODO: Once versions 1.9.x go away this can be removed
+            echo "diff --git a/Dockerfile b/Dockerfile" > docker.patch
+            echo "index ffffa7bf..e82f0402 100644" >> docker.patch
+            echo "--- a/Dockerfile" >> docker.patch
+            echo "+++ b/Dockerfile" >> docker.patch
+            echo "@@ -1,5 +1,6 @@" >> docker.patch
+            echo " # Build the manager binary" >> docker.patch
+            echo " FROM golang:1.21 as builder" >> docker.patch
+            echo "+ARG GOTOOLCHAIN=auto" >> docker.patch
+            echo " " >> docker.patch
+            echo " WORKDIR /workspace" >> docker.patch
+            echo " # Copy the Go Modules manifests" >> docker.patch
+            patch Dockerfile docker.patch
             echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
           fi
       - name: Check signing supported
@@ -114,7 +130,7 @@ jobs:
         if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
         run: |
           make all-platforms VERSION=${{ matrix.version }}
-          # not all versiions Makefiles support the version check
+          # not all versions Makefiles support the version check
           if make |grep -q check-version; then
             echo "Checking version..."
             make check-version VERSION=${{ matrix.version }}

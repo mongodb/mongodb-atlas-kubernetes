@@ -1,5 +1,6 @@
 # TODO: Eventually replace main Dockerfile
 FROM golang:1.22 as certs-source
+ARG GOTOOLCHAIN=auto
 
 FROM registry.access.redhat.com/ubi9/ubi:9.2 as ubi-certs
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
