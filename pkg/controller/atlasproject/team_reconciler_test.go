@@ -130,17 +130,6 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				return TeamsApi
 			}(),
 		}
-		//atlasClient := mongodbatlas.Client{
-		//	Teams: &atlasmock.TeamsClientMock{
-		//		GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-		//			return &mongodbatlas.Team{
-		//				ID:        "team-id-1",
-		//				Name:      "My Team",
-		//				Usernames: []string{"user1@mongodb.com", "user2@mongodb.com"},
-		//			}, &mongodbatlas.Response{}, nil
-		//		},
-		//	},
-		//}
 		team := &akov2.AtlasTeam{
 			Spec: akov2.TeamSpec{
 				Name:      "My Team",
