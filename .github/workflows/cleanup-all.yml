@@ -69,14 +69,14 @@ jobs:
       - name: Checkout codebase
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
         with:
-          go-version-file: "${{ github.workspace }}/tools/clean/go.mod"
-          cache: false
+          enable-cache: 'true'
 
       - name: Build clean tool
-        run: (cd tools/clean && go build .)
+        run: |
+         devbox run -- 'cd tools/clean && go build .'
 
       - name: Persist GCP credentials
         id: gcp-cred
@@ -103,4 +103,6 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: svet-test
           PROJECT_LIFETIME: ${{ inputs.lifetime || 1 }}
-        run: (cd tools/clean && ./clean atlas)
+        run: |
+         devbox run -- 'cd tools/clean && ./clean atlas'
+         

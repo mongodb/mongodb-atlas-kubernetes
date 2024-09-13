@@ -12,18 +12,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.sha}}
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
         with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-
-      - name: lint
-        run: make lint
-
+          enable-cache: 'true'
+      - name: Run lint
+        run: devbox run -- 'make lint'
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
-
+        env:
+          SHELLCHECK_OPTS: -e SC2148 -e SC2086 -e SC2148
       - name: Run govulncheck
-        run: make vulncheck
+        run: devbox run -- 'make vulncheck'

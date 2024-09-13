@@ -1,0 +1,63 @@
+name: Weekly Devbox Update
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # This cron expression runs the action at 00:00 UTC every Sunday
+  workflow_dispatch:
+
+jobs:
+  update-devbox:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+      
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.11.0
+      with:
+        enable-cache: 'true'
+    
+    - name: Update Devbox
+      run: |
+        devbox update
+
+    - name: Check for Changes
+      id: check_changes
+      run: |
+        if git diff --quiet; then
+          echo "No changes to commit."
+          echo "CHANGES=false" >> $GITHUB_OUTPUT
+        else
+          echo "Changes detected."
+          echo "CHANGES=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate Branch Name
+      id: generate_branch
+      if: steps.check_changes.outputs.CHANGES == 'true'
+      run: |
+        RANDOM_NUM=$((RANDOM % 10000))  # Generate a random number between 0 and 9999
+        BRANCH_NAME="devbox-update-$(date +'%Y-%m-%d')-$RANDOM_NUM"
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT  # Export branch name
+
+    - name: Commit and Push Changes
+      if: steps.check_changes.outputs.CHANGES == 'true'
+      run: |
+        git config --local user.email "akobot@ako-team-fake.mongodb.com"
+        git config --local user.name "AKOBot"
+        git checkout -b ${{ steps.generate_branch.outputs.BRANCH_NAME }}  # New branch
+        git add .
+        git commit -m "Weekly devbox dependencies update"
+        git push origin ${{ steps.generate_branch.outputs.BRANCH_NAME }}  # Push branch
+
+    - name: Create Pull Request
+      if: steps.check_changes.outputs.CHANGES == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        PR_URL=$(curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+        -d '{"title":"Weekly Devbox Update","body":"This PR contains the weekly dependencies update for Devbox.","head":"${{ steps.generate_branch.outputs.BRANCH_NAME }}","base":"origin/CLOUDP-263321/unified-development-environment-devbox"}' \
+        https://api.github.com/repos/${{ github.repository }}/pulls | jq -r '.html_url')
+        echo "Pull request created: $PR_URL"
+

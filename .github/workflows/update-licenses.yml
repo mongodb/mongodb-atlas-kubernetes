@@ -29,15 +29,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.BRANCH }}
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
         with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-
+          enable-cache: 'true'
+      
       - name: Recompute licenses
-        run: make recompute-licenses
+        run: devbox run -- 'make recompute-licenses'
 
       - name: Commit as needed
         run: |

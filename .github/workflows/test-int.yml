@@ -37,19 +37,10 @@ jobs:
         with:
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
-
-      - name: Cache multiple paths
-        uses: actions/cache@v4
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
+          enable-cache: 'true'
       - name: Run testing
         env:
           ATLAS_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
@@ -60,18 +51,12 @@ jobs:
           GO111MODULE: on
           GINKGO_EDITOR_INTEGRATION: "true"
         run: |
-
-          # Download binaries for envtests (api-server, etcd)
-          sudo curl -Lo setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh && \
-          sudo mkdir -p /usr/local/kubebuilder/bin && \
-          sudo /bin/bash -c "source setup-envtest.sh && fetch_envtest_tools /usr/local/kubebuilder"
-  
-          GOWORK=off go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo && \
-          go install github.com/onsi/gomega/...
-          
-          cd ${{ matrix.path }}
-          AKO_INT_TEST=1 ginkgo --label-filter="${TEST_NAME}" --timeout 90m --v --nodes="${PARALLEL_NODES}" --flake-attempts=1 --race --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
-
+          devbox run -- '
+          sudo curl -Lo setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh &&
+          sudo mkdir -p /usr/local/kubebuilder/bin && 
+          sudo /bin/bash -c "source setup-envtest.sh && fetch_envtest_tools /usr/local/kubebuilder" &&
+          cd ${{ matrix.path }} &&
+          AKO_INT_TEST=1 ginkgo --label-filter="${TEST_NAME}" --timeout 90m --v --nodes="${PARALLEL_NODES}" --flake-attempts=1 --race --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...'
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:

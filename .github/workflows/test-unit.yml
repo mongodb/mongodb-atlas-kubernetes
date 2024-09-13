@@ -11,28 +11,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.sha}}
-
-      - name: Cache multiple paths
-        uses: actions/cache@v4
+          
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-
-      - run: go version
+          enable-cache: 'true'
 
       - name: Run testing
-        run: CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e') -coverprofile=coverage.out
+        run: devbox run -- 'CGO_ENABLED=0 go test -v $(go list ./... | grep -v "test/int\|test/e2e") -coverprofile=coverage.out'
 
       - name: Test tools
-        run: make test-tools
+        run: devbox run -- 'make test-tools'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

@@ -21,20 +21,12 @@ jobs:
           config: test/helper/e2e/config/kind.yaml
           cluster_name: "atlas-gov-e2e-test"
           wait: 180s
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
         with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-      - name: Install dependencies
-        run: |
-          go install golang.org/x/tools/cmd/goimports@latest
-          
-          wget https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv4.5.7/kustomize_v4.5.7_linux_amd64.tar.gz -O kustomize.tar.gz -q
-          tar xvf kustomize.tar.gz
-          chmod +x kustomize && mkdir -p ./bin/ && mv kustomize ./bin/kustomize
+          enable-cache: 'true'
       - name: Install CRDs
-        run: make install
+        run: devbox run -- 'make install'
       - name: Run e2e test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_GOV_PUBLIC_KEY }}
@@ -46,13 +38,12 @@ jobs:
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
         run: |
-          GOWORK=off go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo && \
-          go install github.com/onsi/gomega/...
-          
-          cd test/e2e
-          ginkgo labels
-          echo 'Running: AKO_E2E_TEST=1 ginkgo --label-filter="atlas-gov" --timeout 120m --nodes=10  --flake-attempts=1 --randomize-all --race --cover --v --trace --show-nodes-events --output-interceptor-mode=none' && \
-          AKO_E2E_TEST=1 ginkgo --label-filter="atlas-gov" --timeout 120m --nodes=10 --flake-attempts=1 --randomize-all --race --cover --v --trace --show-node-events --output-interceptor-mode=none --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
+          devbox run -- '
+          GOWORK=off &&
+          cd test/e2e &&
+          ginkgo labels &&
+          echo "Running: AKO_E2E_TEST=1 ginkgo --label-filter=\"atlas-gov\" --timeout 120m --nodes=10 --flake-attempts=1 --randomize-all --race --cover --v --trace --show-nodes-events --output-interceptor-mode=none" &&
+          AKO_E2E_TEST=1 ginkgo --label-filter="atlas-gov" --timeout 120m --nodes=10 --flake-attempts=1 --randomize-all --race --cover --v --trace --show-node-events --output-interceptor-mode=none --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...'
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
