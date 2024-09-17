@@ -935,7 +935,7 @@ func TestDelete(t *testing.T) {
 				&akov2.AtlasTeam{ObjectMeta: metav1.ObjectMeta{Name: teamName}},
 			},
 		},
-		"should delete team from Atlas when AtlasProject with finalizer is deleted": {
+		"should update team status when project is deleted": {
 			atlasClientMocker: func() *mongodbatlas.Client {
 				projectsMock := &atlasmocks.ProjectsClientMock{
 					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
@@ -956,10 +956,6 @@ func TestDelete(t *testing.T) {
 					},
 				}
 				teamsMock := &atlasmocks.TeamsClientMock{
-					RemoveTeamFromOrganizationFunc: func(orgID string, teamID string) (*mongodbatlas.Response, error) {
-						return nil, nil
-					},
-					RemoveTeamFromOrganizationRequests: map[string]struct{}{},
 					ListFunc: func(orgID string) ([]mongodbatlas.Team, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Team{
 							{
@@ -1073,6 +1069,7 @@ func TestDelete(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.objects...).
+				WithStatusSubresource(tt.objects...).
 				WithIndex(
 					instancesIndexer.Object(),
 					instancesIndexer.Name(),
@@ -1091,6 +1088,7 @@ func TestDelete(t *testing.T) {
 					},
 				},
 				projectService: tt.projectServiceMocker(),
+				EventRecorder:  record.NewFakeRecorder(1),
 			}
 			ctx := &workflow.Context{
 				Context:   context.Background(),

@@ -89,6 +89,11 @@ const (
 	SearchIndexesNotReady          = "SearchIndexesNotReady"
 )
 
+// Atlas Teams condition types
+const (
+	TeamUnmanaged ConditionType = "TeamUnmanaged"
+)
+
 // Generic condition type
 const (
 	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"
