@@ -757,11 +757,6 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Deleting team from the operator", func() {
-			team := &akov2.AtlasTeam{}
-			teamRef := testData.Project.Spec.Teams[0].TeamRef
-			Expect(testData.K8SClient.Get(ctx, *teamRef.GetObject(testData.Project.Namespace), team)).To(Succeed())
-			Expect(testData.K8SClient.Delete(ctx, team)).To(Succeed())
-
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.Teams = nil
 			Expect(testData.K8SClient.Update(ctx, testData.Project)).To(Succeed())
