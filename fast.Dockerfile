@@ -2,8 +2,8 @@
 FROM golang:1.22 as certs-source
 ARG GOTOOLCHAIN=auto
 
-FROM registry.access.redhat.com/ubi9/ubi:9.2 as ubi-certs
-FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
+FROM registry.access.redhat.com/ubi9/ubi:9.4-1214.1725849297 as ubi-certs
+FROM registry.access.redhat.com/ubi9/ubi-micro:9.4-15
 
 ARG TARGETOS
 ARG TARGETARCH
