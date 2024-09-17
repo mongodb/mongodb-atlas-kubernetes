@@ -122,20 +122,23 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
-licenses.csv: go.mod ## Track licenses in a CSV file
+.PHONY: build-licenses.csv
+build-licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
 	@echo "========================================"
 	GOOS=linux GOARCH=amd64 go mod download
 	# https://github.com/google/go-licenses/issues/244
-	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
+	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
+.PHONY: recompute-licenses
 recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was changed)
-	@[ "$(GOMOD_SHA)" == "$(GOMOD_LICENSES_SHA)" ] || $(MAKE) licenses.csv
+	@[ "$(GOMOD_SHA)" == "$(GOMOD_LICENSES_SHA)" ] || $(MAKE) build-licenses.csv
 
-licenses-up-to-date:
+.PHONY: licenses-up-to-date
+licenses-up-to-date: ## Check if the licenses.csv is up to date
 	@if [ "$(GOMOD_SHA)" != "$(GOMOD_LICENSES_SHA)" ]; then \
-	echo "licenses.csv needs to be recalculated: git rebase AND run 'make licenses.csv'"; exit 1; \
+	echo "licenses.csv needs to be recalculated: git rebase AND run 'make build-licenses.csv'"; exit 1; \
 	else echo "licenses.csv is OK! (up to date)"; fi
 
 .PHONY: check-licenses
