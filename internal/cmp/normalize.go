@@ -94,6 +94,11 @@ func traverseValue(value reflect.Value, f func(slice reflect.Value)) {
 		}
 
 	case reflect.Slice:
+		// initialize empty slices to nil for normalization to be comparable
+		if value.Len() == 0 && value.CanSet() {
+			value.Set(reflect.Zero(value.Type()))
+		}
+
 		// omit zero length slices
 		if value.Len() == 0 {
 			return

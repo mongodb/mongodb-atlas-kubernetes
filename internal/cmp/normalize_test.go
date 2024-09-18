@@ -27,6 +27,45 @@ func TestEndlessRecursion(t *testing.T) {
 			},
 		},
 		{
+			name: "settable and addressable nil slice",
+			data: &struct {
+				Slice []string
+			}{
+				Slice: []string{},
+			},
+			want: &struct {
+				Slice []string
+			}{
+				Slice: nil,
+			},
+		},
+		{
+			name: "unsettable nil slice",
+			data: &struct {
+				slice []string
+			}{
+				slice: []string{},
+			},
+			want: &struct {
+				slice []string
+			}{
+				slice: []string{},
+			},
+		},
+		{
+			name: "unaddressable nil slice",
+			data: struct {
+				Slice []string
+			}{
+				Slice: []string{},
+			},
+			want: struct {
+				Slice []string
+			}{
+				Slice: []string{},
+			},
+		},
+		{
 			name: "nested JSON",
 			data: struct {
 				NestedJSON v1apiextensions.JSON
