@@ -2,9 +2,9 @@
 FROM golang:1.22 as certs-source
 ARG GOTOOLCHAIN=auto
 
-# Using rolling tags to stay on latest UBI 9.4
-FROM registry.access.redhat.com/ubi9/ubi:9.4 as ubi-certs
-FROM registry.access.redhat.com/ubi9/ubi-micro:9.4
+# Using rolling tag to stay on latest UBI 9
+FROM registry.access.redhat.com/ubi9/ubi:latest as ubi-certs
+FROM registry.access.redhat.com/ubi9/ubi-micro:latest
 
 ARG TARGETOS
 ARG TARGETARCH
