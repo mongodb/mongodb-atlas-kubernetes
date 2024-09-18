@@ -29,6 +29,7 @@ jobs:
               production-code-changed:
                 - 'cmd/**/!(*_test.go)'
                 - 'pkg/**/!(*_test.go)'
+                - 'internal/**/!(*_test.go)'
                 - 'Dockerfile'
                 - 'test/e2e/**'
                 - 'test/int/**'
