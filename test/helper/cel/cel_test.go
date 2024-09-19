@@ -18,11 +18,19 @@ package cel_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel/fake"
+)
+
+const (
+	crdFilePath = "./fake/test.mongodb.com_resources.yaml"
+
+	crdVersion = "fake"
 )
 
 func TestCEL(t *testing.T) {
@@ -136,24 +144,9 @@ func TestCEL(t *testing.T) {
 		},
 	}
 
-	validator, err := cel.VersionValidatorFromFile(t, "./fake/test.mongodb.com_resources.yaml", "fake")
-	require.NoError(t, err)
-	_ = validator // why?
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var (
-				err          error
-				current, old map[string]interface{}
-			)
-			if tc.current != nil {
-				current, err = runtime.DefaultUnstructuredConverter.ToUnstructured(tc.current)
-				require.NoError(t, err)
-			}
-			if tc.old != nil {
-				old, err = runtime.DefaultUnstructuredConverter.ToUnstructured(tc.old)
-				require.NoError(t, err)
-			}
-			errs := validator(current, old)
+			errs := ValidateFromFile(t, crdFilePath, crdVersion, tc.old, tc.current)
 
 			if got := len(errs); got != len(tc.wantErrs) {
 				t.Errorf("expected errors %v, got %v", len(tc.wantErrs), len(errs))
@@ -168,4 +161,42 @@ func TestCEL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ValidateFromFile(t *testing.T, crdFilePath string, version string, old, current runtime.Object) field.ErrorList {
+	t.Helper()
+
+	var (
+		err                error
+		currentRaw, oldRaw map[string]interface{}
+	)
+
+	if current != nil {
+		currentRaw, err = runtime.DefaultUnstructuredConverter.ToUnstructured(current)
+		require.NoError(t, err)
+	}
+	if old != nil {
+		oldRaw, err = runtime.DefaultUnstructuredConverter.ToUnstructured(old)
+		require.NoError(t, err)
+	}
+
+	validator, err := cel.VersionValidatorFromFile(t, crdFilePath, version)
+	require.NoError(t, err)
+	return validator(currentRaw, oldRaw)
+}
+
+func TestFieldValidator(t *testing.T) {
+	result := cel.FieldValidatorsFromFile(t, crdFilePath)
+	assert.NotNil(t, result[crdVersion])
+	assert.NotNil(t, result[crdVersion]["openAPIV3Schema.properties.spec"])
+}
+
+func TestPatterValidator(t *testing.T) {
+	result := cel.PatternValidatorsFromFile(t, crdFilePath)
+	assert.Equal(t, 1, len(result))
+	assert.NotNil(t, result[crdVersion])
+	validators := result[crdVersion]
+	assert.Equal(t, 2, len(validators))
+	assert.NotNil(t, validators["openAPIV3Schema.properties.status.properties.conditions.items.properties.reason"])
+	assert.NotNil(t, validators["openAPIV3Schema.properties.status.properties.conditions.items.properties.type"])
 }
