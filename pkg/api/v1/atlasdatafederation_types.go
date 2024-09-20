@@ -17,11 +17,8 @@ limitations under the License.
 package v1
 
 import (
-	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -49,6 +46,9 @@ type DataFederationSpec struct {
 
 	// +optional
 	PrivateEndpoints []DataFederationPE `json:"privateEndpoints,omitempty"`
+
+	// +optional
+	SkipRoleValidation bool `json:"skipRoleValidation,omitempty"`
 }
 
 type CloudProviderConfig struct {
@@ -96,30 +96,57 @@ type DataSource struct {
 	CollectionRegex string `json:"collectionRegex,omitempty"`
 	Database        string `json:"database,omitempty"`
 	DatabaseRegex   string `json:"databaseRegex,omitempty"`
+	DatasetName     string `json:"datasetName,omitempty"`
+	DatasetPrefix   string `json:"datasetPrefix,omitempty"`
 	// +kubebuilder:validation:Enum:=.avro;.avro.bz2;.avro.gz;.bson;.bson.bz2;.bson.gz;.bsonx;.csv;.csv.bz2;.csv.gz;.json;.json.bz2;.json.gz;.orc;.parquet;.tsv;.tsv.bz2;.tsv.gz
 	DefaultFormat       string   `json:"defaultFormat,omitempty"`
 	Path                string   `json:"path,omitempty"`
 	ProvenanceFieldName string   `json:"provenanceFieldName,omitempty"`
 	StoreName           string   `json:"storeName,omitempty"`
+	TrimLevel           int      `json:"trimLevel,omitempty"`
 	Urls                []string `json:"urls,omitempty"`
 }
 
 type Store struct {
-	Name                     string   `json:"name,omitempty"`
-	Provider                 string   `json:"provider,omitempty"`
-	AdditionalStorageClasses []string `json:"additionalStorageClasses,omitempty"`
-	Bucket                   string   `json:"bucket,omitempty"`
-	Delimiter                string   `json:"delimiter,omitempty"`
-	IncludeTags              bool     `json:"includeTags,omitempty"`
-	Prefix                   string   `json:"prefix,omitempty"`
-	Public                   bool     `json:"public,omitempty"`
-	Region                   string   `json:"region,omitempty"`
+	Name                     string          `json:"name,omitempty"`
+	Provider                 string          `json:"provider,omitempty"`
+	AdditionalStorageClasses []string        `json:"additionalStorageClasses,omitempty"`
+	Bucket                   string          `json:"bucket,omitempty"`
+	Delimiter                string          `json:"delimiter,omitempty"`
+	IncludeTags              bool            `json:"includeTags,omitempty"`
+	Prefix                   string          `json:"prefix,omitempty"`
+	Public                   bool            `json:"public,omitempty"`
+	Region                   string          `json:"region,omitempty"`
+	ClusterName              string          `json:"clusterName,omitempty"`
+	AllowInsecure            bool            `json:"allowInsecure,omitempty"`
+	DefaultFormat            string          `json:"defaultFormat,omitempty"`
+	ReadConcern              *ReadConcern    `json:"readConcern,omitempty"`
+	ReadPreference           *ReadPreference `json:"readPreference,omitempty"`
+	Urls                     []string        `json:"urls,omitempty"`
+}
+
+type ReadPreference struct {
+	MaxStalenessSeconds int                   `json:"maxStalenessSeconds,omitempty"`
+	Mode                string                `json:"mode,omitempty"`
+	TagSets             [][]ReadPreferenceTag `json:"tagSets,omitempty"`
+}
+
+type ReadPreferenceTag struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ReadConcern struct {
+	Level string `json:"level,omitempty"`
 }
 
 type DataFederationPE struct {
-	EndpointID string `json:"endpointId,omitempty"`
-	Provider   string `json:"provider,omitempty"`
-	Type       string `json:"type,omitempty"`
+	EndpointID              string `json:"endpointId,omitempty"`
+	Provider                string `json:"provider,omitempty"`
+	Type                    string `json:"type,omitempty"`
+	Comment                 string `json:"comment,omitempty"`
+	CustomerEndpointDNSName string `json:"customerEndpointDNSName,omitempty"`
+	Region                  string `json:"region,omitempty"`
 }
 
 func (pe DataFederationPE) Identifier() interface{} {
@@ -175,12 +202,6 @@ func (c *AtlasDataFederation) UpdateStatus(conditions []api.Condition, options .
 		v := o.(status.DataFederationStatusOption)
 		v(&c.Status)
 	}
-}
-
-func (c *AtlasDataFederation) ToAtlas() (*mongodbatlas.DataFederationInstance, error) {
-	result := &mongodbatlas.DataFederationInstance{}
-	err := compat.JSONCopy(result, c.Spec)
-	return result, err
 }
 
 func NewDataFederationInstance(projectName, instanceName, namespace string) *AtlasDataFederation {
