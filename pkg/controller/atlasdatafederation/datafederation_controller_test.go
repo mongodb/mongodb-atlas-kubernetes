@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -22,17 +24,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-type DataFederationMock struct {
-	mongodbatlas.DataFederationService
-}
-
-func (m *DataFederationMock) Delete(context.Context, string, string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
 func TestDeleteConnectionSecrets(t *testing.T) {
 	for _, tc := range []struct {
 		name              string
+		service           func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService
 		atlasProject      *akov2.AtlasProject
 		dataFederation    *akov2.AtlasDataFederation
 		connectionSecrets []*corev1.Secret
@@ -71,6 +66,10 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 		},
 		{
 			name: "federation object without secrets",
+			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
+				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
+				return serviceMock
+			},
 			atlasProject: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
 			},
@@ -92,6 +91,10 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 		},
 		{
 			name: "federation object without secrets",
+			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
+				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
+				return serviceMock
+			},
 			atlasProject: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
 			},
@@ -115,6 +118,10 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 		},
 		{
 			name: "federation object with secrets",
+			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
+				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
+				return serviceMock
+			},
 			atlasProject: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
 				Status:     status.AtlasProjectStatus{ID: "123"},
@@ -201,15 +208,17 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 				WithObjects(objects...).
 				Build()
 			project := &akov2.AtlasProject{}
-			atlasClient := &mongodbatlas.Client{
-				DataFederation: &DataFederationMock{},
-			}
 
 			r := &AtlasDataFederationReconciler{
 				Client: fakeClient,
 				Log:    logger,
 			}
-			gotResult := r.handleDelete(ctx, logger, tc.dataFederation, project, atlasClient)
+
+			var svc datafederation.DataFederationService
+			if tc.service != nil {
+				svc = tc.service(translation.NewDataFederationServiceMock(t))
+			}
+			gotResult := r.handleDelete(ctx, logger, tc.dataFederation, project, svc)
 			assert.Equal(t, tc.wantResult, gotResult)
 
 			gotDataFederation := &akov2.AtlasDataFederation{}
