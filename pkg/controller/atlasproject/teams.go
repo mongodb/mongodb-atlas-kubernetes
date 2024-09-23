@@ -188,26 +188,19 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	conditions := akov2.InitCondition(team, api.FalseCondition(api.ReadyType))
 	teamCtx := workflow.NewContext(log, conditions, ctx.Context)
 
-	atlasClient, orgID, err := r.AtlasProvider.Client(teamCtx.Context, project.ConnectionSecretObjectKey(), log)
-	if err != nil {
-		return err
-	}
-	teamCtx.Client = atlasClient
-
 	if len(assignedProjects) == 0 {
-		if customresource.IsResourcePolicyKeepOrDefault(project, r.ObjectDeletionProtection) {
-			log.Debug("team %s has no project associated, "+
-				"skipping deletion from Atlas due to ObjectDeletionProtection being set", team.Spec.Name)
-		} else {
-			log.Debugf("team %s has no project associated to it. removing from atlas.", team.Spec.Name)
-			_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(ctx.Context, orgID, team.Status.ID)
-			if err != nil {
-				return err
-			}
+		if err = customresource.ManageFinalizer(ctx.Context, r.Client, team, customresource.UnsetFinalizer); err != nil {
+			return err
 		}
-		teamCtx.EnsureStatusOption(status.AtlasTeamUnsetID())
+
+		teamCtx.SetConditionTrueMsg(api.TeamUnmanaged, "This resource is only reconciled when associated to a project")
+	} else {
+		if err = customresource.ManageFinalizer(ctx.Context, r.Client, team, customresource.SetFinalizer); err != nil {
+			return err
+		}
 	}
 
+	teamCtx.SetConditionTrue(api.ReadyType)
 	teamCtx.EnsureStatusOption(status.AtlasTeamSetProjects(assignedProjects))
 	statushandler.Update(teamCtx, r.Client, r.EventRecorder, team)
 
