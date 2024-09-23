@@ -58,10 +58,6 @@ spec:
                 description: AtlasRef holds the Atlas project ID the user belongs
                   to
                 properties:
-                  credentials:
-                    description: Credentials is the name of the secret that holds
-                      the Atlas credentials
-                    type: string
                   id:
                     description: ID is the Atlas project ID
                     type: string

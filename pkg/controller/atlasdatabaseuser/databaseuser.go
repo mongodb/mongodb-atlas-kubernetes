@@ -45,52 +45,14 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasGovUnsupported, false, fmt.Errorf("the %T is not supported by Atlas for government", atlasDatabaseUser))
 	}
 
-	if isIndependentResource(atlasDatabaseUser) {
-		return r.independentFlow(ctx, atlasDatabaseUser)
+	var atlasProject *project.Project
+	if atlasDatabaseUser.Spec.AtlasRef != nil {
+		atlasProject, err = r.getProjectFromAtlas(ctx, atlasDatabaseUser)
+	} else {
+		atlasProject, err = r.getProjectFromKube(ctx, atlasDatabaseUser)
 	}
-
-	atlasProject := &akov2.AtlasProject{}
-	if err := r.Client.Get(ctx.Context, atlasDatabaseUser.AtlasProjectObjectKey(), atlasProject); err != nil {
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
-	}
-
-	credentialsSecret, err := customresource.ComputeSecret(atlasProject, atlasDatabaseUser)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
-	}
-
-	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx.Context, credentialsSecret, r.Log)
-	if err != nil {
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
-	}
-
-	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
-	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
-
-	return r.dbuLifeCycle(ctx, atlasDatabaseUser, project.NewProject(atlasProject, orgID))
-}
-
-func (r *AtlasDatabaseUserReconciler) independentFlow(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
-	var credsKey *client.ObjectKey
-	if atlasDatabaseUser.Spec.AtlasRef.Credentials != nil {
-		credsKey = &client.ObjectKey{
-			Namespace: atlasDatabaseUser.Namespace,
-			Name:      *atlasDatabaseUser.Spec.AtlasRef.Credentials,
-		}
-	}
-
-	sdkClient, _, err := r.AtlasProvider.SdkClient(ctx.Context, credsKey, r.Log)
-	if err != nil {
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
-	}
-
-	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
-	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
-	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
-
-	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.AtlasRef.ID)
-	if err != nil {
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
 
 	return r.dbuLifeCycle(ctx, atlasDatabaseUser, atlasProject)
@@ -312,8 +274,48 @@ func (r *AtlasDatabaseUserReconciler) removeOldUser(ctx context.Context, project
 	return err
 }
 
-func isIndependentResource(atlasDatabaseUser *akov2.AtlasDatabaseUser) bool {
-	return atlasDatabaseUser.Spec.AtlasRef != nil
+func (r *AtlasDatabaseUserReconciler) getProjectFromAtlas(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) (*project.Project, error) {
+	sdkClient, _, err := r.AtlasProvider.SdkClient(
+		ctx.Context,
+		&client.ObjectKey{Namespace: atlasDatabaseUser.Namespace, Name: atlasDatabaseUser.Credentials().Name},
+		r.Log,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	projectService := project.NewProjectAPIService(sdkClient.ProjectsApi)
+	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+
+	atlasProject, err := projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.AtlasRef.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return atlasProject, nil
+}
+
+func (r *AtlasDatabaseUserReconciler) getProjectFromKube(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) (*project.Project, error) {
+	atlasProject := &akov2.AtlasProject{}
+	if err := r.Client.Get(ctx.Context, atlasDatabaseUser.AtlasProjectObjectKey(), atlasProject); err != nil {
+		return nil, err
+	}
+
+	credentialsSecret, err := customresource.ComputeSecret(atlasProject, atlasDatabaseUser)
+	if err != nil {
+		return nil, err
+	}
+
+	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx.Context, credentialsSecret, r.Log)
+	if err != nil {
+		return nil, err
+	}
+
+	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+
+	return project.NewProject(atlasProject, orgID), nil
 }
 
 func canManageOIDC(isEnabled bool, oidcType string) bool {

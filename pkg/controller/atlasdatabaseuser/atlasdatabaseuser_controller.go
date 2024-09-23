@@ -40,7 +40,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -69,7 +68,6 @@ type AtlasDatabaseUserReconciler struct {
 
 	dbUserService     dbuser.AtlasUsersService
 	deploymentService deployment.AtlasDeploymentsService
-	projectService    project.ProjectService
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
