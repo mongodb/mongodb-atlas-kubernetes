@@ -93,7 +93,7 @@ func WithOIDCEnabled() func(user *akov2.AtlasDatabaseUser) {
 
 func WithProject(project *akov2.AtlasProject) func(user *akov2.AtlasDatabaseUser) {
 	return func(user *akov2.AtlasDatabaseUser) {
-		user.Spec.AtlasRef = nil
+		user.Spec.ExternalProjectRef = nil
 		user.Spec.Project = &common.ResourceRefNamespaced{
 			Name:      project.Name,
 			Namespace: project.Namespace,
@@ -113,12 +113,16 @@ func WithCredentials(secretName string) func(user *akov2.AtlasDatabaseUser) {
 	}
 }
 
-func WithAtlasRef(projectID string, credentialsRef *string) func(user *akov2.AtlasDatabaseUser) {
+func WithExternalProjectRef(projectID, credentialsName string) func(user *akov2.AtlasDatabaseUser) {
 	return func(user *akov2.AtlasDatabaseUser) {
 		user.Spec.Project = nil
-		user.Spec.AtlasRef = &akov2.ExternalProjectReference{
-			ID:          projectID,
-			Credentials: credentialsRef,
+		user.Spec.ExternalProjectRef = &akov2.ExternalProjectReference{
+			ID: projectID,
+		}
+		user.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
+			ConnectionSecret: &api.LocalObjectReference{
+				Name: credentialsName,
+			},
 		}
 	}
 }

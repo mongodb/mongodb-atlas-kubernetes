@@ -117,14 +117,14 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			deploy.CreateProject(testData)
 		})
 		By("Failing when an user has both project and atlas references are set", func() {
-			testData.Users[0].Spec.AtlasRef = &akov2.ExternalProjectReference{
+			testData.Users[0].Spec.ExternalProjectRef = &akov2.ExternalProjectReference{
 				ID: testData.Project.ID(),
 			}
 
 			Expect(testData.K8SClient.Create(testData.Context, testData.Users[0])).ToNot(Succeed())
 		})
 		By("Creating a linked and a standalone users", func() {
-			data.WithAtlasRef(testData.Project.ID(), nil)(testData.Users[0])
+			data.WithExternalProjectRef(testData.Project.ID(), localSecretName)(testData.Users[0])
 			deploy.CreateUsers(testData)
 
 			Expect(countConnectionSecrets(testData.K8SClient, testData.Project.Spec.Name)).To(Equal(0))

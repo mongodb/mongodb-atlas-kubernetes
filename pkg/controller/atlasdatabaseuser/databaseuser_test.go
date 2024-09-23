@@ -135,7 +135,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: "project-id",
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{
@@ -2154,7 +2154,7 @@ func TestGetProjectFromAtlas(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: "project-id",
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{
@@ -2183,7 +2183,7 @@ func TestGetProjectFromAtlas(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: "project-id",
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{
@@ -2221,7 +2221,7 @@ func TestGetProjectFromAtlas(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					AtlasRef: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: "project-id",
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{

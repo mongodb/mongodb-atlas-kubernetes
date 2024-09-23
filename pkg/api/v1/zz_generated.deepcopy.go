@@ -683,8 +683,8 @@ func (in *AtlasDatabaseUserSpec) DeepCopyInto(out *AtlasDatabaseUserSpec) {
 		*out = new(common.ResourceRefNamespaced)
 		**out = **in
 	}
-	if in.AtlasRef != nil {
-		in, out := &in.AtlasRef, &out.AtlasRef
+	if in.ExternalProjectRef != nil {
+		in, out := &in.ExternalProjectRef, &out.ExternalProjectRef
 		*out = new(ExternalProjectReference)
 		**out = **in
 	}

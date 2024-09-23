@@ -46,7 +46,7 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 	}
 
 	var atlasProject *project.Project
-	if atlasDatabaseUser.Spec.AtlasRef != nil {
+	if atlasDatabaseUser.Spec.ExternalProjectRef != nil {
 		atlasProject, err = r.getProjectFromAtlas(ctx, atlasDatabaseUser)
 	} else {
 		atlasProject, err = r.getProjectFromKube(ctx, atlasDatabaseUser)
@@ -288,7 +288,7 @@ func (r *AtlasDatabaseUserReconciler) getProjectFromAtlas(ctx *workflow.Context,
 	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
 
-	atlasProject, err := projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.AtlasRef.ID)
+	atlasProject, err := projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.ExternalProjectRef.ID)
 	if err != nil {
 		return nil, err
 	}
