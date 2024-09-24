@@ -141,16 +141,16 @@ func TestHandleProject(t *testing.T) {
 				mockPeeringEndpointAPI.EXPECT().
 					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
-				mockTeamApi := mockadmin.NewTeamsApi(t)
-				mockTeamApi.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamApi})
-				mockTeamApi.EXPECT().ListProjectTeamsExecute(mock.Anything).
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{}, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
 					NetworkPeeringApi:          mockPeeringEndpointAPI,
-					TeamsApi:                   mockTeamApi,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -336,10 +336,10 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				mockTeamApi := mockadmin.NewTeamsApi(t)
-				mockTeamApi.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamApi})
-				mockTeamApi.EXPECT().ListProjectTeamsExecute(mock.Anything).
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
 					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
@@ -350,7 +350,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
-					TeamsApi:                   mockTeamApi,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -438,10 +438,10 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				mockTeamApi := mockadmin.NewTeamsApi(t)
-				mockTeamApi.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamApi})
-				mockTeamApi.EXPECT().ListProjectTeamsExecute(mock.Anything).
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
 					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
@@ -452,7 +452,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
-					TeamsApi:                   mockTeamApi,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -542,10 +542,10 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				mockTeamApi := mockadmin.NewTeamsApi(t)
-				mockTeamApi.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamApi})
-				mockTeamApi.EXPECT().ListProjectTeamsExecute(mock.Anything).
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
 					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
@@ -556,7 +556,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
-					TeamsApi:                   mockTeamApi,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -964,15 +964,15 @@ func TestDelete(t *testing.T) {
 				mockPeeringEndpointAPI.EXPECT().
 					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
-				mockTeamApi := mockadmin.NewTeamsApi(t)
-				mockTeamApi.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamApi})
-				mockTeamApi.EXPECT().ListProjectTeamsExecute(mock.Anything).
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
 					Return(nil, &http.Response{}, nil)
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
 					NetworkPeeringApi:          mockPeeringEndpointAPI,
-					TeamsApi:                   mockTeamApi,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {

@@ -49,12 +49,12 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	t.Run("should return false when resource was not found in Atlas", func(t *testing.T) {
 		atlasClient := admin.APIClient{
 			TeamsApi: func() *mockadmin.TeamsApi {
-				TeamsApi := mockadmin.NewTeamsApi(t)
-				TeamsApi.EXPECT().GetTeamById(context.Background(), "orgID", "team-id-1").
-					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsApi})
-				TeamsApi.EXPECT().GetTeamByIdExecute(mock.Anything).
+				TeamsAPI := mockadmin.NewTeamsApi(t)
+				TeamsAPI.EXPECT().GetTeamById(context.Background(), "orgID", "team-id-1").
+					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
 					Return(nil, &http.Response{}, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound})
-				return TeamsApi
+				return TeamsAPI
 			}(),
 		}
 		team := &akov2.AtlasTeam{
@@ -76,12 +76,12 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	t.Run("should return error when failed to fetch the team from Atlas", func(t *testing.T) {
 		atlasClient := admin.APIClient{
 			TeamsApi: func() *mockadmin.TeamsApi {
-				TeamsApi := mockadmin.NewTeamsApi(t)
-				TeamsApi.EXPECT().GetTeamById(context.Background(), "orgID", "team-id-1").
-					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsApi})
-				TeamsApi.EXPECT().GetTeamByIdExecute(mock.Anything).
+				TeamsAPI := mockadmin.NewTeamsApi(t)
+				TeamsAPI.EXPECT().GetTeamById(context.Background(), "orgID", "team-id-1").
+					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
 					Return(nil, &http.Response{}, errors.New("unavailable"))
-				return TeamsApi
+				return TeamsAPI
 			}(),
 		}
 		team := &akov2.AtlasTeam{
@@ -103,18 +103,18 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	t.Run("should return false when resource are equal", func(t *testing.T) {
 		atlasClient := admin.APIClient{
 			TeamsApi: func() *mockadmin.TeamsApi {
-				TeamsApi := mockadmin.NewTeamsApi(t)
-				TeamsApi.EXPECT().GetTeamById(context.Background(), "orgID-1", "team-id-1").
-					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsApi})
-				TeamsApi.EXPECT().GetTeamByIdExecute(mock.Anything).
+				TeamsAPI := mockadmin.NewTeamsApi(t)
+				TeamsAPI.EXPECT().GetTeamById(context.Background(), "orgID-1", "team-id-1").
+					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
 					Return(&admin.TeamResponse{
 						Id:    func(s string) *string { return &s }("team-id-1"),
 						Links: nil,
 						Name:  func(s string) *string { return &s }("My Team"),
 					}, &http.Response{}, nil)
-				TeamsApi.EXPECT().ListTeamUsers(context.Background(), "orgID-1", "My Team").
-					Return(admin.ListTeamUsersApiRequest{ApiService: TeamsApi})
-				TeamsApi.EXPECT().ListTeamUsersExecute(mock.Anything).
+				TeamsAPI.EXPECT().ListTeamUsers(context.Background(), "orgID-1", "My Team").
+					Return(admin.ListTeamUsersApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
 					Return(&admin.PaginatedApiAppUser{
 						Links: nil,
 						Results: &[]admin.CloudAppUser{
@@ -127,7 +127,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 						},
 						TotalCount: nil,
 					}, &http.Response{}, nil)
-				return TeamsApi
+				return TeamsAPI
 			}(),
 		}
 		team := &akov2.AtlasTeam{
@@ -153,18 +153,18 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	t.Run("should return true when resource are different", func(t *testing.T) {
 		atlasClient := admin.APIClient{
 			TeamsApi: func() *mockadmin.TeamsApi {
-				TeamsApi := mockadmin.NewTeamsApi(t)
-				TeamsApi.EXPECT().GetTeamById(context.Background(), "orgID-1", "team-id-1").
-					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsApi})
-				TeamsApi.EXPECT().GetTeamByIdExecute(mock.Anything).
+				TeamsAPI := mockadmin.NewTeamsApi(t)
+				TeamsAPI.EXPECT().GetTeamById(context.Background(), "orgID-1", "team-id-1").
+					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
 					Return(&admin.TeamResponse{
 						Id:    func(s string) *string { return &s }("team-id-1"),
 						Links: nil,
 						Name:  func(s string) *string { return &s }("My Team"),
 					}, &http.Response{}, nil)
-				TeamsApi.EXPECT().ListTeamUsers(context.Background(), "orgID-1", "My Team").
-					Return(admin.ListTeamUsersApiRequest{ApiService: TeamsApi})
-				TeamsApi.EXPECT().ListTeamUsersExecute(mock.Anything).
+				TeamsAPI.EXPECT().ListTeamUsers(context.Background(), "orgID-1", "My Team").
+					Return(admin.ListTeamUsersApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
 					Return(&admin.PaginatedApiAppUser{
 						Links: nil,
 						Results: &[]admin.CloudAppUser{
@@ -177,7 +177,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 						},
 						TotalCount: nil,
 					}, &http.Response{}, nil)
-				return TeamsApi
+				return TeamsAPI
 			}(),
 		}
 		team := &akov2.AtlasTeam{

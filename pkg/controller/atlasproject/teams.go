@@ -89,7 +89,8 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 			if atlasAssignedTeam.TeamId != nil {
 				desiredTeam, ok = teamsToAssign[*atlasAssignedTeam.TeamId]
 				if !ok {
-					toDelete = append(toDelete, &atlasAssignedTeam)
+					result := atlasAssignedTeam
+					toDelete = append(toDelete, &result)
 
 					continue
 				}

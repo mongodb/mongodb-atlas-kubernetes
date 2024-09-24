@@ -28,7 +28,7 @@ import (
 func (r *AtlasProjectReconciler) teamReconcile(
 	team *akov2.AtlasTeam,
 	connectionSecretKey *client.ObjectKey,
-	projectId string,
+	projectID string,
 ) reconcile.Func {
 	return func(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 		log := r.Log.With("atlasteam", req.NamespacedName)
@@ -112,7 +112,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 				return workflow.OK().ReconcileResult(), nil
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-				_, err := teamCtx.SdkClient.TeamsApi.RemoveProjectTeam(teamCtx.Context, projectId, team.Status.ID).Execute()
+				_, err := teamCtx.SdkClient.TeamsApi.RemoveProjectTeam(teamCtx.Context, projectID, team.Status.ID).Execute()
 				var apiError *mongodbatlas.ErrorResponse
 				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
@@ -343,7 +343,7 @@ func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChec
 
 		atlasUsernames := make([]string, 0, len(*atlasTeamUsers.Results))
 		for _, user := range *atlasTeamUsers.Results {
-			atlasUsernames = append(atlasUsernames, string(user.Username))
+			atlasUsernames = append(atlasUsernames, user.Username)
 		}
 
 		return cmp.Diff(usernames, atlasUsernames) != "", nil
