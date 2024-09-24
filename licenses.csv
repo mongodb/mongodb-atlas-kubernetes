@@ -3,9 +3,9 @@ cloud.google.com/go/auth/oauth2adapt,https://github.com/googleapis/google-cloud-
 cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/blob/compute/v1.28.1/compute/apiv1/license_codes_client.go,Apache-2.0
 cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.28.1/compute/LICENSE,Apache-2.0
 cloud.google.com/go/compute/metadata,https://github.com/googleapis/google-cloud-go/blob/compute/metadata/v0.5.1/compute/metadata/LICENSE,Apache-2.0
-cloud.google.com/go/iam,https://github.com/googleapis/google-cloud-go/blob/iam/v1.2.0/iam/LICENSE,Apache-2.0
-cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v1.19.1/kms/LICENSE,Apache-2.0
-cloud.google.com/go/longrunning,https://github.com/googleapis/google-cloud-go/blob/longrunning/v0.6.0/longrunning/LICENSE,Apache-2.0
+cloud.google.com/go/iam,https://github.com/googleapis/google-cloud-go/blob/iam/v1.2.1/iam/LICENSE,Apache-2.0
+cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v1.20.0/kms/LICENSE,Apache-2.0
+cloud.google.com/go/longrunning,https://github.com/googleapis/google-cloud-go/blob/longrunning/v0.6.1/longrunning/LICENSE,Apache-2.0
 github.com/Azure/azure-sdk-for-go,https://github.com/Azure/azure-sdk-for-go/blob/v68.0.0/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/azcore,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azcore/v1.14.0/sdk/azcore/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/azidentity,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azidentity/v1.7.0/sdk/azidentity/LICENSE.txt,MIT
