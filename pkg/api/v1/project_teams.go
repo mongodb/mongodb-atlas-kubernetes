@@ -35,7 +35,9 @@ func (in *Team) ToAtlas(teamID string) admin.TeamRole {
 	}
 
 	for _, role := range in.Roles {
-		*result.RoleNames = append(*result.RoleNames, string(role))
+		roles := result.GetRoleNames()
+		roles = append(roles, string(role))
+		result.SetRoleNames(roles)
 	}
 
 	return result

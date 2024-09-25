@@ -112,7 +112,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 				return workflow.OK().ReconcileResult(), nil
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-				_, err := teamCtx.SdkClient.TeamsApi.RemoveProjectTeam(teamCtx.Context, projectID, team.Status.ID).Execute()
+				_, _, err := teamCtx.SdkClient.TeamsApi.DeleteTeam(teamCtx.Context, orgID, team.Status.ID).Execute()
 				var apiError *mongodbatlas.ErrorResponse
 				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
@@ -150,7 +150,7 @@ func ensureTeamState(workflowCtx *workflow.Context, team *akov2.AtlasTeam) (stri
 			return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
 		}
 
-		return *atlasTeam.Id, workflow.OK()
+		return atlasTeam.GetId(), workflow.OK()
 	}
 
 	atlasTeam, err = fetchTeamByName(workflowCtx, team.Spec.Name)
@@ -175,7 +175,7 @@ func ensureTeamState(workflowCtx *workflow.Context, team *akov2.AtlasTeam) (stri
 		return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
 	}
 
-	return *atlasTeam.Id, workflow.OK()
+	return atlasTeam.GetId(), workflow.OK()
 }
 
 func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team *akov2.AtlasTeam) workflow.Result {
@@ -196,14 +196,16 @@ func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team
 
 	g, taskContext := errgroup.WithContext(workflowCtx.Context)
 
-	for i := range *atlasUsers.Results {
-		user := (*atlasUsers.Results)[i]
-		if _, ok := usernamesMap[(*atlasUsers.Results)[i].Username]; !ok {
-			g.Go(func() error {
-				workflowCtx.Log.Debugf("removing user %s from team %s", user.Id, teamID)
-				_, err := workflowCtx.SdkClient.TeamsApi.RemoveTeamUser(taskContext, workflowCtx.OrgID, teamID, *user.Id).Execute()
-				return err
-			})
+	if atlasUsers.Results != nil {
+		for i := range *atlasUsers.Results {
+			user := (*atlasUsers.Results)[i]
+			if _, ok := usernamesMap[user.Username]; !ok {
+				g.Go(func() error {
+					workflowCtx.Log.Debugf("removing user %s from team %s", user.GetId(), teamID)
+					_, err := workflowCtx.SdkClient.TeamsApi.RemoveTeamUser(taskContext, workflowCtx.OrgID, teamID, user.GetId()).Execute()
+					return err
+				})
+			}
 		}
 	}
 
@@ -227,7 +229,7 @@ func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team
 				}
 
 				lock.Lock()
-				toAdd = append(toAdd, admin.AddUserToTeam{Id: *user.Id})
+				toAdd = append(toAdd, admin.AddUserToTeam{Id: user.GetId()})
 				lock.Unlock()
 
 				return nil
@@ -294,15 +296,15 @@ func renameTeam(workflowCtx *workflow.Context, atlasTeam *admin.Team, newName st
 	if atlasTeam.Name == newName {
 		return atlasTeam, nil
 	}
-	teamUpdate := admin.TeamUpdate{Links: atlasTeam.Links, Name: newName}
 
 	workflowCtx.Log.Debugf("updating name of team %s in atlas", atlasTeam.Id)
-	atlasTeamResponse, _, err := workflowCtx.SdkClient.TeamsApi.RenameTeam(workflowCtx.Context, workflowCtx.OrgID, *atlasTeam.Id, &teamUpdate).Execute()
+	teamUpdate := admin.TeamUpdate{Links: atlasTeam.Links, Name: newName}
+	atlasTeamResponse, _, err := workflowCtx.SdkClient.TeamsApi.RenameTeam(workflowCtx.Context, workflowCtx.OrgID, atlasTeam.GetId(), &teamUpdate).Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	atlasTeam.SetName(*atlasTeamResponse.Name)
+	atlasTeam.SetName(atlasTeamResponse.GetName())
 	return atlasTeam, nil
 }
 
@@ -327,9 +329,9 @@ func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChec
 			return false, err
 		}
 
-		atlasTeamUsers, _, err := workflowCtx.SdkClient.TeamsApi.ListTeamUsers(workflowCtx.Context, workflowCtx.OrgID, *atlasTeam.Name).Execute()
+		atlasTeamUsers, _, err := workflowCtx.SdkClient.TeamsApi.ListTeamUsers(workflowCtx.Context, workflowCtx.OrgID, atlasTeam.GetName()).Execute()
 		if err != nil {
-			return false, nil
+			return false, err
 		}
 
 		if team.Spec.Name != *atlasTeam.Name || len(*atlasTeamUsers.Results) == 0 {
