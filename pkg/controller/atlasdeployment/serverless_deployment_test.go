@@ -770,11 +770,13 @@ func TestHandleServerlessInstance(t *testing.T) {
 			logger := zaptest.NewLogger(t)
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
-			dbUserIndexer := indexer.NewAtlasDatabaseUserByProjectsIndexer(logger)
+			projectsRefIndexer := indexer.NewAtlasDatabaseUserByProjectsRefIndexer(logger)
+			externalProjectsRefIndexer := indexer.NewAtlasDatabaseUserByExternalProjectsRefIndexer(logger)
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.atlasDeployment).
-				WithIndex(dbUserIndexer.Object(), dbUserIndexer.Name(), dbUserIndexer.Keys).
+				WithIndex(projectsRefIndexer.Object(), projectsRefIndexer.Name(), projectsRefIndexer.Keys).
+				WithIndex(externalProjectsRefIndexer.Object(), externalProjectsRefIndexer.Name(), externalProjectsRefIndexer.Keys).
 				Build()
 			reconciler := &AtlasDeploymentReconciler{
 				Client:            k8sClient,

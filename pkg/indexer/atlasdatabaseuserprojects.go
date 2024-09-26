@@ -8,28 +8,28 @@ import (
 )
 
 const (
-	AtlasDatabaseUserByProjectsIndex = "atlasdatabaseuser.spec.project"
+	AtlasDatabaseUserByProjectsRefIndex = "atlasdatabaseuser.spec.projectRef"
 )
 
-type AtlasDatabaseUserByProjectsIndexer struct {
+type AtlasDatabaseUserByProjectsRefIndexer struct {
 	logger *zap.SugaredLogger
 }
 
-func NewAtlasDatabaseUserByProjectsIndexer(logger *zap.Logger) *AtlasDatabaseUserByProjectsIndexer {
-	return &AtlasDatabaseUserByProjectsIndexer{
-		logger: logger.Named(AtlasDatabaseUserByProjectsIndex).Sugar(),
+func NewAtlasDatabaseUserByProjectsRefIndexer(logger *zap.Logger) *AtlasDatabaseUserByProjectsRefIndexer {
+	return &AtlasDatabaseUserByProjectsRefIndexer{
+		logger: logger.Named(AtlasDatabaseUserByProjectsRefIndex).Sugar(),
 	}
 }
 
-func (*AtlasDatabaseUserByProjectsIndexer) Object() client.Object {
+func (*AtlasDatabaseUserByProjectsRefIndexer) Object() client.Object {
 	return &akov2.AtlasDatabaseUser{}
 }
 
-func (*AtlasDatabaseUserByProjectsIndexer) Name() string {
-	return AtlasDatabaseUserByProjectsIndex
+func (*AtlasDatabaseUserByProjectsRefIndexer) Name() string {
+	return AtlasDatabaseUserByProjectsRefIndex
 }
 
-func (a *AtlasDatabaseUserByProjectsIndexer) Keys(object client.Object) []string {
+func (a *AtlasDatabaseUserByProjectsRefIndexer) Keys(object client.Object) []string {
 	user, ok := object.(*akov2.AtlasDatabaseUser)
 	if !ok {
 		a.logger.Errorf("expected *akov2.AtlasDatabaseUser but got %T", object)
@@ -38,10 +38,6 @@ func (a *AtlasDatabaseUserByProjectsIndexer) Keys(object client.Object) []string
 
 	if user.Spec.Project != nil && user.Spec.Project.Name != "" {
 		return []string{user.Spec.Project.GetObject(user.Namespace).String()}
-	}
-
-	if user.Spec.ExternalProjectRef != nil && user.Spec.ExternalProjectRef.ID != "" {
-		return []string{user.Spec.ExternalProjectRef.ID}
 	}
 
 	return nil

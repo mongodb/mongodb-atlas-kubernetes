@@ -118,7 +118,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 	// list using resource name
 	atlasDeployment := deploymentInAKO.GetCustomResource()
 	listOpts := &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProjectsIndex, atlasDeployment.Spec.Project.GetObject(atlasDeployment.Namespace).String()),
+		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProjectsRefIndex, atlasDeployment.Spec.Project.GetObject(atlasDeployment.Namespace).String()),
 	}
 	err := r.Client.List(ctx.Context, &databaseUsers, listOpts)
 	if err != nil {
@@ -129,7 +129,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 
 	// list using project id
 	listOpts = &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProjectsIndex, deploymentInAKO.GetProjectID()),
+		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByExternalProjectsRefIndex, deploymentInAKO.GetProjectID()),
 	}
 	err = r.Client.List(ctx.Context, &databaseUsers, listOpts)
 	if err != nil {

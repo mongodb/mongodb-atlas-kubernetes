@@ -67,28 +67,9 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 			},
 			wantKeys: []string{"nsProject/someProject"},
 		},
-		{
-			name: "should return nil when there is an empty reference for external project",
-			object: &akov2.AtlasDatabaseUser{
-				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{},
-				},
-			},
-		},
-		{
-			name: "should return external project reference",
-			object: &akov2.AtlasDatabaseUser{
-				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-				},
-			},
-			wantKeys: []string{"project-id"},
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			indexer := NewAtlasDatabaseUserByProjectsIndexer(zaptest.NewLogger(t))
+			indexer := NewAtlasDatabaseUserByProjectsRefIndexer(zaptest.NewLogger(t))
 			keys := indexer.Keys(tc.object)
 			sort.Strings(keys)
 			assert.Equal(t, tc.wantKeys, keys)

@@ -370,12 +370,14 @@ func TestRegularClusterReconciliation(t *testing.T) {
 	require.NoError(t, corev1.AddToScheme(sch))
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
-	dbUserIndexer := indexer.NewAtlasDatabaseUserByProjectsIndexer(logger)
+	projectsRefIndexer := indexer.NewAtlasDatabaseUserByProjectsRefIndexer(logger)
+	externalProjectsRefIndexer := indexer.NewAtlasDatabaseUserByExternalProjectsRefIndexer(logger)
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(sch).
 		WithObjects(secret, project, bPolicy, bSchedule, d).
 		WithStatusSubresource(bPolicy, bSchedule).
-		WithIndex(dbUserIndexer.Object(), dbUserIndexer.Name(), dbUserIndexer.Keys).
+		WithIndex(projectsRefIndexer.Object(), projectsRefIndexer.Name(), projectsRefIndexer.Keys).
+		WithIndex(externalProjectsRefIndexer.Object(), externalProjectsRefIndexer.Name(), externalProjectsRefIndexer.Keys).
 		Build()
 
 	orgID := "0987654321"
@@ -586,11 +588,13 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	require.NoError(t, corev1.AddToScheme(sch))
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
-	dbUserIndexer := indexer.NewAtlasDatabaseUserByProjectsIndexer(logger)
+	projectsRefIndexer := indexer.NewAtlasDatabaseUserByProjectsRefIndexer(logger)
+	externalProjectsRefIndexer := indexer.NewAtlasDatabaseUserByExternalProjectsRefIndexer(logger)
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(sch).
 		WithObjects(secret, project, d).
-		WithIndex(dbUserIndexer.Object(), dbUserIndexer.Name(), dbUserIndexer.Keys).
+		WithIndex(projectsRefIndexer.Object(), projectsRefIndexer.Name(), projectsRefIndexer.Keys).
+		WithIndex(externalProjectsRefIndexer.Object(), externalProjectsRefIndexer.Name(), externalProjectsRefIndexer.Keys).
 		Build()
 
 	orgID := "0987654321"
