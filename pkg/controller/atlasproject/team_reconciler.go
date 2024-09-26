@@ -7,14 +7,12 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -136,46 +134,46 @@ func (r *AtlasProjectReconciler) teamReconcile(
 }
 
 func ensureTeamState(workflowCtx *workflow.Context, team *akov2.AtlasTeam) (string, workflow.Result) {
-	var atlasTeam *admin.Team
+	var atlasTeamResponse *admin.TeamResponse
 	var err error
 
 	if team.Status.ID != "" {
-		atlasTeam, err = fetchTeamByID(workflowCtx, team.Status.ID)
+		atlasTeamResponse, err = fetchTeamByID(workflowCtx, team.Status.ID)
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 		}
 
-		atlasTeam, err = renameTeam(workflowCtx, atlasTeam, team.Spec.Name)
+		atlasTeamResponse, err = renameTeam(workflowCtx, atlasTeamResponse, team.Spec.Name)
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
 		}
 
-		return atlasTeam.GetId(), workflow.OK()
+		return atlasTeamResponse.GetId(), workflow.OK()
 	}
 
-	atlasTeam, err = fetchTeamByName(workflowCtx, team.Spec.Name)
+	atlasTeamResponse, err = fetchTeamByName(workflowCtx, team.Spec.Name)
 	if err != nil {
 		return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 	}
 
-	if atlasTeam == nil {
-		atlasTeam, err = team.ToAtlas()
+	if atlasTeamResponse == nil {
+		atlasTeam, err := team.ToAtlas()
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamInvalidSpec, err.Error())
 		}
 
-		atlasTeam, err = createTeam(workflowCtx, atlasTeam)
+		atlasTeamResponse, err = createTeam(workflowCtx, atlasTeam)
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 		}
 	}
 
-	atlasTeam, err = renameTeam(workflowCtx, atlasTeam, team.Spec.Name)
+	atlasTeamResponse, err = renameTeam(workflowCtx, atlasTeamResponse, team.Spec.Name)
 	if err != nil {
 		return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
 	}
 
-	return atlasTeam.GetId(), workflow.OK()
+	return atlasTeamResponse.GetId(), workflow.OK()
 }
 
 func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team *akov2.AtlasTeam) workflow.Result {
@@ -190,15 +188,14 @@ func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team
 	}
 
 	atlasUsernamesMap := map[string]admin.CloudAppUser{}
-	for _, atlasUser := range *atlasUsers.Results {
+	for _, atlasUser := range atlasUsers.GetResults() {
 		atlasUsernamesMap[atlasUser.Username] = atlasUser
 	}
 
 	g, taskContext := errgroup.WithContext(workflowCtx.Context)
 
 	if atlasUsers.Results != nil {
-		for i := range *atlasUsers.Results {
-			user := (*atlasUsers.Results)[i]
+		for _, user := range atlasUsers.GetResults() {
 			if _, ok := usernamesMap[user.Username]; !ok {
 				g.Go(func() error {
 					workflowCtx.Log.Debugf("removing user %s from team %s", user.GetId(), teamID)
@@ -256,18 +253,17 @@ func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team
 	return workflow.OK()
 }
 
-func fetchTeamByID(workflowCtx *workflow.Context, teamID string) (*admin.Team, error) {
+func fetchTeamByID(workflowCtx *workflow.Context, teamID string) (*admin.TeamResponse, error) {
 	workflowCtx.Log.Debugf("fetching team %s from atlas", teamID)
 	atlasTeamResponse, _, err := workflowCtx.SdkClient.TeamsApi.GetTeamById(workflowCtx.Context, workflowCtx.OrgID, teamID).Execute()
 	if err != nil {
 		return nil, err
 	}
-	atlasTeam := &admin.Team{Id: atlasTeamResponse.Id, Name: *atlasTeamResponse.Name, Links: atlasTeamResponse.Links}
 
-	return atlasTeam, nil
+	return atlasTeamResponse, nil
 }
 
-func fetchTeamByName(workflowCtx *workflow.Context, teamName string) (*admin.Team, error) {
+func fetchTeamByName(workflowCtx *workflow.Context, teamName string) (*admin.TeamResponse, error) {
 	workflowCtx.Log.Debugf("fetching team named %s from atlas", teamName)
 	atlasTeamResponse, resp, err := workflowCtx.SdkClient.TeamsApi.GetTeamByName(workflowCtx.Context, workflowCtx.OrgID, teamName).Execute()
 	if err != nil {
@@ -277,35 +273,36 @@ func fetchTeamByName(workflowCtx *workflow.Context, teamName string) (*admin.Tea
 
 		return nil, err
 	}
-	atlasTeam := &admin.Team{Id: atlasTeamResponse.Id, Name: *atlasTeamResponse.Name, Links: atlasTeamResponse.Links}
 
-	return atlasTeam, nil
+	return atlasTeamResponse, nil
 }
 
-func createTeam(workflowCtx *workflow.Context, atlasTeam *admin.Team) (*admin.Team, error) {
+func createTeam(workflowCtx *workflow.Context, atlasTeam *admin.Team) (*admin.TeamResponse, error) {
 	workflowCtx.Log.Debugf("create team named %s in atlas", atlasTeam.Name)
 	atlasTeam, _, err := workflowCtx.SdkClient.TeamsApi.CreateTeam(workflowCtx.Context, workflowCtx.OrgID, atlasTeam).Execute()
 	if err != nil {
 		return nil, err
 	}
-
-	return atlasTeam, nil
+	response := &admin.TeamResponse{}
+	response.SetId(atlasTeam.GetId())
+	response.SetLinks(atlasTeam.GetLinks())
+	response.SetName(atlasTeam.GetName())
+	return response, nil
 }
 
-func renameTeam(workflowCtx *workflow.Context, atlasTeam *admin.Team, newName string) (*admin.Team, error) {
-	if atlasTeam.Name == newName {
-		return atlasTeam, nil
+func renameTeam(workflowCtx *workflow.Context, atlasTeamResponse *admin.TeamResponse, newName string) (*admin.TeamResponse, error) {
+	if atlasTeamResponse.GetName() == newName {
+		return atlasTeamResponse, nil
 	}
 
-	workflowCtx.Log.Debugf("updating name of team %s in atlas", atlasTeam.Id)
-	teamUpdate := admin.TeamUpdate{Links: atlasTeam.Links, Name: newName}
-	atlasTeamResponse, _, err := workflowCtx.SdkClient.TeamsApi.RenameTeam(workflowCtx.Context, workflowCtx.OrgID, atlasTeam.GetId(), &teamUpdate).Execute()
+	workflowCtx.Log.Debugf("updating name of team %s in atlas", atlasTeamResponse.GetId())
+	teamUpdate := admin.TeamUpdate{Name: newName}
+	atlasTeamResponse, _, err := workflowCtx.SdkClient.TeamsApi.RenameTeam(workflowCtx.Context, workflowCtx.OrgID, atlasTeamResponse.GetId(), &teamUpdate).Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	atlasTeam.SetName(atlasTeamResponse.GetName())
-	return atlasTeam, nil
+	return atlasTeamResponse, nil
 }
 
 func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
@@ -334,7 +331,7 @@ func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChec
 			return false, err
 		}
 
-		if team.Spec.Name != *atlasTeam.Name || len(*atlasTeamUsers.Results) == 0 {
+		if team.Spec.Name != atlasTeam.GetName() || len(atlasTeamUsers.GetResults()) == 0 {
 			return false, err
 		}
 
@@ -343,8 +340,8 @@ func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChec
 			usernames = append(usernames, string(username))
 		}
 
-		atlasUsernames := make([]string, 0, len(*atlasTeamUsers.Results))
-		for _, user := range *atlasTeamUsers.Results {
+		atlasUsernames := make([]string, 0, len(atlasTeamUsers.GetResults()))
+		for _, user := range atlasTeamUsers.GetResults() {
 			atlasUsernames = append(atlasUsernames, user.Username)
 		}
 

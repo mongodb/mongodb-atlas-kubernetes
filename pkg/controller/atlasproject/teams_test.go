@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,8 +16,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"

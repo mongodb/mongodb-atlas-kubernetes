@@ -6,18 +6,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
-
+	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas/mongodbatlas"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 

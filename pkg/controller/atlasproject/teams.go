@@ -80,20 +80,20 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
-	toDelete := make([]*admin.TeamRole, 0)
+	toDelete := make([]*admin.TeamRole, 0, len(atlasAssignedTeams.GetResults()))
 
 	if atlasAssignedTeams != nil && atlasAssignedTeams.Results != nil {
-		for _, atlasAssignedTeam := range *(atlasAssignedTeams.Results) {
-			var desiredTeam *akov2.Team
-			var ok bool
-			if atlasAssignedTeam.TeamId != nil {
-				desiredTeam, ok = teamsToAssign[atlasAssignedTeam.GetTeamId()]
-				if !ok {
-					result := atlasAssignedTeam
-					toDelete = append(toDelete, &result)
+		for _, atlasAssignedTeam := range atlasAssignedTeams.GetResults() {
+			if atlasAssignedTeam.GetTeamId() == "" {
+				continue
+			}
 
-					continue
-				}
+			desiredTeam, ok := teamsToAssign[atlasAssignedTeam.GetTeamId()]
+			if !ok {
+				result := atlasAssignedTeam
+				toDelete = append(toDelete, &result)
+
+				continue
 			}
 
 			if !hasTeamRolesChanged(atlasAssignedTeam.GetRoleNames(), desiredTeam.Roles) {
