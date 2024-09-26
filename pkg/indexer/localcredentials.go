@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 const (
@@ -25,11 +26,22 @@ type LocalCredential struct {
 	logger *zap.SugaredLogger
 }
 
+// Reconciliable is implemented by CRD objects used by indexes to trigger reconciliations
+type Reconciliable interface {
+	ReconciliableRequests() []reconcile.Request
+}
+
+// ReconciliableList is a Reconciliable that is also a CRD list
+type ReconciliableList interface {
+	client.ObjectList
+	Reconciliable
+}
+
 func NewLocalCredentialsIndexer(name string, obj client.Object, logger *zap.Logger) *LocalCredential {
 	return &LocalCredential{
 		obj:    obj,
 		name:   name,
-		logger: logger.Named(AtlasStreamInstanceByConnectionIndex).Sugar(),
+		logger: logger.Named(name).Sugar(),
 	}
 }
 
@@ -59,7 +71,9 @@ func (lc *LocalCredential) Keys(object client.Object) []string {
 	return []string{}
 }
 
-func CredentialsIndexMapperFunc(indexerName string, list api.ReconciliableList, kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+type requestsFunc[L client.ObjectList] func(L) []reconcile.Request
+
+func CredentialsIndexMapperFunc[L client.ObjectList](indexerName string, list L, reqsFn requestsFunc[L], kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		secret, ok := obj.(*corev1.Secret)
 		if !ok {
@@ -78,6 +92,25 @@ func CredentialsIndexMapperFunc(indexerName string, list api.ReconciliableList, 
 			logger.Errorf("failed to list from indexer %s: %v", indexerName, err)
 			return nil
 		}
-		return list.ReconciliableRequests()
+		return reqsFn(list)
 	}
+}
+
+// ToRequest is a helper to turns CRD objects into reconcile requests.
+// Most Reconciliable implementations may leverage it.
+func toRequest(obj client.Object) reconcile.Request {
+	return reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      obj.GetName(),
+			Namespace: obj.GetNamespace(),
+		},
+	}
+}
+
+func DatabaseUserRequests(list *akov2.AtlasDatabaseUserList) []reconcile.Request {
+	requests := make([]reconcile.Request, 0, len(list.Items))
+	for _, item := range list.Items {
+		requests = append(requests, toRequest(&item))
+	}
+	return requests
 }

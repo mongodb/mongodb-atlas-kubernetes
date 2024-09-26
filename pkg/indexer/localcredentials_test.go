@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -79,28 +81,31 @@ func TestAtlasDatabaseUserLocalCredentialsIndexer(t *testing.T) {
 
 func TestCredentialsIndexMapperFunc(t *testing.T) {
 	for _, tc := range []struct {
-		name    string
-		list    api.ReconciliableList
-		objects []client.Object
-		input   client.Object
-		want    []reconcile.Request
+		name     string
+		mapperFn func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc
+		objects  []client.Object
+		input    client.Object
+		want     []reconcile.Request
 	}{
 		{
-			name: "nil input & list renders nil",
+			name:     "nil input & list renders nil",
+			mapperFn: dbUserMapperFunc,
 		},
 		{
-			name:  "nil list renders nil",
-			input: &corev1.Secret{},
+			name:     "nil list renders empty list",
+			mapperFn: dbUserMapperFunc,
+			input:    &corev1.Secret{},
+			want:     []reconcile.Request{},
 		},
 		{
-			name:  "empty input with proper empty list type renders empty list",
-			list:  &akov2.AtlasDatabaseUserList{},
-			input: &corev1.Secret{},
-			want:  []reconcile.Request{},
+			name:     "empty input with proper empty list type renders empty list",
+			mapperFn: dbUserMapperFunc,
+			input:    &corev1.Secret{},
+			want:     []reconcile.Request{},
 		},
 		{
-			name: "matching input credentials renders matching user",
-			list: &akov2.AtlasDatabaseUserList{},
+			name:     "matching input credentials renders matching user",
+			mapperFn: dbUserMapperFunc,
 			input: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secret-ref",
@@ -149,14 +154,19 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 						return indexer.Keys(obj)
 					}).
 				Build()
-			fn := CredentialsIndexMapperFunc(
-				AtlasDatabaseUserCredentialsIndex,
-				tc.list,
-				fakeClient,
-				zaptest.NewLogger(t).Sugar(),
-			)
+			fn := tc.mapperFn(fakeClient, zaptest.NewLogger(t).Sugar())
 			result := fn(context.Background(), tc.input)
 			assert.Equal(t, tc.want, result)
 		})
 	}
+}
+
+func dbUserMapperFunc(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+	return CredentialsIndexMapperFunc(
+		AtlasDatabaseUserCredentialsIndex,
+		&akov2.AtlasDatabaseUserList{},
+		DatabaseUserRequests,
+		kubeClient,
+		logger,
+	)
 }

@@ -214,6 +214,17 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager, skipNam
 			handler.EnqueueRequestsFromMapFunc(r.findAtlasDatabaseUserForSecret),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(indexer.CredentialsIndexMapperFunc(
+				indexer.AtlasDatabaseUserCredentialsIndex,
+				&akov2.AtlasDatabaseUserList{},
+				indexer.DatabaseUserRequests,
+				r.Client,
+				r.Log,
+			)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
