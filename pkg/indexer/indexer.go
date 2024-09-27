@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -34,7 +32,7 @@ func RegisterAll(ctx context.Context, mgr manager.Manager, logger *zap.Logger) e
 		NewAtlasProjectByTeamIndexer(logger),
 		NewAtlasFederatedAuthBySecretsIndexer(logger),
 		NewAtlasDatabaseUserBySecretsIndexer(logger),
-		NewLocalCredentialsIndexer(AtlasDatabaseUserCredentialsIndex, &akov2.AtlasDatabaseUser{}, logger),
+		NewAtlasDatabaseUserByCredentialIndexer(logger),
 	)
 }
 

@@ -13,14 +13,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
-const (
-	AtlasDatabaseUserCredentialsIndex = "atlasdatabaseuser.credentials"
-)
-
-type LocalCredential struct {
+type LocalCredentialIndexer struct {
 	obj    client.Object
 	name   string
 	logger *zap.SugaredLogger
@@ -37,23 +32,23 @@ type ReconciliableList interface {
 	Reconciliable
 }
 
-func NewLocalCredentialsIndexer(name string, obj client.Object, logger *zap.Logger) *LocalCredential {
-	return &LocalCredential{
+func NewLocalCredentialsIndexer(name string, obj client.Object, logger *zap.Logger) *LocalCredentialIndexer {
+	return &LocalCredentialIndexer{
 		obj:    obj,
 		name:   name,
 		logger: logger.Named(name).Sugar(),
 	}
 }
 
-func (lc *LocalCredential) Object() client.Object {
+func (lc *LocalCredentialIndexer) Object() client.Object {
 	return lc.obj
 }
 
-func (lc *LocalCredential) Name() string {
+func (lc *LocalCredentialIndexer) Name() string {
 	return lc.name
 }
 
-func (lc *LocalCredential) Keys(object client.Object) []string {
+func (lc *LocalCredentialIndexer) Keys(object client.Object) []string {
 	if reflect.TypeOf(object) != reflect.TypeOf(lc.obj) {
 		lc.logger.Errorf("expected %T but got %T", lc.obj, object)
 		return nil
@@ -105,12 +100,4 @@ func toRequest(obj client.Object) reconcile.Request {
 			Namespace: obj.GetNamespace(),
 		},
 	}
-}
-
-func DatabaseUserRequests(list *akov2.AtlasDatabaseUserList) []reconcile.Request {
-	requests := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		requests = append(requests, toRequest(&item))
-	}
-	return requests
 }
