@@ -161,10 +161,12 @@ func ensureTeamState(workflowCtx *workflow.Context, team *akov2.AtlasTeam) (stri
 			return "", workflow.Terminate(workflow.TeamInvalidSpec, err.Error())
 		}
 
-		atlasTeamResponse, err = createTeam(workflowCtx, atlasTeam)
+		atlasTeam, err = createTeam(workflowCtx, atlasTeam)
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 		}
+
+		return atlasTeam.GetId(), workflow.OK()
 	}
 
 	atlasTeamResponse, err = renameTeam(workflowCtx, atlasTeamResponse, team.Spec.Name)
@@ -276,17 +278,13 @@ func fetchTeamByName(workflowCtx *workflow.Context, teamName string) (*admin.Tea
 	return atlasTeamResponse, nil
 }
 
-func createTeam(workflowCtx *workflow.Context, atlasTeam *admin.Team) (*admin.TeamResponse, error) {
+func createTeam(workflowCtx *workflow.Context, atlasTeam *admin.Team) (*admin.Team, error) {
 	workflowCtx.Log.Debugf("create team named %s in atlas", atlasTeam.Name)
 	atlasTeam, _, err := workflowCtx.SdkClient.TeamsApi.CreateTeam(workflowCtx.Context, workflowCtx.OrgID, atlasTeam).Execute()
 	if err != nil {
 		return nil, err
 	}
-	response := &admin.TeamResponse{}
-	response.SetId(atlasTeam.GetId())
-	response.SetLinks(atlasTeam.GetLinks())
-	response.SetName(atlasTeam.GetName())
-	return response, nil
+	return atlasTeam, nil
 }
 
 func renameTeam(workflowCtx *workflow.Context, atlasTeamResponse *admin.TeamResponse, newName string) (*admin.TeamResponse, error) {
