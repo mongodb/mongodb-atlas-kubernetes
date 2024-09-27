@@ -3,12 +3,15 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -18,9 +21,9 @@ import (
 func TestTeamManagedByAtlas(t *testing.T) {
 	t.Run("should return error when passing wrong resource", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			OrgID:   "orgID",
-			Client:  &mongodbatlas.Client{},
-			Context: context.Background(),
+			OrgID:     "orgID",
+			SdkClient: &admin.APIClient{},
+			Context:   context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(&akov2.AtlasProject{})
@@ -30,9 +33,9 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false when resource has no Atlas Team ID", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			OrgID:   "orgID",
-			Client:  &mongodbatlas.Client{},
-			Context: context.Background(),
+			OrgID:     "orgID",
+			SdkClient: &admin.APIClient{},
+			Context:   context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(&akov2.AtlasTeam{})
@@ -41,12 +44,15 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	})
 
 	t.Run("should return false when resource was not found in Atlas", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			Teams: &atlasmock.TeamsClientMock{
-				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-					return nil, &mongodbatlas.Response{}, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound}
-				},
-			},
+		atlasClient := admin.APIClient{
+			TeamsApi: func() *mockadmin.TeamsApi {
+				TeamsAPI := mockadmin.NewTeamsApi(t)
+				TeamsAPI.EXPECT().GetTeamById(context.Background(), "orgID", "team-id-1").
+					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
+					Return(nil, &http.Response{}, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound})
+				return TeamsAPI
+			}(),
 		}
 		team := &akov2.AtlasTeam{
 			Status: status.TeamStatus{
@@ -54,9 +60,9 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			OrgID:   "orgID",
-			Client:  &atlasClient,
-			Context: context.Background(),
+			OrgID:     "orgID",
+			SdkClient: &atlasClient,
+			Context:   context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
@@ -65,12 +71,15 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	})
 
 	t.Run("should return error when failed to fetch the team from Atlas", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			Teams: &atlasmock.TeamsClientMock{
-				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-					return nil, &mongodbatlas.Response{}, errors.New("unavailable")
-				},
-			},
+		atlasClient := admin.APIClient{
+			TeamsApi: func() *mockadmin.TeamsApi {
+				TeamsAPI := mockadmin.NewTeamsApi(t)
+				TeamsAPI.EXPECT().GetTeamById(context.Background(), "orgID", "team-id-1").
+					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
+					Return(nil, &http.Response{}, errors.New("unavailable"))
+				return TeamsAPI
+			}(),
 		}
 		team := &akov2.AtlasTeam{
 			Status: status.TeamStatus{
@@ -78,9 +87,9 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			OrgID:   "orgID",
-			Client:  &atlasClient,
-			Context: context.Background(),
+			OrgID:     "orgID",
+			SdkClient: &atlasClient,
+			Context:   context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
@@ -89,16 +98,34 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	})
 
 	t.Run("should return false when resource are equal", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			Teams: &atlasmock.TeamsClientMock{
-				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-					return &mongodbatlas.Team{
-						ID:        "team-id-1",
-						Name:      "My Team",
-						Usernames: []string{"user1@mongodb.com", "user2@mongodb.com"},
-					}, &mongodbatlas.Response{}, nil
-				},
-			},
+		atlasClient := admin.APIClient{
+			TeamsApi: func() *mockadmin.TeamsApi {
+				TeamsAPI := mockadmin.NewTeamsApi(t)
+				TeamsAPI.EXPECT().GetTeamById(context.Background(), "orgID-1", "team-id-1").
+					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
+					Return(&admin.TeamResponse{
+						Id:    func(s string) *string { return &s }("team-id-1"),
+						Links: nil,
+						Name:  func(s string) *string { return &s }("My Team"),
+					}, &http.Response{}, nil)
+				TeamsAPI.EXPECT().ListTeamUsers(context.Background(), "orgID-1", "My Team").
+					Return(admin.ListTeamUsersApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
+					Return(&admin.PaginatedApiAppUser{
+						Links: nil,
+						Results: &[]admin.CloudAppUser{
+							{
+								Username: "user1@mongodb.com",
+							},
+							{
+								Username: "user2@mongodb.com",
+							},
+						},
+						TotalCount: nil,
+					}, &http.Response{}, nil)
+				return TeamsAPI
+			}(),
 		}
 		team := &akov2.AtlasTeam{
 			Spec: akov2.TeamSpec{
@@ -110,9 +137,9 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			OrgID:   "orgID-1",
-			Client:  &atlasClient,
-			Context: context.Background(),
+			OrgID:     "orgID-1",
+			SdkClient: &atlasClient,
+			Context:   context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
@@ -121,16 +148,34 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	})
 
 	t.Run("should return true when resource are different", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			Teams: &atlasmock.TeamsClientMock{
-				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-					return &mongodbatlas.Team{
-						ID:        "team-id-1",
-						Name:      "My Team",
-						Usernames: []string{"user1@mongodb.com", "user2@mongodb.com"},
-					}, &mongodbatlas.Response{}, nil
-				},
-			},
+		atlasClient := admin.APIClient{
+			TeamsApi: func() *mockadmin.TeamsApi {
+				TeamsAPI := mockadmin.NewTeamsApi(t)
+				TeamsAPI.EXPECT().GetTeamById(context.Background(), "orgID-1", "team-id-1").
+					Return(admin.GetTeamByIdApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
+					Return(&admin.TeamResponse{
+						Id:    func(s string) *string { return &s }("team-id-1"),
+						Links: nil,
+						Name:  func(s string) *string { return &s }("My Team"),
+					}, &http.Response{}, nil)
+				TeamsAPI.EXPECT().ListTeamUsers(context.Background(), "orgID-1", "My Team").
+					Return(admin.ListTeamUsersApiRequest{ApiService: TeamsAPI})
+				TeamsAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
+					Return(&admin.PaginatedApiAppUser{
+						Links: nil,
+						Results: &[]admin.CloudAppUser{
+							{
+								Username: "user1@mongodb.com",
+							},
+							{
+								Username: "user2@mongodb.com",
+							},
+						},
+						TotalCount: nil,
+					}, &http.Response{}, nil)
+				return TeamsAPI
+			}(),
 		}
 		team := &akov2.AtlasTeam{
 			Spec: akov2.TeamSpec{
@@ -142,9 +187,9 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			OrgID:   "orgID-1",
-			Client:  &atlasClient,
-			Context: context.Background(),
+			OrgID:     "orgID-1",
+			SdkClient: &atlasClient,
+			Context:   context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)

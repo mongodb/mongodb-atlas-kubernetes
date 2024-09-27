@@ -2,10 +2,13 @@ package atlasproject
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -148,65 +150,52 @@ func TestSyncAssignedTeams(t *testing.T) {
 				WithStatusSubresource(project, team1, team2, team3).
 				Build()
 
-			atlasClient := &mongodbatlas.Client{
-				Projects: &atlasmocks.ProjectsClientMock{
-					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-						return &mongodbatlas.TeamsAssigned{
+			atlasClient := &admin.APIClient{
+				TeamsApi: func() *mockadmin.TeamsApi {
+					TeamsAPI := mockadmin.NewTeamsApi(t)
+					TeamsAPI.EXPECT().ListProjectTeams(nil, "projectID").
+						Return(admin.ListProjectTeamsApiRequest{ApiService: TeamsAPI})
+					TeamsAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+						Return(&admin.PaginatedTeamRole{
 							Links: nil,
-							Results: []*mongodbatlas.Result{
+							Results: &[]admin.TeamRole{
 								{
 									Links:     nil,
-									RoleNames: []string{"GROUP_OWNER"},
-									TeamID:    "teamID_1",
+									RoleNames: &[]string{"GROUP_OWNER"},
+									TeamId:    &team1.Status.ID,
 								},
 								{
 									Links:     nil,
-									RoleNames: []string{"GROUP_OWNER"},
-									TeamID:    "teamID_2",
+									RoleNames: &[]string{"GROUP_OWNER"},
+									TeamId:    &team2.Status.ID,
 								},
 								{
 									Links:     nil,
-									RoleNames: []string{"GROUP_READ_ONLY"},
-									TeamID:    "teamID_3",
+									RoleNames: &[]string{"GROUP_READ_ONLY"},
+									TeamId:    &team3.Status.ID,
 								},
 							},
-							TotalCount: 0,
-						}, nil, nil
-					},
-					AddTeamsToProjectFunc: func(projectId string, teams []*mongodbatlas.ProjectTeam) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-						return &mongodbatlas.TeamsAssigned{}, nil, nil
-					},
-				},
-				Teams: &atlasmocks.TeamsClientMock{
-					ListFunc: func(orgID string) ([]mongodbatlas.Team, *mongodbatlas.Response, error) {
-						return []mongodbatlas.Team{
-							{
-								ID:        "teamID_1",
-								Name:      "teamName_1",
-								Usernames: nil,
-							},
-							{
-								ID:        "teamID_2",
-								Name:      "teamName_2",
-								Usernames: nil,
-							},
-							{
-								ID:        "teamID_3",
-								Name:      "teamName_3",
-								Usernames: nil,
-							},
-						}, nil, nil
-					},
-					RemoveTeamFromProjectFunc: func(projectID string, teamID string) (*mongodbatlas.Response, error) {
-						return nil, nil
-					},
-				},
+							TotalCount: nil,
+						}, &http.Response{}, nil)
+					TeamsAPI.EXPECT().RemoveProjectTeam(nil, "projectID", "teamID_2").
+						Return(admin.RemoveProjectTeamApiRequest{ApiService: TeamsAPI})
+					TeamsAPI.EXPECT().RemoveProjectTeamExecute(mock.Anything).
+						Return(nil, nil)
+					TeamsAPI.EXPECT().RemoveProjectTeam(nil, "projectID", "teamID_3").
+						Return(admin.RemoveProjectTeamApiRequest{ApiService: TeamsAPI})
+					TeamsAPI.EXPECT().RemoveProjectTeamExecute(mock.Anything).
+						Return(nil, nil)
+					TeamsAPI.EXPECT().AddAllTeamsToProject(nil, "projectID", &[]admin.TeamRole{{Links: nil, RoleNames: &[]string{"GROUP_READ_ONLY"}, TeamId: &team2.Status.ID}}).
+						Return(admin.AddAllTeamsToProjectApiRequest{ApiService: TeamsAPI})
+					TeamsAPI.EXPECT().AddAllTeamsToProjectExecute(mock.Anything).Return(&admin.PaginatedTeamRole{}, &http.Response{}, nil)
+					return TeamsAPI
+				}(),
 			}
 
 			logger := zaptest.NewLogger(t).Sugar()
 			ctx := &workflow.Context{
-				Log:    logger,
-				Client: atlasClient,
+				Log:       logger,
+				SdkClient: atlasClient,
 			}
 			r := &AtlasProjectReconciler{
 				Client:        k8sClient,

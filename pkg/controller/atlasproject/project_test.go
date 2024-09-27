@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -116,13 +117,6 @@ func TestHandleProject(t *testing.T) {
 		"should delete project": {
 			atlasClientMocker: func() *mongodbatlas.Client {
 				projectsMock := &atlasmocks.ProjectsClientMock{
-					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-						return &mongodbatlas.TeamsAssigned{
-							Links:      nil,
-							Results:    []*mongodbatlas.Result{},
-							TotalCount: 0,
-						}, nil, nil
-					},
 					DeleteFunc: func(projectID string) (*mongodbatlas.Response, error) {
 						return nil, nil
 					},
@@ -147,10 +141,16 @@ func TestHandleProject(t *testing.T) {
 				mockPeeringEndpointAPI.EXPECT().
 					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+					Return(&admin.PaginatedTeamRole{}, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
 					NetworkPeeringApi:          mockPeeringEndpointAPI,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -288,11 +288,7 @@ func TestHandleProject(t *testing.T) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
 					},
 				}
-				projectAPI := &atlasmocks.ProjectsClientMock{
-					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-						return &mongodbatlas.TeamsAssigned{}, nil, nil
-					},
-				}
+				projectAPI := &atlasmocks.ProjectsClientMock{}
 
 				return &mongodbatlas.Client{
 					Integrations:      integrations,
@@ -340,6 +336,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -349,6 +350,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -390,16 +392,10 @@ func TestHandleProject(t *testing.T) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
 					},
 				}
-				projectAPI := &atlasmocks.ProjectsClientMock{
-					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-						return &mongodbatlas.TeamsAssigned{}, nil, nil
-					},
-				}
 
 				return &mongodbatlas.Client{
 					Integrations:      integrations,
 					EncryptionsAtRest: encryptionAtRest,
-					Projects:          projectAPI,
 				}
 			},
 			atlasSDKMocker: func() *admin.APIClient {
@@ -442,6 +438,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -451,6 +452,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -494,16 +496,10 @@ func TestHandleProject(t *testing.T) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
 					},
 				}
-				projectAPI := &atlasmocks.ProjectsClientMock{
-					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-						return &mongodbatlas.TeamsAssigned{}, nil, nil
-					},
-				}
 
 				return &mongodbatlas.Client{
 					Integrations:      integrations,
 					EncryptionsAtRest: encryptionAtRest,
-					Projects:          projectAPI,
 				}
 			},
 			atlasSDKMocker: func() *admin.APIClient {
@@ -546,6 +542,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -555,6 +556,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -938,41 +940,13 @@ func TestDelete(t *testing.T) {
 		"should update team status when project is deleted": {
 			atlasClientMocker: func() *mongodbatlas.Client {
 				projectsMock := &atlasmocks.ProjectsClientMock{
-					GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-						return &mongodbatlas.TeamsAssigned{
-							Links: nil,
-							Results: []*mongodbatlas.Result{
-								{
-									Links:     nil,
-									RoleNames: nil,
-									TeamID:    teamID,
-								},
-							},
-							TotalCount: 0,
-						}, nil, nil
-					},
 					DeleteFunc: func(projectID string) (*mongodbatlas.Response, error) {
-						return nil, nil
-					},
-				}
-				teamsMock := &atlasmocks.TeamsClientMock{
-					ListFunc: func(orgID string) ([]mongodbatlas.Team, *mongodbatlas.Response, error) {
-						return []mongodbatlas.Team{
-							{
-								ID:        teamID,
-								Name:      teamName,
-								Usernames: nil,
-							},
-						}, nil, nil
-					},
-					RemoveTeamFromProjectFunc: func(projectID string, teamID string) (*mongodbatlas.Response, error) {
 						return nil, nil
 					},
 				}
 
 				return &mongodbatlas.Client{
 					Projects: projectsMock,
-					Teams:    teamsMock,
 				}
 			},
 			atlasSDKMocker: func() *admin.APIClient {
@@ -990,10 +964,15 @@ func TestDelete(t *testing.T) {
 				mockPeeringEndpointAPI.EXPECT().
 					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
-
+				mockTeamAPI := mockadmin.NewTeamsApi(t)
+				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
+					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+					Return(nil, &http.Response{}, nil)
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
 					NetworkPeeringApi:          mockPeeringEndpointAPI,
+					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
