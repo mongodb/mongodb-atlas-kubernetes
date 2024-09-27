@@ -7,7 +7,7 @@ linters:
     - dupl
     - errcheck
     - errorlint
-    - exportloopref
+    - copyloopvar
     #- gocritic
     - gocyclo
     - goimports
