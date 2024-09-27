@@ -36,7 +36,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		}
 
 		team := &akov2.AtlasTeam{}
-		teamReconciler := r.teamReconcile(team, project.ConnectionSecretObjectKey(), project.ID())
+		teamReconciler := r.teamReconcile(team, project.ConnectionSecretObjectKey())
 		_, err := teamReconciler(
 			workflowCtx.Context,
 			controllerruntime.Request{NamespacedName: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},

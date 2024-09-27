@@ -26,7 +26,6 @@ import (
 func (r *AtlasProjectReconciler) teamReconcile(
 	team *akov2.AtlasTeam,
 	connectionSecretKey *client.ObjectKey,
-	projectID string,
 ) reconcile.Func {
 	return func(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 		log := r.Log.With("atlasteam", req.NamespacedName)
