@@ -21,17 +21,6 @@ type LocalCredentialIndexer struct {
 	logger *zap.SugaredLogger
 }
 
-// Reconciliable is implemented by CRD objects used by indexes to trigger reconciliations
-type Reconciliable interface {
-	ReconciliableRequests() []reconcile.Request
-}
-
-// ReconciliableList is a Reconciliable that is also a CRD list
-type ReconciliableList interface {
-	client.ObjectList
-	Reconciliable
-}
-
 func NewLocalCredentialsIndexer(name string, obj client.Object, logger *zap.Logger) *LocalCredentialIndexer {
 	return &LocalCredentialIndexer{
 		obj:    obj,
