@@ -84,6 +84,7 @@ ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
+GO_LICENSES_VERSION = 1.6.0
 KUSTOMIZE = kustomize
 DISALLOWED_LICENSES = restricted,reciprocal
 
@@ -126,9 +127,9 @@ all: manager ## Build all binaries
 build-licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
 	@echo "========================================"
-	GOOS=linux GOARCH=amd64 go mod download
-	# https://github.com/google/go-licenses/issues/244
-	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
+	export GOOS=linux
+	export GOARCH=amd64
+	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
 .PHONY: recompute-licenses
@@ -145,8 +146,9 @@ licenses-up-to-date: ## Check if the licenses.csv is up to date
 check-licenses: licenses-up-to-date ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
-	# https://github.com/google/go-licenses/issues/244
-	GOTOOLCHAIN=local GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests \
+	export GOOS=linux
+	export GOARCH=amd64
+	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
 	@echo "Licenses check: PASS"

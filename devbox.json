@@ -16,7 +16,6 @@
     "kubernetes-helm@latest",
     "govulncheck@latest",
     "gotools@latest",
-    "go-licenses@latest",
     "ginkgo@latest",
     "operator-sdk@1.36.1",
     "shellcheck@latest",
