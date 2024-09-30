@@ -52,6 +52,8 @@ const (
 
 // AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
 type AtlasDatabaseUserSpec struct {
+	api.LocalCredentialHolder `json:",inline"`
+
 	// Project is a reference to AtlasProject resource the user belongs to
 	Project common.ResourceRefNamespaced `json:"projectRef"`
 
@@ -294,6 +296,10 @@ func (p *AtlasDatabaseUser) ClearScopes() *AtlasDatabaseUser {
 func (p *AtlasDatabaseUser) WithDeleteAfterDate(date string) *AtlasDatabaseUser {
 	p.Spec.DeleteAfterDate = date
 	return p
+}
+
+func (p AtlasDatabaseUser) Credentials() *api.LocalObjectReference {
+	return p.Spec.Credentials()
 }
 
 func DefaultDBUser(namespace, username, projectName string) *AtlasDatabaseUser {
