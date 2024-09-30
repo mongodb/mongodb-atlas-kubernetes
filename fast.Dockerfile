@@ -1,5 +1,5 @@
 # TODO: Eventually replace main Dockerfile
-FROM golang:1.22 as certs-source
+FROM golang:1.23 as certs-source
 ARG GOTOOLCHAIN=auto
 
 # Using rolling tag to stay on latest UBI 9

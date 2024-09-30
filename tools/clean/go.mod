@@ -1,8 +1,6 @@
 module tools/clean
 
-go 1.22.1
-
-toolchain go1.22.5
+go 1.23.1
 
 require (
 	cloud.google.com/go/compute v1.28.1
