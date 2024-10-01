@@ -3,7 +3,7 @@
     "yq-go@latest",
     "kubebuilder@4.1.1",
     "jq@latest",
-    "go@1.22.5",
+    "go@1.23",
     "gotests@latest",
     "act@latest",
     "kubectl@latest",
@@ -16,11 +16,10 @@
     "kubernetes-helm@latest",
     "govulncheck@latest",
     "gotools@latest",
-    "go-licenses@latest",
     "ginkgo@latest",
     "operator-sdk@1.36.1",
     "shellcheck@latest",
-    "golangci-lint@1.59.1",
+    "golangci-lint@1.60",
     "kubernetes-controller-tools@0.16.1"
   ]
 }

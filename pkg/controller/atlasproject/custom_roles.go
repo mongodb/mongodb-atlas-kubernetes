@@ -200,7 +200,7 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []customrol
 		if ok {
 			if stat.Status == status.CustomRoleStatusFailed {
 				statuses = append(statuses, stat)
-				err = errors.Join(err, fmt.Errorf(stat.Error))
+				err = errors.Join(err, fmt.Errorf("%s", stat.Error))
 			}
 
 			continue
@@ -210,7 +210,7 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []customrol
 			statuses = append(statuses, stat)
 
 			if stat.Status == status.CustomRoleStatusFailed {
-				err = errors.Join(err, fmt.Errorf(stat.Error))
+				err = errors.Join(err, fmt.Errorf("%s", stat.Error))
 			}
 
 			continue
@@ -220,7 +220,7 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []customrol
 			statuses = append(statuses, stat)
 
 			if stat.Status == status.CustomRoleStatusFailed {
-				err = errors.Join(err, fmt.Errorf(stat.Error))
+				err = errors.Join(err, fmt.Errorf("%s", stat.Error))
 			}
 
 			continue
