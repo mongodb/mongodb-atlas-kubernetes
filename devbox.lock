@@ -146,8 +146,8 @@
       }
     },
     "gettext@latest": {
-      "last_modified": "2024-09-10T15:01:03Z",
-      "resolved": "github:NixOS/nixpkgs/5ed627539ac84809c78b2dd6d26a5cebeb5ae269#gettext",
+      "last_modified": "2024-09-25T20:32:29Z",
+      "resolved": "github:NixOS/nixpkgs/fe866c653c24adf1520628236d4e70bbb2fdd949#gettext",
       "source": "devbox-search",
       "version": "0.21.1",
       "systems": {
@@ -786,8 +786,8 @@
       }
     },
     "kubectl@latest": {
-      "last_modified": "2024-09-10T15:01:03Z",
-      "resolved": "github:NixOS/nixpkgs/5ed627539ac84809c78b2dd6d26a5cebeb5ae269#kubectl",
+      "last_modified": "2024-09-20T05:11:28Z",
+      "resolved": "github:NixOS/nixpkgs/79454ee9aacc9714653a4e7eb2a52b717728caff#kubectl",
       "source": "devbox-search",
       "version": "1.31.0",
       "systems": {
