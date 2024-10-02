@@ -9,7 +9,6 @@ import (
 )
 
 func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Context, project *akov2.AtlasProject, dataFederation *akov2.AtlasDataFederation, federationService datafederation.DataFederationService) workflow.Result {
-
 	projectID := project.ID()
 	operatorSpec := &dataFederation.Spec
 

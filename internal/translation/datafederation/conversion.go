@@ -18,7 +18,7 @@ type DataFederation struct {
 	Hostnames []string
 }
 
-// EqualsSpecs returns true if the spec of the data federation instance equals to the given one.
+// SpecEqualsTo returns true if the spec of the data federation instance semantically equals to the given one.
 // Note: it assumes the spec is already normalized.
 func (df *DataFederation) SpecEqualsTo(target *DataFederation) bool {
 	dfCopy, toCopy := df.DeepCopy(), target.DeepCopy()
@@ -66,9 +66,9 @@ func NewDataFederation(spec *akov2.DataFederationSpec, projectID string, hostnam
 	}, nil
 }
 
-func toAtlas(df *DataFederation) (*admin.DataLakeTenant, error) {
+func toAtlas(df *DataFederation) *admin.DataLakeTenant {
 	if df == nil || df.DataFederationSpec == nil {
-		return nil, nil
+		return nil
 	}
 
 	return &admin.DataLakeTenant{
@@ -77,7 +77,7 @@ func toAtlas(df *DataFederation) (*admin.DataLakeTenant, error) {
 		DataProcessRegion:   dataProcessRegionToAtlas(df.DataProcessRegion),
 		Name:                pointer.MakePtrOrNil(df.Name),
 		Storage:             storageToAtlas(df.Storage),
-	}, nil
+	}
 }
 
 func fromAtlas(federation *admin.DataLakeTenant) (*DataFederation, error) {
@@ -127,9 +127,7 @@ func storageFromAtlas(storage *admin.DataLakeStorage) *akov2.Storage {
 					StoreName:           atlasDataSource.GetStoreName(),
 					TrimLevel:           atlasDataSource.GetTrimLevel(),
 				}
-				for _, atlasUrl := range atlasDataSource.GetUrls() {
-					dataSource.Urls = append(dataSource.Urls, atlasUrl)
-				}
+				dataSource.Urls = append(dataSource.Urls, atlasDataSource.GetUrls()...)
 				collection.DataSources = append(collection.DataSources, dataSource)
 			}
 			db.Collections = append(db.Collections, collection)
@@ -160,12 +158,8 @@ func storageFromAtlas(storage *admin.DataLakeStorage) *akov2.Storage {
 			ReadConcern:    readConcernFromAtlas(atlasStore.ReadConcern),
 			ReadPreference: readPreferenceFromAtlas(atlasStore.ReadPreference),
 		}
-		for _, atlasUrl := range atlasStore.GetUrls() {
-			store.Urls = append(store.Urls, atlasUrl)
-		}
-		for _, atlasAdditionalStorageClasse := range atlasStore.GetAdditionalStorageClasses() {
-			store.AdditionalStorageClasses = append(store.AdditionalStorageClasses, atlasAdditionalStorageClasse)
-		}
+		store.Urls = append(store.Urls, atlasStore.GetUrls()...)
+		store.AdditionalStorageClasses = append(store.AdditionalStorageClasses, atlasStore.GetAdditionalStorageClasses()...)
 		result.Stores = append(result.Stores, store)
 	}
 	return result

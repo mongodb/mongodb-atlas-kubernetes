@@ -14,7 +14,7 @@ import (
 
 func NonEmptyString(s *string, c fuzz.Continue) {
 	for {
-		fuzz.UnicodeRange{'a', 'z'}.CustomStringFuzzFunc()(s, c)
+		fuzz.UnicodeRange{First: 'a', Last: 'z'}.CustomStringFuzzFunc()(s, c)
 		if *s != "" {
 			return
 		}
@@ -61,8 +61,7 @@ func TestRoundtrip_DataFederation(t *testing.T) {
 
 		fromAtlasResult, err := fromAtlas(&atlas)
 		require.NoError(t, err)
-		toAtlasResult, err := toAtlas(fromAtlasResult)
-		require.NoError(t, err)
+		toAtlasResult := toAtlas(fromAtlasResult)
 
 		require.NoError(t, akocmp.Normalize(&atlas))
 		require.NoError(t, akocmp.Normalize(toAtlasResult))

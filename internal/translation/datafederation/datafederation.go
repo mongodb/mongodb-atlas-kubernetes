@@ -51,11 +51,8 @@ func (dfs *AtlasDataFederationService) Get(ctx context.Context, projectID, name 
 }
 
 func (dfs *AtlasDataFederationService) Create(ctx context.Context, df *DataFederation) error {
-	atlasDataFederation, err := toAtlas(df)
-	if err != nil {
-		return fmt.Errorf("failed to convert DataFederation to Atlas: %w", err)
-	}
-	_, _, err = dfs.api.
+	atlasDataFederation := toAtlas(df)
+	_, _, err := dfs.api.
 		CreateFederatedDatabase(ctx, df.ProjectID, atlasDataFederation).
 		SkipRoleValidation(df.SkipRoleValidation).
 		Execute()
@@ -66,11 +63,8 @@ func (dfs *AtlasDataFederationService) Create(ctx context.Context, df *DataFeder
 }
 
 func (dfs *AtlasDataFederationService) Update(ctx context.Context, df *DataFederation) error {
-	atlasDataFederation, err := toAtlas(df)
-	if err != nil {
-		return fmt.Errorf("failed to convert DataFederation to Atlas: %w", err)
-	}
-	_, _, err = dfs.api.
+	atlasDataFederation := toAtlas(df)
+	_, _, err := dfs.api.
 		UpdateFederatedDatabase(ctx, df.ProjectID, df.Name, atlasDataFederation).
 		SkipRoleValidation(df.SkipRoleValidation).
 		Execute()
