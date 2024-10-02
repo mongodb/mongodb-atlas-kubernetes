@@ -25,6 +25,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 func TestHandleServerlessInstance(t *testing.T) {
@@ -766,21 +767,25 @@ func TestHandleServerlessInstance(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
+			logger := zaptest.NewLogger(t)
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
+			projectsRefIndexer := indexer.NewAtlasDatabaseUserByProjectsRefIndexer(logger)
+			externalProjectsRefIndexer := indexer.NewAtlasDatabaseUserByExternalProjectsRefIndexer(logger)
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.atlasDeployment).
+				WithIndex(projectsRefIndexer.Object(), projectsRefIndexer.Name(), projectsRefIndexer.Keys).
+				WithIndex(externalProjectsRefIndexer.Object(), externalProjectsRefIndexer.Name(), externalProjectsRefIndexer.Keys).
 				Build()
-			logger := zaptest.NewLogger(t).Sugar()
 			reconciler := &AtlasDeploymentReconciler{
 				Client:            k8sClient,
-				Log:               logger,
+				Log:               logger.Sugar(),
 				deploymentService: tt.deploymentService(),
 			}
 			ctx := &workflow.Context{
 				Context:   context.Background(),
-				Log:       logger,
+				Log:       logger.Sugar(),
 				SdkClient: tt.sdkMock(),
 			}
 

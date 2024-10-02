@@ -147,8 +147,8 @@ func (r *AtlasDatabaseUserReconciler) terminate(
 }
 
 // unmanage remove finalizer and release resource
-func (r *AtlasDatabaseUserReconciler) unmanage(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *akov2.AtlasProject) ctrl.Result {
-	err := connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, atlasProject.ID(), atlasDatabaseUser.Spec.Username, *atlasDatabaseUser, r.Log)
+func (r *AtlasDatabaseUserReconciler) unmanage(ctx *workflow.Context, projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
+	err := connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, projectID, atlasDatabaseUser.Spec.Username, *atlasDatabaseUser, r.Log)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
 	}

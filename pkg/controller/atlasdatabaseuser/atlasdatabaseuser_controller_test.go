@@ -27,10 +27,9 @@ import (
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
@@ -47,7 +46,7 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: common.ResourceRefNamespaced{
+					Project: &common.ResourceRefNamespaced{
 						Name:      "my-project",
 						Namespace: "default",
 					},
@@ -72,7 +71,7 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: common.ResourceRefNamespaced{
+					Project: &common.ResourceRefNamespaced{
 						Name:      "my-project",
 						Namespace: "default",
 					},
@@ -95,7 +94,7 @@ func TestReconcile(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: common.ResourceRefNamespaced{
+					Project: &common.ResourceRefNamespaced{
 						Name:      "my-project",
 						Namespace: "default",
 					},
@@ -115,7 +114,7 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: common.ResourceRefNamespaced{
+					Project: &common.ResourceRefNamespaced{
 						Name:      "my-project",
 						Namespace: "default",
 					},

@@ -149,7 +149,7 @@ func TestApplyLastConfigApplied(t *testing.T) {
 
 	annot := resource.GetAnnotations()
 	assert.NotEmpty(t, annot)
-	expectedConfig := `{"projectRef":{"name":"","namespace":""},"roles":null,"username":"test-user"}`
+	expectedConfig := `{"roles":null,"username":"test-user"}`
 	assert.Equal(t, expectedConfig, annot[customresource.AnnotationLastAppliedConfiguration])
 }
 

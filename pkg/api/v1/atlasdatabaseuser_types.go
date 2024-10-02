@@ -51,11 +51,15 @@ const (
 )
 
 // AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
+// +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
+// +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasDatabaseUserSpec struct {
 	api.LocalCredentialHolder `json:",inline"`
 
 	// Project is a reference to AtlasProject resource the user belongs to
-	Project common.ResourceRefNamespaced `json:"projectRef"`
+	Project *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
+	// ExternalProjectRef holds the Atlas project ID the user belongs to
+	ExternalProjectRef *ExternalProjectReference `json:"externalProjectRef,omitempty"`
 
 	// DatabaseName is a Database against which Atlas authenticates the user. Default value is 'admin'.
 	// +kubebuilder:default=admin
@@ -112,8 +116,6 @@ type AtlasDatabaseUserSpec struct {
 	// +optional
 	X509Type string `json:"x509Type,omitempty"`
 }
-
-var _ api.AtlasCustomResource = &AtlasDatabaseUser{}
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
@@ -255,7 +257,7 @@ func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUs
 		},
 		Spec: AtlasDatabaseUserSpec{
 			Username:       dbUserName,
-			Project:        common.ResourceRefNamespaced{Name: projectName},
+			Project:        &common.ResourceRefNamespaced{Name: projectName},
 			PasswordSecret: &common.ResourceRef{},
 			Roles:          []RoleSpec{},
 			Scopes:         []ScopeSpec{},

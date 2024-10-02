@@ -13,14 +13,15 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 
-func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, ds deployment.AtlasDeploymentsService, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
-	conns, err := ds.ListDeploymentConnections(ctx.Context, project.ID())
+func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, ds deployment.AtlasDeploymentsService, recorder record.EventRecorder, project *project.Project, dbUser akov2.AtlasDatabaseUser) workflow.Result {
+	conns, err := ds.ListDeploymentConnections(ctx.Context, project.ID)
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
@@ -33,7 +34,7 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 	return workflow.OK()
 }
 
-func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser, conns []deployment.Connection) workflow.Result {
+func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project *project.Project, dbUser akov2.AtlasDatabaseUser, conns []deployment.Connection) workflow.Result {
 	requeue := false
 	secrets := make([]string, 0)
 
@@ -62,7 +63,7 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 		FillPrivateConns(di, &data)
 
 		var secretName string
-		if secretName, err = Ensure(ctx.Context, k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), di.Name, data); err != nil {
+		if secretName, err = Ensure(ctx.Context, k8sClient, dbUser.Namespace, project.Name, project.ID, di.Name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		secrets = append(secrets, secretName)
@@ -73,7 +74,7 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 		recorder.Eventf(&dbUser, "Normal", ConnectionSecretsEnsuredEvent, "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
 	}
 
-	if err := cleanupStaleSecrets(ctx, k8sClient, project.ID(), dbUser); err != nil {
+	if err := cleanupStaleSecrets(ctx, k8sClient, project.ID, dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserStaleConnectionSecrets, err.Error())
 	}
 
