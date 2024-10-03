@@ -8,6 +8,7 @@ on:
 jobs:
   release-openshift:
     name: "Create Pull request for openshift release"
+    environment: openshift-test
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ github.token }}

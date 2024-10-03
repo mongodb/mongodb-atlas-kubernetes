@@ -11,7 +11,6 @@ on:
 
 jobs:
   compute:
-    environment: test
     name: "Compute test matrix"
     runs-on: ubuntu-latest
     outputs:
@@ -29,6 +28,7 @@ jobs:
           cat "${GITHUB_OUTPUT}"
   prepare-e2e:
     name: Prepare E2E configuration and image
+    environment: release
     runs-on: ubuntu-latest
     env:
       REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
@@ -135,6 +135,7 @@ jobs:
           forked: ${{ inputs.forked }}
   e2e:
     name: E2E tests
+    environment: test
     needs: [compute, prepare-e2e, prepare-e2e-bundle]
     runs-on: ubuntu-latest
     env:
@@ -253,16 +254,14 @@ jobs:
           K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
           K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
           TEST_NAME: "${{ matrix.test }}"
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_NEW_TEST }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET_NEW_TEST }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED_NEW_TEST }}
+          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
         run: |

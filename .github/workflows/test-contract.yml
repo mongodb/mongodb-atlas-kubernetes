@@ -7,6 +7,7 @@ on:
 jobs:
   contract:
     name: Contract Tests
+    environment: test
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
