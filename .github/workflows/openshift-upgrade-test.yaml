@@ -29,7 +29,6 @@ concurrency:
 jobs:
   e2e-tests:
     name: Upgrade test on Openshift
-    environment: openshift-test
     runs-on: ubuntu-latest
     if: ${{ vars.SKIP_OPENSHIFT != 'true' }}
     steps:

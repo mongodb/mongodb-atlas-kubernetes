@@ -12,7 +12,6 @@ on:
 jobs:
   int-test:
     name: Integration tests
-    environment: test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
