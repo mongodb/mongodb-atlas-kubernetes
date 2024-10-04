@@ -264,14 +264,7 @@ jobs:
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
-        run: |
-          devbox run -- 'helm version;
-          go version;
-          cd test/e2e;
-          # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
-          [[ $TEST_NAME == "long-run" ]]  &&  filter="long-run && !broken" || filter="$TEST_NAME && !long-run && !broken" && \
-          echo "Running: AKO_E2E_TEST=1 ginkgo --label-filter=\"${filter}\" --timeout 120m --nodes=10 --race --cover --v" && \
-          AKO_E2E_TEST=1 ginkgo --output-interceptor-mode=none --label-filter="${filter}" --timeout 120m --nodes=10  --flake-attempts=1 --race --cover --v --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...'
+        run: devbox run -- ./scripts/launch-c2-e2e.sh
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
