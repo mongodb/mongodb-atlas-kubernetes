@@ -264,7 +264,7 @@ jobs:
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
-        run: devbox run -- ./scripts/launch-c2-e2e.sh
+        run: devbox run -- ./scripts/launch-ci-e2e.sh
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
