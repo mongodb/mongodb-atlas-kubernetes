@@ -1,8 +1,9 @@
 package teams
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
