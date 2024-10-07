@@ -46,7 +46,7 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 					Return(&admin.PaginatedTeamRole{}, &http.Response{}, nil)
 			},
 			expectedErr:   nil,
-			expectedTeams: nil,
+			expectedTeams: []Team{},
 		},
 		{
 			title: "Should return populated team when team is present on Atlas",
