@@ -1,6 +1,7 @@
 package teams
 
 import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -94,7 +95,7 @@ func TeamRoleToAtlas(atlasTeams []Team) []admin.TeamRole {
 
 	for _, team := range atlasTeams {
 		result := admin.TeamRole{
-			TeamId:    &team.TeamID,
+			TeamId:    pointer.MakePtrOrNil(team.TeamID),
 			RoleNames: &team.Roles,
 		}
 		teams = append(teams, result)
@@ -111,7 +112,7 @@ func AssignedTeamFromAtlas(assignedTeam *admin.TeamResponse) *AssignedTeam {
 
 func AssignedTeamToAtlas(assignedTeam *AssignedTeam) *admin.Team {
 	return &admin.Team{
-		Id:        &assignedTeam.TeamID,
+		Id:        pointer.MakePtrOrNil(assignedTeam.TeamID),
 		Name:      assignedTeam.TeamName,
 		Usernames: &assignedTeam.Usernames,
 	}
@@ -120,7 +121,10 @@ func AssignedTeamToAtlas(assignedTeam *AssignedTeam) *admin.Team {
 func UsersFromAtlas(users *admin.PaginatedApiAppUser) []TeamUser {
 	teamUsers := make([]TeamUser, 0)
 	for _, user := range users.GetResults() {
-		teamUsers = append(teamUsers, TeamUser{Username: user.Username, UserID: user.GetId()})
+		teamUsers = append(teamUsers, TeamUser{
+			Username: user.Username,
+			UserID:   user.GetId(),
+		})
 	}
 	return teamUsers
 }
