@@ -1037,6 +1037,54 @@
         }
       }
     },
+    "setup-envtest@0.18.2": {
+      "last_modified": "2024-09-10T15:01:03Z",
+      "resolved": "github:NixOS/nixpkgs/5ed627539ac84809c78b2dd6d26a5cebeb5ae269#setup-envtest",
+      "source": "devbox-search",
+      "version": "0.18.2",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/kc22jbvb811zysi9245w4nimyipr2dyz-setup-envtest-0.18.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/kc22jbvb811zysi9245w4nimyipr2dyz-setup-envtest-0.18.2"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/0x6wm35hdh1h1lpcq2s5akj2y1s17apy-setup-envtest-0.18.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/0x6wm35hdh1h1lpcq2s5akj2y1s17apy-setup-envtest-0.18.2"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/mhv8afglwwy8ajb1c5s4xdc0c3p1s9m7-setup-envtest-0.18.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/mhv8afglwwy8ajb1c5s4xdc0c3p1s9m7-setup-envtest-0.18.2"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7rlfhmyxv2hnhqjrj1xmgy6ygkis8fwm-setup-envtest-0.18.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/7rlfhmyxv2hnhqjrj1xmgy6ygkis8fwm-setup-envtest-0.18.2"
+        }
+      }
+    },
     "shellcheck@latest": {
       "last_modified": "2024-09-10T15:01:03Z",
       "resolved": "github:NixOS/nixpkgs/5ed627539ac84809c78b2dd6d26a5cebeb5ae269#shellcheck",

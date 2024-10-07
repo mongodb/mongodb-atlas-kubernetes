@@ -20,6 +20,7 @@
     "operator-sdk@1.36.1",
     "shellcheck@latest",
     "golangci-lint@1.60",
-    "kubernetes-controller-tools@0.16.1"
+    "kubernetes-controller-tools@0.16.1",
+    "setup-envtest@0.18.2"
   ]
 }
