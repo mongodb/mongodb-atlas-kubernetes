@@ -2,13 +2,10 @@ package atlasproject
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -150,59 +149,48 @@ func TestSyncAssignedTeams(t *testing.T) {
 				WithStatusSubresource(project, team1, team2, team3).
 				Build()
 
-			atlasClient := &admin.APIClient{
-				TeamsApi: func() *mockadmin.TeamsApi {
-					TeamsAPI := mockadmin.NewTeamsApi(t)
-					TeamsAPI.EXPECT().ListProjectTeams(nil, "projectID").
-						Return(admin.ListProjectTeamsApiRequest{ApiService: TeamsAPI})
-					TeamsAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
-						Return(&admin.PaginatedTeamRole{
-							Links: nil,
-							Results: &[]admin.TeamRole{
-								{
-									Links:     nil,
-									RoleNames: &[]string{"GROUP_OWNER"},
-									TeamId:    &team1.Status.ID,
-								},
-								{
-									Links:     nil,
-									RoleNames: &[]string{"GROUP_OWNER"},
-									TeamId:    &team2.Status.ID,
-								},
-								{
-									Links:     nil,
-									RoleNames: &[]string{"GROUP_READ_ONLY"},
-									TeamId:    &team3.Status.ID,
-								},
-							},
-							TotalCount: nil,
-						}, &http.Response{}, nil)
-					TeamsAPI.EXPECT().RemoveProjectTeam(nil, "projectID", "teamID_2").
-						Return(admin.RemoveProjectTeamApiRequest{ApiService: TeamsAPI})
-					TeamsAPI.EXPECT().RemoveProjectTeamExecute(mock.Anything).
-						Return(nil, nil)
-					TeamsAPI.EXPECT().RemoveProjectTeam(nil, "projectID", "teamID_3").
-						Return(admin.RemoveProjectTeamApiRequest{ApiService: TeamsAPI})
-					TeamsAPI.EXPECT().RemoveProjectTeamExecute(mock.Anything).
-						Return(nil, nil)
-					TeamsAPI.EXPECT().AddAllTeamsToProject(nil, "projectID", &[]admin.TeamRole{{Links: nil, RoleNames: &[]string{"GROUP_READ_ONLY"}, TeamId: &team2.Status.ID}}).
-						Return(admin.AddAllTeamsToProjectApiRequest{ApiService: TeamsAPI})
-					TeamsAPI.EXPECT().AddAllTeamsToProjectExecute(mock.Anything).Return(&admin.PaginatedTeamRole{}, &http.Response{}, nil)
-					return TeamsAPI
-				}(),
-			}
-
+			atlasClient := &admin.APIClient{}
 			logger := zaptest.NewLogger(t).Sugar()
 			ctx := &workflow.Context{
 				Log:       logger,
 				SdkClient: atlasClient,
 			}
+			teamService := func() teams.AtlasTeamsService {
+				service := translation.NewAtlasTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(nil, "projectID").Return([]teams.Team{
+					{
+						Roles:    []string{"GROUP_OWNER"},
+						TeamID:   team1.Status.ID,
+						TeamName: "teamName_1",
+					},
+					{
+						Roles:    []string{"GROUP_OWNER"},
+						TeamID:   team2.Status.ID,
+						TeamName: "teamName_2",
+					},
+					{
+						Roles:    []string{"GROUP_READ_ONLY"},
+						TeamID:   team3.Status.ID,
+						TeamName: "teamName_3",
+					},
+				}, nil)
+				service.EXPECT().Unassign(nil, "projectID", "teamID_2").Return(nil)
+				service.EXPECT().Unassign(nil, "projectID", "teamID_3").Return(nil)
+				service.EXPECT().Assign(nil,
+					&[]teams.Team{
+						{
+							Roles:  []string{"GROUP_READ_ONLY"},
+							TeamID: "teamID_2",
+						},
+					}, "projectID").Return(nil)
+				return service
+			}
 			r := &AtlasProjectReconciler{
 				Client:        k8sClient,
 				EventRecorder: record.NewFakeRecorder(10),
 				Log:           logger,
+				teamsService:  teamService(),
 			}
-
 			err := r.syncAssignedTeams(ctx, "projectID", project, tt.teamsToAssign)
 			assert.Equal(t, tt.expectedErr, err)
 		})

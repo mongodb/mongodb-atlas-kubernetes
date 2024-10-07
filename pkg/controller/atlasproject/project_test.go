@@ -3,7 +3,6 @@ package atlasproject
 import (
 	"context"
 	"errors"
-	"net/http"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,6 +28,7 @@ import (
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -45,6 +45,7 @@ func TestHandleProject(t *testing.T) {
 		atlasClientMocker    func() *mongodbatlas.Client
 		atlasSDKMocker       func() *admin.APIClient
 		projectServiceMocker func() project.ProjectService
+		teamServiceMocker    func() teams.AtlasTeamsService
 		interceptors         interceptor.Funcs
 		project              *akov2.AtlasProject
 		result               reconcile.Result
@@ -64,6 +65,9 @@ func TestHandleProject(t *testing.T) {
 					Return(nil, errors.New("failed to get project"))
 
 				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				return nil
 			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -96,6 +100,9 @@ func TestHandleProject(t *testing.T) {
 					Return(nil)
 
 				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				return nil
 			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -141,16 +148,10 @@ func TestHandleProject(t *testing.T) {
 				mockPeeringEndpointAPI.EXPECT().
 					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
-				mockTeamAPI := mockadmin.NewTeamsApi(t)
-				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
-					Return(&admin.PaginatedTeamRole{}, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
 					NetworkPeeringApi:          mockPeeringEndpointAPI,
-					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -160,6 +161,11 @@ func TestHandleProject(t *testing.T) {
 				service.EXPECT().DeleteProject(context.Background(), mock.AnythingOfType("*project.Project")).
 					Return(nil)
 
+				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				service := translation.NewAtlasTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -189,6 +195,9 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				return nil
+			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "my-project",
@@ -215,6 +224,9 @@ func TestHandleProject(t *testing.T) {
 					Return(nil, nil)
 
 				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				return nil
 			},
 			interceptors: interceptor.Funcs{
 				Patch: func(ctx context.Context, client client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
@@ -253,6 +265,9 @@ func TestHandleProject(t *testing.T) {
 					Return(&project.Project{ID: "projectID", Name: "my-project"}, nil)
 
 				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				return nil
 			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -336,11 +351,6 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				mockTeamAPI := mockadmin.NewTeamsApi(t)
-				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
-					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -350,7 +360,6 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
-					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -358,6 +367,11 @@ func TestHandleProject(t *testing.T) {
 				service.EXPECT().GetProjectByName(context.Background(), "my-project").
 					Return(&project.Project{ID: "projectID", Name: "my-project"}, nil)
 
+				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				service := translation.NewAtlasTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -438,11 +452,6 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				mockTeamAPI := mockadmin.NewTeamsApi(t)
-				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
-					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -452,7 +461,6 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
-					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -460,6 +468,11 @@ func TestHandleProject(t *testing.T) {
 				service.EXPECT().GetProjectByName(context.Background(), "my-project").
 					Return(&project.Project{ID: "projectID", Name: "my-project"}, nil)
 
+				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				service := translation.NewAtlasTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -542,11 +555,6 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				mockTeamAPI := mockadmin.NewTeamsApi(t)
-				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
-					Return(nil, &http.Response{}, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -556,7 +564,6 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
-					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -564,6 +571,11 @@ func TestHandleProject(t *testing.T) {
 				service.EXPECT().GetProjectByName(context.Background(), "my-project").
 					Return(&project.Project{ID: "projectID", Name: "my-project"}, nil)
 
+				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				service := translation.NewAtlasTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -616,6 +628,7 @@ func TestHandleProject(t *testing.T) {
 				Client:         k8sClient,
 				Log:            logger,
 				projectService: tt.projectServiceMocker(),
+				teamsService:   tt.teamServiceMocker(),
 				EventRecorder:  record.NewFakeRecorder(30),
 			}
 			ctx := &workflow.Context{
@@ -803,6 +816,7 @@ func TestDelete(t *testing.T) {
 		atlasClientMocker    func() *mongodbatlas.Client
 		atlasSDKMocker       func() *admin.APIClient
 		projectServiceMocker func() project.ProjectService
+		teamServiceMocker    func() teams.AtlasTeamsService
 		interceptors         interceptor.Funcs
 		objects              []client.Object
 		result               reconcile.Result
@@ -817,6 +831,9 @@ func TestDelete(t *testing.T) {
 				return nil
 			},
 			projectServiceMocker: func() project.ProjectService {
+				return nil
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
 				return nil
 			},
 			interceptors: interceptor.Funcs{List: func(ctx context.Context, client client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
@@ -850,6 +867,9 @@ func TestDelete(t *testing.T) {
 				return nil
 			},
 			projectServiceMocker: func() project.ProjectService {
+				return nil
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
 				return nil
 			},
 			objects: []client.Object{
@@ -893,6 +913,9 @@ func TestDelete(t *testing.T) {
 			projectServiceMocker: func() project.ProjectService {
 				return nil
 			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				return nil
+			},
 			deletionProtection: true,
 			objects: []client.Object{
 				&akov2.AtlasProject{
@@ -919,6 +942,9 @@ func TestDelete(t *testing.T) {
 				return nil
 			},
 			projectServiceMocker: func() project.ProjectService {
+				return nil
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
 				return nil
 			},
 			objects: []client.Object{
@@ -964,21 +990,20 @@ func TestDelete(t *testing.T) {
 				mockPeeringEndpointAPI.EXPECT().
 					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
-				mockTeamAPI := mockadmin.NewTeamsApi(t)
-				mockTeamAPI.EXPECT().ListProjectTeams(context.Background(), mock.Anything).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
-					Return(nil, &http.Response{}, nil)
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
 					NetworkPeeringApi:          mockPeeringEndpointAPI,
-					TeamsApi:                   mockTeamAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
 				service.EXPECT().DeleteProject(context.Background(), mock.AnythingOfType("*project.Project")).Return(nil)
 
+				return service
+			},
+			teamServiceMocker: func() teams.AtlasTeamsService {
+				service := translation.NewAtlasTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
 				return service
 			},
 			objects: []client.Object{
@@ -1057,6 +1082,12 @@ func TestDelete(t *testing.T) {
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
+			ctx := &workflow.Context{
+				Context:   context.Background(),
+				Client:    tt.atlasClientMocker(),
+				SdkClient: tt.atlasSDKMocker(),
+				Log:       logger,
+			}
 			reconciler := &AtlasProjectReconciler{
 				Client:                   k8sClient,
 				ObjectDeletionProtection: tt.deletionProtection,
@@ -1067,13 +1098,8 @@ func TestDelete(t *testing.T) {
 					},
 				},
 				projectService: tt.projectServiceMocker(),
+				teamsService:   tt.teamServiceMocker(),
 				EventRecorder:  record.NewFakeRecorder(1),
-			}
-			ctx := &workflow.Context{
-				Context:   context.Background(),
-				Client:    tt.atlasClientMocker(),
-				SdkClient: tt.atlasSDKMocker(),
-				Log:       logger,
 			}
 
 			atlasProject := tt.objects[0].(*akov2.AtlasProject)

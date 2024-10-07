@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
+
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -59,6 +61,7 @@ type AtlasProjectReconciler struct {
 	SubObjectDeletionProtection bool
 
 	projectService project.ProjectService
+	teamsService   teams.AtlasTeamsService
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -137,7 +140,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 	workflowCtx.SdkClient = atlasSdkClient
 	r.projectService = project.NewProjectAPIService(atlasSdkClient.ProjectsApi)
-
+	r.teamsService = teams.NewTeamsAPIService(atlasSdkClient.TeamsApi, atlasSdkClient.MongoDBCloudUsersApi)
 	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
