@@ -6,19 +6,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	fuzz "github.com/google/gofuzz"
-
-	akocmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 )
 
 func TestRoundtrip_DataFederationPE(t *testing.T) {
-	f := fuzz.New().NilChance(0.0).NumElements(1, 10)
-	f.Funcs(
-		NonEmptyString,
-		EnsureEmptySliceOf[string](f),
-	)
+	f := fuzz.New()
 
 	for i := 0; i < 100; i++ {
 		var atlas admin.PrivateNetworkEndpointIdEntry
@@ -26,13 +19,11 @@ func TestRoundtrip_DataFederationPE(t *testing.T) {
 
 		fromAtlasResult := endpointFromAtlas(atlas, "")
 		toAtlasResult := endpointToAtlas(fromAtlasResult)
+		roundtripAtlasResult := endpointFromAtlas(*toAtlasResult, "")
 
-		require.NoError(t, akocmp.Normalize(&atlas))
-		require.NoError(t, akocmp.Normalize(toAtlasResult))
-
-		equals := reflect.DeepEqual(&atlas, toAtlasResult)
+		equals := reflect.DeepEqual(fromAtlasResult, roundtripAtlasResult)
 		if !equals {
-			t.Log(cmp.Diff(&atlas, toAtlasResult))
+			t.Log(cmp.Diff(fromAtlasResult, roundtripAtlasResult))
 		}
 		require.True(t, equals)
 	}

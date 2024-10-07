@@ -1,44 +1,16 @@
 package datafederation
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-
-	akocmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 )
 
-func NonEmptyString(s *string, c fuzz.Continue) {
-	for {
-		fuzz.UnicodeRange{First: 'a', Last: 'z'}.CustomStringFuzzFunc()(s, c)
-		if *s != "" {
-			return
-		}
-	}
-}
-
-// EnsureEmptySliceOf ensures that slices in the form of *[]typ are initialized with empty slices.
-func EnsureEmptySliceOf[typ any](f *fuzz.Fuzzer) func(**[]typ, fuzz.Continue) {
-	return func(slice **[]typ, c fuzz.Continue) {
-		var empty []typ
-		*slice = &empty
-		f.FuzzNoCustom(*slice)
-	}
-}
-
 func TestRoundtrip_DataFederation(t *testing.T) {
-	f := fuzz.New().NilChance(0.0).NumElements(1, 10)
-	f.Funcs(
-		NonEmptyString,
-		EnsureEmptySliceOf[admin.DataLakeDatabaseCollection](f),
-		EnsureEmptySliceOf[admin.DataLakeDatabaseDataSourceSettings](f),
-		EnsureEmptySliceOf[admin.DataLakeDatabaseInstance](f),
-		EnsureEmptySliceOf[string](f),
-	)
+	f := fuzz.New()
 
 	for i := 0; i < 100; i++ {
 		var atlas admin.DataLakeTenant
@@ -62,13 +34,12 @@ func TestRoundtrip_DataFederation(t *testing.T) {
 		fromAtlasResult, err := fromAtlas(&atlas)
 		require.NoError(t, err)
 		toAtlasResult := toAtlas(fromAtlasResult)
+		roundtripAtlasResult, err := fromAtlas(toAtlasResult)
+		require.NoError(t, err)
 
-		require.NoError(t, akocmp.Normalize(&atlas))
-		require.NoError(t, akocmp.Normalize(toAtlasResult))
-
-		equals := reflect.DeepEqual(&atlas, toAtlasResult)
+		equals := fromAtlasResult.SpecEqualsTo(roundtripAtlasResult)
 		if !equals {
-			t.Log(cmp.Diff(&atlas, toAtlasResult))
+			t.Log(cmp.Diff(fromAtlasResult, roundtripAtlasResult))
 		}
 		require.True(t, equals)
 	}

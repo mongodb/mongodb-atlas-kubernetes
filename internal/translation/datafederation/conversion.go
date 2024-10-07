@@ -46,6 +46,11 @@ func pruneSpec(spec *akov2.DataFederationSpec) *akov2.DataFederationSpec {
 	// skip "SkipRoleValidation" field as it is a request parameter, not a returned body from/to Atlas.
 	spec.SkipRoleValidation = false
 
+	// normalize nested empty stores/database slices
+	if spec.Storage != nil && (len(spec.Storage.Stores) == 0 && len(spec.Storage.Databases) == 0) {
+		spec.Storage = nil
+	}
+
 	return spec
 }
 
