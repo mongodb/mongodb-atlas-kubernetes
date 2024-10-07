@@ -91,6 +91,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 		By("Running operator watching global namespace", func() {
 			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, config.DefaultOperatorNS)).To(Succeed())
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
+			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, localSecretName, config.DefaultOperatorNS)
 			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)).To(Succeed())
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, localSecretName, secondNamespace)
 
