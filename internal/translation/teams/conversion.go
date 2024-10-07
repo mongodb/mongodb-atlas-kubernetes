@@ -28,7 +28,7 @@ func NewTeam(projTeamSpec *akov2.Team, teamID string) *Team {
 		return nil
 	}
 
-	var roles []string
+	roles := make([]string, 0)
 	for _, role := range projTeamSpec.Roles {
 		roles = append(roles, string(role))
 	}
@@ -45,7 +45,7 @@ func NewAssignedTeam(teamSpec *akov2.TeamSpec, teamID string) *AssignedTeam {
 	if teamSpec == nil {
 		return nil
 	}
-	var usernames []string
+	usernames := make([]string, 0)
 	for _, username := range teamSpec.Usernames {
 		usernames = append(usernames, string(username))
 	}
@@ -71,7 +71,7 @@ func TeamFromAtlas(team *admin.TeamResponse) *Team {
 }
 
 func TeamToAtlas(team *akov2.Team, teamID string) *Team {
-	var roleNames []string
+	roleNames := make([]string, 0)
 	for _, role := range team.Roles {
 		roleNames = append(roleNames, string(role))
 	}
@@ -82,7 +82,7 @@ func TeamToAtlas(team *akov2.Team, teamID string) *Team {
 }
 
 func TeamRoleFromAtlas(atlasTeams []admin.TeamRole) []Team {
-	var teams []Team
+	teams := make([]Team, 0)
 	for _, team := range atlasTeams {
 		teams = append(teams, Team{Roles: team.GetRoleNames(), TeamID: team.GetTeamId()})
 	}
@@ -90,7 +90,7 @@ func TeamRoleFromAtlas(atlasTeams []admin.TeamRole) []Team {
 }
 
 func TeamRoleToAtlas(atlasTeams []Team) []admin.TeamRole {
-	var teams []admin.TeamRole
+	teams := make([]admin.TeamRole, 0)
 
 	for _, team := range atlasTeams {
 		result := admin.TeamRole{
@@ -118,7 +118,7 @@ func AssignedTeamToAtlas(assignedTeam *AssignedTeam) *admin.Team {
 }
 
 func UsersFromAtlas(users *admin.PaginatedApiAppUser) []TeamUser {
-	var teamUsers []TeamUser
+	teamUsers := make([]TeamUser, 0)
 	for _, user := range users.GetResults() {
 		teamUsers = append(teamUsers, TeamUser{Username: user.Username, UserID: user.GetId()})
 	}

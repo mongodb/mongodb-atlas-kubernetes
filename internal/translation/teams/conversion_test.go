@@ -25,7 +25,7 @@ func TestNewTeam(t *testing.T) {
 		{
 			title:        "Empty spec returns Empty user",
 			projTeamSpec: &akov2.Team{},
-			expectedTeam: &Team{},
+			expectedTeam: &Team{Roles: []string{}},
 		},
 		{
 			title: "Populated spec is properly created",
@@ -59,7 +59,7 @@ func TestNewAssignedTeam(t *testing.T) {
 		{
 			title:        "Empty spec returns Empty user",
 			teamSpec:     &akov2.TeamSpec{},
-			expectedTeam: &AssignedTeam{},
+			expectedTeam: &AssignedTeam{Usernames: []string{}},
 		},
 		{
 			title: "Populated spec is properly created",
