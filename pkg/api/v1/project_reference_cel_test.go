@@ -15,29 +15,7 @@ type projectReferenceTestCase map[string]struct {
 	expectedErrors []string
 }
 
-func assertProjectReference(t *testing.T, crdPath string, tests projectReferenceTestCase) {
-	t.Helper()
-
-	validator, err := cel.VersionValidatorFromFile(t, crdPath, "v1")
-	require.NoError(t, err)
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tt.object)
-			require.NoError(t, err)
-
-			errs := validator(unstructuredObject, nil)
-
-			require.Equal(t, len(tt.expectedErrors), len(errs))
-
-			for i, err := range errs {
-				assert.Equal(t, tt.expectedErrors[i], err.Error())
-			}
-		})
-	}
-}
-
-func assertExternalProjectReferenceConnectionSecret(t *testing.T, crdPath string, tests projectReferenceTestCase) {
+func assertCELValidation(t *testing.T, crdPath string, tests projectReferenceTestCase) {
 	t.Helper()
 
 	validator, err := cel.VersionValidatorFromFile(t, crdPath, "v1")
