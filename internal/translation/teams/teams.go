@@ -17,12 +17,12 @@ type AtlasTeamsService interface {
 	Assign(ctx context.Context, at *[]Team, projectID string) error
 	Unassign(ctx context.Context, projectID, teamID string) error
 	Create(ctx context.Context, at *AssignedTeam, orgID string) (*Team, error)
+	RenameTeam(ctx context.Context, at *Team, orgID, newName string) (*Team, error)
+	UpdateRoles(ctx context.Context, at *Team, projectID string, newRoles []akov2.TeamRole) error
 
 	GetTeamUsers(ctx context.Context, orgID, teamID string) ([]TeamUser, error)
-	UpdateRoles(ctx context.Context, at *Team, projectID string, newRoles []akov2.TeamRole) error
 	AddUsers(ctx context.Context, usersToAdd *[]admin.AddUserToTeam, orgID, teamID string) error
 	RemoveUser(ctx context.Context, orgID, teamID, userID string) error
-	RenameTeam(ctx context.Context, at *Team, orgID, newName string) (*Team, error)
 }
 
 type TeamsAPI struct {

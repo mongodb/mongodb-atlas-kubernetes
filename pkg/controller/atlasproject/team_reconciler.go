@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
-
 	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -15,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -157,7 +156,7 @@ func (r *AtlasProjectReconciler) ensureTeamState(workflowCtx *workflow.Context, 
 	if atlasTeam == nil {
 		desiredAtlasTeam := teams.NewAssignedTeam(&team.Spec, team.Status.ID)
 		if desiredAtlasTeam == nil {
-			return "", workflow.Terminate(workflow.TeamInvalidSpec, err.Error())
+			return "", workflow.Terminate(workflow.TeamInvalidSpec, "teamspec is invalid")
 		}
 
 		atlasTeam, err = r.createTeam(workflowCtx, desiredAtlasTeam)

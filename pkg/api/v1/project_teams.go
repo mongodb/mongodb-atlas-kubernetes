@@ -28,7 +28,7 @@ type Team struct {
 }
 
 func (in *Team) ToAtlas(teamID string) admin.TeamRole {
-	roleNames := make([]string, 0)
+	roleNames := make([]string, 0, len(in.Roles))
 	result := admin.TeamRole{
 		TeamId:    &teamID,
 		RoleNames: &roleNames,

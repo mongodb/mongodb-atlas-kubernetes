@@ -1,14 +1,11 @@
 package atlasproject
 
 import (
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -70,9 +67,6 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 
 func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projectID string, project *akov2.AtlasProject, teamsToAssign map[string]*akov2.Team) error {
 	ctx.Log.Debug("fetching assigned teams from atlas")
-	if r.teamsService == nil {
-		return fmt.Errorf("teamsService is nil")
-	}
 
 	atlasAssignedTeams, err := r.teamsService.ListProjectTeams(ctx.Context, projectID)
 	if err != nil {
@@ -87,7 +81,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
-	toDelete := make([]*teams.Team, 0)
+	toDelete := make([]*teams.Team, 0, len(atlasAssignedTeams))
 
 	for _, atlasAssignedTeam := range atlasAssignedTeams {
 		if atlasAssignedTeam.TeamID == "" {
