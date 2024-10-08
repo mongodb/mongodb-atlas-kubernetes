@@ -82,6 +82,21 @@ OPERATOR_NAMESPACE = mongodb-atlas-system
 ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
+# Envtest configuration params
+ENVTEST_ASSETS_DIR ?= $(shell pwd)/bin
+ENVTEST_K8S_VERSION ?= 1.30.0
+KUBEBUILDER_ASSETS ?= $(ENVTEST_ASSETS_DIR)/k8s/$(ENVTEST_K8S_VERSION)-$(TARGET_OS)-$(TARGET_ARCH)
+
+# Ginkgo configuration
+GINKGO_NODES ?= 12
+GINKGO_EDITOR_INTEGRATION ?= true
+GINKGO_OPTS = -vv --randomize-all --output-interceptor-mode=none --trace --timeout 90m --flake-attempts=1 --race --nodes=$(GINKGO_NODES) --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
+GINKGO_FILTER_LABEL ?=
+ifneq ($(GINKGO_FILTER_LABEL),)
+GINKGO_FILTER_LABEL_OPT := --label-filter="$(GINKGO_FILTER_LABEL)"
+endif
+GINKGO=ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT) $(shell pwd)/$@
+
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
 GO_LICENSES_VERSION = 1.6.0
@@ -157,16 +172,18 @@ check-licenses: licenses-up-to-date ## Check licenses are compliant with our res
 unit-test:
 	go test -race -cover $(GO_UNIT_TEST_FOLDERS)
 
-.PHONY: int-test
-int-test: ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
-int-test: ENVTEST_K8S_VERSION = 1.26.1
-# magical env that if specified makes the test output 0 on successful runs
-# https://github.com/onsi/ginkgo/blob/master/ginkgo/run_command.go#L130
-int-test: export GINKGO_EDITOR_INTEGRATION="true"
-int-test: generate manifests ## Run integration tests. Sample with labels: `make int-test label=AtlasProject` or `make int-test label='AtlasDeployment && !slow'`
+## Run integration tests. Sample with labels: `make test/int GINKGO_FILTER_LABEL=AtlasProject`
+test/int: envtest
+	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
+
+test/int/clusterwide: envtest
+	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
+
+envtest: envtest-assets
+	KUBEBUILDER_ASSETS=$(shell setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(ENVTEST_ASSETS_DIR) -p path)
+
+envtest-assets:
 	mkdir -p $(ENVTEST_ASSETS_DIR)
-	test -f $(ENVTEST_ASSETS_DIR)/setup-envtest.sh || curl -sSLo $(ENVTEST_ASSETS_DIR)/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh
-	export ENVTEST_K8S_VERSION=$(ENVTEST_K8S_VERSION) && source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ./scripts/int_local.sh $(label)
 
 .PHONY: e2e
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
