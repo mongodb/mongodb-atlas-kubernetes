@@ -34,7 +34,7 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 	tests := []struct {
 		title         string
 		mock          func(mockTeamAPI *mockadmin.TeamsApi)
-		expectedTeams []Team
+		expectedTeams []AssignedTeam
 		expectedErr   error
 	}{
 		{
@@ -46,7 +46,7 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 					Return(&admin.PaginatedTeamRole{}, &http.Response{}, nil)
 			},
 			expectedErr:   nil,
-			expectedTeams: []Team{},
+			expectedTeams: []AssignedTeam{},
 		},
 		{
 			title: "Should return populated team when team is present on Atlas",
@@ -68,7 +68,7 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 					}, &http.Response{}, nil)
 			},
 			expectedErr: nil,
-			expectedTeams: []Team{
+			expectedTeams: []AssignedTeam{
 				{
 					Roles:  []string{"role1", "role2"},
 					TeamID: testTeamID1,
@@ -112,7 +112,7 @@ func TestTeamsAPI_GetTeamByName(t *testing.T) {
 	tests := []struct {
 		title         string
 		mock          func(mockTeamAPI *mockadmin.TeamsApi)
-		expectedTeams *Team
+		expectedTeams *AssignedTeam
 		expectedErr   error
 	}{
 		{
@@ -124,7 +124,7 @@ func TestTeamsAPI_GetTeamByName(t *testing.T) {
 					Return(&admin.TeamResponse{Id: &testTeamID1, Name: &testTeamName}, &http.Response{}, nil)
 			},
 			expectedErr:   nil,
-			expectedTeams: &Team{TeamID: testTeamID1, TeamName: testTeamName},
+			expectedTeams: &AssignedTeam{TeamID: testTeamID1, TeamName: testTeamName},
 		},
 		{
 			title: "Should return error when request fails",
@@ -170,7 +170,7 @@ func TestTeamsAPI_GetTeamByID(t *testing.T) {
 	tests := []struct {
 		title         string
 		mock          func(mockTeamAPI *mockadmin.TeamsApi)
-		expectedTeams *Team
+		expectedTeams *AssignedTeam
 		expectedErr   error
 	}{
 		{
@@ -182,7 +182,7 @@ func TestTeamsAPI_GetTeamByID(t *testing.T) {
 					Return(&admin.TeamResponse{Id: &testTeamID1, Name: &testTeamName}, &http.Response{}, nil)
 			},
 			expectedErr:   nil,
-			expectedTeams: &Team{TeamID: testTeamID1, TeamName: testTeamName},
+			expectedTeams: &AssignedTeam{TeamID: testTeamID1, TeamName: testTeamName},
 		},
 		{
 			title: "Should return error when request fails",
@@ -255,7 +255,7 @@ func TestTeamsAPI_Assign(t *testing.T) {
 			ts := &TeamsAPI{
 				teamsAPI: mockTeamAPI,
 			}
-			err := ts.Assign(ctx, &[]Team{}, testProjectID)
+			err := ts.Assign(ctx, &[]AssignedTeam{}, testProjectID)
 			require.Equal(t, tt.expectedErr, err)
 		})
 	}
@@ -351,7 +351,7 @@ func TestTeamsAPI_Create(t *testing.T) {
 			ts := &TeamsAPI{
 				teamsAPI: mockTeamAPI,
 			}
-			team, err := ts.Create(ctx, &AssignedTeam{}, mock.Anything)
+			team, err := ts.Create(ctx, &Team{}, mock.Anything)
 			require.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedTeam, team)
 		})
@@ -470,7 +470,7 @@ func TestTeamsAPI_UpdateRoles(t *testing.T) {
 			ts := &TeamsAPI{
 				teamsAPI: mockTeamAPI,
 			}
-			err := ts.UpdateRoles(ctx, &Team{}, mock.Anything, tt.newRoles)
+			err := ts.UpdateRoles(ctx, &AssignedTeam{}, mock.Anything, tt.newRoles)
 			require.Equal(t, tt.expectedErr, err)
 		})
 	}
@@ -575,7 +575,7 @@ func TestTeamsAPI_Rename(t *testing.T) {
 	tests := []struct {
 		title        string
 		mock         func(mockTeamAPI *mockadmin.TeamsApi)
-		expectedTeam *Team
+		expectedTeam *AssignedTeam
 		expectedErr  error
 	}{
 		{
@@ -590,7 +590,7 @@ func TestTeamsAPI_Rename(t *testing.T) {
 					}, &http.Response{}, nil)
 			},
 			expectedErr: nil,
-			expectedTeam: &Team{
+			expectedTeam: &AssignedTeam{
 				TeamID:   testTeamID1,
 				TeamName: testTeamName,
 			},
@@ -615,7 +615,7 @@ func TestTeamsAPI_Rename(t *testing.T) {
 			ts := &TeamsAPI{
 				teamsAPI: mockTeamAPI,
 			}
-			team, err := ts.RenameTeam(ctx, &Team{}, mock.Anything, mock.Anything)
+			team, err := ts.RenameTeam(ctx, &AssignedTeam{}, mock.Anything, mock.Anything)
 			require.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedTeam, team)
 		})

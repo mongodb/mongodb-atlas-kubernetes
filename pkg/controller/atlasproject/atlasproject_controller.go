@@ -60,7 +60,7 @@ type AtlasProjectReconciler struct {
 	SubObjectDeletionProtection bool
 
 	projectService project.ProjectService
-	teamsService   teams.AtlasTeamsService
+	teamsService   teams.TeamsService
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles

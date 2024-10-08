@@ -9,15 +9,15 @@ import (
 )
 
 type Team struct {
-	Roles    []string
-	TeamName string
-	TeamID   string
+	Usernames []string
+	TeamID    string
+	TeamName  string
 }
 
 type AssignedTeam struct {
-	Usernames []string
-	TeamName  string
-	TeamID    string
+	Roles    []string
+	TeamID   string
+	TeamName string
 }
 
 type TeamUser struct {
@@ -25,7 +25,25 @@ type TeamUser struct {
 	UserID   string
 }
 
-func NewTeam(projTeamSpec *akov2.Team, teamID string) *Team {
+func NewTeam(teamSpec *akov2.TeamSpec, teamID string) *Team {
+	if teamSpec == nil {
+		return nil
+	}
+	usernames := make([]string, 0, len(teamSpec.Usernames))
+	for _, username := range teamSpec.Usernames {
+		usernames = append(usernames, string(username))
+	}
+
+	team := &Team{
+		TeamID:    teamID,
+		TeamName:  teamSpec.Name,
+		Usernames: usernames,
+	}
+
+	return team
+}
+
+func NewAssignedTeam(projTeamSpec *akov2.Team, teamID string) *AssignedTeam {
 	if projTeamSpec == nil {
 		return nil
 	}
@@ -35,7 +53,7 @@ func NewTeam(projTeamSpec *akov2.Team, teamID string) *Team {
 		roles = append(roles, string(role))
 	}
 
-	team := &Team{
+	team := &AssignedTeam{
 		Roles:  roles,
 		TeamID: teamID,
 	}
@@ -43,56 +61,53 @@ func NewTeam(projTeamSpec *akov2.Team, teamID string) *Team {
 	return team
 }
 
-func NewAssignedTeam(teamSpec *akov2.TeamSpec, teamID string) *AssignedTeam {
-	if teamSpec == nil {
-		return nil
+func TeamFromAtlas(assignedTeam *admin.TeamResponse) *Team {
+	return &Team{
+		TeamID:   assignedTeam.GetId(),
+		TeamName: assignedTeam.GetName(),
 	}
-	usernames := make([]string, 0, len(teamSpec.Usernames))
-	for _, username := range teamSpec.Usernames {
-		usernames = append(usernames, string(username))
-	}
-
-	team := &AssignedTeam{
-		TeamID:    teamID,
-		TeamName:  teamSpec.Name,
-		Usernames: usernames,
-	}
-
-	return team
 }
 
-func TeamFromAtlas(team *admin.TeamResponse) *Team {
+func TeamToAtlas(team *Team) *admin.Team {
+	return &admin.Team{
+		Id:        pointer.MakePtrOrNil(team.TeamID),
+		Name:      team.TeamName,
+		Usernames: &team.Usernames,
+	}
+}
+
+func AssignedTeamFromAtlas(team *admin.TeamResponse) *AssignedTeam {
 	if team == nil {
 		return nil
 	}
 
-	tm := &Team{
+	tm := &AssignedTeam{
 		TeamID:   team.GetId(),
 		TeamName: team.GetName(),
 	}
 	return tm
 }
 
-func TeamToAtlas(team *akov2.Team, teamID string) *Team {
+func AssignedTeamToAtlas(team *akov2.Team, teamID string) *AssignedTeam {
 	if team == nil {
 		return nil
 	}
 
-	return &Team{
+	return &AssignedTeam{
 		TeamID: teamID,
 		Roles:  RolesToAtlas(team.Roles),
 	}
 }
 
-func TeamRoleFromAtlas(atlasTeams []admin.TeamRole) []Team {
-	teams := make([]Team, 0, len(atlasTeams))
+func TeamRoleFromAtlas(atlasTeams []admin.TeamRole) []AssignedTeam {
+	teams := make([]AssignedTeam, 0, len(atlasTeams))
 	for _, team := range atlasTeams {
-		teams = append(teams, Team{Roles: team.GetRoleNames(), TeamID: team.GetTeamId()})
+		teams = append(teams, AssignedTeam{Roles: team.GetRoleNames(), TeamID: team.GetTeamId()})
 	}
 	return teams
 }
 
-func TeamRoleToAtlas(atlasTeams []Team) []admin.TeamRole {
+func TeamRoleToAtlas(atlasTeams []AssignedTeam) []admin.TeamRole {
 	if atlasTeams == nil {
 		return nil
 	}
@@ -106,21 +121,6 @@ func TeamRoleToAtlas(atlasTeams []Team) []admin.TeamRole {
 		teams = append(teams, result)
 	}
 	return teams
-}
-
-func AssignedTeamFromAtlas(assignedTeam *admin.TeamResponse) *AssignedTeam {
-	return &AssignedTeam{
-		TeamID:   assignedTeam.GetId(),
-		TeamName: assignedTeam.GetName(),
-	}
-}
-
-func AssignedTeamToAtlas(assignedTeam *AssignedTeam) *admin.Team {
-	return &admin.Team{
-		Id:        pointer.MakePtrOrNil(assignedTeam.TeamID),
-		Name:      assignedTeam.TeamName,
-		Usernames: &assignedTeam.Usernames,
-	}
 }
 
 func UsersFromAtlas(users *admin.PaginatedApiAppUser) []TeamUser {

@@ -15,7 +15,7 @@ const (
 func TestNewTeam(t *testing.T) {
 	for _, tc := range []struct {
 		title        string
-		projTeamSpec *akov2.Team
+		teamSpec     *akov2.TeamSpec
 		teamID       string
 		expectedTeam *Team
 	}{
@@ -24,42 +24,8 @@ func TestNewTeam(t *testing.T) {
 		},
 		{
 			title:        "Empty spec returns Empty user",
-			projTeamSpec: &akov2.Team{},
-			expectedTeam: &Team{Roles: []string{}},
-		},
-		{
-			title: "Populated spec is properly created",
-			projTeamSpec: &akov2.Team{
-				Roles: []akov2.TeamRole{"role1", "role2"},
-			},
-			teamID: testTeamID,
-			expectedTeam: &Team{
-				Roles:  []string{"role1", "role2"},
-				TeamID: testTeamID,
-			},
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			team := NewTeam(tc.projTeamSpec, tc.teamID)
-			assert.Equal(t, tc.expectedTeam, team)
-		})
-	}
-}
-
-func TestNewAssignedTeam(t *testing.T) {
-	for _, tc := range []struct {
-		title        string
-		teamSpec     *akov2.TeamSpec
-		teamID       string
-		expectedTeam *AssignedTeam
-	}{
-		{
-			title: "Nil spec returns nil user",
-		},
-		{
-			title:        "Empty spec returns Empty user",
 			teamSpec:     &akov2.TeamSpec{},
-			expectedTeam: &AssignedTeam{Usernames: []string{}},
+			expectedTeam: &Team{Usernames: []string{}},
 		},
 		{
 			title: "Populated spec is properly created",
@@ -68,7 +34,7 @@ func TestNewAssignedTeam(t *testing.T) {
 				Usernames: []akov2.TeamUser{"user1", "user2"},
 			},
 			teamID: testTeamID,
-			expectedTeam: &AssignedTeam{
+			expectedTeam: &Team{
 				TeamName:  testTeamName,
 				TeamID:    testTeamID,
 				Usernames: []string{"user1", "user2"},
@@ -76,7 +42,41 @@ func TestNewAssignedTeam(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			team := NewAssignedTeam(tc.teamSpec, tc.teamID)
+			team := NewTeam(tc.teamSpec, tc.teamID)
+			assert.Equal(t, tc.expectedTeam, team)
+		})
+	}
+}
+
+func TestNewAssignedTeam(t *testing.T) {
+	for _, tc := range []struct {
+		title        string
+		projTeamSpec *akov2.Team
+		teamID       string
+		expectedTeam *AssignedTeam
+	}{
+		{
+			title: "Nil spec returns nil user",
+		},
+		{
+			title:        "Empty spec returns Empty user",
+			projTeamSpec: &akov2.Team{},
+			expectedTeam: &AssignedTeam{Roles: []string{}},
+		},
+		{
+			title: "Populated spec is properly created",
+			projTeamSpec: &akov2.Team{
+				Roles: []akov2.TeamRole{"role1", "role2"},
+			},
+			teamID: testTeamID,
+			expectedTeam: &AssignedTeam{
+				Roles:  []string{"role1", "role2"},
+				TeamID: testTeamID,
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			team := NewAssignedTeam(tc.projTeamSpec, tc.teamID)
 			assert.Equal(t, tc.expectedTeam, team)
 		})
 	}

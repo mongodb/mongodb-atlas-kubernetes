@@ -55,8 +55,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			SdkClient: &atlasClient,
 			Context:   context.Background(),
 		}
-		teamService := func() teams.AtlasTeamsService {
-			service := translation.NewAtlasTeamsServiceMock(t)
+		teamService := func() teams.TeamsService {
+			service := translation.NewTeamsServiceMock(t)
 			service.EXPECT().GetTeamByID(workflowCtx.Context, workflowCtx.OrgID, "team-id-1").
 				Return(nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound})
 			return service
@@ -80,8 +80,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			SdkClient: &atlasClient,
 			Context:   context.Background(),
 		}
-		teamService := func() teams.AtlasTeamsService {
-			service := translation.NewAtlasTeamsServiceMock(t)
+		teamService := func() teams.TeamsService {
+			service := translation.NewTeamsServiceMock(t)
 			service.EXPECT().GetTeamByID(workflowCtx.Context, workflowCtx.OrgID, "team-id-1").
 				Return(nil, errors.New("unavailable"))
 			return service
@@ -109,10 +109,10 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			SdkClient: &atlasClient,
 			Context:   context.Background(),
 		}
-		teamService := func() teams.AtlasTeamsService {
-			service := translation.NewAtlasTeamsServiceMock(t)
+		teamService := func() teams.TeamsService {
+			service := translation.NewTeamsServiceMock(t)
 			service.EXPECT().GetTeamByID(workflowCtx.Context, workflowCtx.OrgID, "team-id-1").
-				Return(&teams.Team{
+				Return(&teams.AssignedTeam{
 					TeamID:   "team-id-1",
 					TeamName: "My Team",
 					Roles:    nil,
@@ -151,10 +151,10 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			SdkClient: &atlasClient,
 			Context:   context.Background(),
 		}
-		teamService := func() teams.AtlasTeamsService {
-			service := translation.NewAtlasTeamsServiceMock(t)
+		teamService := func() teams.TeamsService {
+			service := translation.NewTeamsServiceMock(t)
 			service.EXPECT().GetTeamByID(workflowCtx.Context, workflowCtx.OrgID, "team-id-1").
-				Return(&teams.Team{
+				Return(&teams.AssignedTeam{
 					TeamID:   "team-id-1",
 					TeamName: "My Team",
 					Roles:    nil,

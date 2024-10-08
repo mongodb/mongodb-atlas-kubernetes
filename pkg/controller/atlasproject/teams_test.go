@@ -155,9 +155,9 @@ func TestSyncAssignedTeams(t *testing.T) {
 				Log:       logger,
 				SdkClient: atlasClient,
 			}
-			teamService := func() teams.AtlasTeamsService {
-				service := translation.NewAtlasTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(nil, "projectID").Return([]teams.Team{
+			teamService := func() teams.TeamsService {
+				service := translation.NewTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(nil, "projectID").Return([]teams.AssignedTeam{
 					{
 						Roles:    []string{"GROUP_OWNER"},
 						TeamID:   team1.Status.ID,
@@ -177,7 +177,7 @@ func TestSyncAssignedTeams(t *testing.T) {
 				service.EXPECT().Unassign(nil, "projectID", "teamID_2").Return(nil)
 				service.EXPECT().Unassign(nil, "projectID", "teamID_3").Return(nil)
 				service.EXPECT().Assign(nil,
-					&[]teams.Team{
+					&[]teams.AssignedTeam{
 						{
 							Roles:  []string{"GROUP_READ_ONLY"},
 							TeamID: "teamID_2",

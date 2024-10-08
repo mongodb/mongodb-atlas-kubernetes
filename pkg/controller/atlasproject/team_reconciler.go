@@ -79,7 +79,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		teamCtx.EnsureStatusOption(status.AtlasTeamSetID(teamID))
 
-		result = r.ensureTeamUsersAreInSync(teamCtx, teamID, team)
+		result = r.ensureTeamUsersAreInSync(teamCtx, teamID, team) //TODO: hits all teams (even unassigned)
 		if !result.IsOk() {
 			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			return result.ReconcileResult(), nil
@@ -133,44 +133,38 @@ func (r *AtlasProjectReconciler) teamReconcile(
 }
 
 func (r *AtlasProjectReconciler) ensureTeamState(workflowCtx *workflow.Context, team *akov2.AtlasTeam) (string, workflow.Result) {
-	var atlasTeam *teams.Team
+	var atlasAssignedTeam *teams.AssignedTeam
 	var err error
 
 	if team.Status.ID != "" {
-		atlasTeam, err = r.fetchTeamByID(workflowCtx, team.Status.ID)
-		if err == nil {
-			atlasTeam, err = r.renameTeam(workflowCtx, atlasTeam, team.Spec.Name)
-			if err != nil {
-				return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
-			}
+		atlasAssignedTeam, err = r.fetchTeamByID(workflowCtx, team.Status.ID)
 
-			return atlasTeam.TeamID, workflow.OK()
-		}
 	} else {
-		atlasTeam, err = r.fetchTeamByName(workflowCtx, team.Spec.Name)
-		if err != nil {
-			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
-		}
+		atlasAssignedTeam, err = r.fetchTeamByName(workflowCtx, team.Spec.Name)
+	}
+	if err != nil {
+		return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 	}
 
-	if atlasTeam == nil {
-		desiredAtlasTeam := teams.NewAssignedTeam(&team.Spec, team.Status.ID)
+	if atlasAssignedTeam == nil {
+		desiredAtlasTeam := teams.NewTeam(&team.Spec, team.Status.ID)
 		if desiredAtlasTeam == nil {
 			return "", workflow.Terminate(workflow.TeamInvalidSpec, "teamspec is invalid")
 		}
 
-		atlasTeam, err = r.createTeam(workflowCtx, desiredAtlasTeam)
+		atlasTeam, err := r.createTeam(workflowCtx, desiredAtlasTeam)
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 		}
+		return atlasTeam.TeamID, workflow.OK()
 	}
 
-	atlasTeam, err = r.renameTeam(workflowCtx, atlasTeam, team.Spec.Name)
+	atlasAssignedTeam, err = r.renameTeam(workflowCtx, atlasAssignedTeam, team.Spec.Name)
 	if err != nil {
 		return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
 	}
 
-	return atlasTeam.TeamID, workflow.OK()
+	return atlasAssignedTeam.TeamID, workflow.OK()
 }
 
 func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team *akov2.AtlasTeam) workflow.Result {
@@ -248,7 +242,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 	return workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) fetchTeamByID(workflowCtx *workflow.Context, teamID string) (*teams.Team, error) {
+func (r *AtlasProjectReconciler) fetchTeamByID(workflowCtx *workflow.Context, teamID string) (*teams.AssignedTeam, error) {
 	workflowCtx.Log.Debugf("fetching team %s from atlas", teamID)
 	atlasTeam, err := r.teamsService.GetTeamByID(workflowCtx.Context, workflowCtx.OrgID, teamID)
 	if err != nil {
@@ -258,7 +252,7 @@ func (r *AtlasProjectReconciler) fetchTeamByID(workflowCtx *workflow.Context, te
 	return atlasTeam, nil
 }
 
-func (r *AtlasProjectReconciler) fetchTeamByName(workflowCtx *workflow.Context, teamName string) (*teams.Team, error) {
+func (r *AtlasProjectReconciler) fetchTeamByName(workflowCtx *workflow.Context, teamName string) (*teams.AssignedTeam, error) {
 	workflowCtx.Log.Debugf("fetching team named %s from atlas", teamName)
 	atlasTeam, err := r.teamsService.GetTeamByName(workflowCtx.Context, workflowCtx.OrgID, teamName)
 	if err != nil {
@@ -268,7 +262,7 @@ func (r *AtlasProjectReconciler) fetchTeamByName(workflowCtx *workflow.Context, 
 	return atlasTeam, nil
 }
 
-func (r *AtlasProjectReconciler) createTeam(workflowCtx *workflow.Context, desiredAtlasTeam *teams.AssignedTeam) (*teams.Team, error) {
+func (r *AtlasProjectReconciler) createTeam(workflowCtx *workflow.Context, desiredAtlasTeam *teams.Team) (*teams.Team, error) {
 	workflowCtx.Log.Debugf("create team named %s in atlas", desiredAtlasTeam.TeamName)
 	atlasTeam, err := r.teamsService.Create(workflowCtx.Context, desiredAtlasTeam, workflowCtx.OrgID)
 	if err != nil {
@@ -277,7 +271,7 @@ func (r *AtlasProjectReconciler) createTeam(workflowCtx *workflow.Context, desir
 	return atlasTeam, nil
 }
 
-func (r *AtlasProjectReconciler) renameTeam(workflowCtx *workflow.Context, at *teams.Team, newName string) (*teams.Team, error) {
+func (r *AtlasProjectReconciler) renameTeam(workflowCtx *workflow.Context, at *teams.AssignedTeam, newName string) (*teams.AssignedTeam, error) {
 	if at.TeamName == newName {
 		return at, nil
 	}

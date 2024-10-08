@@ -81,7 +81,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
-	toDelete := make([]*teams.Team, 0, len(atlasAssignedTeams))
+	toDelete := make([]*teams.AssignedTeam, 0, len(atlasAssignedTeams))
 
 	for _, atlasAssignedTeam := range atlasAssignedTeams {
 		if atlasAssignedTeam.TeamID == "" {
@@ -132,11 +132,11 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	if len(teamsToAssign) > 0 {
 		ctx.Log.Debug("assigning teams to project")
-		projectTeams := make([]teams.Team, 0, len(teamsToAssign))
+		projectTeams := make([]teams.AssignedTeam, 0, len(teamsToAssign))
 		for teamID := range teamsToAssign {
-			assignedTeam := teams.NewTeam(teamsToAssign[teamID], teamID)
+			teamToAssign := teams.NewAssignedTeam(teamsToAssign[teamID], teamID)
 
-			projectTeams = append(projectTeams, *assignedTeam)
+			projectTeams = append(projectTeams, *teamToAssign)
 			currentProjectsStatus[teamID] = status.ProjectTeamStatus{
 				ID:      teamID,
 				TeamRef: teamsToAssign[teamID].TeamRef,

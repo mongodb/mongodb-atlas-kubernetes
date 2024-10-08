@@ -45,7 +45,7 @@ func TestHandleProject(t *testing.T) {
 		atlasClientMocker    func() *mongodbatlas.Client
 		atlasSDKMocker       func() *admin.APIClient
 		projectServiceMocker func() project.ProjectService
-		teamServiceMocker    func() teams.AtlasTeamsService
+		teamServiceMocker    func() teams.TeamsService
 		interceptors         interceptor.Funcs
 		project              *akov2.AtlasProject
 		result               reconcile.Result
@@ -66,7 +66,7 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -101,7 +101,7 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -163,9 +163,9 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
-				service := translation.NewAtlasTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
+			teamServiceMocker: func() teams.TeamsService {
+				service := translation.NewTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -195,7 +195,7 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -225,7 +225,7 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			interceptors: interceptor.Funcs{
@@ -266,7 +266,7 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -369,9 +369,9 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
-				service := translation.NewAtlasTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
+			teamServiceMocker: func() teams.TeamsService {
+				service := translation.NewTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -470,9 +470,9 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
-				service := translation.NewAtlasTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
+			teamServiceMocker: func() teams.TeamsService {
+				service := translation.NewTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -573,9 +573,9 @@ func TestHandleProject(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
-				service := translation.NewAtlasTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
+			teamServiceMocker: func() teams.TeamsService {
+				service := translation.NewTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -816,7 +816,7 @@ func TestDelete(t *testing.T) {
 		atlasClientMocker    func() *mongodbatlas.Client
 		atlasSDKMocker       func() *admin.APIClient
 		projectServiceMocker func() project.ProjectService
-		teamServiceMocker    func() teams.AtlasTeamsService
+		teamServiceMocker    func() teams.TeamsService
 		interceptors         interceptor.Funcs
 		objects              []client.Object
 		result               reconcile.Result
@@ -833,7 +833,7 @@ func TestDelete(t *testing.T) {
 			projectServiceMocker: func() project.ProjectService {
 				return nil
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			interceptors: interceptor.Funcs{List: func(ctx context.Context, client client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
@@ -869,7 +869,7 @@ func TestDelete(t *testing.T) {
 			projectServiceMocker: func() project.ProjectService {
 				return nil
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			objects: []client.Object{
@@ -913,7 +913,7 @@ func TestDelete(t *testing.T) {
 			projectServiceMocker: func() project.ProjectService {
 				return nil
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			deletionProtection: true,
@@ -944,7 +944,7 @@ func TestDelete(t *testing.T) {
 			projectServiceMocker: func() project.ProjectService {
 				return nil
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
+			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
 			objects: []client.Object{
@@ -1001,9 +1001,9 @@ func TestDelete(t *testing.T) {
 
 				return service
 			},
-			teamServiceMocker: func() teams.AtlasTeamsService {
-				service := translation.NewAtlasTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.Team{}, nil)
+			teamServiceMocker: func() teams.TeamsService {
+				service := translation.NewTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			objects: []client.Object{
