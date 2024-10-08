@@ -54,7 +54,7 @@ func TestProjectReference(t *testing.T) {
 		},
 	}
 
-	assertProjectReference(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdatabaseusers.yaml", tests)
+	assertCELValidation(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdatabaseusers.yaml", tests)
 }
 
 func TestExternalProjectReferenceConnectionSecret(t *testing.T) {
@@ -110,5 +110,5 @@ func TestExternalProjectReferenceConnectionSecret(t *testing.T) {
 		},
 	}
 
-	assertExternalProjectReferenceConnectionSecret(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdatabaseusers.yaml", tests)
+	assertCELValidation(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdatabaseusers.yaml", tests)
 }
