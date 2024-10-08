@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	DefaultRetry   = time.Second * 10
-	DefaultTimeout = time.Minute * 20
+	DefaultRetry                    = time.Second * 10
+	StandaloneResourceRequeuePeriod = time.Minute * 15
+	DefaultTimeout                  = time.Minute * 20
 )
 
 type Result struct {
@@ -27,6 +28,13 @@ func OK() Result {
 	return Result{
 		terminated:   false,
 		requeueAfter: -1,
+	}
+}
+
+func Requeue(period time.Duration) Result {
+	return Result{
+		terminated:   false,
+		requeueAfter: period,
 	}
 }
 

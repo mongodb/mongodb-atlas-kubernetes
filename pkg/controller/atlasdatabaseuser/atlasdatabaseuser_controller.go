@@ -202,6 +202,10 @@ func (r *AtlasDatabaseUserReconciler) ready(ctx *workflow.Context, atlasDatabase
 		EnsureStatusOption(status.AtlasDatabaseUserNameOption(atlasDatabaseUser.Spec.Username)).
 		EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(passwordVersion))
 
+	if atlasDatabaseUser.Spec.ExternalProjectRef != nil {
+		return workflow.Requeue(workflow.StandaloneResourceRequeuePeriod).ReconcileResult()
+	}
+
 	return workflow.OK().ReconcileResult()
 }
 
