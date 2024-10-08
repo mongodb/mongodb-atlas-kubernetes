@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -435,6 +436,17 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 			&akov2.AtlasSearchIndexConfig{},
 			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForSearchIndexConfig),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(indexer.CredentialsIndexMapperFunc(
+				indexer.AtlasDeploymentCredentialsIndex,
+				&akov2.AtlasDeploymentList{},
+				indexer.DeploymentRequests,
+				r.Client,
+				r.Log,
+			)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
