@@ -280,8 +280,8 @@ go.mongodb.org/atlas-sdk/v20231115004 v20231115004.1.0 h1:vOvfk8bPedcphaTHIm6p8U
 go.mongodb.org/atlas-sdk/v20231115004 v20231115004.1.0/go.mod h1:FzD5DLz+WPB+z3OGgNBjXMPQJjJ7Y+hKn4iupXZuoOc=
 go.mongodb.org/atlas-sdk/v20231115008 v20231115008.5.0 h1:OuV1HfIpZUZa4+BKvtrvDlNqnilkCkdHspuZok6KAbM=
 go.mongodb.org/atlas-sdk/v20231115008 v20231115008.5.0/go.mod h1:0707RpWIrNFZ6Msy/dwRDCzC5JVDon61JoOqcbfCujg=
-go.mongodb.org/mongo-driver v1.17.0 h1:Hp4q2MCjvY19ViwimTs00wHi7G4yzxh4/2+nTx8r40k=
-go.mongodb.org/mongo-driver v1.17.0/go.mod h1:wwWm/+BuOddhcq3n68LKRmgk2wXzmF6s0SFOa0GINL4=
+go.mongodb.org/mongo-driver v1.17.1 h1:Wic5cJIwJgSpBhe3lx3+/RybR5PiYRMpVFgO7cOHyIM=
+go.mongodb.org/mongo-driver v1.17.1/go.mod h1:wwWm/+BuOddhcq3n68LKRmgk2wXzmF6s0SFOa0GINL4=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 h1:r6I7RJCN86bpD/FQwedZ0vSixDpwuWREjW9oRMsmqDc=
