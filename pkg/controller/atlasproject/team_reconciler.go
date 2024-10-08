@@ -138,7 +138,6 @@ func (r *AtlasProjectReconciler) ensureTeamState(workflowCtx *workflow.Context, 
 
 	if team.Status.ID != "" {
 		atlasAssignedTeam, err = r.fetchTeamByID(workflowCtx, team.Status.ID)
-
 	} else {
 		atlasAssignedTeam, err = r.fetchTeamByName(workflowCtx, team.Spec.Name)
 	}
