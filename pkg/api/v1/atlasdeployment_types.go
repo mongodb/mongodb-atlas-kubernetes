@@ -684,6 +684,20 @@ func (c *AtlasDeployment) WithSearchNodes(instanceSize string, count uint8) *Atl
 	return c
 }
 
+func (c *AtlasDeployment) WithExternaLProject(projectID, credentialsName string) *AtlasDeployment {
+	c.Spec.Project = nil
+	c.Spec.ExternalProjectRef = &ExternalProjectReference{
+		ID: projectID,
+	}
+	c.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
+		ConnectionSecret: &api.LocalObjectReference{
+			Name: credentialsName,
+		},
+	}
+
+	return c
+}
+
 // Lightweight makes the deployment work with small shared instance M2. This is useful for non-deployment tests (e.g.
 // database users) and saves some money for the company.
 func (c *AtlasDeployment) Lightweight() *AtlasDeployment {

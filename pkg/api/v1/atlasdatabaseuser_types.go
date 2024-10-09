@@ -300,6 +300,20 @@ func (p *AtlasDatabaseUser) WithDeleteAfterDate(date string) *AtlasDatabaseUser 
 	return p
 }
 
+func (p *AtlasDatabaseUser) WithExternaLProject(projectID, credentialsName string) *AtlasDatabaseUser {
+	p.Spec.Project = nil
+	p.Spec.ExternalProjectRef = &ExternalProjectReference{
+		ID: projectID,
+	}
+	p.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
+		ConnectionSecret: &api.LocalObjectReference{
+			Name: credentialsName,
+		},
+	}
+
+	return p
+}
+
 func (p AtlasDatabaseUser) Credentials() *api.LocalObjectReference {
 	return p.Spec.Credentials()
 }
