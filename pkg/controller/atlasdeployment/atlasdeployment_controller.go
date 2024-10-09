@@ -408,6 +408,10 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
 
+	if atlasDeployment.Spec.ExternalProjectRef != nil {
+		return workflow.Requeue(workflow.StandaloneResourceRequeuePeriod).ReconcileResult(), nil
+	}
+
 	return workflow.OK().ReconcileResult(), nil
 }
 
