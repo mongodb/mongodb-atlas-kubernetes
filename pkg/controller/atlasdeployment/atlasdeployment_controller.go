@@ -65,6 +65,7 @@ type AtlasDeploymentReconciler struct {
 	SubObjectDeletionProtection bool
 
 	deploymentService deployment.AtlasDeploymentsService
+	projectService    project.ProjectService
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdeployments,verbs=get;list;watch;create;update;patch;delete
@@ -193,10 +194,10 @@ func (r *AtlasDeploymentReconciler) getProjectFromAtlas(ctx *workflow.Context, a
 
 	ctx.SdkClient = sdkClient
 	ctx.OrgID = orgID
-	projectService := project.NewProjectAPIService(sdkClient.ProjectsApi)
+	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
 
-	atlasProject, err := projectService.GetProject(ctx.Context, atlasDeployment.Spec.ExternalProjectRef.ID)
+	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDeployment.Spec.ExternalProjectRef.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -239,6 +240,7 @@ func (r *AtlasDeploymentReconciler) getProjectFromKube(ctx *workflow.Context, at
 	ctx.SdkClient = sdkClient
 	ctx.OrgID = orgID
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
 
 	return project.NewProject(atlasProject, orgID), nil
 }
