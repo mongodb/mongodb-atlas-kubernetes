@@ -255,7 +255,13 @@ func TestTeamsAPI_Assign(t *testing.T) {
 			ts := &TeamsAPI{
 				teamsAPI: mockTeamAPI,
 			}
-			err := ts.Assign(ctx, &[]AssignedTeam{}, testProjectID)
+			err := ts.Assign(ctx, &[]AssignedTeam{
+				{
+					Roles:    []string{"role1", "role2"},
+					TeamID:   testTeamID1,
+					TeamName: testTeamName,
+				},
+			}, testProjectID)
 			require.Equal(t, tt.expectedErr, err)
 		})
 	}
@@ -520,7 +526,12 @@ func TestTeamsAPI_AddUsers(t *testing.T) {
 			ts := &TeamsAPI{
 				teamsAPI: mockTeamAPI,
 			}
-			err := ts.AddUsers(ctx, &[]TeamUser{}, mock.Anything, mock.Anything)
+			err := ts.AddUsers(ctx, &[]TeamUser{
+				{
+					Username: "user@name",
+					UserID:   testUserID,
+				},
+			}, mock.Anything, mock.Anything)
 			require.Equal(t, tt.expectedErr, err)
 		})
 	}
