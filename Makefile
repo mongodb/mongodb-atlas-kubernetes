@@ -282,7 +282,6 @@ endif
 validate-manifests: generate manifests
 	$(MAKE) check-missing-files
 
-
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
@@ -510,7 +509,9 @@ install-credentials: set-namespace ## Install the Atlas credentials for the Oper
 	$(ATLAS_KEY_SECRET_NAME) atlas.mongodb.com/type=credentials
 
 .PHONY: prepare-run
-prepare-run: generate vet manifests manager run-kind install-crds install-credentials
+prepare-run: generate vet manifests run-kind install-crds install-credentials
+	rm bin/manager
+	$(MAKE) manager VERSION=$(NEXT_VERSION)
 
 .PHONY: run
 run: prepare-run ## Run a freshly compiled manager against kind
