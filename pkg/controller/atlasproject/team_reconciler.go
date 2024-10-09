@@ -78,7 +78,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		teamCtx.EnsureStatusOption(status.AtlasTeamSetID(teamID))
 
-		result = r.ensureTeamUsersAreInSync(teamCtx, teamID, team) //TODO: hits all teams (even unassigned)
+		result = r.ensureTeamUsersAreInSync(teamCtx, teamID, team)
 		if !result.IsOk() {
 			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			return result.ReconcileResult(), nil
