@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -201,7 +200,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 	}
 
 	g, taskContext = errgroup.WithContext(workflowCtx.Context)
-	toAdd := make([]admin.AddUserToTeam, 0, len(team.Spec.Usernames))
+	toAdd := make([]teams.TeamUser, 0, len(team.Spec.Usernames))
 	lock := sync.Mutex{}
 	for i := range team.Spec.Usernames {
 		username := team.Spec.Usernames[i]
@@ -214,7 +213,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 				}
 
 				lock.Lock()
-				toAdd = append(toAdd, admin.AddUserToTeam{Id: user.GetId()})
+				toAdd = append(toAdd, teams.TeamUser{UserID: user.GetId()})
 				lock.Unlock()
 
 				return nil

@@ -520,7 +520,7 @@ func TestTeamsAPI_AddUsers(t *testing.T) {
 			ts := &TeamsAPI{
 				teamsAPI: mockTeamAPI,
 			}
-			err := ts.AddUsers(ctx, &[]admin.AddUserToTeam{}, mock.Anything, mock.Anything)
+			err := ts.AddUsers(ctx, &[]TeamUser{}, mock.Anything, mock.Anything)
 			require.Equal(t, tt.expectedErr, err)
 		})
 	}

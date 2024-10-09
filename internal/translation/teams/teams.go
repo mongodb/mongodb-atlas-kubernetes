@@ -11,17 +11,28 @@ import (
 )
 
 type TeamsService interface {
+	TeamProjectsService
+	TeamRolesService
+	TeamUsersService
+}
+
+type TeamProjectsService interface { // manages Team's associations to Projects
 	ListProjectTeams(ctx context.Context, projectID string) ([]AssignedTeam, error)
-	GetTeamByName(ctx context.Context, orgID, teamName string) (*AssignedTeam, error)
-	GetTeamByID(ctx context.Context, orgID, teamID string) (*AssignedTeam, error)
+	Create(ctx context.Context, at *Team, orgID string) (*Team, error)
 	Assign(ctx context.Context, at *[]AssignedTeam, projectID string) error
 	Unassign(ctx context.Context, projectID, teamID string) error
-	Create(ctx context.Context, at *Team, orgID string) (*Team, error)
+}
+
+type TeamRolesService interface { // manages Team's Roles
+	GetTeamByName(ctx context.Context, orgID, teamName string) (*AssignedTeam, error)
+	GetTeamByID(ctx context.Context, orgID, teamID string) (*AssignedTeam, error)
 	RenameTeam(ctx context.Context, at *AssignedTeam, orgID, newName string) (*AssignedTeam, error)
 	UpdateRoles(ctx context.Context, at *AssignedTeam, projectID string, newRoles []akov2.TeamRole) error
+}
 
+type TeamUsersService interface { // manages Team's Members (Users)
 	GetTeamUsers(ctx context.Context, orgID, teamID string) ([]TeamUser, error)
-	AddUsers(ctx context.Context, usersToAdd *[]admin.AddUserToTeam, orgID, teamID string) error
+	AddUsers(ctx context.Context, usersToAdd *[]TeamUser, orgID, teamID string) error
 	RemoveUser(ctx context.Context, orgID, teamID, userID string) error
 }
 
@@ -42,7 +53,7 @@ func (tm *TeamsAPI) ListProjectTeams(ctx context.Context, projectID string) ([]A
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project team list from Atlas: %w", err)
 	}
-	return TeamRoleFromAtlas(atlasAssignedTeams.GetResults()), err
+	return TeamRolesFromAtlas(atlasAssignedTeams.GetResults()), err
 }
 
 func (tm *TeamsAPI) GetTeamByName(ctx context.Context, orgID, teamName string) (*AssignedTeam, error) {
@@ -65,7 +76,7 @@ func (tm *TeamsAPI) GetTeamByID(ctx context.Context, orgID, teamID string) (*Ass
 }
 
 func (tm *TeamsAPI) Assign(ctx context.Context, at *[]AssignedTeam, projectID string) error {
-	desiredRoles := TeamRoleToAtlas(*at)
+	desiredRoles := TeamRolesToAtlas(*at)
 	_, _, err := tm.teamsAPI.AddAllTeamsToProject(ctx, projectID, &desiredRoles).Execute()
 	return err
 }
@@ -119,8 +130,8 @@ func (tm *TeamsAPI) GetTeamUsers(ctx context.Context, orgID, teamID string) ([]T
 	return UsersFromAtlas(atlasUsers), err
 }
 
-func (tm *TeamsAPI) AddUsers(ctx context.Context, usersToAdd *[]admin.AddUserToTeam, orgID, teamID string) error {
-	_, _, err := tm.teamsAPI.AddTeamUser(ctx, orgID, teamID, usersToAdd).Execute()
+func (tm *TeamsAPI) AddUsers(ctx context.Context, usersToAdd *[]TeamUser, orgID, teamID string) error {
+	_, _, err := tm.teamsAPI.AddTeamUser(ctx, orgID, teamID, UsersToAtlas(usersToAdd)).Execute()
 	return err
 }
 
