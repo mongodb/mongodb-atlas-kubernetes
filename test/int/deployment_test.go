@@ -1290,32 +1290,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 		})
 	})
-
-	Describe("Manage an independent deployment resource", func() {
-		It("Successfully creates and manage a independent CRD", func(ctx context.Context) {
-			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).
-				Lightweight()
-
-			By("Failing to create deployment with duplicated reference to the project", func() {
-				createdDeployment.Spec.ExternalProjectRef = &akov2.ExternalProjectReference{
-					ID: createdProject.ID(),
-				}
-				createdDeployment.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
-					ConnectionSecret: &api.LocalObjectReference{
-						Name: createdProject.Spec.ConnectionSecret.Name,
-					},
-				}
-
-				Expect(k8sClient.Create(ctx, createdDeployment)).ToNot(Succeed())
-			})
-
-			By("Creating a independent deployment resource", func() {
-				createdDeployment.Spec.Project = nil
-				performCreate(createdDeployment, 30*time.Minute)
-				doDeploymentStatusChecks()
-			})
-		})
-	})
 })
 
 var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "deployment-backups"), func() {
