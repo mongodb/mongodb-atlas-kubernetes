@@ -5,7 +5,10 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -279,6 +282,172 @@ func TestTerminate(t *testing.T) {
 				assert.Equal(t, zapcore.Level(2), log.Level)
 				assert.Equal(t, tt.expectedLogs[ix], log.Message)
 			}
+		})
+	}
+}
+
+func TestReady(t *testing.T) {
+	tests := map[string]struct {
+		dbUser          *akov2.AtlasDatabaseUser
+		passwordVersion string
+		interceptors    interceptor.Funcs
+
+		expectedResult     ctrl.Result
+		expectedConditions []api.Condition
+	}{
+		"fail to set finalizer": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			passwordVersion: "1",
+			interceptors: interceptor.Funcs{
+				Patch: func(ctx context.Context, client client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+					return errors.New("failed to set finalizer")
+				},
+			},
+			expectedResult: workflow.Terminate(workflow.AtlasFinalizerNotSet, "").ReconcileResult(),
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.AtlasFinalizerNotSet)).
+					WithMessageRegexp("failed to set finalizer"),
+			},
+		},
+		"fail to set last applied config": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			passwordVersion: "1",
+			interceptors: interceptor.Funcs{
+				Patch: func(ctx context.Context, client client.WithWatch, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+					if patch.Type() == types.JSONPatchType {
+						return nil
+					}
+
+					return errors.New("failed to set last applied config")
+				},
+			},
+			expectedResult: workflow.Terminate(workflow.Internal, "").ReconcileResult(),
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.Internal)).
+					WithMessageRegexp("failed to set last applied config"),
+			},
+		},
+		"don't requeue when it's a linked resource": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			passwordVersion: "1",
+			expectedResult:  workflow.OK().ReconcileResult(),
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.DatabaseUserReadyType),
+			},
+		},
+		"don't requeue when it's a standalone resource": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
+						ID: "project-id",
+					},
+					LocalCredentialHolder: api.LocalCredentialHolder{
+						ConnectionSecret: &api.LocalObjectReference{
+							Name: "user-creds",
+						},
+					},
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			passwordVersion: "1",
+			expectedResult:  workflow.Requeue(15 * time.Minute).ReconcileResult(),
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.DatabaseUserReadyType),
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tt.dbUser).
+				WithStatusSubresource(tt.dbUser).
+				WithInterceptorFuncs(tt.interceptors).
+				Build()
+
+			logger := zaptest.NewLogger(t).Sugar()
+			c := &AtlasDatabaseUserReconciler{
+				Client: k8sClient,
+				Log:    logger,
+			}
+			ctx := &workflow.Context{
+				Context: context.Background(),
+				Log:     logger,
+			}
+
+			assert.Equal(t, tt.expectedResult, c.ready(ctx, tt.dbUser, tt.passwordVersion))
+			assert.True(
+				t,
+				cmp.Equal(
+					tt.expectedConditions,
+					ctx.Conditions(),
+					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+				),
+			)
 		})
 	}
 }
