@@ -20,6 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
@@ -640,9 +641,11 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Serverless is not supported in Atlas for government", func() {
 			expectedConditions := conditions.MatchConditions(
-				api.FalseCondition(api.DeploymentReadyType),
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.AtlasGovUnsupported)).
+					WithMessageRegexp("the AtlasDeployment is not supported by Atlas for government"),
 				api.FalseCondition(api.ReadyType),
-				api.TrueCondition(api.ValidationSucceeded),
+				api.TrueCondition(api.ResourceVersionStatus),
 			)
 
 			Eventually(func(g Gomega) {
