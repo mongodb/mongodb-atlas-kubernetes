@@ -194,9 +194,9 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, atlasProj
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
 	if len(removedOrphanSecrets) > 0 {
-		r.Log.Info("Removed %d orphan secrets on project %s bound to an non existent deployment:")
+		r.Log.Debug("Removed %d orphan secrets on project %s bound to an non existent deployment:")
 		for _, orphan := range removedOrphanSecrets {
-			r.Log.Info("Removed orphan secret %q", orphan)
+			r.Log.Debug("Removed orphan secret %q", orphan)
 		}
 	}
 
