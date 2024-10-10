@@ -13,6 +13,13 @@ DOCKER_SBOM_PLUGIN_VERSION=0.6.1
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= $(shell git describe --tags --dirty --broken | cut -c 2-)
 
+# NEXT_VERSION represents a version that is higher than anything released
+# VERSION default value does not play well with the run target which might end up failing
+# with errors such as:
+# "version of the resource $Resource is higher than the operator version $VERSION"
+# This happens if you use exported YAMLs from CLI and the dirty version is deemed a pre-release
+NEXT_VERSION = 99.99.99-next
+
 MAJOR_VERSION = $(shell cat major-version)
 
 # CHANNELS define the bundle channels used in the bundle.
@@ -275,7 +282,6 @@ endif
 validate-manifests: generate manifests
 	$(MAKE) check-missing-files
 
-
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
@@ -503,13 +509,16 @@ install-credentials: set-namespace ## Install the Atlas credentials for the Oper
 	$(ATLAS_KEY_SECRET_NAME) atlas.mongodb.com/type=credentials
 
 .PHONY: prepare-run
-prepare-run: generate vet manifests manager run-kind install-crds install-credentials
+prepare-run: generate vet manifests run-kind install-crds install-credentials
+	rm bin/manager
+	$(MAKE) manager VERSION=$(NEXT_VERSION)
 
 .PHONY: run
 run: prepare-run ## Run a freshly compiled manager against kind
 ifdef RUN_YAML
 	kubectl apply -f $(RUN_YAML)
 endif
+	VERSION=$(NEXT_VERSION) \
 	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
 	bin/manager --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
