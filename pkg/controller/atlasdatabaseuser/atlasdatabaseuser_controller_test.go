@@ -5,7 +5,6 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -409,7 +408,7 @@ func TestReady(t *testing.T) {
 				},
 			},
 			passwordVersion: "1",
-			expectedResult:  workflow.Requeue(15 * time.Minute).ReconcileResult(),
+			expectedResult:  workflow.Requeue(workflow.StandaloneResourceRequeuePeriod).ReconcileResult(),
 			expectedConditions: []api.Condition{
 				api.TrueCondition(api.ReadyType),
 				api.TrueCondition(api.DatabaseUserReadyType),
