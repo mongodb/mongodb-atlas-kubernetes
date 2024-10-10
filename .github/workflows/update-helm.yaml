@@ -13,6 +13,10 @@ jobs:
       - name: Checkout AKO repo
         uses: actions/checkout@v4
 
+      - name: Install YQ
+        run: |
+          curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+
       - name: Configure git
         run: |
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
