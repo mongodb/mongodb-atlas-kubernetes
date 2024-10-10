@@ -39,7 +39,7 @@ func ReapOrphanConnectionSecrets(ctx context.Context, k8sClient client.Client, p
 		if !ok {
 			continue
 		}
-		if clusterExists := contains(projectDeploymentNames, clusterName); clusterExists {
+		if clusterExists := stringutil.Contains(projectDeploymentNames, clusterName); clusterExists {
 			continue
 		}
 		if err := k8sClient.Delete(ctx, &secret); err != nil {
@@ -49,15 +49,6 @@ func ReapOrphanConnectionSecrets(ctx context.Context, k8sClient client.Client, p
 		}
 	}
 	return removedOrphanSecrets, nil
-}
-
-func contains(list []string, item string) bool {
-	for _, v := range list {
-		if v == item {
-			return true
-		}
-	}
-	return false
 }
 
 func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, ds deployment.AtlasDeploymentsService, recorder record.EventRecorder, project *project.Project, dbUser akov2.AtlasDatabaseUser) workflow.Result {
