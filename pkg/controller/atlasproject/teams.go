@@ -1,11 +1,11 @@
 package atlasproject
 
 import (
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -67,7 +67,8 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 
 func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projectID string, project *akov2.AtlasProject, teamsToAssign map[string]*akov2.Team) error {
 	ctx.Log.Debug("fetching assigned teams from atlas")
-	atlasAssignedTeams, _, err := ctx.SdkClient.TeamsApi.ListProjectTeams(ctx.Context, projectID).Execute()
+
+	atlasAssignedTeams, err := r.teamsService.ListProjectTeams(ctx.Context, projectID)
 	if err != nil {
 		return err
 	}
@@ -80,76 +81,73 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
-	toDelete := make([]*admin.TeamRole, 0, len(atlasAssignedTeams.GetResults()))
+	toDelete := make([]*teams.AssignedTeam, 0, len(atlasAssignedTeams))
 
-	if atlasAssignedTeams != nil && atlasAssignedTeams.Results != nil {
-		for _, atlasAssignedTeam := range atlasAssignedTeams.GetResults() {
-			if atlasAssignedTeam.GetTeamId() == "" {
-				continue
+	for _, atlasAssignedTeam := range atlasAssignedTeams {
+		if atlasAssignedTeam.TeamID == "" {
+			continue
+		}
+
+		desiredTeam, ok := teamsToAssign[atlasAssignedTeam.TeamID]
+		if !ok {
+			toDelete = append(toDelete, &atlasAssignedTeam)
+			continue
+		}
+
+		if !hasTeamRolesChanged(atlasAssignedTeam.Roles, desiredTeam.Roles) {
+			currentProjectsStatus[atlasAssignedTeam.TeamID] = status.ProjectTeamStatus{
+				ID:      atlasAssignedTeam.TeamID,
+				TeamRef: desiredTeam.TeamRef,
 			}
+			delete(teamsToAssign, atlasAssignedTeam.TeamID)
 
-			desiredTeam, ok := teamsToAssign[atlasAssignedTeam.GetTeamId()]
-			if !ok {
-				result := atlasAssignedTeam
-				toDelete = append(toDelete, &result)
+			continue
+		}
 
-				continue
-			}
-
-			if !hasTeamRolesChanged(atlasAssignedTeam.GetRoleNames(), desiredTeam.Roles) {
-				currentProjectsStatus[atlasAssignedTeam.GetTeamId()] = status.ProjectTeamStatus{
-					ID:      atlasAssignedTeam.GetTeamId(),
-					TeamRef: desiredTeam.TeamRef,
-				}
-				delete(teamsToAssign, atlasAssignedTeam.GetTeamId())
-
-				continue
-			}
-
-			ctx.Log.Debugf("removing team %s from project for later update", atlasAssignedTeam.GetTeamId())
-			_, err = ctx.SdkClient.TeamsApi.RemoveProjectTeam(ctx.Context, projectID, atlasAssignedTeam.GetTeamId()).Execute()
-			if err != nil {
-				ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.GetTeamId(), err.Error())
-			}
+		ctx.Log.Debugf("removing team %s from project for later update", atlasAssignedTeam.TeamID)
+		err := r.teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
+		if err != nil {
+			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
 	}
 
 	for _, atlasAssignedTeam := range toDelete {
-		ctx.Log.Debugf("removing team %s from project", atlasAssignedTeam.GetTeamId())
-		_, err = ctx.SdkClient.TeamsApi.RemoveProjectTeam(ctx.Context, projectID, atlasAssignedTeam.GetTeamId()).Execute()
+		ctx.Log.Debugf("removing team %s from project", atlasAssignedTeam.TeamID)
+		err := r.teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
-			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.GetTeamId(), err.Error())
+			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
 
-		teamRef := getTeamRefFromProjectStatus(project, atlasAssignedTeam.GetTeamId())
+		teamRef := getTeamRefFromProjectStatus(project, atlasAssignedTeam.TeamID)
 		if teamRef == nil {
-			ctx.Log.Warnf("unable to find team %s status in the project", atlasAssignedTeam.GetTeamId())
+			ctx.Log.Warnf("unable to find team %s status in the project", atlasAssignedTeam.TeamID)
 		} else {
 			if err = r.updateTeamState(ctx, project, teamRef, true); err != nil {
-				ctx.Log.Warnf("failed to update team %s status with removed project: %s", atlasAssignedTeam.GetTeamId(), err.Error())
+				ctx.Log.Warnf("failed to update team %s status with removed project: %s", atlasAssignedTeam.TeamID, err.Error())
 			}
 		}
 
-		delete(currentProjectsStatus, atlasAssignedTeam.GetTeamId())
+		delete(currentProjectsStatus, atlasAssignedTeam.TeamID)
 	}
 
 	if len(teamsToAssign) > 0 {
 		ctx.Log.Debug("assigning teams to project")
-		projectTeams := make([]admin.TeamRole, 0, len(teamsToAssign))
+		projectTeams := make([]teams.AssignedTeam, 0, len(teamsToAssign))
 		for teamID := range teamsToAssign {
-			assignedTeam := teamsToAssign[teamID]
-			projectTeams = append(projectTeams, assignedTeam.ToAtlas(teamID))
+			teamToAssign := teams.NewAssignedTeam(teamsToAssign[teamID], teamID)
+
+			projectTeams = append(projectTeams, *teamToAssign)
 			currentProjectsStatus[teamID] = status.ProjectTeamStatus{
 				ID:      teamID,
-				TeamRef: assignedTeam.TeamRef,
+				TeamRef: teamsToAssign[teamID].TeamRef,
 			}
 
-			if err = r.updateTeamState(ctx, project, &assignedTeam.TeamRef, false); err != nil {
+			if err = r.updateTeamState(ctx, project, &teamsToAssign[teamID].TeamRef, false); err != nil {
 				ctx.Log.Warnf("failed to update team %s status with added project: %s", teamID, err.Error())
 			}
 		}
 
-		_, _, err = ctx.SdkClient.TeamsApi.AddAllTeamsToProject(ctx.Context, projectID, &projectTeams).Execute()
+		err = r.teamsService.Assign(ctx.Context, &projectTeams, projectID)
 		if err != nil {
 			return err
 		}
