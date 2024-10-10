@@ -7,6 +7,8 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -19,6 +21,44 @@ import (
 )
 
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
+
+func ReapOrphanConnectionSecrets(ctx context.Context, k8sClient client.Client, projectID, namespace string, projectDeploymentNames []string) ([]string, error) {
+	secretList := &corev1.SecretList{}
+	labelSelector := labels.SelectorFromSet(labels.Set{TypeLabelKey: CredLabelVal, ProjectLabelKey: projectID})
+	err := k8sClient.List(context.Background(), secretList, &client.ListOptions{
+		LabelSelector: labelSelector,
+		Namespace:     namespace,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed listing possible orphan secrets: %w", err)
+	}
+
+	removedOrphanSecrets := []string{}
+	for _, secret := range secretList.Items {
+		clusterName, ok := secret.Labels[ClusterLabelKey]
+		if !ok {
+			continue
+		}
+		if clusterExists := contains(projectDeploymentNames, clusterName); clusterExists {
+			continue
+		}
+		if err := k8sClient.Delete(ctx, &secret); err != nil {
+			return nil, fmt.Errorf("failed to remove orphan connection Secret: %w", err)
+		} else {
+			removedOrphanSecrets = append(removedOrphanSecrets, fmt.Sprintf("%s/%s", namespace, secret.Name))
+		}
+	}
+	return removedOrphanSecrets, nil
+}
+
+func contains(list []string, item string) bool {
+	for _, v := range list {
+		if v == item {
+			return true
+		}
+	}
+	return false
+}
 
 func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, ds deployment.AtlasDeploymentsService, recorder record.EventRecorder, project *project.Project, dbUser akov2.AtlasDatabaseUser) workflow.Result {
 	conns, err := ds.ListDeploymentConnections(ctx.Context, project.ID)
