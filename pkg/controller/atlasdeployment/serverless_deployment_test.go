@@ -23,9 +23,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 func TestHandleServerlessInstance(t *testing.T) {
@@ -476,6 +476,9 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name: "my-project",
+					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
 						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
@@ -555,6 +558,9 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name: "my-project",
+					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
 						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
@@ -639,6 +645,9 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name: "my-project",
+					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
 						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
@@ -708,6 +717,9 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name: "my-project",
+					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
 						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
@@ -770,13 +782,9 @@ func TestHandleServerlessInstance(t *testing.T) {
 			logger := zaptest.NewLogger(t)
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
-			projectsRefIndexer := indexer.NewAtlasDatabaseUserByProjectsRefIndexer(logger)
-			externalProjectsRefIndexer := indexer.NewAtlasDatabaseUserByExternalProjectsRefIndexer(logger)
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.atlasDeployment).
-				WithIndex(projectsRefIndexer.Object(), projectsRefIndexer.Name(), projectsRefIndexer.Keys).
-				WithIndex(externalProjectsRefIndexer.Object(), externalProjectsRefIndexer.Name(), externalProjectsRefIndexer.Keys).
 				Build()
 			reconciler := &AtlasDeploymentReconciler{
 				Client:            k8sClient,

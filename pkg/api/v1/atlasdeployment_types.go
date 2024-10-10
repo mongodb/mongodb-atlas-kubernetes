@@ -47,9 +47,15 @@ const (
 
 // AtlasDeploymentSpec defines the desired state of AtlasDeployment
 // Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined
+// +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
+// +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasDeploymentSpec struct {
+	api.LocalCredentialHolder `json:",inline"`
+
 	// Project is a reference to AtlasProject resource the deployment belongs to
-	Project common.ResourceRefNamespaced `json:"projectRef"`
+	Project *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
+	// ExternalProjectRef holds the Atlas project ID the user belongs to
+	ExternalProjectRef *ExternalProjectReference `json:"externalProjectRef,omitempty"`
 
 	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
 	// +optional
@@ -520,6 +526,10 @@ func (c *AtlasDeployment) UpdateStatus(conditions []api.Condition, options ...ap
 	}
 }
 
+func (c *AtlasDeployment) Credentials() *api.LocalObjectReference {
+	return c.Spec.Credentials()
+}
+
 // ************************************ Builder methods *************************************************
 
 func NewDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
@@ -619,7 +629,7 @@ func (c *AtlasDeployment) WithAtlasName(name string) *AtlasDeployment {
 }
 
 func (c *AtlasDeployment) WithProjectName(projectName string) *AtlasDeployment {
-	c.Spec.Project = common.ResourceRefNamespaced{Name: projectName}
+	c.Spec.Project = &common.ResourceRefNamespaced{Name: projectName}
 	return c
 }
 
@@ -671,6 +681,20 @@ func (c *AtlasDeployment) WithSearchNodes(instanceSize string, count uint8) *Atl
 			NodeCount:    count,
 		},
 	}
+	return c
+}
+
+func (c *AtlasDeployment) WithExternaLProject(projectID, credentialsName string) *AtlasDeployment {
+	c.Spec.Project = nil
+	c.Spec.ExternalProjectRef = &ExternalProjectReference{
+		ID: projectID,
+	}
+	c.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
+		ConnectionSecret: &api.LocalObjectReference{
+			Name: credentialsName,
+		},
+	}
+
 	return c
 }
 
