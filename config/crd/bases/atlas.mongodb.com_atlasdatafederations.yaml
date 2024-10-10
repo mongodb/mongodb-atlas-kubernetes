@@ -84,9 +84,15 @@ spec:
               privateEndpoints:
                 items:
                   properties:
+                    comment:
+                      type: string
+                    customerEndpointDNSName:
+                      type: string
                     endpointId:
                       type: string
                     provider:
+                      type: string
+                    region:
                       type: string
                     type:
                       type: string
@@ -105,6 +111,8 @@ spec:
                 required:
                 - name
                 type: object
+              skipRoleValidation:
+                type: boolean
               storage:
                 properties:
                   databases:
@@ -125,6 +133,10 @@ spec:
                                     database:
                                       type: string
                                     databaseRegex:
+                                      type: string
+                                    datasetName:
+                                      type: string
+                                    datasetPrefix:
                                       type: string
                                     defaultFormat:
                                       enum:
@@ -153,6 +165,8 @@ spec:
                                       type: string
                                     storeName:
                                       type: string
+                                    trimLevel:
+                                      type: integer
                                     urls:
                                       items:
                                         type: string
@@ -187,7 +201,13 @@ spec:
                           items:
                             type: string
                           type: array
+                        allowInsecure:
+                          type: boolean
                         bucket:
+                          type: string
+                        clusterName:
+                          type: string
+                        defaultFormat:
                           type: string
                         delimiter:
                           type: string
@@ -201,8 +221,35 @@ spec:
                           type: string
                         public:
                           type: boolean
+                        readConcern:
+                          properties:
+                            level:
+                              type: string
+                          type: object
+                        readPreference:
+                          properties:
+                            maxStalenessSeconds:
+                              type: integer
+                            mode:
+                              type: string
+                            tagSets:
+                              items:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                              type: array
+                          type: object
                         region:
                           type: string
+                        urls:
+                          items:
+                            type: string
+                          type: array
                       type: object
                     type: array
                 type: object
