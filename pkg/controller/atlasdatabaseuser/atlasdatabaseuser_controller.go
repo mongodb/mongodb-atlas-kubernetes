@@ -19,6 +19,7 @@ package atlasdatabaseuser
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -65,6 +66,7 @@ type AtlasDatabaseUserReconciler struct {
 	ObjectDeletionProtection      bool
 	SubObjectDeletionProtection   bool
 	FeaturePreviewOIDCAuthEnabled bool
+	independentSyncPeriod         time.Duration
 
 	dbUserService     dbuser.AtlasUsersService
 	deploymentService deployment.AtlasDeploymentsService
@@ -203,7 +205,7 @@ func (r *AtlasDatabaseUserReconciler) ready(ctx *workflow.Context, atlasDatabase
 		EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(passwordVersion))
 
 	if atlasDatabaseUser.Spec.ExternalProjectRef != nil {
-		return workflow.Requeue(workflow.StandaloneResourceRequeuePeriod).ReconcileResult()
+		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult()
 	}
 
 	return workflow.OK().ReconcileResult()
@@ -275,6 +277,7 @@ func NewAtlasDatabaseUserReconciler(
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
+	independentSyncPeriod time.Duration,
 	featureFlags *featureflags.FeatureFlags,
 	logger *zap.Logger,
 ) *AtlasDatabaseUserReconciler {
@@ -287,5 +290,6 @@ func NewAtlasDatabaseUserReconciler(
 		AtlasProvider:                 atlasProvider,
 		ObjectDeletionProtection:      deletionProtection,
 		FeaturePreviewOIDCAuthEnabled: featureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
+		independentSyncPeriod:         independentSyncPeriod,
 	}
 }

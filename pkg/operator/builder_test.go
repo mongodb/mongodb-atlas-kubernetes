@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -35,9 +36,6 @@ type managerMock struct {
 	client client.Client
 	scheme *runtime.Scheme
 
-	gotHealthzCheck string
-	gotReadyzCheck  string
-
 	opts ctrl.Options
 }
 
@@ -45,7 +43,7 @@ func (m *managerMock) GetCache() cache.Cache {
 	return &informertest.FakeInformers{}
 }
 
-func (m *managerMock) Add(runnable manager.Runnable) error {
+func (m *managerMock) Add(_ manager.Runnable) error {
 	return nil
 }
 
@@ -61,7 +59,7 @@ func (m *managerMock) GetScheme() *runtime.Scheme {
 	return m.scheme
 }
 
-func (m *managerMock) GetEventRecorderFor(name string) record.EventRecorder {
+func (m *managerMock) GetEventRecorderFor(_ string) record.EventRecorder {
 	return record.NewFakeRecorder(100)
 }
 
@@ -73,7 +71,7 @@ func (m *managerMock) GetFieldIndexer() client.FieldIndexer {
 	return &informertest.FakeInformers{}
 }
 
-func (m *managerMock) New(config *rest.Config, options manager.Options) (manager.Manager, error) {
+func (m *managerMock) New(_ *rest.Config, options manager.Options) (manager.Manager, error) {
 	m.opts = options
 	m.scheme = options.Scheme
 	m.client = fake.NewClientBuilder().
@@ -83,13 +81,11 @@ func (m *managerMock) New(config *rest.Config, options manager.Options) (manager
 	return m, nil
 }
 
-func (m *managerMock) AddHealthzCheck(name string, check healthz.Checker) error {
-	m.gotHealthzCheck = name
+func (m *managerMock) AddHealthzCheck(_ string, _ healthz.Checker) error {
 	return nil
 }
 
-func (m *managerMock) AddReadyzCheck(name string, check healthz.Checker) error {
-	m.gotReadyzCheck = name
+func (m *managerMock) AddReadyzCheck(_ string, _ healthz.Checker) error {
 	return nil
 }
 
@@ -99,6 +95,7 @@ func TestBuildManager(t *testing.T) {
 		expectedSyncPeriod       time.Duration
 		expectedClusterWideCache bool
 		expectedNamespacedCache  bool
+		expectedError            error
 	}{
 		"should build the manager with default values": {
 			configure:                func(b *Builder) {},
@@ -120,6 +117,7 @@ func TestBuildManager(t *testing.T) {
 					WithNamespaces("ns1").
 					WithLogger(zaptest.NewLogger(t)).
 					WithSyncPeriod(time.Hour).
+					WithIndependentSyncPeriod(15 * time.Minute).
 					WithMetricAddress(":9090").
 					WithProbeAddress(":9091").
 					WithLeaderElection(true).
@@ -134,6 +132,15 @@ func TestBuildManager(t *testing.T) {
 			expectedClusterWideCache: false,
 			expectedNamespacedCache:  true,
 		},
+		"should error when independentSyncPeriod is misconfigured": {
+			configure: func(b *Builder) {
+				b.WithIndependentSyncPeriod(4 * time.Minute)
+			},
+			expectedSyncPeriod:       DefaultSyncPeriod,
+			expectedClusterWideCache: false,
+			expectedNamespacedCache:  true,
+			expectedError:            errors.New("wrong value for independentSyncPeriod. Value should be greater or equal to 5"),
+		},
 	}
 
 	for name, tt := range tests {
@@ -142,16 +149,18 @@ func TestBuildManager(t *testing.T) {
 			require.NoError(t, akov2.AddToScheme(akoScheme))
 
 			mgrMock := &managerMock{}
-			builder := NewBuilder(mgrMock, akoScheme)
+			builder := NewBuilder(mgrMock, akoScheme, 5*time.Minute)
 			tt.configure(builder)
 			// this is necessary for tests
 			builder.WithSkipNameValidation(true)
 			_, err := builder.Build(context.Background())
-			require.NoError(t, err)
+			require.Equal(t, tt.expectedError, err)
 
-			assert.Equal(t, tt.expectedSyncPeriod, *mgrMock.opts.Cache.SyncPeriod)
-			assert.Equal(t, tt.expectedClusterWideCache, len(mgrMock.opts.Cache.ByObject) > 0)
-			assert.Equal(t, tt.expectedNamespacedCache, len(mgrMock.opts.Cache.DefaultNamespaces) > 0)
+			if err == nil {
+				assert.Equal(t, tt.expectedSyncPeriod, *mgrMock.opts.Cache.SyncPeriod)
+				assert.Equal(t, tt.expectedClusterWideCache, len(mgrMock.opts.Cache.ByObject) > 0)
+				assert.Equal(t, tt.expectedNamespacedCache, len(mgrMock.opts.Cache.DefaultNamespaces) > 0)
+			}
 		})
 	}
 }

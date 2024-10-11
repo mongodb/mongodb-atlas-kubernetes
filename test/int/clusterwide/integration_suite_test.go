@@ -115,7 +115,7 @@ var _ = BeforeSuite(func() {
 		logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
 		ctrl.SetLogger(zapr.NewLogger(logger))
 
-		mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), testEnv.Scheme).
+		mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), testEnv.Scheme, 5*time.Minute).
 			WithConfig(testEnv.Config).
 			WithLogger(logger).
 			WithAtlasDomain(atlasDomain).

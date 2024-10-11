@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -37,9 +38,10 @@ import (
 )
 
 const (
-	DefaultAtlasDomain      = "https://cloud.mongodb.com/"
-	DefaultSyncPeriod       = 3 * time.Hour
-	DefaultLeaderElectionID = "06d035fb.mongodb.com"
+	DefaultAtlasDomain           = "https://cloud.mongodb.com/"
+	DefaultSyncPeriod            = 3 * time.Hour
+	DefaultIndependentSyncPeriod = 15 * time.Minute
+	DefaultLeaderElectionID      = "06d035fb.mongodb.com"
 )
 
 type ManagerProvider interface {
@@ -53,17 +55,19 @@ func (f ManagerProviderFunc) New(config *rest.Config, options manager.Options) (
 }
 
 type Builder struct {
-	managerProvider ManagerProvider
-	scheme          *runtime.Scheme
+	managerProvider              ManagerProvider
+	scheme                       *runtime.Scheme
+	minimumIndependentSyncPeriod time.Duration
 
-	config           *rest.Config
-	namespaces       []string
-	logger           *zap.Logger
-	syncPeriod       time.Duration
-	metricAddress    string
-	probeAddress     string
-	leaderElection   bool
-	leaderElectionID string
+	config                *rest.Config
+	namespaces            []string
+	logger                *zap.Logger
+	syncPeriod            time.Duration
+	independentSyncPeriod time.Duration
+	metricAddress         string
+	probeAddress          string
+	leaderElection        bool
+	leaderElectionID      string
 
 	atlasDomain        string
 	predicates         []predicate.Predicate
@@ -139,6 +143,11 @@ func (b *Builder) WithDeletionProtection(deletionProtection bool) *Builder {
 	return b
 }
 
+func (b *Builder) WithIndependentSyncPeriod(period time.Duration) *Builder {
+	b.independentSyncPeriod = period
+	return b
+}
+
 // WithSkipNameValidation skips name validation in controller-runtime
 // to prevent duplicate controller names.
 //
@@ -151,6 +160,10 @@ func (b *Builder) WithSkipNameValidation(skip bool) *Builder {
 // Build builds the controller manager and configure operator controllers
 func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 	mergeDefaults(b)
+
+	if b.independentSyncPeriod < b.minimumIndependentSyncPeriod {
+		return nil, errors.New("wrong value for independentSyncPeriod. Value should be greater or equal to 5")
+	}
 
 	cacheOpts := cache.Options{
 		SyncPeriod: &b.syncPeriod,
@@ -233,6 +246,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.predicates,
 		b.atlasProvider,
 		b.deletionProtection,
+		b.independentSyncPeriod,
 		b.featureFlags,
 		b.logger,
 	)
@@ -310,10 +324,11 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 }
 
 // NewBuilder return a new Builder to construct operator controllers
-func NewBuilder(provider ManagerProvider, scheme *runtime.Scheme) *Builder {
+func NewBuilder(provider ManagerProvider, scheme *runtime.Scheme, minimumIndependentSyncPeriod time.Duration) *Builder {
 	return &Builder{
-		managerProvider: provider,
-		scheme:          scheme,
+		managerProvider:              provider,
+		scheme:                       scheme,
+		minimumIndependentSyncPeriod: minimumIndependentSyncPeriod,
 	}
 }
 
@@ -328,6 +343,10 @@ func mergeDefaults(b *Builder) {
 
 	if b.syncPeriod == 0 {
 		b.syncPeriod = DefaultSyncPeriod
+	}
+
+	if b.independentSyncPeriod == 0 {
+		b.independentSyncPeriod = DefaultIndependentSyncPeriod
 	}
 
 	if b.metricAddress == "" {
