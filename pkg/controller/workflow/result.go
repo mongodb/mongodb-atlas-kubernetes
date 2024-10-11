@@ -7,9 +7,7 @@ import (
 )
 
 const (
-	DefaultRetry                    = time.Second * 10
-	StandaloneResourceRequeuePeriod = time.Minute * 15
-	DefaultTimeout                  = time.Minute * 20
+	DefaultRetry = time.Second * 10
 )
 
 type Result struct {

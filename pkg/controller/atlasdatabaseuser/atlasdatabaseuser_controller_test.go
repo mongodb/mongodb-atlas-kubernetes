@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -385,7 +386,7 @@ func TestReady(t *testing.T) {
 				api.TrueCondition(api.DatabaseUserReadyType),
 			},
 		},
-		"don't requeue when it's a standalone resource": {
+		"requeue when it's a standalone resource": {
 			dbUser: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -408,7 +409,7 @@ func TestReady(t *testing.T) {
 				},
 			},
 			passwordVersion: "1",
-			expectedResult:  workflow.Requeue(workflow.StandaloneResourceRequeuePeriod).ReconcileResult(),
+			expectedResult:  workflow.Requeue(10 * time.Minute).ReconcileResult(),
 			expectedConditions: []api.Condition{
 				api.TrueCondition(api.ReadyType),
 				api.TrueCondition(api.DatabaseUserReadyType),
@@ -430,8 +431,9 @@ func TestReady(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			c := &AtlasDatabaseUserReconciler{
-				Client: k8sClient,
-				Log:    logger,
+				Client:                k8sClient,
+				Log:                   logger,
+				independentSyncPeriod: 10 * time.Minute,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),

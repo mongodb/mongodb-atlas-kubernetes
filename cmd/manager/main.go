@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
@@ -51,6 +52,7 @@ const (
 	objectDeletionProtectionDefault    = true
 	subobjectDeletionProtectionDefault = false
 	subobjectDeletionProtectionMessage = "Note: sub-object deletion protection is IGNORED because it does not work deterministically."
+	independentSyncPeriod              = 15 // time in minutes
 )
 
 func main() {
@@ -82,6 +84,7 @@ func main() {
 		WithAtlasDomain(config.AtlasDomain).
 		WithAPISecret(config.GlobalAPISecret).
 		WithDeletionProtection(config.ObjectDeletionProtection).
+		WithIndependentSyncPeriod(time.Duration(config.IndependentSyncPeriod) * time.Minute).
 		Build(ctx)
 	if err != nil {
 		setupLog.Error(err, "unable to start operator")
@@ -107,6 +110,7 @@ type Config struct {
 	LogEncoder                  string
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	IndependentSyncPeriod       int
 	FeatureFlags                *featureflags.FeatureFlags
 }
 
@@ -128,6 +132,7 @@ func parseConfiguration() Config {
 		"when a Custom Resource is deleted")
 	flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "Defines if the operator overwrites "+
 		"(and consequently delete) subresources that were not previously created by the operator. "+subobjectDeletionProtectionMessage)
+	flag.IntVar(&config.IndependentSyncPeriod, "independent-sync-period", independentSyncPeriod, "The default time, in minutes,  between reconciliations for independent custom resources. (default 15, minimum 5)")
 	appVersion := flag.Bool("v", false, "prints application version")
 	flag.Parse()
 
