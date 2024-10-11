@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -63,6 +64,7 @@ type AtlasDeploymentReconciler struct {
 	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	independentSyncPeriod       time.Duration
 
 	deploymentService deployment.AtlasDeploymentsService
 	projectService    project.ProjectService
@@ -409,7 +411,7 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
 
 	if atlasDeployment.Spec.ExternalProjectRef != nil {
-		return workflow.Requeue(workflow.StandaloneResourceRequeuePeriod).ReconcileResult(), nil
+		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
 	}
 
 	return workflow.OK().ReconcileResult(), nil
@@ -463,6 +465,7 @@ func NewAtlasDeploymentReconciler(
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
+	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
 ) *AtlasDeploymentReconciler {
 	suggaredLogger := logger.Named("controllers").Named("AtlasDeployment").Sugar()
@@ -475,6 +478,7 @@ func NewAtlasDeploymentReconciler(
 		Log:                      suggaredLogger,
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		independentSyncPeriod:    independentSyncPeriod,
 	}
 }
 

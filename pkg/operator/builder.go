@@ -235,6 +235,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		b.predicates,
 		b.atlasProvider,
 		b.deletionProtection,
+		b.independentSyncPeriod,
 		b.logger,
 	)
 	if err = deploymentReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
