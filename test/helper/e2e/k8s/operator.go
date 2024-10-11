@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
@@ -50,7 +51,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 		signalCancelledCtx = ctrl.SetupSignalHandler()
 	})
 
-	return operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme).
+	return operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme, 5*time.Minute).
 		WithConfig(ctrl.GetConfigOrDie()).
 		WithNamespaces(collection.Keys(config.WatchedNamespaces)...).
 		WithLogger(logger).

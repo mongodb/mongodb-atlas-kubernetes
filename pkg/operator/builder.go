@@ -42,8 +42,6 @@ const (
 	DefaultSyncPeriod            = 3 * time.Hour
 	DefaultIndependentSyncPeriod = 15 * time.Minute
 	DefaultLeaderElectionID      = "06d035fb.mongodb.com"
-
-	minimumIndependentSyncPeriod = 5 * time.Minute
 )
 
 type ManagerProvider interface {
@@ -57,8 +55,9 @@ func (f ManagerProviderFunc) New(config *rest.Config, options manager.Options) (
 }
 
 type Builder struct {
-	managerProvider ManagerProvider
-	scheme          *runtime.Scheme
+	managerProvider              ManagerProvider
+	scheme                       *runtime.Scheme
+	minimumIndependentSyncPeriod time.Duration
 
 	config                *rest.Config
 	namespaces            []string
@@ -162,7 +161,7 @@ func (b *Builder) WithSkipNameValidation(skip bool) *Builder {
 func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 	mergeDefaults(b)
 
-	if b.independentSyncPeriod < minimumIndependentSyncPeriod {
+	if b.independentSyncPeriod < b.minimumIndependentSyncPeriod {
 		return nil, errors.New("wrong value for independentSyncPeriod. Value should be greater or equal to 5")
 	}
 
@@ -325,10 +324,11 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 }
 
 // NewBuilder return a new Builder to construct operator controllers
-func NewBuilder(provider ManagerProvider, scheme *runtime.Scheme) *Builder {
+func NewBuilder(provider ManagerProvider, scheme *runtime.Scheme, minimumIndependentSyncPeriod time.Duration) *Builder {
 	return &Builder{
-		managerProvider: provider,
-		scheme:          scheme,
+		managerProvider:              provider,
+		scheme:                       scheme,
+		minimumIndependentSyncPeriod: minimumIndependentSyncPeriod,
 	}
 }
 

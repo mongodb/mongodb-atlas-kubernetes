@@ -188,7 +188,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	// shallow copy global config
 	managerCfg := *cfg
 	managerCfg.UserAgent = "AKO"
-	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), scheme.Scheme).
+	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), scheme.Scheme, 5*time.Minute).
 		WithConfig(&managerCfg).
 		WithNamespaces(namespace.Name).
 		WithLogger(logger).
@@ -229,7 +229,7 @@ func prepareControllersWithSyncPeriod(deletionProtection bool, syncPeriod time.D
 	// shallow copy global config
 	managerCfg := *cfg
 	managerCfg.UserAgent = "AKO"
-	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), scheme.Scheme).
+	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), scheme.Scheme, 5*time.Minute).
 		WithConfig(&managerCfg).
 		WithNamespaces(namespace.Name).
 		WithLogger(logger).

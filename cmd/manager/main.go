@@ -53,6 +53,7 @@ const (
 	subobjectDeletionProtectionDefault = false
 	subobjectDeletionProtectionMessage = "Note: sub-object deletion protection is IGNORED because it does not work deterministically."
 	independentSyncPeriod              = 15 // time in minutes
+	minimumIndependentSyncPeriod       = 5  // time in minutes
 )
 
 func main() {
@@ -74,7 +75,7 @@ func main() {
 	setupLog := logger.Named("setup").Sugar()
 	setupLog.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))
 
-	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme).
+	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme, time.Duration(minimumIndependentSyncPeriod)*time.Minute).
 		WithConfig(ctrl.GetConfigOrDie()).
 		WithNamespaces(collection.Keys(config.WatchedNamespaces)...).
 		WithLogger(logger).
@@ -132,7 +133,12 @@ func parseConfiguration() Config {
 		"when a Custom Resource is deleted")
 	flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "Defines if the operator overwrites "+
 		"(and consequently delete) subresources that were not previously created by the operator. "+subobjectDeletionProtectionMessage)
-	flag.IntVar(&config.IndependentSyncPeriod, "independent-sync-period", independentSyncPeriod, "The default time, in minutes,  between reconciliations for independent custom resources. (default 15, minimum 5)")
+	flag.IntVar(
+		&config.IndependentSyncPeriod,
+		"independent-sync-period",
+		independentSyncPeriod,
+		fmt.Sprintf("The default time, in minutes,  between reconciliations for independent custom resources. (default %d, minimum %d)", independentSyncPeriod, minimumIndependentSyncPeriod),
+	)
 	appVersion := flag.Bool("v", false, "prints application version")
 	flag.Parse()
 

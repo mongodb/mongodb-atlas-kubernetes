@@ -149,7 +149,7 @@ func TestBuildManager(t *testing.T) {
 			require.NoError(t, akov2.AddToScheme(akoScheme))
 
 			mgrMock := &managerMock{}
-			builder := NewBuilder(mgrMock, akoScheme)
+			builder := NewBuilder(mgrMock, akoScheme, 5*time.Minute)
 			tt.configure(builder)
 			// this is necessary for tests
 			builder.WithSkipNameValidation(true)
