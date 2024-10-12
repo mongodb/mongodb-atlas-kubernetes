@@ -2,6 +2,8 @@
 
 set -eou pipefail
 
+echo "Working dir: $(pwd)"
+
 if [[ -z "${HELM_CRDS_PATH}" ]]; then
   echo "HELM_CRDS_PATH is not set"
   exit 1
@@ -10,7 +12,7 @@ fi
 filesToCopy=()
 for filename in ./bundle/manifests/atlas.mongodb.com_*.yaml; do
   absName="$(basename "$filename")"
-  echo "Veryfing file: ${filename}"
+  echo "Verifying file: ${filename}"
   if ! diff "$filename" "${HELM_CRDS_PATH}"/"$absName"; then
     filesToCopy+=("$filename")
   fi
