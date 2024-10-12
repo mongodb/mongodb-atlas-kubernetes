@@ -19,7 +19,6 @@ spec:
     plural: atlasdatabaseusers
     shortNames:
     - adu
-    - du
     singular: atlasdatabaseuser
   scope: Namespaced
   versions:
