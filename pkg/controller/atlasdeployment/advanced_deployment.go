@@ -1,12 +1,12 @@
 package atlasdeployment
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -19,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 const FreeTier = "M0"
@@ -112,13 +113,17 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 }
 
 func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, deploymentInAKO deployment.Deployment, connection *status.ConnectionStrings) error {
-	dbUsers, err := r.getProjectDatabaseUsers(ctx.Context, deploymentInAKO.GetProjectID())
+	databaseUsers := &akov2.AtlasDatabaseUserList{}
+	listOpts := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProject, deploymentInAKO.GetProjectID()),
+	}
+	err := r.Client.List(ctx.Context, databaseUsers, listOpts)
 	if err != nil {
 		return err
 	}
 
 	secrets := make([]string, 0)
-	for _, dbUser := range dbUsers {
+	for _, dbUser := range databaseUsers.Items {
 		found := false
 		for _, c := range dbUser.Status.Conditions {
 			if c.Type == api.ReadyType && c.Status == v1.ConditionTrue {
@@ -203,34 +208,4 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context,
 	}
 
 	return nil
-}
-
-func (r *AtlasDeploymentReconciler) getProjectDatabaseUsers(ctx context.Context, projectID string) ([]*akov2.AtlasDatabaseUser, error) {
-	databaseUsers := &akov2.AtlasDatabaseUserList{}
-	err := r.Client.List(ctx, databaseUsers, &client.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*akov2.AtlasDatabaseUser, 0, len(databaseUsers.Items))
-	for _, dbUser := range databaseUsers.Items {
-		switch {
-		// if external reference and refer to same project as deployment, append
-		case dbUser.Spec.ExternalProjectRef != nil && dbUser.Spec.ExternalProjectRef.ID == projectID:
-			result = append(result, &dbUser)
-		// if internal reference and project resource is the same of the deployment, append
-		case dbUser.Spec.Project != nil:
-			atlasProject := &akov2.AtlasProject{}
-			err = r.Client.Get(ctx, *dbUser.Spec.Project.GetObject(dbUser.Namespace), atlasProject)
-			if err != nil {
-				return nil, err
-			}
-
-			if atlasProject.ID() == projectID {
-				result = append(result, &dbUser)
-			}
-		}
-	}
-
-	return result, nil
 }

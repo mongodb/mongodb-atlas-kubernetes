@@ -34,6 +34,7 @@ func RegisterAll(ctx context.Context, mgr manager.Manager, logger *zap.Logger) e
 		NewAtlasDatabaseUserBySecretsIndexer(logger),
 		NewAtlasDatabaseUserByCredentialIndexer(logger),
 		NewAtlasDeploymentByCredentialIndexer(logger),
+		NewAtlasDatabaseUserByProjectIndexer(ctx, mgr.GetClient(), logger),
 	)
 }
 

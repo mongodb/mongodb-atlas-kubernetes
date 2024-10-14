@@ -366,17 +366,20 @@ func TestRegularClusterReconciliation(t *testing.T) {
 	}
 	d.Spec.DeploymentSpec.SearchNodes = searchNodes
 
+	ctx := context.Background()
 	logger := zaptest.NewLogger(t)
 
 	sch := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(sch))
 	require.NoError(t, corev1.AddToScheme(sch))
+	dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(sch).
 		WithObjects(secret, project, bPolicy, bSchedule, d).
 		WithStatusSubresource(bPolicy, bSchedule).
+		WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
 		Build()
 
 	orgID := "0987654321"
@@ -535,7 +538,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 
 	t.Run("should reconcile with existing cluster", func(t *testing.T) {
 		result, err := reconciler.Reconcile(
-			context.Background(),
+			ctx,
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: d.Namespace,
@@ -549,6 +552,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 }
 
 func TestServerlessInstanceReconciliation(t *testing.T) {
+	ctx := context.Background()
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "api-secret",
@@ -585,11 +589,13 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	sch := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(sch))
 	require.NoError(t, corev1.AddToScheme(sch))
+	dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(sch).
 		WithObjects(secret, project, d).
+		WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
 		Build()
 
 	orgID := "0987654321"
@@ -660,7 +666,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 
 	t.Run("should reconcile with existing serverless instance", func(t *testing.T) {
 		result, err := reconciler.Reconcile(
-			context.Background(),
+			ctx,
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: d.Namespace,
