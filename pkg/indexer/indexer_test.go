@@ -9,6 +9,7 @@ import (
 
 	"go.uber.org/zap/zaptest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -19,11 +20,15 @@ type managerMock struct {
 	fields sets.Set[string]
 }
 
+func (m *managerMock) GetClient() client.Client {
+	return fake.NewFakeClient()
+}
+
 func (m *managerMock) GetFieldIndexer() client.FieldIndexer {
 	return m
 }
 
-func (m *managerMock) IndexField(ctx context.Context, obj client.Object, field string, extractValue client.IndexerFunc) error {
+func (m *managerMock) IndexField(_ context.Context, obj client.Object, field string, _ client.IndexerFunc) error {
 	if field == "" {
 		return fmt.Errorf("error adding indexer for type %T: field is empty", obj)
 	}

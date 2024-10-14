@@ -26,6 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 func TestHandleServerlessInstance(t *testing.T) {
@@ -779,33 +780,36 @@ func TestHandleServerlessInstance(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
 			logger := zaptest.NewLogger(t)
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
+			dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.atlasDeployment).
+				WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
 				Build()
 			reconciler := &AtlasDeploymentReconciler{
 				Client:            k8sClient,
 				Log:               logger.Sugar(),
 				deploymentService: tt.deploymentService(),
 			}
-			ctx := &workflow.Context{
-				Context:   context.Background(),
+			workflowCtx := &workflow.Context{
+				Context:   ctx,
 				Log:       logger.Sugar(),
 				SdkClient: tt.sdkMock(),
 			}
 
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Serverless)
-			result, err := reconciler.handleServerlessInstance(ctx, deploymentInAKO, tt.deploymentInAtlas)
+			result, err := reconciler.handleServerlessInstance(workflowCtx, deploymentInAKO, tt.deploymentInAtlas)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
 				cmp.Equal(
 					tt.expectedConditions,
-					ctx.Conditions(),
+					workflowCtx.Conditions(),
 					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
 				),
 			)
