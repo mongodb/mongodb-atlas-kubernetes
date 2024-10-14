@@ -55,7 +55,9 @@ func (a *AtlasDatabaseUserByProjectIndexer) Keys(object client.Object) []string 
 			return nil
 		}
 
-		return []string{project.ID()}
+		if project.ID() != "" {
+			return []string{project.ID()}
+		}
 	}
 
 	return nil
