@@ -35,7 +35,7 @@ func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -84,7 +84,7 @@ func CreateServerlessDeployment(name string, providerName string, regionName str
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
 			ServerlessSpec: &akov2.ServerlessSpec{
@@ -105,7 +105,7 @@ func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -139,7 +139,7 @@ func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -171,7 +171,7 @@ func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
 
 func NewDeploymentWithBackupSpec() akov2.AtlasDeploymentSpec {
 	return akov2.AtlasDeploymentSpec{
-		Project: common.ResourceRefNamespaced{
+		Project: &common.ResourceRefNamespaced{
 			Name: ProjectName,
 		},
 		DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -230,7 +230,7 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -276,7 +276,7 @@ func CreateFreeAdvancedDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -317,7 +317,7 @@ func CreateAdvancedDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
+			Project: &common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{

@@ -20,8 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +41,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -61,8 +64,10 @@ type AtlasDeploymentReconciler struct {
 	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	independentSyncPeriod       time.Duration
 
 	deploymentService deployment.AtlasDeploymentsService
+	projectService    project.ProjectService
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdeployments,verbs=get;list;watch;create;update;patch;delete
@@ -87,11 +92,11 @@ type AtlasDeploymentReconciler struct {
 
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
-func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasdeployment", req.NamespacedName)
 
 	atlasDeployment := &akov2.AtlasDeployment{}
-	result := customresource.PrepareResource(context, r.Client, req, atlasDeployment, log)
+	result := customresource.PrepareResource(ctx, r.Client, req, atlasDeployment, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
@@ -99,7 +104,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	if shouldSkip := customresource.ReconciliationShouldBeSkipped(atlasDeployment); shouldSkip {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasDeployment reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", atlasDeployment.Spec)
 		if !atlasDeployment.GetDeletionTimestamp().IsZero() {
-			err := r.removeDeletionFinalizer(context, atlasDeployment)
+			err := r.removeDeletionFinalizer(ctx, atlasDeployment)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("failed to remove finalizer", "error", err)
@@ -110,60 +115,47 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	}
 
 	conditions := akov2.InitCondition(atlasDeployment, api.FalseCondition(api.ReadyType))
-	ctx := workflow.NewContext(log, conditions, context)
+	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	log.Infow("-> Starting AtlasDeployment reconciliation", "spec", atlasDeployment.Spec, "status", atlasDeployment.Status)
 	defer func() {
-		statushandler.Update(ctx, r.Client, r.EventRecorder, atlasDeployment)
+		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, atlasDeployment)
 	}()
 
-	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, atlasDeployment, r.Log)
+	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, atlasDeployment, r.Log)
 	if !resourceVersionIsValid.IsOk() {
 		r.Log.Debugf("deployment validation result: %v", resourceVersionIsValid)
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 
-	project := &akov2.AtlasProject{}
-	if result = r.readProjectResource(context, atlasDeployment, project); !result.IsOk() {
-		ctx.SetConditionFromResult(api.DeploymentReadyType, result)
-		return result.ReconcileResult(), nil
-	}
-
-	if err := validate.AtlasDeployment(atlasDeployment, r.AtlasProvider.IsCloudGov(), project.Spec.RegionUsageRestrictions); err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(api.ValidationSucceeded, result)
-		return result.ReconcileResult(), nil
-	}
-	ctx.SetConditionTrue(api.ValidationSucceeded)
-
 	if !r.AtlasProvider.IsResourceSupported(atlasDeployment) {
 		result = workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDeployment is not supported by Atlas for government").
 			WithoutRetry()
-		ctx.SetConditionFromResult(api.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClient, orgID, err := r.AtlasProvider.Client(ctx.Context, project.ConnectionSecretObjectKey(), log)
+	var atlasProject *project.Project
+	var err error
+	if atlasDeployment.Spec.ExternalProjectRef != nil {
+		atlasProject, err = r.getProjectFromAtlas(workflowCtx, atlasDeployment)
+	} else {
+		atlasProject, err = r.getProjectFromKube(workflowCtx, atlasDeployment)
+	}
 	if err != nil {
-		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		ctx.SetConditionFromResult(api.DeploymentReadyType, result)
+		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
+	}
+
+	if err = validate.AtlasDeployment(atlasDeployment, r.AtlasProvider.IsCloudGov(), atlasProject.RegionUsageRestrictions); err != nil {
+		result = workflow.Terminate(workflow.Internal, err.Error())
+		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
-	ctx.OrgID = orgID
-	ctx.Client = atlasClient
+	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
-	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(ctx.Context, project.ConnectionSecretObjectKey(), log)
+	deploymentInAKO := deployment.NewDeployment(atlasProject.ID, atlasDeployment)
+	deploymentInAtlas, err := r.deploymentService.GetDeployment(workflowCtx.Context, atlasProject.ID, atlasDeployment.GetDeploymentName())
 	if err != nil {
-		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		ctx.SetConditionFromResult(api.DeploymentReadyType, result)
-		return result.ReconcileResult(), nil
-	}
-	ctx.SdkClient = atlasSdkClient
-	r.deploymentService = deployment.NewAtlasDeployments(atlasSdkClient.ClustersApi, atlasSdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
-
-	deploymentInAKO := deployment.NewDeployment(project.ID(), atlasDeployment)
-	deploymentInAtlas, err := r.deploymentService.GetDeployment(ctx.Context, project.ID(), atlasDeployment.GetDeploymentName())
-	if err != nil {
-		return r.terminate(ctx, workflow.Internal, err)
+		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
 
 	isServerless := atlasDeployment.IsServerless()
@@ -172,24 +164,87 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 
 	switch {
 	case existsInAtlas && wasDeleted:
-		return r.delete(ctx, deploymentInAKO)
+		return r.delete(workflowCtx, deploymentInAKO)
 	case !existsInAtlas && wasDeleted:
-		return r.unmanage(ctx, atlasDeployment)
+		return r.unmanage(workflowCtx, atlasDeployment)
 	case !wasDeleted && isServerless:
 		var serverlessDeployment *deployment.Serverless
 		if existsInAtlas {
 			serverlessDeployment = deploymentInAtlas.(*deployment.Serverless)
 		}
-		return r.handleServerlessInstance(ctx, deploymentInAKO.(*deployment.Serverless), serverlessDeployment)
+		return r.handleServerlessInstance(workflowCtx, deploymentInAKO.(*deployment.Serverless), serverlessDeployment)
 	case !wasDeleted && !isServerless:
 		var clusterDeployment *deployment.Cluster
 		if existsInAtlas {
 			clusterDeployment = deploymentInAtlas.(*deployment.Cluster)
 		}
-		return r.handleAdvancedDeployment(ctx, deploymentInAKO.(*deployment.Cluster), clusterDeployment)
+		return r.handleAdvancedDeployment(workflowCtx, deploymentInAKO.(*deployment.Cluster), clusterDeployment)
 	}
 
 	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasDeploymentReconciler) getProjectFromAtlas(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment) (*project.Project, error) {
+	sdkClient, orgID, err := r.AtlasProvider.SdkClient(
+		ctx.Context,
+		&client.ObjectKey{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Credentials().Name},
+		r.Log,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.SdkClient = sdkClient
+	ctx.OrgID = orgID
+	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+
+	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDeployment.Spec.ExternalProjectRef.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Need to still set old client for component not yet migrated
+	ctx.Client, _, err = r.AtlasProvider.Client(
+		ctx.Context,
+		&client.ObjectKey{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Credentials().Name},
+		r.Log,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return atlasProject, nil
+}
+
+func (r *AtlasDeploymentReconciler) getProjectFromKube(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment) (*project.Project, error) {
+	atlasProject := &akov2.AtlasProject{}
+	if err := r.Client.Get(ctx.Context, atlasDeployment.AtlasProjectObjectKey(), atlasProject); err != nil {
+		return nil, err
+	}
+
+	credentialsSecret, err := customresource.ComputeSecret(atlasProject, atlasDeployment)
+	if err != nil {
+		return nil, err
+	}
+
+	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx.Context, credentialsSecret, r.Log)
+	if err != nil {
+		return nil, err
+	}
+
+	// Need to still set old client for component not yet migrated
+	ctx.Client, _, err = r.AtlasProvider.Client(ctx.Context, credentialsSecret, r.Log)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.SdkClient = sdkClient
+	ctx.OrgID = orgID
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
+
+	return project.NewProject(atlasProject, orgID), nil
 }
 
 func (r *AtlasDeploymentReconciler) delete(
@@ -268,13 +323,6 @@ func (r *AtlasDeploymentReconciler) deleteConnectionStrings(ctx *workflow.Contex
 	}
 
 	return nil
-}
-
-func (r *AtlasDeploymentReconciler) readProjectResource(ctx context.Context, deployment *akov2.AtlasDeployment, project *akov2.AtlasProject) workflow.Result {
-	if err := r.Client.Get(ctx, deployment.AtlasProjectObjectKey(), project); err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
-	}
-	return workflow.OK()
 }
 
 func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Context, deployment *akov2.AtlasDeployment) error {
@@ -362,6 +410,10 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
 
+	if atlasDeployment.Spec.ExternalProjectRef != nil {
+		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
+	}
+
 	return workflow.OK().ReconcileResult(), nil
 }
 
@@ -393,6 +445,17 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForSearchIndexConfig),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(indexer.CredentialsIndexMapperFunc(
+				indexer.AtlasDeploymentCredentialsIndex,
+				&akov2.AtlasDeploymentList{},
+				indexer.DeploymentRequests,
+				r.Client,
+				r.Log,
+			)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
@@ -402,16 +465,20 @@ func NewAtlasDeploymentReconciler(
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
+	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
 ) *AtlasDeploymentReconciler {
+	suggaredLogger := logger.Named("controllers").Named("AtlasDeployment").Sugar()
+
 	return &AtlasDeploymentReconciler{
 		Scheme:                   mgr.GetScheme(),
 		Client:                   mgr.GetClient(),
 		EventRecorder:            mgr.GetEventRecorderFor("AtlasDeployment"),
 		GlobalPredicates:         predicates,
-		Log:                      logger.Named("controllers").Named("AtlasDeployment").Sugar(),
+		Log:                      suggaredLogger,
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		independentSyncPeriod:    independentSyncPeriod,
 	}
 }
 
