@@ -225,7 +225,7 @@ uninstall: manifests ## Uninstall CRDs from a cluster
 .PHONY: deploy
 deploy: generate manifests run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 	@./scripts/deploy.sh
- 
+
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
@@ -454,7 +454,7 @@ test-metrics:
 .PHONY: test-tools ## Test all tools
 test-tools: test-clean test-makejwt test-metrics
 
-.PHONY: sign 
+.PHONY: sign
 sign: ## Sign an AKO multi-architecture image
 	@echo "Signing multi-architecture image $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
@@ -462,16 +462,23 @@ sign: ## Sign an AKO multi-architecture image
 ./ako.pem:
 	curl $(AKO_SIGN_PUBKEY) > $@
 
-.PHONY: verify 
+.PHONY: verify
 verify: ./ako.pem ## Verify an AKO multi-architecture image's signature
 	@echo "Verifying multi-architecture image signature $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"
 
+.PHONY: helm-upd-crds
+helm-upd-crds:
+	HELM_CRDS_PATH=$(HELM_CRDS_PATH) ./scripts/helm-upd-crds.sh
+
+.PHONY: helm-upd-rbac
+helm-upd-rbac:
+	HELM_RBAC_FILE=$(HELM_RBAC_FILE) ./scripts/helm-upd-rbac.sh
+
 .PHONY: vulncheck
 vulncheck: ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
- 
 
 .PHONY: generate-sboms
 generate-sboms: ./ako.pem ## Generate a released version SBOMs
