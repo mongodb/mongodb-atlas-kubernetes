@@ -24,6 +24,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -1419,6 +1421,178 @@ func TestGetProjectFromKube(t *testing.T) {
 
 			_, err := r.getProjectFromKube(ctx, tt.atlasDeployment)
 			assert.Equal(t, tt.expectedErr, err)
+		})
+	}
+}
+
+func TestChangeDeploymentType(t *testing.T) {
+	tests := map[string]struct {
+		deployment *akov2.AtlasDeployment
+	}{
+		"should fail when existing cluster is regular but manifest defines a serverless instance": {
+			deployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					ServerlessSpec: &akov2.ServerlessSpec{
+						Name: "cluster0",
+						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
+							ProviderName:        "SERVERLESS",
+							BackingProviderName: "AWS",
+						},
+					},
+				},
+				Status: status.AtlasDeploymentStatus{
+					StateName: "IDLE",
+				},
+			},
+		},
+		"should fail when existing cluster is serverless instance but manifest defines a regular deployment": {
+			deployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name: "cluster0",
+					},
+				},
+				Status: status.AtlasDeploymentStatus{
+					StateName: "IDLE",
+				},
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "api-secret",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Data: map[string][]byte{
+					"orgId":         []byte("1234567890"),
+					"publicApiKey":  []byte("a1b2c3"),
+					"privateApiKey": []byte("abcdef123456"),
+				},
+				Type: "Opaque",
+			}
+			project := &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasProjectSpec{
+					Name: "MyProject",
+					ConnectionSecret: &common.ResourceRefNamespaced{
+						Name:      secret.Name,
+						Namespace: secret.Namespace,
+					},
+				},
+				Status: status.AtlasProjectStatus{ID: "abc123"},
+			}
+
+			ctx := context.Background()
+			logger := zaptest.NewLogger(t)
+
+			sch := runtime.NewScheme()
+			require.NoError(t, akov2.AddToScheme(sch))
+			require.NoError(t, corev1.AddToScheme(sch))
+			dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(sch).
+				WithObjects(secret, project, tt.deployment).
+				WithStatusSubresource(project, tt.deployment).
+				WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
+				Build()
+
+			atlasProvider := &atlasmock.TestProvider{
+				IsCloudGovFunc: func() bool {
+					return false
+				},
+				IsSupportedFunc: func() bool {
+					return true
+				},
+				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+					return &mongodbatlas.Client{}, "org-id", nil
+				},
+				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+					clusterAPI := mockadmin.NewClustersApi(t)
+					clusterAPI.EXPECT().GetCluster(ctx, "abc123", "cluster0").
+						Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+					clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+						RunAndReturn(
+							func(request admin.GetClusterApiRequest) (*admin.AdvancedClusterDescription, *http.Response, error) {
+								if !tt.deployment.IsServerless() {
+									err := &admin.GenericOpenAPIError{}
+									err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
+									return nil, nil, err
+								}
+								return &admin.AdvancedClusterDescription{Name: pointer.MakePtr("cluster0")}, nil, nil
+							},
+						)
+
+					serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
+					if !tt.deployment.IsServerless() {
+						serverlessAPI.EXPECT().GetServerlessInstance(ctx, "abc123", "cluster0").
+							Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
+						serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
+							Return(&admin.ServerlessInstanceDescription{Name: pointer.MakePtr("cluster0")}, nil, nil)
+					}
+
+					return &admin.APIClient{ClustersApi: clusterAPI, ServerlessInstancesApi: serverlessAPI}, "org-id", nil
+				},
+			}
+
+			r := &AtlasDeploymentReconciler{
+				Client:        k8sClient,
+				AtlasProvider: atlasProvider,
+				Log:           logger.Sugar(),
+				EventRecorder: record.NewFakeRecorder(1),
+			}
+			result, err := r.Reconcile(
+				ctx,
+				ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: tt.deployment.Namespace,
+						Name:      tt.deployment.Name,
+					},
+				},
+			)
+
+			assert.NoError(t, err)
+			assert.Equal(t, ctrl.Result{Requeue: false, RequeueAfter: workflow.DefaultRetry}, result)
+			assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(tt.deployment), tt.deployment))
+			assert.True(
+				t,
+				cmp.Equal(
+					[]api.Condition{
+						api.FalseCondition(api.ReadyType),
+						api.TrueCondition(api.ResourceVersionStatus),
+						api.TrueCondition(api.ValidationSucceeded),
+						api.FalseCondition(api.DeploymentReadyType).
+							WithReason(string(workflow.Internal)).
+							WithMessageRegexp("regular deployment cannot be converted into a serverless deployment and vice-versa"),
+					},
+					tt.deployment.Status.Conditions,
+					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+				),
+			)
 		})
 	}
 }
