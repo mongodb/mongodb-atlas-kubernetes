@@ -474,8 +474,8 @@ func labelsFromAtlas(cLabels []admin.ComponentLabel) []common.LabelSpec {
 }
 
 func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec) []*akov2.AdvancedReplicationSpec {
-	hSpecOrDefault := func(spec admin.HardwareSpec) *akov2.Specs {
-		if spec.GetNodeCount() == 0 {
+	hSpecOrDefault := func(spec admin.HardwareSpec, providerName string) *akov2.Specs {
+		if spec.GetNodeCount() == 0 && providerName != string(provider.ProviderTenant) {
 			return nil
 		}
 
@@ -536,7 +536,7 @@ func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec) []*akov2
 					BackingProviderName: regionConfig.GetBackingProviderName(),
 					RegionName:          regionConfig.GetRegionName(),
 					Priority:            regionConfig.Priority,
-					ElectableSpecs:      hSpecOrDefault(regionConfig.GetElectableSpecs()),
+					ElectableSpecs:      hSpecOrDefault(regionConfig.GetElectableSpecs(), regionConfig.GetProviderName()),
 					ReadOnlySpecs:       dHSpecOrDefault(regionConfig.GetReadOnlySpecs()),
 					AnalyticsSpecs:      dHSpecOrDefault(regionConfig.GetAnalyticsSpecs()),
 					AutoScaling:         autoScalingOrDefault(regionConfig.GetAutoScaling()),
