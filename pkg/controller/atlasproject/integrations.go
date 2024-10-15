@@ -3,7 +3,6 @@ package atlasproject
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
@@ -164,7 +163,7 @@ func toAliasThirdPartyIntegration(list []admin.ThirdPartyIntegration) []aliasThi
 
 func syncPrometheusStatus(ctx *workflow.Context, project *akov2.AtlasProject, integrationPairs [][]set.Identifiable) {
 	ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(&status.Prometheus{
-		DiscoveryURL: buildPrometheusDiscoveryURL(ctx.Client.BaseURL, project.ID()),
+		DiscoveryURL: buildPrometheusDiscoveryURL(ctx.SdkClient.GetConfig().Servers[0].URL, project.ID()),
 	}))
 }
 
@@ -190,7 +189,7 @@ func isPrometheusType(typeName string) bool {
 	return typeName == "PROMETHEUS"
 }
 
-func buildPrometheusDiscoveryURL(baseURL *url.URL, projectID string) string {
-	api := fmt.Sprintf("https://%s/prometheus/v1.0", baseURL.Host)
+func buildPrometheusDiscoveryURL(baseURL string, projectID string) string {
+	api := fmt.Sprintf("%s/prometheus/v1.0", baseURL)
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
 }

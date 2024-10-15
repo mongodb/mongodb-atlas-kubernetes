@@ -57,7 +57,7 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			atlasSDKMocker: func() *admin.APIClient {
-				return nil
+				return admin.NewAPIClient(admin.NewConfiguration())
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -90,7 +90,7 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			atlasSDKMocker: func() *admin.APIClient {
-				return nil
+				return admin.NewAPIClient(admin.NewConfiguration())
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -149,10 +149,11 @@ func TestHandleProject(t *testing.T) {
 					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
 
-				return &admin.APIClient{
-					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
-					NetworkPeeringApi:          mockPeeringEndpointAPI,
-				}
+				client := admin.NewAPIClient(admin.NewConfiguration())
+				client.PrivateEndpointServicesApi = mockPrivateEndpointAPI
+				client.NetworkPeeringApi = mockPeeringEndpointAPI
+
+				return client
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -186,7 +187,7 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			atlasSDKMocker: func() *admin.APIClient {
-				return nil
+				return admin.NewAPIClient(admin.NewConfiguration())
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -216,7 +217,7 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			atlasSDKMocker: func() *admin.APIClient {
-				return nil
+				return admin.NewAPIClient(admin.NewConfiguration())
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -257,7 +258,7 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			atlasSDKMocker: func() *admin.APIClient {
-				return nil
+				return admin.NewAPIClient(admin.NewConfiguration())
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -293,11 +294,6 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should configure project resources": {
 			atlasClientMocker: func() *mongodbatlas.Client {
-				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
-					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						return &mongodbatlas.ThirdPartyIntegrations{}, nil, nil
-					},
-				}
 				encryptionAtRest := &atlasmocks.EncryptionAtRestClientMock{
 					GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
@@ -306,7 +302,6 @@ func TestHandleProject(t *testing.T) {
 				projectAPI := &atlasmocks.ProjectsClientMock{}
 
 				return &mongodbatlas.Client{
-					Integrations:      integrations,
 					EncryptionsAtRest: encryptionAtRest,
 					Projects:          projectAPI,
 				}
@@ -351,16 +346,22 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				integrations := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrations.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrations})
+				integrations.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
 
-				return &admin.APIClient{
-					ProjectIPAccessListApi:     ipAccessList,
-					PrivateEndpointServicesApi: privateEndpoints,
-					NetworkPeeringApi:          networkPeering,
-					AuditingApi:                audit,
-					CustomDatabaseRolesApi:     customRoles,
-					ProjectsApi:                projectAPI,
-					CloudBackupsApi:            backup,
-				}
+				client := admin.NewAPIClient(admin.NewConfiguration())
+				client.ProjectIPAccessListApi = ipAccessList
+				client.PrivateEndpointServicesApi = privateEndpoints
+				client.NetworkPeeringApi = networkPeering
+				client.AuditingApi = audit
+				client.CustomDatabaseRolesApi = customRoles
+				client.ProjectsApi = projectAPI
+				client.CloudBackupsApi = backup
+				client.ThirdPartyIntegrationsApi = integrations
+				return client
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -396,11 +397,6 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should fail to configure project resources": {
 			atlasClientMocker: func() *mongodbatlas.Client {
-				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
-					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						return &mongodbatlas.ThirdPartyIntegrations{}, nil, nil
-					},
-				}
 				encryptionAtRest := &atlasmocks.EncryptionAtRestClientMock{
 					GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
@@ -408,7 +404,6 @@ func TestHandleProject(t *testing.T) {
 				}
 
 				return &mongodbatlas.Client{
-					Integrations:      integrations,
 					EncryptionsAtRest: encryptionAtRest,
 				}
 			},
@@ -452,16 +447,23 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				integrations := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrations.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrations})
+				integrations.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
 
-				return &admin.APIClient{
-					ProjectIPAccessListApi:     ipAccessList,
-					PrivateEndpointServicesApi: privateEndpoints,
-					NetworkPeeringApi:          networkPeering,
-					AuditingApi:                audit,
-					CustomDatabaseRolesApi:     customRoles,
-					ProjectsApi:                projectAPI,
-					CloudBackupsApi:            backup,
-				}
+				client := admin.NewAPIClient(admin.NewConfiguration())
+
+				client.ProjectIPAccessListApi = ipAccessList
+				client.PrivateEndpointServicesApi = privateEndpoints
+				client.NetworkPeeringApi = networkPeering
+				client.AuditingApi = audit
+				client.CustomDatabaseRolesApi = customRoles
+				client.ProjectsApi = projectAPI
+				client.CloudBackupsApi = backup
+				client.ThirdPartyIntegrationsApi = integrations
+				return client
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -499,11 +501,6 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should fail to save last applied config": {
 			atlasClientMocker: func() *mongodbatlas.Client {
-				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
-					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						return &mongodbatlas.ThirdPartyIntegrations{}, nil, nil
-					},
-				}
 				encryptionAtRest := &atlasmocks.EncryptionAtRestClientMock{
 					GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 						return &mongodbatlas.EncryptionAtRest{}, nil, nil
@@ -511,7 +508,6 @@ func TestHandleProject(t *testing.T) {
 				}
 
 				return &mongodbatlas.Client{
-					Integrations:      integrations,
 					EncryptionsAtRest: encryptionAtRest,
 				}
 			},
@@ -555,16 +551,23 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				integrations := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrations.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrations})
+				integrations.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
 
-				return &admin.APIClient{
-					ProjectIPAccessListApi:     ipAccessList,
-					PrivateEndpointServicesApi: privateEndpoints,
-					NetworkPeeringApi:          networkPeering,
-					AuditingApi:                audit,
-					CustomDatabaseRolesApi:     customRoles,
-					ProjectsApi:                projectAPI,
-					CloudBackupsApi:            backup,
-				}
+				client := admin.NewAPIClient(admin.NewConfiguration())
+
+				client.ProjectIPAccessListApi = ipAccessList
+				client.PrivateEndpointServicesApi = privateEndpoints
+				client.NetworkPeeringApi = networkPeering
+				client.AuditingApi = audit
+				client.CustomDatabaseRolesApi = customRoles
+				client.ProjectsApi = projectAPI
+				client.CloudBackupsApi = backup
+				client.ThirdPartyIntegrationsApi = integrations
+				return client
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
