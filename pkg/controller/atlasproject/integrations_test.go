@@ -2,16 +2,18 @@ package atlasproject
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 
 	"go.uber.org/zap"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
@@ -62,13 +64,11 @@ func TestAreIntegrationsEqual(t *testing.T) {
 }
 
 func TestUpdateIntegrationsAtlas(t *testing.T) {
-	calls := 0
 	for _, tc := range []struct {
 		title          string
 		toUpdate       [][]set.Identifiable
 		integrationAPI *mockadmin.ThirdPartyIntegrationsApi
 		expectedResult workflow.Result
-		expectedCalls  int
 	}{
 		{
 			title:          "nil list does nothing",
@@ -88,7 +88,6 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 					{
 						admin.ThirdPartyIntegration{
 							Type:                     pointer.MakePtr("MICROSOFT_TEAMS"),
-							Name:                     testNamespace,
 							MicrosoftTeamsWebhookUrl: pointer.MakePtr("https://somehost/somepath/somesecret"),
 							Enabled:                  pointer.MakePtr(true),
 						},
@@ -101,16 +100,15 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 						Enabled:                  true,
 					},
 				}),
-			client: &mongodbatlas.Client{
-				Integrations: &atlas.IntegrationsMock{
-					ReplaceFunc: func(ctx context.Context, projectID string, integrationType string, integration *mongodbatlas.ThirdPartyIntegration) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						calls += 1
-						return nil, nil, nil
-					},
-				},
-			},
+			integrationAPI: func() *mockadmin.ThirdPartyIntegrationsApi {
+				api := mockadmin.NewThirdPartyIntegrationsApi(t)
+				api.EXPECT().UpdateThirdPartyIntegration(context.Background(), "MICROSOFT_TEAMS", "project-id", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
+					Return(admin.UpdateThirdPartyIntegrationApiRequest{ApiService: api})
+				api.EXPECT().UpdateThirdPartyIntegrationExecute(mock.Anything).
+					Return(&admin.PaginatedIntegration{}, &http.Response{}, nil)
+				return api
+			}(),
 			expectedResult: workflow.OK(),
-			expectedCalls:  1,
 		},
 
 		{
@@ -118,10 +116,11 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 			toUpdate: set.Intersection(
 				[]aliasThirdPartyIntegration{
 					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
+						admin.ThirdPartyIntegration{
+							Type:                     pointer.MakePtr("MICROSOFT_TEAMS"),
+							MicrosoftTeamsWebhookUrl: pointer.MakePtr("https://somehost/somepath/somesecret"),
+							Enabled:                  pointer.MakePtr(true),
+						},
 					},
 				},
 				[]project.Integration{
@@ -131,16 +130,15 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 						Enabled:                  true,
 					},
 				}),
-			client: &mongodbatlas.Client{
-				Integrations: &atlas.IntegrationsMock{
-					ReplaceFunc: func(ctx context.Context, projectID string, integrationType string, integration *mongodbatlas.ThirdPartyIntegration) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						calls += 1
-						return nil, nil, nil
-					},
-				},
-			},
+			integrationAPI: func() *mockadmin.ThirdPartyIntegrationsApi {
+				api := mockadmin.NewThirdPartyIntegrationsApi(t)
+				api.EXPECT().UpdateThirdPartyIntegration(context.Background(), "MICROSOFT_TEAMS", "project-id", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
+					Return(admin.UpdateThirdPartyIntegrationApiRequest{ApiService: api}).Once()
+				api.EXPECT().UpdateThirdPartyIntegrationExecute(mock.Anything).
+					Return(&admin.PaginatedIntegration{}, &http.Response{}, nil).Once()
+				return api
+			}(),
 			expectedResult: workflow.OK(),
-			expectedCalls:  1,
 		},
 
 		{
@@ -148,10 +146,11 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 			toUpdate: set.Intersection(
 				[]aliasThirdPartyIntegration{
 					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
+						admin.ThirdPartyIntegration{
+							Type:                     pointer.MakePtr("MICROSOFT_TEAMS"),
+							MicrosoftTeamsWebhookUrl: pointer.MakePtr("https://somehost/somepath/somesecret"),
+							Enabled:                  pointer.MakePtr(true),
+						},
 					},
 				},
 				[]project.Integration{
@@ -161,29 +160,28 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 						Enabled:                  true,
 					},
 				}),
-			client: &mongodbatlas.Client{
-				Integrations: &atlas.IntegrationsMock{
-					ReplaceFunc: func(ctx context.Context, projectID string, integrationType string, integration *mongodbatlas.ThirdPartyIntegration) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						calls += 1
-						return nil, nil, errTest
-					},
-				},
-			},
+			integrationAPI: func() *mockadmin.ThirdPartyIntegrationsApi {
+				api := mockadmin.NewThirdPartyIntegrationsApi(t)
+				api.EXPECT().UpdateThirdPartyIntegration(context.Background(), "MICROSOFT_TEAMS", "project-id", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
+					Return(admin.UpdateThirdPartyIntegrationApiRequest{ApiService: api}).Once()
+				api.EXPECT().UpdateThirdPartyIntegrationExecute(mock.Anything).
+					Return(&admin.PaginatedIntegration{}, &http.Response{}, errors.New("fake test error")).Once()
+				return api
+			}(),
 			expectedResult: workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Can not apply integration: %v", errTest)),
-			expectedCalls:  1,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				Context: context.Background(),
 				Log:     zap.S(),
-				Client:  tc.client,
+				SdkClient: &admin.APIClient{
+					ThirdPartyIntegrationsApi: tc.integrationAPI,
+				},
 			}
 			r := AtlasProjectReconciler{}
-			calls = 0
 			result := r.updateIntegrationsAtlas(workflowCtx, testProjectID, tc.toUpdate, testNamespace)
 			assert.Equal(t, tc.expectedResult, result)
-			assert.Equal(t, tc.expectedCalls, calls)
 		})
 	}
 }
@@ -219,10 +217,11 @@ func TestCheckIntegrationsReady(t *testing.T) {
 			toCheck: set.Intersection(
 				[]aliasThirdPartyIntegration{
 					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
+						admin.ThirdPartyIntegration{
+							Type:                     pointer.MakePtr("MICROSOFT_TEAMS"),
+							MicrosoftTeamsWebhookUrl: pointer.MakePtr("https://somehost/somepath/somesecret"),
+							Enabled:                  pointer.MakePtr(true),
+						},
 					},
 				},
 				[]project.Integration{
@@ -241,10 +240,11 @@ func TestCheckIntegrationsReady(t *testing.T) {
 			toCheck: set.Intersection(
 				[]aliasThirdPartyIntegration{
 					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
+						admin.ThirdPartyIntegration{
+							Type:                     pointer.MakePtr("MICROSOFT_TEAMS"),
+							MicrosoftTeamsWebhookUrl: pointer.MakePtr("https://somehost/somepath/somesecret"),
+							Enabled:                  pointer.MakePtr(true),
+						},
 					},
 				},
 				[]project.Integration{
@@ -263,16 +263,19 @@ func TestCheckIntegrationsReady(t *testing.T) {
 			toCheck: set.Intersection(
 				[]aliasThirdPartyIntegration{
 					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
+						admin.ThirdPartyIntegration{
+							Type:                     pointer.MakePtr("MICROSOFT_TEAMS"),
+							MicrosoftTeamsWebhookUrl: pointer.MakePtr("https://somehost/somepath/somesecret"),
+							Enabled:                  pointer.MakePtr(true),
+						},
 					},
 					{
-						Type:             "PROMETHEUS",
-						UserName:         "prometheus",
-						ServiceDiscovery: "http",
-						Enabled:          true,
+						admin.ThirdPartyIntegration{
+							Type:             pointer.MakePtr("PROMETHEUS"),
+							Username:         pointer.MakePtr("prometheus"),
+							ServiceDiscovery: pointer.MakePtr("http"),
+							Enabled:          pointer.MakePtr(true),
+						},
 					},
 				},
 				[]project.Integration{
@@ -297,16 +300,19 @@ func TestCheckIntegrationsReady(t *testing.T) {
 			toCheck: set.Intersection(
 				[]aliasThirdPartyIntegration{
 					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
+						admin.ThirdPartyIntegration{
+							Type:                     pointer.MakePtr("MICROSOFT_TEAMS"),
+							MicrosoftTeamsWebhookUrl: pointer.MakePtr("https://somehost/somepath/somesecret"),
+							Enabled:                  pointer.MakePtr(true),
+						},
 					},
 					{
-						Type:             "PROMETHEUS",
-						UserName:         "prometheus",
-						ServiceDiscovery: "http",
-						Enabled:          true,
+						admin.ThirdPartyIntegration{
+							Type:             pointer.MakePtr("PROMETHEUS"),
+							Username:         pointer.MakePtr("prometheus"),
+							ServiceDiscovery: pointer.MakePtr("http"),
+							Enabled:          pointer.MakePtr(true),
+						},
 					},
 				},
 				[]project.Integration{
