@@ -14,7 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
-func TestAtlasFederatedAuthBySecretsIndexer(t *testing.T) {
+func TestAtlasDataFederationByProjectIndexer(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		object   client.Object
@@ -22,43 +22,43 @@ func TestAtlasFederatedAuthBySecretsIndexer(t *testing.T) {
 	}{
 		{
 			name:   "should return nil on wrong type",
-			object: &akov2.AtlasDatabaseUser{},
+			object: &akov2.AtlasDeployment{},
 		},
 		{
 			name:   "should return nil when there are no references",
-			object: &akov2.AtlasFederatedAuth{},
+			object: &akov2.AtlasDataFederation{},
 		},
 		{
 			name: "should return nil when there is an empty reference",
-			object: &akov2.AtlasFederatedAuth{
-				Spec: akov2.AtlasFederatedAuthSpec{
-					ConnectionSecretRef: common.ResourceRefNamespaced{},
+			object: &akov2.AtlasDataFederation{
+				Spec: akov2.DataFederationSpec{
+					Project: common.ResourceRefNamespaced{},
 				},
 			},
 		},
 		{
 			name: "should return project namespace if name is set only",
-			object: &akov2.AtlasFederatedAuth{
+			object: &akov2.AtlasDataFederation{
 				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns"},
-				Spec: akov2.AtlasFederatedAuthSpec{
-					ConnectionSecretRef: common.ResourceRefNamespaced{Name: "someSecret"},
+				Spec: akov2.DataFederationSpec{
+					Project: common.ResourceRefNamespaced{Name: "someProject"},
 				},
 			},
-			wantKeys: []string{"ns/someSecret"},
+			wantKeys: []string{"ns/someProject"},
 		},
 		{
 			name: "should return secret namespace and name if set",
-			object: &akov2.AtlasFederatedAuth{
+			object: &akov2.AtlasDataFederation{
 				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns"},
-				Spec: akov2.AtlasFederatedAuthSpec{
-					ConnectionSecretRef: common.ResourceRefNamespaced{Name: "someSecret", Namespace: "secretNamespace"},
+				Spec: akov2.DataFederationSpec{
+					Project: common.ResourceRefNamespaced{Name: "someProject", Namespace: "otherNs"},
 				},
 			},
-			wantKeys: []string{"secretNamespace/someSecret"},
+			wantKeys: []string{"otherNs/someProject"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			indexer := NewAtlasFederatedAuthBySecretsIndexer(zaptest.NewLogger(t))
+			indexer := NewAtlasDataFederationByProjectIndexer(zaptest.NewLogger(t))
 			keys := indexer.Keys(tc.object)
 			sort.Strings(keys)
 			assert.Equal(t, tc.wantKeys, keys)

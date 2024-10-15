@@ -2,6 +2,7 @@ package atlasdatafederation
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,9 +11,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
@@ -22,6 +25,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 func TestDeleteConnectionSecrets(t *testing.T) {
@@ -234,6 +238,72 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantSecrets, gotSecrets.Items)
+		})
+	}
+}
+
+func TestFindAtlasDataFederationForProjects(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasDeployment{},
+			want: nil,
+		},
+		{
+			name: "same namespace",
+			obj: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "ns"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasDataFederation{
+					ObjectMeta: metav1.ObjectMeta{Name: "adf1", Namespace: "ns"},
+					Spec: akov2.DataFederationSpec{
+						Project: common.ResourceRefNamespaced{Name: "project"},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "adf1", Namespace: "ns"}},
+			},
+		},
+		{
+			name: "different namespace",
+			obj: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "ns2"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasDataFederation{
+					ObjectMeta: metav1.ObjectMeta{Name: "adf1", Namespace: "ns"},
+					Spec: akov2.DataFederationSpec{
+						Project: common.ResourceRefNamespaced{Name: "project"},
+					},
+				},
+			},
+			want: []reconcile.Request{},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			idx := indexer.NewAtlasDataFederationByProjectIndexer(zaptest.NewLogger(t))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(idx.Object(), idx.Name(), idx.Keys).
+				Build()
+			reconciler := &AtlasDataFederationReconciler{
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
+			}
+			got := reconciler.findAtlasDataFederationForProjects(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", got, tc.want)
+			}
 		})
 	}
 }
