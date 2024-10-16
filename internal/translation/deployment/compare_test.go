@@ -829,6 +829,50 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 		},
+		"should return false when instance size of shared cluster changed": {
+			ako: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName:        "TENANT",
+										BackingProviderName: "AWS",
+										RegionName:          "US_EAST_1",
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M2",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			atlas: &admin.AdvancedClusterDescription{
+				Name:        pointer.MakePtr("cluster0"),
+				ClusterType: pointer.MakePtr("REPLICASET"),
+				ReplicationSpecs: &[]admin.ReplicationSpec{
+					{
+						NumShards: pointer.MakePtr(1),
+						RegionConfigs: &[]admin.CloudRegionConfig{
+							{
+								ProviderName:        pointer.MakePtr("TENANT"),
+								BackingProviderName: pointer.MakePtr("AWS"),
+								RegionName:          pointer.MakePtr("US_EAST_1"),
+								ElectableSpecs: &admin.HardwareSpec{
+									InstanceSize: pointer.MakePtr("M0"),
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: false,
+		},
 		"should return true when cluster are the same": {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
