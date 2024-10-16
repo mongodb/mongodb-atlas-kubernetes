@@ -24,6 +24,7 @@ type Deployment interface {
 	GetMongoDBVersion() string
 	GetConnection() *status.ConnectionStrings
 	GetReplicaSet() []status.ReplicaSet
+	IsServerless() bool
 }
 
 type Cluster struct {
@@ -69,6 +70,10 @@ func (c *Cluster) GetCustomResource() *akov2.AtlasDeployment {
 	return c.customResource
 }
 
+func (c *Cluster) IsServerless() bool {
+	return false
+}
+
 func (c *Cluster) IsTenant() bool {
 	return c.isTenant
 }
@@ -109,6 +114,10 @@ func (s *Serverless) GetReplicaSet() []status.ReplicaSet {
 
 func (s *Serverless) GetCustomResource() *akov2.AtlasDeployment {
 	return s.customResource
+}
+
+func (s *Serverless) IsServerless() bool {
+	return true
 }
 
 type Connection struct {
