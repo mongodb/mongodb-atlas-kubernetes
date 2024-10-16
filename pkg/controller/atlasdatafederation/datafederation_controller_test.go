@@ -2,37 +2,36 @@ package atlasdatafederation
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
-
-type DataFederationMock struct {
-	mongodbatlas.DataFederationService
-}
-
-func (m *DataFederationMock) Delete(context.Context, string, string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
 
 func TestDeleteConnectionSecrets(t *testing.T) {
 	for _, tc := range []struct {
 		name              string
+		service           func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService
 		atlasProject      *akov2.AtlasProject
 		dataFederation    *akov2.AtlasDataFederation
 		connectionSecrets []*corev1.Secret
@@ -71,6 +70,10 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 		},
 		{
 			name: "federation object without secrets",
+			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
+				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
+				return serviceMock
+			},
 			atlasProject: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
 			},
@@ -92,6 +95,10 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 		},
 		{
 			name: "federation object without secrets",
+			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
+				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
+				return serviceMock
+			},
 			atlasProject: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
 			},
@@ -115,6 +122,10 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 		},
 		{
 			name: "federation object with secrets",
+			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
+				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
+				return serviceMock
+			},
 			atlasProject: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
 				Status:     status.AtlasProjectStatus{ID: "123"},
@@ -201,15 +212,17 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 				WithObjects(objects...).
 				Build()
 			project := &akov2.AtlasProject{}
-			atlasClient := &mongodbatlas.Client{
-				DataFederation: &DataFederationMock{},
-			}
 
 			r := &AtlasDataFederationReconciler{
 				Client: fakeClient,
 				Log:    logger,
 			}
-			gotResult := r.handleDelete(ctx, logger, tc.dataFederation, project, atlasClient)
+
+			var svc datafederation.DataFederationService
+			if tc.service != nil {
+				svc = tc.service(translation.NewDataFederationServiceMock(t))
+			}
+			gotResult := r.handleDelete(ctx, logger, tc.dataFederation, project, svc)
 			assert.Equal(t, tc.wantResult, gotResult)
 
 			gotDataFederation := &akov2.AtlasDataFederation{}
@@ -225,6 +238,72 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantSecrets, gotSecrets.Items)
+		})
+	}
+}
+
+func TestFindAtlasDataFederationForProjects(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		obj      client.Object
+		initObjs []client.Object
+		want     []reconcile.Request
+	}{
+		{
+			name: "wrong type",
+			obj:  &akov2.AtlasDeployment{},
+			want: nil,
+		},
+		{
+			name: "same namespace",
+			obj: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "ns"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasDataFederation{
+					ObjectMeta: metav1.ObjectMeta{Name: "adf1", Namespace: "ns"},
+					Spec: akov2.DataFederationSpec{
+						Project: common.ResourceRefNamespaced{Name: "project"},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "adf1", Namespace: "ns"}},
+			},
+		},
+		{
+			name: "different namespace",
+			obj: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "ns2"},
+			},
+			initObjs: []client.Object{
+				&akov2.AtlasDataFederation{
+					ObjectMeta: metav1.ObjectMeta{Name: "adf1", Namespace: "ns"},
+					Spec: akov2.DataFederationSpec{
+						Project: common.ResourceRefNamespaced{Name: "project"},
+					},
+				},
+			},
+			want: []reconcile.Request{},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			idx := indexer.NewAtlasDataFederationByProjectIndexer(zaptest.NewLogger(t))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.initObjs...).
+				WithIndex(idx.Object(), idx.Name(), idx.Keys).
+				Build()
+			reconciler := &AtlasDataFederationReconciler{
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
+			}
+			got := reconciler.findAtlasDataFederationForProjects(context.Background(), tc.obj)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want reconcile requests: %v, got %v", got, tc.want)
+			}
 		})
 	}
 }
