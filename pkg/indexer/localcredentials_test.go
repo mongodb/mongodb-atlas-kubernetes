@@ -2,7 +2,9 @@ package indexer
 
 import (
 	"context"
+	"fmt"
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,6 +21,10 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+)
+
+const (
+	testUsername = "matching-user"
 )
 
 func TestAtlasDatabaseUserLocalCredentialsIndexer(t *testing.T) {
@@ -106,27 +112,8 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 		{
 			name:     "matching input credentials renders matching user",
 			mapperFn: dbUserMapperFunc,
-			input: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret-ref",
-					Namespace: "ns",
-				},
-			},
-			objects: []client.Object{
-				&akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "matching-user",
-						Namespace: "ns",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						LocalCredentialHolder: api.LocalCredentialHolder{
-							ConnectionSecret: &api.LocalObjectReference{
-								Name: "secret-ref",
-							},
-						},
-					},
-				},
-			},
+			input:    newTestSecret("matching-user-secret-ref"),
+			objects:  []client.Object{newTestUser("matching-user")},
 			want: []reconcile.Request{
 				{NamespacedName: types.NamespacedName{
 					Name:      "matching-user",
@@ -161,10 +148,77 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 	}
 }
 
-func dbUserMapperFunc(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
-	return CredentialsIndexMapperFunc(
+func TestCredentialsIndexMapperFuncRace(t *testing.T) {
+	scheme := runtime.NewScheme()
+	assert.NoError(t, corev1.AddToScheme(scheme))
+	assert.NoError(t, akov2.AddToScheme(scheme))
+	indexer := NewLocalCredentialsIndexer(
 		AtlasDatabaseUserCredentialsIndex,
-		&akov2.AtlasDatabaseUserList{},
+		&akov2.AtlasDatabaseUser{},
+		zaptest.NewLogger(t),
+	)
+	objs := make([]client.Object, 10)
+	for i := range objs {
+		objs[i] = newTestUser(fmt.Sprintf("%s-%d", testUsername, i))
+	}
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(objs...).
+		WithIndex(
+			&akov2.AtlasDatabaseUser{},
+			AtlasDatabaseUserCredentialsIndex,
+			func(obj client.Object) []string {
+				return indexer.Keys(obj)
+			}).
+		Build()
+	fn := dbUserMapperFunc(fakeClient, zaptest.NewLogger(t).Sugar())
+	ctx := context.Background()
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			input := newTestSecret(fmt.Sprintf("%s-%d-secret-ref", testUsername, i))
+			result := fn(ctx, input)
+			if i < len(objs) {
+				assert.NotEmpty(t, result, "failed to find for index %d", i)
+			} else {
+				assert.Empty(t, result, "failed not to find for index %d", i)
+			}
+		}(i)
+	}
+	wg.Wait()
+}
+
+func newTestUser(username string) *akov2.AtlasDatabaseUser {
+	return &akov2.AtlasDatabaseUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      username,
+			Namespace: "ns",
+		},
+		Spec: akov2.AtlasDatabaseUserSpec{
+			LocalCredentialHolder: api.LocalCredentialHolder{
+				ConnectionSecret: &api.LocalObjectReference{
+					Name: fmt.Sprintf("%s-secret-ref", username),
+				},
+			},
+		},
+	}
+}
+
+func newTestSecret(name string) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "ns",
+		},
+	}
+}
+
+func dbUserMapperFunc(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+	return CredentialsIndexMapperFunc[*akov2.AtlasDatabaseUserList](
+		AtlasDatabaseUserCredentialsIndex,
+		func() *akov2.AtlasDatabaseUserList { return &akov2.AtlasDatabaseUserList{} },
 		DatabaseUserRequests,
 		kubeClient,
 		logger,

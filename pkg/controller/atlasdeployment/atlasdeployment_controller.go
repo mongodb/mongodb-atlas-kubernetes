@@ -451,13 +451,7 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 		).
 		Watches(
 			&corev1.Secret{},
-			handler.EnqueueRequestsFromMapFunc(indexer.CredentialsIndexMapperFunc(
-				indexer.AtlasDeploymentCredentialsIndex,
-				&akov2.AtlasDeploymentList{},
-				indexer.DeploymentRequests,
-				r.Client,
-				r.Log,
-			)),
+			handler.EnqueueRequestsFromMapFunc(r.deploymentsForCredentialMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
@@ -594,4 +588,14 @@ func (r *AtlasDeploymentReconciler) findDeploymentsForSearchIndexConfig(ctx cont
 	}
 
 	return requests
+}
+
+func (r *AtlasDeploymentReconciler) deploymentsForCredentialMapFunc() handler.MapFunc {
+	return indexer.CredentialsIndexMapperFunc(
+		indexer.AtlasDeploymentCredentialsIndex,
+		func() *akov2.AtlasDeploymentList { return &akov2.AtlasDeploymentList{} },
+		indexer.DeploymentRequests,
+		r.Client,
+		r.Log,
+	)
 }

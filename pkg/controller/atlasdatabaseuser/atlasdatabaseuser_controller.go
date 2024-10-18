@@ -222,13 +222,7 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager, skipNam
 		).
 		Watches(
 			&corev1.Secret{},
-			handler.EnqueueRequestsFromMapFunc(indexer.CredentialsIndexMapperFunc(
-				indexer.AtlasDatabaseUserCredentialsIndex,
-				&akov2.AtlasDatabaseUserList{},
-				indexer.DatabaseUserRequests,
-				r.Client,
-				r.Log,
-			)),
+			handler.EnqueueRequestsFromMapFunc(r.databaseUsersForCredentialMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
@@ -270,6 +264,16 @@ func (r *AtlasDatabaseUserReconciler) findAtlasDatabaseUserForSecret(ctx context
 	}
 
 	return requests
+}
+
+func (r *AtlasDatabaseUserReconciler) databaseUsersForCredentialMapFunc() handler.MapFunc {
+	return indexer.CredentialsIndexMapperFunc(
+		indexer.AtlasDatabaseUserCredentialsIndex,
+		func() *akov2.AtlasDatabaseUserList { return &akov2.AtlasDatabaseUserList{} },
+		indexer.DatabaseUserRequests,
+		r.Client,
+		r.Log,
+	)
 }
 
 func NewAtlasDatabaseUserReconciler(
