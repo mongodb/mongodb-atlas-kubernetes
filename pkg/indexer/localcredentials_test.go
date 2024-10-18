@@ -216,9 +216,9 @@ func newTestSecret(name string) *corev1.Secret {
 }
 
 func dbUserMapperFunc(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
-	return CredentialsIndexMapperFunc(
+	return CredentialsIndexMapperFunc[*akov2.AtlasDatabaseUserList](
 		AtlasDatabaseUserCredentialsIndex,
-		&akov2.AtlasDatabaseUserList{},
+		func() *akov2.AtlasDatabaseUserList { return &akov2.AtlasDatabaseUserList{} },
 		DatabaseUserRequests,
 		kubeClient,
 		logger,

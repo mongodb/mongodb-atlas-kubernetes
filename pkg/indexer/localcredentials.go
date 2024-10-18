@@ -57,7 +57,7 @@ func (lc *LocalCredentialIndexer) Keys(object client.Object) []string {
 
 type requestsFunc[L client.ObjectList] func(L) []reconcile.Request
 
-func CredentialsIndexMapperFunc[L client.ObjectList](indexerName string, list L, reqsFn requestsFunc[L], kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+func CredentialsIndexMapperFunc[L client.ObjectList](indexerName string, listGenFn func() L, reqsFn requestsFunc[L], kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		secret, ok := obj.(*corev1.Secret)
 		if !ok {
@@ -71,6 +71,7 @@ func CredentialsIndexMapperFunc[L client.ObjectList](indexerName string, list L,
 				client.ObjectKeyFromObject(secret).String(),
 			),
 		}
+		list := listGenFn()
 		err := kubeClient.List(ctx, list, listOpts)
 		if err != nil {
 			logger.Errorf("failed to list from indexer %s: %v", indexerName, err)
