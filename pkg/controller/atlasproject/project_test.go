@@ -27,6 +27,7 @@ import (
 
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/integrations"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -42,15 +43,16 @@ func TestHandleProject(t *testing.T) {
 	deletionTime := metav1.Now()
 
 	tests := map[string]struct {
-		atlasClientMocker    func() *mongodbatlas.Client
-		atlasSDKMocker       func() *admin.APIClient
-		projectServiceMocker func() project.ProjectService
-		teamServiceMocker    func() teams.TeamsService
-		interceptors         interceptor.Funcs
-		project              *akov2.AtlasProject
-		result               reconcile.Result
-		conditions           []api.Condition
-		finalizers           []string
+		atlasClientMocker        func() *mongodbatlas.Client
+		atlasSDKMocker           func() *admin.APIClient
+		projectServiceMocker     func() project.ProjectService
+		teamServiceMocker        func() teams.TeamsService
+		integrationServiceMocker func() integrations.AtlasIntegrationsService
+		interceptors             interceptor.Funcs
+		project                  *akov2.AtlasProject
+		result                   reconcile.Result
+		conditions               []api.Condition
+		finalizers               []string
 	}{
 		"should fail to get project from atlas": {
 			atlasClientMocker: func() *mongodbatlas.Client {
@@ -67,6 +69,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -102,6 +107,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -169,6 +177,9 @@ func TestHandleProject(t *testing.T) {
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
+				return nil
+			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "my-project",
@@ -199,6 +210,9 @@ func TestHandleProject(t *testing.T) {
 			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
+				return nil
+			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "my-project",
@@ -227,6 +241,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
 				return nil
 			},
 			interceptors: interceptor.Funcs{
@@ -268,6 +285,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -346,11 +366,6 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				integrations := mockadmin.NewThirdPartyIntegrationsApi(t)
-				integrations.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
-					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrations})
-				integrations.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
-					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				client := admin.NewAPIClient(admin.NewConfiguration())
 				client.ProjectIPAccessListApi = ipAccessList
@@ -360,7 +375,7 @@ func TestHandleProject(t *testing.T) {
 				client.CustomDatabaseRolesApi = customRoles
 				client.ProjectsApi = projectAPI
 				client.CloudBackupsApi = backup
-				client.ThirdPartyIntegrationsApi = integrations
+
 				return client
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -373,6 +388,11 @@ func TestHandleProject(t *testing.T) {
 			teamServiceMocker: func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
+				return service
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
+				service := translation.NewAtlasIntegrationsServiceMock(t)
+				service.EXPECT().List(context.Background(), mock.Anything).Return([]integrations.Integration{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -447,11 +467,6 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				integrations := mockadmin.NewThirdPartyIntegrationsApi(t)
-				integrations.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
-					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrations})
-				integrations.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
-					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				client := admin.NewAPIClient(admin.NewConfiguration())
 
@@ -462,7 +477,7 @@ func TestHandleProject(t *testing.T) {
 				client.CustomDatabaseRolesApi = customRoles
 				client.ProjectsApi = projectAPI
 				client.CloudBackupsApi = backup
-				client.ThirdPartyIntegrationsApi = integrations
+
 				return client
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -475,6 +490,11 @@ func TestHandleProject(t *testing.T) {
 			teamServiceMocker: func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
+				return service
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
+				service := translation.NewAtlasIntegrationsServiceMock(t)
+				service.EXPECT().List(context.Background(), mock.Anything).Return([]integrations.Integration{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -551,11 +571,6 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
-				integrations := mockadmin.NewThirdPartyIntegrationsApi(t)
-				integrations.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
-					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrations})
-				integrations.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
-					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				client := admin.NewAPIClient(admin.NewConfiguration())
 
@@ -566,7 +581,7 @@ func TestHandleProject(t *testing.T) {
 				client.CustomDatabaseRolesApi = customRoles
 				client.ProjectsApi = projectAPI
 				client.CloudBackupsApi = backup
-				client.ThirdPartyIntegrationsApi = integrations
+
 				return client
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -579,6 +594,11 @@ func TestHandleProject(t *testing.T) {
 			teamServiceMocker: func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
+				return service
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
+				service := translation.NewAtlasIntegrationsServiceMock(t)
+				service.EXPECT().List(context.Background(), mock.Anything).Return([]integrations.Integration{}, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -628,11 +648,12 @@ func TestHandleProject(t *testing.T) {
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
 			reconciler := &AtlasProjectReconciler{
-				Client:         k8sClient,
-				Log:            logger,
-				projectService: tt.projectServiceMocker(),
-				teamsService:   tt.teamServiceMocker(),
-				EventRecorder:  record.NewFakeRecorder(30),
+				Client:              k8sClient,
+				Log:                 logger,
+				projectService:      tt.projectServiceMocker(),
+				teamsService:        tt.teamServiceMocker(),
+				integrationsService: tt.integrationServiceMocker(),
+				EventRecorder:       record.NewFakeRecorder(30),
 			}
 			ctx := &workflow.Context{
 				Context:   context.Background(),
@@ -815,16 +836,17 @@ func TestDelete(t *testing.T) {
 	teamID := "teamID"
 
 	tests := map[string]struct {
-		deletionProtection   bool
-		atlasClientMocker    func() *mongodbatlas.Client
-		atlasSDKMocker       func() *admin.APIClient
-		projectServiceMocker func() project.ProjectService
-		teamServiceMocker    func() teams.TeamsService
-		interceptors         interceptor.Funcs
-		objects              []client.Object
-		result               reconcile.Result
-		conditions           []api.Condition
-		finalizers           []string
+		deletionProtection       bool
+		atlasClientMocker        func() *mongodbatlas.Client
+		atlasSDKMocker           func() *admin.APIClient
+		projectServiceMocker     func() project.ProjectService
+		teamServiceMocker        func() teams.TeamsService
+		integrationServiceMocker func() integrations.AtlasIntegrationsService
+		interceptors             interceptor.Funcs
+		objects                  []client.Object
+		result                   reconcile.Result
+		conditions               []api.Condition
+		finalizers               []string
 	}{
 		"should fail when unable to check project dependencies": {
 			atlasClientMocker: func() *mongodbatlas.Client {
@@ -837,6 +859,9 @@ func TestDelete(t *testing.T) {
 				return nil
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
 				return nil
 			},
 			interceptors: interceptor.Funcs{List: func(ctx context.Context, client client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
@@ -873,6 +898,9 @@ func TestDelete(t *testing.T) {
 				return nil
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
 				return nil
 			},
 			objects: []client.Object{
@@ -919,6 +947,9 @@ func TestDelete(t *testing.T) {
 			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
+				return nil
+			},
 			deletionProtection: true,
 			objects: []client.Object{
 				&akov2.AtlasProject{
@@ -948,6 +979,9 @@ func TestDelete(t *testing.T) {
 				return nil
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
 				return nil
 			},
 			objects: []client.Object{
@@ -1008,6 +1042,9 @@ func TestDelete(t *testing.T) {
 				service := translation.NewTeamsServiceMock(t)
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
+			},
+			integrationServiceMocker: func() integrations.AtlasIntegrationsService {
+				return nil
 			},
 			objects: []client.Object{
 				&akov2.AtlasProject{
@@ -1100,9 +1137,10 @@ func TestDelete(t *testing.T) {
 						return tt.atlasClientMocker(), "", nil
 					},
 				},
-				projectService: tt.projectServiceMocker(),
-				teamsService:   tt.teamServiceMocker(),
-				EventRecorder:  record.NewFakeRecorder(1),
+				projectService:      tt.projectServiceMocker(),
+				teamsService:        tt.teamServiceMocker(),
+				integrationsService: tt.integrationServiceMocker(),
+				EventRecorder:       record.NewFakeRecorder(1),
 			}
 
 			atlasProject := tt.objects[0].(*akov2.AtlasProject)
