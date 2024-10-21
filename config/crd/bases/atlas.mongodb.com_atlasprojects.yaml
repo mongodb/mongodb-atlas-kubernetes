@@ -540,10 +540,12 @@ spec:
                 items:
                   properties:
                     accountId:
+                      description: Unique 40-hexadecimal digit string identifying
+                        your New Relic account.
                       type: string
                     apiKeyRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing the API key for
+                        your Datadog, OpsGenie, or Victor Ops account.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource
@@ -556,8 +558,8 @@ spec:
                       - name
                       type: object
                     apiTokenRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing the API token
+                        for your Slack account.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource
@@ -570,14 +572,19 @@ spec:
                       - name
                       type: object
                     channelName:
+                      description: Name of the Slack channel to which notifications
+                        are sent.
                       type: string
                     enabled:
+                      description: Flag indicating whether the Prometheus integration
+                        is activated.
                       type: boolean
                     flowName:
+                      description: 'DEPRECATED: No longer available in Atlas API.'
                       type: string
                     licenseKeyRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing a unique 40-hexadecimal
+                        digit string that idenfies your New Relic license.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource
@@ -590,14 +597,18 @@ spec:
                       - name
                       type: object
                     microsoftTeamsWebhookUrl:
+                      description: Endpoint web address of the Microsoft Teams webhook
+                        to which notifications are sent.
                       type: string
                     name:
+                      description: 'DEPRECATED: No longer available in Atlas API.'
                       type: string
                     orgName:
+                      description: 'DEPRECATED: No longer available in Atlas API.'
                       type: string
                     passwordRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing the password for
+                        your Prometheus account.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource
@@ -610,8 +621,8 @@ spec:
                       - name
                       type: object
                     readTokenRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing a query key associated
+                        with your New Relic account.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource
@@ -624,10 +635,12 @@ spec:
                       - name
                       type: object
                     region:
+                      description: Region code indicating which region to use for
+                        Datadog, OpsGenie, or PagerDuty.
                       type: string
                     routingKeyRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing your routing key
+                        for Splunk On-Call, for use with Victor Ops.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource
@@ -640,10 +653,11 @@ spec:
                       - name
                       type: object
                     scheme:
+                      description: 'DEPRECATED: No longer available in Atlas API.'
                       type: string
                     secretRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing the secret that
+                        secures your webhook.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource
@@ -656,10 +670,11 @@ spec:
                       - name
                       type: object
                     serviceDiscovery:
+                      description: Desired method to discover the Prometheus service.
                       type: string
                     serviceKeyRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing the service key
+                        for your PagerDuty account.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource
@@ -672,6 +687,7 @@ spec:
                       - name
                       type: object
                     teamName:
+                      description: Human-readable label that identies your Slack team.
                       type: string
                     type:
                       description: Third Party Integration type such as Slack, New
@@ -689,12 +705,16 @@ spec:
                       - PROMETHEUS
                       type: string
                     url:
+                      description: Endpoint web address to which notifications are
+                        sent.
                       type: string
                     username:
+                      description: Human-readable label that identifies your Prometheus
+                        incoming webhook.
                       type: string
                     writeTokenRef:
-                      description: ResourceRefNamespaced is a reference to a Kubernetes
-                        Resource that allows to configure the namespace
+                      description: Reference to a secret containing an insert key
+                        associated with your New Relic account.
                       properties:
                         name:
                           description: Name is the name of the Kubernetes Resource

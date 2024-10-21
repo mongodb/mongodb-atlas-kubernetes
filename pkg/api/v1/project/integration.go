@@ -30,7 +30,7 @@ type Integration struct {
 	// Reference to a secret containing the service key for your PagerDuty account.
 	// +optional
 	ServiceKeyRef common.ResourceRefNamespaced `json:"serviceKeyRef,omitempty"`
-	// Refernce to a secret containing the API token for your Slack account.
+	// Reference to a secret containing the API token for your Slack account.
 	// +optional
 	APITokenRef common.ResourceRefNamespaced `json:"apiTokenRef,omitempty"`
 	// Human-readable label that identies your Slack team.
