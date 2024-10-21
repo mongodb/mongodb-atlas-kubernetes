@@ -1,14 +1,7 @@
 package project
 
 import (
-	"context"
-
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Integration struct {
@@ -58,7 +51,7 @@ type Integration struct {
 	// Endpoint web address to which notifications are sent.
 	// +optional
 	URL string `json:"url,omitempty"`
-	// REference to a secret containing the secret that secures your webhook.
+	// Reference to a secret containing the secret that secures your webhook.
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 	// DEPRECATED: No longer available in Atlas API.
@@ -82,55 +75,4 @@ type Integration struct {
 	// Flag indicating whether the Prometheus integration is activated.
 	// +optional
 	Enabled bool `json:"enabled,omitempty"`
-}
-
-func (i Integration) ToAtlas(ctx context.Context, c client.Client, defaultNS string) (result *admin.ThirdPartyIntegration, err error) {
-	result = &admin.ThirdPartyIntegration{
-		Type:                     pointer.MakePtr(i.Type),
-		AccountId:                pointer.MakePtr(i.AccountID),
-		Region:                   pointer.MakePtr(i.Region),
-		TeamName:                 pointer.MakePtr(i.TeamName),
-		ChannelName:              pointer.MakePtr(i.ChannelName),
-		Url:                      pointer.MakePtr(i.URL),
-		MicrosoftTeamsWebhookUrl: pointer.MakePtr(i.MicrosoftTeamsWebhookURL),
-		Username:                 pointer.MakePtr(i.UserName),
-		ServiceDiscovery:         pointer.MakePtr(i.ServiceDiscovery),
-		Enabled:                  pointer.MakePtr(i.Enabled),
-	}
-
-	readPassword := func(passwordField common.ResourceRefNamespaced, target *string, errors *[]error) {
-		if passwordField.Name == "" {
-			return
-		}
-
-		*target, err = passwordField.ReadPassword(ctx, c, defaultNS)
-		storeError(err, errors)
-	}
-
-	errorList := make([]error, 0)
-	readPassword(i.LicenseKeyRef, result.LicenseKey, &errorList)
-	readPassword(i.WriteTokenRef, result.WriteToken, &errorList)
-	readPassword(i.ReadTokenRef, result.ReadToken, &errorList)
-	readPassword(i.APIKeyRef, result.ApiKey, &errorList)
-	readPassword(i.ServiceKeyRef, result.ServiceKey, &errorList)
-	readPassword(i.APITokenRef, result.ApiToken, &errorList)
-	readPassword(i.RoutingKeyRef, result.RoutingKey, &errorList)
-	readPassword(i.SecretRef, result.Secret, &errorList)
-	readPassword(i.PasswordRef, result.Password, &errorList)
-
-	if len(errorList) != 0 {
-		firstError := (errorList)[0]
-		return nil, firstError
-	}
-	return result, nil
-}
-
-func (i Integration) Identifier() interface{} {
-	return i.Type
-}
-
-func storeError(err error, errors *[]error) {
-	if err != nil {
-		*errors = append(*errors, err)
-	}
 }

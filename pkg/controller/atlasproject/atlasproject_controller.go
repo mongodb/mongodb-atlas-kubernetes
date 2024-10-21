@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/integrations"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/maintenancewindow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
@@ -60,9 +61,10 @@ type AtlasProjectReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 
-	projectService     project.ProjectService
-	teamsService       teams.TeamsService
-	maintenanceService maintenancewindow.MaintenanceWindowService
+	projectService      project.ProjectService
+	teamsService        teams.TeamsService
+	maintenanceService  maintenancewindow.MaintenanceWindowService
+	integrationsService integrations.AtlasIntegrationsService
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -143,6 +145,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	r.projectService = project.NewProjectAPIService(atlasSdkClient.ProjectsApi)
 	r.teamsService = teams.NewTeamsAPIService(atlasSdkClient.TeamsApi, atlasSdkClient.MongoDBCloudUsersApi)
 	r.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.MaintenanceWindowsApi)
+	r.integrationsService = integrations.NewAtlasIntegrationsAPIService(atlasSdkClient.ThirdPartyIntegrationsApi)
 
 	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
 	if err != nil {
