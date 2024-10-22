@@ -21,23 +21,6 @@ func (i Integration) Identifier() interface{} {
 	return i.Type
 }
 
-func (i *Integration) EqualTo(target *Integration) bool {
-	// As integration secrets are redacted from Alas, we cannot properly compare them,
-	// so as a simple fix we assume changes are always needed
-	// TODO: Compare using Atlas redacted fields with checksums if accepted OR
-	//       move to implicit state checks if Atlas cannot help with this.
-	return false
-}
-
-func (i *Integration) IsApplied(target *Integration) bool {
-	// As integration secrets are redacted from Alas, we cannot properly compare them,
-	// so as a simple fix here we assume changes were applied correctly as we would
-	// have otherwise errored out as are always needed
-	// TODO: remove and replace calls to this with areIntegrationsEqual when
-	//       that code is properly comparing fields
-	return true
-}
-
 func NewIntegration(spec *project.Integration) (*Integration, error) {
 	if spec == nil {
 		return nil, nil

@@ -67,9 +67,9 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 
 func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, projectID string, integrationsToUpdate [][]set.Identifiable, namespace string) workflow.Result {
 	for _, item := range integrationsToUpdate {
-		kubeIntegration, err := item[1].(project.Integration)
-		if err != nil {
-			ctx.Log.Warnw("Update Integrations", "Can not convert kube integration", err)
+		kubeIntegration, ok := item[1].(integrations.Integration)
+		if !ok {
+			ctx.Log.Warnw("Update Integrations", "Can not convert kube integration")
 			return workflow.Terminate(workflow.ProjectIntegrationInternal, "Update Integrations: Can not convert kube integration")
 		}
 		// As integration secrets are redacted from Atlas, we cannot properly compare them,
@@ -120,7 +120,6 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, i
 			// so as a simple fix we assume changes were applied correctly as we would
 			// have otherwise hit an error at apply time
 			areEqual = true
-
 		}
 		ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "spec", spec, "areEqual", areEqual)
 
