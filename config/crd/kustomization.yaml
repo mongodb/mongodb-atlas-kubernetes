@@ -14,5 +14,6 @@ resources:
   - bases/atlas.mongodb.com_atlasstreamconnections.yaml
   - bases/atlas.mongodb.com_atlassearchindexconfigs.yaml
   - bases/atlas.mongodb.com_atlasbackupcompliancepolicies.yaml
+  - bases/atlas.mongodb.com_atlasprivateendpoints.yaml
 configurations:
   - kustomizeconfig.yaml

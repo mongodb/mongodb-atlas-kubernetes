@@ -7,21 +7,21 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
-func TestDeploymentProjectReference(t *testing.T) {
+func TestPrivateEndpointProjectReference(t *testing.T) {
 	tests := celTestCase{
 		"no project reference is set": {
-			object: &AtlasDeployment{
-				Spec: AtlasDeploymentSpec{},
+			object: &AtlasPrivateEndpoint{
+				Spec: AtlasPrivateEndpointSpec{},
 			},
 			expectedErrors: []string{"spec: Invalid value: \"object\": must define only one project reference through externalProjectRef or projectRef"},
 		},
 		"both project references are set": {
-			object: &AtlasDeployment{
-				Spec: AtlasDeploymentSpec{
+			object: &AtlasPrivateEndpoint{
+				Spec: AtlasPrivateEndpointSpec{
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
-					ExternalProjectRef: &ExternalProjectReference{
+					ExternalProject: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
 				},
@@ -32,9 +32,9 @@ func TestDeploymentProjectReference(t *testing.T) {
 			},
 		},
 		"external project references is set": {
-			object: &AtlasDeployment{
-				Spec: AtlasDeploymentSpec{
-					ExternalProjectRef: &ExternalProjectReference{
+			object: &AtlasPrivateEndpoint{
+				Spec: AtlasPrivateEndpointSpec{
+					ExternalProject: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
 				},
@@ -44,8 +44,8 @@ func TestDeploymentProjectReference(t *testing.T) {
 			},
 		},
 		"kubernetes project references is set": {
-			object: &AtlasDeployment{
-				Spec: AtlasDeploymentSpec{
+			object: &AtlasPrivateEndpoint{
+				Spec: AtlasPrivateEndpointSpec{
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
@@ -54,15 +54,15 @@ func TestDeploymentProjectReference(t *testing.T) {
 		},
 	}
 
-	assertCELValidation(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdeployments.yaml", tests)
+	assertCELValidation(t, "../../../config/crd/bases/atlas.mongodb.com_atlasprivateendpoints.yaml", tests)
 }
 
-func TestDeploymentExternalProjectReferenceConnectionSecret(t *testing.T) {
+func TestPrivateEndpointExternalProjectReferenceConnectionSecret(t *testing.T) {
 	tests := celTestCase{
 		"external project references is set without connection secret": {
-			object: &AtlasDeployment{
-				Spec: AtlasDeploymentSpec{
-					ExternalProjectRef: &ExternalProjectReference{
+			object: &AtlasPrivateEndpoint{
+				Spec: AtlasPrivateEndpointSpec{
+					ExternalProject: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
 				},
@@ -72,9 +72,9 @@ func TestDeploymentExternalProjectReferenceConnectionSecret(t *testing.T) {
 			},
 		},
 		"external project references is set with connection secret": {
-			object: &AtlasDeployment{
-				Spec: AtlasDeploymentSpec{
-					ExternalProjectRef: &ExternalProjectReference{
+			object: &AtlasPrivateEndpoint{
+				Spec: AtlasPrivateEndpointSpec{
+					ExternalProject: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{
@@ -86,8 +86,8 @@ func TestDeploymentExternalProjectReferenceConnectionSecret(t *testing.T) {
 			},
 		},
 		"kubernetes project references is set without connection secret": {
-			object: &AtlasDeployment{
-				Spec: AtlasDeploymentSpec{
+			object: &AtlasPrivateEndpoint{
+				Spec: AtlasPrivateEndpointSpec{
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
@@ -95,8 +95,8 @@ func TestDeploymentExternalProjectReferenceConnectionSecret(t *testing.T) {
 			},
 		},
 		"kubernetes project references is set with connection secret": {
-			object: &AtlasDeployment{
-				Spec: AtlasDeploymentSpec{
+			object: &AtlasPrivateEndpoint{
+				Spec: AtlasPrivateEndpointSpec{
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
@@ -110,5 +110,5 @@ func TestDeploymentExternalProjectReferenceConnectionSecret(t *testing.T) {
 		},
 	}
 
-	assertCELValidation(t, "../../../config/crd/bases/atlas.mongodb.com_atlasdeployments.yaml", tests)
+	assertCELValidation(t, "../../../config/crd/bases/atlas.mongodb.com_atlasprivateendpoints.yaml", tests)
 }

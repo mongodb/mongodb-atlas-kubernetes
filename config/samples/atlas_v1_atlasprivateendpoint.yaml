@@ -1,0 +1,12 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasPrivateEndpoint
+metadata:
+  name: atlasprivateendpoint-sample
+spec:
+  projectRef:
+    name: my-project
+  provider: AWS
+  region: EU_CENTRAL_1
+  awsConfiguration:
+    id: vpce-f4k34w51d
+
