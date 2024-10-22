@@ -67,14 +67,12 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 
 func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, projectID string, integrationsToUpdate [][]set.Identifiable, namespace string) workflow.Result {
 	for _, item := range integrationsToUpdate {
-		atlasIntegration := item[0].(integrations.Integration)
 		kubeIntegration := item[1].(integrations.Integration)
 
-		if !kubeIntegration.EqualTo(&atlasIntegration) {
-			ctx.Log.Debugf("Try to update integration: %s", kubeIntegration.Type)
-			if err := r.integrationsService.Update(ctx.Context, projectID, kubeIntegration.Type, kubeIntegration, r.Client, namespace); err != nil {
-				return workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Cannot apply integration %s: %v", kubeIntegration.Type, err.Error()))
-			}
+		// We always update because we cannot accurately determine if secrets have changed; see CLOUDP-280225
+		ctx.Log.Debugf("Try to update integration: %s", kubeIntegration.Type)
+		if err := r.integrationsService.Update(ctx.Context, projectID, kubeIntegration.Type, kubeIntegration, r.Client, namespace); err != nil {
+			return workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Cannot apply integration %s: %v", kubeIntegration.Type, err.Error()))
 		}
 	}
 	return workflow.OK()
@@ -114,7 +112,7 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, i
 		if isPrometheusType(atlas.Type) {
 			areEqual = arePrometheusesEqual(atlas, spec)
 		} else {
-			areEqual = atlas.IsApplied(&spec)
+			areEqual = true
 		}
 		ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "spec", spec, "areEqual", areEqual)
 
