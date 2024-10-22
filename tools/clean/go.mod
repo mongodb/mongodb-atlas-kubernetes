@@ -12,11 +12,11 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/jedib0t/go-pretty/v6 v6.6.0
 	go.mongodb.org/atlas-sdk/v20231115008 v20231115008.5.0
-	google.golang.org/api v0.200.0
+	google.golang.org/api v0.201.0
 )
 
 require (
-	cloud.google.com/go v0.115.1 // indirect
+	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/auth v0.9.8 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
