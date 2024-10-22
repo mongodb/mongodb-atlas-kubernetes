@@ -8,7 +8,7 @@ import (
 )
 
 func TestDeploymentProjectReference(t *testing.T) {
-	tests := projectReferenceTestCase{
+	tests := celTestCase{
 		"no project reference is set": {
 			object: &AtlasDeployment{
 				Spec: AtlasDeploymentSpec{},
@@ -58,7 +58,7 @@ func TestDeploymentProjectReference(t *testing.T) {
 }
 
 func TestDeploymentExternalProjectReferenceConnectionSecret(t *testing.T) {
-	tests := projectReferenceTestCase{
+	tests := celTestCase{
 		"external project references is set without connection secret": {
 			object: &AtlasDeployment{
 				Spec: AtlasDeploymentSpec{

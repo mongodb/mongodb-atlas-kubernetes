@@ -29,6 +29,7 @@ var _ AtlasCustomResource = &AtlasStreamInstance{}
 var _ AtlasCustomResource = &AtlasStreamConnection{}
 var _ AtlasCustomResource = &AtlasSearchIndexConfig{}
 var _ AtlasCustomResource = &AtlasBackupCompliancePolicy{}
+var _ AtlasCustomResource = &AtlasPrivateEndpoint{}
 
 // InitCondition initializes the underlying type of the given condition to the given default value.
 func InitCondition(resource AtlasCustomResource, defaultCondition api.Condition) []api.Condition {
