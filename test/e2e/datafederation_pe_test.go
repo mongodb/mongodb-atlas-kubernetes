@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -120,9 +121,11 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 		})
 
 		By("Deleting DataFederation Private endpoint", func() {
-			_, _, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
+			_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
 				testData.Project.ID(), pe.ID).Execute()
 			Expect(err).To(BeNil())
+			Expect(resp).NotTo(BeNil())
+			Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
 		})
 
 		By("Delete DataFederation", func() {
