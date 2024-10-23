@@ -30,6 +30,7 @@ import (
 var _ = Describe("UserLogin", Label("datafederation"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
+	var pe *cloud.PrivateEndpointDetails
 
 	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
@@ -66,7 +67,6 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 	})
 
 	It("Creates a data federation with private endpoint", func(ctx context.Context) {
-		var pe *cloud.PrivateEndpointDetails
 		const dataFederationInstanceName = "test-data-federation-aws"
 
 		//nolint:dupl
@@ -117,6 +117,11 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 			Eventually(func() bool {
 				return resources.CheckCondition(testData.K8SClient, df, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
+		})
+
+		By("Deleting DataFederation Private endpoint", func() {
+			Expect(atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
+				testData.Project.ID(), pe.ID)).Should(Succeed())
 		})
 
 		By("Delete DataFederation", func() {
