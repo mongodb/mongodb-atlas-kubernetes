@@ -120,8 +120,9 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 		})
 
 		By("Deleting DataFederation Private endpoint", func() {
-			Expect(atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
-				testData.Project.ID(), pe.ID)).Should(Succeed())
+			_, _, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
+				testData.Project.ID(), pe.ID).Execute()
+			Expect(err).To(BeNil())
 		})
 
 		By("Delete DataFederation", func() {
