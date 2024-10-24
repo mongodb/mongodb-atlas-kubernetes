@@ -132,8 +132,6 @@ CONTAINER_SPEC=.spec.template.spec.containers[0]
 
 SILK_ASSET_GROUP="atlas-kubernetes-operator"
 
-DELETION_PROTECTION ?= true
-
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -520,7 +518,7 @@ install-credentials: set-namespace ## Install the Atlas credentials for the Oper
 .PHONY: prepare-run
 prepare-run: generate vet manifests run-kind install-crds install-credentials
 	rm bin/manager
-	$(MAKE) manager VERSION=$(NEXT_VERSION) 
+	$(MAKE) manager VERSION=$(NEXT_VERSION)
 
 .PHONY: run
 run: prepare-run ## Run a freshly compiled manager against kind
@@ -532,8 +530,7 @@ endif
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
 	bin/manager --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
 	--atlas-domain=$(ATLAS_DOMAIN) \
-	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME) \
-	--object-deletion-protection=$(DELETION_PROTECTION)
+	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME)
 
 .PHONY: local-docker-build
 local-docker-build:

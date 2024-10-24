@@ -558,27 +558,27 @@ func NewGCPAction(t core.GinkgoTInterface, projectID string) (*GCPAction, error)
 
 	networkClient, err := compute.NewNetworksRESTClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup GCP network client: %w", err)
+		return nil, err
 	}
 
 	subnetClient, err := compute.NewSubnetworksRESTClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup GCP subnet client: %w", err)
+		return nil, err
 	}
 
 	addressClient, err := compute.NewAddressesRESTClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup GCP address client: %w", err)
+		return nil, err
 	}
 
 	forwardRuleClient, err := compute.NewForwardingRulesRESTClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup GCP forwarding rules client: %w", err)
+		return nil, err
 	}
 
 	keyManagementClient, err := kms.NewKeyManagementClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup GCP key management client: %w", err)
+		return nil, err
 	}
 
 	return &GCPAction{

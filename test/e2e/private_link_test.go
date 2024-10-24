@@ -298,19 +298,17 @@ func prepareProviderAction() (*cloud.ProviderAction, error) {
 
 	aws, err := cloud.NewAWSAction(t)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare AWS provider action: %w", err)
+		return nil, err
 	}
 
 	gcp, err := cloud.NewGCPAction(t, cloud.GoogleProjectID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare Google provider action for project ID %q: %w",
-			cloud.GoogleProjectID, err)
+		return nil, err
 	}
 
 	azure, err := cloud.NewAzureAction(t, os.Getenv("AZURE_SUBSCRIPTION_ID"), cloud.ResourceGroupName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare Azure provider action for subscription %q: %w",
-			os.Getenv("AZURE_SUBSCRIPTION_ID"), err)
+		return nil, err
 	}
 
 	return cloud.NewProviderAction(t, aws, gcp, azure), nil
