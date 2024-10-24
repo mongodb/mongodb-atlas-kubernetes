@@ -580,7 +580,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		It("Should Succeed (single)", func() {
 			By("Creating the project first", func() {
 				createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
-					WithMaintenanceWindow(project.NewMaintenanceWindow().WithDay(2).WithHour(2).WithAutoDefer(false))
+					WithMaintenanceWindow(project.MaintenanceWindow{
+						DayOfWeek: 2,
+						HourOfDay: 2,
+						AutoDefer: false,
+					})
 
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 

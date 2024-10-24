@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/maintenancewindow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -59,8 +60,9 @@ type AtlasProjectReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 
-	projectService project.ProjectService
-	teamsService   teams.TeamsService
+	projectService     project.ProjectService
+	teamsService       teams.TeamsService
+	maintenanceService maintenancewindow.MaintenanceWindowService
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -140,6 +142,8 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx.SdkClient = atlasSdkClient
 	r.projectService = project.NewProjectAPIService(atlasSdkClient.ProjectsApi)
 	r.teamsService = teams.NewTeamsAPIService(atlasSdkClient.TeamsApi, atlasSdkClient.MongoDBCloudUsersApi)
+	r.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.MaintenanceWindowsApi)
+
 	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
@@ -190,7 +194,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensureMaintenanceWindow(workflowCtx, project); result.IsOk() {
+	if result = r.ensureMaintenanceWindow(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.MaintenanceWindowReadyType), "")
 	}
 	results = append(results, result)
