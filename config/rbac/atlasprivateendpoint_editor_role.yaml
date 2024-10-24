@@ -1,0 +1,24 @@
+# permissions for end users to edit atlasprivateendpoints.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasprivateendpoint-editor-role
+rules:
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasprivateendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasprivateendpoints/status
+  verbs:
+  - get
