@@ -55,6 +55,8 @@ jobs:
           devbox run -- "make helm-upd-rbac"
 
       - name: Create PR for helm-charts repo
+        env:
+            GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           cd ./helm-charts-cloned
 
