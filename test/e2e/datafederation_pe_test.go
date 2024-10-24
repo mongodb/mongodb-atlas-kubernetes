@@ -120,14 +120,6 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 			}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
 		})
 
-		By("Deleting DataFederation Private endpoint", func() {
-			_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
-				testData.Project.ID(), pe.ID).Execute()
-			Expect(err).To(BeNil())
-			Expect(resp).NotTo(BeNil())
-			Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
-		})
-
 		By("Delete DataFederation", func() {
 			df := &akov2.AtlasDataFederation{}
 			Expect(testData.K8SClient.Get(context.Background(), types.NamespacedName{
@@ -135,6 +127,27 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 				Name:      dataFederationInstanceName,
 			}, df)).To(Succeed())
 			Expect(testData.K8SClient.Delete(testData.Context, df)).Should(Succeed())
+		})
+
+		By("Deleting DataFederation Private Endpoint", func() {
+			_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
+				testData.Project.ID(), pe.ID).Execute()
+			Expect(err).To(BeNil())
+			Expect(resp).NotTo(BeNil())
+			Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
+
+			vpe, _, err := atlasClient.Client.DataFederationApi.ListDataFederationPrivateEndpoints(testData.Context,
+				testData.Project.ID()).Execute()
+			Expect(err).To(BeNil())
+			Expect(vpe.GetResults()).To(BeEmpty())
+		})
+		By("Deleting DataFederation Private Endpoint again, as it does not do it the first time around", func() {
+			time.Sleep(5 * time.Second)
+			_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
+				testData.Project.ID(), pe.ID).Execute()
+			Expect(err).To(BeNil())
+			Expect(resp).NotTo(BeNil())
+			Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
 		})
 	})
 })
