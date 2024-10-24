@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,6 +31,7 @@ import (
 var _ = Describe("UserLogin", Label("datafederation"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
+	var pe *cloud.PrivateEndpointDetails
 
 	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
@@ -66,7 +68,6 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 	})
 
 	It("Creates a data federation with private endpoint", func(ctx context.Context) {
-		var pe *cloud.PrivateEndpointDetails
 		const dataFederationInstanceName = "test-data-federation-aws"
 
 		//nolint:dupl
@@ -126,6 +127,27 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 				Name:      dataFederationInstanceName,
 			}, df)).To(Succeed())
 			Expect(testData.K8SClient.Delete(testData.Context, df)).Should(Succeed())
+		})
+
+		By("Deleting DataFederation Private Endpoint", func() {
+			_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
+				testData.Project.ID(), pe.ID).Execute()
+			Expect(err).To(BeNil())
+			Expect(resp).NotTo(BeNil())
+			Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
+
+			vpe, _, err := atlasClient.Client.DataFederationApi.ListDataFederationPrivateEndpoints(testData.Context,
+				testData.Project.ID()).Execute()
+			Expect(err).To(BeNil())
+			Expect(vpe.GetResults()).To(BeEmpty())
+		})
+		By("Deleting DataFederation Private Endpoint again, as it does not do it the first time around", func() {
+			time.Sleep(5 * time.Second)
+			_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
+				testData.Project.ID(), pe.ID).Execute()
+			Expect(err).To(BeNil())
+			Expect(resp).NotTo(BeNil())
+			Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
 		})
 	})
 })
