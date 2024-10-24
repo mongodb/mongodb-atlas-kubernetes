@@ -1,0 +1,21 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-14f8c90978e34c815b7bd01e155fa785c9b60d769d6ad37211278a96975bed26",
+  "author": "Unknown Author",
+  "timestamp": "2024-10-11T16:27:06.984213+02:00",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2023-45288"
+      },
+      "timestamp": "2024-10-11T16:27:06.984213+02:00",
+      "products": [
+        {
+          "@id": "pkg:go/golang.org/x/net@v0.22.0"
+        }
+      ],
+      "status": "under_investigation"
+    }
+  ]
+}
