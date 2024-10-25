@@ -2,11 +2,13 @@ package e2e_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -130,24 +132,22 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 		})
 
 		By("Deleting DataFederation Private Endpoint", func() {
-			_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
-				testData.Project.ID(), pe.ID).Execute()
-			Expect(err).To(BeNil())
-			Expect(resp).NotTo(BeNil())
-			Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
-
-			vpe, _, err := atlasClient.Client.DataFederationApi.ListDataFederationPrivateEndpoints(testData.Context,
-				testData.Project.ID()).Execute()
-			Expect(err).To(BeNil())
-			Expect(vpe.GetResults()).To(BeEmpty())
-		})
-		By("Deleting DataFederation Private Endpoint again, as it does not do it the first time around", func() {
-			time.Sleep(5 * time.Second)
-			_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
-				testData.Project.ID(), pe.ID).Execute()
-			Expect(err).To(BeNil())
-			Expect(resp).NotTo(BeNil())
-			Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
+			// This is required or will result on error:
+			// CANNOT_CLOSE_GROUP_ACTIVE_ATLAS_DATA_FEDERATION_PRIVATE_ENDPOINTS
+			// for some reason, doing it just once doesn't work
+			for i := 0; i < 5; i++ { // 3 retries or less seems to fail
+				_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
+					testData.Project.ID(), pe.ID).Execute()
+				if admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
+					msg := fmt.Sprintf("It says it Removed DataFederation Private Endpoint %q for project %s after retry %d\n",
+						pe.ID, testData.Project.ID(), i+1)
+					GinkgoWriter.Write([]byte(msg))
+					continue
+				}
+				Expect(err).To(BeNil())
+				Expect(resp).NotTo(BeNil())
+				Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
+			}
 		})
 	})
 })
