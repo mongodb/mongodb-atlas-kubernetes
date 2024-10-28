@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   creationTimestamp: null
   labels:
     app.kubernetes.io/component: controller
@@ -70,6 +70,18 @@ spec:
                 - USER
                 - ROLE
                 type: string
+              connectionSecret:
+                description: LocalObjectReference is a reference to an object in the
+                  same namespace as the referent
+                properties:
+                  name:
+                    description: |-
+                      Name of the resource being referred to
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                required:
+                - name
+                type: object
               databaseName:
                 default: admin
                 description: DatabaseName is a Database against which Atlas authenticates
@@ -80,6 +92,16 @@ spec:
                   DeleteAfterDate is a timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the user.
                   The specified date must be in the future and within one week.
                 type: string
+              externalProjectRef:
+                description: ExternalProjectRef holds the Atlas project ID the user
+                  belongs to
+                properties:
+                  id:
+                    description: ID is the Atlas project ID
+                    type: string
+                required:
+                - id
+                type: object
               labels:
                 description: |-
                   Labels is an array containing key-value pairs that tag and categorize the database user.
@@ -204,10 +226,18 @@ spec:
                 - CUSTOMER
                 type: string
             required:
-            - projectRef
             - roles
             - username
             type: object
+            x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
           status:
             description: AtlasDatabaseUserStatus defines the observed state of AtlasProject
             properties:

@@ -11,7 +11,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -240,7 +240,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -417,7 +417,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -623,7 +623,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -690,6 +690,18 @@ spec:
                 - USER
                 - ROLE
                 type: string
+              connectionSecret:
+                description: LocalObjectReference is a reference to an object in the
+                  same namespace as the referent
+                properties:
+                  name:
+                    description: |-
+                      Name of the resource being referred to
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                required:
+                - name
+                type: object
               databaseName:
                 default: admin
                 description: DatabaseName is a Database against which Atlas authenticates
@@ -700,6 +712,16 @@ spec:
                   DeleteAfterDate is a timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the user.
                   The specified date must be in the future and within one week.
                 type: string
+              externalProjectRef:
+                description: ExternalProjectRef holds the Atlas project ID the user
+                  belongs to
+                properties:
+                  id:
+                    description: ID is the Atlas project ID
+                    type: string
+                required:
+                - id
+                type: object
               labels:
                 description: |-
                   Labels is an array containing key-value pairs that tag and categorize the database user.
@@ -824,10 +846,18 @@ spec:
                 - CUSTOMER
                 type: string
             required:
-            - projectRef
             - roles
             - username
             type: object
+            x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
           status:
             description: AtlasDatabaseUserStatus defines the observed state of AtlasProject
             properties:
@@ -887,7 +917,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -1153,7 +1183,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -1217,6 +1247,18 @@ spec:
                     type: string
                   namespace:
                     description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
+              connectionSecret:
+                description: LocalObjectReference is a reference to an object in the
+                  same namespace as the referent
+                properties:
+                  name:
+                    description: |-
+                      Name of the resource being referred to
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     type: string
                 required:
                 - name
@@ -1667,6 +1709,7 @@ spec:
                                 type: object
                               type: array
                           required:
+                          - mappings
                           - searchConfigurationRef
                           type: object
                         type:
@@ -1681,11 +1724,14 @@ spec:
                             fields:
                               description: Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
                               x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - fields
                           type: object
                       required:
                       - DBName
                       - collectionName
                       - name
+                      - type
                       type: object
                     type: array
                   searchNodes:
@@ -1752,6 +1798,18 @@ spec:
                     type: boolean
                   versionReleaseSystem:
                     type: string
+                required:
+                - name
+                type: object
+              externalProjectRef:
+                description: ExternalProjectRef holds the Atlas project ID the user
+                  belongs to
+                properties:
+                  id:
+                    description: ID is the Atlas project ID
+                    type: string
+                required:
+                - id
                 type: object
               processArgs:
                 description: ProcessArgs allows to modify Advanced Configuration Options
@@ -1970,9 +2028,16 @@ spec:
                 - name
                 - providerSettings
                 type: object
-            required:
-            - projectRef
             type: object
+            x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
           status:
             description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
             properties:
@@ -2059,16 +2124,15 @@ spec:
                           description: Private-endpoint-aware mongodb+srv:// connection
                             string for this private endpoint.
                           type: string
+                        srvShardOptimizedConnectionString:
+                          type: string
                         type:
                           description: |-
                             Type of MongoDB process that you connect to with the connection strings
 
-
                             Atlas returns:
 
-
                             • MONGOD for replica sets, or
-
 
                             • MONGOS for sharded clusters
                           type: string
@@ -2233,7 +2297,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -2421,7 +2485,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -3973,7 +4037,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -4138,6 +4202,8 @@ spec:
                           - keyword
                           - edgeGram
                           type: string
+                      required:
+                      - type
                       type: object
                   required:
                   - name
@@ -4252,7 +4318,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -4488,7 +4554,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -4695,7 +4761,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
@@ -4913,225 +4979,16 @@ rules:
   - atlas.mongodb.com
   resources:
   - atlasbackupcompliancepolicies
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasbackupcompliancepolicies/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasbackuppolicies
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasbackuppolicies/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasbackupschedules
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasbackupschedules/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasdatabaseusers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasdatabaseusers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasdatafederations
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasdatafederations/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasdeployments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasdeployments/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasfederatedauths
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasfederatedauths/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasprojects
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasprojects/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlassearchindexconfigs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlassearchindexconfigs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasstreamconnections
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasstreamconnections/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasstreaminstances
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
-  - atlasstreaminstances/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - atlas.mongodb.com
-  resources:
   - atlasteams
   verbs:
   - create
@@ -5144,6 +5001,17 @@ rules:
 - apiGroups:
   - atlas.mongodb.com
   resources:
+  - atlasbackupcompliancepolicies/status
+  - atlasbackuppolicies/status
+  - atlasbackupschedules/status
+  - atlasdatabaseusers/status
+  - atlasdatafederations/status
+  - atlasdeployments/status
+  - atlasfederatedauths/status
+  - atlasprojects/status
+  - atlassearchindexconfigs/status
+  - atlasstreamconnections/status
+  - atlasstreaminstances/status
   - atlasteams/status
   verbs:
   - get
@@ -5227,7 +5095,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:2.4.1
+        image: mongodb/mongodb-atlas-kubernetes-operator:2.5.0
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
