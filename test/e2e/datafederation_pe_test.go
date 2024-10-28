@@ -2,6 +2,8 @@ package e2e_test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,6 +32,7 @@ import (
 var _ = Describe("UserLogin", Label("datafederation"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
+	var pe *cloud.PrivateEndpointDetails
 
 	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
@@ -66,7 +69,6 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 	})
 
 	It("Creates a data federation with private endpoint", func(ctx context.Context) {
-		var pe *cloud.PrivateEndpointDetails
 		const dataFederationInstanceName = "test-data-federation-aws"
 
 		//nolint:dupl
@@ -126,6 +128,21 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 				Name:      dataFederationInstanceName,
 			}, df)).To(Succeed())
 			Expect(testData.K8SClient.Delete(testData.Context, df)).Should(Succeed())
+		})
+
+		By("Deleting DataFederation Private Endpoint", func() {
+			// This is required or will result on error:
+			// CANNOT_CLOSE_GROUP_ACTIVE_ATLAS_DATA_FEDERATION_PRIVATE_ENDPOINTS
+			// for some reason, requesting deletion successfully just once doesn't work
+			// TODO: revisit and cleanup once CLOUDP-280905 is fixed
+			Eventually(func(g Gomega) {
+				_, resp, err := atlasClient.Client.DataFederationApi.
+					DeleteDataFederationPrivateEndpoint(testData.Context, testData.Project.ID(), pe.ID).
+					Execute()
+				g.Expect(err).To(BeNil(), fmt.Sprintf("deletion of private endpoint failed with error %v", err))
+				g.Expect(resp).NotTo(BeNil())
+				g.Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
+			}).WithTimeout(5 * time.Minute).WithPolling(15 * time.Second).MustPassRepeatedly(2).Should(Succeed())
 		})
 	})
 })
