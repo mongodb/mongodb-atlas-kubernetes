@@ -8,7 +8,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -134,21 +133,16 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 		By("Deleting DataFederation Private Endpoint", func() {
 			// This is required or will result on error:
 			// CANNOT_CLOSE_GROUP_ACTIVE_ATLAS_DATA_FEDERATION_PRIVATE_ENDPOINTS
-			// for some reason, doing it just once doesn't work
+			// for some reason, requesting deletion successfully just once doesn't work
 			// TODO: revisit and cleanup once CLOUDP-280905 is fixed
-			for i := 0; i < 5; i++ { // 3 retries or less seems to fail
-				_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
-					testData.Project.ID(), pe.ID).Execute()
-				if admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
-					msg := fmt.Sprintf("It says it Removed DataFederation Private Endpoint %q for project %s after retry %d\n",
-						pe.ID, testData.Project.ID(), i+1)
-					GinkgoWriter.Write([]byte(msg))
-					continue
-				}
-				Expect(err).To(BeNil())
-				Expect(resp).NotTo(BeNil())
-				Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
-			}
+			Eventually(func(g Gomega) {
+				_, resp, err := atlasClient.Client.DataFederationApi.
+					DeleteDataFederationPrivateEndpoint(testData.Context, testData.Project.ID(), pe.ID).
+					Execute()
+				g.Expect(err).To(BeNil(), fmt.Sprintf("deletion of private endpoint failed with error %v", err))
+				g.Expect(resp).NotTo(BeNil())
+				g.Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
+			}).WithTimeout(5 * time.Minute).WithPolling(15 * time.Second).MustPassRepeatedly(2).Should(Succeed())
 		})
 	})
 })
