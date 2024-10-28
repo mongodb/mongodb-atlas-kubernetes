@@ -135,6 +135,7 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 			// This is required or will result on error:
 			// CANNOT_CLOSE_GROUP_ACTIVE_ATLAS_DATA_FEDERATION_PRIVATE_ENDPOINTS
 			// for some reason, doing it just once doesn't work
+			// TODO: revisit and cleanup once CLOUDP-280905 is fixed
 			for i := 0; i < 5; i++ { // 3 retries or less seems to fail
 				_, resp, err := atlasClient.Client.DataFederationApi.DeleteDataFederationPrivateEndpoint(testData.Context,
 					testData.Project.ID(), pe.ID).Execute()
