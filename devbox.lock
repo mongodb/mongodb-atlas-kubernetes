@@ -49,6 +49,70 @@
         }
       }
     },
+    "awscli2@latest": {
+      "last_modified": "2024-10-24T16:50:28Z",
+      "resolved": "github:NixOS/nixpkgs/63487b2f26fa065cfeeaa47dddb08e2856ba53e8#awscli2",
+      "source": "devbox-search",
+      "version": "2.17.64",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/mn0yqd21hqyyv7dckcan0jpq9lrm9j6k-awscli2-2.17.64",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/mswf5gg8mxrrqm8qdwhw93v2i013pv7v-awscli2-2.17.64-dist"
+            }
+          ],
+          "store_path": "/nix/store/mn0yqd21hqyyv7dckcan0jpq9lrm9j6k-awscli2-2.17.64"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/qh3nw81a6gqhznk7pfj1mc85sxyjp73b-awscli2-2.17.64",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/a0amwb065q5d6yz3ivl5d5b4g0gipvhk-awscli2-2.17.64-dist"
+            }
+          ],
+          "store_path": "/nix/store/qh3nw81a6gqhznk7pfj1mc85sxyjp73b-awscli2-2.17.64"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/36bgc0f1hnjljmizzw7s00azrz55k7kf-awscli2-2.17.64",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/0jrbanbws3h2f6mxszvnmg2jvgwkf68j-awscli2-2.17.64-dist"
+            }
+          ],
+          "store_path": "/nix/store/36bgc0f1hnjljmizzw7s00azrz55k7kf-awscli2-2.17.64"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/3lzmpwhgnci0d8yvfwbp8gzrrcz2km5s-awscli2-2.17.64",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/apkzxak8p17ac17a77mj8wcfvraxj22b-awscli2-2.17.64-dist"
+            }
+          ],
+          "store_path": "/nix/store/3lzmpwhgnci0d8yvfwbp8gzrrcz2km5s-awscli2-2.17.64"
+        }
+      }
+    },
     "cosign@latest": {
       "last_modified": "2024-10-13T23:44:06Z",
       "resolved": "github:NixOS/nixpkgs/d4f247e89f6e10120f911e2e2d2254a050d0f732#cosign",
