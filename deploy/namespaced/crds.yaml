@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasbackupcompliancepolicies.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -227,7 +227,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasbackuppolicies.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -400,7 +400,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasbackupschedules.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -602,7 +602,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasdatabaseusers.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -665,6 +665,18 @@ spec:
                 - USER
                 - ROLE
                 type: string
+              connectionSecret:
+                description: LocalObjectReference is a reference to an object in the
+                  same namespace as the referent
+                properties:
+                  name:
+                    description: |-
+                      Name of the resource being referred to
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                required:
+                - name
+                type: object
               databaseName:
                 default: admin
                 description: DatabaseName is a Database against which Atlas authenticates
@@ -675,6 +687,16 @@ spec:
                   DeleteAfterDate is a timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the user.
                   The specified date must be in the future and within one week.
                 type: string
+              externalProjectRef:
+                description: ExternalProjectRef holds the Atlas project ID the user
+                  belongs to
+                properties:
+                  id:
+                    description: ID is the Atlas project ID
+                    type: string
+                required:
+                - id
+                type: object
               labels:
                 description: |-
                   Labels is an array containing key-value pairs that tag and categorize the database user.
@@ -799,10 +821,18 @@ spec:
                 - CUSTOMER
                 type: string
             required:
-            - projectRef
             - roles
             - username
             type: object
+            x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
           status:
             description: AtlasDatabaseUserStatus defines the observed state of AtlasProject
             properties:
@@ -862,7 +892,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasdatafederations.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -1124,7 +1154,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasdeployments.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -1184,6 +1214,18 @@ spec:
                     type: string
                   namespace:
                     description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
+              connectionSecret:
+                description: LocalObjectReference is a reference to an object in the
+                  same namespace as the referent
+                properties:
+                  name:
+                    description: |-
+                      Name of the resource being referred to
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     type: string
                 required:
                 - name
@@ -1634,6 +1676,7 @@ spec:
                                 type: object
                               type: array
                           required:
+                          - mappings
                           - searchConfigurationRef
                           type: object
                         type:
@@ -1648,11 +1691,14 @@ spec:
                             fields:
                               description: Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
                               x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - fields
                           type: object
                       required:
                       - DBName
                       - collectionName
                       - name
+                      - type
                       type: object
                     type: array
                   searchNodes:
@@ -1719,6 +1765,18 @@ spec:
                     type: boolean
                   versionReleaseSystem:
                     type: string
+                required:
+                - name
+                type: object
+              externalProjectRef:
+                description: ExternalProjectRef holds the Atlas project ID the user
+                  belongs to
+                properties:
+                  id:
+                    description: ID is the Atlas project ID
+                    type: string
+                required:
+                - id
                 type: object
               processArgs:
                 description: ProcessArgs allows to modify Advanced Configuration Options
@@ -1937,9 +1995,16 @@ spec:
                 - name
                 - providerSettings
                 type: object
-            required:
-            - projectRef
             type: object
+            x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
           status:
             description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
             properties:
@@ -2026,16 +2091,15 @@ spec:
                           description: Private-endpoint-aware mongodb+srv:// connection
                             string for this private endpoint.
                           type: string
+                        srvShardOptimizedConnectionString:
+                          type: string
                         type:
                           description: |-
                             Type of MongoDB process that you connect to with the connection strings
 
-
                             Atlas returns:
 
-
                             • MONGOD for replica sets, or
-
 
                             • MONGOS for sharded clusters
                           type: string
@@ -2200,7 +2264,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasfederatedauths.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -2384,7 +2448,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasprojects.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -3932,7 +3996,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlassearchindexconfigs.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -4093,6 +4157,8 @@ spec:
                           - keyword
                           - edgeGram
                           type: string
+                      required:
+                      - type
                       type: object
                   required:
                   - name
@@ -4207,7 +4273,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasstreamconnections.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -4439,7 +4505,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasstreaminstances.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -4642,7 +4708,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: atlasteams.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
