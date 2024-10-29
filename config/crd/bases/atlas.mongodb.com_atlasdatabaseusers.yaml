@@ -67,8 +67,8 @@ spec:
                 - ROLE
                 type: string
               connectionSecret:
-                description: LocalObjectReference is a reference to an object in the
-                  same namespace as the referent
+                description: Name of the secret containing Atlas API private and public
+                  keys
                 properties:
                   name:
                     description: |-
@@ -94,6 +94,7 @@ spec:
                 properties:
                   id:
                     description: ID is the Atlas project ID
+                    pattern: ^([a-f0-9]{24})$
                     type: string
                 required:
                 - id
