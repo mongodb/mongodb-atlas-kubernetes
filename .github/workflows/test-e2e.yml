@@ -183,14 +183,7 @@ jobs:
             "backup-compliance",
           ]
     steps:
-      - name: Get repo files from cache
-        id: get-repo-files-from-cache
-        uses: actions/cache@v4
-        with:
-          path: ./*
-          key: ${{ github.sha }}
       - name: Checkout if cache repo files missed
-        if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.sha}}
