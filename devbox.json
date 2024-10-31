@@ -21,6 +21,7 @@
     "shellcheck@latest",
     "golangci-lint@1.60",
     "kubernetes-controller-tools@0.16.1",
-    "setup-envtest@0.18.2"
+    "setup-envtest@0.18.2",
+    "awscli2@latest",
   ]
 }
