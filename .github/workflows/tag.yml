@@ -4,18 +4,24 @@ on:
   pull_request:
     types:
     - closed
+  workflow_dispatch:
+    inputs:
+      branch:
+        type: string
+        description: "Name of existing branch to tag for release"
+        default: main
+        required: true
 
 jobs:
   tag:
-    if: (github.event.pull_request.merged == true && (startsWith(github.head_ref, 'release/') || startsWith(github.head_ref, 'pre-release/')))
+    if: (github.event.pull_request.merged == true && (startsWith(github.head_ref, 'release/') || startsWith(github.head_ref, 'pre-release/'))) || (github.event_name == 'workflow_dispatch')
     environment: release
     name: Tag Release
     runs-on: ubuntu-latest
     env:
-      BRANCH: ${{ github.head_ref }}
+      BRANCH: ${{ github.event.inputs.branch || 'main' }}
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
-      version: ${{ steps.tag.outputs.version }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -33,7 +39,6 @@ jobs:
           git tag "${tag}"
           git push origin "${tag}"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
 
   release-post-merge:
@@ -43,11 +48,3 @@ jobs:
     secrets: inherit
     with:
       tag: ${{ needs.tag.outputs.tag }}
-
-  sboms-pr:
-    needs:
-    - release-post-merge
-    uses: ./.github/workflows/sboms-pr.yaml
-    secrets: inherit
-    with:
-      version: ${{ needs.tag.outputs.version }}

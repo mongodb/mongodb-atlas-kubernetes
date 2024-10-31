@@ -62,6 +62,8 @@ jobs:
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
       TAG: ${{ inputs.tag || github.head_ref || github.ref_name }}
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - name: Free disk space
         run: | 
@@ -223,3 +225,11 @@ jobs:
           asset_path: ./atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_name: atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_content_type: application/tgz
+
+  sboms-pr:
+    needs:
+    - create-release
+    uses: ./.github/workflows/sboms-pr.yaml
+    secrets: inherit
+    with:
+      version: ${{ needs.create-release.outputs.version }}
