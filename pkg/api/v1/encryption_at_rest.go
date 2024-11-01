@@ -51,6 +51,7 @@ type AzureKeyVault struct {
 	keyIdentifier     string // The unique identifier of a key in an Azure Key Vault.
 	secret            string // The secret associated with the Azure Key Vault specified by azureKeyVault.tenantID.
 	TenantID          string `json:"tenantID,omitempty"` // The unique identifier for an Azure AD tenant within an Azure subscription.
+	Valid             *bool  `json:"valid,omitempty"`    // Specifies whether the encryption key set for the provider is valid and may be used to encrypt and decrypt data.
 	// A reference to as Secret containing the SubscriptionID, KeyVaultName, KeyIdentifier, Secret fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
@@ -84,6 +85,7 @@ type GoogleCloudKms struct {
 	Enabled              *bool  `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
 	serviceAccountKey    string // String-formatted JSON object containing GCP KMS credentials from your GCP account.
 	keyVersionResourceID string // 	The Key Version Resource ID from your GCP account.
+	Valid                *bool  `json:"valid,omitempty"` // Specifies whether the encryption key set for the provider is valid and may be used to encrypt and decrypt data.
 	// A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
