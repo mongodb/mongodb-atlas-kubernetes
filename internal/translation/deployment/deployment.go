@@ -12,6 +12,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
@@ -27,12 +28,20 @@ type AtlasDeploymentsService interface {
 	DeleteDeployment(ctx context.Context, deployment Deployment) error
 	ClusterWithProcessArgs(ctx context.Context, cluster *Cluster) error
 	UpdateProcessArgs(ctx context.Context, cluster *Cluster) error
+
+	GetCustomZones(ctx context.Context, projectID, clusterName string) (map[string]string, error)
+	CreateCustomZones(ctx context.Context, projectID, clusterName string, mappings []akov2.CustomZoneMapping) (map[string]string, error)
+	DeleteCustomZones(ctx context.Context, projectID, clusterName string) error
+	GetManagedNamespaces(ctx context.Context, projectID, clusterName string) (*[]akov2.ManagedNamespace, error)
+	CreateManagedNamespace(ctx context.Context, projectID, clusterName string, ns *akov2.ManagedNamespace) error
+	DeleteManagedNamespace(ctx context.Context, projectID, clusterName string) error
 }
 
 type ProductionAtlasDeployments struct {
-	clustersAPI   admin.ClustersApi
-	serverlessAPI admin.ServerlessInstancesApi
-	isGov         bool
+	clustersAPI      admin.ClustersApi
+	serverlessAPI    admin.ServerlessInstancesApi
+	globalClusterAPI admin.GlobalClustersApi
+	isGov            bool
 }
 
 func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger, isGov bool) (*ProductionAtlasDeployments, error) {
@@ -40,11 +49,11 @@ func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, se
 	if err != nil {
 		return nil, fmt.Errorf("failed to create versioned client: %w", err)
 	}
-	return NewAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, isGov), nil
+	return NewAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, client.GlobalClustersApi, isGov), nil
 }
 
-func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, isGov bool) *ProductionAtlasDeployments {
-	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, isGov: isGov}
+func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, globalClusterAPI admin.GlobalClustersApi, isGov bool) *ProductionAtlasDeployments {
+	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, globalClusterAPI: globalClusterAPI, isGov: isGov}
 }
 
 func (ds *ProductionAtlasDeployments) ListClusterNames(ctx context.Context, projectID string) ([]string, error) {
@@ -213,5 +222,54 @@ func (ds *ProductionAtlasDeployments) UpdateProcessArgs(ctx context.Context, clu
 
 	cluster.ProcessArgs = processArgsFromAtlas(config)
 
+	return nil
+}
+
+func (ds *ProductionAtlasDeployments) GetCustomZones(ctx context.Context, projectID, clusterName string) (map[string]string, error) {
+	geosharding, _, err := ds.globalClusterAPI.GetManagedNamespace(ctx, projectID, clusterName).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get global cluster: %w", err)
+	}
+	return geosharding.GetCustomZoneMapping(), nil
+}
+
+func (ds *ProductionAtlasDeployments) CreateCustomZones(ctx context.Context, projectID, clusterName string, mappings []akov2.CustomZoneMapping) (map[string]string, error) {
+	geosharding, _, err := ds.globalClusterAPI.CreateCustomZoneMapping(ctx, projectID, clusterName, customZonesToAtlas(&mappings)).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create custom zone: %w", err)
+	}
+	return geosharding.GetCustomZoneMapping(), nil
+}
+
+func (ds *ProductionAtlasDeployments) DeleteCustomZones(ctx context.Context, projectID, clusterName string) error {
+	_, _, err := ds.globalClusterAPI.DeleteAllCustomZoneMappings(ctx, projectID, clusterName).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to delete custom zone: %w", err)
+	}
+	return nil
+}
+
+func (ds *ProductionAtlasDeployments) GetManagedNamespaces(ctx context.Context, projectID, clusterName string) (*[]akov2.ManagedNamespace, error) {
+	geosharding, _, err := ds.globalClusterAPI.GetManagedNamespace(ctx, projectID, clusterName).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get global cluster: %w", err)
+	}
+	return managedNamespacesFromAtlas(geosharding), nil
+}
+
+func (ds *ProductionAtlasDeployments) CreateManagedNamespace(ctx context.Context, projectID, clusterName string, ns *akov2.ManagedNamespace) error {
+	_, _, err := ds.globalClusterAPI.CreateManagedNamespace(ctx, projectID, clusterName, managedNamespaceToAtlas(ns)).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to create managed namespace: %w", err)
+	}
+	return nil
+}
+
+func (ds *ProductionAtlasDeployments) DeleteManagedNamespace(ctx context.Context, projectID, clusterName string) error {
+	//TODO: This should take a managed namespace to delete; flag with APIx
+	_, _, err := ds.globalClusterAPI.DeleteManagedNamespace(ctx, clusterName, projectID).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to delete managed namespace: %w", err)
+	}
 	return nil
 }

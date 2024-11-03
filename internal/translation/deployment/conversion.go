@@ -915,3 +915,54 @@ func set[T any](nameFn func(T) string, lists ...[]T) []T {
 	}
 	return result
 }
+
+func customZonesFromAtlas(gs *admin.GeoSharding) *[]akov2.CustomZoneMapping {
+	out := make([]akov2.CustomZoneMapping, len(*gs.CustomZoneMapping))
+	for k, v := range gs.GetCustomZoneMapping() {
+		out = append(out, akov2.CustomZoneMapping{Location: k, Zone: v})
+	}
+	return &out
+}
+
+func managedNamespacesFromAtlas(gs *admin.GeoSharding) *[]akov2.ManagedNamespace {
+	out := make([]akov2.ManagedNamespace, len(*gs.ManagedNamespaces))
+	for _, ns := range gs.GetManagedNamespaces() {
+		out = append(out, akov2.ManagedNamespace{
+			Db:                     ns.Db,
+			Collection:             ns.Collection,
+			CustomShardKey:         ns.CustomShardKey,
+			IsCustomShardKeyHashed: ns.IsCustomShardKeyHashed,
+			IsShardKeyUnique:       ns.IsShardKeyUnique,
+			NumInitialChunks:       int(ns.GetNumInitialChunks()),
+			PresplitHashedZones:    ns.PresplitHashedZones,
+		})
+	}
+	return &out
+}
+
+func customZonesToAtlas(in *[]akov2.CustomZoneMapping) *admin.CustomZoneMappings {
+	if in == nil {
+		return nil
+	}
+	zoneMappings := &admin.CustomZoneMappings{}
+	for _, zone := range *in {
+		*zoneMappings.CustomZoneMappings = append(zoneMappings.GetCustomZoneMappings(), *admin.NewZoneMapping(zone.Location, zone.Zone))
+	}
+
+	return zoneMappings
+}
+
+func managedNamespaceToAtlas(in *akov2.ManagedNamespace) *admin.ManagedNamespace {
+	if in == nil {
+		return nil
+	}
+	return &admin.ManagedNamespace{
+		Db:                     pointer.MakePtr(in.Db),
+		Collection:             pointer.MakePtr(in.Collection),
+		CustomShardKey:         pointer.MakePtr(in.CustomShardKey),
+		IsCustomShardKeyHashed: in.IsCustomShardKeyHashed,
+		IsShardKeyUnique:       in.IsShardKeyUnique,
+		NumInitialChunks:       pointer.MakePtr(int64(in.NumInitialChunks)),
+		PresplitHashedZones:    in.PresplitHashedZones,
+	}
+}
