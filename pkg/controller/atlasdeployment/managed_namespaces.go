@@ -4,21 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas/mongodbatlas"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.Result {
+func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Context, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.Result {
 	if clusterType != string(akov2.TypeGeoSharded) && managedNamespace != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, "Managed namespace is only supported by GeoSharded clusters")
 	}
 
-	result := syncManagedNamespaces(service, groupID, deploymentName, managedNamespace)
+	result := r.syncManagedNamespaces(service, groupID, deploymentName, managedNamespace)
 	if !result.IsOk() {
 		service.SetConditionFromResult(api.ManagedNamespacesReadyType, result)
 		return result
@@ -33,23 +32,23 @@ func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterT
 	return result
 }
 
-func syncManagedNamespaces(service *workflow.Context, groupID string, deploymentName string, managedNamespaces []akov2.ManagedNamespace) workflow.Result {
+func (r *AtlasDeploymentReconciler) syncManagedNamespaces(service *workflow.Context, groupID string, deploymentName string, managedNamespaces []akov2.ManagedNamespace) workflow.Result {
 	logger := service.Log
-	existingManagedNamespaces, _, err := GetGlobalDeploymentState(service.Context, service.Client.GlobalClusters, groupID, deploymentName)
+	existingManagedNamespaces, err := r.deploymentService.GetManagedNamespaces(service.Context, groupID, deploymentName)
 	logger.Debugf("Syncing managed namespaces %s", deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to get managed namespaces: %v", err))
 	}
 	diff := sortManagedNamespaces(existingManagedNamespaces, managedNamespaces)
 	logger.Debugw("diff", "To create: %v", diff.ToCreate, "To delete: %v", diff.ToDelete, "To update status: %v", diff.ToUpdateStatus)
-	err = deleteManagedNamespaces(service.Context, service.Client.GlobalClusters, groupID, deploymentName, diff.ToDelete)
+	err = deleteManagedNamespaces(service.Context, r.deploymentService, groupID, deploymentName, diff.ToDelete)
 	if err != nil {
 		logger.Errorf("failed to delete managed namespaces: %v", err)
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to delete managed namespaces: %v", err))
 	}
-	nsStatuses := createManagedNamespaces(service.Context, service.Client.GlobalClusters, groupID, deploymentName, diff.ToCreate)
+	nsStatuses := createManagedNamespaces(service.Context, r.deploymentService, groupID, deploymentName, diff.ToCreate)
 	for _, ns := range diff.ToUpdateStatus {
-		nsStatuses = append(nsStatuses, status.NewCreatedManagedNamespaceStatus(ns))
+		nsStatuses = append(nsStatuses, akov2.NewCreatedManagedNamespaceStatus(ns))
 	}
 	logger.Debugw("Managed namespaces statuses", "statuses", nsStatuses)
 
@@ -66,19 +65,19 @@ func checkManagedNamespaceStatus(managedNamespaces []status.ManagedNamespace) wo
 	return workflow.OK()
 }
 
-func sortManagedNamespaces(existing []mongodbatlas.ManagedNamespace, desired []akov2.ManagedNamespace) NamespaceDiff {
+func sortManagedNamespaces(existing, desired []akov2.ManagedNamespace) NamespaceDiff {
 	var result NamespaceDiff
 	for _, d := range desired {
 		found := false
 		for _, e := range existing {
 			if isManagedNamespaceStateMatch(e, d) {
 				found = true
-				result.ToUpdateStatus = append(result.ToUpdateStatus, d.ToAtlas())
+				result.ToUpdateStatus = append(result.ToUpdateStatus, d)
 				break
 			}
 		}
 		if !found {
-			result.ToCreate = append(result.ToCreate, d.ToAtlas())
+			result.ToCreate = append(result.ToCreate, d)
 		}
 	}
 
@@ -98,7 +97,7 @@ func sortManagedNamespaces(existing []mongodbatlas.ManagedNamespace, desired []a
 	return result
 }
 
-func isManagedNamespaceStateMatch(existing mongodbatlas.ManagedNamespace, desired akov2.ManagedNamespace) bool {
+func isManagedNamespaceStateMatch(existing, desired akov2.ManagedNamespace) bool {
 	if existing.Db == desired.Db &&
 		existing.Collection == desired.Collection &&
 		existing.CustomShardKey == desired.CustomShardKey &&
@@ -110,9 +109,9 @@ func isManagedNamespaceStateMatch(existing mongodbatlas.ManagedNamespace, desire
 	return false
 }
 
-func deleteManagedNamespaces(ctx context.Context, client mongodbatlas.GlobalClustersService, id string, name string, namespaces []mongodbatlas.ManagedNamespace) error {
+func deleteManagedNamespaces(ctx context.Context, client deployment.AtlasDeploymentsService, id string, name string, namespaces []akov2.ManagedNamespace) error {
 	for i := range namespaces {
-		_, _, err := client.DeleteManagedNamespace(ctx, id, name, &namespaces[i])
+		err := client.DeleteManagedNamespace(ctx, id, name, &namespaces[i])
 		if err != nil {
 			return err
 		}
@@ -120,22 +119,23 @@ func deleteManagedNamespaces(ctx context.Context, client mongodbatlas.GlobalClus
 	return nil
 }
 
-func createManagedNamespaces(ctx context.Context, client mongodbatlas.GlobalClustersService, id string, name string, namespaces []mongodbatlas.ManagedNamespace) []status.ManagedNamespace {
+func createManagedNamespaces(ctx context.Context, client deployment.AtlasDeploymentsService, id string, name string, namespaces []akov2.ManagedNamespace) []status.ManagedNamespace {
 	var newStatuses []status.ManagedNamespace
 	for i := range namespaces {
 		ns := namespaces[i]
-		_, _, err := client.AddManagedNamespace(ctx, id, name, &ns)
+		err := client.CreateManagedNamespace(ctx, id, name, &ns)
+
 		if err != nil {
-			newStatuses = append(newStatuses, status.NewFailedToCreateManagedNamespaceStatus(ns, err))
+			newStatuses = append(newStatuses, akov2.NewFailedToCreateManagedNamespaceStatus(ns, err))
 		} else {
-			newStatuses = append(newStatuses, status.NewCreatedManagedNamespaceStatus(ns))
+			newStatuses = append(newStatuses, akov2.NewCreatedManagedNamespaceStatus(ns))
 		}
 	}
 	return newStatuses
 }
 
 type NamespaceDiff struct {
-	ToCreate       []mongodbatlas.ManagedNamespace
-	ToDelete       []mongodbatlas.ManagedNamespace
-	ToUpdateStatus []mongodbatlas.ManagedNamespace
+	ToCreate       []akov2.ManagedNamespace
+	ToDelete       []akov2.ManagedNamespace
+	ToUpdateStatus []akov2.ManagedNamespace
 }

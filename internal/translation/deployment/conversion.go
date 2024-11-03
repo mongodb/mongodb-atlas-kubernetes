@@ -917,17 +917,23 @@ func set[T any](nameFn func(T) string, lists ...[]T) []T {
 }
 
 func customZonesFromAtlas(gs *admin.GeoSharding) *[]akov2.CustomZoneMapping {
-	out := make([]akov2.CustomZoneMapping, len(*gs.CustomZoneMapping))
+	if gs == nil {
+		return nil
+	}
+	out := make([]akov2.CustomZoneMapping, 0, len(gs.GetCustomZoneMapping()))
 	for k, v := range gs.GetCustomZoneMapping() {
 		out = append(out, akov2.CustomZoneMapping{Location: k, Zone: v})
 	}
 	return &out
 }
 
-func managedNamespacesFromAtlas(gs *admin.GeoSharding) *[]akov2.ManagedNamespace {
-	out := make([]akov2.ManagedNamespace, len(*gs.ManagedNamespaces))
-	for _, ns := range gs.GetManagedNamespaces() {
-		out = append(out, akov2.ManagedNamespace{
+func managedNamespacesFromAtlas(gs *admin.GeoSharding) []akov2.ManagedNamespace {
+	if gs == nil {
+		return nil
+	}
+	out := make([]akov2.ManagedNamespace, len(gs.GetManagedNamespaces()))
+	for i, ns := range gs.GetManagedNamespaces() {
+		out[i] = akov2.ManagedNamespace{
 			Db:                     ns.Db,
 			Collection:             ns.Collection,
 			CustomShardKey:         ns.CustomShardKey,
@@ -935,21 +941,24 @@ func managedNamespacesFromAtlas(gs *admin.GeoSharding) *[]akov2.ManagedNamespace
 			IsShardKeyUnique:       ns.IsShardKeyUnique,
 			NumInitialChunks:       int(ns.GetNumInitialChunks()),
 			PresplitHashedZones:    ns.PresplitHashedZones,
-		})
+		}
 	}
-	return &out
+	return out
 }
 
 func customZonesToAtlas(in *[]akov2.CustomZoneMapping) *admin.CustomZoneMappings {
 	if in == nil {
 		return nil
 	}
-	zoneMappings := &admin.CustomZoneMappings{}
-	for _, zone := range *in {
-		*zoneMappings.CustomZoneMappings = append(zoneMappings.GetCustomZoneMappings(), *admin.NewZoneMapping(zone.Location, zone.Zone))
+
+	out := make([]admin.ZoneMapping, len(*in))
+	for i, zone := range *in {
+		out[i] = *admin.NewZoneMapping(zone.Location, zone.Zone)
 	}
 
-	return zoneMappings
+	return &admin.CustomZoneMappings{
+		CustomZoneMappings: &out,
+	}
 }
 
 func managedNamespaceToAtlas(in *akov2.ManagedNamespace) *admin.ManagedNamespace {

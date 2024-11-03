@@ -32,9 +32,10 @@ type AtlasDeploymentsService interface {
 	GetCustomZones(ctx context.Context, projectID, clusterName string) (map[string]string, error)
 	CreateCustomZones(ctx context.Context, projectID, clusterName string, mappings []akov2.CustomZoneMapping) (map[string]string, error)
 	DeleteCustomZones(ctx context.Context, projectID, clusterName string) error
-	GetManagedNamespaces(ctx context.Context, projectID, clusterName string) (*[]akov2.ManagedNamespace, error)
+	GetZoneMappingMap(ctx context.Context, projectID, deploymentName string) (map[string]string, error)
+	GetManagedNamespaces(ctx context.Context, projectID, clusterName string) ([]akov2.ManagedNamespace, error)
 	CreateManagedNamespace(ctx context.Context, projectID, clusterName string, ns *akov2.ManagedNamespace) error
-	DeleteManagedNamespace(ctx context.Context, projectID, clusterName string) error
+	DeleteManagedNamespace(ctx context.Context, projectID, clusterName string, ns *akov2.ManagedNamespace) error
 }
 
 type ProductionAtlasDeployments struct {
@@ -249,7 +250,19 @@ func (ds *ProductionAtlasDeployments) DeleteCustomZones(ctx context.Context, pro
 	return nil
 }
 
-func (ds *ProductionAtlasDeployments) GetManagedNamespaces(ctx context.Context, projectID, clusterName string) (*[]akov2.ManagedNamespace, error) {
+func (ds *ProductionAtlasDeployments) GetZoneMappingMap(ctx context.Context, projectID, deploymentName string) (map[string]string, error) {
+	cluster, _, err := ds.clustersAPI.GetCluster(ctx, projectID, deploymentName).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cluster: %w", err)
+	}
+	result := make(map[string]string, len(cluster.GetReplicationSpecs()))
+	for _, rc := range cluster.GetReplicationSpecs() {
+		result[rc.GetId()] = rc.GetZoneName()
+	}
+	return result, nil
+}
+
+func (ds *ProductionAtlasDeployments) GetManagedNamespaces(ctx context.Context, projectID, clusterName string) ([]akov2.ManagedNamespace, error) {
 	geosharding, _, err := ds.globalClusterAPI.GetManagedNamespace(ctx, projectID, clusterName).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global cluster: %w", err)
@@ -265,9 +278,14 @@ func (ds *ProductionAtlasDeployments) CreateManagedNamespace(ctx context.Context
 	return nil
 }
 
-func (ds *ProductionAtlasDeployments) DeleteManagedNamespace(ctx context.Context, projectID, clusterName string) error {
-	//TODO: This should take a managed namespace to delete; flag with APIx
-	_, _, err := ds.globalClusterAPI.DeleteManagedNamespace(ctx, clusterName, projectID).Execute()
+func (ds *ProductionAtlasDeployments) DeleteManagedNamespace(ctx context.Context, projectID, clusterName string, namespace *akov2.ManagedNamespace) error {
+	params := &admin.DeleteManagedNamespaceApiParams{
+		GroupId:     projectID,
+		ClusterName: clusterName,
+		Db:          &namespace.Db,
+		Collection:  &namespace.Collection,
+	}
+	_, _, err := ds.globalClusterAPI.DeleteManagedNamespaceWithParams(ctx, params).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete managed namespace: %w", err)
 	}

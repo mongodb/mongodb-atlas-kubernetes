@@ -74,7 +74,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			return transition(workflow.Internal)
 		}
 
-		result = EnsureCustomZoneMapping(
+		result = r.ensureCustomZoneMapping(
 			ctx,
 			deploymentInAKO.GetProjectID(),
 			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.CustomZoneMapping,
@@ -84,7 +84,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			return transition(workflow.Internal)
 		}
 
-		result = EnsureManagedNamespaces(
+		result = r.ensureManagedNamespaces(
 			ctx,
 			deploymentInAKO.GetProjectID(),
 			deploymentInAKO.ClusterType,

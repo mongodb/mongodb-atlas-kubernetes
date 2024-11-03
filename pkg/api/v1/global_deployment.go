@@ -1,9 +1,5 @@
 package v1
 
-import (
-	"go.mongodb.org/atlas/mongodbatlas"
-)
-
 type CustomZoneMapping struct {
 	Location string `json:"location"`
 	Zone     string `json:"zone"`
@@ -18,23 +14,4 @@ type ManagedNamespace struct {
 	PresplitHashedZones    *bool  `json:"presplitHashedZones,omitempty"`
 	IsCustomShardKeyHashed *bool  `json:"isCustomShardKeyHashed,omitempty"` // Flag that specifies whether the custom shard key for the collection is hashed.
 	IsShardKeyUnique       *bool  `json:"isShardKeyUnique,omitempty"`       // Flag that specifies whether the underlying index enforces a unique constraint.
-}
-
-func (in *ManagedNamespace) ToAtlas() mongodbatlas.ManagedNamespace {
-	return mongodbatlas.ManagedNamespace{
-		Db:                     in.Db,
-		Collection:             in.Collection,
-		CustomShardKey:         in.CustomShardKey,
-		IsCustomShardKeyHashed: in.IsCustomShardKeyHashed,
-		IsShardKeyUnique:       in.IsShardKeyUnique,
-		NumInitialChunks:       in.NumInitialChunks,
-		PresplitHashedZones:    in.PresplitHashedZones,
-	}
-}
-
-func (c *CustomZoneMapping) ToAtlas() mongodbatlas.CustomZoneMapping {
-	return mongodbatlas.CustomZoneMapping{
-		Location: c.Location,
-		Zone:     c.Zone,
-	}
 }

@@ -1,9 +1,5 @@
 package status
 
-import (
-	"go.mongodb.org/atlas/mongodbatlas"
-)
-
 type CustomZoneMapping struct {
 	CustomZoneMapping     map[string]string `json:"customZoneMapping,omitempty"`
 	ZoneMappingState      string            `json:"zoneMappingState,omitempty"`
@@ -22,7 +18,7 @@ type ManagedNamespace struct {
 	ErrMessage             string `json:"errMessage,omitempty"`
 }
 
-func NewFailedToCreateManagedNamespaceStatus(namespace mongodbatlas.ManagedNamespace, err error) ManagedNamespace {
+func NewFailedToCreateManagedNamespaceStatus(namespace ManagedNamespace, err error) ManagedNamespace {
 	return ManagedNamespace{
 		Db:                     namespace.Db,
 		Collection:             namespace.Collection,
@@ -36,7 +32,7 @@ func NewFailedToCreateManagedNamespaceStatus(namespace mongodbatlas.ManagedNames
 	}
 }
 
-func NewCreatedManagedNamespaceStatus(namespace mongodbatlas.ManagedNamespace) ManagedNamespace {
+func NewCreatedManagedNamespaceStatus(namespace ManagedNamespace) ManagedNamespace {
 	return ManagedNamespace{
 		Db:                     namespace.Db,
 		Collection:             namespace.Collection,
