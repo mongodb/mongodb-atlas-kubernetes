@@ -5,7 +5,6 @@ package translation
 import (
 	mock "github.com/stretchr/testify/mock"
 
-	deployment "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	status "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
@@ -24,19 +23,19 @@ func (_m *DeploymentMock) EXPECT() *DeploymentMock_Expecter {
 }
 
 // GetConnection provides a mock function with given fields:
-func (_m *DeploymentMock) GetConnection() *deployment.Connection {
+func (_m *DeploymentMock) GetConnection() *status.ConnectionStrings {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetConnection")
 	}
 
-	var r0 *deployment.Connection
-	if rf, ok := ret.Get(0).(func() *deployment.Connection); ok {
+	var r0 *status.ConnectionStrings
+	if rf, ok := ret.Get(0).(func() *status.ConnectionStrings); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*deployment.Connection)
+			r0 = ret.Get(0).(*status.ConnectionStrings)
 		}
 	}
 
@@ -60,12 +59,12 @@ func (_c *DeploymentMock_GetConnection_Call) Run(run func()) *DeploymentMock_Get
 	return _c
 }
 
-func (_c *DeploymentMock_GetConnection_Call) Return(_a0 *deployment.Connection) *DeploymentMock_GetConnection_Call {
+func (_c *DeploymentMock_GetConnection_Call) Return(_a0 *status.ConnectionStrings) *DeploymentMock_GetConnection_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *DeploymentMock_GetConnection_Call) RunAndReturn(run func() *deployment.Connection) *DeploymentMock_GetConnection_Call {
+func (_c *DeploymentMock_GetConnection_Call) RunAndReturn(run func() *status.ConnectionStrings) *DeploymentMock_GetConnection_Call {
 	_c.Call.Return(run)
 	return _c
 }

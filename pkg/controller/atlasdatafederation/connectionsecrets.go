@@ -8,20 +8,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *akov2.AtlasProject, df *akov2.AtlasDataFederation) workflow.Result {
+func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Context, federationService datafederation.DataFederationService, project *akov2.AtlasProject, df *akov2.AtlasDataFederation) workflow.Result {
 	databaseUsers := akov2.AtlasDatabaseUserList{}
 	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	atlasDF, _, err := ctx.Client.DataFederation.Get(ctx.Context, project.ID(), df.Spec.Name)
+	atlasDF, err := federationService.Get(ctx.Context, project.ID(), df.Spec.Name)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}

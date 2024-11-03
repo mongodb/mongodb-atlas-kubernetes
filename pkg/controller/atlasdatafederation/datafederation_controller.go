@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -93,26 +93,31 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClient, orgID, err := r.AtlasProvider.Client(ctx.Context, project.ConnectionSecretObjectKey(), log)
+	endpointService, err := datafederation.NewDatafederationPrivateEndpointService(ctx.Context, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
-		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-		return result.ReconcileResult(), nil
-	}
-	ctx.OrgID = orgID
-	ctx.Client = atlasClient
-
-	if result = r.ensureDataFederation(ctx, project, dataFederation); !result.IsOk() {
-		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
+		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	if result = r.ensurePrivateEndpoints(ctx, project, dataFederation); !result.IsOk() {
+	dataFederationService, err := datafederation.NewAtlasDataFederationService(ctx.Context, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	if err != nil {
+		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
+	if result = r.ensureDataFederation(ctx, project, dataFederation, dataFederationService); !result.IsOk() {
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
+	if result = r.ensurePrivateEndpoints(ctx, project, dataFederation, endpointService); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationPEReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	if result = r.ensureConnectionSecrets(ctx, project, dataFederation); !result.IsOk() {
+	if result = r.ensureConnectionSecrets(ctx, dataFederationService, project, dataFederation); !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
@@ -133,7 +138,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	}
 
 	if !dataFederation.GetDeletionTimestamp().IsZero() {
-		return r.handleDelete(ctx, log, dataFederation, project, atlasClient).ReconcileResult(), nil
+		return r.handleDelete(ctx, log, dataFederation, project, dataFederationService).ReconcileResult(), nil
 	}
 
 	err = customresource.ApplyLastConfigApplied(context, project, r.Client)
@@ -149,7 +154,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log *zap.SugaredLogger, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject, atlasClient *mongodbatlas.Client) workflow.Result {
+func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log *zap.SugaredLogger, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject, service datafederation.DataFederationService) workflow.Result {
 	if customresource.HaveFinalizer(dataFederation, customresource.FinalizerLabel) {
 		if customresource.IsResourcePolicyKeepOrDefault(dataFederation, r.ObjectDeletionProtection) {
 			log.Info("Not removing AtlasDataFederation from Atlas as per configuration")
@@ -160,7 +165,7 @@ func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log 
 				ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 				return result
 			}
-			if err := r.deleteDataFederationFromAtlas(ctx.Context, atlasClient, dataFederation, project, log); err != nil {
+			if err := r.deleteDataFederationFromAtlas(ctx.Context, service, dataFederation, project, log); err != nil {
 				log.Errorf("failed to remove DataFederation from Atlas: %s", err)
 				result := workflow.Terminate(workflow.Internal, err.Error())
 				ctx.SetConditionFromResult(api.DataFederationReadyType, result)
@@ -177,13 +182,12 @@ func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log 
 	return workflow.OK()
 }
 
-func (r *AtlasDataFederationReconciler) deleteDataFederationFromAtlas(ctx context.Context, client *mongodbatlas.Client, df *akov2.AtlasDataFederation, project *akov2.AtlasProject, log *zap.SugaredLogger) error {
+func (r *AtlasDataFederationReconciler) deleteDataFederationFromAtlas(ctx context.Context, service datafederation.DataFederationService, df *akov2.AtlasDataFederation, project *akov2.AtlasProject, log *zap.SugaredLogger) error {
 	log.Infof("Deleting DataFederation instance: %s from Atlas", df.Spec.Name)
 
-	_, err := client.DataFederation.Delete(ctx, project.ID(), df.Spec.Name)
+	err := service.Delete(ctx, project.ID(), df.Spec.Name)
 
-	var apiError *mongodbatlas.ErrorResponse
-	if errors.As(err, &apiError) && apiError.Error() == "DATA_LAKE_TENANT_NOT_FOUND_FOR_NAME" {
+	if errors.Is(err, datafederation.ErrorNotFound) {
 		log.Info("DataFederation doesn't exist or is already deleted")
 		return nil
 	}

@@ -11,4 +11,5 @@ packages:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles:
+  github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams:
