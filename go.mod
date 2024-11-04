@@ -21,7 +21,7 @@ require (
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
 	github.com/onsi/ginkgo/v2 v2.21.0
-	github.com/onsi/gomega v1.34.2
+	github.com/onsi/gomega v1.35.1
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/atlas v0.37.0
