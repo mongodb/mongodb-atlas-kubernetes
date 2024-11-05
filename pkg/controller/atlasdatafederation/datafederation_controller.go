@@ -7,12 +7,15 @@ import (
 
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -27,6 +30,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
 )
 
 // AtlasDataFederationReconciler reconciles an DataFederation object
@@ -211,8 +215,40 @@ func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager, skipN
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDataFederation").
 		For(&akov2.AtlasDataFederation{}, builder.WithPredicates(r.GlobalPredicates...)).
+		Watches(
+			&akov2.AtlasProject{},
+			handler.EnqueueRequestsFromMapFunc(r.findAtlasDataFederationForProjects),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
+}
+
+func (r *AtlasDataFederationReconciler) findAtlasDataFederationForProjects(ctx context.Context, obj client.Object) []reconcile.Request {
+	project, ok := obj.(*akov2.AtlasProject)
+	if !ok {
+		r.Log.Warnf("watching AtlasProject but got %T", obj)
+		return nil
+	}
+
+	datafederationList := &akov2.AtlasDataFederationList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasDataFederationByProject,
+			client.ObjectKeyFromObject(project).String(),
+		),
+	}
+	err := r.Client.List(ctx, datafederationList, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list AtlasDataFederation: %e", err)
+		return []reconcile.Request{}
+	}
+
+	requests := make([]reconcile.Request, 0, len(datafederationList.Items))
+	for _, item := range datafederationList.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{Name: item.Name, Namespace: item.Namespace}})
+	}
+	return requests
 }
 
 func NewAtlasDataFederationReconciler(
