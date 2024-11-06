@@ -35,25 +35,6 @@ func TestToAlias(t *testing.T) {
 	assert.Equal(t, sample[0].Region, result[0].Region)
 }
 
-func TestAreIntegrationsEqual(t *testing.T) {
-	atlasDef := aliasThirdPartyIntegration{
-		Type:   "DATADOG",
-		APIKey: "****************************4e6f",
-		Region: "EU",
-	}
-	specDef := aliasThirdPartyIntegration{
-		Type:   "DATADOG",
-		APIKey: "actual-valid-id*************4e6f",
-		Region: "EU",
-	}
-
-	areEqual := integrationsApplied(&atlasDef, &specDef)
-	assert.True(t, areEqual, "Identical objects should be equal")
-
-	areEqual = areIntegrationsEqual(&atlasDef, &specDef)
-	assert.False(t, areEqual, "Should fail if the last 4 characters of APIKey do not match")
-}
-
 func TestUpdateIntegrationsAtlas(t *testing.T) {
 	calls := 0
 	for _, tc := range []struct {

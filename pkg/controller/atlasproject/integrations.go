@@ -75,18 +75,16 @@ func fetchIntegrations(ctx *workflow.Context, projectID string) (*mongodbatlas.T
 
 func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, projectID string, integrationsToUpdate [][]set.Identifiable, namespace string) workflow.Result {
 	for _, item := range integrationsToUpdate {
-		atlasIntegration := item[0].(aliasThirdPartyIntegration)
 		kubeIntegration, err := item[1].(project.Integration).ToAtlas(ctx.Context, r.Client, namespace)
 		if kubeIntegration == nil {
 			ctx.Log.Warnw("Update Integrations", "Can not convert kube integration", err)
 			return workflow.Terminate(workflow.ProjectIntegrationInternal, "Update Integrations: Can not convert kube integration")
 		}
-		specIntegration := (*aliasThirdPartyIntegration)(kubeIntegration)
-		if !areIntegrationsEqual(specIntegration, &atlasIntegration) {
-			ctx.Log.Debugf("Try to update integration: %s", kubeIntegration.Type)
-			if _, _, err := ctx.Client.Integrations.Replace(ctx.Context, projectID, kubeIntegration.Type, kubeIntegration); err != nil {
-				return workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Can not apply integration: %v", err))
-			}
+		// As integration secrets are redacted from Atlas, we cannot properly compare them,
+		// so as a simple fix we assume changes are always needed at evaluation time
+		ctx.Log.Debugf("Try to update integration: %s", kubeIntegration.Type)
+		if _, _, err := ctx.Client.Integrations.Replace(ctx.Context, projectID, kubeIntegration.Type, kubeIntegration); err != nil {
+			return workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Can not apply integration: %v", err))
 		}
 	}
 	return workflow.OK()
@@ -133,9 +131,10 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 		if isPrometheusType(atlas.Type) {
 			areEqual = arePrometheusesEqual(atlas, spec)
 		} else {
-			specAsAtlas, _ := spec.ToAtlas(ctx.Context, r.Client, namespace)
-			specAlias := aliasThirdPartyIntegration(*specAsAtlas)
-			areEqual = integrationsApplied(&atlas, &specAlias)
+			// As integration secrets are redacted from Atlas, we cannot properly compare them,
+			// so as a simple fix we assume changes were applied correctly as we would
+			// have otherwise hit an error at apply time
+			areEqual = true
 		}
 		ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "spec", spec, "areEqual", areEqual)
 
@@ -145,23 +144,6 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 	}
 
 	return true
-}
-
-func integrationsApplied(_, _ *aliasThirdPartyIntegration) bool {
-	// As integration secrets are redacted from Alas, we cannot properly compare them,
-	// so as a simple fix here we assume changes were applied correctly as we would
-	// have otherwise errored out as are always needed
-	// TODO: remove and replace calls to this with areIntegrationsEqual when
-	//       that code is properly comparing fields
-	return true
-}
-
-func areIntegrationsEqual(_, _ *aliasThirdPartyIntegration) bool {
-	// As integration secrets are redacted from Alas, we cannot properly compare them,
-	// so as a simple fix we assume changes are always needed
-	// TODO: Compare using Atlas redacted fields with checksums if accepted OR
-	//       move to implicit state checks if Atlas cannot help with this.
-	return false
 }
 
 type aliasThirdPartyIntegration mongodbatlas.ThirdPartyIntegration
