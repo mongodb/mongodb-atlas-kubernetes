@@ -28,6 +28,7 @@ func handleCustomRole(ctx *workflow.Context, akoCustomRole *akov2.AtlasCustomRol
 		service:   customroles.NewCustomRoles(ctx.SdkClient.CustomDatabaseRolesApi),
 		projectID: akoCustomRole.Spec.ProjectIDRef.ID,
 		deleted:   !akoCustomRole.DeletionTimestamp.IsZero(),
+		role:      akoCustomRole,
 	}
 
 	return r.Reconcile()
@@ -45,7 +46,7 @@ func (r *roleController) Reconcile() workflow.Result {
 	roleInAKO := customroles.NewCustomRole(&r.role.Spec.Role)
 	var roleInAtlas customroles.CustomRole
 	for _, role := range currentCustomRoles {
-		if role.Name == roleInAtlas.Name {
+		if role.Name == roleInAKO.Name {
 			roleFoundInAtlas = true
 			roleInAtlas = role
 			break

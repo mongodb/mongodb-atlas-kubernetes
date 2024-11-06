@@ -23,8 +23,6 @@ type CustomRole struct {
 // Not the one included in the AtlasProject
 type AtlasCustomRoleStatus struct {
 	api.Common `json:",inline"`
-	RoleStatus CustomRoleStatus             `json:"roleStatus,omitempty"`
-	Project    AtlasCustomRoleProjectStatus `json:"project,omitempty"`
 }
 
 type AtlasCustomRoleProjectStatus struct {

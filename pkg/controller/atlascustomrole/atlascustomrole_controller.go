@@ -94,6 +94,8 @@ func (r *AtlasСustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	workflowCtx := workflow.NewContext(r.Log, conditions, ctx)
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, atlasCustomRole)
+		r.Log.Infow("-> Finished AtlasCustomRole reconciliation", "spec", atlasCustomRole.Spec, "status",
+			atlasCustomRole.GetStatus())
 	}()
 
 	valid, err := customresource.ResourceVersionIsValid(atlasCustomRole)
@@ -118,10 +120,28 @@ func (r *AtlasСustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			fmt.Errorf("the %T is not supported by Atlas for government", atlasCustomRole)), nil
 	}
 
+	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context,
+		&client.ObjectKey{
+			Namespace: atlasCustomRole.GetNamespace(),
+			Name:      atlasCustomRole.Spec.Credentials().Name,
+		},
+		workflowCtx.Log)
+	if err != nil {
+		return r.terminate(workflowCtx,
+			atlasCustomRole,
+			api.ProjectCustomRolesReadyType,
+			workflow.AtlasAPIAccessNotConfigured,
+			true,
+			fmt.Errorf("unable to create atlas client: %s", err.Error())), nil
+		//result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+		//return result.ReconcileResult(), nil
+	}
+	workflowCtx.SdkClient = atlasSdkClient
+
 	if res := handleCustomRole(workflowCtx, atlasCustomRole); !res.IsOk() {
 		return r.fail(req, fmt.Errorf("%s", res.GetMessage())), nil
 	}
-	return r.idle(), nil
+	return r.idle(workflowCtx), nil
 }
 
 func (r *AtlasСustomRoleReconciler) terminate(
@@ -143,12 +163,14 @@ func (r *AtlasСustomRoleReconciler) terminate(
 	return result.ReconcileResult()
 }
 
-func (r *AtlasСustomRoleReconciler) idle() ctrl.Result {
+func (r *AtlasСustomRoleReconciler) idle(ctx *workflow.Context) ctrl.Result {
+	ctx.SetConditionTrue(api.ReadyType)
 	return workflow.OK().ReconcileResult()
 }
 
 // fail terminates the reconciliation silently(no updates on conditions)
 func (r *AtlasСustomRoleReconciler) fail(req ctrl.Request, err error) ctrl.Result {
+
 	r.Log.Errorf("Failed to query object %s: %s", req.NamespacedName, err)
 	return workflow.TerminateSilently().ReconcileResult()
 }

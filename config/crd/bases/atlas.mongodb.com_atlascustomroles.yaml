@@ -22,10 +22,10 @@ spec:
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
       type: string
-    - jsonPath: .spec.name
+    - jsonPath: .spec.role.name
       name: Name
       type: string
-    - jsonPath: .status.project.id
+    - jsonPath: .spec.projectIDRef.id
       name: Project ID
       type: string
     name: v1
@@ -52,41 +52,6 @@ spec:
           spec:
             description: AtlasCustomRoleSpec
             properties:
-              actions:
-                description: List of the individual privilege actions that the role
-                  grants.
-                items:
-                  properties:
-                    name:
-                      description: Human-readable label that identifies the privilege
-                        action.
-                      type: string
-                    resources:
-                      description: List of resources on which you grant the action.
-                      items:
-                        properties:
-                          cluster:
-                            description: Flag that indicates whether to grant the
-                              action on the cluster resource. If true, MongoDB Cloud
-                              ignores Database and Collection parameters.
-                            type: boolean
-                          collection:
-                            description: Human-readable label that identifies the
-                              collection on which you grant the action to one MongoDB
-                              user.
-                            type: string
-                          database:
-                            description: Human-readable label that identifies the
-                              database on which you grant the action to one MongoDB
-                              user.
-                            type: string
-                        type: object
-                      type: array
-                  required:
-                  - name
-                  - resources
-                  type: object
-                type: array
               connectionSecret:
                 description: Name of the secret containing Atlas API private and public
                   keys
@@ -99,25 +64,6 @@ spec:
                 required:
                 - name
                 type: object
-              inheritedRoles:
-                description: List of the built-in roles that this custom role inherits.
-                items:
-                  properties:
-                    database:
-                      description: Human-readable label that identifies the database
-                        on which someone grants the action to one MongoDB user.
-                      type: string
-                    name:
-                      description: Human-readable label that identifies the role inherited.
-                      type: string
-                  required:
-                  - database
-                  - name
-                  type: object
-                type: array
-              name:
-                description: Name of the custom role
-                type: string
               projectIDRef:
                 description: ID of the Atlas Project this role is attached to
                 properties:
@@ -128,9 +74,71 @@ spec:
                 required:
                 - id
                 type: object
+              role:
+                properties:
+                  actions:
+                    description: List of the individual privilege actions that the
+                      role grants.
+                    items:
+                      properties:
+                        name:
+                          description: Human-readable label that identifies the privilege
+                            action.
+                          type: string
+                        resources:
+                          description: List of resources on which you grant the action.
+                          items:
+                            properties:
+                              cluster:
+                                description: Flag that indicates whether to grant
+                                  the action on the cluster resource. If true, MongoDB
+                                  Cloud ignores Database and Collection parameters.
+                                type: boolean
+                              collection:
+                                description: Human-readable label that identifies
+                                  the collection on which you grant the action to
+                                  one MongoDB user.
+                                type: string
+                              database:
+                                description: Human-readable label that identifies
+                                  the database on which you grant the action to one
+                                  MongoDB user.
+                                type: string
+                            type: object
+                          type: array
+                      required:
+                      - name
+                      - resources
+                      type: object
+                    type: array
+                  inheritedRoles:
+                    description: List of the built-in roles that this custom role
+                      inherits.
+                    items:
+                      properties:
+                        database:
+                          description: Human-readable label that identifies the database
+                            on which someone grants the action to one MongoDB user.
+                          type: string
+                        name:
+                          description: Human-readable label that identifies the role
+                            inherited.
+                          type: string
+                      required:
+                      - database
+                      - name
+                      type: object
+                    type: array
+                  name:
+                    description: Human-readable label that identifies the role. This
+                      name must be unique for this custom role in this project.
+                    type: string
+                required:
+                - name
+                type: object
             required:
-            - name
             - projectIDRef
+            - role
             type: object
           status:
             description: |-
@@ -173,15 +181,6 @@ spec:
                   The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
                 format: int64
                 type: integer
-              project:
-                properties:
-                  id:
-                    type: string
-                  ready:
-                    type: boolean
-                type: object
-              roleStatus:
-                type: string
             required:
             - conditions
             type: object

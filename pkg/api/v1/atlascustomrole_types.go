@@ -15,8 +15,8 @@ func init() {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
-// +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
-// +kubebuilder:printcolumn:name="Project ID",type=string,JSONPath=`.status.project.id`
+// +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.role.name`
+// +kubebuilder:printcolumn:name="Project ID",type=string,JSONPath=`.spec.projectIDRef.id`
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
 // +kubebuilder:resource:categories=atlas,shortName=acr
