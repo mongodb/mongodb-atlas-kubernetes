@@ -17,6 +17,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
+const (
+	mongodbRepoURL = "https://mongodb.github.io/helm-charts"
+)
+
 func DefaultAtlasProject(name string) client.Object {
 	return &akov2.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
@@ -63,6 +67,9 @@ func isTestAtlasOperatorInstalled(namespace string) bool {
 }
 
 func installTestAtlasOperator(namespace string) error {
+	if _, err := run("helm", "repo", "add", "mongodb", mongodbRepoURL); err != nil {
+		return fmt.Errorf("failed to set mongodb repo to URL %q: %w", mongodbRepoURL, err)
+	}
 	domain := os.Getenv("MCLI_OPS_MANAGER_URL")
 	args := []string{
 		"install",
