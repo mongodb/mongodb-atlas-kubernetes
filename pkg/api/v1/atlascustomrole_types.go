@@ -48,15 +48,8 @@ type AtlasCustomRoleList struct {
 // AtlasCustomRoleSpec
 type AtlasCustomRoleSpec struct {
 	api.LocalCredentialHolder `json:",inline"`
-
-	// Name of the custom role
-	Name string `json:"name"`
+	Role                      CustomRole `json:"role"`
 	// ID of the Atlas Project this role is attached to
-	ProjectIDRef *ExternalProjectReference `json:"projectIDRef"`
-	// List of the built-in roles that this custom role inherits.
-	// +optional
-	InheritedRoles []Role `json:"inheritedRoles,omitempty"`
-	// List of the individual privilege actions that the role grants.
-	// +optional
-	Actions []Action `json:"actions,omitempty"`
+	// +required
+	ProjectIDRef ExternalProjectReference `json:"projectIDRef"`
 }
