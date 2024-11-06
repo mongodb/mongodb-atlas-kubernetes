@@ -8,6 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -80,8 +81,13 @@ func k8sRecreate(ctx context.Context, k8sClient client.Client, obj client.Object
 	if !k8sErrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create object: %w", err)
 	}
-	if err := k8sClient.Update(ctx, obj); err != nil {
-		return fmt.Errorf("failed to update object: %w", err)
-	}
-	return nil
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		latestObj := obj.DeepCopyObject().(client.Object)
+		err = k8sClient.Get(ctx, client.ObjectKeyFromObject(obj), latestObj)
+		if err != nil {
+			return err
+		}
+		obj.SetResourceVersion(latestObj.GetResourceVersion())
+		return k8sClient.Update(ctx, obj)
+	})
 }
