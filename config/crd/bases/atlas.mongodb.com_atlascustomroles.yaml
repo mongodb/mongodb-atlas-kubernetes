@@ -31,6 +31,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
+        description: AtlasCustomRole is the Schema for the AtlasCustomRole API
         properties:
           apiVersion:
             description: |-
@@ -50,7 +51,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtlasCustomRoleSpec
+            description: AtlasCustomRoleSpec defines the desired state of CustomRole
+              in Atlas
             properties:
               connectionSecret:
                 description: Name of the secret containing Atlas API private and public

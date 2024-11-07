@@ -3,6 +3,7 @@ package status
 import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 
 // +k8s:deepcopy-gen=false
+
 type CustomRoleStatus string
 
 const (
@@ -23,9 +24,4 @@ type CustomRole struct {
 // Not the one included in the AtlasProject
 type AtlasCustomRoleStatus struct {
 	api.Common `json:",inline"`
-}
-
-type AtlasCustomRoleProjectStatus struct {
-	ID    string `json:"id,omitempty"`
-	Ready bool   `json:"ready,omitempty"`
 }
