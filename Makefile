@@ -568,6 +568,6 @@ store-silk-sboms: download-from-silk ## Download & Store the latest augmented SB
 	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH)
 
 .PHONY: contract-tests
-contract-tests: ## Run contract tests
+contract-tests: run-kind ## Run contract tests
 	go clean -testcache
 	AKO_CONTRACT_TEST=1 go test -v -race -cover ./test/contract/...

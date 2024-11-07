@@ -32,4 +32,5 @@ jobs:
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          USE_KIND: "false" # Avoid launching a kind cluster yet again
         run: devbox run -- 'make contract-tests'
