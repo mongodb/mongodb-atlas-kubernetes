@@ -39,12 +39,9 @@ func endpointFromAtlas(endpoint *admin.PrivateNetworkEndpointIdEntry, projectID 
 	}
 	if endpoint != nil {
 		result.DataFederationPE = &akov2.DataFederationPE{
-			EndpointID:              endpoint.GetEndpointId(),
-			Provider:                endpoint.GetProvider(),
-			Type:                    endpoint.GetType(),
-			Comment:                 endpoint.GetComment(),
-			CustomerEndpointDNSName: endpoint.GetCustomerEndpointDNSName(),
-			Region:                  endpoint.GetRegion(),
+			EndpointID: endpoint.GetEndpointId(),
+			Provider:   endpoint.GetProvider(),
+			Type:       endpoint.GetType(),
 		}
 	}
 	return result
@@ -56,11 +53,8 @@ func endpointToAtlas(ep *DatafederationPrivateEndpointEntry) *admin.PrivateNetwo
 	}
 
 	return &admin.PrivateNetworkEndpointIdEntry{
-		EndpointId:              ep.EndpointID,
-		Provider:                pointer.MakePtrOrNil(ep.Provider),
-		Type:                    pointer.MakePtrOrNil(ep.Type),
-		Comment:                 pointer.MakePtrOrNil(ep.Comment),
-		CustomerEndpointDNSName: pointer.MakePtrOrNil(ep.CustomerEndpointDNSName),
-		Region:                  pointer.MakePtrOrNil(ep.Region),
+		EndpointId: ep.EndpointID,
+		Provider:   pointer.MakePtrOrNil(ep.Provider),
+		Type:       pointer.MakePtrOrNil(ep.Type),
 	}
 }

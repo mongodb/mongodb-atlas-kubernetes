@@ -54,7 +54,6 @@ func (dfs *AtlasDataFederationService) Create(ctx context.Context, df *DataFeder
 	atlasDataFederation := toAtlas(df)
 	_, _, err := dfs.api.
 		CreateFederatedDatabase(ctx, df.ProjectID, atlasDataFederation).
-		SkipRoleValidation(df.SkipRoleValidation).
 		Execute()
 	if err != nil {
 		return fmt.Errorf("failed to create data federation database %q: %w", df.ProjectID, err)
@@ -66,7 +65,8 @@ func (dfs *AtlasDataFederationService) Update(ctx context.Context, df *DataFeder
 	atlasDataFederation := toAtlas(df)
 	_, _, err := dfs.api.
 		UpdateFederatedDatabase(ctx, df.ProjectID, df.Name, atlasDataFederation).
-		SkipRoleValidation(df.SkipRoleValidation).
+		// false is the default for creation, so we have to respect it for updates as well.
+		SkipRoleValidation(false).
 		Execute()
 	if err != nil {
 		return fmt.Errorf("failed to update data federation database %q: %w", df.ProjectID, err)
