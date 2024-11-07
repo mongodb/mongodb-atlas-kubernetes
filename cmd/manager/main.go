@@ -163,6 +163,10 @@ func parseConfiguration() Config {
 	configureDeletionProtection(&config)
 
 	config.FeatureFlags = featureflags.NewFeatureFlags(os.Environ)
+
+	if config.LogLevel == "debug" {
+		os.Setenv("AKO_ATLAS_SDK_DEBUG", "1")
+	}
 	return config
 }
 
