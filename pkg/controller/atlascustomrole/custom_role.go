@@ -16,32 +16,33 @@ type roleController struct {
 	projectID string
 	service   customroles.CustomRoleService
 	role      *akov2.AtlasCustomRole
-	deleted   bool
+	dpEnabled bool
 }
 
-func handleCustomRole(ctx *workflow.Context, akoCustomRole *akov2.AtlasCustomRole) workflow.Result {
+func handleCustomRole(ctx *workflow.Context, akoCustomRole *akov2.AtlasCustomRole, dpEnabled bool) workflow.Result {
 	ctx.Log.Debug("starting custom role processing")
 	defer ctx.Log.Debug("finished custom role processing")
 
 	r := roleController{
 		ctx:       ctx,
 		service:   customroles.NewCustomRoles(ctx.SdkClient.CustomDatabaseRolesApi),
-		projectID: akoCustomRole.Spec.ProjectIDRef.ID,
-		deleted:   !akoCustomRole.DeletionTimestamp.IsZero(),
 		role:      akoCustomRole,
+		dpEnabled: dpEnabled,
 	}
 
 	return r.Reconcile()
 }
 
 func (r *roleController) Reconcile() workflow.Result {
+	r.projectID = r.role.Spec.ProjectIDRef.ID
+
 	currentCustomRoles, err := r.service.List(r.ctx.Context, r.projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
 	}
 
 	roleFoundInAtlas := false
-	roleDeleted := r.deleted
+	roleDeleted := !r.role.GetDeletionTimestamp().IsZero()
 
 	roleInAKO := customroles.NewCustomRole(&r.role.Spec.Role)
 	var roleInAtlas customroles.CustomRole
@@ -58,7 +59,7 @@ func (r *roleController) Reconcile() workflow.Result {
 		return r.create(roleInAKO)
 	case roleFoundInAtlas && !roleDeleted:
 		return r.update(roleInAKO, roleInAtlas)
-	case roleFoundInAtlas && roleDeleted:
+	case roleFoundInAtlas && roleDeleted && !r.dpEnabled:
 		return r.delete(roleInAtlas)
 	}
 

@@ -133,12 +133,10 @@ func (r *AtlasСustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			workflow.AtlasAPIAccessNotConfigured,
 			true,
 			fmt.Errorf("unable to create atlas client: %s", err.Error())), nil
-		//result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		//return result.ReconcileResult(), nil
 	}
 	workflowCtx.SdkClient = atlasSdkClient
 
-	if res := handleCustomRole(workflowCtx, atlasCustomRole); !res.IsOk() {
+	if res := handleCustomRole(workflowCtx, atlasCustomRole, r.ObjectDeletionProtection); !res.IsOk() {
 		return r.fail(req, fmt.Errorf("%s", res.GetMessage())), nil
 	}
 	return r.idle(workflowCtx), nil

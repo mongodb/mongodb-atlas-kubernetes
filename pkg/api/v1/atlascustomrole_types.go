@@ -12,6 +12,7 @@ func init() {
 	SchemeBuilder.Register(&AtlasCustomRole{}, &AtlasCustomRoleList{})
 }
 
+// AtlasCustomRole is the Schema for the AtlasCustomRole API
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
@@ -37,15 +38,15 @@ func (in *AtlasCustomRole) GetStatus() api.Status {
 	return in.Status
 }
 
-// +kubebuilder:object:root=true
 // AtlasCustomRoleList contains a list of AtlasCustomRole
+// +kubebuilder:object:root=true
 type AtlasCustomRoleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AtlasCustomRole `json:"items"`
 }
 
-// AtlasCustomRoleSpec
+// AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas
 type AtlasCustomRoleSpec struct {
 	api.LocalCredentialHolder `json:",inline"`
 	Role                      CustomRole `json:"role"`

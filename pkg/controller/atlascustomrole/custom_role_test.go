@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -21,11 +24,10 @@ import (
 
 func Test_roleController_Reconcile(t *testing.T) {
 	type fields struct {
-		ctx       *workflow.Context
-		projectID string
-		service   func() customroles.CustomRoleService
-		role      *akov2.AtlasCustomRole
-		deleted   bool
+		ctx                       *workflow.Context
+		service                   func() customroles.CustomRoleService
+		role                      *akov2.AtlasCustomRole
+		deletionProtectionEnabled bool
 	}
 	tests := []struct {
 		name   string
@@ -40,7 +42,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					OrgID:   "",
 					Context: context.Background(),
 				},
-				projectID: "testProjectID",
 				service: func() customroles.CustomRoleService {
 					s := translation.NewCustomRoleServiceMock(t)
 					s.EXPECT().List(context.Background(), "testProjectID").
@@ -78,7 +79,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				deleted: false,
 			},
 			want: workflow.OK(),
 		},
@@ -90,7 +90,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					OrgID:   "",
 					Context: context.Background(),
 				},
-				projectID: "testProjectID",
 				service: func() customroles.CustomRoleService {
 					s := translation.NewCustomRoleServiceMock(t)
 					s.EXPECT().List(context.Background(), "testProjectID").
@@ -128,7 +127,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				deleted: false,
 			},
 			want: workflow.Terminate(workflow.AtlasCustomRoleNotCreated, "unable to create role"),
 		},
@@ -140,7 +138,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					OrgID:   "",
 					Context: context.Background(),
 				},
-				projectID: "testProjectID",
 				service: func() customroles.CustomRoleService {
 					s := translation.NewCustomRoleServiceMock(t)
 					s.EXPECT().List(context.Background(), "testProjectID").
@@ -176,7 +173,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				deleted: false,
 			},
 			want: workflow.Terminate(workflow.ProjectCustomRolesReady, "unable to list roles"),
 		},
@@ -188,7 +184,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					OrgID:   "",
 					Context: context.Background(),
 				},
-				projectID: "testProjectID",
 				service: func() customroles.CustomRoleService {
 					s := translation.NewCustomRoleServiceMock(t)
 					s.EXPECT().List(context.Background(), "testProjectID").
@@ -235,7 +230,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				deleted: false,
 			},
 			want: workflow.OK(),
 		},
@@ -247,7 +241,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					OrgID:   "",
 					Context: context.Background(),
 				},
-				projectID: "testProjectID",
 				service: func() customroles.CustomRoleService {
 					s := translation.NewCustomRoleServiceMock(t)
 					s.EXPECT().List(context.Background(), "testProjectID").
@@ -294,7 +287,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				deleted: false,
 			},
 			want: workflow.Terminate(workflow.AtlasCustomRoleNotUpdated, "unable to update custom role"),
 		},
@@ -306,7 +298,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					OrgID:   "",
 					Context: context.Background(),
 				},
-				projectID: "testProjectID",
 				service: func() customroles.CustomRoleService {
 					s := translation.NewCustomRoleServiceMock(t)
 					s.EXPECT().List(context.Background(), "testProjectID").
@@ -366,7 +357,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				deleted: false,
 			},
 			want: workflow.OK(),
 		},
@@ -378,7 +368,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					OrgID:   "",
 					Context: context.Background(),
 				},
-				projectID: "testProjectID",
 				service: func() customroles.CustomRoleService {
 					s := translation.NewCustomRoleServiceMock(t)
 					s.EXPECT().List(context.Background(), "testProjectID").
@@ -395,6 +384,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 					return s
 				},
 				role: &akov2.AtlasCustomRole{
+					ObjectMeta: metav1.ObjectMeta{
+						DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
+					},
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name: "TestRoleName",
@@ -423,7 +415,64 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				deleted: true,
+			},
+			want: workflow.OK(),
+		},
+		{
+			name: "DO NOT Delete custom role successfully with DeletionProtection enabled",
+			fields: fields{
+				deletionProtectionEnabled: true,
+				ctx: &workflow.Context{
+					Log:     zap.S(),
+					OrgID:   "",
+					Context: context.Background(),
+				},
+				service: func() customroles.CustomRoleService {
+					s := translation.NewCustomRoleServiceMock(t)
+					s.EXPECT().List(context.Background(), "testProjectID").
+						Return([]customroles.CustomRole{
+							{
+								CustomRole: &akov2.CustomRole{
+									Name:           "TestRoleName",
+									InheritedRoles: nil,
+									Actions:        nil,
+								},
+							},
+						}, nil)
+					return s
+				},
+				role: &akov2.AtlasCustomRole{
+					ObjectMeta: metav1.ObjectMeta{
+						DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
+					},
+					Spec: akov2.AtlasCustomRoleSpec{
+						Role: akov2.CustomRole{
+							Name: "TestRoleName",
+							InheritedRoles: []akov2.Role{
+								{
+									Name:     "read",
+									Database: "main",
+								},
+							},
+							Actions: []akov2.Action{
+								{
+									Name: "VIEW_ALL_HISTORY",
+									Resources: []akov2.Resource{
+										{
+											Cluster:    pointer.MakePtr(true),
+											Database:   pointer.MakePtr("main"),
+											Collection: pointer.MakePtr("collection"),
+										},
+									},
+								},
+							},
+						},
+						ProjectIDRef: akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
+					},
+					Status: status.AtlasCustomRoleStatus{},
+				},
 			},
 			want: workflow.OK(),
 		},
@@ -435,7 +484,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					OrgID:   "",
 					Context: context.Background(),
 				},
-				projectID: "testProjectID",
 				service: func() customroles.CustomRoleService {
 					s := translation.NewCustomRoleServiceMock(t)
 					s.EXPECT().List(context.Background(), "testProjectID").
@@ -453,6 +501,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 					return s
 				},
 				role: &akov2.AtlasCustomRole{
+					ObjectMeta: metav1.ObjectMeta{
+						DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
+					},
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name: "TestRoleName",
@@ -481,7 +532,6 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				deleted: true,
 			},
 			want: workflow.Terminate(workflow.AtlasCustomRoleNotDeleted, "unable to delete custom role"),
 		},
@@ -490,10 +540,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &roleController{
 				ctx:       tt.fields.ctx,
-				projectID: tt.fields.projectID,
 				service:   tt.fields.service(),
 				role:      tt.fields.role,
-				deleted:   tt.fields.deleted,
+				dpEnabled: tt.fields.deletionProtectionEnabled,
 			}
 			if got := r.Reconcile(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Reconcile() = %v, want %v", got, tt.want)
@@ -504,8 +553,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 
 func Test_handleCustomRole(t *testing.T) {
 	type args struct {
-		ctx           *workflow.Context
-		akoCustomRole *akov2.AtlasCustomRole
+		ctx                       *workflow.Context
+		akoCustomRole             *akov2.AtlasCustomRole
+		deletionProtectionEnabled bool
 	}
 	tests := []struct {
 		name string
@@ -521,17 +571,17 @@ func Test_handleCustomRole(t *testing.T) {
 					SdkClient: func() *admin.APIClient {
 						return &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
-								cdrApi := mockadmin.NewCustomDatabaseRolesApi(t)
-								cdrApi.EXPECT().ListCustomDatabaseRoles(context.Background(), "testProjectID").
-									Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: cdrApi})
-								cdrApi.EXPECT().ListCustomDatabaseRolesExecute(admin.ListCustomDatabaseRolesApiRequest{ApiService: cdrApi}).
+								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+								cdrAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "testProjectID").
+									Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: cdrAPI})
+								cdrAPI.EXPECT().ListCustomDatabaseRolesExecute(admin.ListCustomDatabaseRolesApiRequest{ApiService: cdrAPI}).
 									Return([]admin.UserCustomDBRole{}, nil, nil)
-								cdrApi.EXPECT().CreateCustomDatabaseRole(context.Background(), "testProjectID",
+								cdrAPI.EXPECT().CreateCustomDatabaseRole(context.Background(), "testProjectID",
 									mock.AnythingOfType("*admin.UserCustomDBRole")).
-									Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrApi})
-								cdrApi.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrApi}).
+									Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
+								cdrAPI.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
 									Return(nil, nil, nil)
-								return cdrApi
+								return cdrAPI
 							}(),
 						}
 					}(),
@@ -556,7 +606,7 @@ func Test_handleCustomRole(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := handleCustomRole(tt.args.ctx, tt.args.akoCustomRole); !reflect.DeepEqual(got, tt.want) {
+			if got := handleCustomRole(tt.args.ctx, tt.args.akoCustomRole, tt.args.deletionProtectionEnabled); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("handleCustomRole() = %v, want %v", got, tt.want)
 			}
 		})
