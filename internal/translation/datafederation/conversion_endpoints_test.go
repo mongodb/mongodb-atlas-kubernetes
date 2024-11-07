@@ -1,7 +1,6 @@
 package datafederation
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -21,7 +20,7 @@ func TestRoundtrip_DataFederationPE(t *testing.T) {
 		toAtlasResult := endpointToAtlas(fuzzed)
 		fromAtlasResult := endpointFromAtlas(toAtlasResult, "")
 
-		equals := reflect.DeepEqual(fuzzed, fromAtlasResult)
+		equals := fuzzed.EqualsTo(fromAtlasResult)
 		if !equals {
 			t.Log(cmp.Diff(fuzzed, fromAtlasResult))
 		}

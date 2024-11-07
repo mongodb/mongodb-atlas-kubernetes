@@ -99,6 +99,32 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 				testData.Project.Name,
 				dataFederationInstanceName,
 				testData.Project.Namespace).WithPrivateEndpoint(pe.ID, "AWS", "DATA_LAKE")
+			createdDataFederation.Spec.Storage = &akov2.Storage{
+				Databases: []akov2.Database{
+					{
+						Name: "test-db-1",
+						Collections: []akov2.Collection{
+							{
+								Name: "test-collection-1",
+								DataSources: []akov2.DataSource{
+									{
+										StoreName: "http-test",
+										Urls: []string{
+											"https://data.cityofnewyork.us/api/views/vfnx-vebw/rows.csv",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Stores: []akov2.Store{
+					{
+						Name:     "http-test",
+						Provider: "http",
+					},
+				},
+			}
 			Expect(testData.K8SClient.Create(context.Background(), createdDataFederation)).ShouldNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
