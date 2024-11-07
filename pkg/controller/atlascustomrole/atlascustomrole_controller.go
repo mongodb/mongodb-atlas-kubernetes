@@ -168,7 +168,6 @@ func (r *AtlasСustomRoleReconciler) idle(ctx *workflow.Context) ctrl.Result {
 
 // fail terminates the reconciliation silently(no updates on conditions)
 func (r *AtlasСustomRoleReconciler) fail(req ctrl.Request, err error) ctrl.Result {
-
 	r.Log.Errorf("Failed to query object %s: %s", req.NamespacedName, err)
 	return workflow.TerminateSilently().ReconcileResult()
 }
