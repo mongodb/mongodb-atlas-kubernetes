@@ -49,9 +49,6 @@ func pruneSpec(spec *akov2.DataFederationSpec) *akov2.DataFederationSpec {
 	// private endpoints are sub-resources, they have their own conversion and are not part of the data federation entity.
 	spec.PrivateEndpoints = nil
 
-	// skip "SkipRoleValidation" field as it is a request parameter, not a returned body from/to Atlas.
-	spec.SkipRoleValidation = false
-
 	// normalize nested empty stores/database slices
 	if spec.Storage != nil && (len(spec.Storage.Stores) == 0 && len(spec.Storage.Databases) == 0) {
 		spec.Storage = nil
@@ -130,13 +127,10 @@ func storageFromAtlas(storage *admin.DataLakeStorage) *akov2.Storage {
 					CollectionRegex:     atlasDataSource.GetCollectionRegex(),
 					Database:            atlasDataSource.GetDatabase(),
 					DatabaseRegex:       atlasDataSource.GetDatabaseRegex(),
-					DatasetName:         atlasDataSource.GetDatasetName(),
-					DatasetPrefix:       atlasDataSource.GetDatasetPrefix(),
 					DefaultFormat:       atlasDataSource.GetDefaultFormat(),
 					Path:                atlasDataSource.GetPath(),
 					ProvenanceFieldName: atlasDataSource.GetProvenanceFieldName(),
 					StoreName:           atlasDataSource.GetStoreName(),
-					TrimLevel:           atlasDataSource.GetTrimLevel(),
 				}
 				dataSource.Urls = append(dataSource.Urls, atlasDataSource.GetUrls()...)
 				collection.DataSources = append(collection.DataSources, dataSource)
@@ -155,21 +149,15 @@ func storageFromAtlas(storage *admin.DataLakeStorage) *akov2.Storage {
 
 	for _, atlasStore := range storage.GetStores() {
 		store := akov2.Store{
-			Name:           atlasStore.GetName(),
-			Provider:       atlasStore.GetProvider(),
-			Bucket:         atlasStore.GetBucket(),
-			Delimiter:      atlasStore.GetDelimiter(),
-			IncludeTags:    atlasStore.GetIncludeTags(),
-			Prefix:         atlasStore.GetPrefix(),
-			Public:         atlasStore.GetPublic(),
-			Region:         atlasStore.GetRegion(),
-			ClusterName:    atlasStore.GetClusterName(),
-			AllowInsecure:  atlasStore.GetAllowInsecure(),
-			DefaultFormat:  atlasStore.GetDefaultFormat(),
-			ReadConcern:    readConcernFromAtlas(atlasStore.ReadConcern),
-			ReadPreference: readPreferenceFromAtlas(atlasStore.ReadPreference),
+			Name:        atlasStore.GetName(),
+			Provider:    atlasStore.GetProvider(),
+			Bucket:      atlasStore.GetBucket(),
+			Delimiter:   atlasStore.GetDelimiter(),
+			IncludeTags: atlasStore.GetIncludeTags(),
+			Prefix:      atlasStore.GetPrefix(),
+			Public:      atlasStore.GetPublic(),
+			Region:      atlasStore.GetRegion(),
 		}
-		store.Urls = append(store.Urls, atlasStore.GetUrls()...)
 		store.AdditionalStorageClasses = append(store.AdditionalStorageClasses, atlasStore.GetAdditionalStorageClasses()...)
 		result.Stores = append(result.Stores, store)
 	}
@@ -201,13 +189,10 @@ func storageToAtlas(storage *akov2.Storage) *admin.DataLakeStorage {
 					CollectionRegex:     pointer.MakePtrOrNil(dataSource.CollectionRegex),
 					Database:            pointer.MakePtrOrNil(dataSource.Database),
 					DatabaseRegex:       pointer.MakePtrOrNil(dataSource.DatabaseRegex),
-					DatasetName:         pointer.MakePtrOrNil(dataSource.DatasetName),
-					DatasetPrefix:       pointer.MakePtrOrNil(dataSource.DatasetPrefix),
 					DefaultFormat:       pointer.MakePtrOrNil(dataSource.DefaultFormat),
 					Path:                pointer.MakePtrOrNil(dataSource.Path),
 					ProvenanceFieldName: pointer.MakePtrOrNil(dataSource.ProvenanceFieldName),
 					StoreName:           pointer.MakePtrOrNil(dataSource.StoreName),
-					TrimLevel:           pointer.MakePtrOrNil(dataSource.TrimLevel),
 				}
 				atlasDataSource.Urls = pointer.GetOrNilIfEmpty(append([]string{}, dataSource.Urls...))
 				atlasDataSources = append(atlasDataSources, atlasDataSource)
@@ -232,21 +217,15 @@ func storageToAtlas(storage *akov2.Storage) *admin.DataLakeStorage {
 	stores := make([]admin.DataLakeStoreSettings, 0, len(storage.Stores))
 	for _, store := range storage.Stores {
 		atlasStore := admin.DataLakeStoreSettings{
-			Name:           pointer.MakePtrOrNil(store.Name),
-			Provider:       store.Provider,
-			Bucket:         pointer.MakePtrOrNil(store.Bucket),
-			Delimiter:      pointer.MakePtrOrNil(store.Delimiter),
-			IncludeTags:    pointer.MakePtr(store.IncludeTags),
-			Prefix:         pointer.MakePtrOrNil(store.Prefix),
-			Public:         pointer.MakePtr(store.Public),
-			Region:         pointer.MakePtrOrNil(store.Region),
-			ClusterName:    pointer.MakePtrOrNil(store.ClusterName),
-			AllowInsecure:  pointer.MakePtr(store.AllowInsecure),
-			DefaultFormat:  pointer.MakePtrOrNil(store.DefaultFormat),
-			ReadConcern:    readConcernToAtlas(store.ReadConcern),
-			ReadPreference: readPreferenceToAtlas(store.ReadPreference),
+			Name:        pointer.MakePtrOrNil(store.Name),
+			Provider:    store.Provider,
+			Bucket:      pointer.MakePtrOrNil(store.Bucket),
+			Delimiter:   pointer.MakePtrOrNil(store.Delimiter),
+			IncludeTags: pointer.MakePtr(store.IncludeTags),
+			Prefix:      pointer.MakePtrOrNil(store.Prefix),
+			Public:      pointer.MakePtr(store.Public),
+			Region:      pointer.MakePtrOrNil(store.Region),
 		}
-		atlasStore.Urls = pointer.GetOrNilIfEmpty(append([]string{}, store.Urls...))
 		additionalStorageClasses := make([]string, 0, len(store.AdditionalStorageClasses))
 		additionalStorageClasses = append(additionalStorageClasses, store.AdditionalStorageClasses...)
 		atlasStore.AdditionalStorageClasses = pointer.GetOrNilIfEmpty(additionalStorageClasses)
@@ -254,80 +233,6 @@ func storageToAtlas(storage *akov2.Storage) *admin.DataLakeStorage {
 	}
 	result.Stores = pointer.GetOrNilIfEmpty(stores)
 	return result
-}
-
-func readPreferenceFromAtlas(preference *admin.DataLakeAtlasStoreReadPreference) *akov2.ReadPreference {
-	if preference == nil {
-		return nil
-	}
-	result := &akov2.ReadPreference{
-		MaxStalenessSeconds: preference.GetMaxStalenessSeconds(),
-		Mode:                preference.GetMode(),
-	}
-	for _, tagset := range preference.GetTagSets() {
-		var akoTags []akov2.ReadPreferenceTag
-		if len(tagset) > 0 {
-			akoTags = make([]akov2.ReadPreferenceTag, 0, len(tagset))
-			for _, tag := range tagset {
-				akoTags = append(akoTags, akov2.ReadPreferenceTag{
-					Name:  tag.GetName(),
-					Value: tag.GetValue(),
-				})
-			}
-		}
-		result.TagSets = append(result.TagSets, akoTags)
-	}
-	return result
-}
-
-func readPreferenceToAtlas(preference *akov2.ReadPreference) *admin.DataLakeAtlasStoreReadPreference {
-	if preference == nil {
-		return nil
-	}
-
-	var atlasTagSets [][]admin.DataLakeAtlasStoreReadPreferenceTag
-	if len(preference.TagSets) > 0 {
-		atlasTagSets = make([][]admin.DataLakeAtlasStoreReadPreferenceTag, 0, len(preference.TagSets))
-		for _, tagset := range preference.TagSets {
-			var atlasTags []admin.DataLakeAtlasStoreReadPreferenceTag
-			if len(tagset) > 0 {
-				atlasTags = make([]admin.DataLakeAtlasStoreReadPreferenceTag, 0, len(tagset))
-				for _, tag := range tagset {
-					atlasTags = append(atlasTags, admin.DataLakeAtlasStoreReadPreferenceTag{
-						Name:  pointer.MakePtrOrNil(tag.Name),
-						Value: pointer.MakePtrOrNil(tag.Value),
-					})
-				}
-			}
-			atlasTagSets = append(atlasTagSets, atlasTags)
-		}
-	}
-
-	return &admin.DataLakeAtlasStoreReadPreference{
-		MaxStalenessSeconds: pointer.MakePtrOrNil(preference.MaxStalenessSeconds),
-		Mode:                pointer.MakePtrOrNil(preference.Mode),
-		TagSets:             pointer.GetOrNilIfEmpty(atlasTagSets),
-	}
-}
-
-func readConcernFromAtlas(concern *admin.DataLakeAtlasStoreReadConcern) *akov2.ReadConcern {
-	if concern == nil {
-		return nil
-	}
-
-	return &akov2.ReadConcern{
-		Level: concern.GetLevel(),
-	}
-}
-
-func readConcernToAtlas(concern *akov2.ReadConcern) *admin.DataLakeAtlasStoreReadConcern {
-	if concern == nil {
-		return nil
-	}
-
-	return &admin.DataLakeAtlasStoreReadConcern{
-		Level: pointer.MakePtrOrNil(concern.Level),
-	}
 }
 
 func dataProcessRegionFromAtlas(region *admin.DataLakeDataProcessRegion) *akov2.DataProcessRegion {
