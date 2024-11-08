@@ -34,6 +34,7 @@ rules:
   - atlasdatafederations
   - atlasdeployments
   - atlasfederatedauths
+  - atlasprivateendpoints
   - atlasprojects
   - atlassearchindexconfigs
   - atlasstreamconnections
@@ -58,6 +59,7 @@ rules:
   - atlasdatafederations/status
   - atlasdeployments/status
   - atlasfederatedauths/status
+  - atlasprivateendpoints/status
   - atlasprojects/status
   - atlassearchindexconfigs/status
   - atlasstreamconnections/status

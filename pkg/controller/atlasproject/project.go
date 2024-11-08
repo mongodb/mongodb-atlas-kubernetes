@@ -183,5 +183,21 @@ func (r *AtlasProjectReconciler) hasDependencies(ctx *workflow.Context, project 
 		return false, err
 	}
 
-	return len(customRoles.Items) > 0, nil
+	if len(customRoles.Items) > 0 {
+		return true, nil
+	}
+
+	privateEndpoints := &akov2.AtlasPrivateEndpointList{}
+	listOps = &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasPrivateEndpointByProjectIndex,
+			client.ObjectKeyFromObject(project).String(),
+		),
+	}
+	err = r.Client.List(ctx.Context, privateEndpoints, listOps)
+	if err != nil {
+		return false, err
+	}
+
+	return len(privateEndpoints.Items) > 0, nil
 }

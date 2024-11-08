@@ -137,3 +137,16 @@ const (
 	AtlasCustomRoleNotUpdated ConditionReason = "CustomRoleNotUpdated"
 	AtlasCustomRoleNotDeleted ConditionReason = "CustomRoleNotDeleted"
 )
+
+const (
+	PrivateEndpointServiceCreated           ConditionReason = "PrivateEndpointServiceCreated"
+	PrivateEndpointServiceFailedToCreate    ConditionReason = "PrivateEndpointServiceFailedToCreate"
+	PrivateEndpointServiceFailedToConfigure ConditionReason = "PrivateEndpointServiceFailedToConfigure"
+	PrivateEndpointServiceInitializing      ConditionReason = "PrivateEndpointServiceInitializing"
+	PrivateEndpointServiceDeleting          ConditionReason = "PrivateEndpointServiceDeleting"
+	PrivateEndpointFailedToCreate           ConditionReason = "PrivateEndpointFailedToCreate"
+	PrivateEndpointUpdating                 ConditionReason = "PrivateEndpointUpdating"
+	PrivateEndpointConfigurationPending     ConditionReason = "PrivateEndpointConfigurationPending"
+	PrivateEndpointFailedToConfigure        ConditionReason = "PrivateEndpointFailedToConfigure"
+	PrivateEndpointFailedToDelete           ConditionReason = "PrivateEndpointFailedToDelete"
+)
