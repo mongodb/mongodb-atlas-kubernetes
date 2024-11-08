@@ -10,12 +10,13 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel"
 )
 
-type projectReferenceTestCase map[string]struct {
+type celTestCase map[string]struct {
 	object         AtlasCustomResource
+	oldObject      AtlasCustomResource
 	expectedErrors []string
 }
 
-func assertCELValidation(t *testing.T, crdPath string, tests projectReferenceTestCase) {
+func assertCELValidation(t *testing.T, crdPath string, tests celTestCase) {
 	t.Helper()
 
 	validator, err := cel.VersionValidatorFromFile(t, crdPath, "v1")
@@ -26,7 +27,10 @@ func assertCELValidation(t *testing.T, crdPath string, tests projectReferenceTes
 			unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tt.object)
 			require.NoError(t, err)
 
-			errs := validator(unstructuredObject, nil)
+			unstructuredOldObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tt.oldObject)
+			require.NoError(t, err)
+
+			errs := validator(unstructuredObject, unstructuredOldObject)
 
 			require.Equal(t, len(tt.expectedErrors), len(errs))
 
