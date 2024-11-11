@@ -159,13 +159,11 @@ func fromAtlas(ear *admin.EncryptionAtRest) *EncryptionAtRest {
 			ClientID:          ear.AzureKeyVault.GetClientID(),
 			ResourceGroupName: ear.AzureKeyVault.GetResourceGroupName(),
 			TenantID:          ear.AzureKeyVault.GetTenantID(),
-			Valid:             ear.AzureKeyVault.Valid,
 		}
 	}
 	if ear.HasGoogleCloudKms() {
 		out.GCP.GoogleCloudKms = akov2.GoogleCloudKms{
 			Enabled: ear.GoogleCloudKms.Enabled,
-			Valid:   ear.GoogleCloudKms.Valid,
 		}
 	}
 	return out

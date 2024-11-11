@@ -152,6 +152,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	r.projectService = project.NewProjectAPIService(atlasSdkClient.ProjectsApi)
 	r.teamsService = teams.NewTeamsAPIService(atlasSdkClient.TeamsApi, atlasSdkClient.MongoDBCloudUsersApi)
 	r.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.MaintenanceWindowsApi)
+	r.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.EncryptionAtRestUsingCustomerKeyManagementApi)
 
 	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
 	if err != nil {
