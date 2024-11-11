@@ -37,8 +37,6 @@ func TestRoundtrip_EncryptionAtRest(t *testing.T) {
 
 		//ignore read-only 'Valid' field
 		fuzzed.AWS.Valid = nil
-		fuzzed.Azure.Valid = nil
-		fuzzed.GCP.Valid = nil
 
 		toAtlasResult := toAtlas(fuzzed)
 		fromAtlasResult := fromAtlas(toAtlasResult)
