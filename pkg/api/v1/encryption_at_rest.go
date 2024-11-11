@@ -1,10 +1,9 @@
 package v1
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 

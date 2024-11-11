@@ -3,19 +3,16 @@ package atlasproject
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"regexp"
 	"strings"
 
-	"go.mongodb.org/atlas/mongodbatlas"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -24,12 +21,14 @@ const (
 )
 
 func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
-	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, project.Spec.EncryptionAtRest, project.Namespace); err != nil {
+	encRest := encryptionatrest.NewEncryptionAtRest(project)
+
+	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, encRest, project.Namespace); err != nil {
 		workflowCtx.UnsetCondition(api.EncryptionAtRestReadyType)
 		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
 	}
 
-	result := createOrDeleteEncryptionAtRests(workflowCtx, project.ID(), project)
+	result := createOrDeleteEncryptionAtRests(workflowCtx, r.encryptionAtRestService, project.ID(), encRest)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(api.EncryptionAtRestReadyType, result)
 		return result
@@ -44,27 +43,27 @@ func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Co
 	return workflow.OK()
 }
 
-func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Context, encRest *akov2.EncryptionAtRest, parentNs string) error {
+func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Context, encRest *encryptionatrest.EncryptionAtRest, parentNs string) error {
 	if encRest == nil {
 		return nil
 	}
 
-	if encRest.AwsKms.Enabled != nil && *encRest.AwsKms.Enabled && encRest.AwsKms.SecretRef.Name != "" {
-		err := readAndFillAWSSecret(service.Context, kubeClient, parentNs, &encRest.AwsKms)
+	if encRest.AWS.Enabled != nil && *encRest.AWS.Enabled && encRest.AWS.SecretRef.Name != "" {
+		err := readAndFillAWSSecret(service.Context, kubeClient, parentNs, &encRest.AWS)
 		if err != nil {
 			return err
 		}
 	}
 
-	if encRest.GoogleCloudKms.Enabled != nil && *encRest.GoogleCloudKms.Enabled && encRest.GoogleCloudKms.SecretRef.Name != "" {
-		err := readAndFillGoogleSecret(service.Context, kubeClient, parentNs, &encRest.GoogleCloudKms)
+	if encRest.GCP.Enabled != nil && *encRest.GCP.Enabled && encRest.GCP.SecretRef.Name != "" {
+		err := readAndFillGoogleSecret(service.Context, kubeClient, parentNs, &encRest.GCP)
 		if err != nil {
 			return err
 		}
 	}
 
-	if encRest.AzureKeyVault.Enabled != nil && *encRest.AzureKeyVault.Enabled && encRest.AzureKeyVault.SecretRef.Name != "" {
-		err := readAndFillAzureSecret(service.Context, kubeClient, parentNs, &encRest.AzureKeyVault)
+	if encRest.Azure.Enabled != nil && *encRest.Azure.Enabled && encRest.Azure.SecretRef.Name != "" {
+		err := readAndFillAzureSecret(service.Context, kubeClient, parentNs, &encRest.Azure)
 		if err != nil {
 			return err
 		}
@@ -73,7 +72,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 	return nil
 }
 
-func readAndFillAWSSecret(ctx context.Context, kubeClient client.Client, parentNs string, awsKms *akov2.AwsKms) error {
+func readAndFillAWSSecret(ctx context.Context, kubeClient client.Client, parentNs string, awsKms *encryptionatrest.AwsKms) error {
 	fieldData, err := readSecretData(ctx, kubeClient, awsKms.SecretRef, parentNs, "CustomerMasterKeyID", "RoleID")
 	if err != nil {
 		return err
@@ -84,7 +83,7 @@ func readAndFillAWSSecret(ctx context.Context, kubeClient client.Client, parentN
 	return nil
 }
 
-func readAndFillGoogleSecret(ctx context.Context, kubeClient client.Client, parentNs string, gkms *akov2.GoogleCloudKms) error {
+func readAndFillGoogleSecret(ctx context.Context, kubeClient client.Client, parentNs string, gkms *encryptionatrest.GoogleCloudKms) error {
 	fieldData, err := readSecretData(ctx, kubeClient, gkms.SecretRef, parentNs, "ServiceAccountKey", "KeyVersionResourceID")
 	if err != nil {
 		return err
@@ -95,7 +94,7 @@ func readAndFillGoogleSecret(ctx context.Context, kubeClient client.Client, pare
 	return nil
 }
 
-func readAndFillAzureSecret(ctx context.Context, kubeClient client.Client, parentNs string, azureVault *akov2.AzureKeyVault) error {
+func readAndFillAzureSecret(ctx context.Context, kubeClient client.Client, parentNs string, azureVault *encryptionatrest.AzureKeyVault) error {
 	fieldData, err := readSecretData(ctx, kubeClient, azureVault.SecretRef, parentNs, "Secret", "SubscriptionID", "KeyVaultName", "KeyIdentifier")
 	if err != nil {
 		return err
@@ -140,57 +139,30 @@ func readSecretData(ctx context.Context, kubeClient client.Client, res common.Re
 	return result, nil
 }
 
-func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) workflow.Result {
-	encryptionAtRestsInAtlas, err := fetchEncryptionAtRests(ctx, projectID)
+func createOrDeleteEncryptionAtRests(ctx *workflow.Context, service encryptionatrest.EncryptionAtRestService, projectID string, encRest *encryptionatrest.EncryptionAtRest) workflow.Result {
+	encryptionAtRestsInAtlas, err := service.Get(ctx.Context, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	inSync, err := AtlasInSync(encryptionAtRestsInAtlas, project.Spec.EncryptionAtRest)
-	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
-	}
+	inSync := encryptionatrest.EqualSpecs(encRest, encryptionAtRestsInAtlas)
 
 	if inSync {
 		return workflow.OK()
 	}
 
-	if err := syncEncryptionAtRestsInAtlas(ctx, projectID, project); err != nil {
+	if err := normalizeAwsKms(ctx, projectID, &encRest.AWS); err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+
+	if err := service.Update(ctx.Context, projectID, *encRest); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
 	return workflow.OK()
 }
 
-func fetchEncryptionAtRests(ctx *workflow.Context, projectID string) (*mongodbatlas.EncryptionAtRest, error) {
-	encryptionAtRestsInAtlas, _, err := ctx.Client.EncryptionsAtRest.Get(ctx.Context, projectID)
-	if err != nil {
-		return nil, err
-	}
-	ctx.Log.Debugf("Got EncryptionAtRests From Atlas: %v", *encryptionAtRestsInAtlas)
-	return encryptionAtRestsInAtlas, nil
-}
-
-func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) error {
-	requestBody := mongodbatlas.EncryptionAtRest{
-		GroupID:        projectID,
-		AwsKms:         getAwsKMS(project),
-		AzureKeyVault:  getAzureKeyVault(project),
-		GoogleCloudKms: getGoogleCloudKms(project),
-	}
-
-	if err := normalizeAwsKms(ctx, projectID, &requestBody.AwsKms); err != nil {
-		return err
-	}
-
-	if _, _, err := ctx.Client.EncryptionsAtRest.Create(ctx.Context, &requestBody); err != nil { // Create() sends PATCH request
-		return err
-	}
-
-	return nil
-}
-
-func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *mongodbatlas.AwsKms) error {
+func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *encryptionatrest.AwsKms) error {
 	if awsKms == nil || awsKms.Enabled == nil || !*awsKms.Enabled {
 		return nil
 	}
@@ -206,63 +178,20 @@ func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *mongodbatl
 	}
 
 	// assume that role ID is set as AWS ARN
-	resp, _, err := ctx.Client.CloudProviderAccess.ListRoles(ctx.Context, projectID)
+	resp, _, err := ctx.SdkClient.CloudProviderAccessApi.ListCloudProviderAccessRoles(ctx.Context, projectID).Execute()
 	if err != nil {
 		return err
 	}
 
-	for _, role := range resp.AWSIAMRoles {
-		if role.IAMAssumedRoleARN == awsKms.RoleID {
-			awsKms.RoleID = role.RoleID
+	for _, role := range resp.GetAwsIamRoles() {
+		if role.GetIamAssumedRoleArn() == awsKms.RoleID {
+			awsKms.RoleID = role.GetRoleId()
 			return nil
 		}
 	}
 
 	ctx.Log.Debugf("no match for provided AWS RoleID ARN: '%s'. Is the CPA configured for the project?", awsKms.RoleID)
 	return fmt.Errorf("can not use '%s' aws roleID for encryption at rest. AWS ARN not configured as Cloud Provider Access", awsKms.RoleID)
-}
-
-func AtlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *akov2.EncryptionAtRest) (bool, error) {
-	if IsEncryptionAtlasEmpty(atlas) && IsEncryptionSpecEmpty(spec) {
-		return true, nil
-	}
-
-	if IsEncryptionAtlasEmpty(atlas) || IsEncryptionSpecEmpty(spec) {
-		return false, nil
-	}
-
-	specAsAtlas, err := spec.ToAtlas(atlas.GroupID)
-	if err != nil {
-		return false, err
-	}
-
-	balanceAsymmetricalFields(atlas, specAsAtlas)
-
-	return reflect.DeepEqual(atlas, specAsAtlas), nil
-}
-
-func balanceAsymmetricalFields(atlas *mongodbatlas.EncryptionAtRest, spec *mongodbatlas.EncryptionAtRest) {
-	if spec.AwsKms.RoleID == "" && atlas.AwsKms.RoleID != "" {
-		spec.AwsKms.RoleID = atlas.AwsKms.RoleID
-	}
-	if spec.AzureKeyVault.Secret == "" && atlas.AzureKeyVault.Secret != "" {
-		spec.AzureKeyVault.Secret = atlas.AzureKeyVault.Secret
-	}
-	if spec.GoogleCloudKms.ServiceAccountKey == "" && atlas.GoogleCloudKms.ServiceAccountKey != "" {
-		spec.GoogleCloudKms.ServiceAccountKey = ""
-	}
-
-	if isNotNilAndFalse(atlas.AwsKms.Enabled) {
-		spec.AwsKms.Enabled = pointer.MakePtr(false)
-	}
-	if isNotNilAndFalse(atlas.AzureKeyVault.Enabled) {
-		spec.AzureKeyVault.Enabled = pointer.MakePtr(false)
-	}
-	if isNotNilAndFalse(atlas.GoogleCloudKms.Enabled) {
-		spec.GoogleCloudKms.Enabled = pointer.MakePtr(false)
-	}
-
-	spec.Valid = atlas.Valid
 }
 
 func IsEncryptionSpecEmpty(spec *akov2.EncryptionAtRest) bool {
@@ -281,85 +210,6 @@ func IsEncryptionSpecEmpty(spec *akov2.EncryptionAtRest) bool {
 	return true
 }
 
-func IsEncryptionAtlasEmpty(atlas *mongodbatlas.EncryptionAtRest) bool {
-	if atlas == nil {
-		return true
-	}
-
-	awsEnabled := atlas.AwsKms.Enabled
-	azureEnabled := atlas.AzureKeyVault.Enabled
-	gcpEnabled := atlas.GoogleCloudKms.Enabled
-
-	if isNotNilAndTrue(awsEnabled) || isNotNilAndTrue(azureEnabled) || isNotNilAndTrue(gcpEnabled) {
-		return false
-	}
-
-	return true
-}
-
 func isNotNilAndTrue(val *bool) bool {
 	return val != nil && *val
-}
-
-func isNotNilAndFalse(val *bool) bool {
-	return val != nil && !*val
-}
-
-func getAwsKMS(project *akov2.AtlasProject) (result mongodbatlas.AwsKms) {
-	if project.Spec.EncryptionAtRest == nil {
-		return
-	}
-
-	result = project.Spec.EncryptionAtRest.AwsKms.ToAtlas()
-
-	if (result == mongodbatlas.AwsKms{}) {
-		result.Enabled = pointer.MakePtr(false)
-	}
-
-	if result.RoleID == "" {
-		awsRole, foundRole := selectRole(project.Status.CloudProviderIntegrations, "AWS")
-		if foundRole {
-			result.RoleID = awsRole.RoleID
-		}
-	}
-
-	return
-}
-
-func getAzureKeyVault(project *akov2.AtlasProject) (result mongodbatlas.AzureKeyVault) {
-	if project.Spec.EncryptionAtRest == nil {
-		return
-	}
-
-	result = project.Spec.EncryptionAtRest.AzureKeyVault.ToAtlas()
-
-	if (result == mongodbatlas.AzureKeyVault{}) {
-		result.Enabled = pointer.MakePtr(false)
-	}
-
-	return
-}
-
-func getGoogleCloudKms(project *akov2.AtlasProject) (result mongodbatlas.GoogleCloudKms) {
-	if project.Spec.EncryptionAtRest == nil {
-		return
-	}
-
-	result = project.Spec.EncryptionAtRest.GoogleCloudKms.ToAtlas()
-
-	if (result == mongodbatlas.GoogleCloudKms{}) {
-		result.Enabled = pointer.MakePtr(false)
-	}
-
-	return
-}
-
-func selectRole(accessRoles []status.CloudProviderIntegration, providerName string) (result status.CloudProviderIntegration, found bool) {
-	for _, role := range accessRoles {
-		if role.ProviderName == providerName {
-			return role, true
-		}
-	}
-
-	return
 }
