@@ -447,10 +447,17 @@ func TestRegularClusterReconciliation(t *testing.T) {
 					nil,
 				)
 
+			globalAPI := mockadmin.NewGlobalClustersApi(t)
+			globalAPI.EXPECT().GetManagedNamespace(context.Background(), project.ID(), d.Spec.DeploymentSpec.Name).
+				Return(admin.GetManagedNamespaceApiRequest{ApiService: globalAPI})
+			globalAPI.EXPECT().GetManagedNamespaceExecute(mock.Anything).
+				Return(&admin.GeoSharding{}, nil, nil)
+
 			return &admin.APIClient{
 				AtlasSearchApi:         searchAPI,
 				ClustersApi:            clusterAPI,
 				ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
+				GlobalClustersApi:      globalAPI,
 			}, orgID, nil
 		},
 		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
@@ -485,11 +492,6 @@ func TestRegularClusterReconciliation(t *testing.T) {
 					},
 					DeleteFunc: func(projectID string, clusterName string) (*mongodbatlas.Response, error) {
 						return nil, nil
-					},
-				},
-				GlobalClusters: &atlasmock.GlobalClustersClientMock{
-					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.GlobalCluster, *mongodbatlas.Response, error) {
-						return &mongodbatlas.GlobalCluster{}, nil, nil
 					},
 				},
 				CloudProviderSnapshotBackupPolicies: &atlasmock.CloudProviderSnapshotBackupPoliciesClientMock{

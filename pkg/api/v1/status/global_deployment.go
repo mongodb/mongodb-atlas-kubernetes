@@ -17,30 +17,3 @@ type ManagedNamespace struct {
 	PresplitHashedZones    *bool  `json:"presplitHashedZones,omitempty"`
 	ErrMessage             string `json:"errMessage,omitempty"`
 }
-
-func NewFailedToCreateManagedNamespaceStatus(namespace ManagedNamespace, err error) ManagedNamespace {
-	return ManagedNamespace{
-		Db:                     namespace.Db,
-		Collection:             namespace.Collection,
-		CustomShardKey:         namespace.CustomShardKey,
-		IsCustomShardKeyHashed: namespace.IsCustomShardKeyHashed,
-		IsShardKeyUnique:       namespace.IsShardKeyUnique,
-		NumInitialChunks:       namespace.NumInitialChunks,
-		PresplitHashedZones:    namespace.PresplitHashedZones,
-		Status:                 StatusFailed,
-		ErrMessage:             err.Error(),
-	}
-}
-
-func NewCreatedManagedNamespaceStatus(namespace ManagedNamespace) ManagedNamespace {
-	return ManagedNamespace{
-		Db:                     namespace.Db,
-		Collection:             namespace.Collection,
-		CustomShardKey:         namespace.CustomShardKey,
-		IsCustomShardKeyHashed: namespace.IsCustomShardKeyHashed,
-		IsShardKeyUnique:       namespace.IsShardKeyUnique,
-		NumInitialChunks:       namespace.NumInitialChunks,
-		PresplitHashedZones:    namespace.PresplitHashedZones,
-		Status:                 StatusReady,
-	}
-}
