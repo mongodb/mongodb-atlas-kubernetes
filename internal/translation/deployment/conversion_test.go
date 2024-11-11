@@ -3,7 +3,11 @@ package deployment
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -518,5 +522,56 @@ func TestConnSet(t *testing.T) {
 			result := connectionSet(tc.inputs...)
 			assert.Equal(t, tc.expected, result)
 		})
+	}
+}
+
+func TestRoundtrip_ManagedNamespace(t *testing.T) {
+	f := fuzz.New()
+
+	for range 100 {
+		fuzzed := &admin.GeoSharding{}
+		f.Fuzz(fuzzed)
+		fuzzed.CustomZoneMapping = nil
+		t.Log(fuzzed.ManagedNamespaces)
+
+		fromAtlasResult := managedNamespacesFromAtlas(fuzzed)
+		for i, r := range fromAtlasResult {
+			toAtlasResult := managedNamespaceToAtlas(&r)
+			ns := fuzzed.GetManagedNamespaces()[i]
+			equals := (ns.GetCollection() == toAtlasResult.GetCollection() &&
+				ns.GetCustomShardKey() == toAtlasResult.GetCustomShardKey() &&
+				ns.GetDb() == toAtlasResult.GetDb() &&
+				ns.GetIsCustomShardKeyHashed() == toAtlasResult.GetIsCustomShardKeyHashed() &&
+				ns.GetIsShardKeyUnique() == toAtlasResult.GetIsShardKeyUnique() &&
+				ns.GetNumInitialChunks() == toAtlasResult.GetNumInitialChunks() &&
+				ns.GetPresplitHashedZones() == toAtlasResult.GetPresplitHashedZones())
+			if !equals {
+				t.Log(cmp.Diff(fuzzed.GetManagedNamespaces()[i], *toAtlasResult))
+			}
+			require.True(t, equals)
+		}
+	}
+}
+
+func TestRoundtrip_CustomZone(t *testing.T) {
+	f := fuzz.New()
+
+	for range 100 {
+		fuzzed := &admin.GeoSharding{}
+		f.Fuzz(fuzzed)
+		fuzzed.ManagedNamespaces = nil
+
+		fromAtlasResult := customZonesFromAtlas(fuzzed)
+		toAtlasResult := customZonesToAtlas(fromAtlasResult)
+
+		require.Equal(t, len(fuzzed.GetCustomZoneMapping()), len(toAtlasResult.GetCustomZoneMappings()))
+
+		for _, r := range toAtlasResult.GetCustomZoneMappings() {
+			equals := fuzzed.GetCustomZoneMapping()[r.Location] == r.Zone
+			if !equals {
+				t.Log(cmp.Diff(fuzzed.GetCustomZoneMapping()[r.Location], r.Zone))
+			}
+			require.True(t, equals)
+		}
 	}
 }
