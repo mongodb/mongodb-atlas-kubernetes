@@ -151,12 +151,13 @@ func createOrDeleteEncryptionAtRests(ctx *workflow.Context, service encryptionat
 		return workflow.OK()
 	}
 
-	if err := normalizeAwsKms(ctx, projectID, &encRest.AWS); err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
-	}
-
-	if err := service.Update(ctx.Context, projectID, *encRest); err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+	if encRest != nil {
+		if err := normalizeAwsKms(ctx, projectID, &encRest.AWS); err != nil {
+			return workflow.Terminate(workflow.Internal, err.Error())
+		}
+		if err := service.Update(ctx.Context, projectID, *encRest); err != nil {
+			return workflow.Terminate(workflow.Internal, err.Error())
+		}
 	}
 
 	return workflow.OK()
