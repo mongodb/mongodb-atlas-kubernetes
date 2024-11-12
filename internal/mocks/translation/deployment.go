@@ -343,6 +343,51 @@ func (_c *DeploymentMock_GetState_Call) RunAndReturn(run func() string) *Deploym
 	return _c
 }
 
+// IsServerless provides a mock function with given fields:
+func (_m *DeploymentMock) IsServerless() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsServerless")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// DeploymentMock_IsServerless_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsServerless'
+type DeploymentMock_IsServerless_Call struct {
+	*mock.Call
+}
+
+// IsServerless is a helper method to define mock.On call
+func (_e *DeploymentMock_Expecter) IsServerless() *DeploymentMock_IsServerless_Call {
+	return &DeploymentMock_IsServerless_Call{Call: _e.mock.On("IsServerless")}
+}
+
+func (_c *DeploymentMock_IsServerless_Call) Run(run func()) *DeploymentMock_IsServerless_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DeploymentMock_IsServerless_Call) Return(_a0 bool) *DeploymentMock_IsServerless_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *DeploymentMock_IsServerless_Call) RunAndReturn(run func() bool) *DeploymentMock_IsServerless_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewDeploymentMock creates a new instance of DeploymentMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewDeploymentMock(t interface {
