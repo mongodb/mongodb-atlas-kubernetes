@@ -5,6 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
+
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -135,8 +141,7 @@ func (r *AtlasСustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			fmt.Errorf("unable to create atlas client: %s", err.Error())), nil
 	}
 	workflowCtx.SdkClient = atlasSdkClient
-
-	if res := handleCustomRole(workflowCtx, atlasCustomRole, r.ObjectDeletionProtection); !res.IsOk() {
+	if res := handleCustomRole(workflowCtx, r.Client, atlasCustomRole, r.ObjectDeletionProtection); !res.IsOk() {
 		return r.fail(req, fmt.Errorf("%s", res.GetMessage())), nil
 	}
 	return r.idle(workflowCtx), nil
@@ -190,6 +195,20 @@ func (r *AtlasСustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasCustomRole").
 		For(&akov2.AtlasCustomRole{}).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(r.customRolesCredentials()),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
+}
+
+func (r *AtlasСustomRoleReconciler) customRolesCredentials() handler.MapFunc {
+	return indexer.CredentialsIndexMapperFunc(
+		indexer.AtlasCustomRoleCredentialsIndex,
+		func() *akov2.AtlasCustomRoleList { return &akov2.AtlasCustomRoleList{} },
+		indexer.CustomRoleRequests,
+		r.Client,
+		r.Log,
+	)
 }

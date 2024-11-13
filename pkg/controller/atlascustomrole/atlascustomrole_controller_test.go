@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,7 +67,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ProjectIDRef: akov2.ExternalProjectReference{
+					ExternalProjectIDRef: &akov2.ExternalProjectReference{
 						ID: "testProjectID",
 					},
 				},
@@ -108,7 +109,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ProjectIDRef: akov2.ExternalProjectReference{
+					ExternalProjectIDRef: &akov2.ExternalProjectReference{
 						ID: "testProjectID",
 					},
 				},
@@ -148,7 +149,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ProjectIDRef: akov2.ExternalProjectReference{
+					ExternalProjectIDRef: &akov2.ExternalProjectReference{
 						ID: "testProjectID",
 					},
 				},
@@ -185,7 +186,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ProjectIDRef: akov2.ExternalProjectReference{
+					ExternalProjectIDRef: &akov2.ExternalProjectReference{
 						ID: "testProjectID",
 					},
 				},
@@ -225,7 +226,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ProjectIDRef: akov2.ExternalProjectReference{
+					ExternalProjectIDRef: &akov2.ExternalProjectReference{
 						ID: "testProjectID",
 					},
 				},
@@ -265,7 +266,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ProjectIDRef: akov2.ExternalProjectReference{
+					ExternalProjectIDRef: &akov2.ExternalProjectReference{
 						ID: "testProjectID",
 					},
 				},
@@ -306,7 +307,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ProjectIDRef: akov2.ExternalProjectReference{
+					ExternalProjectIDRef: &akov2.ExternalProjectReference{
 						ID: "testProjectID",
 					},
 				},
@@ -336,10 +337,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							return nil, "", fmt.Errorf("failed to create sdk")
 						}
 						cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-						cdrAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "testProjectID").
-							Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: cdrAPI})
-						cdrAPI.EXPECT().ListCustomDatabaseRolesExecute(admin.ListCustomDatabaseRolesApiRequest{ApiService: cdrAPI}).
-							Return([]admin.UserCustomDBRole{}, nil, nil)
+						cdrAPI.EXPECT().GetCustomDatabaseRole(context.Background(), "testProjectID", "TestRoleName").
+							Return(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
+						cdrAPI.EXPECT().GetCustomDatabaseRoleExecute(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+							Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
 						cdrAPI.EXPECT().CreateCustomDatabaseRole(context.Background(), "testProjectID",
 							mock.AnythingOfType("*admin.UserCustomDBRole")).
 							Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})

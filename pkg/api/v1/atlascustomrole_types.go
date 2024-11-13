@@ -3,6 +3,8 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -46,11 +48,16 @@ type AtlasCustomRoleList struct {
 	Items           []AtlasCustomRole `json:"items"`
 }
 
+// +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
+// +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 // AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas
 type AtlasCustomRoleSpec struct {
 	api.LocalCredentialHolder `json:",inline"`
 	Role                      CustomRole `json:"role"`
-	// ID of the Atlas Project this role is attached to
-	// +required
-	ProjectIDRef ExternalProjectReference `json:"projectIDRef"`
+	// Optional ID of the Atlas Project this role is attached to. Mutually exclusive with "projectRef" field
+	// +optional
+	ExternalProjectIDRef *ExternalProjectReference `json:"externalProjectIDRef"`
+	// Optional reference to an AtlasProject custom resource. Mutually exclusive with "externalProjectRef" field
+	// +optional
+	ProjectRef *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
 }

@@ -66,8 +66,9 @@ spec:
                 required:
                 - name
                 type: object
-              projectIDRef:
-                description: ID of the Atlas Project this role is attached to
+              externalProjectIDRef:
+                description: Optional ID of the Atlas Project this role is attached
+                  to. Mutually exclusive with "projectRef" field
                 properties:
                   id:
                     description: ID is the Atlas project ID
@@ -75,6 +76,19 @@ spec:
                     type: string
                 required:
                 - id
+                type: object
+              projectRef:
+                description: Optional reference to an AtlasProject custom resource.
+                  Mutually exclusive with "externalProjectRef" field
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
                 type: object
               role:
                 properties:
@@ -139,9 +153,17 @@ spec:
                 - name
                 type: object
             required:
-            - projectIDRef
             - role
             type: object
+            x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
           status:
             description: |-
               AtlasCustomRoleStatus is a status for the AtlasCustomRole Custom resource.
