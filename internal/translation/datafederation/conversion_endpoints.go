@@ -2,6 +2,7 @@ package datafederation
 
 import (
 	"fmt"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
