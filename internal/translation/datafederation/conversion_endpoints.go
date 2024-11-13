@@ -2,6 +2,7 @@ package datafederation
 
 import (
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
@@ -70,7 +71,7 @@ func endpointToAtlas(ep *PrivateEndpoint) *admin.PrivateNetworkEndpointIdEntry {
 
 	return &admin.PrivateNetworkEndpointIdEntry{
 		EndpointId: ep.EndpointID,
-		Provider:   &ep.Provider,
-		Type:       &ep.Type,
+		Provider:   pointer.MakePtr(ep.Provider),
+		Type:       pointer.MakePtr(ep.Type),
 	}
 }
