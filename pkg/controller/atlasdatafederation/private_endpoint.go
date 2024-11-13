@@ -1,64 +1,63 @@
 package atlasdatafederation
 
 import (
-	"context"
+	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, project *akov2.AtlasProject, dataFederation *akov2.AtlasDataFederation, service datafederation.DatafederationPrivateEndpointService) workflow.Result {
-	projectID := project.ID()
-	specPEs := make([]*datafederation.DatafederationPrivateEndpointEntry, 0, len(dataFederation.Spec.PrivateEndpoints))
-	for _, pe := range dataFederation.Spec.PrivateEndpoints {
-		specPEs = append(specPEs, datafederation.NewDatafederationPrivateEndpointEntry(&pe, projectID))
+func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, projectID string, dataFederation *akov2.AtlasDataFederation) workflow.Result {
+	r.privateEndpointService = datafederation.NewPrivateEndpointService(ctx.SdkClient.DataFederationApi)
+
+	if err := r.reconcilePrivateEndpoints(ctx, projectID, dataFederation.Spec.PrivateEndpoints); err != nil {
+		ctx.SetConditionFalseMsg(api.DataFederationPEReadyType, err.Error())
+
+		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	//NewDatafederationPrivateEndpointEntry
-	atlasPEs, err := getAllDataFederationPEs(ctx.Context, service, projectID)
+	ctx.SetConditionTrue(api.DataFederationPEReadyType)
+
+	if len(dataFederation.Spec.PrivateEndpoints) == 0 {
+		ctx.UnsetCondition(api.DataFederationPEReadyType)
+	}
+
+	return workflow.OK()
+}
+
+func (r *AtlasDataFederationReconciler) reconcilePrivateEndpoints(ctx *workflow.Context, projectID string, privateEndpoints []akov2.DataFederationPE) error {
+	specPrivateEndpoints, err := datafederation.NewPrivateEndpoints(projectID, privateEndpoints)
 	if err != nil {
-		ctx.Log.Debugw("getAllDataFederationPEs error", "err", err.Error())
+		return fmt.Errorf("failed to parse private endpoint specifications: %w", err)
 	}
 
-	result := syncPrivateEndpointsWithAtlas(ctx, service, projectID, specPEs, atlasPEs)
-	if !result.IsOk() {
-		ctx.SetConditionFromResult(api.DataFederationPEReadyType, result)
-		return result
+	atlasPrivateEndpoints, err := r.privateEndpointService.List(ctx.Context, projectID)
+	if err != nil {
+		return err
 	}
 
-	return workflow.OK()
-}
+	for _, specPrivateEndpoint := range specPrivateEndpoints {
+		if compare.ContainsDeepEqual(atlasPrivateEndpoints, specPrivateEndpoint) {
+			continue
+		}
 
-func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, service datafederation.DatafederationPrivateEndpointService, projectID string, specPEs, atlasPEs []*datafederation.DatafederationPrivateEndpointEntry) workflow.Result {
-	endpointsToCreate := set.Difference(specPEs, atlasPEs)
-	ctx.Log.Debugw("Data Federation PEs to Create", "endpoints", endpointsToCreate)
-	for _, e := range endpointsToCreate {
-		endpoint := e.(*datafederation.DatafederationPrivateEndpointEntry)
-		if err := service.Create(ctx.Context, endpoint); err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
+		if err = r.privateEndpointService.Create(ctx.Context, &specPrivateEndpoint); err != nil {
+			return err
 		}
 	}
 
-	endpointsToDelete := set.Difference(atlasPEs, specPEs)
-	ctx.Log.Debugw("Data Federation PEs to Delete", "endpoints", endpointsToDelete)
-	for _, item := range endpointsToDelete {
-		endpoint := item.(*datafederation.DatafederationPrivateEndpointEntry)
-		if err := service.Delete(ctx.Context, endpoint); err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
+	for _, atlasPrivateEndpoint := range atlasPrivateEndpoints {
+		if compare.ContainsDeepEqual(specPrivateEndpoints, atlasPrivateEndpoint) {
+			continue
+		}
+
+		if err = r.privateEndpointService.Delete(ctx.Context, &atlasPrivateEndpoint); err != nil {
+			return err
 		}
 	}
 
-	return workflow.OK()
-}
-
-func getAllDataFederationPEs(ctx context.Context, service datafederation.DatafederationPrivateEndpointService, projectID string) (endpoints []*datafederation.DatafederationPrivateEndpointEntry, err error) {
-	endpoints, err = service.List(ctx, projectID)
-	if endpoints == nil {
-		endpoints = make([]*datafederation.DatafederationPrivateEndpointEntry, 0)
-	}
-	return
+	return nil
 }

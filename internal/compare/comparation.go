@@ -1,5 +1,7 @@
 package compare
 
+import "reflect"
+
 func IsEqualWithoutOrder[T comparable](a, b []T) bool {
 	if len(a) != len(b) {
 		return false
@@ -32,5 +34,15 @@ func Contains[T comparable](a []T, b T) bool {
 			return true
 		}
 	}
+	return false
+}
+
+func ContainsDeepEqual[T comparable](a []T, b T) bool {
+	for _, item := range a {
+		if reflect.DeepEqual(item, b) {
+			return true
+		}
+	}
+
 	return false
 }

@@ -5,53 +5,45 @@ import (
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
-type DatafederationPrivateEndpointService interface {
-	List(ctx context.Context, projectID string) ([]*DatafederationPrivateEndpointEntry, error)
-	Create(context.Context, *DatafederationPrivateEndpointEntry) error
-	Delete(context.Context, *DatafederationPrivateEndpointEntry) error
+type DataFederationPrivateEndpointService interface {
+	List(ctx context.Context, projectID string) ([]PrivateEndpoint, error)
+	Create(context.Context, *PrivateEndpoint) error
+	Delete(context.Context, *PrivateEndpoint) error
 }
 
-type DatafederationPrivateEndpoints struct {
+type PrivateEndpoints struct {
 	api admin.DataFederationApi
 }
 
-func NewDatafederationPrivateEndpointService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*DatafederationPrivateEndpoints, error) {
-	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create versioned client: %w", err)
-	}
-	return &DatafederationPrivateEndpoints{client.DataFederationApi}, nil
+func NewPrivateEndpointService(api admin.DataFederationApi) *PrivateEndpoints {
+	return &PrivateEndpoints{api: api}
 }
 
-func (d *DatafederationPrivateEndpoints) List(ctx context.Context, projectID string) ([]*DatafederationPrivateEndpointEntry, error) {
+func (d *PrivateEndpoints) List(ctx context.Context, projectID string) ([]PrivateEndpoint, error) {
 	paginatedResponse, _, err := d.api.ListDataFederationPrivateEndpoints(ctx, projectID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list data federation private endpoints from Atlas: %w", err)
 	}
 
-	return endpointsFromAtlas(paginatedResponse.GetResults(), projectID)
+	return endpointsFromAtlas(projectID, paginatedResponse.GetResults())
 }
 
-func (d *DatafederationPrivateEndpoints) Create(ctx context.Context, aep *DatafederationPrivateEndpointEntry) error {
-	ep := endpointToAtlas(aep)
-	_, _, err := d.api.CreateDataFederationPrivateEndpoint(ctx, aep.ProjectID, ep).Execute()
+func (d *PrivateEndpoints) Create(ctx context.Context, aep *PrivateEndpoint) error {
+	_, _, err := d.api.CreateDataFederationPrivateEndpoint(ctx, aep.ProjectID, endpointToAtlas(aep)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to create data federation private endpoint: %w", err)
 	}
+
 	return nil
 }
 
-func (d *DatafederationPrivateEndpoints) Delete(ctx context.Context, aep *DatafederationPrivateEndpointEntry) error {
+func (d *PrivateEndpoints) Delete(ctx context.Context, aep *PrivateEndpoint) error {
 	_, _, err := d.api.DeleteDataFederationPrivateEndpoint(ctx, aep.ProjectID, aep.EndpointID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete data federation private endpoint: %w", err)
 	}
+
 	return nil
 }

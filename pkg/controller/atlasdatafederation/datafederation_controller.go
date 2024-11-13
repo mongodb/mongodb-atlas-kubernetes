@@ -43,6 +43,8 @@ type AtlasDataFederationReconciler struct {
 	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+
+	privateEndpointService datafederation.DataFederationPrivateEndpointService
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatafederations,verbs=get;list;watch;create;update;patch;delete
@@ -97,27 +99,24 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
-	endpointService, err := datafederation.NewDatafederationPrivateEndpointService(ctx.Context, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	sdkClient, _, err := r.AtlasProvider.SdkClient(ctx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	dataFederationService, err := datafederation.NewAtlasDataFederationService(ctx.Context, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
-	if err != nil {
-		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
-		return result.ReconcileResult(), nil
-	}
+	ctx.SdkClient = sdkClient
+	dataFederationService := datafederation.NewAtlasDataFederationService(sdkClient.DataFederationApi)
 
 	if result = r.ensureDataFederation(ctx, project, dataFederation, dataFederationService); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	if result = r.ensurePrivateEndpoints(ctx, project, dataFederation, endpointService); !result.IsOk() {
-		ctx.SetConditionFromResult(api.DataFederationPEReadyType, result)
+	if result = r.ensurePrivateEndpoints(ctx, project.ID(), dataFederation); !result.IsOk() {
+		r.Log.Debugw("Failed to reconcile private endpoints", "err", result.GetMessage())
+
 		return result.ReconcileResult(), nil
 	}
 
@@ -154,7 +153,8 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
-	ctx.SetConditionTrue(api.ReadyType)
+	ctx.SetConditionTrue(api.DataFederationReadyType).
+		SetConditionTrue(api.ReadyType)
 	return workflow.OK().ReconcileResult(), nil
 }
 

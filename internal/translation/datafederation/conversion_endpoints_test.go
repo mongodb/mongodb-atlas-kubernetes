@@ -13,13 +13,13 @@ func TestRoundtrip_DataFederationPE(t *testing.T) {
 	f := fuzz.New()
 
 	for i := 0; i < 100; i++ {
-		fuzzed := &DatafederationPrivateEndpointEntry{}
-		f.Fuzz(fuzzed)
+		fuzzed := PrivateEndpoint{}
+		f.Fuzz(&fuzzed)
 		// ignore non-Atlas fields
 		fuzzed.ProjectID = ""
 
-		toAtlasResult := endpointToAtlas(fuzzed)
-		fromAtlasResult := endpointFromAtlas(toAtlasResult, "")
+		toAtlasResult := endpointToAtlas(&fuzzed)
+		fromAtlasResult := endpointFromAtlas("", toAtlasResult)
 
 		equals := reflect.DeepEqual(fuzzed, fromAtlasResult)
 		if !equals {
