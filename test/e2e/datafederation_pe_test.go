@@ -29,7 +29,7 @@ import (
 
 // AWS NOTES: reserved VPC in eu-west-2, eu-south-1, us-east-1 (due to limitation no more 4 VPC per region)
 
-var _ = FDescribe("DataFederation", Label("datafederation"), func() {
+var _ = Describe("DataFederation", Label("datafederation"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
 	var pe *cloud.PrivateEndpointDetails
