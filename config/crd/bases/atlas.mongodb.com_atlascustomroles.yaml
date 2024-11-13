@@ -72,7 +72,6 @@ spec:
                 properties:
                   id:
                     description: ID is the Atlas project ID
-                    pattern: ^([a-f0-9]{24})$
                     type: string
                 required:
                 - id

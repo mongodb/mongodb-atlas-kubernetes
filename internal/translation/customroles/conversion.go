@@ -73,7 +73,6 @@ func fromAtlas(role *admin.UserCustomDBRole) CustomRole {
 	var inheritedRoles []akov2.Role
 	if role.InheritedRoles != nil {
 		inheritedRoles = make([]akov2.Role, 0, len(*role.InheritedRoles))
-
 		for _, atlasInheritedRole := range *role.InheritedRoles {
 			inheritedRoles = append(inheritedRoles, akov2.Role{
 				Name:     atlasInheritedRole.Role,
@@ -84,13 +83,10 @@ func fromAtlas(role *admin.UserCustomDBRole) CustomRole {
 
 	var actions []akov2.Action
 	if role.Actions != nil {
-
 		actions = make([]akov2.Action, 0, len(*role.Actions))
 		for _, atlasAction := range *role.Actions {
-
 			var resources []akov2.Resource
 			if atlasAction.Resources != nil {
-
 				resources = make([]akov2.Resource, 0, len(*atlasAction.Resources))
 				for _, atlasResource := range *atlasAction.Resources {
 					resources = append(resources, akov2.Resource{

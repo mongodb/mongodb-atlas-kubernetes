@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -141,7 +140,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 			want: workflow.Terminate(workflow.AtlasCustomRoleNotCreated, "unable to create role"),
 		},
 		{
-			name: "Create custom role with error on Geting roles",
+			name: "Create custom role with error on Getting roles",
 			fields: fields{
 				ctx: &workflow.Context{
 					Log:     zap.S(),
@@ -554,7 +553,6 @@ func Test_handleCustomRole(t *testing.T) {
 		ctx                       *workflow.Context
 		akoCustomRole             *akov2.AtlasCustomRole
 		deletionProtectionEnabled bool
-		k8sClient                 client.Client
 		k8sObjects                []crClient.Object
 	}
 	tests := []struct {
