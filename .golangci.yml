@@ -76,6 +76,9 @@ issues:
     # EXC0011 stylecheck: Annoying issue about not having a comment. The rare codebase has such comments
     # - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
 
+    # ECX0012 staticcheck: Temporary disable deprecated LocalCredentialHolder and api.CredentialsProvider
+    - (api.LocalCredentialHolder is deprecated|api.CredentialsProvider is deprecated)
+
     - at least one file in a package should have a package comment
 
   exclude-rules:

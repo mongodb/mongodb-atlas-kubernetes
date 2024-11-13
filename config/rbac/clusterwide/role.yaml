@@ -35,6 +35,7 @@ rules:
   - atlasdeployments
   - atlasfederatedauths
   - atlasprivateendpoints
+  - atlasnetworkpeerings
   - atlasprojects
   - atlassearchindexconfigs
   - atlasstreamconnections
@@ -60,6 +61,7 @@ rules:
   - atlasdeployments/status
   - atlasfederatedauths/status
   - atlasprivateendpoints/status
+  - atlasnetworkpeerings/status
   - atlasprojects/status
   - atlassearchindexconfigs/status
   - atlasstreamconnections/status
@@ -68,4 +70,10 @@ rules:
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasnetworkpeerings/finalizers
+  verbs:
   - update

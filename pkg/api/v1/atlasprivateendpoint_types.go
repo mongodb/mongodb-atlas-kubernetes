@@ -38,9 +38,9 @@ type AtlasPrivateEndpointSpec struct {
 	// Project is a reference to AtlasProject resource the user belongs to
 	// +kubebuilder:validation:Optional
 	Project *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
-	// ExternalProject holds the Atlas project ID the user belongs to
+	// ExternalProjectRef holds the Atlas project ID the user belongs to
 	// +kubebuilder:validation:Optional
-	ExternalProject *ExternalProjectReference `json:"externalProjectRef,omitempty"`
+	ExternalProjectRef *ExternalProjectReference `json:"externalProjectRef,omitempty"`
 
 	// Local credentials
 	api.LocalCredentialHolder `json:",inline"`

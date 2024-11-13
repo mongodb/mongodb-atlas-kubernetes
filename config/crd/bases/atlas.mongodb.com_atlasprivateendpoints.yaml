@@ -112,8 +112,8 @@ spec:
                 - name
                 type: object
               externalProjectRef:
-                description: ExternalProject holds the Atlas project ID the user belongs
-                  to
+                description: ExternalProjectRef holds the Atlas project ID the user
+                  belongs to
                 properties:
                   id:
                     description: ID is the Atlas project ID
