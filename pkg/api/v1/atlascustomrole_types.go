@@ -56,7 +56,7 @@ type AtlasCustomRoleSpec struct {
 	Role                      CustomRole `json:"role"`
 	// Optional ID of the Atlas Project this role is attached to. Mutually exclusive with "projectRef" field
 	// +optional
-	ExternalProjectIDRef *ExternalProjectReference `json:"externalProjectIDRef"`
+	ExternalProjectIDRef *ExternalProjectReference `json:"externalProjectRef"`
 	// Optional reference to an AtlasProject custom resource. Mutually exclusive with "externalProjectRef" field
 	// +optional
 	ProjectRef *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
