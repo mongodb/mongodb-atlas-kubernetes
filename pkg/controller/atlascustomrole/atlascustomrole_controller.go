@@ -129,6 +129,9 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	credentials, err := selectCredentials(workflowCtx.Context, r.Client, atlasCustomRole)
+	if err != nil {
+		return r.fail(req, err), nil
+	}
 
 	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, workflowCtx.Log)
 	if err != nil {
