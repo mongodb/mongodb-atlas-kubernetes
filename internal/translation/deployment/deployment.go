@@ -17,6 +17,11 @@ import (
 )
 
 type AtlasDeploymentsService interface {
+	DeploymentService
+	GlobalClusterService
+}
+
+type DeploymentService interface {
 	ListClusterNames(ctx context.Context, projectID string) ([]string, error)
 	ListDeploymentConnections(ctx context.Context, projectID string) ([]Connection, error)
 	ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error)
@@ -28,11 +33,13 @@ type AtlasDeploymentsService interface {
 	DeleteDeployment(ctx context.Context, deployment Deployment) error
 	ClusterWithProcessArgs(ctx context.Context, cluster *Cluster) error
 	UpdateProcessArgs(ctx context.Context, cluster *Cluster) error
+}
 
+type GlobalClusterService interface {
 	GetCustomZones(ctx context.Context, projectID, clusterName string) (map[string]string, error)
 	CreateCustomZones(ctx context.Context, projectID, clusterName string, mappings []akov2.CustomZoneMapping) (map[string]string, error)
 	DeleteCustomZones(ctx context.Context, projectID, clusterName string) error
-	GetZoneMappingMap(ctx context.Context, projectID, deploymentName string) (map[string]string, error)
+	GetZoneMapping(ctx context.Context, projectID, deploymentName string) (map[string]string, error)
 	GetManagedNamespaces(ctx context.Context, projectID, clusterName string) ([]akov2.ManagedNamespace, error)
 	CreateManagedNamespace(ctx context.Context, projectID, clusterName string, ns *akov2.ManagedNamespace) error
 	DeleteManagedNamespace(ctx context.Context, projectID, clusterName string, ns *akov2.ManagedNamespace) error
@@ -250,7 +257,7 @@ func (ds *ProductionAtlasDeployments) DeleteCustomZones(ctx context.Context, pro
 	return nil
 }
 
-func (ds *ProductionAtlasDeployments) GetZoneMappingMap(ctx context.Context, projectID, deploymentName string) (map[string]string, error) {
+func (ds *ProductionAtlasDeployments) GetZoneMapping(ctx context.Context, projectID, deploymentName string) (map[string]string, error) {
 	cluster, _, err := ds.clustersAPI.GetCluster(ctx, projectID, deploymentName).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster: %w", err)

@@ -39,7 +39,7 @@ func (r *AtlasDeploymentReconciler) syncCustomZoneMapping(service *workflow.Cont
 	}
 	logger.Debugf("Existing zone mapping: %v", existingZoneMapping)
 	var customZoneMappingStatus status.CustomZoneMapping
-	zoneMappingMap, err := r.deploymentService.GetZoneMappingMap(service.Context, groupID, deploymentName)
+	zoneMappingMap, err := r.deploymentService.GetZoneMapping(service.Context, groupID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping map: %v", err))
 	}
