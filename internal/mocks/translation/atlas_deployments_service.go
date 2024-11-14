@@ -681,12 +681,12 @@ func (_c *AtlasDeploymentsServiceMock_GetManagedNamespaces_Call) RunAndReturn(ru
 	return _c
 }
 
-// GetZoneMappingMap provides a mock function with given fields: ctx, projectID, deploymentName
-func (_m *AtlasDeploymentsServiceMock) GetZoneMappingMap(ctx context.Context, projectID string, deploymentName string) (map[string]string, error) {
+// GetZoneMapping provides a mock function with given fields: ctx, projectID, deploymentName
+func (_m *AtlasDeploymentsServiceMock) GetZoneMapping(ctx context.Context, projectID string, deploymentName string) (map[string]string, error) {
 	ret := _m.Called(ctx, projectID, deploymentName)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetZoneMappingMap")
+		panic("no return value specified for GetZoneMapping")
 	}
 
 	var r0 map[string]string
@@ -711,32 +711,32 @@ func (_m *AtlasDeploymentsServiceMock) GetZoneMappingMap(ctx context.Context, pr
 	return r0, r1
 }
 
-// AtlasDeploymentsServiceMock_GetZoneMappingMap_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetZoneMappingMap'
-type AtlasDeploymentsServiceMock_GetZoneMappingMap_Call struct {
+// AtlasDeploymentsServiceMock_GetZoneMapping_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetZoneMapping'
+type AtlasDeploymentsServiceMock_GetZoneMapping_Call struct {
 	*mock.Call
 }
 
-// GetZoneMappingMap is a helper method to define mock.On call
+// GetZoneMapping is a helper method to define mock.On call
 //   - ctx context.Context
 //   - projectID string
 //   - deploymentName string
-func (_e *AtlasDeploymentsServiceMock_Expecter) GetZoneMappingMap(ctx interface{}, projectID interface{}, deploymentName interface{}) *AtlasDeploymentsServiceMock_GetZoneMappingMap_Call {
-	return &AtlasDeploymentsServiceMock_GetZoneMappingMap_Call{Call: _e.mock.On("GetZoneMappingMap", ctx, projectID, deploymentName)}
+func (_e *AtlasDeploymentsServiceMock_Expecter) GetZoneMapping(ctx interface{}, projectID interface{}, deploymentName interface{}) *AtlasDeploymentsServiceMock_GetZoneMapping_Call {
+	return &AtlasDeploymentsServiceMock_GetZoneMapping_Call{Call: _e.mock.On("GetZoneMapping", ctx, projectID, deploymentName)}
 }
 
-func (_c *AtlasDeploymentsServiceMock_GetZoneMappingMap_Call) Run(run func(ctx context.Context, projectID string, deploymentName string)) *AtlasDeploymentsServiceMock_GetZoneMappingMap_Call {
+func (_c *AtlasDeploymentsServiceMock_GetZoneMapping_Call) Run(run func(ctx context.Context, projectID string, deploymentName string)) *AtlasDeploymentsServiceMock_GetZoneMapping_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
 	return _c
 }
 
-func (_c *AtlasDeploymentsServiceMock_GetZoneMappingMap_Call) Return(_a0 map[string]string, _a1 error) *AtlasDeploymentsServiceMock_GetZoneMappingMap_Call {
+func (_c *AtlasDeploymentsServiceMock_GetZoneMapping_Call) Return(_a0 map[string]string, _a1 error) *AtlasDeploymentsServiceMock_GetZoneMapping_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *AtlasDeploymentsServiceMock_GetZoneMappingMap_Call) RunAndReturn(run func(context.Context, string, string) (map[string]string, error)) *AtlasDeploymentsServiceMock_GetZoneMappingMap_Call {
+func (_c *AtlasDeploymentsServiceMock_GetZoneMapping_Call) RunAndReturn(run func(context.Context, string, string) (map[string]string, error)) *AtlasDeploymentsServiceMock_GetZoneMapping_Call {
 	_c.Call.Return(run)
 	return _c
 }

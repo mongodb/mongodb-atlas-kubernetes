@@ -176,7 +176,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
 
 				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(nil, nil)
-				service.EXPECT().GetZoneMappingMap(context.Background(), projectID, deploymentName).Return(nil, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(nil, nil)
 
 				return service
 			}(),
@@ -196,7 +196,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(nil, nil)
 				service.EXPECT().CreateCustomZones(context.Background(), projectID, deploymentName, mock.AnythingOfType("[]v1.CustomZoneMapping")).Return(map[string]string{"test-location": "test-zone"}, nil)
 
-				service.EXPECT().GetZoneMappingMap(context.Background(), projectID, deploymentName).Return(map[string]string{}, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{}, nil)
 
 				return service
 			}(),
@@ -215,7 +215,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 
 				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(nil, nil)
 				service.EXPECT().CreateCustomZones(context.Background(), projectID, deploymentName, mock.AnythingOfType("[]v1.CustomZoneMapping")).Return(nil, errors.New("test POST error"))
-				service.EXPECT().GetZoneMappingMap(context.Background(), projectID, deploymentName).Return(map[string]string{}, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{}, nil)
 
 				return service
 			}(),
@@ -229,7 +229,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 
 				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(map[string]string{"test-location": "test-zone"}, nil)
 				service.EXPECT().DeleteCustomZones(context.Background(), projectID, deploymentName).Return(nil)
-				service.EXPECT().GetZoneMappingMap(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
 
 				return service
 			}(),
@@ -243,7 +243,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 
 				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(map[string]string{"test-location": "test-zone"}, nil)
 				service.EXPECT().DeleteCustomZones(context.Background(), projectID, deploymentName).Return(errors.New("test DELETE error"))
-				service.EXPECT().GetZoneMappingMap(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
 
 				return service
 			}(),
@@ -261,7 +261,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
 
 				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(map[string]string{"test-location": "test-id"}, nil)
-				service.EXPECT().GetZoneMappingMap(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
 
 				return service
 			}(),
@@ -281,7 +281,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(map[string]string{"test-location": "test-id"}, nil)
 				service.EXPECT().CreateCustomZones(context.Background(), projectID, deploymentName, mock.AnythingOfType("[]v1.CustomZoneMapping")).Return(map[string]string{"new-test-location": "new-test-zone"}, nil)
 				service.EXPECT().DeleteCustomZones(context.Background(), projectID, deploymentName).Return(nil)
-				service.EXPECT().GetZoneMappingMap(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
 
 				return service
 			}(),
