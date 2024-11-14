@@ -18,7 +18,7 @@ type DatafederationPrivateEndpointEntry struct {
 	ProjectID string
 }
 
-func NewDatafederationPrivateEndpointEntry(projectID string, pe *akov2.DataFederationPE) *DatafederationPrivateEndpointEntry {
+func NewDataFederationPrivateEndpointEntry(projectID string, pe *akov2.DataFederationPE) *DatafederationPrivateEndpointEntry {
 	if pe == nil {
 		return nil
 	}
@@ -92,11 +92,11 @@ func MapDatafederationPrivateEndpoints(projectID string, df *akov2.AtlasDataFede
 	}
 	for _, pe := range df.Spec.PrivateEndpoints {
 		addEndpoint(pe.EndpointID)
-		result[pe.EndpointID].AKO = NewDatafederationPrivateEndpointEntry(projectID, &pe)
+		result[pe.EndpointID].AKO = NewDataFederationPrivateEndpointEntry(projectID, &pe)
 	}
 	for _, pe := range lastApplied.Spec.PrivateEndpoints {
 		addEndpoint(pe.EndpointID)
-		result[pe.EndpointID].LastApplied = NewDatafederationPrivateEndpointEntry(projectID, &pe)
+		result[pe.EndpointID].LastApplied = NewDataFederationPrivateEndpointEntry(projectID, &pe)
 	}
 
 	return result, nil
