@@ -2,9 +2,8 @@ package atlascustomrole
 
 import (
 	"fmt"
+	"reflect"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -89,8 +88,7 @@ func (r *roleController) create(role customroles.CustomRole) workflow.Result {
 }
 
 func (r *roleController) update(roleInAKO, roleInAtlas customroles.CustomRole) workflow.Result {
-	// cmpopts.IgnoreUnexported() prevents panic
-	if cmp.Diff(roleInAKO, roleInAtlas, cmpopts.EquateEmpty(), cmpopts.IgnoreUnexported()) == "" {
+	if reflect.DeepEqual(roleInAKO, roleInAtlas) {
 		return r.idle()
 	}
 	err := r.service.Update(r.ctx.Context, r.projectID, roleInAKO.Name, roleInAKO)
