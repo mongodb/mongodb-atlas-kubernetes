@@ -1,8 +1,9 @@
 package e2e
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
