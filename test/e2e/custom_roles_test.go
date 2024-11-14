@@ -13,7 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-var _ = Describe("UserLogin", Label("custom-roles"), func() {
+var _ = Describe("CustomRoles", Label("custom-roles"), func() {
 	var testData *model.TestDataProvider
 
 	_ = AfterEach(func() {

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
+
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -34,7 +36,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
-type AtlasСustomRoleReconciler struct {
+type AtlasCustomRoleReconciler struct {
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
@@ -53,8 +55,8 @@ func NewAtlasCustomRoleReconciler(
 	deletionProtection bool,
 	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
-) *AtlasСustomRoleReconciler {
-	return &AtlasСustomRoleReconciler{
+) *AtlasCustomRoleReconciler {
+	return &AtlasCustomRoleReconciler{
 		Client:                   mgr.GetClient(),
 		Log:                      logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
 		Scheme:                   mgr.GetScheme(),
@@ -76,7 +78,7 @@ func NewAtlasCustomRoleReconciler(
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=create;update;patch;delete
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
-func (r *AtlasСustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	atlasCustomRole := &akov2.AtlasCustomRole{}
 
 	err := r.Client.Get(ctx, req.NamespacedName, atlasCustomRole)
@@ -126,12 +128,9 @@ func (r *AtlasСustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			fmt.Errorf("the %T is not supported by Atlas for government", atlasCustomRole)), nil
 	}
 
-	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context,
-		&client.ObjectKey{
-			Namespace: atlasCustomRole.GetNamespace(),
-			Name:      atlasCustomRole.Spec.Credentials().Name,
-		},
-		workflowCtx.Log)
+	credentials, err := selectCredentials(workflowCtx.Context, r.Client, atlasCustomRole)
+
+	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, workflowCtx.Log)
 	if err != nil {
 		return r.terminate(workflowCtx,
 			atlasCustomRole,
@@ -147,7 +146,36 @@ func (r *AtlasСustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return r.idle(workflowCtx), nil
 }
 
-func (r *AtlasСustomRoleReconciler) terminate(
+func selectCredentials(ctx context.Context, k8sClient client.Client, akoRole *akov2.AtlasCustomRole) (*client.ObjectKey, error) {
+	switch {
+	// First, try the externalProjectID and it's credentials
+	case akoRole.Spec.ExternalProjectIDRef != nil:
+		if akoRole.Spec.ConnectionSecret == nil {
+			return nil, errors.New("the 'externalProjectIDRef' is set but the 'connectionSecret' is missing")
+		}
+		return &client.ObjectKey{Name: akoRole.Spec.ConnectionSecret.Name, Namespace: akoRole.GetNamespace()}, nil
+	// Try the external project ref
+	case akoRole.Spec.ProjectRef != nil:
+		// if the local credentials are set, use them
+		if akoRole.Spec.ConnectionSecret != nil {
+			return &client.ObjectKey{Name: akoRole.Spec.ConnectionSecret.Name, Namespace: akoRole.GetNamespace()}, nil
+		}
+		// otherwise, use those attached to the AtlasProject that is referenced by the externalProjectRef
+		project := &akov2.AtlasProject{}
+		err := k8sClient.Get(ctx,
+			client.ObjectKey{Name: akoRole.Spec.ProjectRef.Name, Namespace: akoRole.Spec.ProjectRef.Namespace}, project)
+		if err != nil {
+			return nil, errors.Wrap(err, "can not read credentials from AtlasProject")
+		}
+		if project.Spec.ConnectionSecret == nil || project.Spec.ConnectionSecret.Name == "" {
+			return nil, errors.Wrapf(err, "credentials for AtlasProject '%s' are not configured", project.GetName())
+		}
+		return &client.ObjectKey{Name: project.Spec.ConnectionSecret.Name, Namespace: project.Spec.ConnectionSecret.Namespace}, nil
+	}
+	return nil, errors.New("either 'externalProjectIDRef' or 'projectRef' must be set for the AtlasCustomRole resource")
+}
+
+func (r *AtlasCustomRoleReconciler) terminate(
 	ctx *workflow.Context,
 	object akov2.AtlasCustomResource,
 	condition api.ConditionType,
@@ -166,19 +194,19 @@ func (r *AtlasСustomRoleReconciler) terminate(
 	return result.ReconcileResult()
 }
 
-func (r *AtlasСustomRoleReconciler) idle(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasCustomRoleReconciler) idle(ctx *workflow.Context) ctrl.Result {
 	ctx.SetConditionTrue(api.ReadyType)
 	return workflow.OK().ReconcileResult()
 }
 
 // fail terminates the reconciliation silently(no updates on conditions)
-func (r *AtlasСustomRoleReconciler) fail(req ctrl.Request, err error) ctrl.Result {
+func (r *AtlasCustomRoleReconciler) fail(req ctrl.Request, err error) ctrl.Result {
 	r.Log.Errorf("Failed to query object %s: %s", req.NamespacedName, err)
 	return workflow.TerminateSilently().ReconcileResult()
 }
 
 // skip prevents the reconciliation to start and successfully return
-func (r *AtlasСustomRoleReconciler) skip() ctrl.Result {
+func (r *AtlasCustomRoleReconciler) skip() ctrl.Result {
 	r.Log.Infow(fmt.Sprintf("-> Skipping AtlasCustomRole reconciliation as annotation %s=%s",
 		customresource.ReconciliationPolicyAnnotation,
 		customresource.ReconciliationPolicySkip))
@@ -186,12 +214,12 @@ func (r *AtlasСustomRoleReconciler) skip() ctrl.Result {
 }
 
 // notFound terminates the reconciliation silently(no updates on conditions) and without retry
-func (r *AtlasСustomRoleReconciler) notFound(req ctrl.Request) ctrl.Result {
+func (r *AtlasCustomRoleReconciler) notFound(req ctrl.Request) ctrl.Result {
 	r.Log.Infof("Object %s doesn't exist, was it deleted after reconcile request?", req.NamespacedName)
 	return workflow.TerminateSilently().WithoutRetry().ReconcileResult()
 }
 
-func (r *AtlasСustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
+func (r *AtlasCustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasCustomRole").
 		For(&akov2.AtlasCustomRole{}).
@@ -203,7 +231,7 @@ func (r *AtlasСustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 		Complete(r)
 }
 
-func (r *AtlasСustomRoleReconciler) customRolesCredentials() handler.MapFunc {
+func (r *AtlasCustomRoleReconciler) customRolesCredentials() handler.MapFunc {
 	return indexer.CredentialsIndexMapperFunc(
 		indexer.AtlasCustomRoleCredentialsIndex,
 		func() *akov2.AtlasCustomRoleList { return &akov2.AtlasCustomRoleList{} },
