@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 
 	"net/http"
@@ -26,7 +24,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
 
-	crClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -42,8 +40,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 		service                   func() customroles.CustomRoleService
 		role                      *akov2.AtlasCustomRole
 		deletionProtectionEnabled bool
-		k8sClient                 client.Client
-		k8sObjects                []crClient.Object
+		k8sObjects                []client.Object
 	}
 	tests := []struct {
 		name   string
@@ -481,7 +478,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				k8sObjects: []crClient.Object{
+				k8sObjects: []client.Object{
 					&akov2.AtlasCustomRole{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:              "testRole",
@@ -606,7 +603,7 @@ func Test_handleCustomRole(t *testing.T) {
 		ctx                       *workflow.Context
 		akoCustomRole             *akov2.AtlasCustomRole
 		deletionProtectionEnabled bool
-		k8sObjects                []crClient.Object
+		k8sObjects                []client.Object
 	}
 	tests := []struct {
 		name string
@@ -693,7 +690,7 @@ func Test_handleCustomRole(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				k8sObjects: []crClient.Object{
+				k8sObjects: []client.Object{
 					&akov2.AtlasProject{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "testProject",
@@ -738,7 +735,7 @@ func Test_handleCustomRole(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				k8sObjects: []crClient.Object{
+				k8sObjects: []client.Object{
 					&akov2.AtlasProject{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "testProject",
@@ -783,7 +780,7 @@ func Test_handleCustomRole(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
-				k8sObjects: []crClient.Object{},
+				k8sObjects: []client.Object{},
 			},
 			want: workflow.Terminate(workflow.ProjectCustomRolesReady, "atlasprojects.atlas.mongodb.com \"testProject\" not found"),
 		},
