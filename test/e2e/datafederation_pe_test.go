@@ -213,6 +213,13 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), fun
 				g.Expect(err).To(BeNil(), fmt.Sprintf("deletion of private endpoint failed with error %v", err))
 				g.Expect(resp).NotTo(BeNil())
 				g.Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
+
+				_, resp, err = atlasClient.Client.DataFederationApi.
+					DeleteDataFederationPrivateEndpoint(testData.Context, testData.Project.ID(), secondPE.ID).
+					Execute()
+				g.Expect(err).To(BeNil(), fmt.Sprintf("deletion of private endpoint failed with error %v", err))
+				g.Expect(resp).NotTo(BeNil())
+				g.Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
 			}).WithTimeout(5 * time.Minute).WithPolling(15 * time.Second).MustPassRepeatedly(2).Should(Succeed())
 		})
 	})
