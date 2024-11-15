@@ -60,6 +60,7 @@ jobs:
       QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
       PLATFORMS: "linux/arm64,linux/amd64"
     strategy:
+      fail-fast: false
       matrix:
         version: ${{ fromJSON(needs.read-versions.outputs.releases) }}
     steps:
