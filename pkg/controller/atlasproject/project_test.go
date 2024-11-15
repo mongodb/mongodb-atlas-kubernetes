@@ -611,7 +611,16 @@ func TestHandleProject(t *testing.T) {
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
 			require.NoError(t, corev1.AddToScheme(testScheme))
+			logger := zaptest.NewLogger(t).Sugar()
+			ctx := &workflow.Context{
+				Context:   context.Background(),
+				Log:       logger,
+				Client:    tt.atlasClientMocker(),
+				SdkClient: tt.atlasSDKMocker(),
+			}
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
+			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(ctx.Context, nil, logger.Desugar())
+
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.project).
@@ -621,21 +630,16 @@ func TestHandleProject(t *testing.T) {
 					instancesIndexer.Name(),
 					instancesIndexer.Keys,
 				).
+				WithIndex(customRoleIndexer.Object(), customRoleIndexer.Name(), customRoleIndexer.Keys).
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
-			logger := zaptest.NewLogger(t).Sugar()
+
 			reconciler := &AtlasProjectReconciler{
 				Client:         k8sClient,
 				Log:            logger,
 				projectService: tt.projectServiceMocker(),
 				teamsService:   tt.teamServiceMocker(),
 				EventRecorder:  record.NewFakeRecorder(30),
-			}
-			ctx := &workflow.Context{
-				Context:   context.Background(),
-				Log:       logger,
-				Client:    tt.atlasClientMocker(),
-				SdkClient: tt.atlasSDKMocker(),
 			}
 
 			result, err := reconciler.handleProject(ctx, "my-org-id", tt.project)
@@ -1069,7 +1073,16 @@ func TestDelete(t *testing.T) {
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
 			require.NoError(t, corev1.AddToScheme(testScheme))
+			logger := zaptest.NewLogger(t).Sugar()
+			ctx := &workflow.Context{
+				Context:   context.Background(),
+				Client:    tt.atlasClientMocker(),
+				SdkClient: tt.atlasSDKMocker(),
+				Log:       logger,
+			}
+
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
+			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(ctx.Context, nil, logger.Desugar())
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.objects...).
@@ -1079,15 +1092,10 @@ func TestDelete(t *testing.T) {
 					instancesIndexer.Name(),
 					instancesIndexer.Keys,
 				).
+				WithIndex(customRoleIndexer.Object(), customRoleIndexer.Name(), customRoleIndexer.Keys).
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
-			logger := zaptest.NewLogger(t).Sugar()
-			ctx := &workflow.Context{
-				Context:   context.Background(),
-				Client:    tt.atlasClientMocker(),
-				SdkClient: tt.atlasSDKMocker(),
-				Log:       logger,
-			}
+
 			reconciler := &AtlasProjectReconciler{
 				Client:                   k8sClient,
 				ObjectDeletionProtection: tt.deletionProtection,
@@ -1155,7 +1163,11 @@ func TestHasDependencies(t *testing.T) {
 				Namespace: "default",
 			},
 		}
+		ctx := &workflow.Context{
+			Context: context.Background(),
+		}
 		instanceIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
+		customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(ctx.Context, nil, zap.L())
 		testScheme := runtime.NewScheme()
 		require.NoError(t, akov2.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
@@ -1166,12 +1178,10 @@ func TestHasDependencies(t *testing.T) {
 				instanceIndexer.Name(),
 				instanceIndexer.Keys,
 			).
+			WithIndex(customRoleIndexer.Object(), customRoleIndexer.Name(), customRoleIndexer.Keys).
 			Build()
 		reconciler := &AtlasProjectReconciler{
 			Client: k8sClient,
-		}
-		ctx := &workflow.Context{
-			Context: context.Background(),
 		}
 
 		ok, err := reconciler.hasDependencies(ctx, p)
