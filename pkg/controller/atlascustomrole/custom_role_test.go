@@ -3,6 +3,11 @@ package atlascustomrole
 import (
 	"context"
 	"fmt"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+
 	"net/http"
 	"reflect"
 	"testing"
@@ -37,6 +42,8 @@ func Test_roleController_Reconcile(t *testing.T) {
 		service                   func() customroles.CustomRoleService
 		role                      *akov2.AtlasCustomRole
 		deletionProtectionEnabled bool
+		k8sClient                 client.Client
+		k8sObjects                []crClient.Object
 	}
 	tests := []struct {
 		name   string
@@ -420,7 +427,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 			want: workflow.OK(),
 		},
 		{
-			name: "DO NOT Delete custom role successfully with DeletionProtection enabled",
+			name: "DO NOT Delete custom role successfully with DeletionProtection enabled, just stop managing it",
 			fields: fields{
 				deletionProtectionEnabled: true,
 				ctx: &workflow.Context{
@@ -442,6 +449,8 @@ func Test_roleController_Reconcile(t *testing.T) {
 				},
 				role: &akov2.AtlasCustomRole{
 					ObjectMeta: metav1.ObjectMeta{
+						Name:              "testRole",
+						Namespace:         "testNamespace",
 						DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
 					},
 					Spec: akov2.AtlasCustomRoleSpec{
@@ -472,8 +481,45 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
+				k8sObjects: []crClient.Object{
+					&akov2.AtlasCustomRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:              "testRole",
+							Namespace:         "testNamespace",
+							DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
+							Finalizers:        []string{customresource.FinalizerLabel},
+						},
+						Spec: akov2.AtlasCustomRoleSpec{
+							Role: akov2.CustomRole{
+								Name: "TestRoleName",
+								InheritedRoles: []akov2.Role{
+									{
+										Name:     "read",
+										Database: "main",
+									},
+								},
+								Actions: []akov2.Action{
+									{
+										Name: "VIEW_ALL_HISTORY",
+										Resources: []akov2.Resource{
+											{
+												Cluster:    pointer.MakePtr(true),
+												Database:   pointer.MakePtr("main"),
+												Collection: pointer.MakePtr("collection"),
+											},
+										},
+									},
+								},
+							},
+							ExternalProjectIDRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
+						},
+						Status: status.AtlasCustomRoleStatus{},
+					},
+				},
 			},
-			want: workflow.OK(),
+			want: workflow.Deleted(),
 		},
 		{
 			name: "Delete custom role with error",
@@ -534,12 +580,19 @@ func Test_roleController_Reconcile(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(tt.fields.k8sObjects...).
+			Build()
 		t.Run(tt.name, func(t *testing.T) {
 			r := &roleController{
 				ctx:       tt.fields.ctx,
 				service:   tt.fields.service(),
 				role:      tt.fields.role,
 				dpEnabled: tt.fields.deletionProtectionEnabled,
+				k8sClient: k8sClient,
 			}
 			if got := r.Reconcile(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Reconcile() = %v, want %v", got, tt.want)
