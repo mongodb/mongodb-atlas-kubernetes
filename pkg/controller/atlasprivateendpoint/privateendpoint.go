@@ -19,7 +19,6 @@ package atlasprivateendpoint
 import (
 	"context"
 	"errors"
-	"reflect"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -36,7 +35,7 @@ func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointService(
 	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
 ) (ctrl.Result, error) {
 	akoPEService := privateendpoint.NewPrivateEndpoint(akoPrivateEndpoint)
-	atlasPEService, err := r.getPrivateEndpointService(ctx.Context, projectID, akoPrivateEndpoint)
+	atlasPEService, err := r.getOrMatchPrivateEndpointService(ctx.Context, projectID, akoPrivateEndpoint)
 	if err != nil {
 		return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.ReadyType, workflow.Internal, err)
 	}
@@ -87,67 +86,72 @@ func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointInterface(
 	akoPEService privateendpoint.EndpointService,
 	atlasPEService privateendpoint.EndpointService,
 ) (ctrl.Result, error) {
-	if len(akoPEService.EndpointInterfaces()) == 0 && len(atlasPEService.EndpointInterfaces()) == 0 {
+	compositeInterfacesMap := privateendpoint.MapPrivateEndpoints(akoPEService.EndpointInterfaces(), atlasPEService.EndpointInterfaces())
+
+	if len(compositeInterfacesMap) == 0 {
 		return r.waitForConfiguration(ctx, akoPrivateEndpoint, atlasPEService)
 	}
 
-	inProgress := false
-	for _, akoPEInterface := range akoPEService.EndpointInterfaces() {
-		atlasPEInterfaces := atlasPEService.EndpointInterfaces()
-		atlasPEInterface := atlasPEInterfaces.Get(akoPEInterface.InterfaceID())
-		existInAtlas := atlasPEInterface != nil
-		inProgress = isInterfaceInProgress(akoPEInterface.Status())
-		var err error
+	// we want to sync all interface, if any of them is in progress, after all we transition to in progress
+	pendingResources := false
+	for _, compositeInterfaceMap := range compositeInterfacesMap {
+		inAKO := compositeInterfaceMap.AKO != nil
+		inAtlas := compositeInterfaceMap.Atlas != nil
+		inProgress := isInterfaceInProgress(compositeInterfaceMap.Atlas)
+		failed := hasInterfaceFailed(compositeInterfaceMap.Atlas)
 
-		if !existInAtlas {
-			gcpProjectID := getGCPProjectID(akoPrivateEndpoint, akoPEInterface.InterfaceID())
-			_, err = r.privateEndpointService.CreatePrivateEndpointInterface(
+		switch {
+		case failed:
+			return r.terminate(
+				ctx,
+				akoPrivateEndpoint,
+				atlasPEService,
+				api.PrivateEndpointReady,
+				workflow.PrivateEndpointFailedToConfigure,
+				errors.New(compositeInterfaceMap.Atlas.ErrorMessage()),
+			)
+		case inProgress:
+			pendingResources = true
+			continue
+		case inAKO && !inAtlas:
+			gcpProjectID := getGCPProjectID(akoPrivateEndpoint, compositeInterfaceMap.AKO.InterfaceID())
+			_, err := r.privateEndpointService.CreatePrivateEndpointInterface(
 				ctx.Context,
 				projectID,
 				akoPrivateEndpoint.Spec.Provider,
 				akoPrivateEndpoint.Status.ServiceID,
 				gcpProjectID,
-				akoPEInterface,
+				compositeInterfaceMap.AKO,
 			)
 			if err != nil {
 				return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointReady, workflow.PrivateEndpointFailedToCreate, err)
 			}
-
-			inProgress = true
-		}
-	}
-
-	for _, atlasPEInterface := range atlasPEService.EndpointInterfaces() {
-		akoPEInterfaces := akoPEService.EndpointInterfaces()
-		akoPEInterface := akoPEInterfaces.Get(atlasPEInterface.InterfaceID())
-		wasDeleted := akoPEInterface == nil
-		inProgress = isInterfaceInProgress(atlasPEInterface.Status())
-		var err error
-
-		if wasDeleted && atlasPEInterface.Status() != privateendpoint.StatusDeleting {
-			err = r.privateEndpointService.DeleteEndpointInterface(ctx.Context, projectID, akoPrivateEndpoint.Spec.Provider, akoPrivateEndpoint.Status.ServiceID, atlasPEInterface.InterfaceID())
+			pendingResources = true
+		case !inAKO && inAtlas:
+			err := r.privateEndpointService.DeleteEndpointInterface(
+				ctx.Context,
+				projectID,
+				akoPrivateEndpoint.Spec.Provider,
+				akoPrivateEndpoint.Status.ServiceID,
+				compositeInterfaceMap.Atlas.InterfaceID(),
+			)
 			if err != nil {
 				return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointReady, workflow.PrivateEndpointFailedToDelete, err)
 			}
-
-			inProgress = true
-
-			continue
-		}
-
-		if hasInterfaceFailed(atlasPEInterface.Status()) {
-			return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointReady, workflow.PrivateEndpointFailedToConfigure, errors.New(atlasPEInterface.ErrorMessage()))
+			pendingResources = true
 		}
 	}
 
-	if !inProgress && reflect.DeepEqual(akoPEService.EndpointInterfaces(), atlasPEService.EndpointInterfaces()) {
-		return r.ready(ctx, akoPrivateEndpoint, atlasPEService)
+	if pendingResources {
+		return r.inProgress(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointReady, workflow.PrivateEndpointUpdating, "Private Endpoints are being updated")
 	}
 
-	return r.inProgress(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointReady, workflow.PrivateEndpointUpdating, "Private Endpoints are being updated")
+	return r.ready(ctx, akoPrivateEndpoint, atlasPEService)
 }
 
-func (r *AtlasPrivateEndpointReconciler) getPrivateEndpointService(
+// getOrMatchPrivateEndpointService retrieve the project by ID if one is set or try to match by provider/region
+// only one private endpoint service per provider/region is allowed
+func (r *AtlasPrivateEndpointReconciler) getOrMatchPrivateEndpointService(
 	ctx context.Context,
 	projectID string,
 	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
@@ -194,7 +198,13 @@ func (r *AtlasPrivateEndpointReconciler) deletePrivateEndpoint(
 	return r.privateEndpointService.GetPrivateEndpoint(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID())
 }
 
-func isInterfaceInProgress(status string) bool {
+func isInterfaceInProgress(ep privateendpoint.EndpointInterface) bool {
+	if ep == nil {
+		return false
+	}
+
+	status := ep.Status()
+
 	return status == privateendpoint.StatusInitiating ||
 		status == privateendpoint.StatusPending ||
 		status == privateendpoint.StatusPendingAcceptance ||
@@ -203,7 +213,13 @@ func isInterfaceInProgress(status string) bool {
 		status == privateendpoint.StatusDeleting
 }
 
-func hasInterfaceFailed(status string) bool {
+func hasInterfaceFailed(ep privateendpoint.EndpointInterface) bool {
+	if ep == nil {
+		return false
+	}
+
+	status := ep.Status()
+
 	return status == privateendpoint.StatusFailed || status == privateendpoint.StatusRejected
 }
 

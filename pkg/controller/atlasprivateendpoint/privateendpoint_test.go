@@ -886,6 +886,93 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					WithMessageRegexp("Private Endpoints are being updated"),
 			},
 		},
+		"private endpoints are in progress": {
+			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pe1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasPrivateEndpointSpec{
+					ExternalProject: &akov2.ExternalProjectReference{
+						ID: projectID,
+					},
+					LocalCredentialHolder: api.LocalCredentialHolder{},
+					Provider:              "AZURE",
+					Region:                "GERMANY_NORTH",
+					AzureConfiguration: []akov2.AzurePrivateEndpointConfiguration{
+						{
+							ID: "azure/resource/id",
+							IP: "10.0.0.2",
+						},
+					},
+				},
+				Status: status.AtlasPrivateEndpointStatus{
+					Common: api.Common{
+						Conditions: []api.Condition{
+							{
+								Type:               api.ReadyType,
+								Status:             corev1.ConditionTrue,
+								LastTransitionTime: metav1.Now(),
+							},
+							{
+								Type:               api.PrivateEndpointServiceReady,
+								Status:             corev1.ConditionTrue,
+								LastTransitionTime: metav1.Now(),
+							},
+							{
+								Type:               api.PrivateEndpointReady,
+								Status:             corev1.ConditionTrue,
+								LastTransitionTime: metav1.Now(),
+							},
+						},
+					},
+					ServiceID:     "pe-service-id",
+					ResourceID:    "atlas/azure/resource/id",
+					ServiceStatus: "AVAILABLE",
+					Endpoints: []status.EndpointInterfaceStatus{
+						{
+							ID:             "azure/resource/id",
+							ConnectionName: "atlas-connection-name",
+							Status:         "INITIATING",
+						},
+					},
+				},
+			},
+			atlasPEService: func() privateendpoint.EndpointService {
+				azureInterface := &privateendpoint.AzureInterface{
+					CommonEndpointInterface: privateendpoint.CommonEndpointInterface{
+						ID:              "azure/resource/id",
+						InterfaceStatus: "INITIATING",
+					},
+					IP:             "10.0.0.2",
+					ConnectionName: "atlas-connection-name",
+				}
+				azureService := &privateendpoint.AzureService{
+					CommonEndpointService: privateendpoint.CommonEndpointService{
+						ID:            "pe-service-id",
+						CloudRegion:   "GERMANY_NORTH",
+						ServiceStatus: "AVAILABLE",
+						Interfaces:    privateendpoint.EndpointInterfaces{azureInterface},
+					},
+					ServiceName: "atlas/azure/service/name",
+					ResourceID:  "atlas/azure/resource/id",
+				}
+
+				return azureService
+			},
+			peClient: func() privateendpoint.PrivateEndpointService {
+				c := translation.NewPrivateEndpointServiceMock(t)
+
+				return c
+			},
+			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType),
+				api.FalseCondition(api.PrivateEndpointReady).
+					WithReason(string(workflow.PrivateEndpointUpdating)).
+					WithMessageRegexp("Private Endpoints are being updated"),
+			},
+		},
 		"private endpoints are ready": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
@@ -997,6 +1084,11 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			result, err := r.handlePrivateEndpointInterface(&workflowCtx, projectID, tt.atlasPrivateEndpoint, akoPEService, tt.atlasPEService())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
+			t.Log(cmp.Diff(
+				tt.expectedConditions,
+				workflowCtx.Conditions(),
+				cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+			))
 			assert.True(
 				t,
 				cmp.Equal(
@@ -1101,7 +1193,7 @@ func TestGetPrivateEndpointService(t *testing.T) {
 				privateEndpointService: tt.peClient(),
 			}
 
-			result, err := r.getPrivateEndpointService(ctx, projectID, tt.atlasPrivateEndpoint)
+			result, err := r.getOrMatchPrivateEndpointService(ctx, projectID, tt.atlasPrivateEndpoint)
 			assert.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})

@@ -473,3 +473,30 @@ func interfaceCreateToAtlas(peInterface EndpointInterface, gcpProjectID string) 
 
 	return nil
 }
+
+type CompositeEndpointInterface struct {
+	AKO   EndpointInterface
+	Atlas EndpointInterface
+}
+
+func MapPrivateEndpoints(akoInterfaces, atlasInterfaces []EndpointInterface) map[string]CompositeEndpointInterface {
+	m := map[string]CompositeEndpointInterface{}
+
+	for _, akoInterface := range akoInterfaces {
+		m[akoInterface.InterfaceID()] = CompositeEndpointInterface{
+			AKO: akoInterface,
+		}
+	}
+
+	for _, atlasInterface := range atlasInterfaces {
+		i := CompositeEndpointInterface{}
+		if existing, ok := m[atlasInterface.InterfaceID()]; ok {
+			i = existing
+		}
+
+		i.Atlas = atlasInterface
+		m[atlasInterface.InterfaceID()] = i
+	}
+
+	return m
+}
