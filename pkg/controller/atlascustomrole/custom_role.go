@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -56,12 +58,10 @@ func (r *roleController) Reconcile() workflow.Result {
 
 	roleFoundInAtlas := false
 	roleInAtlas, err := r.service.Get(r.ctx.Context, r.projectID, r.role.Spec.Role.Name)
-	switch {
-	case err != nil:
+	if err != nil {
 		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
-	case err == nil && (roleInAtlas != customroles.CustomRole{}):
-		roleFoundInAtlas = true
 	}
+	roleFoundInAtlas = roleInAtlas != customroles.CustomRole{}
 
 	roleDeleted := !r.role.GetDeletionTimestamp().IsZero()
 
@@ -76,7 +76,14 @@ func (r *roleController) Reconcile() workflow.Result {
 		return r.delete(roleInAtlas)
 	}
 
-	return r.idle()
+	return r.unmanaged()
+}
+
+func (r *roleController) unmanaged() workflow.Result {
+	if err := customresource.ManageFinalizer(r.ctx.Context, r.k8sClient, r.role, customresource.UnsetFinalizer); err != nil {
+		return r.terminate(workflow.AtlasFinalizerNotRemoved, err)
+	}
+	return workflow.Deleted()
 }
 
 func (r *roleController) create(role customroles.CustomRole) workflow.Result {

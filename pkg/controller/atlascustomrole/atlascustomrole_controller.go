@@ -173,7 +173,7 @@ func selectCredentials(ctx context.Context, k8sClient client.Client, akoRole *ak
 		if project.Spec.ConnectionSecret == nil || project.Spec.ConnectionSecret.Name == "" {
 			return nil, errors.Wrapf(err, "credentials for AtlasProject '%s' are not configured", project.GetName())
 		}
-		return &client.ObjectKey{Name: project.Spec.ConnectionSecret.Name, Namespace: project.Spec.ConnectionSecret.Namespace}, nil
+		return project.ConnectionSecretObjectKey(), nil
 	}
 	return nil, errors.New("either 'externalProjectIDRef' or 'projectRef' must be set for the AtlasCustomRole resource")
 }

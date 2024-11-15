@@ -168,5 +168,20 @@ func (r *AtlasProjectReconciler) hasDependencies(ctx *workflow.Context, project 
 		return false, err
 	}
 
-	return len(streamInstances.Items) > 0, nil
+	if len(streamInstances.Items) > 0 {
+		return true, nil
+	}
+
+	customRoles := &akov2.AtlasCustomRoleList{}
+	listOps = &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasCustomRoleByProject,
+			client.ObjectKeyFromObject(project).String()),
+	}
+	err = r.Client.List(ctx.Context, customRoles, listOps)
+	if err != nil {
+		return false, err
+	}
+
+	return len(customRoles.Items) > 0, nil
 }
