@@ -1,15 +1,12 @@
 package integrations
 
 import (
-	"context"
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 )
 
@@ -60,8 +57,8 @@ func fromAtlas(in *admin.ThirdPartyIntegration) (*Integration, error) {
 	)
 }
 
-func toAtlas(in Integration, ctx context.Context, c client.Client, defaultNS string) (result *admin.ThirdPartyIntegration, err error) {
-	result = &admin.ThirdPartyIntegration{
+func toAtlas(in Integration, secrets map[string]string) *admin.ThirdPartyIntegration {
+	result := &admin.ThirdPartyIntegration{
 		Type:                     pointer.MakePtr(in.Type),
 		AccountId:                pointer.MakePtr(in.AccountID),
 		Region:                   pointer.MakePtr(in.Region),
@@ -71,36 +68,36 @@ func toAtlas(in Integration, ctx context.Context, c client.Client, defaultNS str
 		MicrosoftTeamsWebhookUrl: pointer.MakePtr(in.MicrosoftTeamsWebhookURL),
 		Username:                 pointer.MakePtr(in.UserName),
 		ServiceDiscovery:         pointer.MakePtr(in.ServiceDiscovery),
-		LicenseKey:               pointer.MakePtr(""),
 		Enabled:                  pointer.MakePtr(in.Enabled),
 	}
 
-	readPassword := func(passwordField common.ResourceRefNamespaced, setFunc func(string), errors *[]error) {
-		if passwordField.Name == "" {
-			return
-		}
-
-		target, err := passwordField.ReadPassword(ctx, c, defaultNS)
-		if err != nil {
-			*errors = append(*errors, err)
-		}
-		setFunc(target)
+	if licenseKey, ok := secrets["licenseKey"]; ok {
+		result.SetLicenseKey(licenseKey)
+	}
+	if writeToken, ok := secrets["writeToken"]; ok {
+		result.SetWriteToken(writeToken)
+	}
+	if readToken, ok := secrets["readToken"]; ok {
+		result.SetReadToken(readToken)
+	}
+	if apiKey, ok := secrets["apiKey"]; ok {
+		result.SetApiKey(apiKey)
+	}
+	if serviceKey, ok := secrets["serviceKey"]; ok {
+		result.SetServiceKey(serviceKey)
+	}
+	if apiToken, ok := secrets["apiToken"]; ok {
+		result.SetApiToken(apiToken)
+	}
+	if routingKey, ok := secrets["routingKey"]; ok {
+		result.SetRoutingKey(routingKey)
+	}
+	if secret, ok := secrets["secret"]; ok {
+		result.SetSecret(secret)
+	}
+	if password, ok := secrets["password"]; ok {
+		result.SetPassword(password)
 	}
 
-	errorList := make([]error, 0)
-	readPassword(in.LicenseKeyRef, result.SetLicenseKey, &errorList)
-	readPassword(in.WriteTokenRef, result.SetWriteToken, &errorList)
-	readPassword(in.ReadTokenRef, result.SetReadToken, &errorList)
-	readPassword(in.APIKeyRef, result.SetApiKey, &errorList)
-	readPassword(in.ServiceKeyRef, result.SetServiceKey, &errorList)
-	readPassword(in.APITokenRef, result.SetApiToken, &errorList)
-	readPassword(in.RoutingKeyRef, result.SetRoutingKey, &errorList)
-	readPassword(in.SecretRef, result.SetSecret, &errorList)
-	readPassword(in.PasswordRef, result.SetPassword, &errorList)
-
-	if len(errorList) != 0 {
-		firstError := (errorList)[0]
-		return nil, firstError
-	}
-	return result, nil
+	return result
 }

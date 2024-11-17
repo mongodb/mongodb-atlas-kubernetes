@@ -1,12 +1,17 @@
 package atlasproject
 
 import (
+	"context"
+	"errors"
 	"fmt"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/integrations"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -72,10 +77,15 @@ func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, 
 			ctx.Log.Warnw("Update Integrations", "Can not convert kube integration")
 			return workflow.Terminate(workflow.ProjectIntegrationInternal, "Update Integrations: Can not convert kube integration")
 		}
+		secrets, err := getSecrets(ctx.Context, r.Client, namespace, kubeIntegration)
+		if err != nil {
+			ctx.Log.Warnw("Update Integrations", "Cannot get secrets", err)
+			return workflow.Terminate(workflow.ProjectIntegrationInternal, fmt.Sprintf("Update Integrations: Cannot get secrets: %v", err))
+		}
 		// As integration secrets are redacted from Atlas, we cannot properly compare them,
 		// so as a simple fix we assume changes are always needed at evaluation time
 		ctx.Log.Debugf("Try to update integration: %s", kubeIntegration.Type)
-		if err := r.integrationsService.Update(ctx.Context, projectID, kubeIntegration.Type, kubeIntegration, r.Client, namespace); err != nil {
+		if err := r.integrationsService.Update(ctx.Context, projectID, kubeIntegration.Type, kubeIntegration, secrets); err != nil {
 			return workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Cannot apply integration %s: %v", kubeIntegration.Type, err.Error()))
 		}
 	}
@@ -95,8 +105,12 @@ func (r *AtlasProjectReconciler) deleteIntegrationsFromAtlas(ctx *workflow.Conte
 func (r *AtlasProjectReconciler) createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrationsToCreate []set.Identifiable, namespace string) workflow.Result {
 	for _, item := range integrationsToCreate {
 		integration := item.(integrations.Integration)
-
-		if err := r.integrationsService.Create(ctx.Context, projectID, integration.Type, integration, r.Client, namespace); err != nil {
+		secrets, err := getSecrets(ctx.Context, r.Client, namespace, integration)
+		if err != nil {
+			ctx.Log.Warnw("Update Integrations", "Cannot get secrets", err)
+			return workflow.Terminate(workflow.ProjectIntegrationInternal, fmt.Sprintf("Update Integrations: Cannot get secrets: %v", err))
+		}
+		if err := r.integrationsService.Create(ctx.Context, projectID, integration.Type, integration, secrets); err != nil {
 			return workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Cannot create integration %s: %v", integration.Type, err.Error()))
 		}
 	}
@@ -168,4 +182,34 @@ func isPrometheusType(typeName string) bool {
 func buildPrometheusDiscoveryURL(baseURL string, projectID string) string {
 	api := fmt.Sprintf("%s/prometheus/v1.0", baseURL)
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
+}
+
+func getSecrets(ctx context.Context, c client.Client, defaultNS string, in integrations.Integration) (map[string]string, error) {
+	readPassword := func(passwordField common.ResourceRefNamespaced, name string, out map[string]string) error {
+		if passwordField.Name == "" {
+			return nil
+		}
+
+		target, err := passwordField.ReadPassword(ctx, c, defaultNS)
+		if err != nil {
+			return err
+		}
+
+		out[name] = target
+		return nil
+	}
+	var errs error
+	out := make(map[string]string)
+
+	errs = errors.Join(errs, readPassword(in.LicenseKeyRef, "licenseKey", out))
+	errs = errors.Join(errs, readPassword(in.WriteTokenRef, "writeToken", out))
+	errs = errors.Join(errs, readPassword(in.ReadTokenRef, "readToken", out))
+	errs = errors.Join(errs, readPassword(in.APIKeyRef, "apiKey", out))
+	errs = errors.Join(errs, readPassword(in.ServiceKeyRef, "serviceKey", out))
+	errs = errors.Join(errs, readPassword(in.APITokenRef, "apiToken", out))
+	errs = errors.Join(errs, readPassword(in.RoutingKeyRef, "routingKey", out))
+	errs = errors.Join(errs, readPassword(in.SecretRef, "secret", out))
+	errs = errors.Join(errs, readPassword(in.PasswordRef, "password", out))
+
+	return out, errs
 }

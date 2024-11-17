@@ -1,20 +1,13 @@
 package integrations
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	fuzz "github.com/google/gofuzz"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
@@ -44,15 +37,7 @@ func TestRoundTrip_Integrations(t *testing.T) {
 		fuzzed.Name = ""
 		fuzzed.Scheme = ""
 
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		assert.NoError(t, corev1.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			Build()
-
-		toAtlasResult, err := toAtlas(*fuzzed, context.Background(), k8sClient, "testNS")
-		require.NoError(t, err)
+		toAtlasResult := toAtlas(*fuzzed, nil)
 
 		fromAtlasResult, err := fromAtlas(toAtlasResult)
 		require.NoError(t, err)
@@ -60,59 +45,4 @@ func TestRoundTrip_Integrations(t *testing.T) {
 		equals := cmp.Diff(fuzzed, fromAtlasResult) == ""
 		require.True(t, equals)
 	}
-}
-
-func TestIntegrationsReadPassword(t *testing.T) {
-	in := &Integration{}
-
-	in.LicenseKeyRef = common.ResourceRefNamespaced{
-		Name:      "secret-name",
-		Namespace: "secret-namespace",
-	}
-
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "secret-name",
-			Namespace: "secret-namespace",
-			Labels: map[string]string{
-				"atlas.mongodb.com/type": "credentials",
-			},
-		},
-		Data: map[string][]byte{
-			"password": []byte("Passw0rd!"),
-		},
-	}
-
-	testScheme := runtime.NewScheme()
-	assert.NoError(t, akov2.AddToScheme(testScheme))
-	assert.NoError(t, corev1.AddToScheme(testScheme))
-	k8sClient := fake.NewClientBuilder().
-		WithScheme(testScheme).
-		WithObjects(secret).
-		Build()
-
-	toAtlasResult, err := toAtlas(*in, context.Background(), k8sClient, "test-namespace")
-	require.NoError(t, err)
-
-	require.Equal(t, string(secret.Data["password"]), toAtlasResult.GetLicenseKey())
-}
-
-func TestIntegrationsFailReadPassword(t *testing.T) {
-	in := &Integration{}
-
-	in.LicenseKeyRef = common.ResourceRefNamespaced{
-		Name:      "secret-name",
-		Namespace: "secret-namespace",
-	}
-
-	testScheme := runtime.NewScheme()
-	assert.NoError(t, akov2.AddToScheme(testScheme))
-	assert.NoError(t, corev1.AddToScheme(testScheme))
-	k8sClient := fake.NewClientBuilder().
-		WithScheme(testScheme).
-		Build()
-
-	_, err := toAtlas(*in, context.Background(), k8sClient, "test-namespace")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `secrets "secret-name" not found`)
 }

@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/integrations"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -31,30 +33,12 @@ const (
 
 var errTest = fmt.Errorf("fake test error")
 
-func TestToAlias(t *testing.T) {
-	sample := []admin.ThirdPartyIntegration{{
-		Type:   pointer.MakePtr("DATADOG"),
-		ApiKey: pointer.MakePtr("some"),
-		Region: pointer.MakePtr("EU"),
-	}}
-	result := toAliasThirdPartyIntegration(sample)
-	assert.Equal(t, sample[0].ApiKey, result[0].ApiKey)
-	assert.Equal(t, sample[0].Type, result[0].Type)
-	assert.Equal(t, sample[0].Region, result[0].Region)
-}
-
 func TestUpdateIntegrationsAtlas(t *testing.T) {
-	testScheme := runtime.NewScheme()
-	assert.NoError(t, akov2.AddToScheme(testScheme))
-	assert.NoError(t, corev1.AddToScheme(testScheme))
-	k8sClient := fake.NewClientBuilder().
-		WithScheme(testScheme).
-		Build()
-
 	for _, tc := range []struct {
 		title              string
 		toUpdate           [][]set.Identifiable
 		integrationService integrations.AtlasIntegrationsService
+		secret             *corev1.Secret
 		expectedResult     workflow.Result
 	}{
 		{
@@ -87,14 +71,27 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 							Type:                     "MICROSOFT_TEAMS",
 							MicrosoftTeamsWebhookURL: "https://somehost/some-otherpath/some-othersecret",
 							Enabled:                  true,
+							APIKeyRef: common.ResourceRefNamespaced{
+								Name:      "test-secret",
+								Namespace: "test-ns",
+							},
 						},
 					},
 				}),
 			integrationService: func() integrations.AtlasIntegrationsService {
 				service := translation.NewAtlasIntegrationsServiceMock(t)
-				service.EXPECT().Update(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), k8sClient, testNamespace).Return(nil)
+				service.EXPECT().Update(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), map[string]string{"apiKey": "Passw0rd!"}).Return(nil)
 				return service
 			}(),
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-secret",
+					Namespace: "test-ns",
+				},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
+				},
+			},
 			expectedResult: workflow.OK(),
 		},
 
@@ -122,7 +119,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 				}),
 			integrationService: func() integrations.AtlasIntegrationsService {
 				service := translation.NewAtlasIntegrationsServiceMock(t)
-				service.EXPECT().Update(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), k8sClient, testNamespace).Return(nil)
+				service.EXPECT().Update(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), map[string]string{}).Return(nil)
 				return service
 			}(),
 			expectedResult: workflow.OK(),
@@ -152,7 +149,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 				}),
 			integrationService: func() integrations.AtlasIntegrationsService {
 				service := translation.NewAtlasIntegrationsServiceMock(t)
-				service.EXPECT().Update(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), k8sClient, testNamespace).Return(errors.New("fake test error"))
+				service.EXPECT().Update(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), map[string]string{}).Return(errors.New("fake test error"))
 				return service
 			}(),
 			expectedResult: workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Cannot apply integration %v: %v", "MICROSOFT_TEAMS", errTest)),
@@ -164,8 +161,18 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 				Log:     zap.S(),
 			}
 
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme)
+
+			if tc.secret != nil {
+				k8sClient.WithObjects(tc.secret)
+			}
+
 			r := AtlasProjectReconciler{
-				Client:              k8sClient,
+				Client:              k8sClient.Build(),
 				integrationsService: tc.integrationService,
 			}
 			result := r.updateIntegrationsAtlas(workflowCtx, testProjectID, tc.toUpdate, testNamespace)
@@ -282,7 +289,7 @@ func TestCreateIntegrationsAtlas(t *testing.T) {
 				[]integrations.Integration{}),
 			integrationService: func() integrations.AtlasIntegrationsService {
 				service := translation.NewAtlasIntegrationsServiceMock(t)
-				service.EXPECT().Create(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), k8sClient, testNamespace).Return(nil)
+				service.EXPECT().Create(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), map[string]string{}).Return(nil)
 				return service
 			}(),
 			expectedResult: workflow.OK(),
@@ -302,7 +309,7 @@ func TestCreateIntegrationsAtlas(t *testing.T) {
 				[]integrations.Integration{}),
 			integrationService: func() integrations.AtlasIntegrationsService {
 				service := translation.NewAtlasIntegrationsServiceMock(t)
-				service.EXPECT().Create(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), k8sClient, testNamespace).Return(errors.New("fake test error"))
+				service.EXPECT().Create(context.Background(), "project-id", "MICROSOFT_TEAMS", mock.AnythingOfType("integrations.Integration"), map[string]string{}).Return(errors.New("fake test error"))
 				return service
 			}(),
 			expectedResult: workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Cannot create integration %v: %v", "MICROSOFT_TEAMS", errTest)),

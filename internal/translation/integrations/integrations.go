@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type AtlasIntegrationsService interface {
 	Get(ctx context.Context, projectID string, integrationType string) (*Integration, error)
 	List(ctx context.Context, projectID string) ([]Integration, error)
-	Create(ctx context.Context, projectID string, integrationType string, integration Integration, client client.Client, ns string) error
-	Update(ctx context.Context, projectID string, integrationType string, integration Integration, client client.Client, ns string) error
+	Create(ctx context.Context, projectID string, integrationType string, integration Integration, secrets map[string]string) error
+	Update(ctx context.Context, projectID string, integrationType string, integration Integration, secrets map[string]string) error
 	Delete(ctx context.Context, projectID string, integrationType string) error
 }
 
@@ -48,24 +47,20 @@ func (i *AtlasIntegrations) List(ctx context.Context, projectID string) ([]Integ
 	return list, nil
 }
 
-func (i *AtlasIntegrations) Create(ctx context.Context, projectID string, integrationType string, integration Integration, client client.Client, ns string) error {
-	atlasIntegration, err := toAtlas(integration, ctx, client, ns)
-	if err != nil {
-		return fmt.Errorf("failed to convert integration to Atlas: %w", err)
-	}
-	_, _, err = i.integrationsAPI.CreateThirdPartyIntegration(ctx, integrationType, projectID, atlasIntegration).Execute()
+func (i *AtlasIntegrations) Create(ctx context.Context, projectID string, integrationType string, integration Integration, secrets map[string]string) error {
+	atlasIntegration := toAtlas(integration, secrets)
+
+	_, _, err := i.integrationsAPI.CreateThirdPartyIntegration(ctx, integrationType, projectID, atlasIntegration).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to create integration in Atlas: %w", err)
 	}
 	return nil
 }
 
-func (i *AtlasIntegrations) Update(ctx context.Context, projectID string, integrationType string, integration Integration, client client.Client, ns string) error {
-	atlasIntegration, err := toAtlas(integration, ctx, client, ns)
-	if err != nil {
-		return fmt.Errorf("failed to convert integration to Atlas: %w", err)
-	}
-	_, _, err = i.integrationsAPI.UpdateThirdPartyIntegration(ctx, integrationType, projectID, atlasIntegration).Execute()
+func (i *AtlasIntegrations) Update(ctx context.Context, projectID string, integrationType string, integration Integration, secrets map[string]string) error {
+	atlasIntegration := toAtlas(integration, secrets)
+
+	_, _, err := i.integrationsAPI.UpdateThirdPartyIntegration(ctx, integrationType, projectID, atlasIntegration).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to update integration in Atlas: %w", err)
 	}
