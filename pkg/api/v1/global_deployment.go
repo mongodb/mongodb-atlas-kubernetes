@@ -1,8 +1,6 @@
 package v1
 
-import (
-	"go.mongodb.org/atlas/mongodbatlas"
-)
+import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 type CustomZoneMapping struct {
 	Location string `json:"location"`
@@ -20,21 +18,29 @@ type ManagedNamespace struct {
 	IsShardKeyUnique       *bool  `json:"isShardKeyUnique,omitempty"`       // Flag that specifies whether the underlying index enforces a unique constraint.
 }
 
-func (in *ManagedNamespace) ToAtlas() mongodbatlas.ManagedNamespace {
-	return mongodbatlas.ManagedNamespace{
-		Db:                     in.Db,
-		Collection:             in.Collection,
-		CustomShardKey:         in.CustomShardKey,
-		IsCustomShardKeyHashed: in.IsCustomShardKeyHashed,
-		IsShardKeyUnique:       in.IsShardKeyUnique,
-		NumInitialChunks:       in.NumInitialChunks,
-		PresplitHashedZones:    in.PresplitHashedZones,
+func NewFailedToCreateManagedNamespaceStatus(namespace ManagedNamespace, err error) status.ManagedNamespace {
+	return status.ManagedNamespace{
+		Db:                     namespace.Db,
+		Collection:             namespace.Collection,
+		CustomShardKey:         namespace.CustomShardKey,
+		IsCustomShardKeyHashed: namespace.IsCustomShardKeyHashed,
+		IsShardKeyUnique:       namespace.IsShardKeyUnique,
+		NumInitialChunks:       namespace.NumInitialChunks,
+		PresplitHashedZones:    namespace.PresplitHashedZones,
+		Status:                 status.StatusFailed,
+		ErrMessage:             err.Error(),
 	}
 }
 
-func (c *CustomZoneMapping) ToAtlas() mongodbatlas.CustomZoneMapping {
-	return mongodbatlas.CustomZoneMapping{
-		Location: c.Location,
-		Zone:     c.Zone,
+func NewCreatedManagedNamespaceStatus(namespace ManagedNamespace) status.ManagedNamespace {
+	return status.ManagedNamespace{
+		Db:                     namespace.Db,
+		Collection:             namespace.Collection,
+		CustomShardKey:         namespace.CustomShardKey,
+		IsCustomShardKeyHashed: namespace.IsCustomShardKeyHashed,
+		IsShardKeyUnique:       namespace.IsShardKeyUnique,
+		NumInitialChunks:       namespace.NumInitialChunks,
+		PresplitHashedZones:    namespace.PresplitHashedZones,
+		Status:                 status.StatusReady,
 	}
 }

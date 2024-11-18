@@ -201,7 +201,7 @@ func (r *AtlasDeploymentReconciler) getProjectFromAtlas(ctx *workflow.Context, a
 	ctx.SdkClient = sdkClient
 	ctx.OrgID = orgID
 	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
-	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
 
 	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDeployment.Spec.ExternalProjectRef.ID)
 	if err != nil {
@@ -245,7 +245,7 @@ func (r *AtlasDeploymentReconciler) getProjectFromKube(ctx *workflow.Context, at
 
 	ctx.SdkClient = sdkClient
 	ctx.OrgID = orgID
-	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, r.AtlasProvider.IsCloudGov())
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
 	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
 
 	return project.NewProject(atlasProject, orgID), nil

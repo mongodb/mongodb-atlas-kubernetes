@@ -1,9 +1,18 @@
 package atlasdeployment
 
 import (
+	"context"
+	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 type CMZTestData struct {
@@ -138,5 +147,168 @@ func TestCompareZoneMappingStates(t *testing.T) {
 	}
 	for _, test := range tests {
 		runCMZTest(t, test)
+	}
+}
+
+func TestEnsureCustomZoneMapping(t *testing.T) {
+	projectID := "test-project"
+	deploymentName := "test-deployment"
+
+	for _, tc := range []struct {
+		name               string
+		customZoneMappings []akov2.CustomZoneMapping
+		deploymentAPI      deployment.AtlasDeploymentsService
+		isOK               bool
+	}{
+		{
+			name: "GET errors",
+			deploymentAPI: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(nil, errors.New("test GET error"))
+				return service
+			}(),
+			isOK: false,
+		},
+		{
+			name: "No zone mappings in AKO or Atlas (no op)",
+			deploymentAPI: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(nil, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(nil, nil)
+
+				return service
+			}(),
+			isOK: true,
+		},
+		{
+			name: "Zone mapping in AKO but not Atlas (create)",
+			customZoneMappings: []akov2.CustomZoneMapping{
+				{
+					Location: "test-location",
+					Zone:     "test-zone",
+				},
+			},
+			deploymentAPI: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(nil, nil)
+				service.EXPECT().CreateCustomZones(context.Background(), projectID, deploymentName, mock.AnythingOfType("[]v1.CustomZoneMapping")).Return(map[string]string{"test-location": "test-zone"}, nil)
+
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{}, nil)
+
+				return service
+			}(),
+			isOK: true,
+		},
+		{
+			name: "Create errors",
+			customZoneMappings: []akov2.CustomZoneMapping{
+				{
+					Location: "test-location",
+					Zone:     "test-zone",
+				},
+			},
+			deploymentAPI: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(nil, nil)
+				service.EXPECT().CreateCustomZones(context.Background(), projectID, deploymentName, mock.AnythingOfType("[]v1.CustomZoneMapping")).Return(nil, errors.New("test POST error"))
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{}, nil)
+
+				return service
+			}(),
+			isOK: false,
+		},
+		{
+			name:               "Zone mapping in Atlas but not AKO (delete)",
+			customZoneMappings: []akov2.CustomZoneMapping{},
+			deploymentAPI: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(map[string]string{"test-location": "test-zone"}, nil)
+				service.EXPECT().DeleteCustomZones(context.Background(), projectID, deploymentName).Return(nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
+
+				return service
+			}(),
+			isOK: true,
+		},
+		{
+			name:               "Delete errors",
+			customZoneMappings: []akov2.CustomZoneMapping{},
+			deploymentAPI: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(map[string]string{"test-location": "test-zone"}, nil)
+				service.EXPECT().DeleteCustomZones(context.Background(), projectID, deploymentName).Return(errors.New("test DELETE error"))
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
+
+				return service
+			}(),
+			isOK: false,
+		},
+		{
+			name: "Zone mapping the same in Atlas and AKO (no op)",
+			customZoneMappings: []akov2.CustomZoneMapping{
+				{
+					Location: "test-location",
+					Zone:     "test-zone",
+				},
+			},
+			deploymentAPI: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(map[string]string{"test-location": "test-id"}, nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
+
+				return service
+			}(),
+			isOK: true,
+		},
+		{
+			name: "Differing zone mapping in Atlas and AKO (update)",
+			customZoneMappings: []akov2.CustomZoneMapping{
+				{
+					Location: "new-test-location",
+					Zone:     "new-test-zone",
+				},
+			},
+			deploymentAPI: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().GetCustomZones(context.Background(), projectID, deploymentName).Return(map[string]string{"test-location": "test-id"}, nil)
+				service.EXPECT().CreateCustomZones(context.Background(), projectID, deploymentName, mock.AnythingOfType("[]v1.CustomZoneMapping")).Return(map[string]string{"new-test-location": "new-test-zone"}, nil)
+				service.EXPECT().DeleteCustomZones(context.Background(), projectID, deploymentName).Return(nil)
+				service.EXPECT().GetZoneMapping(context.Background(), projectID, deploymentName).Return(map[string]string{"test-id": "test-zone"}, nil)
+
+				return service
+			}(),
+			isOK: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := &AtlasDeploymentReconciler{
+				deploymentService: tc.deploymentAPI,
+			}
+			ctx := &workflow.Context{
+				Log:     zaptest.NewLogger(t).Sugar(),
+				Context: context.Background(),
+			}
+
+			result := r.ensureCustomZoneMapping(
+				ctx,
+				projectID,
+				tc.customZoneMappings,
+				deploymentName,
+			)
+
+			equal := (result.IsOk() == tc.isOK)
+			if !equal {
+				t.Log(result.GetMessage())
+			}
+			require.True(t, equal)
+		})
 	}
 }

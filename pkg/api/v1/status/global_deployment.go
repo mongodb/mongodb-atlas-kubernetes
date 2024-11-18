@@ -1,9 +1,5 @@
 package status
 
-import (
-	"go.mongodb.org/atlas/mongodbatlas"
-)
-
 type CustomZoneMapping struct {
 	CustomZoneMapping     map[string]string `json:"customZoneMapping,omitempty"`
 	ZoneMappingState      string            `json:"zoneMappingState,omitempty"`
@@ -20,31 +16,4 @@ type ManagedNamespace struct {
 	Status                 string `json:"status,omitempty"`
 	PresplitHashedZones    *bool  `json:"presplitHashedZones,omitempty"`
 	ErrMessage             string `json:"errMessage,omitempty"`
-}
-
-func NewFailedToCreateManagedNamespaceStatus(namespace mongodbatlas.ManagedNamespace, err error) ManagedNamespace {
-	return ManagedNamespace{
-		Db:                     namespace.Db,
-		Collection:             namespace.Collection,
-		CustomShardKey:         namespace.CustomShardKey,
-		IsCustomShardKeyHashed: namespace.IsCustomShardKeyHashed,
-		IsShardKeyUnique:       namespace.IsShardKeyUnique,
-		NumInitialChunks:       namespace.NumInitialChunks,
-		PresplitHashedZones:    namespace.PresplitHashedZones,
-		Status:                 StatusFailed,
-		ErrMessage:             err.Error(),
-	}
-}
-
-func NewCreatedManagedNamespaceStatus(namespace mongodbatlas.ManagedNamespace) ManagedNamespace {
-	return ManagedNamespace{
-		Db:                     namespace.Db,
-		Collection:             namespace.Collection,
-		CustomShardKey:         namespace.CustomShardKey,
-		IsCustomShardKeyHashed: namespace.IsCustomShardKeyHashed,
-		IsShardKeyUnique:       namespace.IsShardKeyUnique,
-		NumInitialChunks:       namespace.NumInitialChunks,
-		PresplitHashedZones:    namespace.PresplitHashedZones,
-		Status:                 StatusReady,
-	}
 }
