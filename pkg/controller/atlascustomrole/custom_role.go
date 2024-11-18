@@ -86,12 +86,19 @@ func (r *roleController) unmanaged() workflow.Result {
 	return workflow.Deleted()
 }
 
+func (r *roleController) managed() workflow.Result {
+	if err := customresource.ManageFinalizer(r.ctx.Context, r.k8sClient, r.role, customresource.SetFinalizer); err != nil {
+		return r.terminate(workflow.AtlasFinalizerNotSet, err)
+	}
+	return r.idle()
+}
+
 func (r *roleController) create(role customroles.CustomRole) workflow.Result {
 	err := r.service.Create(r.ctx.Context, r.projectID, role)
 	if err != nil {
 		return r.terminate(workflow.AtlasCustomRoleNotCreated, err)
 	}
-	return r.idle()
+	return r.managed()
 }
 
 func (r *roleController) update(roleInAKO, roleInAtlas customroles.CustomRole) workflow.Result {
@@ -110,7 +117,7 @@ func (r *roleController) delete(roleInAtlas customroles.CustomRole) workflow.Res
 	if err != nil {
 		return r.terminate(workflow.AtlasCustomRoleNotDeleted, err)
 	}
-	return r.idle()
+	return r.unmanaged()
 }
 
 func (r *roleController) terminate(reason workflow.ConditionReason, err error) workflow.Result {

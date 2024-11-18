@@ -3,7 +3,6 @@ package atlascustomrole
 import (
 	"context"
 	"fmt"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 
 	"net/http"
@@ -64,6 +63,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 					return s
 				},
 				role: &akov2.AtlasCustomRole{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "testRole",
+						Namespace: "testRoleNamespace",
+					},
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name: "TestRoleName",
@@ -91,6 +94,37 @@ func Test_roleController_Reconcile(t *testing.T) {
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
+				},
+				k8sObjects: []client.Object{
+					&akov2.AtlasCustomRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testRole",
+							Namespace: "testRoleNamespace",
+						},
+						Spec: akov2.AtlasCustomRoleSpec{
+							Role: akov2.CustomRole{
+								Name: "TestRoleName",
+								InheritedRoles: []akov2.Role{
+									{
+										Name:     "read",
+										Database: "main",
+									},
+								},
+								Actions: []akov2.Action{
+									{
+										Name: "VIEW_ALL_HISTORY",
+										Resources: []akov2.Resource{
+											{
+												Cluster:    pointer.MakePtr(true),
+												Database:   pointer.MakePtr("main"),
+												Collection: pointer.MakePtr("collection"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			want: workflow.OK(),
@@ -390,6 +424,8 @@ func Test_roleController_Reconcile(t *testing.T) {
 				},
 				role: &akov2.AtlasCustomRole{
 					ObjectMeta: metav1.ObjectMeta{
+						Name:              "testRole",
+						Namespace:         "testRoleNamespace",
 						DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
 					},
 					Spec: akov2.AtlasCustomRoleSpec{
@@ -420,8 +456,39 @@ func Test_roleController_Reconcile(t *testing.T) {
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
+				k8sObjects: []client.Object{
+					&akov2.AtlasCustomRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testRole",
+							Namespace: "testRoleNamespace",
+						},
+						Spec: akov2.AtlasCustomRoleSpec{
+							Role: akov2.CustomRole{
+								Name: "TestRoleName",
+								InheritedRoles: []akov2.Role{
+									{
+										Name:     "read",
+										Database: "main",
+									},
+								},
+								Actions: []akov2.Action{
+									{
+										Name: "VIEW_ALL_HISTORY",
+										Resources: []akov2.Resource{
+											{
+												Cluster:    pointer.MakePtr(true),
+												Database:   pointer.MakePtr("main"),
+												Collection: pointer.MakePtr("collection"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
-			want: workflow.OK(),
+			want: workflow.Deleted(),
 		},
 		{
 			name: "DO NOT Delete custom role successfully with DeletionProtection enabled, just stop managing it",
@@ -636,6 +703,10 @@ func Test_handleCustomRole(t *testing.T) {
 					Context: context.Background(),
 				},
 				akoCustomRole: &akov2.AtlasCustomRole{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "testRole",
+						Namespace: "testNamespace",
+					},
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name:           "testRole",
@@ -647,6 +718,26 @@ func Test_handleCustomRole(t *testing.T) {
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
+				},
+				k8sObjects: []client.Object{
+					&akov2.AtlasCustomRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testRole",
+							Namespace: "testNamespace",
+						},
+						Spec: akov2.AtlasCustomRoleSpec{
+							Role: akov2.CustomRole{
+								Name:           "testRole",
+								InheritedRoles: nil,
+								Actions:        nil,
+							},
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      "testProject",
+								Namespace: "testNamespace",
+							},
+						},
+						Status: status.AtlasCustomRoleStatus{},
+					},
 				},
 			},
 			want: workflow.OK(),
@@ -677,6 +768,10 @@ func Test_handleCustomRole(t *testing.T) {
 					Context: context.Background(),
 				},
 				akoCustomRole: &akov2.AtlasCustomRole{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "testRole",
+						Namespace: "testNamespace",
+					},
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name:           "testRole",
@@ -700,6 +795,24 @@ func Test_handleCustomRole(t *testing.T) {
 						Status: status.AtlasProjectStatus{
 							ID: "testProjectID",
 						},
+					},
+					&akov2.AtlasCustomRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testRole",
+							Namespace: "testNamespace",
+						},
+						Spec: akov2.AtlasCustomRoleSpec{
+							Role: akov2.CustomRole{
+								Name:           "testRole",
+								InheritedRoles: nil,
+								Actions:        nil,
+							},
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      "testProject",
+								Namespace: "testNamespace",
+							},
+						},
+						Status: status.AtlasCustomRoleStatus{},
 					},
 				},
 			},

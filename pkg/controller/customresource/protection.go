@@ -12,6 +12,7 @@ import (
 
 const (
 	AnnotationLastAppliedConfiguration = "mongodb.com/last-applied-configuration"
+	AnnotationLastSkippedConfiguration = "mongodb.com/last-skipped-configuration"
 )
 
 type OperatorChecker func(resource api.AtlasCustomResource) (bool, error)
@@ -40,6 +41,13 @@ func IsOwner(resource api.AtlasCustomResource, protectionFlag bool, operatorChec
 }
 
 func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client) error {
+	return applyLastSpec(ctx, resource, k8sClient, AnnotationLastAppliedConfiguration)
+}
+
+func ApplyLastConfigSkipped(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client) error {
+	return applyLastSpec(ctx, resource, k8sClient, AnnotationLastSkippedConfiguration)
+}
+func applyLastSpec(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client, annotationKey string) error {
 	uObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resource)
 	if err != nil {
 		return err
@@ -58,7 +66,7 @@ func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResourc
 		annotations = map[string]string{}
 	}
 
-	annotations[AnnotationLastAppliedConfiguration] = string(js)
+	annotations[annotationKey] = string(js)
 	resourceCopy.SetAnnotations(annotations)
 	err = k8sClient.Patch(ctx, resourceCopy, client.MergeFrom(resource))
 	if err != nil {

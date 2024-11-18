@@ -43,10 +43,6 @@ func (a *AtlasCustomRoleByProjectIndexer) Keys(object client.Object) []string {
 		return nil
 	}
 
-	if role.Spec.ExternalProjectIDRef != nil && role.Spec.ExternalProjectIDRef.ID != "" {
-		return []string{role.Spec.ExternalProjectIDRef.ID}
-	}
-
 	if role.Spec.ProjectRef != nil && role.Spec.ProjectRef.Name != "" {
 		project := &akov2.AtlasProject{}
 		err := a.client.Get(a.ctx, *role.Spec.ProjectRef.GetObject(role.Namespace), project)

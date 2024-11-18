@@ -47,7 +47,7 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 			},
 			expectedLogs: []observer.LoggedEntry{},
 		},
-		"should return external project reference": {
+		"should NOT return external project reference": {
 			object: &akov2.AtlasCustomRole{
 				Spec: akov2.AtlasCustomRoleSpec{
 					ExternalProjectIDRef: &akov2.ExternalProjectReference{
@@ -55,7 +55,7 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 					},
 				},
 			},
-			expectedKeys: []string{"external-project-id"},
+			expectedKeys: nil,
 			expectedLogs: []observer.LoggedEntry{},
 		},
 		"should return nil when there is an empty reference for project": {
