@@ -3,6 +3,7 @@ package atlascustomrole
 import (
 	"context"
 	"fmt"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 
 	"net/http"
