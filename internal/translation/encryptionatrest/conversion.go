@@ -112,7 +112,7 @@ func NewEncryptionAtRest(project *akov2.AtlasProject) *EncryptionAtRest {
 	if spec == nil {
 		return nil
 	}
-	
+
 	ear := &EncryptionAtRest{}
 
 	if *spec.AwsKms.Enabled {
