@@ -114,8 +114,7 @@ func NewEncryptionAtRest(project *akov2.AtlasProject) *EncryptionAtRest {
 	}
 
 	ear := &EncryptionAtRest{}
-
-	if *spec.AwsKms.Enabled {
+	if spec.AwsKms.IsEnabled() {
 		ear.AWS.AwsKms = spec.AwsKms
 		for _, role := range project.Status.CloudProviderIntegrations {
 			if role.ProviderName == "AWS" {
@@ -123,10 +122,10 @@ func NewEncryptionAtRest(project *akov2.AtlasProject) *EncryptionAtRest {
 			}
 		}
 	}
-	if *spec.AzureKeyVault.Enabled {
+	if spec.AzureKeyVault.IsEnabled() {
 		ear.Azure.AzureKeyVault = spec.AzureKeyVault
 	}
-	if *spec.GoogleCloudKms.Enabled {
+	if spec.GoogleCloudKms.IsEnabled() {
 		ear.GCP.GoogleCloudKms = spec.GoogleCloudKms
 	}
 	return ear
