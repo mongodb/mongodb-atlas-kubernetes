@@ -109,7 +109,7 @@ func (r *roleController) update(roleInAKO, roleInAtlas customroles.CustomRole) w
 	if err != nil {
 		return r.terminate(workflow.AtlasCustomRoleNotUpdated, err)
 	}
-	return r.idle()
+	return r.managed()
 }
 
 func (r *roleController) delete(roleInAtlas customroles.CustomRole) workflow.Result {
