@@ -48,21 +48,21 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 		return nil
 	}
 
-	if encRest.AWS.Enabled != nil && *encRest.AWS.Enabled && encRest.AWS.SecretRef.Name != "" {
+	if encRest.AWS.IsEnabled() && encRest.AWS.SecretRef.Name != "" {
 		err := readAndFillAWSSecret(service.Context, kubeClient, parentNs, &encRest.AWS)
 		if err != nil {
 			return err
 		}
 	}
 
-	if encRest.GCP.Enabled != nil && *encRest.GCP.Enabled && encRest.GCP.SecretRef.Name != "" {
+	if encRest.GCP.IsEnabled() && encRest.GCP.SecretRef.Name != "" {
 		err := readAndFillGoogleSecret(service.Context, kubeClient, parentNs, &encRest.GCP)
 		if err != nil {
 			return err
 		}
 	}
 
-	if encRest.Azure.Enabled != nil && *encRest.Azure.Enabled && encRest.Azure.SecretRef.Name != "" {
+	if encRest.Azure.IsEnabled() && encRest.Azure.SecretRef.Name != "" {
 		err := readAndFillAzureSecret(service.Context, kubeClient, parentNs, &encRest.Azure)
 		if err != nil {
 			return err

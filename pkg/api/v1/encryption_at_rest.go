@@ -21,6 +21,10 @@ type AwsKms struct {
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
+func (a *AwsKms) IsEnabled() bool {
+	return a != nil && a.Enabled != nil && *a.Enabled
+}
+
 // AzureKeyVault specifies Azure Key Vault configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type AzureKeyVault struct {
 	Enabled           *bool  `json:"enabled,omitempty"`           // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
@@ -33,10 +37,18 @@ type AzureKeyVault struct {
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
+func (a *AzureKeyVault) IsEnabled() bool {
+	return a != nil && a.Enabled != nil && *a.Enabled
+}
+
 // GoogleCloudKms specifies GCP KMS configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type GoogleCloudKms struct {
 	Enabled *bool `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
 	// A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
+}
+
+func (g *GoogleCloudKms) IsEnabled() bool {
+	return g != nil && g.Enabled != nil && *g.Enabled
 }
