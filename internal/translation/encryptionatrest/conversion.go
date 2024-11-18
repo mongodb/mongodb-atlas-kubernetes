@@ -108,11 +108,12 @@ func (g *GoogleCloudKms) ToAtlas() *admin.GoogleCloudKMS {
 }
 
 func NewEncryptionAtRest(project *akov2.AtlasProject) *EncryptionAtRest {
-	ear := &EncryptionAtRest{}
 	spec := project.Spec.EncryptionAtRest
 	if spec == nil {
 		return nil
 	}
+	
+	ear := &EncryptionAtRest{}
 
 	if *spec.AwsKms.Enabled {
 		ear.AWS.AwsKms = spec.AwsKms
