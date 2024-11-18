@@ -116,8 +116,8 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
-	if result = r.ensurePrivateEndpoints(ctx, project, dataFederation, endpointService); !result.IsOk() {
-		ctx.SetConditionFromResult(api.DataFederationPEReadyType, result)
+	if result = r.ensurePrivateEndpoints(ctx, endpointService, project, dataFederation); !result.IsOk() {
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
@@ -145,7 +145,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return r.handleDelete(ctx, log, dataFederation, project, dataFederationService).ReconcileResult(), nil
 	}
 
-	err = customresource.ApplyLastConfigApplied(context, project, r.Client)
+	err = customresource.ApplyLastConfigApplied(context, dataFederation, r.Client)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
@@ -154,6 +154,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
+	ctx.SetConditionTrue(api.DataFederationReadyType)
 	ctx.SetConditionTrue(api.ReadyType)
 	return workflow.OK().ReconcileResult(), nil
 }

@@ -1,13 +1,16 @@
 package datafederation
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 )
 
 type DatafederationPrivateEndpointEntry struct {
@@ -15,11 +18,15 @@ type DatafederationPrivateEndpointEntry struct {
 	ProjectID string
 }
 
-func NewDatafederationPrivateEndpointEntry(pe *akov2.DataFederationPE, projectID string) *DatafederationPrivateEndpointEntry {
+func NewDataFederationPrivateEndpointEntry(projectID string, pe *akov2.DataFederationPE) *DatafederationPrivateEndpointEntry {
 	if pe == nil {
 		return nil
 	}
 	return &DatafederationPrivateEndpointEntry{DataFederationPE: pe, ProjectID: projectID}
+}
+
+func (e *DatafederationPrivateEndpointEntry) EqualsTo(target *DatafederationPrivateEndpointEntry) bool {
+	return reflect.DeepEqual(e.DataFederationPE, target.DataFederationPE)
 }
 
 func endpointsFromAtlas(endpoints []admin.PrivateNetworkEndpointIdEntry, projectID string) ([]*DatafederationPrivateEndpointEntry, error) {
@@ -57,4 +64,40 @@ func endpointToAtlas(ep *DatafederationPrivateEndpointEntry) *admin.PrivateNetwo
 		Provider:   pointer.MakePtrOrNil(ep.Provider),
 		Type:       pointer.MakePtrOrNil(ep.Type),
 	}
+}
+
+type DataFederationPrivateEndpoint struct {
+	AKO, Atlas, LastApplied *DatafederationPrivateEndpointEntry
+}
+
+func MapDatafederationPrivateEndpoints(projectID string, df *akov2.AtlasDataFederation, atlasEndpoints []*DatafederationPrivateEndpointEntry) (map[string]*DataFederationPrivateEndpoint, error) {
+	var lastApplied akov2.AtlasDataFederation
+	if ann, ok := df.GetAnnotations()[customresource.AnnotationLastAppliedConfiguration]; ok {
+		err := json.Unmarshal([]byte(ann), &lastApplied.Spec)
+		if err != nil {
+			return nil, fmt.Errorf("error reading data federation from last applied annotation: %w", err)
+		}
+	}
+
+	result := make(map[string]*DataFederationPrivateEndpoint)
+	addEndpoint := func(endpointID string) {
+		if _, ok := result[endpointID]; !ok {
+			result[endpointID] = &DataFederationPrivateEndpoint{}
+		}
+	}
+
+	for _, pe := range atlasEndpoints {
+		addEndpoint(pe.EndpointID)
+		result[pe.EndpointID].Atlas = pe
+	}
+	for _, pe := range df.Spec.PrivateEndpoints {
+		addEndpoint(pe.EndpointID)
+		result[pe.EndpointID].AKO = NewDataFederationPrivateEndpointEntry(projectID, &pe)
+	}
+	for _, pe := range lastApplied.Spec.PrivateEndpoints {
+		addEndpoint(pe.EndpointID)
+		result[pe.EndpointID].LastApplied = NewDataFederationPrivateEndpointEntry(projectID, &pe)
+	}
+
+	return result, nil
 }
