@@ -619,7 +619,7 @@ func TestHandleProject(t *testing.T) {
 				SdkClient: tt.atlasSDKMocker(),
 			}
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
-			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(ctx.Context, nil, logger.Desugar())
+			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(logger.Desugar())
 
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
@@ -1082,7 +1082,7 @@ func TestDelete(t *testing.T) {
 			}
 
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
-			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(ctx.Context, nil, logger.Desugar())
+			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(logger.Desugar())
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.objects...).
@@ -1167,7 +1167,7 @@ func TestHasDependencies(t *testing.T) {
 			Context: context.Background(),
 		}
 		instanceIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
-		customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(ctx.Context, nil, zap.L())
+		customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(zap.L())
 		testScheme := runtime.NewScheme()
 		require.NoError(t, akov2.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().

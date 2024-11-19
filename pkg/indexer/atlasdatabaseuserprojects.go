@@ -43,11 +43,9 @@ func (a *AtlasDatabaseUserByProjectIndexer) Keys(object client.Object) []string 
 		return nil
 	}
 
-	// TODO: remove in a separate PR
 	if user.Spec.ExternalProjectRef != nil && user.Spec.ExternalProjectRef.ID != "" {
 		return []string{user.Spec.ExternalProjectRef.ID}
 	}
-	// TODO: end
 
 	if user.Spec.Project != nil && user.Spec.Project.Name != "" {
 		project := &akov2.AtlasProject{}
