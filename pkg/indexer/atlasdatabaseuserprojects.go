@@ -1,7 +1,8 @@
-//nolint:dupl
 package indexer
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -13,11 +14,15 @@ const (
 )
 
 type AtlasDatabaseUserByProjectIndexer struct {
+	ctx    context.Context
+	client client.Client
 	logger *zap.SugaredLogger
 }
 
-func NewAtlasDatabaseUserByProjectIndexer(logger *zap.Logger) *AtlasDatabaseUserByProjectIndexer {
+func NewAtlasDatabaseUserByProjectIndexer(ctx context.Context, client client.Client, logger *zap.Logger) *AtlasDatabaseUserByProjectIndexer {
 	return &AtlasDatabaseUserByProjectIndexer{
+		ctx:    ctx,
+		client: client,
 		logger: logger.Named(AtlasDatabaseUserByProject).Sugar(),
 	}
 }
@@ -37,8 +42,22 @@ func (a *AtlasDatabaseUserByProjectIndexer) Keys(object client.Object) []string 
 		return nil
 	}
 
+	if user.Spec.ExternalProjectRef != nil && user.Spec.ExternalProjectRef.ID != "" {
+		return []string{user.Spec.ExternalProjectRef.ID}
+	}
+
 	if user.Spec.Project != nil && user.Spec.Project.Name != "" {
-		return []string{user.Spec.Project.GetObject(user.Namespace).String()}
+		project := &akov2.AtlasProject{}
+		err := a.client.Get(a.ctx, *user.Spec.Project.GetObject(user.Namespace), project)
+		if err != nil {
+			a.logger.Errorf("unable to find project to index: %s", err)
+
+			return nil
+		}
+
+		if project.ID() != "" {
+			return []string{project.ID()}
+		}
 	}
 
 	return nil

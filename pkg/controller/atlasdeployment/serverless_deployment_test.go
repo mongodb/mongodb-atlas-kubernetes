@@ -784,7 +784,7 @@ func TestHandleServerlessInstance(t *testing.T) {
 			logger := zaptest.NewLogger(t)
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
-			dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(logger)
+			dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.atlasDeployment).
