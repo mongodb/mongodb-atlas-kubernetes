@@ -24,6 +24,8 @@ import (
 
 var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole resource", Label("custom-roles", "independent-custom-roles"), func() {
 	var testData *model.TestDataProvider
+	var akoCustomRole *akov2.AtlasCustomRole
+
 	var customRole = akov2.CustomRole{
 		Name: "backupAdmin",
 		InheritedRoles: []akov2.Role{
@@ -96,7 +98,7 @@ var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole re
 		})
 
 		By("Migrating the Role to the AtlasCustomRole resource", func() {
-			akoCustomRole := &akov2.AtlasCustomRole{
+			akoCustomRole = &akov2.AtlasCustomRole{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-role",
 					Namespace: testData.Project.GetNamespace(),
@@ -143,6 +145,10 @@ var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole re
 				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).Should(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithPolling(10 * time.Second).WithTimeout(2 * time.Minute).Should(Succeed())
+		})
+
+		By("Deleting independent custom role", func() {
+			Expect(testData.K8SClient.Delete(testData.Context, akoCustomRole)).To(Succeed())
 		})
 	})
 })
