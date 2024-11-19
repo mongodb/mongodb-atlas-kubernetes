@@ -374,7 +374,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 	sch := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(sch))
 	require.NoError(t, corev1.AddToScheme(sch))
-	dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
+	dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(logger)
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 	k8sClient := fake.NewClientBuilder().
@@ -593,7 +593,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	sch := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(sch))
 	require.NoError(t, corev1.AddToScheme(sch))
-	dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
+	dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(logger)
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 	k8sClient := fake.NewClientBuilder().
@@ -1515,7 +1515,7 @@ func TestChangeDeploymentType(t *testing.T) {
 			sch := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(sch))
 			require.NoError(t, corev1.AddToScheme(sch))
-			dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
+			dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(logger)
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(sch).
 				WithObjects(secret, project, tt.deployment).

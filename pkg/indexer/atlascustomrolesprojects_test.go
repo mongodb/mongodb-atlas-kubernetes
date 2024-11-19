@@ -2,7 +2,6 @@
 package indexer
 
 import (
-	"context"
 	"sort"
 	"testing"
 
@@ -13,11 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
 func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
@@ -68,20 +65,20 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 			},
 			expectedLogs: []observer.LoggedEntry{},
 		},
-		"should return nil when referenced project was not found": {
+		"should return project with the same namespace as a custom role": {
 			object: &akov2.AtlasCustomRole{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testRole",
+					Namespace: "testNamespace",
+				},
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectRef: &common.ResourceRefNamespaced{
 						Name: "not-found-project",
 					},
 				},
 			},
-			expectedLogs: []observer.LoggedEntry{
-				{
-					Context: []zapcore.Field{},
-					Entry:   zapcore.Entry{LoggerName: AtlasCustomRoleByProject, Level: zap.ErrorLevel, Message: "unable to find project to index: atlasprojects.atlas.mongodb.com \"not-found-project\" not found"},
-				},
-			},
+			expectedLogs: []observer.LoggedEntry{},
+			expectedKeys: []string{"testNamespace/not-found-project"},
 		},
 		"should return project reference with database customRole namespace": {
 			object: &akov2.AtlasCustomRole{
@@ -95,7 +92,7 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 					},
 				},
 			},
-			expectedKeys: []string{"external-project-id"},
+			expectedKeys: []string{"ns/internal-project-id"},
 			expectedLogs: []observer.LoggedEntry{},
 		},
 		"should return project reference": {
@@ -111,36 +108,19 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 					},
 				},
 			},
-			expectedKeys: []string{"external-project-id"},
+			expectedKeys: []string{"ns/internal-project-id"},
 			expectedLogs: []observer.LoggedEntry{},
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "internal-project-id",
-					Namespace: "ns",
-				},
-				Spec: akov2.AtlasProjectSpec{
-					Name: "My Project",
-				},
-				Status: status.AtlasProjectStatus{
-					ID: "external-project-id",
-				},
-			}
 			testScheme := runtime.NewScheme()
 			assert.NoError(t, akov2.AddToScheme(testScheme))
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(project).
-				WithStatusSubresource(project).
-				Build()
 
 			core, logs := observer.New(zap.DebugLevel)
 
-			indexer := NewAtlasCustomRoleByProjectIndexer(context.Background(), k8sClient, zap.New(core))
+			indexer := NewAtlasCustomRoleByProjectIndexer(zap.New(core))
 			keys := indexer.Keys(tt.object)
 			sort.Strings(keys)
 
