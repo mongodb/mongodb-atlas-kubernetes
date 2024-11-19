@@ -1245,7 +1245,11 @@ func TestHasDependencies(t *testing.T) {
 			},
 		}
 		logger := zaptest.NewLogger(t)
+		ctx := &workflow.Context{
+			Context: context.Background(),
+		}
 		instanceIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(logger)
+		customRolesIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(ctx.Context, nil, logger)
 		peIndexer := indexer.NewAtlasPrivateEndpointByProjectIndexer(logger)
 		testScheme := runtime.NewScheme()
 		require.NoError(t, akov2.AddToScheme(testScheme))
@@ -1253,13 +1257,11 @@ func TestHasDependencies(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(p, pe).
 			WithIndex(instanceIndexer.Object(), instanceIndexer.Name(), instanceIndexer.Keys).
+			WithIndex(customRolesIndexer.Object(), customRolesIndexer.Name(), customRolesIndexer.Keys).
 			WithIndex(peIndexer.Object(), peIndexer.Name(), peIndexer.Keys).
 			Build()
 		reconciler := &AtlasProjectReconciler{
 			Client: k8sClient,
-		}
-		ctx := &workflow.Context{
-			Context: context.Background(),
 		}
 
 		ok, err := reconciler.hasDependencies(ctx, p)
