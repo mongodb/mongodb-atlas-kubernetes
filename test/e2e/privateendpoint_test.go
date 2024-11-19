@@ -295,7 +295,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 					},
 					{
 						Provider: "GCP",
-						Region:   "EUROPE_WEST_3",
+						Region:   "EUROPE_NORTH_1",
 					},
 				}
 
@@ -517,7 +517,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 							Namespace: testData.Project.Namespace,
 						},
 						Provider: "GCP",
-						Region:   "EUROPE_WEST_3",
+						Region:   "EUROPE_NORTH_1",
 						GCPConfiguration: []akov2.GCPPrivateEndpointConfiguration{
 							{
 								ProjectID: privateEndpointDetails["GCP"].GCPProjectID,
