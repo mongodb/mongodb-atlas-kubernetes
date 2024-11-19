@@ -20,6 +20,7 @@ type ResourceWithCredentials interface {
 
 // LocalCredentialHolder is to be embedded by Specs of CRDs using custom local credentials
 type LocalCredentialHolder struct {
+	// Name of the secret containing Atlas API private and public keys
 	ConnectionSecret *LocalObjectReference `json:"connectionSecret,omitempty"`
 }
 

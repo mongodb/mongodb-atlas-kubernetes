@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlascustomrole"
+
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -299,14 +301,14 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		return nil, fmt.Errorf("unable to create controller AtlasStreamsConnection: %w", err)
 	}
 
-	searchINdexReconciler := atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(
+	searchIndexReconciler := atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(
 		mgr,
 		b.predicates,
 		b.atlasProvider,
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = searchINdexReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
+	if err = searchIndexReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasSearchIndexConfig: %w", err)
 	}
 
@@ -319,6 +321,18 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 	)
 	if err = bcpReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasBackupCompliancePolicy: %w", err)
+	}
+
+	customRolesReconciler := atlascustomrole.NewAtlasCustomRoleReconciler(
+		mgr,
+		b.predicates,
+		b.atlasProvider,
+		b.deletionProtection,
+		b.independentSyncPeriod,
+		b.logger,
+	)
+	if err = customRolesReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
+		return nil, fmt.Errorf("unable to create controller AtlasCustomRole: %w", err)
 	}
 
 	return mgr, nil

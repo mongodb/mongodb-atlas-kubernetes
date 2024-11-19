@@ -131,3 +131,9 @@ const (
 	StreamConnectionNotRemoved    ConditionReason = "StreamConnectionNotRemoved"
 	StreamConnectionNotUpdated    ConditionReason = "StreamConnectionNotUpdated"
 )
+
+const (
+	AtlasCustomRoleNotCreated ConditionReason = "CustomRoleNotCreated"
+	AtlasCustomRoleNotUpdated ConditionReason = "CustomRoleNotUpdated"
+	AtlasCustomRoleNotDeleted ConditionReason = "CustomRoleNotDeleted"
+)

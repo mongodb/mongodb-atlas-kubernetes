@@ -1,5 +1,9 @@
 package status
 
+import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
+// +k8s:deepcopy-gen=false
+
 type CustomRoleStatus string
 
 const (
@@ -14,4 +18,10 @@ type CustomRole struct {
 	Status CustomRoleStatus `json:"status"`
 	// The message when the custom role is in the FAILED status
 	Error string `json:"error,omitempty"`
+}
+
+// AtlasCustomRoleStatus is a status for the AtlasCustomRole Custom resource.
+// Not the one included in the AtlasProject
+type AtlasCustomRoleStatus struct {
+	api.Common `json:",inline"`
 }

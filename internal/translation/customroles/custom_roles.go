@@ -3,6 +3,7 @@ package customroles
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 )
@@ -24,7 +25,11 @@ func NewCustomRoles(api admin.CustomDatabaseRolesApi) *CustomRoles {
 }
 
 func (s *CustomRoles) Get(ctx context.Context, projectID string, roleName string) (CustomRole, error) {
-	customRole, _, err := s.roleAPI.GetCustomDatabaseRole(ctx, projectID, roleName).Execute()
+	customRole, httpResp, err := s.roleAPI.GetCustomDatabaseRole(ctx, projectID, roleName).Execute()
+	// handle RoleNotFound error
+	if httpResp != nil && httpResp.StatusCode == http.StatusNotFound {
+		return CustomRole{}, nil
+	}
 	if err != nil {
 		return CustomRole{}, fmt.Errorf("failed to get custom roles from Atlas: %w", err)
 	}

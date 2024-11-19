@@ -70,32 +70,38 @@ func toAtlasInheritedRoles(role *CustomRole) []admin.DatabaseInheritedRole {
 }
 
 func fromAtlas(role *admin.UserCustomDBRole) CustomRole {
-	inheritedRoles := make([]akov2.Role, 0, len(*role.InheritedRoles))
-
-	for _, atlasInheritedRole := range *role.InheritedRoles {
-		inheritedRoles = append(inheritedRoles, akov2.Role{
-			Name:     atlasInheritedRole.Role,
-			Database: atlasInheritedRole.Db,
-		})
-	}
-
-	actions := make([]akov2.Action, 0, len(*role.Actions))
-
-	for _, atlasAction := range *role.Actions {
-		resources := make([]akov2.Resource, 0, len(*atlasAction.Resources))
-
-		for _, atlasResource := range *atlasAction.Resources {
-			resources = append(resources, akov2.Resource{
-				Cluster:    pointer.MakePtr(atlasResource.Cluster),
-				Database:   pointer.MakePtr(atlasResource.Db),
-				Collection: pointer.MakePtr(atlasResource.Collection),
+	var inheritedRoles []akov2.Role
+	if role.InheritedRoles != nil {
+		inheritedRoles = make([]akov2.Role, 0, len(*role.InheritedRoles))
+		for _, atlasInheritedRole := range *role.InheritedRoles {
+			inheritedRoles = append(inheritedRoles, akov2.Role{
+				Name:     atlasInheritedRole.Role,
+				Database: atlasInheritedRole.Db,
 			})
 		}
+	}
 
-		actions = append(actions, akov2.Action{
-			Name:      atlasAction.Action,
-			Resources: resources,
-		})
+	var actions []akov2.Action
+	if role.Actions != nil {
+		actions = make([]akov2.Action, 0, len(*role.Actions))
+		for _, atlasAction := range *role.Actions {
+			var resources []akov2.Resource
+			if atlasAction.Resources != nil {
+				resources = make([]akov2.Resource, 0, len(*atlasAction.Resources))
+				for _, atlasResource := range *atlasAction.Resources {
+					resources = append(resources, akov2.Resource{
+						Cluster:    pointer.MakePtr(atlasResource.Cluster),
+						Database:   pointer.MakePtr(atlasResource.Db),
+						Collection: pointer.MakePtr(atlasResource.Collection),
+					})
+				}
+			}
+
+			actions = append(actions, akov2.Action{
+				Name:      atlasAction.Action,
+				Resources: resources,
+			})
+		}
 	}
 
 	return CustomRole{

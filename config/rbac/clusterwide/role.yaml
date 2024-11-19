@@ -29,6 +29,7 @@ rules:
   - atlasbackupcompliancepolicies
   - atlasbackuppolicies
   - atlasbackupschedules
+  - atlascustomroles
   - atlasdatabaseusers
   - atlasdatafederations
   - atlasdeployments
@@ -52,6 +53,7 @@ rules:
   - atlasbackupcompliancepolicies/status
   - atlasbackuppolicies/status
   - atlasbackupschedules/status
+  - atlascustomroles/status
   - atlasdatabaseusers/status
   - atlasdatafederations/status
   - atlasdeployments/status
