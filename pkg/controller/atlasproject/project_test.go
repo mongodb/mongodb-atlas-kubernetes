@@ -1249,7 +1249,7 @@ func TestHasDependencies(t *testing.T) {
 			Context: context.Background(),
 		}
 		instanceIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(logger)
-		customRolesIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(ctx.Context, nil, logger)
+		customRolesIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(logger)
 		peIndexer := indexer.NewAtlasPrivateEndpointByProjectIndexer(logger)
 		testScheme := runtime.NewScheme()
 		require.NoError(t, akov2.AddToScheme(testScheme))
