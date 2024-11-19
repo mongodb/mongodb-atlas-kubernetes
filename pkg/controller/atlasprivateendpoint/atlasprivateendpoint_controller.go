@@ -24,7 +24,9 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -267,12 +269,49 @@ func (r *AtlasPrivateEndpointReconciler) SetupWithManager(mgr ctrl.Manager, skip
 		Named("AtlasPrivateEndpoint").
 		For(&akov2.AtlasPrivateEndpoint{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(
+			&akov2.AtlasProject{},
+			handler.EnqueueRequestsFromMapFunc(r.privateEndpointForProjectMapFunc()),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.privateEndpointForCredentialMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
+}
+
+func (r *AtlasPrivateEndpointReconciler) privateEndpointForProjectMapFunc() handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		atlasProject, ok := obj.(*akov2.AtlasProject)
+		if !ok {
+			r.Log.Warnf("watching Project but got %T", obj)
+
+			return nil
+		}
+
+		peList := &akov2.AtlasPrivateEndpointList{}
+		listOpts := &client.ListOptions{
+			FieldSelector: fields.OneTermEqualSelector(
+				indexer.AtlasPrivateEndpointByProjectIndex,
+				client.ObjectKeyFromObject(atlasProject).String(),
+			),
+		}
+		err := r.Client.List(ctx, peList, listOpts)
+		if err != nil {
+			r.Log.Errorf("failed to list AtlasPrivateEndpoint: %e", err)
+
+			return []reconcile.Request{}
+		}
+
+		requests := make([]reconcile.Request, 0, len(peList.Items))
+		for _, item := range peList.Items {
+			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{Name: item.Name, Namespace: item.Namespace}})
+		}
+
+		return requests
+	}
 }
 
 func (r *AtlasPrivateEndpointReconciler) privateEndpointForCredentialMapFunc() handler.MapFunc {
