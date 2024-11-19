@@ -318,8 +318,12 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 					switch pe.Provider {
 					case "AWS":
 						awsConfig := cloud.AWSConfig{
-							Region:        "eu-central-1",
-							VPC:           fmt.Sprintf("pe-migration-aws-%s", testData.Resources.TestID),
+							Region: "eu-central-1",
+							VPC:    fmt.Sprintf("pe-migration-aws-%s", testData.Resources.TestID),
+							Subnets: map[string]string{
+								fmt.Sprintf("pe-migration-aws-%s-sn1", testData.Resources.TestID): cloud.Subnet1CIDR,
+								fmt.Sprintf("pe-migration-aws-%s-sn2", testData.Resources.TestID): cloud.Subnet2CIDR,
+							},
 							EnableCleanup: true,
 						}
 
@@ -331,8 +335,12 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						})
 					case "AZURE":
 						azureConfig := cloud.AzureConfig{
-							Region:        "northeurope",
-							VPC:           fmt.Sprintf("pe-migration-azure-%s", testData.Resources.TestID),
+							Region: "northeurope",
+							VPC:    fmt.Sprintf("pe-migration-azure-%s", testData.Resources.TestID),
+							Subnets: map[string]string{
+								fmt.Sprintf("pe-migration-azure-%s-sn1", testData.Resources.TestID): cloud.Subnet1CIDR,
+								fmt.Sprintf("pe-migration-azure-%s-sn2", testData.Resources.TestID): cloud.Subnet2CIDR,
+							},
 							EnableCleanup: true,
 						}
 
@@ -345,17 +353,21 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						})
 					case "GCP":
 						gcpConfig := cloud.GCPConfig{
-							Region:        "europe-west3",
-							VPC:           fmt.Sprintf("pe-migration-gcp-%s", testData.Resources.TestID),
+							Region: "europe-north1",
+							VPC:    fmt.Sprintf("pe-migration-gcp-%s", testData.Resources.TestID),
+							Subnets: map[string]string{
+								fmt.Sprintf("pe-migration-gcp-%s-sn1", testData.Resources.TestID): cloud.Subnet1CIDR,
+								fmt.Sprintf("pe-migration-gcp-%s-sn2", testData.Resources.TestID): cloud.Subnet2CIDR,
+							},
 							EnableCleanup: true,
 						}
 
 						Expect(action.SetupNetwork(pe.Provider, cloud.WithGCPConfig(&gcpConfig))).ToNot(BeEmpty())
 						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(&cloud.GCPPrivateEndpointRequest{
 							ID:         fmt.Sprintf("pe-migration-gcp-%s", testData.Resources.TestID),
-							Region:     "europe-west3",
+							Region:     "europe-north1",
 							Targets:    peStatus.ServiceAttachmentNames,
-							SubnetName: cloud.Subnet1Name,
+							SubnetName: fmt.Sprintf("pe-migration-gcp-%s-sn1", testData.Resources.TestID),
 						})
 					}
 				}

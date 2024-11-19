@@ -122,7 +122,7 @@ type Condition struct {
 	Message string `json:"message,omitempty"`
 }
 
-// TrueCondition returns the Condition that has the 'ServiceStatus' set to 'true' and 'Type' to 'conditionType'.
+// TrueCondition returns the Condition that has the 'Status' set to 'true' and 'Type' to 'conditionType'.
 // It explicitly omits the 'Reason' and 'Message' fields.
 func TrueCondition(conditionType ConditionType) Condition {
 	return Condition{
@@ -132,7 +132,7 @@ func TrueCondition(conditionType ConditionType) Condition {
 	}
 }
 
-// FalseCondition returns the Condition that has the 'ServiceStatus' set to 'false' and 'Type' to 'conditionType'.
+// FalseCondition returns the Condition that has the 'Status' set to 'false' and 'Type' to 'conditionType'.
 // The reason and message can be provided optionally
 func FalseCondition(conditionType ConditionType) Condition {
 	condition := Condition{

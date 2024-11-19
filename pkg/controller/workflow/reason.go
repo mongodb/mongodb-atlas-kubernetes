@@ -132,13 +132,13 @@ const (
 	StreamConnectionNotUpdated    ConditionReason = "StreamConnectionNotUpdated"
 )
 
-// Atlas Private Endpoint reasons
 const (
 	AtlasCustomRoleNotCreated ConditionReason = "CustomRoleNotCreated"
 	AtlasCustomRoleNotUpdated ConditionReason = "CustomRoleNotUpdated"
 	AtlasCustomRoleNotDeleted ConditionReason = "CustomRoleNotDeleted"
 )
 
+// Atlas Private Endpoint reasons
 const (
 	PrivateEndpointServiceCreated           ConditionReason = "PrivateEndpointServiceCreated"
 	PrivateEndpointServiceFailedToCreate    ConditionReason = "PrivateEndpointServiceFailedToCreate"
