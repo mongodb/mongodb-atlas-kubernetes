@@ -1,7 +1,7 @@
 cloud.google.com/go/auth,https://github.com/googleapis/google-cloud-go/blob/auth/v0.10.1/auth/LICENSE,Apache-2.0
 cloud.google.com/go/auth/oauth2adapt,https://github.com/googleapis/google-cloud-go/blob/auth/oauth2adapt/v0.2.5/auth/oauth2adapt/LICENSE,Apache-2.0
-cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/blob/compute/v1.28.3/compute/apiv1/license_codes_client.go,Apache-2.0
-cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.28.3/compute/LICENSE,Apache-2.0
+cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/blob/compute/v1.29.0/compute/apiv1/license_codes_client.go,Apache-2.0
+cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.29.0/compute/LICENSE,Apache-2.0
 cloud.google.com/go/compute/metadata,https://github.com/googleapis/google-cloud-go/blob/compute/metadata/v0.5.2/compute/metadata/LICENSE,Apache-2.0
 cloud.google.com/go/iam,https://github.com/googleapis/google-cloud-go/blob/iam/v1.2.1/iam/LICENSE,Apache-2.0
 cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v1.20.1/kms/LICENSE,Apache-2.0
