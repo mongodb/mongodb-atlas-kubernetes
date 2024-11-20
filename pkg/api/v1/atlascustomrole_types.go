@@ -31,6 +31,10 @@ type AtlasCustomRole struct {
 	Status status.AtlasCustomRoleStatus `json:"status,omitempty"`
 }
 
+func (in *AtlasCustomRole) Credentials() *api.LocalObjectReference {
+	return in.Spec.Credentials()
+}
+
 func (in *AtlasCustomRole) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	in.Status.Conditions = conditions
 	in.Status.ObservedGeneration = in.ObjectMeta.Generation
