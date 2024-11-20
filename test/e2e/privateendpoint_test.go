@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -80,45 +81,33 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), func() {
 
 				switch pe.Spec.Provider {
 				case "AWS":
-					awsConfig := cloud.AWSConfig{
-						Region:        "eu-central-1",
-						VPC:           fmt.Sprintf("%s-%s", pe.Name, test.Resources.TestID),
-						EnableCleanup: true,
-					}
+					awsConfig := externalAWSConfig(testData, "eu-west-1")
 
-					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithAWSConfig(&awsConfig))).ToNot(BeEmpty())
+					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithAWSConfig(awsConfig))).ToNot(BeEmpty())
 					privateEndpointDetails = action.SetupPrivateEndpoint(&cloud.AWSPrivateEndpointRequest{
 						ID:          "aws-e2e-pe",
-						Region:      "eu-central-1",
+						Region:      awsConfig.Region,
 						ServiceName: pe.Status.ServiceName,
 					})
 				case "AZURE":
-					azureConfig := cloud.AzureConfig{
-						Region:        "northeurope",
-						VPC:           fmt.Sprintf("%s-%s", pe.Name, test.Resources.TestID),
-						EnableCleanup: true,
-					}
+					azureConfig := externalAzureConfig(testData, "westeurope")
 
-					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithAzureConfig(&azureConfig))).ToNot(BeEmpty())
+					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithAzureConfig(azureConfig))).ToNot(BeEmpty())
 					privateEndpointDetails = action.SetupPrivateEndpoint(&cloud.AzurePrivateEndpointRequest{
 						ID:                "azure-e2e-pe",
-						Region:            "northeurope",
+						Region:            azureConfig.Region,
 						ServiceResourceID: pe.Status.ResourceID,
-						SubnetName:        cloud.Subnet1Name,
+						SubnetName:        collection.FirstFromMap(azureConfig.Subnets),
 					})
 				case "GCP":
-					gcpConfig := cloud.GCPConfig{
-						Region:        "europe-west3",
-						VPC:           fmt.Sprintf("%s-%s", pe.Name, test.Resources.TestID),
-						EnableCleanup: true,
-					}
+					gcpConfig := externalGCPConfig(testData, "europe-west1")
 
-					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithGCPConfig(&gcpConfig))).ToNot(BeEmpty())
+					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithGCPConfig(gcpConfig))).ToNot(BeEmpty())
 					privateEndpointDetails = action.SetupPrivateEndpoint(&cloud.GCPPrivateEndpointRequest{
 						ID:         fmt.Sprintf("%s-%s", pe.Name, test.Resources.TestID),
-						Region:     "europe-west3",
+						Region:     gcpConfig.Region,
 						Targets:    pe.Status.ServiceAttachmentNames,
-						SubnetName: cloud.Subnet1Name,
+						SubnetName: collection.FirstFromMap(gcpConfig.Subnets),
 					})
 				}
 			})
@@ -271,7 +260,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 	It("Should migrate a private endpoint configured in a project as sub-resource to a separate custom resource", func() {
 		By("Setting up project", func() {
 			testData = model.DataProvider(
-				"project-with-private-endpoint",
+				"migrate-private-endpoint",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
@@ -317,57 +306,33 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 
 					switch pe.Provider {
 					case "AWS":
-						awsConfig := cloud.AWSConfig{
-							Region: "eu-central-1",
-							VPC:    fmt.Sprintf("pe-migration-aws-%s", testData.Resources.TestID),
-							Subnets: map[string]string{
-								fmt.Sprintf("pe-migration-aws-%s-sn1", testData.Resources.TestID): cloud.Subnet1CIDR,
-								fmt.Sprintf("pe-migration-aws-%s-sn2", testData.Resources.TestID): cloud.Subnet2CIDR,
-							},
-							EnableCleanup: true,
-						}
+						awsConfig := externalAWSConfig(testData, "eu-central-1")
 
-						Expect(action.SetupNetwork(pe.Provider, cloud.WithAWSConfig(&awsConfig))).ToNot(BeEmpty())
+						Expect(action.SetupNetwork(pe.Provider, cloud.WithAWSConfig(awsConfig))).ToNot(BeEmpty())
 						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(&cloud.AWSPrivateEndpointRequest{
 							ID:          "aws-e2e-pe",
-							Region:      "eu-central-1",
+							Region:      awsConfig.Region,
 							ServiceName: peStatus.ServiceName,
 						})
 					case "AZURE":
-						azureConfig := cloud.AzureConfig{
-							Region: "northeurope",
-							VPC:    fmt.Sprintf("pe-migration-azure-%s", testData.Resources.TestID),
-							Subnets: map[string]string{
-								fmt.Sprintf("pe-migration-azure-%s-sn1", testData.Resources.TestID): cloud.Subnet1CIDR,
-								fmt.Sprintf("pe-migration-azure-%s-sn2", testData.Resources.TestID): cloud.Subnet2CIDR,
-							},
-							EnableCleanup: true,
-						}
+						azureConfig := externalAzureConfig(testData, "northeurope")
 
-						Expect(action.SetupNetwork(pe.Provider, cloud.WithAzureConfig(&azureConfig))).ToNot(BeEmpty())
+						Expect(action.SetupNetwork(pe.Provider, cloud.WithAzureConfig(azureConfig))).ToNot(BeEmpty())
 						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(&cloud.AzurePrivateEndpointRequest{
 							ID:                "azure-e2e-pe",
-							Region:            "northeurope",
+							Region:            azureConfig.Region,
 							ServiceResourceID: peStatus.ServiceResourceID,
-							SubnetName:        cloud.Subnet1Name,
+							SubnetName:        collection.FirstFromMap(azureConfig.Subnets),
 						})
 					case "GCP":
-						gcpConfig := cloud.GCPConfig{
-							Region: "europe-north1",
-							VPC:    fmt.Sprintf("pe-migration-gcp-%s", testData.Resources.TestID),
-							Subnets: map[string]string{
-								fmt.Sprintf("pe-migration-gcp-%s-sn1", testData.Resources.TestID): cloud.Subnet1CIDR,
-								fmt.Sprintf("pe-migration-gcp-%s-sn2", testData.Resources.TestID): cloud.Subnet2CIDR,
-							},
-							EnableCleanup: true,
-						}
+						gcpConfig := externalGCPConfig(testData, "europe-north1")
 
-						Expect(action.SetupNetwork(pe.Provider, cloud.WithGCPConfig(&gcpConfig))).ToNot(BeEmpty())
+						Expect(action.SetupNetwork(pe.Provider, cloud.WithGCPConfig(gcpConfig))).ToNot(BeEmpty())
 						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(&cloud.GCPPrivateEndpointRequest{
 							ID:         fmt.Sprintf("pe-migration-gcp-%s", testData.Resources.TestID),
-							Region:     "europe-north1",
+							Region:     gcpConfig.Region,
 							Targets:    peStatus.ServiceAttachmentNames,
-							SubnetName: fmt.Sprintf("pe-migration-gcp-%s-sn1", testData.Resources.TestID),
+							SubnetName: collection.FirstFromMap(gcpConfig.Subnets),
 						})
 					}
 				}
@@ -629,4 +594,40 @@ func statusForProvider(peStatus []status.ProjectPrivateEndpoint, providerName pr
 	}
 
 	return nil
+}
+
+func externalAWSConfig(testData *model.TestDataProvider, region string) *cloud.AWSConfig {
+	return &cloud.AWSConfig{
+		Region: region,
+		VPC:    fmt.Sprintf("%s-aws-%s", testData.Resources.KeyName, testData.Resources.TestID),
+		Subnets: map[string]string{
+			fmt.Sprintf("%s-aws-%s-sn1", testData.Resources.KeyName, testData.Resources.TestID): cloud.Subnet1CIDR,
+			fmt.Sprintf("%s-aws-%s-sn2", testData.Resources.KeyName, testData.Resources.TestID): cloud.Subnet2CIDR,
+		},
+		EnableCleanup: true,
+	}
+}
+
+func externalAzureConfig(testData *model.TestDataProvider, region string) *cloud.AzureConfig {
+	return &cloud.AzureConfig{
+		Region: region,
+		VPC:    fmt.Sprintf("%s-azure-%s", testData.Resources.KeyName, testData.Resources.TestID),
+		Subnets: map[string]string{
+			fmt.Sprintf("%s-azure-%s-sn1", testData.Resources.KeyName, testData.Resources.TestID): cloud.Subnet1CIDR,
+			fmt.Sprintf("%s-azure-%s-sn2", testData.Resources.KeyName, testData.Resources.TestID): cloud.Subnet2CIDR,
+		},
+		EnableCleanup: true,
+	}
+}
+
+func externalGCPConfig(testData *model.TestDataProvider, region string) *cloud.GCPConfig {
+	return &cloud.GCPConfig{
+		Region: region,
+		VPC:    fmt.Sprintf("%s-gcp-%s", testData.Resources.KeyName, testData.Resources.TestID),
+		Subnets: map[string]string{
+			fmt.Sprintf("%s-gcp-%s-sn1", testData.Resources.KeyName, testData.Resources.TestID): cloud.Subnet1CIDR,
+			fmt.Sprintf("%s-gcp-%s-sn2", testData.Resources.KeyName, testData.Resources.TestID): cloud.Subnet2CIDR,
+		},
+		EnableCleanup: true,
+	}
 }
