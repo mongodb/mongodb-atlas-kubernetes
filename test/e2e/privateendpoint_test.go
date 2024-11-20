@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"fmt"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -10,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
