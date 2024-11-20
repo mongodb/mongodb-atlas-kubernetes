@@ -22,10 +22,10 @@ func Keys[K comparable, V any](m map[K]V) []K {
 	return s
 }
 
-func FirstFromMap[K comparable, V any](m map[K]V) V {
-	for _, v := range m {
-		return v
+func FirstKeyFromMap[K comparable, V any](m map[K]V) K {
+	for k := range m {
+		return k
 	}
 
-	return *new(V)
+	return *new(K)
 }

@@ -97,7 +97,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), func() {
 						ID:                "azure-e2e-pe",
 						Region:            azureConfig.Region,
 						ServiceResourceID: pe.Status.ResourceID,
-						SubnetName:        collection.FirstFromMap(azureConfig.Subnets),
+						SubnetName:        collection.FirstKeyFromMap(azureConfig.Subnets),
 					})
 				case "GCP":
 					gcpConfig := externalGCPConfig(testData, "europe-west1")
@@ -107,7 +107,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), func() {
 						ID:         fmt.Sprintf("%s-%s", pe.Name, test.Resources.TestID),
 						Region:     gcpConfig.Region,
 						Targets:    pe.Status.ServiceAttachmentNames,
-						SubnetName: collection.FirstFromMap(gcpConfig.Subnets),
+						SubnetName: collection.FirstKeyFromMap(gcpConfig.Subnets),
 					})
 				}
 			})
@@ -322,7 +322,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 							ID:                "azure-e2e-pe",
 							Region:            azureConfig.Region,
 							ServiceResourceID: peStatus.ServiceResourceID,
-							SubnetName:        collection.FirstFromMap(azureConfig.Subnets),
+							SubnetName:        collection.FirstKeyFromMap(azureConfig.Subnets),
 						})
 					case "GCP":
 						gcpConfig := externalGCPConfig(testData, "europe-north1")
@@ -332,7 +332,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 							ID:         fmt.Sprintf("pe-migration-gcp-%s", testData.Resources.TestID),
 							Region:     gcpConfig.Region,
 							Targets:    peStatus.ServiceAttachmentNames,
-							SubnetName: collection.FirstFromMap(gcpConfig.Subnets),
+							SubnetName: collection.FirstKeyFromMap(gcpConfig.Subnets),
 						})
 					}
 				}
