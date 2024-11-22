@@ -8,8 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -17,19 +15,22 @@ import (
 )
 
 func TestDefaultAuditingGet(t *testing.T) {
-	contract.RunContractTest(t, "get default auditing", func(ct *contract.ContractTest) {
+	ctx := context.Background()
+	contract.RunGoContractTest(ctx, t, "get default auditing", func(ch contract.ContractHelper) {
 		projectName := "default-auditing-project"
-		ct.AddResources(time.Minute, contract.DefaultAtlasProject(projectName))
-		testProjectID := mustReadProjectID(t, ct.Ctx, ct.K8sClient, ct.Namespace(), projectName)
-		as := audit.NewAuditLog(ct.AtlasClient.AuditingApi)
+		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
+		testProjectID, err := ch.ProjectID(ctx, projectName)
+		require.NoError(t, err)
+		as := audit.NewAuditLog(ch.AtlasClient().AuditingApi)
 
-		result, err := as.Get(ct.Ctx, testProjectID)
+		result, err := as.Get(ctx, testProjectID)
 		require.NoError(t, err)
 		assert.Equal(t, audit.NewAuditConfig(nil), result)
 	})
 }
 
 func TestSyncs(t *testing.T) {
+	ctx := context.Background()
 	testCases := []struct {
 		title    string
 		auditing *audit.AuditConfig
@@ -86,12 +87,12 @@ func TestSyncs(t *testing.T) {
 			),
 		},
 	}
-	contract.RunContractTest(t, "test syncs", func(ct *contract.ContractTest) {
+	contract.RunGoContractTest(ctx, t, "test syncs", func(ch contract.ContractHelper) {
 		projectName := "audit-syncs-project"
-		ct.AddResources(time.Minute, contract.DefaultAtlasProject(projectName))
-		testProjectID := mustReadProjectID(t, ct.Ctx, ct.K8sClient, ct.Namespace(), projectName)
-		ctx := context.Background()
-		as := audit.NewAuditLog(ct.AtlasClient.AuditingApi)
+		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
+		testProjectID, err := ch.ProjectID(ctx, projectName)
+		require.NoError(t, err)
+		as := audit.NewAuditLog(ch.AtlasClient().AuditingApi)
 
 		for _, tc := range testCases {
 			t.Run(tc.title, func(t *testing.T) {
@@ -104,15 +105,4 @@ func TestSyncs(t *testing.T) {
 			})
 		}
 	})
-}
-
-func mustReadProjectID(t *testing.T, ctx context.Context, k8sClient client.Client, ns, projectName string) string {
-	t.Helper()
-	project := akov2.AtlasProject{}
-	key := types.NamespacedName{
-		Namespace: ns,
-		Name:      projectName,
-	}
-	require.NoError(t, k8sClient.Get(ctx, key, &project))
-	return project.Status.ID
 }

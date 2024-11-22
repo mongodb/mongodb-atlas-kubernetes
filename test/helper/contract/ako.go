@@ -3,10 +3,7 @@ package contract
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
-	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	corev1 "k8s.io/api/core/v1"
@@ -15,10 +12,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-)
-
-const (
-	mongodbRepoURL = "https://mongodb.github.io/helm-charts"
 )
 
 func DefaultAtlasProject(name string) client.Object {
@@ -51,41 +44,6 @@ func mustCreateVersionedAtlasClient(ctx context.Context) *admin.APIClient {
 	return client
 }
 
-func ensureTestAtlasOperator(namespace string) error {
-	if !isTestAtlasOperatorInstalled(namespace) {
-		return installTestAtlasOperator(namespace)
-	}
-	return nil
-}
-
-func isTestAtlasOperatorInstalled(namespace string) bool {
-	output, err := run("helm", "ls", "-n", namespace)
-	if err != nil {
-		return false
-	}
-	return strings.Contains(string(output), operatorInstallName)
-}
-
-func installTestAtlasOperator(namespace string) error {
-	if _, err := run("helm", "repo", "add", "mongodb", mongodbRepoURL); err != nil {
-		return fmt.Errorf("failed to set mongodb repo to URL %q: %w", mongodbRepoURL, err)
-	}
-	domain := os.Getenv("MCLI_OPS_MANAGER_URL")
-	args := []string{
-		"install",
-		operatorInstallName,
-		"mongodb/mongodb-atlas-operator",
-		"--atomic",
-		"--set-string", fmt.Sprintf("atlasURI=%s", domain),
-		"--set", "objectDeletionProtection=false",
-		"--set", "subobjectDeletionProtection=false",
-		"--namespace=" + namespace,
-		"--create-namespace",
-	}
-	_, err := run("helm", args...)
-	return err
-}
-
 func globalSecret(namespace string) client.Object {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -101,11 +59,4 @@ func globalSecret(namespace string) client.Object {
 			"privateApiKey": ([]byte)(os.Getenv("MCLI_PRIVATE_API_KEY")),
 		},
 	}
-}
-
-func run(cmd string, args ...string) ([]byte, error) {
-	log.Printf("Running:\n%s %s", cmd, strings.Join(args, " "))
-	output, err := exec.Command(cmd, args...).CombinedOutput()
-	log.Printf("%s", string(output))
-	return output, err
 }

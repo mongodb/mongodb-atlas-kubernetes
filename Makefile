@@ -132,6 +132,10 @@ CONTAINER_SPEC=.spec.template.spec.containers[0]
 
 SILK_ASSET_GROUP="atlas-kubernetes-operator"
 
+HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
+HELM_AKO_INSTALL_NAME = local-ako-install
+HELM_AKO_NAMESPACE = test-ako
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -567,7 +571,17 @@ download-from-silk: ## Download the latest augmented SBOM for a given architectu
 store-silk-sboms: download-from-silk ## Download & Store the latest augmented SBOM for a given version & architecture
 	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH)
 
+.PHONY: install-ako-helm
+install-ako-helm:
+	helm repo add mongodb $(HELM_REPO_URL)
+	helm upgrade $(HELM_AKO_INSTALL_NAME) mongodb/mongodb-atlas-operator --atomic --install \
+	--set-string atlasURI=$(MCLI_OPS_MANAGER_URL) \
+	--set objectDeletionProtection=false \
+	--set subobjectDeletionProtection=false \
+	--namespace=$(HELM_AKO_NAMESPACE) --create-namespace
+	kubectl get crds
+
 .PHONY: contract-tests
-contract-tests: run-kind ## Run contract tests
+contract-tests: run-kind install-ako-helm ## Run contract tests with support by a k8s cluster and AKO
 	go clean -testcache
-	AKO_CONTRACT_TEST=1 go test -v -race -cover ./test/contract/...
+	AKO_CONTRACT_TEST=1 HELM_AKO_NAMESPACE=$(HELM_AKO_NAMESPACE) go test -v -race -cover ./test/contract/...
