@@ -45,23 +45,56 @@ func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointService(
 
 	switch {
 	case !existInAtlas && !wasDeleted:
-		atlasPEService, err = r.privateEndpointService.CreatePrivateEndpointService(ctx.Context, projectID, akoPEService)
-		if err != nil {
-			return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointServiceReady, workflow.PrivateEndpointServiceFailedToCreate, err)
-		}
+		return r.createPrivateEndpointService(ctx, projectID, akoPrivateEndpoint, akoPEService)
 	case !existInAtlas && wasDeleted:
 		return r.unmanage(ctx, akoPrivateEndpoint)
 	case existInAtlas && wasDeleted:
-		if customresource.IsResourcePolicyKeepOrDefault(akoPrivateEndpoint, r.ObjectDeletionProtection) {
-			return r.unmanage(ctx, akoPrivateEndpoint)
-		}
-
-		atlasPEService, err = r.deletePrivateEndpoint(ctx.Context, projectID, atlasPEService)
-		if err != nil {
-			return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointServiceReady, workflow.PrivateEndpointFailedToDelete, err)
-		}
+		return r.deletePrivateEndpointService(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
 	}
 
+	return r.watchServiceState(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
+}
+
+func (r *AtlasPrivateEndpointReconciler) createPrivateEndpointService(
+	ctx *workflow.Context,
+	projectID string,
+	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
+	akoPEService privateendpoint.EndpointService,
+) (ctrl.Result, error) {
+	atlasPEService, err := r.privateEndpointService.CreatePrivateEndpointService(ctx.Context, projectID, akoPEService)
+	if err != nil {
+		return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointServiceReady, workflow.PrivateEndpointServiceFailedToCreate, err)
+	}
+
+	return r.watchServiceState(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
+}
+
+func (r *AtlasPrivateEndpointReconciler) deletePrivateEndpointService(
+	ctx *workflow.Context,
+	projectID string,
+	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
+	akoPEService privateendpoint.EndpointService,
+	atlasPEService privateendpoint.EndpointService,
+) (ctrl.Result, error) {
+	if customresource.IsResourcePolicyKeepOrDefault(akoPrivateEndpoint, r.ObjectDeletionProtection) {
+		return r.unmanage(ctx, akoPrivateEndpoint)
+	}
+
+	atlasPEService, err := r.deletePrivateEndpoint(ctx.Context, projectID, atlasPEService)
+	if err != nil {
+		return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointServiceReady, workflow.PrivateEndpointFailedToDelete, err)
+	}
+
+	return r.watchServiceState(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
+}
+
+func (r *AtlasPrivateEndpointReconciler) watchServiceState(
+	ctx *workflow.Context,
+	projectID string,
+	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
+	akoPEService privateendpoint.EndpointService,
+	atlasPEService privateendpoint.EndpointService,
+) (ctrl.Result, error) {
 	switch atlasPEService.Status() {
 	case privateendpoint.StatusInitiating:
 		return r.inProgress(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointServiceReady, workflow.PrivateEndpointServiceInitializing, "Private Endpoint is being initialized")
@@ -95,6 +128,11 @@ func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointInterface(
 	// we want to sync all interface, if any of them is in progress, after all we transition to in progress
 	pendingResources := false
 	for _, compositeInterfaceMap := range compositeInterfacesMap {
+		// The interface can be in 4 state:
+		// * It doesn't exist and need to be created, and it's expected to be in progress on next reconciliation
+		// * It exist and need to be deleted, and it's expected to in progress on next reconciliation
+		// * It's in progress, we skip it to wait it to be ready
+		// * It's failed to be provisioned, we terminate the reconciliation
 		inAKO := compositeInterfaceMap.AKO != nil
 		inAtlas := compositeInterfaceMap.Atlas != nil
 		inProgress := isInterfaceInProgress(compositeInterfaceMap.Atlas)
