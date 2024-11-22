@@ -73,6 +73,9 @@ spec:
                   - id
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - id
+                x-kubernetes-list-type: map
               azureConfiguration:
                 description: AzureConfiguration is the specific Azure settings for
                   the private endpoint
@@ -93,6 +96,9 @@ spec:
                   - ipAddress
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - id
+                x-kubernetes-list-type: map
               connectionSecret:
                 description: Name of the secret containing Atlas API private and public
                   keys
@@ -156,6 +162,9 @@ spec:
                   - projectId
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - groupName
+                x-kubernetes-list-type: map
               projectRef:
                 description: Project is a reference to AtlasProject resource the user
                   belongs to
