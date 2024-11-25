@@ -134,9 +134,11 @@ var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole re
 		})
 
 		By("Enabled reconciliation for AtlasProject", func() {
-			Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).Should(Succeed())
-			testData.Project.Annotations = map[string]string{}
-			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).Should(Succeed())
+				testData.Project.Annotations = map[string]string{}
+				g.Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
+			}).WithTimeout(1 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
