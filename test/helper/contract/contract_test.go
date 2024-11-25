@@ -1,7 +1,6 @@
 package contract_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -20,19 +19,17 @@ const (
 )
 
 func TestContractTestSkip(t *testing.T) {
-	ctx := context.Background()
 	testWithEnv(func() {
-		contract.RunGoContractTest(ctx, t, "Skip contract test", func(_ contract.ContractHelper) {
+		contract.RunContractTest(t, "Skip contract test", func(_ *contract.ContractTest) {
 			panic("should not have got here!")
 		})
 	}, "-AKO_CONTRACT_TEST")
 }
 
 func TestContractTestClientSetFails(t *testing.T) {
-	ctx := context.Background()
 	testWithEnv(func() {
 		assert.Panics(t, func() {
-			contract.RunGoContractTest(ctx, t, "bad client settings panics", func(_ contract.ContractHelper) {})
+			contract.RunContractTest(t, "bad client settings panics", func(_ *contract.ContractTest) {})
 		})
 	},
 		"AKO_CONTRACT_TEST=1",
@@ -42,15 +39,14 @@ func TestContractTestClientSetFails(t *testing.T) {
 }
 
 func TestContractsWithResources(t *testing.T) {
-	ctx := context.Background()
-	contract.RunGoContractTest(ctx, t, "run contract test list projects", func(ch contract.ContractHelper) {
-		ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject("contract-tests-list-projects"))
-		_, _, err := ch.AtlasClient().ProjectsApi.ListProjects(ctx).Execute()
+	contract.RunContractTest(t, "run contract test list projects", func(ct *contract.ContractTest) {
+		ct.AddResources(time.Minute, contract.DefaultAtlasProject("contract-tests-list-projects"))
+		_, _, err := ct.AtlasClient.ProjectsApi.ListProjects(ct.Ctx).Execute()
 		assert.NoError(t, err)
 	})
-	contract.RunGoContractTest(ctx, t, "run contract test list orgs", func(ch contract.ContractHelper) {
-		ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject("contract-tests-list-orgs"))
-		_, _, err := ch.AtlasClient().OrganizationsApi.ListOrganizations(ctx).Execute()
+	contract.RunContractTest(t, "run contract test list orgs", func(ct *contract.ContractTest) {
+		ct.AddResources(time.Minute, contract.DefaultAtlasProject("contract-tests-list-orgs"))
+		_, _, err := ct.AtlasClient.OrganizationsApi.ListOrganizations(ct.Ctx).Execute()
 		assert.NoError(t, err)
 	})
 }
