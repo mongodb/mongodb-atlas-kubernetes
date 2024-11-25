@@ -353,6 +353,23 @@ func CheckUsersCanUseOldApp(data *model.TestDataProvider) {
 				WaitTestApplication(data, input.Namespace, "app", "test-app-"+user.Spec.Username)
 			})
 
+			By(fmt.Sprintf("Verifying if a user (%s) is READY", user.Spec.Username), func() {
+				Eventually(func(g Gomega) {
+					dbu := &akov2.AtlasDatabaseUser{}
+					g.Expect(data.K8SClient.Get(data.Context, client.ObjectKey{
+						Name:      fmt.Sprintf("%s-%s", data.Resources.Deployments[0].Spec.GetDeploymentName(), user.Spec.Username),
+						Namespace: data.Resources.Namespace},
+						dbu,
+					)).To(Succeed())
+					g.Expect(dbu.Status.Conditions).ShouldNot(BeEmpty())
+					for _, condition := range dbu.Status.Conditions {
+						if condition.Type == api.ReadyType {
+							g.Expect(condition.Status).Should(Equal(corev1.ConditionTrue), "User should be ready")
+						}
+					}
+				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
+
 			app := appclient.NewTestAppClient(port)
 			By("Test restarted App access", func() {
 				getRoot := app.Get("")
