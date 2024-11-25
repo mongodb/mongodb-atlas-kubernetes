@@ -454,7 +454,7 @@ func generateVPCWithSubnets() (string, []string, error) {
 func GetAtlasRegionByProvider(cloudProvider string) (string, error) {
 	regionMap := map[string][]string{
 		"AWS": {
-			"US_WEST_1",      // North America - Northern California
+			"US_WEST_2",      // North America - Oregon
 			"CA_CENTRAL_1",   // North America - Canada Central
 			"SA_EAST_1",      // South America - São Paulo
 			"EU_NORTH_1",     // Europe - Stockholm
@@ -503,7 +503,7 @@ func GetAtlasRegionByProvider(cloudProvider string) (string, error) {
 func MapCloudProviderRegion(cloudProvider, atlasRegion string) string {
 	regionMap := map[string]map[string]string{
 		"AWS": {
-			"US_WEST_1":      "us-west-1",      // North America - Northern California
+			"US_WEST_2":      "us-west-2",      // North America - Oregon
 			"CA_CENTRAL_1":   "ca-central-1",   // North America - Canada Central
 			"SA_EAST_1":      "sa-east-1",      // South America - São Paulo
 			"EU_NORTH_1":     "eu-north-1",     // Europe - Stockholm
@@ -522,7 +522,7 @@ func MapCloudProviderRegion(cloudProvider, atlasRegion string) string {
 			"FRANCE_SOUTH":        "francesouth",       // Europe - France South
 			"UAE_CENTRAL":         "uaecentral",        // Middle East - UAE Central
 			"KOREA_CENTRAL":       "koreacentral",      // Asia - Korea Central
-			"INDIA_CENTRAL":       "indiacentral",      // Asia - India Central
+			"INDIA_CENTRAL":       "centralindia",      // Asia - India Central
 			"AUSTRALIA_CENTRAL_2": "australiacentral2", // Oceania - Australia Central
 			"SOUTH_AFRICA_WEST":   "southafricawest",   // Africa - South Africa West
 		},
