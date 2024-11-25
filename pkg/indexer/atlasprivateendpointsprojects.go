@@ -36,15 +36,9 @@ func (a *AtlasPrivateEndpointByProjectIndexer) Keys(object client.Object) []stri
 		return nil
 	}
 
-	if pe.Spec.Project == nil {
+	if pe.Spec.Project == nil || pe.Spec.Project.Name == "" {
 		return nil
 	}
 
-	if pe.Spec.Project.Name == "" {
-		return nil
-	}
-
-	key := pe.Spec.Project.GetObject(pe.GetNamespace())
-
-	return []string{key.String()}
+	return []string{pe.Spec.Project.GetObject(pe.GetNamespace()).String()}
 }

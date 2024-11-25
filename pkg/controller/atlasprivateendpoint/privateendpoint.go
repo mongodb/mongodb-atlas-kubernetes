@@ -220,7 +220,7 @@ func (r *AtlasPrivateEndpointReconciler) deletePrivateEndpoint(
 	if len(atlasPEService.EndpointInterfaces()) == 0 && atlasPEService.Status() != privateendpoint.StatusDeleting {
 		err := r.privateEndpointService.DeleteEndpointService(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID())
 		if err != nil {
-			return atlasPEService, err
+			return nil, err
 		}
 	}
 
@@ -228,7 +228,7 @@ func (r *AtlasPrivateEndpointReconciler) deletePrivateEndpoint(
 		if i.Status() != privateendpoint.StatusDeleting {
 			err := r.privateEndpointService.DeleteEndpointInterface(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID(), i.InterfaceID())
 			if err != nil {
-				return atlasPEService, err
+				return nil, err
 			}
 		}
 	}
