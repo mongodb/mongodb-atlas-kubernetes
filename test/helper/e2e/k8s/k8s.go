@@ -5,7 +5,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -27,15 +26,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
-func init() {
-	err := akov2.AddToScheme(scheme.Scheme)
-	if err != nil {
-		log.Fatalf("failed to preload Kubernetes schemas: %v", err)
-	}
-}
-
 func CreateNewClient() (client.Client, error) {
 	cfg, err := k8scfg.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	err = akov2.AddToScheme(scheme.Scheme)
 	if err != nil {
 		return nil, err
 	}
