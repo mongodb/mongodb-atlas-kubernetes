@@ -196,6 +196,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	Describe("Deployment with Termination Protection should remain in Atlas after the CR is deleted", Label("dedicated-termination-protection", "slow"), func() {
 		It("Should succeed", func() {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			deploymentName := createdDeployment.GetDeploymentName()
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				createdDeployment.Spec.DeploymentSpec.TerminationProtectionEnabled = true
@@ -215,9 +216,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 					defer cancelF()
 					aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
-						createdDeployment.GetDeploymentName()).Execute()
+						deploymentName).Execute()
 					g.Expect(err).NotTo(HaveOccurred())
-					Expect(aCluster.GetName()).Should(BeEquivalentTo(createdDeployment.GetDeploymentName()))
+					Expect(aCluster.GetName()).Should(BeEquivalentTo(deploymentName))
 				}).WithTimeout(30 * time.Second).WithPolling(5 * time.Second)
 			})
 
@@ -225,11 +226,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 				defer cancelF()
 				aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
-					createdDeployment.GetDeploymentName()).Execute()
+					deploymentName).Execute()
 				Expect(err).NotTo(HaveOccurred())
 				aCluster.TerminationProtectionEnabled = pointer.MakePtr(false)
 				aCluster.ConnectionStrings = nil
-				_, _, err = atlasClient.ClustersApi.UpdateCluster(ctx, createdProject.ID(), createdDeployment.GetDeploymentName(), aCluster).Execute()
+				_, _, err = atlasClient.ClustersApi.UpdateCluster(ctx, createdProject.ID(), deploymentName, aCluster).Execute()
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -238,18 +239,18 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 					defer cancelF()
 					aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
-						createdDeployment.GetDeploymentName()).Execute()
+						deploymentName).Execute()
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(aCluster.TerminationProtectionEnabled).NotTo(BeNil())
 					g.Expect(*aCluster.TerminationProtectionEnabled).To(BeFalse())
-				}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second)
+				}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 			})
 
 			By("Manually deleting the cluster", func() {
 				ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 				defer cancelF()
 				_, err := atlasClient.ClustersApi.DeleteCluster(ctx, createdProject.ID(),
-					createdDeployment.GetDeploymentName()).Execute()
+					deploymentName).Execute()
 				Expect(err).NotTo(HaveOccurred())
 				createdDeployment = nil
 			})
@@ -259,9 +260,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 					defer cancelF()
 					_, resp, _ := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
-						createdDeployment.GetDeploymentName()).Execute()
-					g.Expect(resp.Status).To(Equal(http.StatusNotFound))
-				}).WithTimeout(10 * time.Minute).WithPolling(20 * time.Second)
+						deploymentName).Execute()
+					g.Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+				}).WithTimeout(10 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 			})
 		})
 	})
