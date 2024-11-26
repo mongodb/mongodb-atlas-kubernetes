@@ -14,10 +14,11 @@ import (
 )
 
 type TestProvider struct {
-	ClientFunc      func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
-	SdkClientFunc   func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
-	IsCloudGovFunc  func() bool
-	IsSupportedFunc func() bool
+	ClientFunc       func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
+	SdkClientFunc    func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
+	SdkSetClientFunc func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error)
+	IsCloudGovFunc   func() bool
+	IsSupportedFunc  func() bool
 }
 
 func (f *TestProvider) Client(_ context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
@@ -33,7 +34,7 @@ func (f *TestProvider) IsCloudGov() bool {
 }
 
 func (f *TestProvider) SdkClientSet(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-	return nil, "", nil
+	return f.SdkSetClientFunc(secretRef, log)
 }
 
 func (f *TestProvider) IsResourceSupported(_ api.AtlasCustomResource) bool {

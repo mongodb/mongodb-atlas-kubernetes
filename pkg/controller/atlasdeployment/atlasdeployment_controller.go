@@ -247,10 +247,7 @@ func (r *AtlasDeploymentReconciler) getProjectFromKube(ctx *workflow.Context, at
 		return nil, err
 	}
 
-	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(
-		ctx.Context,
-		&client.ObjectKey{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Credentials().Name},
-		r.Log)
+	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx.Context, credentialsSecret, r.Log)
 	if err != nil {
 		return nil, err
 	}
