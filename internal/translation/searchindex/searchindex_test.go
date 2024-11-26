@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -172,7 +172,7 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 
 func Test_NewSearchIndexFromAtlas(t *testing.T) {
 	type args struct {
-		index admin.ClusterSearchIndex
+		index admin.SearchIndexResponse
 	}
 	tests := []struct {
 		name    string
@@ -183,53 +183,55 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 		{
 			name: "Convert from Atlas",
 			args: args{
-				index: admin.ClusterSearchIndex{
-					CollectionName: "collection",
-					Database:       "db",
+				index: admin.SearchIndexResponse{
+					CollectionName: pointer.MakePtr("collection"),
+					Database:       pointer.MakePtr("db"),
 					IndexID:        pointer.MakePtr("indexID"),
-					Name:           "name",
+					Name:           pointer.MakePtr("name"),
 					Status:         pointer.MakePtr("ACTIVE"),
 					Type:           pointer.MakePtr("search"),
-					Analyzer:       pointer.MakePtr("lucene.standard"),
-					Analyzers: &([]admin.ApiAtlasFTSAnalyzers{
-						{
-							CharFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
-								{"char": "filter"},
-							})),
-							Name: "name",
-							TokenFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
-								{"token": "filter"},
-							})),
-							Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
-								MaxGram:        pointer.MakePtr(20),
-								MinGram:        pointer.MakePtr(10),
-								Type:           pointer.MakePtr("standard"),
-								Group:          pointer.MakePtr(10),
-								Pattern:        pointer.MakePtr("testRegex"),
-								MaxTokenLength: pointer.MakePtr(255),
+					LatestDefinition: &admin.BaseSearchIndexResponseLatestDefinition{
+						Analyzer: pointer.MakePtr("lucene.standard"),
+						Analyzers: &([]admin.AtlasSearchAnalyzer{
+							{
+								CharFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
+									{"char": "filter"},
+								})),
+								Name: "name",
+								TokenFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
+									{"token": "filter"},
+								})),
+								Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
+									MaxGram:        pointer.MakePtr(20),
+									MinGram:        pointer.MakePtr(10),
+									Type:           pointer.MakePtr("standard"),
+									Group:          pointer.MakePtr(10),
+									Pattern:        pointer.MakePtr("testRegex"),
+									MaxTokenLength: pointer.MakePtr(255),
+								},
 							},
+						}),
+						Mappings: &admin.SearchMappings{
+							Dynamic: pointer.MakePtr(true),
+							Fields:  map[string]interface{}{"field": "value"},
 						},
-					}),
-					Mappings: &admin.ApiAtlasFTSMappings{
-						Dynamic: pointer.MakePtr(true),
-						Fields:  map[string]interface{}{"field": "value"},
+						SearchAnalyzer: pointer.MakePtr("search-analyzer"),
+						Synonyms: &([]admin.SearchSynonymMappingDefinition{
+							{
+								Analyzer: "analyzer",
+								Name:     "name",
+								Source: admin.SynonymSource{
+									Collection: "collection",
+								},
+							},
+						}),
+						Fields: &([]any{
+							map[string]string{
+								"testKey": "testValue",
+							},
+						}),
+						StoredSource: map[string]interface{}{"include": "test"},
 					},
-					SearchAnalyzer: pointer.MakePtr("search-analyzer"),
-					Synonyms: &([]admin.SearchSynonymMappingDefinition{
-						{
-							Analyzer: "analyzer",
-							Name:     "name",
-							Source: admin.SynonymSource{
-								Collection: "collection",
-							},
-						},
-					}),
-					Fields: &([]map[string]interface{}{
-						{
-							"testKey": "testValue",
-						},
-					}),
-					StoredSource: map[string]interface{}{"include": "test"},
 				},
 			},
 			want: &SearchIndex{
@@ -398,7 +400,7 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    *admin.ClusterSearchIndex
+		want    *admin.SearchIndexCreateRequest
 		wantErr bool
 	}{
 		{
@@ -446,49 +448,49 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 					StoredSource:   jsonMustEncodeMap(map[string]interface{}{"include": "test"}),
 				},
 			},
-			want: &admin.ClusterSearchIndex{
+			want: &admin.SearchIndexCreateRequest{
 				CollectionName: "collection",
 				Database:       "db",
-				IndexID:        nil,
 				Name:           "name",
-				Status:         nil,
 				Type:           pointer.MakePtr("search"),
-				Analyzer:       pointer.MakePtr("lucene.standard"),
-				Analyzers: &([]admin.ApiAtlasFTSAnalyzers{
-					{
-						CharFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
-							{"char": "filter"},
-						})),
-						Name: "name",
-						TokenFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
-							{"token": "filter"},
-						})),
-						Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
-							MaxGram:        pointer.MakePtr(20),
-							MinGram:        pointer.MakePtr(10),
-							Type:           pointer.MakePtr("standard"),
-							Group:          pointer.MakePtr(10),
-							Pattern:        pointer.MakePtr("testRegex"),
-							MaxTokenLength: pointer.MakePtr(255),
+				Definition: &admin.BaseSearchIndexCreateRequestDefinition{
+					Analyzer: pointer.MakePtr("lucene.standard"),
+					Analyzers: &([]admin.AtlasSearchAnalyzer{
+						{
+							CharFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
+								{"char": "filter"},
+							})),
+							Name: "name",
+							TokenFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
+								{"token": "filter"},
+							})),
+							Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
+								MaxGram:        pointer.MakePtr(20),
+								MinGram:        pointer.MakePtr(10),
+								Type:           pointer.MakePtr("standard"),
+								Group:          pointer.MakePtr(10),
+								Pattern:        pointer.MakePtr("testRegex"),
+								MaxTokenLength: pointer.MakePtr(255),
+							},
 						},
+					}),
+					Mappings: &admin.SearchMappings{
+						Dynamic: pointer.MakePtr(true),
+						Fields:  map[string]interface{}{"field": "value"},
 					},
-				}),
-				Mappings: &admin.ApiAtlasFTSMappings{
-					Dynamic: pointer.MakePtr(true),
-					Fields:  map[string]interface{}{"field": "value"},
+					SearchAnalyzer: pointer.MakePtr("search-analyzer"),
+					Synonyms: &([]admin.SearchSynonymMappingDefinition{
+						{
+							Analyzer: "analyzer",
+							Name:     "name",
+							Source: admin.SynonymSource{
+								Collection: "collection",
+							},
+						},
+					}),
+					Fields:       nil,
+					StoredSource: map[string]interface{}{"include": "test"},
 				},
-				SearchAnalyzer: pointer.MakePtr("search-analyzer"),
-				Synonyms: &([]admin.SearchSynonymMappingDefinition{
-					{
-						Analyzer: "analyzer",
-						Name:     "name",
-						Source: admin.SynonymSource{
-							Collection: "collection",
-						},
-					},
-				}),
-				Fields:       nil,
-				StoredSource: map[string]interface{}{"include": "test"},
 			},
 			wantErr: false,
 		},
@@ -501,7 +503,7 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 				ID:                         tt.fields.ID,
 				Status:                     tt.fields.Status,
 			}
-			got, err := s.toAtlas()
+			got, err := s.toAtlasCreateView()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToAtlas() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -68,7 +68,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			}
 		}
 
-		searchService := searchindex.NewSearchIndexes(ctx.SdkClient.AtlasSearchApi)
+		searchService := searchindex.NewSearchIndexes(ctx.SdkClientSet.SdkClient20241113001.AtlasSearchApi)
 		result := handleSearchIndexes(ctx, r.Client, searchService, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
 		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
 			return transition(workflow.Internal)

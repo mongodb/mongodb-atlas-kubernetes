@@ -3,6 +3,8 @@ package atlas
 import (
 	"context"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -28,6 +30,10 @@ func (f *TestProvider) SdkClient(_ context.Context, secretRef *client.ObjectKey,
 
 func (f *TestProvider) IsCloudGov() bool {
 	return f.IsCloudGovFunc()
+}
+
+func (f *TestProvider) SdkClientSet(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+	return nil, "", nil
 }
 
 func (f *TestProvider) IsResourceSupported(_ api.AtlasCustomResource) bool {
