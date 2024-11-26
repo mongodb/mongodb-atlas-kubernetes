@@ -183,7 +183,7 @@ func (r *AtlasDatabaseUserReconciler) delete(ctx *workflow.Context, projectID st
 }
 
 func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, atlasProject *project.Project, atlasDatabaseUser *akov2.AtlasDatabaseUser, passwordVersion string) ctrl.Result {
-	allDeploymentNames, err := r.deploymentService.ListClusterNames(ctx.Context, atlasProject.ID)
+	allDeploymentNames, err := r.deploymentService.ListDeploymentNames(ctx.Context, atlasProject.ID)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}

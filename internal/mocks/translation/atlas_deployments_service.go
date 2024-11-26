@@ -741,65 +741,6 @@ func (_c *AtlasDeploymentsServiceMock_GetZoneMapping_Call) RunAndReturn(run func
 	return _c
 }
 
-// ListClusterNames provides a mock function with given fields: ctx, projectID
-func (_m *AtlasDeploymentsServiceMock) ListClusterNames(ctx context.Context, projectID string) ([]string, error) {
-	ret := _m.Called(ctx, projectID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListClusterNames")
-	}
-
-	var r0 []string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]string, error)); ok {
-		return rf(ctx, projectID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []string); ok {
-		r0 = rf(ctx, projectID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, projectID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// AtlasDeploymentsServiceMock_ListClusterNames_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListClusterNames'
-type AtlasDeploymentsServiceMock_ListClusterNames_Call struct {
-	*mock.Call
-}
-
-// ListClusterNames is a helper method to define mock.On call
-//   - ctx context.Context
-//   - projectID string
-func (_e *AtlasDeploymentsServiceMock_Expecter) ListClusterNames(ctx interface{}, projectID interface{}) *AtlasDeploymentsServiceMock_ListClusterNames_Call {
-	return &AtlasDeploymentsServiceMock_ListClusterNames_Call{Call: _e.mock.On("ListClusterNames", ctx, projectID)}
-}
-
-func (_c *AtlasDeploymentsServiceMock_ListClusterNames_Call) Run(run func(ctx context.Context, projectID string)) *AtlasDeploymentsServiceMock_ListClusterNames_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
-	})
-	return _c
-}
-
-func (_c *AtlasDeploymentsServiceMock_ListClusterNames_Call) Return(_a0 []string, _a1 error) *AtlasDeploymentsServiceMock_ListClusterNames_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *AtlasDeploymentsServiceMock_ListClusterNames_Call) RunAndReturn(run func(context.Context, string) ([]string, error)) *AtlasDeploymentsServiceMock_ListClusterNames_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // ListDeploymentConnections provides a mock function with given fields: ctx, projectID
 func (_m *AtlasDeploymentsServiceMock) ListDeploymentConnections(ctx context.Context, projectID string) ([]deployment.Connection, error) {
 	ret := _m.Called(ctx, projectID)
@@ -855,6 +796,65 @@ func (_c *AtlasDeploymentsServiceMock_ListDeploymentConnections_Call) Return(_a0
 }
 
 func (_c *AtlasDeploymentsServiceMock_ListDeploymentConnections_Call) RunAndReturn(run func(context.Context, string) ([]deployment.Connection, error)) *AtlasDeploymentsServiceMock_ListDeploymentConnections_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListDeploymentNames provides a mock function with given fields: ctx, projectID
+func (_m *AtlasDeploymentsServiceMock) ListDeploymentNames(ctx context.Context, projectID string) ([]string, error) {
+	ret := _m.Called(ctx, projectID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListDeploymentNames")
+	}
+
+	var r0 []string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]string, error)); ok {
+		return rf(ctx, projectID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []string); ok {
+		r0 = rf(ctx, projectID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, projectID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AtlasDeploymentsServiceMock_ListDeploymentNames_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListDeploymentNames'
+type AtlasDeploymentsServiceMock_ListDeploymentNames_Call struct {
+	*mock.Call
+}
+
+// ListDeploymentNames is a helper method to define mock.On call
+//   - ctx context.Context
+//   - projectID string
+func (_e *AtlasDeploymentsServiceMock_Expecter) ListDeploymentNames(ctx interface{}, projectID interface{}) *AtlasDeploymentsServiceMock_ListDeploymentNames_Call {
+	return &AtlasDeploymentsServiceMock_ListDeploymentNames_Call{Call: _e.mock.On("ListDeploymentNames", ctx, projectID)}
+}
+
+func (_c *AtlasDeploymentsServiceMock_ListDeploymentNames_Call) Run(run func(ctx context.Context, projectID string)) *AtlasDeploymentsServiceMock_ListDeploymentNames_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_ListDeploymentNames_Call) Return(_a0 []string, _a1 error) *AtlasDeploymentsServiceMock_ListDeploymentNames_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *AtlasDeploymentsServiceMock_ListDeploymentNames_Call) RunAndReturn(run func(context.Context, string) ([]string, error)) *AtlasDeploymentsServiceMock_ListDeploymentNames_Call {
 	_c.Call.Return(run)
 	return _c
 }

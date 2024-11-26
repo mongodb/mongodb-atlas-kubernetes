@@ -22,7 +22,7 @@ type AtlasDeploymentsService interface {
 }
 
 type DeploymentService interface {
-	ListClusterNames(ctx context.Context, projectID string) ([]string, error)
+	ListDeploymentNames(ctx context.Context, projectID string) ([]string, error)
 	ListDeploymentConnections(ctx context.Context, projectID string) ([]Connection, error)
 	ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error)
 	DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error)
@@ -64,7 +64,7 @@ func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.S
 	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, globalClusterAPI: globalClusterAPI, isGov: isGov}
 }
 
-func (ds *ProductionAtlasDeployments) ListClusterNames(ctx context.Context, projectID string) ([]string, error) {
+func (ds *ProductionAtlasDeployments) ListDeploymentNames(ctx context.Context, projectID string) ([]string, error) {
 	var deploymentNames []string
 	clusters, _, err := ds.clustersAPI.ListClusters(ctx, projectID).Execute()
 	if err != nil {
