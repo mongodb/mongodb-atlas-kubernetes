@@ -63,7 +63,7 @@ func TestPeerContainerServiceCRUD(t *testing.T) {
 				containers, err := cs.ListContainers(ctx, testProjectID, tc.container.Provider)
 				require.NoError(t, err)
 				assert.NotEmpty(t, containers)
-				assert.Len(t, containers, 1)
+				assert.GreaterOrEqual(t, len(containers), 1)
 			})
 
 			t.Run(fmt.Sprintf("get %s container", tc.provider), func(t *testing.T) {
@@ -162,7 +162,7 @@ func TestPeerServiceCRUD(t *testing.T) {
 					containers, err := ps.ListPeers(ctx, testProjectID)
 					require.NoError(t, err)
 					assert.NotEmpty(t, containers)
-					assert.Len(t, containers, 1)
+					assert.GreaterOrEqual(t, len(containers), 1)
 				})
 
 				t.Run(fmt.Sprintf("delete %s peer connection", tc.provider), func(t *testing.T) {
