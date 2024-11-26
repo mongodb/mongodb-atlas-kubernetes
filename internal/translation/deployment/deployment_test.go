@@ -194,10 +194,6 @@ func TestClusterExists(t *testing.T) {
 					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceFromClusterAPI))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").
-					Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessInstanceAPI})
-				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.ProviderUnsupported))
 
 				return clusterAPI, serverlessInstanceAPI
 			},

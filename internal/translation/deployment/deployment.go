@@ -68,13 +68,24 @@ func (ds *ProductionAtlasDeployments) ListDeploymentNames(ctx context.Context, p
 	var deploymentNames []string
 	clusters, _, err := ds.clustersAPI.ListClusters(ctx, projectID).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list cluster names for project %s: %w", projectID, err)
+		return nil, fmt.Errorf("failed to list clusters for project %s: %w", projectID, err)
 	}
-	if clusters.Results == nil {
+	for _, d := range clusters.GetResults() {
+		name := pointer.GetOrDefault(d.Name, "")
+		if name != "" {
+			deploymentNames = append(deploymentNames, name)
+		}
+	}
+
+	if ds.isGov {
 		return deploymentNames, nil
 	}
 
-	for _, d := range *clusters.Results {
+	serverless, _, err := ds.serverlessAPI.ListServerlessInstances(ctx, projectID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list serverless deployments for project %s: %w", projectID, err)
+	}
+	for _, d := range serverless.GetResults() {
 		name := pointer.GetOrDefault(d.Name, "")
 		if name != "" {
 			deploymentNames = append(deploymentNames, name)
@@ -129,6 +140,10 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 
 	if !admin.IsErrorCode(err, atlas.ClusterNotFound) && !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) {
 		return nil, err
+	}
+
+	if ds.isGov {
+		return nil, nil
 	}
 
 	serverless, _, err := ds.serverlessAPI.GetServerlessInstance(ctx, projectID, name).Execute()
