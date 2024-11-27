@@ -33,19 +33,20 @@ type Cleaner struct {
 }
 
 type ProjectDependencies struct {
-	NetworkPeering        []admin.BaseNetworkPeeringConnectionSettings
-	AWSPrivateEndpoints   []admin.EndpointService
-	GCPPrivateEndpoints   []admin.EndpointService
-	AzurePrivateEndpoints []admin.EndpointService
-	Clusters              []admin.AdvancedClusterDescription
-	ServerlessClusters    []admin.ServerlessInstanceDescription
-	FederatedDatabases    []admin.DataLakeTenant
-	EncryptionAtRest      *admin.EncryptionAtRest
+	NetworkPeering              []admin.BaseNetworkPeeringConnectionSettings
+	AWSPrivateEndpoints         []admin.EndpointService
+	GCPPrivateEndpoints         []admin.EndpointService
+	AzurePrivateEndpoints       []admin.EndpointService
+	Clusters                    []admin.AdvancedClusterDescription
+	ServerlessClusters          []admin.ServerlessInstanceDescription
+	FederatedDatabases          []admin.DataLakeTenant
+	FederatedDBPrivateEndpoints []admin.PrivateNetworkEndpointIdEntry
+	EncryptionAtRest            *admin.EncryptionAtRest
 }
 
 func (pd *ProjectDependencies) Length() int {
 	return len(pd.NetworkPeering) + len(pd.AWSPrivateEndpoints) + len(pd.GCPPrivateEndpoints) + len(pd.AzurePrivateEndpoints) +
-		len(pd.Clusters) + len(pd.ServerlessClusters) + len(pd.FederatedDatabases)
+		len(pd.Clusters) + len(pd.ServerlessClusters) + len(pd.FederatedDBPrivateEndpoints) + len(pd.FederatedDatabases)
 }
 
 func (c *Cleaner) Clean(ctx context.Context, lifetimeHours int) error {
