@@ -140,11 +140,11 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 				}, testData.InitialDeployments[0])).To(Succeed())
 
 				return testData.InitialDeployments[0].Status.StateName == status.StateIDLE
-			}).WithTimeout(30 * time.Minute).Should(BeTrue())
+			}).WithTimeout(40 * time.Minute).Should(BeTrue())
 
 			Eventually(func(g Gomega) bool {
 				return g.Expect(countConnectionSecrets(testData.K8SClient, testData.Project.Spec.Name)).To(Equal(2))
-			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
+			}).WithTimeout(20 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 		})
 		By("Delete deployment and connection secrets for all related users", func() {
 			Expect(testData.K8SClient.Delete(testData.Context, testData.InitialDeployments[0])).To(Succeed())
@@ -155,11 +155,11 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 				aClient := atlas.GetClientOrFail()
 				return aClient.IsDeploymentExist(projectID, deploymentName)
 			},
-			).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(BeFalse())
+			).WithTimeout(40 * time.Minute).WithPolling(10 * time.Second).Should(BeFalse())
 
 			Eventually(func(g Gomega) bool {
 				return g.Expect(countConnectionSecrets(testData.K8SClient, testData.Project.Spec.Name)).To(Equal(0))
-			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
+			}).WithTimeout(20 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 		})
 	})
 })

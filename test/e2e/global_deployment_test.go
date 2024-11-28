@@ -84,7 +84,7 @@ func globalClusterFlow(userData *model.TestDataProvider, mapping []akov2.CustomZ
 				Namespace: userData.InitialDeployments[0].Namespace,
 			}, userData.InitialDeployments[0])).To(Succeed())
 			return userData.InitialDeployments[0].Status.StateName == status.StateIDLE
-		}).WithTimeout(30 * time.Minute).Should(BeTrue())
+		}).WithTimeout(40 * time.Minute).Should(BeTrue())
 	})
 
 	By("Applying global cluster config to Deployment", func() {

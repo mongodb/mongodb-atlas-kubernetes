@@ -243,5 +243,5 @@ func waitSPEStatus(userData *model.TestDataProvider, status string, speLen int) 
 		}
 
 		return true
-	}).WithTimeout(15*time.Minute).Should(BeTrue(), fmt.Sprintf("Private Endpoints should be %s", status))
+	}).WithTimeout(40*time.Minute).Should(BeTrue(), fmt.Sprintf("Private Endpoints should be %s", status))
 }

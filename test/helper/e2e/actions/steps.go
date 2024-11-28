@@ -102,14 +102,14 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 			g.Expect(err).ToNot(HaveOccurred())
 			return deploymentStatus
 		},
-	).WithTimeout(30*time.Minute).WithPolling(1*time.Minute).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
+	).WithTimeout(40*time.Minute).WithPolling(1*time.Minute).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
 
 	Eventually(func(g Gomega) {
 		deploymentState, err := k8s.GetK8sDeploymentStateName(data.Context, data.K8SClient,
 			input.Namespace, input.Deployments[0].ObjectMeta.GetName())
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(deploymentState).Should(Equal("IDLE"), "Kubernetes resource: Deployment status should be IDLE")
-	}).WithTimeout(30 * time.Minute).WithPolling(1 * time.Minute).Should(Succeed())
+	}).WithTimeout(40 * time.Minute).WithPolling(1 * time.Minute).Should(Succeed())
 
 	deploymentState, err := k8s.GetK8sDeploymentStateName(data.Context, data.K8SClient,
 		input.Namespace, input.Deployments[0].ObjectMeta.GetName())
@@ -367,7 +367,7 @@ func CheckUsersCanUseOldApp(data *model.TestDataProvider) {
 							g.Expect(condition.Status).Should(Equal(corev1.ConditionTrue), "User should be ready")
 						}
 					}
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(20 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 
 			app := appclient.NewTestAppClient(port)

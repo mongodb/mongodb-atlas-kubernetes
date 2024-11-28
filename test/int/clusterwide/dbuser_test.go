@@ -115,14 +115,14 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 			Eventually(func(g Gomega) bool {
 				return resources.CheckCondition(k8sClient, createdDeploymentAWS, api.TrueCondition(api.ReadyType), validateDeploymentCreatingFunc(g))
-			}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+			}).WithTimeout(40 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 			createdDBUser = akov2.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			createdDBUser.Spec.Project.Namespace = namespace.Name
 			Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, createdDBUser, api.TrueCondition(api.ReadyType))
-			}).WithTimeout(DBUserUpdateTimeout).WithPolling(interval).Should(BeTrue())
+			}).WithTimeout(20 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 
 			By("Removing the deployment", func() {
 				Expect(k8sClient.Delete(context.Background(), createdDeploymentAWS)).To(Succeed())

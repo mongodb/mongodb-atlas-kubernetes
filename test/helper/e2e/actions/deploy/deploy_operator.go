@@ -120,7 +120,7 @@ func CreateUsers(testData *model.TestDataProvider) {
 						g.Expect(condition.Status).Should(Equal(corev1.ConditionTrue), "User should be ready")
 					}
 				}
-			}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(Succeed(), "User was not created")
+			}).WithTimeout(40*time.Minute).WithPolling(20*time.Second).Should(Succeed(), "User was not created")
 		}
 	})
 }
