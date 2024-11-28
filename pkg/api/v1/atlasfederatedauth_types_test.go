@@ -24,12 +24,13 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		}
 
 		spec := &AtlasFederatedAuthSpec{
-			Enabled:                  true,
-			ConnectionSecretRef:      common.ResourceRefNamespaced{},
-			DomainAllowList:          []string{"test.com"},
-			DomainRestrictionEnabled: pointer.MakePtr(true),
-			SSODebugEnabled:          pointer.MakePtr(true),
-			PostAuthRoleGrants:       []string{"role-3", "role-4"},
+			Enabled:                     true,
+			ConnectionSecretRef:         common.ResourceRefNamespaced{},
+			DomainAllowList:             []string{"test.com"},
+			DomainRestrictionEnabled:    pointer.MakePtr(true),
+			DataAccessIdentityProviders: &[]string{"test-123", "test-456"},
+			SSODebugEnabled:             pointer.MakePtr(true),
+			PostAuthRoleGrants:          []string{"role-3", "role-4"},
 			RoleMappings: []RoleMapping{
 				{
 					ExternalGroupName: "test-group",
@@ -49,11 +50,12 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		assert.NotNil(t, result, "ToAtlas() result is nil")
 
 		expected := &admin.ConnectedOrgConfig{
-			DomainAllowList:          &spec.DomainAllowList,
-			DomainRestrictionEnabled: *spec.DomainRestrictionEnabled,
-			IdentityProviderId:       idpID,
-			OrgId:                    orgID,
-			PostAuthRoleGrants:       &spec.PostAuthRoleGrants,
+			DomainAllowList:               &spec.DomainAllowList,
+			DomainRestrictionEnabled:      *spec.DomainRestrictionEnabled,
+			DataAccessIdentityProviderIds: spec.DataAccessIdentityProviders,
+			IdentityProviderId:            idpID,
+			OrgId:                         orgID,
+			PostAuthRoleGrants:            &spec.PostAuthRoleGrants,
 			RoleMappings: &[]admin.AuthFederationRoleMapping{
 				{
 					ExternalGroupName: spec.RoleMappings[0].ExternalGroupName,
