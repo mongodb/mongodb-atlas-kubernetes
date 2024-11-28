@@ -78,7 +78,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 					}
 				}
 				return false
-			}).WithTimeout(40 * time.Minute).Should(BeTrue())
+			}).WithTimeout(40 * time.Minute).WithPolling(1 * time.Minute).Should(BeTrue())
 
 		})
 

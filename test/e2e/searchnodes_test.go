@@ -68,7 +68,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 					}
 				}
 				return false
-			}).WithTimeout(40 * time.Minute).Should(BeTrue())
+			}).WithTimeout(40 * time.Minute).WithPolling(1 * time.Minute).Should(BeTrue())
 
 			Eventually(func(g Gomega) {
 				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
