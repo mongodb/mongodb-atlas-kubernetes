@@ -41,6 +41,10 @@ type AtlasFederatedAuthSpec struct {
 	// Map IDP groups to Atlas roles.
 	// +optional
 	RoleMappings []RoleMapping `json:"roleMappings,omitempty"`
+	// The collection of unique ids representing the identity providers that can be used for data access in this organization.
+	// Currently connected data access identity providers missing from the this field will be disconnected.
+	// +optional
+	DataAccessIdentityProviders *[]string `json:"dataAccessIdentityProviders,omitempty"`
 }
 
 func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID map[string]string) (*admin.ConnectedOrgConfig, error) {
@@ -73,11 +77,12 @@ func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID ma
 	}
 
 	result := &admin.ConnectedOrgConfig{
-		DomainAllowList:          &f.DomainAllowList,
-		DomainRestrictionEnabled: *f.DomainRestrictionEnabled,
-		IdentityProviderId:       idpID,
-		OrgId:                    orgID,
-		PostAuthRoleGrants:       &f.PostAuthRoleGrants,
+		DataAccessIdentityProviderIds: f.DataAccessIdentityProviders,
+		DomainAllowList:               &f.DomainAllowList,
+		DomainRestrictionEnabled:      *f.DomainRestrictionEnabled,
+		IdentityProviderId:            idpID,
+		OrgId:                         orgID,
+		PostAuthRoleGrants:            &f.PostAuthRoleGrants,
 	}
 
 	if len(atlasRoleMappings) > 0 {
