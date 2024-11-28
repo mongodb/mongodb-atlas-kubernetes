@@ -75,7 +75,7 @@ func (c *Cleaner) GetProjectDependencies(ctx context.Context, projectID string, 
 	}()
 
 	if !isGov {
-		wg.Add(4)
+		wg.Add(5)
 
 		go func() {
 			defer wg.Done()
@@ -98,6 +98,12 @@ func (c *Cleaner) GetProjectDependencies(ctx context.Context, projectID string, 
 		go func() {
 			defer wg.Done()
 
+			deps.FederatedDBPrivateEndpoints = c.listFederatedDBPrivateEndpoints(ctx, projectID)
+		}()
+
+		go func() {
+			defer wg.Done()
+
 			deps.FederatedDatabases = c.listFederatedDatabases(ctx, projectID)
 		}()
 	}
@@ -111,6 +117,8 @@ func (c *Cleaner) DeleteProjectDependencies(ctx context.Context, projectID strin
 	c.deleteClusters(ctx, projectID, deps.Clusters)
 
 	c.deleteServerlessClusters(ctx, projectID, deps.ServerlessClusters)
+
+	c.deleteFederatedDBPrivateEndpoints(ctx, projectID, deps.FederatedDBPrivateEndpoints)
 
 	c.deleteFederatedDatabases(ctx, projectID, deps.FederatedDatabases)
 
