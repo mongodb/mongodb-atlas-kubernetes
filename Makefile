@@ -134,7 +134,7 @@ SILK_ASSET_GROUP="atlas-kubernetes-operator"
 
 HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
-HELM_AKO_NAMESPACE = test-ako
+HELM_AKO_NAMESPACE = $(OPERATOR_NAMESPACE)
 
 .DEFAULT_GOAL := help
 .PHONY: help
