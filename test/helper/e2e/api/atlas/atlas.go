@@ -50,8 +50,8 @@ func GetClientOrFail() *Atlas {
 }
 
 func (a *Atlas) IsDeploymentExist(projectID string, name string) bool {
-	for _, c := range a.GetDeployments(projectID) {
-		if c.GetName() == name {
+	for _, deploymentName := range a.GetDeploymentNames(projectID) {
+		if deploymentName == name {
 			return true
 		}
 	}
@@ -64,18 +64,28 @@ func (a *Atlas) IsProjectExists(g Gomega, projectID string) bool {
 	if admin.IsErrorCode(err, "GROUP_NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
 		return false
 	}
-
 	g.Expect(err).NotTo(HaveOccurred())
 
 	return project != nil
 }
 
-func (a *Atlas) GetDeployments(projectID string) []admin.AdvancedClusterDescription {
-	reply, _, err := a.Client.ClustersApi.ListClusters(context.Background(), projectID).Execute()
-	Expect(err).NotTo(HaveOccurred())
-	ginkgoPrettyPrintf(reply.Results, "listing legacy deployments in project %s", projectID)
+func (a *Atlas) GetDeploymentNames(projectID string) []string {
+	ctx := context.Background()
 
-	return *reply.Results
+	clusters, _, err := a.Client.ClustersApi.ListClusters(ctx, projectID).Execute()
+	Expect(err).NotTo(HaveOccurred())
+	ginkgoPrettyPrintf(clusters.GetResults(), "listing legacy deployments in project %s", projectID)
+	names := []string{}
+	for _, cluster := range clusters.GetResults() {
+		names = append(names, cluster.GetName())
+	}
+	serverless, _, err := a.Client.ServerlessInstancesApi.ListServerlessInstances(ctx, projectID).Execute()
+	Expect(err).NotTo(HaveOccurred())
+	ginkgoPrettyPrintf(serverless.GetResults(), "listing serverless deployments in project %s", projectID)
+	for _, cluster := range serverless.GetResults() {
+		names = append(names, cluster.GetName())
+	}
+	return names
 }
 
 func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.AdvancedClusterDescription, error) {
