@@ -52,57 +52,11 @@ func NewSearchIndex(index *akov2.SearchIndex, config *akov2.AtlasSearchIndexConf
 // fromAtlas returns internal representation of the SearchIndex converted from Atlas
 // internals. It can return an error in case some fields are not valid JSON.
 func fromAtlas(index admin.SearchIndexResponse) (*SearchIndex, error) {
-	convertVectorFields := func(in *[]any) (*apiextensionsv1.JSON, error) {
-		if in == nil {
-			return nil, nil
-		}
-		result := &apiextensionsv1.JSON{}
-		err := compat.JSONCopy(result, *in)
-		return result, err
-	}
-
-	convertSynonyms := func(in *[]admin.SearchSynonymMappingDefinition) *[]akov2.Synonym {
-		if in == nil {
-			return nil
-		}
-
-		result := make([]akov2.Synonym, 0, len(*in))
-
-		for i := range *in {
-			result = append(result, akov2.Synonym{
-				Name:     (*in)[i].Name,
-				Analyzer: (*in)[i].Analyzer,
-				Source:   akov2.Source{Collection: (*in)[i].Source.Collection},
-			})
-		}
-		return &result
-	}
-
-	convertMappings := func(in *admin.SearchMappings) (*akov2.Mappings, error) {
-		if in == nil {
-			return nil, nil
-		}
-		result := &akov2.Mappings{
-			Dynamic: in.Dynamic,
-			Fields:  nil,
-		}
-		if in.Fields == nil {
-			return result, nil
-		}
-
-		var fields apiextensionsv1.JSON
-		if err := compat.JSONCopy(&fields, in.Fields); err != nil {
-			return nil, err
-		}
-		result.Fields = &fields
-		return result, nil
-	}
-
-	mappings, mappingsError := convertMappings(index.LatestDefinition.Mappings)
+	mappings, mappingsError := mappingsFromAtlas(index.LatestDefinition.Mappings)
 	if mappingsError != nil {
 		return nil, fmt.Errorf("unable to convert mappings: %w", mappingsError)
 	}
-	synonyms := convertSynonyms(index.LatestDefinition.Synonyms)
+	synonyms := synonymsFromAtlas(index.LatestDefinition.Synonyms)
 
 	var search *akov2.Search
 	if mappings != nil || (synonyms != nil && len(*synonyms) > 0) {
@@ -124,76 +78,8 @@ func fromAtlas(index admin.SearchIndexResponse) (*SearchIndex, error) {
 		}
 	}
 
-	convertAnalyzers := func(in *[]admin.AtlasSearchAnalyzer) (*[]akov2.AtlasSearchIndexAnalyzer, error) {
-		if in == nil {
-			return nil, nil
-		}
-		result := make([]akov2.AtlasSearchIndexAnalyzer, 0, len(*in))
-
-		convertFilters := func(in *[]interface{}) (*apiextensionsv1.JSON, error) {
-			if in == nil {
-				return nil, nil
-			}
-			var res apiextensionsv1.JSON
-			if err := compat.JSONCopy(&res, *in); err != nil {
-				return nil, err
-			}
-			return &res, nil
-		}
-
-		convertTokenizer := func(in any) (akov2.Tokenizer, error) {
-			res := akov2.Tokenizer{}
-			if in == nil {
-				return res, nil
-			}
-
-			if err := compat.JSONCopy(&res, in); err != nil {
-				return res, err
-			}
-			return res, nil
-		}
-
-		errs := []error{}
-		for i := range *in {
-			tokenFilters, err := convertFilters((*in)[i].TokenFilters)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("unable to convert tokenFilters: %w", err))
-				continue
-			}
-
-			charFilters, err := convertFilters((*in)[i].CharFilters)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("unable to convert charFilters: %w", err))
-				continue
-			}
-
-			tokenizer, err := convertTokenizer((*in)[i].Tokenizer)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("unable to convert tokenizer: %w", err))
-				continue
-			}
-
-			result = append(result, akov2.AtlasSearchIndexAnalyzer{
-				Name:         (*in)[i].Name,
-				TokenFilters: tokenFilters,
-				CharFilters:  charFilters,
-				Tokenizer:    tokenizer,
-			})
-		}
-		e := errors.Join(errs...)
-		return &result, e
-	}
-
-	convertStoredSource := func(in any) (*apiextensionsv1.JSON, error) {
-		val, err := json.Marshal(in)
-		if err != nil {
-			return nil, err
-		}
-		return &apiextensionsv1.JSON{Raw: val}, nil
-	}
-
 	var errs []error
-	analyzers, err := convertAnalyzers(index.LatestDefinition.Analyzers)
+	analyzers, err := analyzersFromAtlas(index.LatestDefinition.Analyzers)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -323,131 +209,33 @@ func (s *SearchIndex) Normalize() (*SearchIndex, error) {
 }
 
 // toAtlas converts internal SearchIndex representation to the Atlas structure used for API calls
-//
-//nolint:dupl
 func (s *SearchIndex) toAtlasCreateView() (*admin.SearchIndexCreateRequest, error) {
-	convertJSONToArrayOfAny := func(in *apiextensionsv1.JSON) (*[]any, error) {
-		if in == nil {
-			return nil, nil
-		}
-		var result []any
-		if err := json.Unmarshal(in.Raw, &result); err != nil {
-			return nil, err
-		}
-		return &result, nil
-	}
-
-	convertJSONToMap := func(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
-		if in == nil {
-			return nil, nil
-		}
-		result := map[string]interface{}{}
-		if err := json.Unmarshal(in.Raw, &result); err != nil {
-			return result, err
-		}
-		return result, nil
-	}
-	convertJSONToInterface := func(in *apiextensionsv1.JSON) (*[]interface{}, error) {
-		if in == nil {
-			return pointer.MakePtr([]interface{}{}), nil
-		}
-		var result []interface{}
-		if err := json.Unmarshal(in.Raw, &result); err != nil {
-			return nil, err
-		}
-		return &result, nil
-	}
-
-	storedSource, err := convertJSONToMap(s.StoredSource)
+	storedSource, err := jsonToMap(s.StoredSource)
 	if err != nil {
 		return nil, fmt.Errorf("unable to convert storedSource: %w", err)
 	}
 
-	analyzers, err := func(in *[]akov2.AtlasSearchIndexAnalyzer) (*[]admin.AtlasSearchAnalyzer, error) {
-		if in == nil {
-			return nil, nil
-		}
-
-		result := make([]admin.AtlasSearchAnalyzer, 0, len(*in))
-		for i := range *in {
-			analyzer := (*in)[i]
-			charFilters, err := convertJSONToInterface(analyzer.CharFilters)
-			if err != nil {
-				return nil, err
-			}
-
-			tokenFilters, err := convertJSONToInterface(analyzer.TokenFilters)
-			if err != nil {
-				return nil, err
-			}
-
-			result = append(result, admin.AtlasSearchAnalyzer{
-				CharFilters:  charFilters,
-				Name:         analyzer.Name,
-				TokenFilters: tokenFilters,
-				Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
-					MaxGram:        analyzer.Tokenizer.MaxGram,
-					MinGram:        analyzer.Tokenizer.MinGram,
-					Type:           analyzer.Tokenizer.Type,
-					Group:          analyzer.Tokenizer.Group,
-					Pattern:        analyzer.Tokenizer.Pattern,
-					MaxTokenLength: analyzer.Tokenizer.MaxTokenLength,
-				},
-			})
-		}
-		return &result, nil
-	}(s.Analyzers)
+	analyzers, err := analyzersToAtlas(s.Analyzers)
 	if err != nil {
 		return nil, err
 	}
 
 	var mappings *admin.SearchMappings
-	convertMappings := func(in *akov2.Mappings) (*admin.SearchMappings, error) {
-		if in == nil {
-			return nil, nil
-		}
-		fields, err := convertJSONToMap(in.Fields)
-		if err != nil {
-			return nil, err
-		}
-		return &admin.SearchMappings{
-			Dynamic: in.Dynamic,
-			Fields:  fields,
-		}, nil
-	}
 	if s.Search != nil {
-		mappings, err = convertMappings(s.Search.Mappings)
+		mappings, err = mappingsToAtlas(s.Search.Mappings)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var synonyms *[]admin.SearchSynonymMappingDefinition
-	convertSynonyms := func(in *[]akov2.Synonym) *[]admin.SearchSynonymMappingDefinition {
-		if in == nil {
-			return nil
-		}
-
-		result := make([]admin.SearchSynonymMappingDefinition, 0, len(*in))
-		for i := range *in {
-			syn := &(*in)[i]
-
-			result = append(result, admin.SearchSynonymMappingDefinition{
-				Analyzer: syn.Analyzer,
-				Name:     syn.Name,
-				Source:   admin.SynonymSource{Collection: syn.Source.Collection},
-			})
-		}
-
-		return &result
-	}
 	if s.Search != nil {
-		synonyms = convertSynonyms(s.Search.Synonyms)
+		synonyms = synonymsToAtlas(s.Search.Synonyms)
 	}
 
 	var searchFields *[]any
 	if s.VectorSearch != nil {
-		searchFields, err = convertJSONToArrayOfAny(s.VectorSearch.Fields)
+		searchFields, err = jsonToArrayOfAny(s.VectorSearch.Fields)
 		if err != nil {
 			return nil, err
 		}
@@ -470,130 +258,33 @@ func (s *SearchIndex) toAtlasCreateView() (*admin.SearchIndexCreateRequest, erro
 	}, nil
 }
 
-//nolint:dupl
 func (s *SearchIndex) toAtlasUpdateView() (*admin.SearchIndexUpdateRequest, error) {
-	convertJSONToArrayOfAny := func(in *apiextensionsv1.JSON) (*[]any, error) {
-		if in == nil {
-			return nil, nil
-		}
-		var result []any
-		if err := json.Unmarshal(in.Raw, &result); err != nil {
-			return nil, err
-		}
-		return &result, nil
-	}
-
-	convertJSONToMap := func(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
-		if in == nil {
-			return nil, nil
-		}
-		result := map[string]interface{}{}
-		if err := json.Unmarshal(in.Raw, &result); err != nil {
-			return result, err
-		}
-		return result, nil
-	}
-	convertJSONToInterface := func(in *apiextensionsv1.JSON) (*[]interface{}, error) {
-		if in == nil {
-			return pointer.MakePtr([]interface{}{}), nil
-		}
-		var result []interface{}
-		if err := json.Unmarshal(in.Raw, &result); err != nil {
-			return nil, err
-		}
-		return &result, nil
-	}
-
-	storedSource, err := convertJSONToMap(s.StoredSource)
+	storedSource, err := jsonToMap(s.StoredSource)
 	if err != nil {
 		return nil, fmt.Errorf("unable to convert storedSource: %w", err)
 	}
 
-	analyzers, err := func(in *[]akov2.AtlasSearchIndexAnalyzer) (*[]admin.AtlasSearchAnalyzer, error) {
-		if in == nil {
-			return nil, nil
-		}
-
-		result := make([]admin.AtlasSearchAnalyzer, 0, len(*in))
-		for i := range *in {
-			analyzer := (*in)[i]
-			charFilters, err := convertJSONToInterface(analyzer.CharFilters)
-			if err != nil {
-				return nil, err
-			}
-
-			tokenFilters, err := convertJSONToInterface(analyzer.TokenFilters)
-			if err != nil {
-				return nil, err
-			}
-
-			result = append(result, admin.AtlasSearchAnalyzer{
-				CharFilters:  charFilters,
-				Name:         analyzer.Name,
-				TokenFilters: tokenFilters,
-				Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
-					MaxGram:        analyzer.Tokenizer.MaxGram,
-					MinGram:        analyzer.Tokenizer.MinGram,
-					Type:           analyzer.Tokenizer.Type,
-					Group:          analyzer.Tokenizer.Group,
-					Pattern:        analyzer.Tokenizer.Pattern,
-					MaxTokenLength: analyzer.Tokenizer.MaxTokenLength,
-				},
-			})
-		}
-		return &result, nil
-	}(s.Analyzers)
+	analyzers, err := analyzersToAtlas(s.Analyzers)
 	if err != nil {
 		return nil, err
 	}
 
 	var mappings *admin.SearchMappings
-	convertMappings := func(in *akov2.Mappings) (*admin.SearchMappings, error) {
-		if in == nil {
-			return nil, nil
-		}
-		fields, err := convertJSONToMap(in.Fields)
-		if err != nil {
-			return nil, err
-		}
-		return &admin.SearchMappings{
-			Dynamic: in.Dynamic,
-			Fields:  fields,
-		}, nil
-	}
 	if s.Search != nil {
-		mappings, err = convertMappings(s.Search.Mappings)
+		mappings, err = mappingsToAtlas(s.Search.Mappings)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var synonyms *[]admin.SearchSynonymMappingDefinition
-	convertSynonyms := func(in *[]akov2.Synonym) *[]admin.SearchSynonymMappingDefinition {
-		if in == nil {
-			return nil
-		}
-
-		result := make([]admin.SearchSynonymMappingDefinition, 0, len(*in))
-		for i := range *in {
-			syn := &(*in)[i]
-
-			result = append(result, admin.SearchSynonymMappingDefinition{
-				Analyzer: syn.Analyzer,
-				Name:     syn.Name,
-				Source:   admin.SynonymSource{Collection: syn.Source.Collection},
-			})
-		}
-
-		return &result
-	}
 	if s.Search != nil {
-		synonyms = convertSynonyms(s.Search.Synonyms)
+		synonyms = synonymToAtlass(s.Search.Synonyms)
 	}
 
 	var searchFields *[]any
 	if s.VectorSearch != nil {
-		searchFields, err = convertJSONToArrayOfAny(s.VectorSearch.Fields)
+		searchFields, err = jsonToArrayOfAny(s.VectorSearch.Fields)
 		if err != nil {
 			return nil, err
 		}
@@ -610,4 +301,238 @@ func (s *SearchIndex) toAtlasUpdateView() (*admin.SearchIndexUpdateRequest, erro
 			Fields:         searchFields,
 		},
 	}, nil
+}
+
+func convertVectorFields(in *[]any) (*apiextensionsv1.JSON, error) {
+	if in == nil {
+		return nil, nil
+	}
+	result := &apiextensionsv1.JSON{}
+	err := compat.JSONCopy(result, *in)
+	return result, err
+}
+
+func synonymsFromAtlas(in *[]admin.SearchSynonymMappingDefinition) *[]akov2.Synonym {
+	if in == nil {
+		return nil
+	}
+
+	result := make([]akov2.Synonym, 0, len(*in))
+
+	for i := range *in {
+		result = append(result, akov2.Synonym{
+			Name:     (*in)[i].Name,
+			Analyzer: (*in)[i].Analyzer,
+			Source:   akov2.Source{Collection: (*in)[i].Source.Collection},
+		})
+	}
+	return &result
+}
+
+func synonymToAtlass(in *[]akov2.Synonym) *[]admin.SearchSynonymMappingDefinition {
+	if in == nil {
+		return nil
+	}
+
+	result := make([]admin.SearchSynonymMappingDefinition, 0, len(*in))
+	for i := range *in {
+		syn := &(*in)[i]
+
+		result = append(result, admin.SearchSynonymMappingDefinition{
+			Analyzer: syn.Analyzer,
+			Name:     syn.Name,
+			Source:   admin.SynonymSource{Collection: syn.Source.Collection},
+		})
+	}
+
+	return &result
+}
+
+func mappingsFromAtlas(in *admin.SearchMappings) (*akov2.Mappings, error) {
+	if in == nil {
+		return nil, nil
+	}
+	result := &akov2.Mappings{
+		Dynamic: in.Dynamic,
+		Fields:  nil,
+	}
+	if in.Fields == nil {
+		return result, nil
+	}
+
+	var fields apiextensionsv1.JSON
+	if err := compat.JSONCopy(&fields, in.Fields); err != nil {
+		return nil, err
+	}
+	result.Fields = &fields
+	return result, nil
+}
+
+func jsonToArrayOfAny(in *apiextensionsv1.JSON) (*[]any, error) {
+	if in == nil {
+		return nil, nil
+	}
+	var result []any
+	if err := json.Unmarshal(in.Raw, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func jsonToMap(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
+	if in == nil {
+		return nil, nil
+	}
+	result := map[string]interface{}{}
+	if err := json.Unmarshal(in.Raw, &result); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func jsonToInterface(in *apiextensionsv1.JSON) (*[]interface{}, error) {
+	if in == nil {
+		return pointer.MakePtr([]interface{}{}), nil
+	}
+	var result []interface{}
+	if err := json.Unmarshal(in.Raw, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func analyzersToAtlas(in *[]akov2.AtlasSearchIndexAnalyzer) (*[]admin.AtlasSearchAnalyzer, error) {
+	if in == nil {
+		return nil, nil
+	}
+
+	result := make([]admin.AtlasSearchAnalyzer, 0, len(*in))
+	for i := range *in {
+		analyzer := (*in)[i]
+		charFilters, err := jsonToInterface(analyzer.CharFilters)
+		if err != nil {
+			return nil, err
+		}
+
+		tokenFilters, err := jsonToInterface(analyzer.TokenFilters)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, admin.AtlasSearchAnalyzer{
+			CharFilters:  charFilters,
+			Name:         analyzer.Name,
+			TokenFilters: tokenFilters,
+			Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
+				MaxGram:        analyzer.Tokenizer.MaxGram,
+				MinGram:        analyzer.Tokenizer.MinGram,
+				Type:           analyzer.Tokenizer.Type,
+				Group:          analyzer.Tokenizer.Group,
+				Pattern:        analyzer.Tokenizer.Pattern,
+				MaxTokenLength: analyzer.Tokenizer.MaxTokenLength,
+			},
+		})
+	}
+	return &result, nil
+}
+
+func analyzersFromAtlas(in *[]admin.AtlasSearchAnalyzer) (*[]akov2.AtlasSearchIndexAnalyzer, error) {
+	if in == nil {
+		return nil, nil
+	}
+	result := make([]akov2.AtlasSearchIndexAnalyzer, 0, len(*in))
+
+	errs := []error{}
+	for i := range *in {
+		tokenFilters, err := convertFilters((*in)[i].TokenFilters)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("unable to convert tokenFilters: %w", err))
+			continue
+		}
+
+		charFilters, err := convertFilters((*in)[i].CharFilters)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("unable to convert charFilters: %w", err))
+			continue
+		}
+
+		tokenizer, err := convertTokenizer((*in)[i].Tokenizer)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("unable to convert tokenizer: %w", err))
+			continue
+		}
+
+		result = append(result, akov2.AtlasSearchIndexAnalyzer{
+			Name:         (*in)[i].Name,
+			TokenFilters: tokenFilters,
+			CharFilters:  charFilters,
+			Tokenizer:    tokenizer,
+		})
+	}
+	e := errors.Join(errs...)
+	return &result, e
+}
+
+func mappingsToAtlas(in *akov2.Mappings) (*admin.SearchMappings, error) {
+	if in == nil {
+		return nil, nil
+	}
+	fields, err := jsonToMap(in.Fields)
+	if err != nil {
+		return nil, err
+	}
+	return &admin.SearchMappings{
+		Dynamic: in.Dynamic,
+		Fields:  fields,
+	}, nil
+}
+
+func synonymsToAtlas(in *[]akov2.Synonym) *[]admin.SearchSynonymMappingDefinition {
+	if in == nil {
+		return nil
+	}
+
+	result := make([]admin.SearchSynonymMappingDefinition, 0, len(*in))
+	for i := range *in {
+		syn := &(*in)[i]
+
+		result = append(result, admin.SearchSynonymMappingDefinition{
+			Analyzer: syn.Analyzer,
+			Name:     syn.Name,
+			Source:   admin.SynonymSource{Collection: syn.Source.Collection},
+		})
+	}
+
+	return &result
+}
+
+func convertStoredSource(in any) (*apiextensionsv1.JSON, error) {
+	val, err := json.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+	return &apiextensionsv1.JSON{Raw: val}, nil
+}
+
+func convertFilters(in *[]interface{}) (*apiextensionsv1.JSON, error) {
+	if in == nil {
+		return nil, nil
+	}
+	var res apiextensionsv1.JSON
+	if err := compat.JSONCopy(&res, *in); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func convertTokenizer(in any) (akov2.Tokenizer, error) {
+	res := akov2.Tokenizer{}
+	if in == nil {
+		return res, nil
+	}
+
+	if err := compat.JSONCopy(&res, in); err != nil {
+		return res, err
+	}
+	return res, nil
 }
