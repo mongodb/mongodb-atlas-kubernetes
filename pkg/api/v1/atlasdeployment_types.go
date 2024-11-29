@@ -624,7 +624,11 @@ func (c *AtlasDeployment) WithName(name string) *AtlasDeployment {
 }
 
 func (c *AtlasDeployment) WithAtlasName(name string) *AtlasDeployment {
-	c.Spec.DeploymentSpec.Name = name
+	if c.Spec.DeploymentSpec != nil {
+		c.Spec.DeploymentSpec.Name = name
+	} else if c.Spec.ServerlessSpec != nil {
+		c.Spec.ServerlessSpec.Name = name
+	}
 	return c
 }
 

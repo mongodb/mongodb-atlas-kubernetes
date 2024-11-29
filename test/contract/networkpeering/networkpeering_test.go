@@ -28,7 +28,7 @@ const (
 func TestPeerContainerServiceCRUD(t *testing.T) {
 	ctx := context.Background()
 	contract.RunGoContractTest(ctx, t, "test container CRUD", func(ch contract.ContractHelper) {
-		projectName := "peer-container-crud-project"
+		projectName := utils.RandomName("peer-container-crud-project")
 		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
 		require.NoError(t, err)
@@ -88,7 +88,7 @@ func TestPeerContainerServiceCRUD(t *testing.T) {
 func TestPeerServiceCRUD(t *testing.T) {
 	ctx := context.Background()
 	contract.RunGoContractTest(ctx, t, "test container CRUD", func(ch contract.ContractHelper) {
-		projectName := "peer-connection-crud-project"
+		projectName := utils.RandomName("peer-connection-crud-project")
 		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
 		require.NoError(t, err)
