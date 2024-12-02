@@ -10,6 +10,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 )
 
+const (
+	pageSize = 100
+)
+
 type PeerConnectionsService interface {
 	CreatePeer(ctx context.Context, projectID string, conn *NetworkPeer) (*NetworkPeer, error)
 	ListPeers(ctx context.Context, projectID string) ([]NetworkPeer, error)
@@ -71,7 +75,9 @@ func (np *networkPeeringService) listPeersForProvider(ctx context.Context, proje
 	listOpts := &admin.ListPeeringConnectionsApiParams{
 		GroupId:      projectID,
 		ProviderName: admin.PtrString(string(providerName)),
-		PageNum:      pointer.MakePtr(pageNum),
+		PageNum:      &pageNum,
+		ItemsPerPage: pointer.MakePtr(pageSize),
+		IncludeCount: pointer.MakePtr(false),
 	}
 	for {
 		page, _, err := np.peeringAPI.ListPeeringConnectionsWithParams(ctx, listOpts).Execute()
@@ -83,7 +89,7 @@ func (np *networkPeeringService) listPeersForProvider(ctx context.Context, proje
 			return nil, fmt.Errorf("failed to convert results to peer list: %w", err)
 		}
 		results = append(results, list...)
-		if len(results) >= page.GetTotalCount() {
+		if len(page.GetResults()) < pageSize {
 			return results, nil
 		}
 		pageNum += 1
@@ -120,7 +126,9 @@ func (np *networkPeeringService) ListContainers(ctx context.Context, projectID, 
 	listOpts := &admin.ListPeeringContainerByCloudProviderApiParams{
 		GroupId:      projectID,
 		ProviderName: pointer.SetOrNil(providerName, ""),
-		PageNum:      pointer.MakePtr(pageNum),
+		PageNum:      &pageNum,
+		ItemsPerPage: pointer.MakePtr(pageSize),
+		IncludeCount: pointer.MakePtr(false),
 	}
 	for {
 		page, _, err := np.peeringAPI.ListPeeringContainerByCloudProviderWithParams(ctx, listOpts).Execute()
@@ -128,7 +136,7 @@ func (np *networkPeeringService) ListContainers(ctx context.Context, projectID, 
 			return nil, fmt.Errorf("failed to list containers: %w", err)
 		}
 		results = append(results, fromAtlasContainerList(page.GetResults())...)
-		if len(results) >= page.GetTotalCount() {
+		if len(page.GetResults()) < pageSize {
 			return results, nil
 		}
 		pageNum += 1
