@@ -121,7 +121,7 @@ func (r *AtlasPrivateEndpointReconciler) getProjectFromAtlas(ctx context.Context
 		r.Log,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create Atlas SDK client: %w", err)
 	}
 
 	projectService := project.NewProjectAPIService(sdkClient.ProjectsApi)
@@ -129,7 +129,7 @@ func (r *AtlasPrivateEndpointReconciler) getProjectFromAtlas(ctx context.Context
 
 	atlasProject, err := projectService.GetProject(ctx, akoPrivateEndpoint.Spec.ExternalProject.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve project from Atlas: %w", err)
 	}
 
 	return atlasProject, nil
@@ -138,17 +138,17 @@ func (r *AtlasPrivateEndpointReconciler) getProjectFromAtlas(ctx context.Context
 func (r *AtlasPrivateEndpointReconciler) getProjectFromKube(ctx context.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) (*project.Project, error) {
 	atlasProject := &akov2.AtlasProject{}
 	if err := r.Client.Get(ctx, akoPrivateEndpoint.AtlasProjectObjectKey(), atlasProject); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve project custom resource: %w", err)
 	}
 
 	credentialsSecret, err := customresource.ComputeSecret(atlasProject, akoPrivateEndpoint)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compute secret: %w", err)
 	}
 
 	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx, credentialsSecret, r.Log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create Atlas SDK client: %w", err)
 	}
 
 	r.privateEndpointService = privateendpoint.NewPrivateEndpointAPI(sdkClient.PrivateEndpointServicesApi)
@@ -300,7 +300,7 @@ func (r *AtlasPrivateEndpointReconciler) privateEndpointForProjectMapFunc() hand
 		}
 		err := r.Client.List(ctx, peList, listOpts)
 		if err != nil {
-			r.Log.Errorf("failed to list AtlasPrivateEndpoint: %e", err)
+			r.Log.Errorf("failed to list AtlasPrivateEndpoint: %s", err)
 
 			return []reconcile.Request{}
 		}
