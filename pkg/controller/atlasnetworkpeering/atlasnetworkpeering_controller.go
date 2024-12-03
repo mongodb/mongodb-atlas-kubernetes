@@ -28,6 +28,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkpeering"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
@@ -115,8 +117,75 @@ func (r *AtlasNetworkPeeringReconciler) Reconcile(ctx context.Context, req ctrl.
 func (r *AtlasNetworkPeeringReconciler) handle(req *reconcileRequest) (ctrl.Result, error) {
 	r.Log.Infow("handling network peering reconcile request",
 		"service set", (req.service != nil), "projectID", req.projectID, "networkPeering", req.networkPeering)
-	// TODO: state machine goes here
-	return ctrl.Result{}, nil
+	atlasPeer, err := req.service.GetPeer(req.workflowCtx.Context, req.projectID, req.networkPeering.Spec.ContainerID)
+	if err != nil {
+		r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
+	}
+	inAtlas := atlasPeer != nil
+	deleted := req.networkPeering.DeletionTimestamp != nil
+
+	switch {
+	case !deleted && !inAtlas:
+		return r.create(req)
+	case !deleted && inAtlas:
+		return r.sync(req)
+	case deleted && inAtlas:
+		return r.delete(req)
+	default: // deleted && !inAtlas so nothing to do
+		return r.noop(req)
+	}
+}
+
+func (r *AtlasNetworkPeeringReconciler) create(req *reconcileRequest) (ctrl.Result, error) {
+	spec := req.networkPeering.Spec
+	ctx := req.workflowCtx.Context
+	containerID := containerID(req.networkPeering)
+	if containerID == "" {
+		requestedContainer := &networkpeering.ProviderContainer{
+			AtlasProviderContainerConfig: akov2.AtlasProviderContainerConfig{
+				AtlasCIDRBlock: spec.AtlasCIDRBlock,
+			},
+			Provider: spec.Provider,
+		}
+		if spec.Provider != string(provider.ProviderGCP) {
+			requestedContainer.ContainerRegion = spec.ContainerRegion
+		} // TODO: else for GCP regions
+		createdContainer, err := req.service.CreateContainer(ctx, req.projectID, requestedContainer)
+		if err != nil {
+			r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
+		}
+		containerID = createdContainer.ID
+		req.networkPeering.Status.ContainerID = containerID
+	}
+	requestedPeer := networkpeering.NetworkPeer{
+		AtlasNetworkPeeringConfig: spec.AtlasNetworkPeeringConfig,
+		ID:                        containerID,
+	}
+	createdPeer, err := req.service.CreatePeer(ctx, req.projectID, &requestedPeer)
+	if err != nil {
+		r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
+	}
+	req.networkPeering.Status.ID = createdPeer.ID
+	if err := r.saveStatus(&req.networkPeering.Status); err != nil {
+		r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
+	}
+	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasNetworkPeeringReconciler) sync(_ *reconcileRequest) (ctrl.Result, error) {
+	panic("TBD")
+}
+
+func (r *AtlasNetworkPeeringReconciler) delete(_ *reconcileRequest) (ctrl.Result, error) {
+	panic("TBD")
+}
+
+func (r *AtlasNetworkPeeringReconciler) noop(_ *reconcileRequest) (ctrl.Result, error) {
+	panic("TBD")
+}
+
+func (r *AtlasNetworkPeeringReconciler) saveStatus(_ *status.AtlasNetworkPeeringStatus) error {
+	panic("TBD")
 }
 
 func (r *AtlasNetworkPeeringReconciler) terminate(
@@ -140,4 +209,11 @@ func (r *AtlasNetworkPeeringReconciler) SetupWithManager(mgr ctrl.Manager) error
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&akov2.AtlasNetworkPeering{}).
 		Complete(r)
+}
+
+func containerID(peer *akov2.AtlasNetworkPeering) string {
+	if peer.Spec.ContainerID != "" {
+		return peer.Spec.ContainerID
+	}
+	return peer.Status.ContainerID
 }

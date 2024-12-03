@@ -89,7 +89,7 @@ type AtlasNetworkPeeringConfig struct {
 
 // AtlasProviderContainerConfig defines the Atlas specifics of the desired state of Peering Container
 type AtlasProviderContainerConfig struct {
-	// ContainerRegion is the provider region name of Atlas network peer container. If not set, AccepterRegionName is used.
+	// ContainerRegion is the provider region name of Atlas network peer container.
 	// +optional
 	ContainerRegion string `json:"containerRegion"`
 	// Atlas CIDR. It needs to be set if ContainerID is not set.

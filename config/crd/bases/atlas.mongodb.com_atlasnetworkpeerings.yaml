@@ -121,7 +121,7 @@ spec:
                 type: string
               containerRegion:
                 description: ContainerRegion is the provider region name of Atlas
-                  network peer container. If not set, AccepterRegionName is used.
+                  network peer container.
                 type: string
               externalProjectRef:
                 description: ExternalProjectRef holds the Atlas project ID the user
@@ -212,6 +212,13 @@ spec:
                   - type
                   type: object
                 type: array
+              containerId:
+                description: ContainerID records the ID of the container created by
+                  atlas for this peering
+                type: string
+              id:
+                description: ID recrods the identified of thr peer created by Atlas
+                type: string
               observedGeneration:
                 description: |-
                   ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.

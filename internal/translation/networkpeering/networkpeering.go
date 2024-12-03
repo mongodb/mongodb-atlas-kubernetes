@@ -17,6 +17,7 @@ const (
 type PeerConnectionsService interface {
 	CreatePeer(ctx context.Context, projectID string, conn *NetworkPeer) (*NetworkPeer, error)
 	ListPeers(ctx context.Context, projectID string) ([]NetworkPeer, error)
+	GetPeer(ctx context.Context, projectID, containerID string) (*NetworkPeer, error)
 	DeletePeer(ctx context.Context, projectID, containerID string) error
 }
 
@@ -49,11 +50,23 @@ func (np *networkPeeringService) CreatePeer(ctx context.Context, projectID strin
 	if err != nil {
 		return nil, fmt.Errorf("failed to create network peer %v: %w", conn, err)
 	}
-	newConn, err := fromAtlasConnection(newAtlasConn)
+	newPeer, err := fromAtlasConnection(newAtlasConn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert peer from Atlas: %w", err)
 	}
-	return newConn, nil
+	return newPeer, nil
+}
+
+func (np *networkPeeringService) GetPeer(ctx context.Context, projectID, containerID string) (*NetworkPeer, error) {
+	atlasConn, _, err := np.peeringAPI.GetPeeringConnection(ctx, projectID, containerID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get network peer for container id %v: %w", containerID, err)
+	}
+	peer, err := fromAtlasConnection(atlasConn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert peer from Atlas: %w", err)
+	}
+	return peer, nil
 }
 
 func (np *networkPeeringService) ListPeers(ctx context.Context, projectID string) ([]NetworkPeer, error) {

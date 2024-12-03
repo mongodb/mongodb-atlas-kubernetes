@@ -158,6 +158,12 @@ func TestPeerServiceCRUD(t *testing.T) {
 					createdPeer = newPeer
 				})
 
+				t.Run(fmt.Sprintf("get %s peer connection", tc.provider), func(t *testing.T) {
+					peer, err := ps.GetPeer(ctx, testProjectID, createdPeer.ContainerID)
+					require.NoError(t, err)
+					assert.Equal(t, createdPeer, peer)
+				})
+
 				t.Run(fmt.Sprintf("list %s peer connections", tc.provider), func(t *testing.T) {
 					peers, err := ps.ListPeers(ctx, testProjectID)
 					require.NoError(t, err)
