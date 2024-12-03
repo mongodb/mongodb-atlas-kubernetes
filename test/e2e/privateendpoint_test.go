@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -105,7 +104,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), func() {
 						ID:                fmt.Sprintf("azure-e2e-pe-%s", testData.Resources.TestID),
 						Region:            azureConfig.Region,
 						ServiceResourceID: pe.Status.ResourceID,
-						SubnetName:        collection.FirstKeyFromMap(azureConfig.Subnets),
+						SubnetName:        randomKeyFromMap(azureConfig.Subnets),
 					})
 				case "GCP":
 					gcpConfig, err := cloud.GenerateCloudConfig[cloud.GCPConfig](pe.Spec.Provider, cloudRegion, testData.Resources.KeyName)
@@ -116,7 +115,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), func() {
 						ID:         fmt.Sprintf("gcp-e2e-pe-%s", testData.Resources.TestID),
 						Region:     gcpConfig.Region,
 						Targets:    pe.Status.ServiceAttachmentNames,
-						SubnetName: collection.FirstKeyFromMap(gcpConfig.Subnets),
+						SubnetName: randomKeyFromMap(gcpConfig.Subnets),
 					})
 				}
 			})
@@ -343,7 +342,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 							ID:                fmt.Sprintf("azure-e2e-pe-%s", testData.Resources.TestID),
 							Region:            azureConfig.Region,
 							ServiceResourceID: peStatus.ServiceResourceID,
-							SubnetName:        collection.FirstKeyFromMap(azureConfig.Subnets),
+							SubnetName:        randomKeyFromMap(azureConfig.Subnets),
 						})
 					case "GCP":
 						gcpConfig, err := cloud.GenerateCloudConfig[cloud.GCPConfig](string(pe.Provider), cloudRegion, testData.Resources.KeyName)
@@ -354,7 +353,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 							ID:         fmt.Sprintf("pe-migration-gcp--%s-%s", pe.EndpointGroupName, testData.Resources.TestID),
 							Region:     gcpConfig.Region,
 							Targets:    peStatus.ServiceAttachmentNames,
-							SubnetName: collection.FirstKeyFromMap(gcpConfig.Subnets),
+							SubnetName: randomKeyFromMap(gcpConfig.Subnets),
 						})
 					}
 				}
@@ -616,4 +615,12 @@ func statusForProvider(peStatus []status.ProjectPrivateEndpoint, providerName pr
 	}
 
 	return nil
+}
+
+func randomKeyFromMap[K comparable, V any](m map[K]V) K {
+	for k := range m {
+		return k
+	}
+
+	return *new(K)
 }
