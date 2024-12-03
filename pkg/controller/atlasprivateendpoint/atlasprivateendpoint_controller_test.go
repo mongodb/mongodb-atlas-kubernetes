@@ -3,6 +3,7 @@ package atlasprivateendpoint
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -247,7 +248,7 @@ func TestEnsureCustomResource(t *testing.T) {
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
-				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: failed to create sdk client",
+				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: failed to create Atlas SDK client: failed to create sdk client",
 				"Status update",
 			},
 		},
@@ -281,7 +282,7 @@ func TestEnsureCustomResource(t *testing.T) {
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
-				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: atlasprojects.atlas.mongodb.com \"my-project\" not found",
+				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: failed to retrieve project custom resource: atlasprojects.atlas.mongodb.com \"my-project\" not found",
 				"Status update",
 			},
 		},
@@ -403,19 +404,22 @@ func TestGetProjectFromKube(t *testing.T) {
 					ServiceStatus: "AVAILABLE",
 				},
 			},
-			expectedErr: &k8serrors.StatusError{
-				ErrStatus: metav1.Status{
-					Status:  "Failure",
-					Message: "atlasprojects.atlas.mongodb.com \"my-missing-project\" not found",
-					Reason:  "NotFound",
-					Details: &metav1.StatusDetails{
-						Name:  "my-missing-project",
-						Group: "atlas.mongodb.com",
-						Kind:  "atlasprojects",
+			expectedErr: fmt.Errorf(
+				"failed to retrieve project custom resource: %w",
+				&k8serrors.StatusError{
+					ErrStatus: metav1.Status{
+						Status:  "Failure",
+						Message: "atlasprojects.atlas.mongodb.com \"my-missing-project\" not found",
+						Reason:  "NotFound",
+						Details: &metav1.StatusDetails{
+							Name:  "my-missing-project",
+							Group: "atlas.mongodb.com",
+							Kind:  "atlasprojects",
+						},
+						Code: 404,
 					},
-					Code: 404,
 				},
-			},
+			),
 		},
 		"failed to create sdk client": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
@@ -441,7 +445,7 @@ func TestGetProjectFromKube(t *testing.T) {
 					return nil, "", errors.New("failed to create sdk client")
 				},
 			},
-			expectedErr: errors.New("failed to create sdk client"),
+			expectedErr: fmt.Errorf("failed to create Atlas SDK client: %w", errors.New("failed to create sdk client")),
 		},
 		"get project from cluster": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
