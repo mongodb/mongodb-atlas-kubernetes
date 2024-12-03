@@ -167,6 +167,7 @@ jobs:
             "multinamespaced",
             "networkpeering",
             "privatelink",
+            "private-endpoint",
             "project-settings",
             "serverless-pe",
             "x509auth",

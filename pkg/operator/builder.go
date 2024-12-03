@@ -7,8 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlascustomrole"
-
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -27,10 +25,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasbackupcompliancepolicy"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlascustomrole"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasprivateendpoint"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlassearchindexconfig"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasstream"
@@ -333,6 +333,17 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 	)
 	if err = customRolesReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasCustomRole: %w", err)
+	}
+
+	peReconciler := atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(
+		mgr,
+		b.predicates,
+		b.atlasProvider,
+		b.deletionProtection,
+		b.logger,
+	)
+	if err = peReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
+		return nil, fmt.Errorf("unable to create controller AtlasPrivateEndpoint: %w", err)
 	}
 
 	return mgr, nil

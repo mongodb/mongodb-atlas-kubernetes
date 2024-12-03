@@ -47,6 +47,7 @@ func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResourc
 func ApplyLastConfigSkipped(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client) error {
 	return applyLastSpec(ctx, resource, k8sClient, AnnotationLastSkippedConfiguration)
 }
+
 func applyLastSpec(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client, annotationKey string) error {
 	uObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resource)
 	if err != nil {

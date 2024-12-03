@@ -620,17 +620,14 @@ func TestHandleProject(t *testing.T) {
 			}
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
 			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(logger.Desugar())
-
+			peIndexer := indexer.NewAtlasPrivateEndpointByProjectIndexer(zaptest.NewLogger(t))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.project).
 				WithStatusSubresource(tt.project).
-				WithIndex(
-					instancesIndexer.Object(),
-					instancesIndexer.Name(),
-					instancesIndexer.Keys,
-				).
+				WithIndex(instancesIndexer.Object(), instancesIndexer.Name(), instancesIndexer.Keys).
 				WithIndex(customRoleIndexer.Object(), customRoleIndexer.Name(), customRoleIndexer.Keys).
+				WithIndex(peIndexer.Object(), peIndexer.Name(), peIndexer.Keys).
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
 
@@ -1083,16 +1080,14 @@ func TestDelete(t *testing.T) {
 
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
 			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(logger.Desugar())
+			peIndexer := indexer.NewAtlasPrivateEndpointByProjectIndexer(zaptest.NewLogger(t))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.objects...).
 				WithStatusSubresource(tt.objects...).
-				WithIndex(
-					instancesIndexer.Object(),
-					instancesIndexer.Name(),
-					instancesIndexer.Keys,
-				).
+				WithIndex(instancesIndexer.Object(), instancesIndexer.Name(), instancesIndexer.Keys).
 				WithIndex(customRoleIndexer.Object(), customRoleIndexer.Name(), customRoleIndexer.Keys).
+				WithIndex(peIndexer.Object(), peIndexer.Name(), peIndexer.Keys).
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
 
@@ -1166,19 +1161,18 @@ func TestHasDependencies(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 		}
+		logger := zaptest.NewLogger(t)
 		instanceIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
 		customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(zap.L())
+		peIndexer := indexer.NewAtlasPrivateEndpointByProjectIndexer(logger)
 		testScheme := runtime.NewScheme()
 		require.NoError(t, akov2.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(p).
-			WithIndex(
-				instanceIndexer.Object(),
-				instanceIndexer.Name(),
-				instanceIndexer.Keys,
-			).
+			WithIndex(instanceIndexer.Object(), instanceIndexer.Name(), instanceIndexer.Keys).
 			WithIndex(customRoleIndexer.Object(), customRoleIndexer.Name(), customRoleIndexer.Keys).
+			WithIndex(peIndexer.Object(), peIndexer.Name(), peIndexer.Keys).
 			Build()
 		reconciler := &AtlasProjectReconciler{
 			Client: k8sClient,
@@ -1189,7 +1183,7 @@ func TestHasDependencies(t *testing.T) {
 		assert.False(t, ok)
 	})
 
-	t.Run("should return true when project has dependencies", func(t *testing.T) {
+	t.Run("should return true when project has streams as dependencies", func(t *testing.T) {
 		p := &akov2.AtlasProject{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-project",
@@ -1208,23 +1202,66 @@ func TestHasDependencies(t *testing.T) {
 				},
 			},
 		}
-		instanceIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
+		logger := zaptest.NewLogger(t)
+		instanceIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(logger)
+		peIndexer := indexer.NewAtlasPrivateEndpointByProjectIndexer(logger)
 		testScheme := runtime.NewScheme()
 		require.NoError(t, akov2.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(p, streamsInstance).
-			WithIndex(
-				instanceIndexer.Object(),
-				instanceIndexer.Name(),
-				instanceIndexer.Keys,
-			).
+			WithIndex(instanceIndexer.Object(), instanceIndexer.Name(), instanceIndexer.Keys).
+			WithIndex(peIndexer.Object(), peIndexer.Name(), peIndexer.Keys).
 			Build()
 		reconciler := &AtlasProjectReconciler{
 			Client: k8sClient,
 		}
 		ctx := &workflow.Context{
 			Context: context.Background(),
+		}
+
+		ok, err := reconciler.hasDependencies(ctx, p)
+		require.NoError(t, err)
+		assert.True(t, ok)
+	})
+
+	t.Run("should return true when project has private endpoints as dependencies", func(t *testing.T) {
+		p := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+		}
+		pe := &akov2.AtlasPrivateEndpoint{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pe-0",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasPrivateEndpointSpec{
+				Project: &common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+			},
+		}
+		logger := zaptest.NewLogger(t)
+		ctx := &workflow.Context{
+			Context: context.Background(),
+		}
+		instanceIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(logger)
+		customRolesIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(logger)
+		peIndexer := indexer.NewAtlasPrivateEndpointByProjectIndexer(logger)
+		testScheme := runtime.NewScheme()
+		require.NoError(t, akov2.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(p, pe).
+			WithIndex(instanceIndexer.Object(), instanceIndexer.Name(), instanceIndexer.Keys).
+			WithIndex(customRolesIndexer.Object(), customRolesIndexer.Name(), customRolesIndexer.Keys).
+			WithIndex(peIndexer.Object(), peIndexer.Name(), peIndexer.Keys).
+			Build()
+		reconciler := &AtlasProjectReconciler{
+			Client: k8sClient,
 		}
 
 		ok, err := reconciler.hasDependencies(ctx, p)

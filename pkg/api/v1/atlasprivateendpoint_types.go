@@ -53,12 +53,18 @@ type AtlasPrivateEndpointSpec struct {
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
 	// AWSConfiguration is the specific AWS settings for the private endpoint
+	// +listType=map
+	// +listMapKey=id
 	// +kubebuilder:validation:Optional
 	AWSConfiguration []AWSPrivateEndpointConfiguration `json:"awsConfiguration,omitempty"`
 	// AzureConfiguration is the specific Azure settings for the private endpoint
+	// +listType=map
+	// +listMapKey=id
 	// +kubebuilder:validation:Optional
 	AzureConfiguration []AzurePrivateEndpointConfiguration `json:"azureConfiguration,omitempty"`
 	// GCPConfiguration is the specific Google Cloud settings for the private endpoint
+	// +listType=map
+	// +listMapKey=groupName
 	// +kubebuilder:validation:Optional
 	GCPConfiguration []GCPPrivateEndpointConfiguration `json:"gcpConfiguration,omitempty"`
 }

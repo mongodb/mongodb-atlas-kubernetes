@@ -2,13 +2,19 @@ package cloud
 
 import (
 	"context"
+	"crypto/rand"
+	"errors"
+	"fmt"
+	"math/big"
+	"net"
 	"path"
+	"strings"
 	"time"
 
-	. "github.com/onsi/gomega"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
+	"github.com/google/uuid"
 	"github.com/onsi/ginkgo/v2/dsl/core"
+	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 )
@@ -44,6 +50,10 @@ type ProviderAction struct {
 	awsProvider   *AwsAction
 	gcpProvider   *GCPAction
 	azureProvider *AzureAction
+}
+
+type CloudConfig interface {
+	AWSConfig | AzureConfig | GCPConfig
 }
 
 type AWSConfig struct {
@@ -246,7 +256,7 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 			Endpoints:         endpoints,
 		}
 	case *AzurePrivateEndpointRequest:
-		pe, err := a.azureProvider.CreatePrivateEndpoint(vpcName, req.SubnetName, req.ID, req.ServiceResourceID, req.Region)
+		pe, err := a.azureProvider.CreatePrivateEndpoint(a.azureConfig.VPC, req.SubnetName, req.ID, req.ServiceResourceID, req.Region)
 		Expect(err).To(BeNil())
 		Expect(pe).ShouldNot(BeNil())
 		Expect(pe.Properties).ShouldNot(BeNil())
@@ -355,4 +365,187 @@ func getAzureConfigDefaults() *AzureConfig {
 		CIDR:    vpcCIDR,
 		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
 	}
+}
+
+func GenerateCloudConfig[T CloudConfig](cloudProvider, region, prefixName string) (*T, error) {
+	vpc, subnets, err := generateVPCWithSubnets()
+	if err != nil {
+		return nil, err
+	}
+
+	uniqueID := strings.ToLower(uuid.New().String()[0:6])
+
+	switch cloudProvider {
+	case "AWS":
+		return any(&AWSConfig{
+			Region: region,
+			VPC:    fmt.Sprintf("%s-aws-vpc-%s", prefixName, uniqueID),
+			CIDR:   vpc,
+			Subnets: map[string]string{
+				fmt.Sprintf("%s-aws-sn1-%s", prefixName, uniqueID): subnets[0],
+				fmt.Sprintf("%s-aws-sn2-%s", prefixName, uniqueID): subnets[1],
+			},
+			EnableCleanup: true,
+		}).(*T), nil
+	case "AZURE":
+		return any(&AzureConfig{
+			Region: region,
+			VPC:    fmt.Sprintf("%s-azure-vpc-%s", prefixName, uniqueID),
+			CIDR:   vpc,
+			Subnets: map[string]string{
+				fmt.Sprintf("%s-azure-sn1-%s", prefixName, uniqueID): subnets[0],
+				fmt.Sprintf("%s-azure-sn2-%s", prefixName, uniqueID): subnets[1],
+			},
+			EnableCleanup: true,
+		}).(*T), nil
+	case "GCP":
+		return any(&GCPConfig{
+			Region: region,
+			VPC:    fmt.Sprintf("%s-gcp-vpc-%s", prefixName, uniqueID),
+			Subnets: map[string]string{
+				fmt.Sprintf("%s-gcp-sn1-%s", prefixName, uniqueID): subnets[0],
+				fmt.Sprintf("%s-gcp-sn2-%s", prefixName, uniqueID): subnets[1],
+			},
+			EnableCleanup: true,
+		}).(*T), nil
+	}
+
+	return nil, errors.New("unsupported provider, valid options are: AWS, Azure, GCP")
+}
+
+func generateVPCWithSubnets() (string, []string, error) {
+	privateRanges := []struct {
+		base       string
+		subnetMask int
+	}{
+		{"10.0.0.0", 24},
+		{"172.16.0.0", 24},
+		{"192.168.0.0", 24},
+	}
+
+	// Pick a random range
+	r, err := rand.Int(rand.Reader, big.NewInt(int64(len(privateRanges))))
+	if err != nil {
+		return "", nil, err
+	}
+	privateRange := privateRanges[r.Int64()]
+
+	_, network, err := net.ParseCIDR(fmt.Sprintf("%s/%d", privateRange.base, privateRange.subnetMask))
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Generate 2 subnets
+	ip := network.IP.To4()
+	r, err = rand.Int(rand.Reader, big.NewInt(int64(255)))
+	if err != nil {
+		return "", nil, err
+	}
+	ip[2] = byte(r.Int64())
+
+	vpcCIDR := fmt.Sprintf("%s/%d", ip.String(), privateRange.subnetMask)
+	subnet1CIDR := fmt.Sprintf("%s/%d", ip.String(), privateRange.subnetMask+1)
+	ip[3] = 128
+	subnet2CIDR := fmt.Sprintf("%s/%d", ip.String(), privateRange.subnetMask+1)
+
+	return vpcCIDR, []string{subnet1CIDR, subnet2CIDR}, nil
+}
+
+func GetAtlasRegionByProvider(cloudProvider string) (string, error) {
+	regionMap := map[string][]string{
+		"AWS": {
+			"US_WEST_2",      // North America - Oregon
+			"CA_CENTRAL_1",   // North America - Canada Central
+			"SA_EAST_1",      // South America - São Paulo
+			"EU_NORTH_1",     // Europe - Stockholm
+			"EU_WEST_3",      // Europe - Paris
+			"ME_SOUTH_1",     // Middle East - Bahrain
+			"AP_SOUTH_2",     // Asia - Hyderabad
+			"AP_NORTHEAST_2", // Asia - Seoul
+			"AP_SOUTHEAST_2", // Oceania - Sydney
+		},
+		"AZURE": {
+			"US_WEST_3",           // North America - West US
+			"US_EAST_2",           // North America - East US
+			"BRAZIL_SOUTHEAST",    // South America - Brazil Southeast
+			"EUROPE_NORTH",        // Europe - North Europe (Ireland)
+			"NORWAY_EAST",         // Europe - Norway East
+			"FRANCE_SOUTH",        // Europe - France South
+			"UAE_CENTRAL",         // Middle East - UAE Central
+			"KOREA_CENTRAL",       // Asia - Korea Central
+			"INDIA_CENTRAL",       // Asia - India Central
+			"AUSTRALIA_CENTRAL_2", // Oceania - Australia Central
+			"SOUTH_AFRICA_WEST",   // Africa - South Africa West
+		},
+		"GCP": {
+			"US_WEST_3",             // North America - Salt Lake City
+			"US_EAST_5",             // North America - Columbus
+			"SOUTH_AMERICA_EAST_1",  // South America - São Paulo
+			"EUROPE_WEST_3",         // Europe - Frankfurt
+			"EUROPE_NORTH_1",        // Europe - Finland
+			"EUROPE_WEST_6",         // Europe - Zurich
+			"ASIA_EAST_2",           // Asia - Hong Kong
+			"ASIA_NORTHEAST_2",      // Asia - Osaka
+			"AUSTRALIA_SOUTHEAST_2", // Oceania - Melbourne
+		},
+	}
+
+	// Validate the input provider
+	regions := regionMap[cloudProvider]
+	r, err := rand.Int(rand.Reader, big.NewInt(int64(len(regions))))
+	if err != nil {
+		return "", err
+	}
+
+	return regions[r.Int64()], nil
+}
+
+func MapCloudProviderRegion(cloudProvider, atlasRegion string) string {
+	regionMap := map[string]map[string]string{
+		"AWS": {
+			"US_WEST_2":      "us-west-2",      // North America - Oregon
+			"CA_CENTRAL_1":   "ca-central-1",   // North America - Canada Central
+			"SA_EAST_1":      "sa-east-1",      // South America - São Paulo
+			"EU_NORTH_1":     "eu-north-1",     // Europe - Stockholm
+			"EU_WEST_3":      "eu-west-3",      // Europe - Paris
+			"ME_SOUTH_1":     "me-south-1",     // Middle East - Bahrain
+			"AP_SOUTH_2":     "ap-south-2",     // Asia - Hyderabad
+			"AP_NORTHEAST_2": "ap-northeast-2", // Asia - Seoul
+			"AP_SOUTHEAST_2": "ap-southeast-2", // Oceania - Sydney
+		},
+		"AZURE": {
+			"US_WEST_3":           "westus3",           // North America - West US
+			"US_EAST_2":           "eastus2",           // North America - East US
+			"BRAZIL_SOUTHEAST":    "brazilsoutheast",   // South America - Brazil Southeast
+			"EUROPE_NORTH":        "northeurope",       // Europe - North Europe (Ireland)
+			"NORWAY_EAST":         "norwayeast",        // Europe - Norway East
+			"FRANCE_SOUTH":        "francesouth",       // Europe - France South
+			"UAE_CENTRAL":         "uaecentral",        // Middle East - UAE Central
+			"KOREA_CENTRAL":       "koreacentral",      // Asia - Korea Central
+			"INDIA_CENTRAL":       "centralindia",      // Asia - India Central
+			"AUSTRALIA_CENTRAL_2": "australiacentral2", // Oceania - Australia Central
+			"SOUTH_AFRICA_WEST":   "southafricawest",   // Africa - South Africa West
+		},
+		"GCP": {
+			"US_WEST_3":             "us-west3",             // North America - Salt Lake City
+			"US_EAST_5":             "us-east5",             // North America - Columbus
+			"SOUTH_AMERICA_EAST_1":  "southamerica-east1",   // South America - São Paulo
+			"EUROPE_WEST_3":         "europe-west3",         // Europe - Frankfurt
+			"EUROPE_NORTH_1":        "europe-north1",        // Europe - Finland
+			"EUROPE_WEST_6":         "europe-west6",         // Europe - Zurich
+			"ASIA_EAST_2":           "asia-east2",           // Asia - Hong Kong
+			"ASIA_NORTHEAST_2":      "asia-northeast2",      // Asia - Osaka
+			"AUSTRALIA_SOUTHEAST_2": "australia-southeast2", // Oceania - Melbourne
+		},
+	}
+
+	if _, ok := regionMap[cloudProvider]; !ok {
+		return ""
+	}
+
+	if _, ok := regionMap[cloudProvider][atlasRegion]; !ok {
+		return ""
+	}
+
+	return regionMap[cloudProvider][atlasRegion]
 }

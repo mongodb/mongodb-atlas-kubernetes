@@ -94,6 +94,12 @@ const (
 	TeamUnmanaged ConditionType = "TeamUnmanaged"
 )
 
+// Atlas Private Endpoint condition types
+const (
+	PrivateEndpointServiceReady ConditionType = "PrivateEndpointServiceReady"
+	PrivateEndpointReady        ConditionType = "PrivateEndpointReady"
+)
+
 // Generic condition type
 const (
 	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"
