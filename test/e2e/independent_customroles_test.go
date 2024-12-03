@@ -1,8 +1,9 @@
 package e2e
 
 import (
-	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 	"time"
+
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 
