@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
@@ -134,11 +135,11 @@ var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole re
 		})
 
 		By("Enabled reconciliation for AtlasProject", func() {
-			Eventually(func(g Gomega) {
-				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).Should(Succeed())
-				testData.Project.Annotations = map[string]string{}
-				g.Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
-			}).WithTimeout(1 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			_, err := akoretry.RetryUpdateOnConflict(testData.Context, testData.K8SClient,
+				client.ObjectKeyFromObject(testData.Project), func(p *akov2.AtlasProject) {
+					p.Annotations = map[string]string{}
+				})
+			Expect(err).To(BeNil())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
