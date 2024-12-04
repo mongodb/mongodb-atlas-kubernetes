@@ -198,8 +198,18 @@ func (r *AtlasDeploymentReconciler) getProjectFromAtlas(ctx *workflow.Context, a
 		return nil, err
 	}
 
+	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(
+		ctx.Context,
+		&client.ObjectKey{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Credentials().Name},
+		r.Log)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx.SdkClient = sdkClient
+	ctx.SdkClientSet = sdkClientSet
 	ctx.OrgID = orgID
+
 	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
 
@@ -237,14 +247,20 @@ func (r *AtlasDeploymentReconciler) getProjectFromKube(ctx *workflow.Context, at
 		return nil, err
 	}
 
+	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx.Context, credentialsSecret, r.Log)
+	if err != nil {
+		return nil, err
+	}
+
 	// Need to still set old client for component not yet migrated
 	ctx.Client, _, err = r.AtlasProvider.Client(ctx.Context, credentialsSecret, r.Log)
 	if err != nil {
 		return nil, err
 	}
-
+	ctx.SdkClientSet = sdkClientSet
 	ctx.SdkClient = sdkClient
 	ctx.OrgID = orgID
+
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
 	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
 

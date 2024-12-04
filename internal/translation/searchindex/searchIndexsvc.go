@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 )
 
 var (
@@ -50,7 +50,7 @@ func (si *SearchIndexes) GetIndex(ctx context.Context, projectID, clusterName, i
 }
 
 func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
-	atlasIndex, err := index.toAtlas()
+	atlasIndex, err := index.toAtlasCreateView()
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (si *SearchIndexes) DeleteIndex(ctx context.Context, projectID, clusterName
 }
 
 func (si *SearchIndexes) UpdateIndex(ctx context.Context, projectID, clusterName string, index *SearchIndex) (*SearchIndex, error) {
-	atlasIndex, err := index.toAtlas()
+	atlasIndex, err := index.toAtlasUpdateView()
 	if err != nil {
 		return nil, fmt.Errorf("error converting index: %w", err)
 	}

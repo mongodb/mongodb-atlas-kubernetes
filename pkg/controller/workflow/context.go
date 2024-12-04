@@ -3,6 +3,8 @@ package workflow
 import (
 	"context"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -27,6 +29,8 @@ type Context struct {
 	// Client is a mongodb atlas client used to make v1.0 API calls
 	Client    *mongodbatlas.Client
 	SdkClient *admin.APIClient
+	// TODO: consider grouping all clients here
+	SdkClientSet *atlas.ClientSet
 
 	status Status
 

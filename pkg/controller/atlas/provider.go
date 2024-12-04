@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	//v20241113001
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -30,8 +32,14 @@ const (
 type Provider interface {
 	Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
 	SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
+	SdkClientSet(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*ClientSet, string, error)
 	IsCloudGov() bool
 	IsResourceSupported(resource api.AtlasCustomResource) bool
+}
+
+type ClientSet struct {
+	//SdkClient20231115008 *admin.APIClient
+	SdkClient20241113001 *adminv20241113001.APIClient
 }
 
 type ProductionProvider struct {
@@ -132,6 +140,27 @@ func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.Ob
 	}
 
 	return c, secretData.OrgID, nil
+}
+
+func (p *ProductionProvider) SdkClientSet(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*ClientSet, string, error) {
+	secretData, err := getSecrets(ctx, p.k8sClient, secretRef, &p.globalSecretRef)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Instead of constantly extending the interface above, consider grouping all SDK Clients here
+	// New SDK (v20241113001) SDK
+	c2024, err := adminv20241113001.NewClient(
+		adminv20241113001.UseBaseURL(p.domain),
+		adminv20241113001.UseDigestAuth(secretData.PublicKey, secretData.PrivateKey),
+		adminv20241113001.UseUserAgent(operatorUserAgent()))
+	if err != nil {
+		return nil, "", err
+	}
+
+	return &ClientSet{
+		SdkClient20241113001: c2024,
+	}, secretData.OrgID, nil
 }
 
 func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (*credentialsSecret, error) {

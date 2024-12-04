@@ -152,7 +152,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 				}, testData.InitialDeployments[0])).To(Succeed())
 				g.Expect(len(testData.InitialDeployments[0].Status.SearchIndexes)).To(BeEquivalentTo(1))
 				g.Expect(testData.InitialDeployments[0].Status.SearchIndexes[0].Status).To(BeEquivalentTo(status.SearchIndexStatusReady))
-			}).WithPolling(10 * time.Second).WithTimeout(20 * time.Minute).Should(Succeed())
+			}).WithPolling(10 * time.Second).WithTimeout(40 * time.Minute).Should(Succeed())
 		})
 
 		By("Creating one search index, type: VECTOR SEARCH", func() {

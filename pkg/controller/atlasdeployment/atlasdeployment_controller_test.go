@@ -24,6 +24,8 @@ import (
 	"reflect"
 	"testing"
 
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
@@ -386,6 +388,9 @@ func TestRegularClusterReconciliation(t *testing.T) {
 
 	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
+		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
 			clusterAPI.EXPECT().GetCluster(context.Background(), project.ID(), d.GetDeploymentName()).
@@ -454,8 +459,8 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				Return(&admin.GeoSharding{}, nil, nil)
 
 			return &admin.APIClient{
-				AtlasSearchApi:         searchAPI,
 				ClustersApi:            clusterAPI,
+				AtlasSearchApi:         searchAPI,
 				ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
 				GlobalClustersApi:      globalAPI,
 			}, orgID, nil
@@ -604,6 +609,9 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 
 	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
+		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			err := &admin.GenericOpenAPIError{}
 			err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
@@ -773,6 +781,9 @@ func TestDeletionReconciliation(t *testing.T) {
 	orgID := "0987654321"
 	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
+		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
 			clusterAPI.EXPECT().GetCluster(context.Background(), project.ID(), d.GetDeploymentName()).
@@ -1148,6 +1159,9 @@ func TestGetProjectFromAtlas(t *testing.T) {
 				IsCloudGovFunc: func() bool {
 					return false
 				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{}, "", nil
+				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
 					projectAPI.EXPECT().GetProject(context.Background(), "project-id").
@@ -1192,6 +1206,9 @@ func TestGetProjectFromAtlas(t *testing.T) {
 			atlasProvider: &atlasmock.TestProvider{
 				IsCloudGovFunc: func() bool {
 					return false
+				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{}, "", nil
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
@@ -1382,6 +1399,9 @@ func TestGetProjectFromKube(t *testing.T) {
 				IsCloudGovFunc: func() bool {
 					return false
 				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{}, "", nil
+				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					return &admin.APIClient{}, "", nil
 				},
@@ -1529,6 +1549,9 @@ func TestChangeDeploymentType(t *testing.T) {
 				},
 				IsSupportedFunc: func() bool {
 					return true
+				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{}, "", nil
 				},
 				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 					return &mongodbatlas.Client{}, "org-id", nil

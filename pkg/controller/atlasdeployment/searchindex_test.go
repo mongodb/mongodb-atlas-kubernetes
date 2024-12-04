@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -418,10 +420,10 @@ func Test_searchIndexReconciler(t *testing.T) {
 	t.Run("must return InProgress if index status is anything but ACTIVE", func(t *testing.T) {
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:       zap.S(),
-				OrgID:     "testOrgID",
-				SdkClient: &admin.APIClient{},
-				Context:   context.Background(),
+				Log:          zap.S(),
+				OrgID:        "testOrgID",
+				SdkClientSet: &atlas.ClientSet{SdkClient20241113001: &admin.APIClient{}},
+				Context:      context.Background(),
 			},
 			deployment: nil,
 			k8sClient:  nil,
@@ -435,10 +437,10 @@ func Test_searchIndexReconciler(t *testing.T) {
 	t.Run("update: must not call update API if indexes are equal", func(t *testing.T) {
 		reconciler := &searchIndexReconciler{
 			ctx: &workflow.Context{
-				Log:       zap.S(),
-				OrgID:     "testOrgID",
-				SdkClient: &admin.APIClient{},
-				Context:   context.Background(),
+				Log:          zap.S(),
+				OrgID:        "testOrgID",
+				SdkClientSet: &atlas.ClientSet{SdkClient20241113001: &admin.APIClient{}},
+				Context:      context.Background(),
 			},
 			deployment: nil,
 			k8sClient:  nil,

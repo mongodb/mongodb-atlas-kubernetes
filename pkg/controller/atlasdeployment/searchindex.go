@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	IndexStatusActive = "STEADY"
+	IndexStatusActive = "READY"
 )
 
 type searchIndexReconciler struct {
