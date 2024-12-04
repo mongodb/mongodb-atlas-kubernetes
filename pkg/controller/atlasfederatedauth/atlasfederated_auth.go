@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -19,27 +19,29 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	}
 
 	// Get current IDP for the ORG
-	atlasFedSettings, _, err := service.SdkClient.FederatedAuthenticationApi.
+	atlasFedSettings, _, err := service.SdkClientSet.SdkClient20241113001.FederatedAuthenticationApi.
 		GetFederationSettings(service.Context, service.OrgID).
 		Execute()
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err.Error())
 	}
 
-	identityProvider, err := GetIdentityProviderForFederatedSettings(service.Context, service.SdkClient, atlasFedSettings)
+	identityProvider, _, err := service.SdkClientSet.SdkClient20241113001.FederatedAuthenticationApi.
+		GetIdentityProvider(service.Context, atlasFedSettings.GetId(), atlasFedSettings.GetIdentityProviderId()).
+		Execute()
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err.Error())
 	}
 
 	// Get current Org config
-	orgConfig, _, err := service.SdkClient.FederatedAuthenticationApi.
+	orgConfig, _, err := service.SdkClientSet.SdkClient20241113001.FederatedAuthenticationApi.
 		GetConnectedOrgConfig(service.Context, atlasFedSettings.GetId(), service.OrgID).
 		Execute()
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthOrgNotConnected, err.Error())
 	}
 
-	projectList, err := prepareProjectList(service.Context, service.SdkClient)
+	projectList, err := prepareProjectList(service.Context, service.SdkClientSet.SdkClient20241113001)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Sprintf("Can not list projects for org ID %s. %s", service.OrgID, err.Error()))
 	}
@@ -49,7 +51,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.Terminate(workflow.Internal, fmt.Sprintln("Can not convert Federated Auth spec to Atlas", err.Error()))
 	}
 
-	if result := r.ensureIDPSettings(service.Context, atlasFedSettings.GetId(), identityProvider, fedauth, service.SdkClient); !result.IsOk() {
+	if result := r.ensureIDPSettings(service.Context, atlasFedSettings.GetId(), identityProvider, fedauth, service.SdkClientSet.SdkClient20241113001); !result.IsOk() {
 		return result
 	}
 
@@ -57,7 +59,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.OK()
 	}
 
-	updatedSettings, _, err := service.SdkClient.FederatedAuthenticationApi.
+	updatedSettings, _, err := service.SdkClientSet.SdkClient20241113001.FederatedAuthenticationApi.
 		UpdateConnectedOrgConfig(service.Context, atlasFedSettings.GetId(), service.OrgID, operatorConf).
 		Execute()
 	if err != nil {
@@ -121,19 +123,4 @@ func federatedSettingsAreEqual(operator, atlas *admin.ConnectedOrgConfig) bool {
 	operator.UserConflicts = nil
 	atlas.UserConflicts = nil
 	return cmp.Diff(operator, atlas) == ""
-}
-
-func GetIdentityProviderForFederatedSettings(ctx context.Context, atlasClient *admin.APIClient, fedSettings *admin.OrgFederationSettings) (*admin.FederationIdentityProvider, error) {
-	identityProviders, _, err := atlasClient.FederatedAuthenticationApi.ListIdentityProviders(ctx, fedSettings.GetId()).Execute()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, identityProvider := range identityProviders.GetResults() {
-		if identityProvider.GetOktaIdpId() == fedSettings.GetIdentityProviderId() {
-			return &identityProvider, nil
-		}
-	}
-
-	return nil, fmt.Errorf("identity provider for Org Federation Settings %s not found", fedSettings.GetId())
 }
