@@ -241,7 +241,7 @@ func (s *SearchIndex) toAtlasCreateView() (*admin.SearchIndexCreateRequest, erro
 		}
 	}
 
-	return &admin.SearchIndexCreateRequest{
+	result := &admin.SearchIndexCreateRequest{
 		CollectionName: s.CollectionName,
 		Database:       s.DBName,
 		Name:           s.Name,
@@ -251,11 +251,18 @@ func (s *SearchIndex) toAtlasCreateView() (*admin.SearchIndexCreateRequest, erro
 			Analyzers:      analyzers,
 			Mappings:       mappings,
 			SearchAnalyzer: s.SearchAnalyzer,
-			StoredSource:   storedSource,
 			Synonyms:       synonyms,
 			Fields:         searchFields,
 		},
-	}, nil
+	}
+
+	// This is a workaround because of JSON marshaller marshals nil (type map[string]interface{}) to null in JSON
+	// which is not accepted by the API endpoint
+	if len(storedSource) > 0 {
+		result.Definition.StoredSource = storedSource
+	}
+
+	return result, nil
 }
 
 func (s *SearchIndex) toAtlasUpdateView() (*admin.SearchIndexUpdateRequest, error) {
