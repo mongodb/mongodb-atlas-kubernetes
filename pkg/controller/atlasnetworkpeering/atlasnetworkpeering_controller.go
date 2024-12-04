@@ -119,7 +119,7 @@ func (r *AtlasNetworkPeeringReconciler) handle(req *reconcileRequest) (ctrl.Resu
 		"service set", (req.service != nil), "projectID", req.projectID, "networkPeering", req.networkPeering)
 	atlasPeer, err := req.service.GetPeer(req.workflowCtx.Context, req.projectID, req.networkPeering.Spec.ContainerID)
 	if err != nil {
-		r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
+		return r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
 	}
 	inAtlas := atlasPeer != nil
 	deleted := req.networkPeering.DeletionTimestamp != nil
@@ -152,7 +152,7 @@ func (r *AtlasNetworkPeeringReconciler) create(req *reconcileRequest) (ctrl.Resu
 		} // TODO: else for GCP regions
 		createdContainer, err := req.service.CreateContainer(ctx, req.projectID, requestedContainer)
 		if err != nil {
-			r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
+			return r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
 		}
 		containerID = createdContainer.ID
 		req.networkPeering.Status.ContainerID = containerID
@@ -163,11 +163,11 @@ func (r *AtlasNetworkPeeringReconciler) create(req *reconcileRequest) (ctrl.Resu
 	}
 	createdPeer, err := req.service.CreatePeer(ctx, req.projectID, &requestedPeer)
 	if err != nil {
-		r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
+		return r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
 	}
 	req.networkPeering.Status.ID = createdPeer.ID
 	if err := r.saveStatus(&req.networkPeering.Status); err != nil {
-		r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
+		return r.terminate(req.workflowCtx, req.networkPeering, api.ReadyType, workflow.Internal, err)
 	}
 	return workflow.OK().ReconcileResult(), nil
 }
