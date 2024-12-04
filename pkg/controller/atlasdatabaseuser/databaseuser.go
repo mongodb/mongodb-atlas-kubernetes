@@ -183,7 +183,7 @@ func (r *AtlasDatabaseUserReconciler) delete(ctx *workflow.Context, projectID st
 }
 
 func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, atlasProject *project.Project, atlasDatabaseUser *akov2.AtlasDatabaseUser, passwordVersion string) ctrl.Result {
-	allDeploymentNames, err := r.deploymentService.ListClusterNames(ctx.Context, atlasProject.ID)
+	allDeploymentNames, err := r.deploymentService.ListDeploymentNames(ctx.Context, atlasProject.ID)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
@@ -194,9 +194,10 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, atlasProj
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
 	if len(removedOrphanSecrets) > 0 {
-		r.Log.Debug("Removed %d orphan secrets on project %s bound to an non existent deployment:")
+		r.Log.Debugw("Removed orphan secrets bound to an non existent deployment",
+			"project", atlasProject.Name, "removed", len(removedOrphanSecrets))
 		for _, orphan := range removedOrphanSecrets {
-			r.Log.Debug("Removed orphan secret %q", orphan)
+			r.Log.Debugw("Removed orphan", "secret", orphan)
 		}
 	}
 

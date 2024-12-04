@@ -3,17 +3,48 @@ package contract
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
+	"github.com/go-logr/zapr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 )
+
+func init() {
+	level := zapcore.DebugLevel
+	encoding := "console"
+
+	lv := zap.NewAtomicLevel()
+	lv.SetLevel(level)
+	logger, err := zap.Config{
+		Level:             lv,
+		OutputPaths:       []string{"stdout"},
+		DisableCaller:     false,
+		DisableStacktrace: false,
+		Encoding:          encoding,
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey:  "msg",
+			LevelKey:    "level",
+			EncodeLevel: zapcore.CapitalLevelEncoder,
+			TimeKey:     "time",
+			EncodeTime:  zapcore.ISO8601TimeEncoder,
+		},
+	}.Build()
+	if err != nil {
+		log.Printf("failed to set zap logger for controller-runtime: %v", err)
+	}
+	ctrl.SetLogger(zapr.NewLogger(logger))
+}
 
 func mustCreateK8sClient() client.Client {
 	client, err := k8s.CreateNewClient()

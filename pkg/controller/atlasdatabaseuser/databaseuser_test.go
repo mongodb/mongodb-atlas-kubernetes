@@ -675,7 +675,7 @@ func TestDbuLifeCycle(t *testing.T) {
 			},
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListClusterNames(context.Background(), "").Return([]string{}, nil)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
 				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
 
 				return service
@@ -1229,7 +1229,7 @@ func TestUpdate(t *testing.T) {
 			},
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListClusterNames(context.Background(), "").Return([]string{}, nil)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
 				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
 
 				return service
@@ -1584,7 +1584,7 @@ func TestReadiness(t *testing.T) {
 			},
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListClusterNames(context.Background(), "").
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
 					Return(nil, errors.New("failed to list cluster names"))
 
 				return service
@@ -1617,7 +1617,7 @@ func TestReadiness(t *testing.T) {
 			},
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListClusterNames(context.Background(), "").
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
 					Return([]string{"cluster1", "cluster2"}, nil)
 				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
 					Return(false, errors.New("failed to check status"))
@@ -1652,7 +1652,7 @@ func TestReadiness(t *testing.T) {
 			},
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListClusterNames(context.Background(), "").
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
 					Return([]string{"cluster1", "cluster2"}, nil)
 				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
 					Return(false, nil)
@@ -1687,7 +1687,7 @@ func TestReadiness(t *testing.T) {
 			},
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListClusterNames(context.Background(), "").
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
 					Return([]string{"cluster1", "cluster2"}, nil)
 				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
 					Return(true, nil)
@@ -1724,7 +1724,7 @@ func TestReadiness(t *testing.T) {
 			},
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListClusterNames(context.Background(), "").
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
 					Return([]string{"cluster1", "cluster2"}, nil)
 				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
 					Return(true, nil)

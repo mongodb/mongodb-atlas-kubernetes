@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 )
 
 var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
@@ -80,7 +82,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 	})
 
-	It("Manage all supported Atlas for Government features", func() {
+	It("Manage all supported Atlas for Government features", Label("atlas-gov-supported"), func() {
 		By("Preparing API Key for integrations", func() {
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -317,7 +319,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}
 			Expect(testData.K8SClient.Create(ctx, secret)).To(Succeed())
 
-			testData.Project.Spec.EncryptionAtRest = &akov2.EncryptionAtRest{
+			encryptionAtRest := &akov2.EncryptionAtRest{
 				AwsKms: akov2.AwsKms{
 					Enabled: pointer.MakePtr(true),
 					Region:  "US_WEST_1",
@@ -327,7 +329,15 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					},
 				},
 			}
-			Expect(testData.K8SClient.Update(ctx, testData.Project)).To(Succeed())
+
+			_, err = akoretry.RetryUpdateOnConflict(
+				ctx,
+				testData.K8SClient,
+				client.ObjectKeyFromObject(testData.Project),
+				func(project *akov2.AtlasProject) {
+					project.Spec.EncryptionAtRest = encryptionAtRest
+				})
+			Expect(err).To(BeNil())
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -584,7 +594,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 	})
 
-	It("Fail to manage when there are non supported features for Atlas for Government", func() {
+	It("Fail to manage when there are non supported features for Atlas for Government", Label("atlas-gov-unsupported"), func() {
 		By("Creating a project to be managed by the operator", func() {
 			akoProject := &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -741,7 +751,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			akoDeployment := &akov2.AtlasDeployment{}
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKey{Namespace: testData.Resources.Namespace, Name: clusterName}, akoDeployment)).To(Succeed())
-			Expect(testData.K8SClient.Delete(ctx, akoDeployment)).To(Succeed())
+			err := testData.K8SClient.Delete(ctx, akoDeployment)
+			Expect(err == nil || !k8serrors.IsNotFound(err)).To(BeTrue())
 
 			Eventually(func(g Gomega) {
 				_, _, err := atlasClient.Client.ClustersApi.GetCluster(ctx, testData.Project.ID(), clusterName).Execute()

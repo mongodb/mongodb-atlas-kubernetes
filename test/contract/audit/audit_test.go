@@ -12,6 +12,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/contract"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
 func TestDefaultAuditingGet(t *testing.T) {
@@ -88,7 +89,7 @@ func TestSyncs(t *testing.T) {
 		},
 	}
 	contract.RunGoContractTest(ctx, t, "test syncs", func(ch contract.ContractHelper) {
-		projectName := "audit-syncs-project"
+		projectName := utils.RandomName("audit-syncs-project")
 		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
 		require.NoError(t, err)
