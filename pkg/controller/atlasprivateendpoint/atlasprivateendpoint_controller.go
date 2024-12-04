@@ -102,7 +102,7 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 
 	var atlasProject *project.Project
 	var err error
-	if akoPrivateEndpoint.Spec.ExternalProject != nil {
+	if akoPrivateEndpoint.Spec.ExternalProjectRef != nil {
 		atlasProject, err = r.getProjectFromAtlas(ctx, akoPrivateEndpoint)
 	} else {
 		atlasProject, err = r.getProjectFromKube(ctx, akoPrivateEndpoint)
@@ -127,7 +127,7 @@ func (r *AtlasPrivateEndpointReconciler) getProjectFromAtlas(ctx context.Context
 	projectService := project.NewProjectAPIService(sdkClient.ProjectsApi)
 	r.privateEndpointService = privateendpoint.NewPrivateEndpointAPI(sdkClient.PrivateEndpointServicesApi)
 
-	atlasProject, err := projectService.GetProject(ctx, akoPrivateEndpoint.Spec.ExternalProject.ID)
+	atlasProject, err := projectService.GetProject(ctx, akoPrivateEndpoint.Spec.ExternalProjectRef.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve project from Atlas: %w", err)
 	}
@@ -234,7 +234,7 @@ func (r *AtlasPrivateEndpointReconciler) ready(ctx *workflow.Context, akoPrivate
 		SetConditionTrue(api.ReadyType).
 		EnsureStatusOption(privateendpoint.NewPrivateEndpointStatus(atlasPEService))
 
-	if akoPrivateEndpoint.Spec.ExternalProject != nil {
+	if akoPrivateEndpoint.Spec.ExternalProjectRef != nil {
 		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
 	}
 
