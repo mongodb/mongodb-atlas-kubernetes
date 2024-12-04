@@ -90,7 +90,7 @@ github.com/spf13/cobra,https://github.com/spf13/cobra/blob/v1.8.1/LICENSE.txt,Ap
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
 github.com/stoewer/go-strcase,https://github.com/stoewer/go-strcase/blob/v1.2.0/LICENSE,MIT
 github.com/stretchr/objx,https://github.com/stretchr/objx/blob/v0.5.2/LICENSE,MIT
-github.com/stretchr/testify,https://github.com/stretchr/testify/blob/v1.9.0/LICENSE,MIT
+github.com/stretchr/testify,https://github.com/stretchr/testify/blob/v1.10.0/LICENSE,MIT
 github.com/x448/float16,https://github.com/x448/float16/blob/v0.8.4/LICENSE,MIT
 github.com/xdg-go/pbkdf2,https://github.com/xdg-go/pbkdf2/blob/v1.0.0/LICENSE,Apache-2.0
 github.com/xdg-go/scram,https://github.com/xdg-go/scram/blob/v1.1.2/LICENSE,Apache-2.0
