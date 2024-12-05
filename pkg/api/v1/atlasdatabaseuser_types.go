@@ -90,7 +90,7 @@ type AtlasDatabaseUserSpec struct {
 	// Username is a username for authenticating to MongoDB
 	// Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
 	// In case of AWS IAM: the value should be AWS ARN for the IAM User/Role;
-	// In case of OIDC Workload or Workfoce: the value should be the Atlas OIDC IdP ID, followed by a '/', followed by the IdP group name;
+	// In case of OIDC Workload or Workforce: the value should be the Atlas OIDC IdP ID, followed by a '/', followed by the IdP group name;
 	// In case of Plain text auth: the value can be anything
 	// +kubebuilder:validation:MaxLength:=1024
 	Username string `json:"username"`
