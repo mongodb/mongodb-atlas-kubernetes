@@ -1,10 +1,6 @@
 package v1
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-
-	"go.mongodb.org/atlas/mongodbatlas"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
@@ -17,131 +13,42 @@ type EncryptionAtRest struct {
 
 // AwsKms specifies AWS KMS configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type AwsKms struct {
-	Enabled             *bool  `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project, To disable Encryption at Rest, pass only this parameter with a value of false, When you disable Encryption at Rest, Atlas also removes the configuration details.
-	customerMasterKeyID string // The AWS customer master key used to encrypt and decrypt the MongoDB master keys.
-	Region              string `json:"region,omitempty"` // The AWS region in which the AWS customer master key exists: CA_CENTRAL_1, US_EAST_1, US_EAST_2, US_WEST_1, US_WEST_2, SA_EAST_1
-	roleID              string // ID of an AWS IAM role authorized to manage an AWS customer master key.
-	Valid               *bool  `json:"valid,omitempty"` // Specifies whether the encryption key set for the provider is valid and may be used to encrypt and decrypt data.
+	Enabled *bool  `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project, To disable Encryption at Rest, pass only this parameter with a value of false, When you disable Encryption at Rest, Atlas also removes the configuration details.
+	Region  string `json:"region,omitempty"`  // The AWS region in which the AWS customer master key exists: CA_CENTRAL_1, US_EAST_1, US_EAST_2, US_WEST_1, US_WEST_2, SA_EAST_1
+	Valid   *bool  `json:"valid,omitempty"`   // Specifies whether the encryption key set for the provider is valid and may be used to encrypt and decrypt data.
 	// A reference to as Secret containing the AccessKeyID, SecretAccessKey, CustomerMasterKeyID and RoleID fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
-func (a *AwsKms) SetSecrets(customerMasterKeyID, roleID string) {
-	a.customerMasterKeyID = customerMasterKeyID
-	a.roleID = roleID
-}
-
-func (a AwsKms) CustomerMasterKeyID() string {
-	return a.customerMasterKeyID
-}
-
-func (a AwsKms) RoleID() string {
-	return a.roleID
+func (a *AwsKms) IsEnabled() bool {
+	return a != nil && a.Enabled != nil && *a.Enabled
 }
 
 // AzureKeyVault specifies Azure Key Vault configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type AzureKeyVault struct {
-	Enabled           *bool  `json:"enabled,omitempty"`          // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
-	ClientID          string `json:"clientID,omitempty"`         // The Client ID, also known as the application ID, for an Azure application associated with the Azure AD tenant.
-	AzureEnvironment  string `json:"azureEnvironment,omitempty"` // The Azure environment where the Azure account credentials reside. Valid values are the following: AZURE, AZURE_CHINA, AZURE_GERMANY
-	subscriptionID    string // The unique identifier associated with an Azure subscription.
+	Enabled           *bool  `json:"enabled,omitempty"`           // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
+	ClientID          string `json:"clientID,omitempty"`          // The Client ID, also known as the application ID, for an Azure application associated with the Azure AD tenant.
+	AzureEnvironment  string `json:"azureEnvironment,omitempty"`  // The Azure environment where the Azure account credentials reside. Valid values are the following: AZURE, AZURE_CHINA, AZURE_GERMANY
 	ResourceGroupName string `json:"resourceGroupName,omitempty"` // The name of the Azure Resource group that contains an Azure Key Vault.
-	keyVaultName      string // The name of an Azure Key Vault containing your key.
-	keyIdentifier     string // The unique identifier of a key in an Azure Key Vault.
-	secret            string // The secret associated with the Azure Key Vault specified by azureKeyVault.tenantID.
-	TenantID          string `json:"tenantID,omitempty"` // The unique identifier for an Azure AD tenant within an Azure subscription.
+	TenantID          string `json:"tenantID,omitempty"`          // The unique identifier for an Azure AD tenant within an Azure subscription.
 	// A reference to as Secret containing the SubscriptionID, KeyVaultName, KeyIdentifier, Secret fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
-func (az *AzureKeyVault) SetSecrets(subscriptionID, keyVaultName, keyIdentifier, secret string) {
-	az.subscriptionID = subscriptionID
-	az.keyVaultName = keyVaultName
-	az.keyIdentifier = keyIdentifier
-	az.secret = secret
-}
-
-func (az AzureKeyVault) KeyIdentifier() string {
-	return az.keyIdentifier
-}
-
-func (az AzureKeyVault) KeyVaultName() string {
-	return az.keyVaultName
-}
-
-func (az AzureKeyVault) SubscriptionID() string {
-	return az.subscriptionID
-}
-
-func (az AzureKeyVault) Secret() string {
-	return az.secret
+func (a *AzureKeyVault) IsEnabled() bool {
+	return a != nil && a.Enabled != nil && *a.Enabled
 }
 
 // GoogleCloudKms specifies GCP KMS configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type GoogleCloudKms struct {
-	Enabled              *bool  `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
-	serviceAccountKey    string // String-formatted JSON object containing GCP KMS credentials from your GCP account.
-	keyVersionResourceID string // 	The Key Version Resource ID from your GCP account.
+	Enabled *bool `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
 	// A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
-func (g *GoogleCloudKms) SetSecrets(serviceAccountKey, keyVersionResourceID string) {
-	g.serviceAccountKey = serviceAccountKey
-	g.keyVersionResourceID = keyVersionResourceID
-}
-
-func (g GoogleCloudKms) KeyVersionResourceID() string {
-	return g.keyVersionResourceID
-}
-
-func (g GoogleCloudKms) ServiceAccountKey() string {
-	return g.serviceAccountKey
-}
-
-func (e EncryptionAtRest) ToAtlas(projectID string) (*mongodbatlas.EncryptionAtRest, error) {
-	result := &mongodbatlas.EncryptionAtRest{
-		GroupID:        projectID,
-		AwsKms:         e.AwsKms.ToAtlas(),
-		GoogleCloudKms: e.GoogleCloudKms.ToAtlas(),
-		AzureKeyVault:  e.AzureKeyVault.ToAtlas(),
-	}
-
-	err := compat.JSONCopy(result, e)
-	return result, err
-}
-
-func (a AwsKms) ToAtlas() mongodbatlas.AwsKms {
-	return mongodbatlas.AwsKms{
-		Enabled:             a.Enabled,
-		RoleID:              a.roleID,
-		CustomerMasterKeyID: a.customerMasterKeyID,
-		Region:              a.Region,
-		Valid:               a.Valid,
-	}
-}
-
-func (g GoogleCloudKms) ToAtlas() mongodbatlas.GoogleCloudKms {
-	return mongodbatlas.GoogleCloudKms{
-		Enabled:              g.Enabled,
-		ServiceAccountKey:    g.serviceAccountKey,
-		KeyVersionResourceID: g.keyVersionResourceID,
-	}
-}
-
-func (az AzureKeyVault) ToAtlas() mongodbatlas.AzureKeyVault {
-	return mongodbatlas.AzureKeyVault{
-		Enabled:           az.Enabled,
-		ClientID:          az.ClientID,
-		AzureEnvironment:  az.AzureEnvironment,
-		SubscriptionID:    az.subscriptionID,
-		ResourceGroupName: az.ResourceGroupName,
-		KeyVaultName:      az.keyVaultName,
-		KeyIdentifier:     az.keyIdentifier,
-		TenantID:          az.TenantID,
-		Secret:            az.secret,
-	}
+func (g *GoogleCloudKms) IsEnabled() bool {
+	return g != nil && g.Enabled != nil && *g.Enabled
 }

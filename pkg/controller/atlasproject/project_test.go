@@ -27,6 +27,7 @@ import (
 
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -42,15 +43,16 @@ func TestHandleProject(t *testing.T) {
 	deletionTime := metav1.Now()
 
 	tests := map[string]struct {
-		atlasClientMocker    func() *mongodbatlas.Client
-		atlasSDKMocker       func() *admin.APIClient
-		projectServiceMocker func() project.ProjectService
-		teamServiceMocker    func() teams.TeamsService
-		interceptors         interceptor.Funcs
-		project              *akov2.AtlasProject
-		result               reconcile.Result
-		conditions           []api.Condition
-		finalizers           []string
+		atlasClientMocker      func() *mongodbatlas.Client
+		atlasSDKMocker         func() *admin.APIClient
+		projectServiceMocker   func() project.ProjectService
+		teamServiceMocker      func() teams.TeamsService
+		encryptionAtRestMocker func() encryptionatrest.EncryptionAtRestService
+		interceptors           interceptor.Funcs
+		project                *akov2.AtlasProject
+		result                 reconcile.Result
+		conditions             []api.Condition
+		finalizers             []string
 	}{
 		"should fail to get project from atlas": {
 			atlasClientMocker: func() *mongodbatlas.Client {
@@ -67,6 +69,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -102,6 +107,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -168,6 +176,9 @@ func TestHandleProject(t *testing.T) {
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
+				return nil
+			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "my-project",
@@ -198,6 +209,9 @@ func TestHandleProject(t *testing.T) {
 			teamServiceMocker: func() teams.TeamsService {
 				return nil
 			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
+				return nil
+			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "my-project",
@@ -226,6 +240,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
 				return nil
 			},
 			interceptors: interceptor.Funcs{
@@ -267,6 +284,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
 				return nil
 			},
 			project: &akov2.AtlasProject{
@@ -374,6 +394,11 @@ func TestHandleProject(t *testing.T) {
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
+				service := translation.NewEncryptionAtRestServiceMock(t)
+				service.EXPECT().Get(context.Background(), mock.Anything).Return(nil, nil)
+				return service
+			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "my-project",
@@ -473,6 +498,11 @@ func TestHandleProject(t *testing.T) {
 			teamServiceMocker: func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
+				return service
+			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
+				service := translation.NewEncryptionAtRestServiceMock(t)
+				service.EXPECT().Get(context.Background(), mock.Anything).Return(nil, nil)
 				return service
 			},
 			project: &akov2.AtlasProject{
@@ -578,6 +608,11 @@ func TestHandleProject(t *testing.T) {
 				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
+				service := translation.NewEncryptionAtRestServiceMock(t)
+				service.EXPECT().Get(context.Background(), mock.Anything).Return(nil, nil)
+				return service
+			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "my-project",
@@ -632,11 +667,12 @@ func TestHandleProject(t *testing.T) {
 				Build()
 
 			reconciler := &AtlasProjectReconciler{
-				Client:         k8sClient,
-				Log:            logger,
-				projectService: tt.projectServiceMocker(),
-				teamsService:   tt.teamServiceMocker(),
-				EventRecorder:  record.NewFakeRecorder(30),
+				Client:                  k8sClient,
+				Log:                     logger,
+				projectService:          tt.projectServiceMocker(),
+				teamsService:            tt.teamServiceMocker(),
+				encryptionAtRestService: tt.encryptionAtRestMocker(),
+				EventRecorder:           record.NewFakeRecorder(30),
 			}
 
 			result, err := reconciler.handleProject(ctx, "my-org-id", tt.project)

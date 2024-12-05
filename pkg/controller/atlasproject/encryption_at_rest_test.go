@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -41,22 +41,24 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &akov2.EncryptionAtRest{
-			AwsKms: akov2.AwsKms{
-				Enabled: pointer.MakePtr(true),
-				SecretRef: common.ResourceRefNamespaced{
-					Name:      "aws-secret",
-					Namespace: "test",
+		encRest := &encryptionatrest.EncryptionAtRest{
+			AWS: encryptionatrest.AwsKms{
+				AwsKms: akov2.AwsKms{
+					Enabled: pointer.MakePtr(true),
+					SecretRef: common.ResourceRefNamespaced{
+						Name:      "aws-secret",
+						Namespace: "test",
+					},
+					Region: "testRegion",
 				},
-				Region: "testRegion",
 			},
 		}
 
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID())
-		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID())
+		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AWS.CustomerMasterKeyID)
+		assert.Equal(t, string(secretData["RoleID"]), encRest.AWS.RoleID)
 	})
 
 	t.Run("AWS with correct secret data (fallback namespace)", func(t *testing.T) {
@@ -83,11 +85,13 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &akov2.EncryptionAtRest{
-			AwsKms: akov2.AwsKms{
-				Enabled: pointer.MakePtr(true),
-				SecretRef: common.ResourceRefNamespaced{
-					Name: "aws-secret",
+		encRest := &encryptionatrest.EncryptionAtRest{
+			AWS: encryptionatrest.AwsKms{
+				AwsKms: akov2.AwsKms{
+					Enabled: pointer.MakePtr(true),
+					SecretRef: common.ResourceRefNamespaced{
+						Name: "aws-secret",
+					},
 				},
 			},
 		}
@@ -95,8 +99,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test-fallback-ns")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID())
-		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID())
+		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AWS.CustomerMasterKeyID)
+		assert.Equal(t, string(secretData["RoleID"]), encRest.AWS.RoleID)
 	})
 
 	t.Run("AWS with missing fields", func(t *testing.T) {
@@ -122,12 +126,14 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &akov2.EncryptionAtRest{
-			AwsKms: akov2.AwsKms{
-				Enabled: pointer.MakePtr(true),
-				SecretRef: common.ResourceRefNamespaced{
-					Name:      "aws-secret",
-					Namespace: "test",
+		encRest := &encryptionatrest.EncryptionAtRest{
+			AWS: encryptionatrest.AwsKms{
+				AwsKms: akov2.AwsKms{
+					Enabled: pointer.MakePtr(true),
+					SecretRef: common.ResourceRefNamespaced{
+						Name:      "aws-secret",
+						Namespace: "test",
+					},
 				},
 			},
 		}
@@ -158,11 +164,13 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &akov2.EncryptionAtRest{
-			GoogleCloudKms: akov2.GoogleCloudKms{
-				Enabled: pointer.MakePtr(true),
-				SecretRef: common.ResourceRefNamespaced{
-					Name: "gcp-secret",
+		encRest := &encryptionatrest.EncryptionAtRest{
+			GCP: encryptionatrest.GoogleCloudKms{
+				GoogleCloudKms: akov2.GoogleCloudKms{
+					Enabled: pointer.MakePtr(true),
+					SecretRef: common.ResourceRefNamespaced{
+						Name: "gcp-secret",
+					},
 				},
 			},
 		}
@@ -170,8 +178,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["ServiceAccountKey"]), encRest.GoogleCloudKms.ServiceAccountKey())
-		assert.Equal(t, string(secretData["KeyVersionResourceID"]), encRest.GoogleCloudKms.KeyVersionResourceID())
+		assert.Equal(t, string(secretData["ServiceAccountKey"]), encRest.GCP.ServiceAccountKey)
+		assert.Equal(t, string(secretData["KeyVersionResourceID"]), encRest.GCP.KeyVersionResourceID)
 	})
 
 	t.Run("GCP with missing fields", func(t *testing.T) {
@@ -195,11 +203,13 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &akov2.EncryptionAtRest{
-			GoogleCloudKms: akov2.GoogleCloudKms{
-				Enabled: pointer.MakePtr(true),
-				SecretRef: common.ResourceRefNamespaced{
-					Name: "gcp-secret",
+		encRest := &encryptionatrest.EncryptionAtRest{
+			GCP: encryptionatrest.GoogleCloudKms{
+				GoogleCloudKms: akov2.GoogleCloudKms{
+					Enabled: pointer.MakePtr(true),
+					SecretRef: common.ResourceRefNamespaced{
+						Name: "gcp-secret",
+					},
 				},
 			},
 		}
@@ -232,11 +242,13 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &akov2.EncryptionAtRest{
-			AzureKeyVault: akov2.AzureKeyVault{
-				Enabled: pointer.MakePtr(true),
-				SecretRef: common.ResourceRefNamespaced{
-					Name: "azure-secret",
+		encRest := &encryptionatrest.EncryptionAtRest{
+			Azure: encryptionatrest.AzureKeyVault{
+				AzureKeyVault: akov2.AzureKeyVault{
+					Enabled: pointer.MakePtr(true),
+					SecretRef: common.ResourceRefNamespaced{
+						Name: "azure-secret",
+					},
 				},
 			},
 		}
@@ -244,10 +256,10 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["Secret"]), encRest.AzureKeyVault.Secret())
-		assert.Equal(t, string(secretData["SubscriptionID"]), encRest.AzureKeyVault.SubscriptionID())
-		assert.Equal(t, string(secretData["KeyVaultName"]), encRest.AzureKeyVault.KeyVaultName())
-		assert.Equal(t, string(secretData["KeyIdentifier"]), encRest.AzureKeyVault.KeyIdentifier())
+		assert.Equal(t, string(secretData["Secret"]), encRest.Azure.Secret)
+		assert.Equal(t, string(secretData["SubscriptionID"]), encRest.Azure.SubscriptionID)
+		assert.Equal(t, string(secretData["KeyVaultName"]), encRest.Azure.KeyVaultName)
+		assert.Equal(t, string(secretData["KeyIdentifier"]), encRest.Azure.KeyIdentifier)
 	})
 
 	t.Run("Azure with missing fields", func(t *testing.T) {
@@ -274,11 +286,13 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &akov2.EncryptionAtRest{
-			AzureKeyVault: akov2.AzureKeyVault{
-				Enabled: pointer.MakePtr(true),
-				SecretRef: common.ResourceRefNamespaced{
-					Name: "gcp-secret",
+		encRest := &encryptionatrest.EncryptionAtRest{
+			Azure: encryptionatrest.AzureKeyVault{
+				AzureKeyVault: akov2.AzureKeyVault{
+					Enabled: pointer.MakePtr(true),
+					SecretRef: common.ResourceRefNamespaced{
+						Name: "gcp-secret",
+					},
 				},
 			},
 		}
@@ -300,90 +314,4 @@ func TestIsEncryptionAtlasEmpty(t *testing.T) {
 	spec.AwsKms.Enabled = pointer.MakePtr(false)
 	isEmpty = IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Enabled flag set to false is same as empty")
-}
-
-func TestAtlasInSync(t *testing.T) {
-	areInSync, err := AtlasInSync(nil, nil)
-	assert.NoError(t, err)
-	assert.True(t, areInSync, "Both atlas and spec are nil")
-
-	groupID := "0"
-	atlas := mongodbatlas.EncryptionAtRest{
-		GroupID: groupID,
-		AwsKms: mongodbatlas.AwsKms{
-			Enabled: pointer.MakePtr(true),
-		},
-	}
-	spec := akov2.EncryptionAtRest{
-		AwsKms: akov2.AwsKms{
-			Enabled: pointer.MakePtr(true),
-		},
-	}
-
-	areInSync, err = AtlasInSync(nil, &spec)
-	assert.NoError(t, err)
-	assert.False(t, areInSync, "Nil atlas")
-
-	areInSync, err = AtlasInSync(&atlas, nil)
-	assert.NoError(t, err)
-	assert.False(t, areInSync, "Nil spec")
-
-	areInSync, err = AtlasInSync(&atlas, &spec)
-	assert.NoError(t, err)
-	assert.True(t, areInSync, "Both are the same")
-
-	spec.AwsKms.Enabled = pointer.MakePtr(false)
-	areInSync, err = AtlasInSync(&atlas, &spec)
-	assert.NoError(t, err)
-	assert.False(t, areInSync, "Atlas is disabled")
-
-	atlas.AwsKms.Enabled = pointer.MakePtr(false)
-	areInSync, err = AtlasInSync(&atlas, &spec)
-	assert.NoError(t, err)
-	assert.True(t, areInSync, "Both are disabled")
-
-	atlas.AwsKms.RoleID = "example"
-	areInSync, err = AtlasInSync(&atlas, &spec)
-	assert.NoError(t, err)
-	assert.True(t, areInSync, "Both are disabled but atlas RoleID field")
-
-	spec.AwsKms.Enabled = pointer.MakePtr(true)
-	areInSync, err = AtlasInSync(&atlas, &spec)
-	assert.NoError(t, err)
-	assert.False(t, areInSync, "Spec is re-enabled")
-
-	atlas.AwsKms.Enabled = pointer.MakePtr(true)
-	areInSync, err = AtlasInSync(&atlas, &spec)
-	assert.NoError(t, err)
-	assert.True(t, areInSync, "Both are re-enabled and only RoleID is different")
-
-	atlas = mongodbatlas.EncryptionAtRest{
-		AwsKms: mongodbatlas.AwsKms{
-			Enabled:             pointer.MakePtr(true),
-			CustomerMasterKeyID: "testCustomerMasterKeyID",
-			Region:              "US_EAST_1",
-			RoleID:              "testRoleID",
-			Valid:               pointer.MakePtr(true),
-		},
-		AzureKeyVault: mongodbatlas.AzureKeyVault{
-			Enabled: pointer.MakePtr(false),
-		},
-		GoogleCloudKms: mongodbatlas.GoogleCloudKms{
-			Enabled: pointer.MakePtr(false),
-		},
-	}
-	spec = akov2.EncryptionAtRest{
-		AwsKms: akov2.AwsKms{
-			Enabled: pointer.MakePtr(true),
-			Region:  "US_EAST_1",
-			Valid:   pointer.MakePtr(true),
-		},
-		AzureKeyVault:  akov2.AzureKeyVault{},
-		GoogleCloudKms: akov2.GoogleCloudKms{},
-	}
-	spec.AwsKms.SetSecrets("testCustomerMasterKeyID", "testRoleID")
-
-	areInSync, err = AtlasInSync(&atlas, &spec)
-	assert.NoError(t, err)
-	assert.True(t, areInSync, "Realistic example. should be equal")
 }
