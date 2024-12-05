@@ -3,9 +3,10 @@ package v1
 import (
 	"testing"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 
 	"github.com/go-test/deep"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -53,7 +54,7 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 			DomainAllowList:               &spec.DomainAllowList,
 			DomainRestrictionEnabled:      *spec.DomainRestrictionEnabled,
 			DataAccessIdentityProviderIds: spec.DataAccessIdentityProviders,
-			IdentityProviderId:            idpID,
+			IdentityProviderId:            &idpID,
 			OrgId:                         orgID,
 			PostAuthRoleGrants:            &spec.PostAuthRoleGrants,
 			RoleMappings: &[]admin.AuthFederationRoleMapping{
@@ -71,6 +72,9 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		}
 
 		diff := deep.Equal(expected, result)
+		if diff != nil {
+			t.Log(cmp.Diff(expected, result))
+		}
 		assert.Nil(t, diff, diff)
 	})
 
