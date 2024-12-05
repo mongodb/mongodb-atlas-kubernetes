@@ -106,14 +106,14 @@ var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole re
 					Namespace: testData.Project.GetNamespace(),
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{
-						Name:      testData.Project.GetName(),
-						Namespace: testData.Project.GetNamespace(),
-					},
-					Role: customRole,
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      testData.Project.GetName(),
+							Namespace: testData.Project.GetNamespace(),
+						},
 						ConnectionSecret: &api.LocalObjectReference{Name: config.DefaultOperatorGlobalKey},
 					},
+					Role: customRole,
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			}

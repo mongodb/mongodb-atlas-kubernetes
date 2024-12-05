@@ -67,8 +67,9 @@ spec:
                 - name
                 type: object
               externalProjectRef:
-                description: Optional ID of the Atlas Project this role is attached
-                  to. Mutually exclusive with "projectRef" field
+                description: |-
+                  "externalProjectRef" holds the parent Atlas project ID.
+                  Mutually exclusive with the "projectRef" field
                 properties:
                   id:
                     description: ID is the Atlas project ID
@@ -77,8 +78,9 @@ spec:
                 - id
                 type: object
               projectRef:
-                description: Optional reference to an AtlasProject custom resource.
-                  Mutually exclusive with "externalProjectRef" field
+                description: |-
+                  "projectRef" is a reference to the parent AtlasProject resource.
+                  Mutually exclusive with the "externalProjectRef" field
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource

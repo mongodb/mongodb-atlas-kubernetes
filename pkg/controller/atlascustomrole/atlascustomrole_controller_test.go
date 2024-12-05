@@ -70,8 +70,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -112,8 +114,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -152,8 +156,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -189,8 +195,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -229,8 +237,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -245,8 +255,11 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "test"},
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 					Role: akov2.CustomRole{
 						Name: "TestRoleName",
@@ -268,9 +281,6 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								},
 							},
 						},
-					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -286,8 +296,11 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "test"},
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 					Role: akov2.CustomRole{
 						Name: "TestRoleName",
@@ -309,9 +322,6 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								},
 							},
 						},
-					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -391,8 +401,10 @@ func TestAtlasCustomRoleReconciler_selectCredentials(t *testing.T) {
 					Namespace: "testNamespace",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ExternalProjectIDRef:  &akov2.ExternalProjectReference{ID: "testProjectID"},
-					LocalCredentialHolder: api.LocalCredentialHolder{ConnectionSecret: &api.LocalObjectReference{Name: "credentials"}},
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject:  &akov2.ExternalProjectReference{ID: "testProjectID"},
+						ConnectionSecret: &api.LocalObjectReference{Name: "credentials"},
+					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			},
@@ -407,8 +419,10 @@ func TestAtlasCustomRoleReconciler_selectCredentials(t *testing.T) {
 					Namespace: "testNamespace",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ExternalProjectIDRef:  &akov2.ExternalProjectReference{ID: "testProjectID"},
-					LocalCredentialHolder: api.LocalCredentialHolder{ConnectionSecret: nil},
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject:  &akov2.ExternalProjectReference{ID: "testProjectID"},
+						ConnectionSecret: nil,
+					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			},
@@ -437,8 +451,10 @@ func TestAtlasCustomRoleReconciler_selectCredentials(t *testing.T) {
 					Namespace: "testNamespace",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef:            &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
-					LocalCredentialHolder: api.LocalCredentialHolder{ConnectionSecret: &api.LocalObjectReference{Name: "credentials"}},
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project:          &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
+						ConnectionSecret: &api.LocalObjectReference{Name: "credentials"},
+					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			},
@@ -473,7 +489,9 @@ func TestAtlasCustomRoleReconciler_selectCredentials(t *testing.T) {
 					Namespace: "testNamespace",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
+					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			},
@@ -503,7 +521,9 @@ func TestAtlasCustomRoleReconciler_selectCredentials(t *testing.T) {
 					Namespace: "testNamespace",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
+					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			},
@@ -518,7 +538,9 @@ func TestAtlasCustomRoleReconciler_selectCredentials(t *testing.T) {
 					Namespace: "testNamespace",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
+					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			},

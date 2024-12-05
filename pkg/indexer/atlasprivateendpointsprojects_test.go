@@ -29,9 +29,11 @@ func TestAtlasPrivateEndpointsByProjectIndices(t *testing.T) {
 			Spec: akov2.AtlasPrivateEndpointSpec{
 				Provider: "AWS",
 				Region:   "US_EAST_1",
-				Project: &common.ResourceRefNamespaced{
-					Name:      "project-1",
-					Namespace: "default",
+				ProjectDualReference: akov2.ProjectDualReference{
+					Project: &common.ResourceRefNamespaced{
+						Name:      "project-1",
+						Namespace: "default",
+					},
 				},
 			},
 		}

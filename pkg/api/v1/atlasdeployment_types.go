@@ -50,12 +50,8 @@ const (
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasDeploymentSpec struct {
-	api.LocalCredentialHolder `json:",inline"`
-
-	// Project is a reference to AtlasProject resource the deployment belongs to
-	Project *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
-	// ExternalProjectRef holds the Atlas project ID the user belongs to
-	ExternalProjectRef *ExternalProjectReference `json:"externalProjectRef,omitempty"`
+	// ProjectReference is the dual external or kubernetes reference with access credentials
+	ProjectDualReference `json:",inline"`
 
 	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
 	// +optional
@@ -526,10 +522,6 @@ func (c *AtlasDeployment) UpdateStatus(conditions []api.Condition, options ...ap
 	}
 }
 
-func (c *AtlasDeployment) Credentials() *api.LocalObjectReference {
-	return c.Spec.Credentials()
-}
-
 // ************************************ Builder methods *************************************************
 
 func NewDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
@@ -690,13 +682,11 @@ func (c *AtlasDeployment) WithSearchNodes(instanceSize string, count uint8) *Atl
 
 func (c *AtlasDeployment) WithExternaLProject(projectID, credentialsName string) *AtlasDeployment {
 	c.Spec.Project = nil
-	c.Spec.ExternalProjectRef = &ExternalProjectReference{
+	c.Spec.ExternalProject = &ExternalProjectReference{
 		ID: projectID,
 	}
-	c.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
-		ConnectionSecret: &api.LocalObjectReference{
-			Name: credentialsName,
-		},
+	c.Spec.ConnectionSecret = &api.LocalObjectReference{
+		Name: credentialsName,
 	}
 
 	return c
@@ -777,4 +767,8 @@ func (c *AtlasDeployment) AtlasName() string {
 		return c.Spec.ServerlessSpec.Name
 	}
 	return ""
+}
+
+func (c *AtlasDeployment) Credentials() *api.LocalObjectReference {
+	return c.Spec.ConnectionSecret
 }

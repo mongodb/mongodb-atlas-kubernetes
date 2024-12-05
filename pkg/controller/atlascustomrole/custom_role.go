@@ -41,9 +41,9 @@ func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, akoCustomR
 }
 
 func (r *roleController) Reconcile() workflow.Result {
-	if r.role.Spec.ProjectRef != nil {
+	if r.role.Spec.Project != nil {
 		project := &akov2.AtlasProject{}
-		err := r.k8sClient.Get(r.ctx.Context, *(r.role.Spec.ProjectRef.GetObject(r.role.GetNamespace())), project)
+		err := r.k8sClient.Get(r.ctx.Context, *(r.role.Spec.Project.GetObject(r.role.GetNamespace())), project)
 		if err != nil {
 			return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
 		}
@@ -52,8 +52,8 @@ func (r *roleController) Reconcile() workflow.Result {
 				fmt.Sprintf("the referenced AtlasProject resource '%s' doesn't have ID (status.ID is empty)", project.GetName()))
 		}
 		r.projectID = project.Status.ID
-	} else if r.role.Spec.ExternalProjectIDRef != nil {
-		r.projectID = r.role.Spec.ExternalProjectIDRef.ID
+	} else if r.role.Spec.ExternalProject != nil {
+		r.projectID = r.role.Spec.ExternalProject.ID
 	}
 
 	roleFoundInAtlas := false

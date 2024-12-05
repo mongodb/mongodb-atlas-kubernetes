@@ -118,7 +118,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			deploy.CreateProject(testData)
 		})
 		By("Failing when an user has both project and atlas references are set", func() {
-			testData.Users[0].Spec.ExternalProjectRef = &akov2.ExternalProjectReference{
+			testData.Users[0].Spec.ExternalProject = &akov2.ExternalProjectReference{
 				ID: testData.Project.ID(),
 			}
 

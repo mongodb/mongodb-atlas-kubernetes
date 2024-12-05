@@ -1110,10 +1110,10 @@ func TestGetProjectFromAtlas(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "project-id",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "project-creds",
 						},
@@ -1134,10 +1134,10 @@ func TestGetProjectFromAtlas(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "project-id",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "project-creds",
 						},
@@ -1167,10 +1167,10 @@ func TestGetProjectFromAtlas(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "project-id",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "project-creds",
 						},
@@ -1258,9 +1258,11 @@ func TestGetProjectFromKube(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 				},
 			},
@@ -1293,9 +1295,11 @@ func TestGetProjectFromKube(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 				},
 			},
@@ -1342,10 +1346,10 @@ func TestGetProjectFromKube(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "project-creds",
 						},
@@ -1438,9 +1442,11 @@ func TestChangeDeploymentType(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "cluster0",
@@ -1462,9 +1468,11 @@ func TestChangeDeploymentType(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name: "cluster0",

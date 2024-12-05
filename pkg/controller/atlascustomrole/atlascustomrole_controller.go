@@ -152,13 +152,13 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func selectCredentials(ctx context.Context, k8sClient client.Client, akoRole *akov2.AtlasCustomRole) (*client.ObjectKey, error) {
 	switch {
 	// First, try the externalProjectID and it's credentials
-	case akoRole.Spec.ExternalProjectIDRef != nil:
+	case akoRole.Spec.ExternalProject != nil:
 		if akoRole.Spec.ConnectionSecret == nil {
 			return nil, errors.New("the 'externalProjectIDRef' is set but the 'connectionSecret' is missing")
 		}
 		return &client.ObjectKey{Name: akoRole.Spec.ConnectionSecret.Name, Namespace: akoRole.GetNamespace()}, nil
 	// Try the external project ref
-	case akoRole.Spec.ProjectRef != nil:
+	case akoRole.Spec.Project != nil:
 		// if the local credentials are set, use them
 		if akoRole.Spec.ConnectionSecret != nil {
 			return &client.ObjectKey{Name: akoRole.Spec.ConnectionSecret.Name, Namespace: akoRole.GetNamespace()}, nil
@@ -166,7 +166,7 @@ func selectCredentials(ctx context.Context, k8sClient client.Client, akoRole *ak
 		// otherwise, use those attached to the AtlasProject that is referenced by the externalProjectRef
 		project := &akov2.AtlasProject{}
 		err := k8sClient.Get(ctx,
-			client.ObjectKey{Name: akoRole.Spec.ProjectRef.Name, Namespace: akoRole.Spec.ProjectRef.Namespace}, project)
+			client.ObjectKey{Name: akoRole.Spec.Project.Name, Namespace: akoRole.Spec.Project.Namespace}, project)
 		if err != nil {
 			return nil, errors.Wrap(err, "can not read credentials from AtlasProject")
 		}

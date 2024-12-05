@@ -35,8 +35,10 @@ func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: &common.ResourceRefNamespaced{
-				Name: ProjectName,
+			ProjectDualReference: akov2.ProjectDualReference{
+				Project: &common.ResourceRefNamespaced{
+					Name: ProjectName,
+				},
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				ClusterType: "GEOSHARDED",
@@ -84,8 +86,10 @@ func CreateServerlessDeployment(name string, providerName string, regionName str
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: &common.ResourceRefNamespaced{
-				Name: ProjectName,
+			ProjectDualReference: akov2.ProjectDualReference{
+				Project: &common.ResourceRefNamespaced{
+					Name: ProjectName,
+				},
 			},
 			ServerlessSpec: &akov2.ServerlessSpec{
 				Name: name,
@@ -105,8 +109,10 @@ func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: &common.ResourceRefNamespaced{
-				Name: ProjectName,
+			ProjectDualReference: akov2.ProjectDualReference{
+				Project: &common.ResourceRefNamespaced{
+					Name: ProjectName,
+				},
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				ClusterType: "REPLICASET",
@@ -139,8 +145,10 @@ func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: &common.ResourceRefNamespaced{
-				Name: ProjectName,
+			ProjectDualReference: akov2.ProjectDualReference{
+				Project: &common.ResourceRefNamespaced{
+					Name: ProjectName,
+				},
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				ClusterType:   "REPLICASET",
@@ -171,8 +179,10 @@ func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
 
 func NewDeploymentWithBackupSpec() akov2.AtlasDeploymentSpec {
 	return akov2.AtlasDeploymentSpec{
-		Project: &common.ResourceRefNamespaced{
-			Name: ProjectName,
+		ProjectDualReference: akov2.ProjectDualReference{
+			Project: &common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
 		},
 		DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:          "deployment-backup",
@@ -230,8 +240,10 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: &common.ResourceRefNamespaced{
-				Name: ProjectName,
+			ProjectDualReference: akov2.ProjectDualReference{
+				Project: &common.ResourceRefNamespaced{
+					Name: ProjectName,
+				},
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:          "deployment-multiregion",
@@ -276,8 +288,10 @@ func CreateFreeAdvancedDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: &common.ResourceRefNamespaced{
-				Name: ProjectName,
+			ProjectDualReference: akov2.ProjectDualReference{
+				Project: &common.ResourceRefNamespaced{
+					Name: ProjectName,
+				},
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:                 name,
@@ -317,8 +331,10 @@ func CreateAdvancedDeployment(name string) *akov2.AtlasDeployment {
 			Name: name,
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			Project: &common.ResourceRefNamespaced{
-				Name: ProjectName,
+			ProjectDualReference: akov2.ProjectDualReference{
+				Project: &common.ResourceRefNamespaced{
+					Name: ProjectName,
+				},
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:          name,

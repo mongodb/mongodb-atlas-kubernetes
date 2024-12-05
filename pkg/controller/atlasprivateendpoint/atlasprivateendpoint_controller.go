@@ -117,7 +117,7 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 func (r *AtlasPrivateEndpointReconciler) getProjectFromAtlas(ctx context.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) (*project.Project, error) {
 	sdkClient, _, err := r.AtlasProvider.SdkClient(
 		ctx,
-		&client.ObjectKey{Namespace: akoPrivateEndpoint.Namespace, Name: akoPrivateEndpoint.Credentials().Name},
+		&client.ObjectKey{Namespace: akoPrivateEndpoint.Namespace, Name: akoPrivateEndpoint.Spec.ConnectionSecret.Name},
 		r.Log,
 	)
 	if err != nil {

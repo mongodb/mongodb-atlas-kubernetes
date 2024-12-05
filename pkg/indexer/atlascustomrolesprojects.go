@@ -37,8 +37,8 @@ func (a *AtlasCustomRoleByProjectIndexer) Keys(object client.Object) []string {
 		return nil
 	}
 
-	if role.Spec.ProjectRef != nil && role.Spec.ProjectRef.Name != "" {
-		return []string{role.Spec.ProjectRef.GetObject(role.Namespace).String()}
+	if role.Spec.Project != nil && role.Spec.Project.Name != "" {
+		return []string{role.Spec.Project.GetObject(role.Namespace).String()}
 	}
 
 	return nil

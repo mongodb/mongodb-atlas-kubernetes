@@ -235,7 +235,7 @@ func TestComputeSecret(t *testing.T) {
 	for _, tt := range []struct {
 		name         string
 		project      *akov2.AtlasProject
-		resource     api.ResourceWithCredentials
+		resource     api.ObjectWithCredentials
 		wantRef      *types.NamespacedName
 		wantErrorMsg string
 	}{
@@ -249,7 +249,7 @@ func TestComputeSecret(t *testing.T) {
 			resource: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
 					},
 				},
@@ -306,7 +306,7 @@ func TestComputeSecret(t *testing.T) {
 			resource: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
 					},
 				},

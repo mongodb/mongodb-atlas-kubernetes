@@ -139,7 +139,7 @@ func SetAnnotation(resource api.AtlasCustomResource, key, value string) {
 	resource.SetAnnotations(annot)
 }
 
-func ComputeSecret(project *akov2.AtlasProject, resource api.ResourceWithCredentials) (*client.ObjectKey, error) {
+func ComputeSecret(project *akov2.AtlasProject, resource api.ObjectWithCredentials) (*client.ObjectKey, error) {
 	if resource == nil {
 		return nil, fmt.Errorf("resource cannot be nil")
 	}

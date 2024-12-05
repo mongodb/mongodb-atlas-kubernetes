@@ -1238,9 +1238,11 @@ func TestHasDependencies(t *testing.T) {
 				Namespace: "default",
 			},
 			Spec: akov2.AtlasPrivateEndpointSpec{
-				Project: &common.ResourceRefNamespaced{
-					Name:      "my-project",
-					Namespace: "default",
+				ProjectDualReference: akov2.ProjectDualReference{
+					Project: &common.ResourceRefNamespaced{
+						Name:      "my-project",
+						Namespace: "default",
+					},
 				},
 			},
 		}

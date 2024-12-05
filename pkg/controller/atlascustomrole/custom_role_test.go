@@ -90,8 +90,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -169,8 +171,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -215,8 +219,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -274,8 +280,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -360,8 +368,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -428,8 +438,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -486,8 +498,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -575,8 +589,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -611,8 +627,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 									},
 								},
 							},
-							ExternalProjectIDRef: &akov2.ExternalProjectReference{
-								ID: "testProjectID",
+							ProjectDualReference: akov2.ProjectDualReference{
+								ExternalProject: &akov2.ExternalProjectReference{
+									ID: "testProjectID",
+								},
 							},
 						},
 						Status: status.AtlasCustomRoleStatus{},
@@ -669,8 +687,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -749,8 +769,10 @@ func Test_handleCustomRole(t *testing.T) {
 							InheritedRoles: nil,
 							Actions:        nil,
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProject: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -767,9 +789,11 @@ func Test_handleCustomRole(t *testing.T) {
 								InheritedRoles: nil,
 								Actions:        nil,
 							},
-							ProjectRef: &common.ResourceRefNamespaced{
-								Name:      "testProject",
-								Namespace: "testNamespace",
+							ProjectDualReference: akov2.ProjectDualReference{
+								Project: &common.ResourceRefNamespaced{
+									Name:      "testProject",
+									Namespace: "testNamespace",
+								},
 							},
 						},
 						Status: status.AtlasCustomRoleStatus{},
@@ -814,9 +838,11 @@ func Test_handleCustomRole(t *testing.T) {
 							InheritedRoles: nil,
 							Actions:        nil,
 						},
-						ProjectRef: &common.ResourceRefNamespaced{
-							Name:      "testProject",
-							Namespace: "testNamespace",
+						ProjectDualReference: akov2.ProjectDualReference{
+							Project: &common.ResourceRefNamespaced{
+								Name:      "testProject",
+								Namespace: "testNamespace",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -843,9 +869,11 @@ func Test_handleCustomRole(t *testing.T) {
 								InheritedRoles: nil,
 								Actions:        nil,
 							},
-							ProjectRef: &common.ResourceRefNamespaced{
-								Name:      "testProject",
-								Namespace: "testNamespace",
+							ProjectDualReference: akov2.ProjectDualReference{
+								Project: &common.ResourceRefNamespaced{
+									Name:      "testProject",
+									Namespace: "testNamespace",
+								},
 							},
 						},
 						Status: status.AtlasCustomRoleStatus{},
@@ -877,9 +905,11 @@ func Test_handleCustomRole(t *testing.T) {
 							InheritedRoles: nil,
 							Actions:        nil,
 						},
-						ProjectRef: &common.ResourceRefNamespaced{
-							Name:      "testProject",
-							Namespace: "testNamespace",
+						ProjectDualReference: akov2.ProjectDualReference{
+							Project: &common.ResourceRefNamespaced{
+								Name:      "testProject",
+								Namespace: "testNamespace",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -922,9 +952,11 @@ func Test_handleCustomRole(t *testing.T) {
 							InheritedRoles: nil,
 							Actions:        nil,
 						},
-						ProjectRef: &common.ResourceRefNamespaced{
-							Name:      "testProject",
-							Namespace: "testNamespace",
+						ProjectDualReference: akov2.ProjectDualReference{
+							Project: &common.ResourceRefNamespaced{
+								Name:      "testProject",
+								Namespace: "testNamespace",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},

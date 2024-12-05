@@ -46,7 +46,7 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 	}
 
 	var atlasProject *project.Project
-	if atlasDatabaseUser.Spec.ExternalProjectRef != nil {
+	if atlasDatabaseUser.Spec.ExternalProject != nil {
 		atlasProject, err = r.getProjectFromAtlas(ctx, atlasDatabaseUser)
 	} else {
 		atlasProject, err = r.getProjectFromKube(ctx, atlasDatabaseUser)
@@ -290,7 +290,7 @@ func (r *AtlasDatabaseUserReconciler) removeOldUser(ctx context.Context, project
 func (r *AtlasDatabaseUserReconciler) getProjectFromAtlas(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) (*project.Project, error) {
 	sdkClient, _, err := r.AtlasProvider.SdkClient(
 		ctx.Context,
-		&client.ObjectKey{Namespace: atlasDatabaseUser.Namespace, Name: atlasDatabaseUser.Credentials().Name},
+		&client.ObjectKey{Namespace: atlasDatabaseUser.Namespace, Name: atlasDatabaseUser.Spec.ConnectionSecret.Name},
 		r.Log,
 	)
 	if err != nil {
@@ -301,7 +301,7 @@ func (r *AtlasDatabaseUserReconciler) getProjectFromAtlas(ctx *workflow.Context,
 	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
 
-	atlasProject, err := projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.ExternalProjectRef.ID)
+	atlasProject, err := projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.ExternalProject.ID)
 	if err != nil {
 		return nil, err
 	}

@@ -54,12 +54,8 @@ const (
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasDatabaseUserSpec struct {
-	api.LocalCredentialHolder `json:",inline"`
-
-	// Project is a reference to AtlasProject resource the user belongs to
-	Project *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
-	// ExternalProjectRef holds the Atlas project ID the user belongs to
-	ExternalProjectRef *ExternalProjectReference `json:"externalProjectRef,omitempty"`
+	// ProjectReference is the dual external or kubernetes reference with access credentials
+	ProjectDualReference `json:",inline"`
 
 	// DatabaseName is a Database against which Atlas authenticates the user. Default value is 'admin'.
 	// +kubebuilder:default=admin
@@ -189,6 +185,10 @@ func (p *AtlasDatabaseUser) GetStatus() api.Status {
 	return p.Status
 }
 
+func (p *AtlasDatabaseUser) Credentials() *api.LocalObjectReference {
+	return p.Spec.ConnectionSecret
+}
+
 func (p *AtlasDatabaseUser) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	p.Status.Conditions = conditions
 	p.Status.ObservedGeneration = p.ObjectMeta.Generation
@@ -256,8 +256,10 @@ func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUs
 			Namespace: namespace,
 		},
 		Spec: AtlasDatabaseUserSpec{
-			Username:       dbUserName,
-			Project:        &common.ResourceRefNamespaced{Name: projectName},
+			Username: dbUserName,
+			ProjectDualReference: ProjectDualReference{
+				Project: &common.ResourceRefNamespaced{Name: projectName},
+			},
 			PasswordSecret: &common.ResourceRef{},
 			Roles:          []RoleSpec{},
 			Scopes:         []ScopeSpec{},
@@ -302,20 +304,13 @@ func (p *AtlasDatabaseUser) WithDeleteAfterDate(date string) *AtlasDatabaseUser 
 
 func (p *AtlasDatabaseUser) WithExternaLProject(projectID, credentialsName string) *AtlasDatabaseUser {
 	p.Spec.Project = nil
-	p.Spec.ExternalProjectRef = &ExternalProjectReference{
+	p.Spec.ExternalProject = &ExternalProjectReference{
 		ID: projectID,
 	}
-	p.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
-		ConnectionSecret: &api.LocalObjectReference{
-			Name: credentialsName,
-		},
+	p.Spec.ConnectionSecret = &api.LocalObjectReference{
+		Name: credentialsName,
 	}
-
 	return p
-}
-
-func (p AtlasDatabaseUser) Credentials() *api.LocalObjectReference {
-	return p.Spec.Credentials()
 }
 
 func DefaultDBUser(namespace, username, projectName string) *AtlasDatabaseUser {
