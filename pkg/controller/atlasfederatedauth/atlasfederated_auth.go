@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
+	adminv20231115008 "go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -41,7 +42,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.Terminate(workflow.FederatedAuthOrgNotConnected, err.Error())
 	}
 
-	projectList, err := prepareProjectList(service.Context, service.SdkClientSet.SdkClient20241113001)
+	projectList, err := prepareProjectList(service.Context, service.SdkClient)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Sprintf("Can not list projects for org ID %s. %s", service.OrgID, err.Error()))
 	}
@@ -79,7 +80,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	return workflow.OK()
 }
 
-func prepareProjectList(ctx context.Context, client *admin.APIClient) (map[string]string, error) {
+func prepareProjectList(ctx context.Context, client *adminv20231115008.APIClient) (map[string]string, error) {
 	if client == nil {
 		return nil, errors.New("client is not created")
 	}
