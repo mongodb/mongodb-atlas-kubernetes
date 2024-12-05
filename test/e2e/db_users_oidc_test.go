@@ -3,7 +3,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,11 +11,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	dbuserController "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
@@ -67,48 +64,8 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags disabled",
 		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 
-	It("Operator run on global namespace with the OIDC feature disabled", func() {
-		By("Running operator watching global namespace with OIDC disabled", func() {
-			actions.ProjectCreationFlow(testData)
-		})
-
-		By("Creating database users resource", func() {
-			deploy.CreateUsers(testData)
-		})
-
-		By("Try to enabled the OIDC feature for the user", func() {
-			currentUser := &akov2.AtlasDatabaseUser{}
-			Expect(testData.K8SClient.Get(context.Background(),
-				types.NamespacedName{
-					Name:      testData.Users[0].Name,
-					Namespace: testData.Users[0].Namespace,
-				}, currentUser)).NotTo(HaveOccurred())
-
-			currentUser.Spec.OIDCAuthType = "IDP_GROUP"
-			Expect(testData.K8SClient.Update(context.Background(), currentUser)).NotTo(HaveOccurred())
-		})
-
-		By("Verify if user is ready. It shouldn't be", func() {
-			currentUser := &akov2.AtlasDatabaseUser{}
-			Eventually(func(g Gomega) {
-				g.Expect(testData.K8SClient.Get(context.Background(),
-					types.NamespacedName{
-						Name:      testData.Users[0].Name,
-						Namespace: testData.Users[0].Namespace,
-					}, currentUser)).NotTo(HaveOccurred())
-				for _, condition := range currentUser.Status.Conditions {
-					if condition.Type == api.DatabaseUserReadyType {
-						g.Expect(condition.Status).Should(Equal(corev1.ConditionFalse))
-						g.Expect(condition.Message).To(ContainSubstring(dbuserController.ErrOIDCNotEnabled.Error()))
-					}
-				}
-			}).WithTimeout(1 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
-		})
-	})
-
 	It("Operator run on global namespace with the OIDC feature enabled", func() {
 		By("Running operator watching global namespace with OIDC enabled", func() {
-			os.Setenv(featureflags.FeatureOIDC, "true")
 			actions.ProjectCreationFlow(testData)
 		})
 		By("Creating database users resource", func() {

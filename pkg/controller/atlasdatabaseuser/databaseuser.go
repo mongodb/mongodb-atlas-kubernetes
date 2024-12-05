@@ -101,10 +101,6 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, atlasD
 }
 
 func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
-	if !canManageOIDC(r.FeaturePreviewOIDCAuthEnabled, atlasDatabaseUser.Spec.OIDCAuthType) {
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, false, ErrOIDCNotEnabled)
-	}
-
 	userPassword, passwordVersion, err := r.readPassword(ctx.Context, atlasDatabaseUser)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
@@ -136,10 +132,6 @@ func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, projectID st
 }
 
 func (r *AtlasDatabaseUserReconciler) update(ctx *workflow.Context, atlasProject *project.Project, atlasDatabaseUser *akov2.AtlasDatabaseUser, databaseUserInAtlas *dbuser.User) ctrl.Result {
-	if !canManageOIDC(r.FeaturePreviewOIDCAuthEnabled, atlasDatabaseUser.Spec.OIDCAuthType) {
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, false, ErrOIDCNotEnabled)
-	}
-
 	userPassword, passwordVersion, err := r.readPassword(ctx.Context, atlasDatabaseUser)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
@@ -329,14 +321,6 @@ func (r *AtlasDatabaseUserReconciler) getProjectFromKube(ctx *workflow.Context, 
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
 
 	return project.NewProject(atlasProject, orgID), nil
-}
-
-func canManageOIDC(isEnabled bool, oidcType string) bool {
-	if !isEnabled && (oidcType != "" && oidcType != "NONE") {
-		return false
-	}
-
-	return true
 }
 
 func isExpired(atlasDatabaseUser *akov2.AtlasDatabaseUser) (bool, error) {

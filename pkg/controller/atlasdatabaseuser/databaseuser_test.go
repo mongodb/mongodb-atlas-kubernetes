@@ -831,27 +831,9 @@ func TestCreate(t *testing.T) {
 		dbUserInAKO        *akov2.AtlasDatabaseUser
 		dbUserSecret       *corev1.Secret
 		dbUserService      func() dbuser.AtlasUsersService
-		oidcFlag           bool
 		expectedResult     ctrl.Result
 		expectedConditions []api.Condition
 	}{
-		"failed to set OIDC config when feature is not enabled": {
-			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				Spec: akov2.AtlasDatabaseUserSpec{
-					OIDCAuthType: "USER",
-				},
-			},
-			oidcFlag: false,
-			dbUserService: func() dbuser.AtlasUsersService {
-				return translation.NewAtlasUsersServiceMock(t)
-			},
-			expectedResult: ctrl.Result{},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.DatabaseUserReadyType).
-					WithReason(string(workflow.Internal)).
-					WithMessageRegexp(ErrOIDCNotEnabled.Error()),
-			},
-		},
 		"failed to read user password": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
@@ -865,7 +847,6 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				return translation.NewAtlasUsersServiceMock(t)
 			},
@@ -902,7 +883,6 @@ func TestCreate(t *testing.T) {
 					"password": []byte("Passw0rd!"),
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				return translation.NewAtlasUsersServiceMock(t)
 			},
@@ -942,7 +922,6 @@ func TestCreate(t *testing.T) {
 					"password": []byte("Passw0rd!"),
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				service := translation.NewAtlasUsersServiceMock(t)
 				service.EXPECT().Create(context.Background(), mock.AnythingOfType("*dbuser.User")).
@@ -987,7 +966,6 @@ func TestCreate(t *testing.T) {
 					"password": []byte("Passw0rd!"),
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				service := translation.NewAtlasUsersServiceMock(t)
 				service.EXPECT().Create(context.Background(), mock.AnythingOfType("*dbuser.User")).Return(nil)
@@ -1031,7 +1009,6 @@ func TestCreate(t *testing.T) {
 					"password": []byte("Passw0rd!"),
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				service := translation.NewAtlasUsersServiceMock(t)
 				service.EXPECT().Create(context.Background(), mock.AnythingOfType("*dbuser.User")).Return(nil)
@@ -1063,10 +1040,9 @@ func TestCreate(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				Client:                        k8sClient.Build(),
-				Log:                           logger,
-				dbUserService:                 tt.dbUserService(),
-				FeaturePreviewOIDCAuthEnabled: tt.oidcFlag,
+				Client:        k8sClient.Build(),
+				Log:           logger,
+				dbUserService: tt.dbUserService(),
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
@@ -1094,30 +1070,9 @@ func TestUpdate(t *testing.T) {
 		dbUserInAtlas      *dbuser.User
 		dbUserService      func() dbuser.AtlasUsersService
 		dService           func() deployment.AtlasDeploymentsService
-		oidcFlag           bool
 		expectedResult     ctrl.Result
 		expectedConditions []api.Condition
 	}{
-		"failed to set OIDC config when feature is not enabled": {
-			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				Spec: akov2.AtlasDatabaseUserSpec{
-					OIDCAuthType: "USER",
-				},
-			},
-			oidcFlag: false,
-			dbUserService: func() dbuser.AtlasUsersService {
-				return translation.NewAtlasUsersServiceMock(t)
-			},
-			dService: func() deployment.AtlasDeploymentsService {
-				return translation.NewAtlasDeploymentsServiceMock(t)
-			},
-			expectedResult: ctrl.Result{},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.DatabaseUserReadyType).
-					WithReason(string(workflow.Internal)).
-					WithMessageRegexp(ErrOIDCNotEnabled.Error()),
-			},
-		},
 		"failed to read user password": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1131,7 +1086,6 @@ func TestUpdate(t *testing.T) {
 					},
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				return translation.NewAtlasUsersServiceMock(t)
 			},
@@ -1171,7 +1125,6 @@ func TestUpdate(t *testing.T) {
 					"password": []byte("Passw0rd!"),
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				return translation.NewAtlasUsersServiceMock(t)
 			},
@@ -1223,7 +1176,6 @@ func TestUpdate(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				return translation.NewAtlasUsersServiceMock(t)
 			},
@@ -1278,7 +1230,6 @@ func TestUpdate(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				service := translation.NewAtlasUsersServiceMock(t)
 				service.EXPECT().Update(context.Background(), mock.AnythingOfType("*dbuser.User")).
@@ -1334,7 +1285,6 @@ func TestUpdate(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			oidcFlag: false,
 			dbUserService: func() dbuser.AtlasUsersService {
 				service := translation.NewAtlasUsersServiceMock(t)
 				service.EXPECT().Update(context.Background(), mock.AnythingOfType("*dbuser.User")).Return(nil)
@@ -1369,11 +1319,10 @@ func TestUpdate(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				Client:                        k8sClient.Build(),
-				Log:                           logger,
-				dbUserService:                 tt.dbUserService(),
-				deploymentService:             tt.dService(),
-				FeaturePreviewOIDCAuthEnabled: tt.oidcFlag,
+				Client:            k8sClient.Build(),
+				Log:               logger,
+				dbUserService:     tt.dbUserService(),
+				deploymentService: tt.dService(),
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
@@ -2034,51 +1983,6 @@ func TestAreDeploymentScopesValid(t *testing.T) {
 	clusters := []string{"cluster1", "cluster4", "cluster5"}
 	scopeClusters := filterScopeDeployments(&akov2.AtlasDatabaseUser{Spec: akov2.AtlasDatabaseUserSpec{Scopes: scopeSpecs}}, clusters)
 	assert.Equal(t, []string{"cluster1"}, scopeClusters)
-}
-
-func TestCanManageOIDC(t *testing.T) {
-	tests := map[string]struct {
-		featureFlag bool
-		oidc        string
-		expected    bool
-	}{
-		"feature is disabled and config unset": {
-			featureFlag: false,
-			oidc:        "",
-			expected:    true,
-		},
-		"feature is disabled and config is none": {
-			featureFlag: false,
-			oidc:        "NONE",
-			expected:    true,
-		},
-		"feature is disabled and config is set": {
-			featureFlag: false,
-			oidc:        "USER",
-			expected:    false,
-		},
-		"feature is enabled and config unset": {
-			featureFlag: true,
-			oidc:        "",
-			expected:    true,
-		},
-		"feature is enabled and config is none": {
-			featureFlag: true,
-			oidc:        "NONE",
-			expected:    true,
-		},
-		"feature is enabled and config is set": {
-			featureFlag: true,
-			oidc:        "IDP_GROUP",
-			expected:    true,
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, canManageOIDC(tt.featureFlag, tt.oidc))
-		})
-	}
 }
 
 func TestRemoveOldUser(t *testing.T) {
