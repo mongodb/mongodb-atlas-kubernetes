@@ -37,15 +37,15 @@ func (a *AwsKms) ToAtlas() *admin.AWSKMSConfiguration {
 
 	result := &admin.AWSKMSConfiguration{
 		Enabled: a.AwsKms.Enabled,
-		Region:  &a.AwsKms.Region,
+		Region:  pointer.MakePtrOrNil(a.AwsKms.Region),
 		Valid:   a.AwsKms.Valid,
 
-		RoleId:              &a.RoleID,
-		CustomerMasterKeyID: &a.CustomerMasterKeyID,
+		RoleId:              pointer.MakePtrOrNil(a.RoleID),
+		CustomerMasterKeyID: pointer.MakePtrOrNil(a.CustomerMasterKeyID),
 	}
 
 	if result.RoleId == nil && a.CloudProviderIntegrationRole != "" {
-		result.RoleId = &a.CloudProviderIntegrationRole
+		result.RoleId = pointer.MakePtrOrNil(a.CloudProviderIntegrationRole)
 	}
 
 	if result.Enabled == nil {
@@ -77,15 +77,15 @@ func (az *AzureKeyVault) ToAtlas() *admin.AzureKeyVault {
 
 	result := &admin.AzureKeyVault{
 		Enabled:           az.AzureKeyVault.Enabled,
-		ClientID:          &az.AzureKeyVault.ClientID,
-		AzureEnvironment:  &az.AzureKeyVault.AzureEnvironment,
-		ResourceGroupName: &az.AzureKeyVault.ResourceGroupName,
-		TenantID:          &az.AzureKeyVault.TenantID,
+		ClientID:          pointer.MakePtrOrNil(az.AzureKeyVault.ClientID),
+		AzureEnvironment:  pointer.MakePtrOrNil(az.AzureKeyVault.AzureEnvironment),
+		ResourceGroupName: pointer.MakePtrOrNil(az.AzureKeyVault.ResourceGroupName),
+		TenantID:          pointer.MakePtrOrNil(az.AzureKeyVault.TenantID),
 
-		SubscriptionID: &az.SubscriptionID,
-		KeyVaultName:   &az.KeyVaultName,
-		KeyIdentifier:  &az.KeyIdentifier,
-		Secret:         &az.Secret,
+		SubscriptionID: pointer.MakePtrOrNil(az.SubscriptionID),
+		KeyVaultName:   pointer.MakePtrOrNil(az.KeyVaultName),
+		KeyIdentifier:  pointer.MakePtrOrNil(az.KeyIdentifier),
+		Secret:         pointer.MakePtrOrNil(az.Secret),
 	}
 
 	if result.Enabled == nil {
@@ -113,8 +113,8 @@ func (g *GoogleCloudKms) ToAtlas() *admin.GoogleCloudKMS {
 
 	result := &admin.GoogleCloudKMS{
 		Enabled:              g.GoogleCloudKms.Enabled,
-		ServiceAccountKey:    &g.ServiceAccountKey,
-		KeyVersionResourceID: &g.KeyVersionResourceID,
+		ServiceAccountKey:    pointer.MakePtrOrNil(g.ServiceAccountKey),
+		KeyVersionResourceID: pointer.MakePtrOrNil(g.KeyVersionResourceID),
 	}
 
 	if result.Enabled == nil {
