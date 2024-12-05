@@ -30,7 +30,8 @@ func (e *EncryptionAtRestAPI) Get(ctx context.Context, projectID string) (*Encry
 }
 
 func (e *EncryptionAtRestAPI) Update(ctx context.Context, projectID string, ear EncryptionAtRest) error {
-	_, _, err := e.encryptionAtRestAPI.UpdateEncryptionAtRest(ctx, projectID, toAtlas(&ear)).Execute()
+	a := toAtlas(&ear)
+	_, _, err := e.encryptionAtRestAPI.UpdateEncryptionAtRest(ctx, projectID, a).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to update encryption at rest in Atlas: %w", err)
 	}

@@ -5,7 +5,9 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
 type EncryptionAtRest struct {
@@ -46,6 +48,10 @@ func (a *AwsKms) ToAtlas() *admin.AWSKMSConfiguration {
 		result.RoleId = &a.CloudProviderIntegrationRole
 	}
 
+	if result.Enabled == nil {
+		result.Enabled = pointer.MakePtr(false)
+	}
+
 	return result
 }
 
@@ -69,7 +75,7 @@ func (az *AzureKeyVault) ToAtlas() *admin.AzureKeyVault {
 		return nil
 	}
 
-	return &admin.AzureKeyVault{
+	result := &admin.AzureKeyVault{
 		Enabled:           az.AzureKeyVault.Enabled,
 		ClientID:          &az.AzureKeyVault.ClientID,
 		AzureEnvironment:  &az.AzureKeyVault.AzureEnvironment,
@@ -81,6 +87,12 @@ func (az *AzureKeyVault) ToAtlas() *admin.AzureKeyVault {
 		KeyIdentifier:  &az.KeyIdentifier,
 		Secret:         &az.Secret,
 	}
+
+	if result.Enabled == nil {
+		result.Enabled = pointer.MakePtr(false)
+	}
+
+	return result
 }
 
 type GoogleCloudKms struct {
@@ -99,12 +111,17 @@ func (g *GoogleCloudKms) ToAtlas() *admin.GoogleCloudKMS {
 		return nil
 	}
 
-	return &admin.GoogleCloudKMS{
-		Enabled: g.GoogleCloudKms.Enabled,
-
+	result := &admin.GoogleCloudKMS{
+		Enabled:              g.GoogleCloudKms.Enabled,
 		ServiceAccountKey:    &g.ServiceAccountKey,
 		KeyVersionResourceID: &g.KeyVersionResourceID,
 	}
+
+	if result.Enabled == nil {
+		result.Enabled = pointer.MakePtr(false)
+	}
+
+	return result
 }
 
 func NewEncryptionAtRest(project *akov2.AtlasProject) *EncryptionAtRest {
@@ -132,19 +149,17 @@ func NewEncryptionAtRest(project *akov2.AtlasProject) *EncryptionAtRest {
 }
 
 func toAtlas(spec *EncryptionAtRest) *admin.EncryptionAtRest {
-	if spec == nil {
-		return nil
-	}
-
-	return &admin.EncryptionAtRest{
+	result := &admin.EncryptionAtRest{
 		AwsKms:         spec.AWS.ToAtlas(),
 		AzureKeyVault:  spec.Azure.ToAtlas(),
 		GoogleCloudKms: spec.GCP.ToAtlas(),
 	}
+	return result
 }
 
 func fromAtlas(ear *admin.EncryptionAtRest) *EncryptionAtRest {
 	out := &EncryptionAtRest{}
+	out.AWS.AwsKms.Enabled = pointer.MakePtr(false)
 	if ear.HasAwsKms() {
 		out.AWS.AwsKms = akov2.AwsKms{
 			Enabled: ear.AwsKms.Enabled,
@@ -152,6 +167,8 @@ func fromAtlas(ear *admin.EncryptionAtRest) *EncryptionAtRest {
 			Valid:   ear.AwsKms.Valid,
 		}
 	}
+
+	out.Azure.AzureKeyVault.Enabled = pointer.MakePtr(false)
 	if ear.HasAzureKeyVault() {
 		out.Azure.AzureKeyVault = akov2.AzureKeyVault{
 			Enabled:           ear.AzureKeyVault.Enabled,
@@ -161,6 +178,8 @@ func fromAtlas(ear *admin.EncryptionAtRest) *EncryptionAtRest {
 			TenantID:          ear.AzureKeyVault.GetTenantID(),
 		}
 	}
+
+	out.GCP.GoogleCloudKms.Enabled = pointer.MakePtr(false)
 	if ear.HasGoogleCloudKms() {
 		out.GCP.GoogleCloudKms = akov2.GoogleCloudKms{
 			Enabled: ear.GoogleCloudKms.Enabled,
@@ -170,6 +189,79 @@ func fromAtlas(ear *admin.EncryptionAtRest) *EncryptionAtRest {
 }
 
 func EqualSpecs(spec, atlas *EncryptionAtRest) bool {
-	// Retracted secrets mean that this will never be equal
-	return reflect.DeepEqual(atlas, spec)
+	var specCopy, atlasCopy EncryptionAtRest
+
+	specCopy.AWS = prunedAWSSpecCopy(spec)
+	specCopy.GCP = prunedGCPSpecCopy(spec)
+	specCopy.Azure = prunedAzureSpecCopy(spec)
+
+	atlasCopy.AWS = prunedAWSSpecCopy(atlas)
+	atlasCopy.GCP = prunedGCPSpecCopy(atlas)
+	atlasCopy.Azure = prunedAzureSpecCopy(atlas)
+
+	setDefaultsFromAtlas(&specCopy, &atlasCopy)
+	return reflect.DeepEqual(specCopy, atlasCopy)
+}
+
+func prunedAWSSpecCopy(source *EncryptionAtRest) AwsKms {
+	var result AwsKms
+
+	if source == nil {
+		return result
+	}
+
+	result.AwsKms = *source.AWS.AwsKms.DeepCopy()
+	result.AwsKms.SecretRef = common.ResourceRefNamespaced{}
+	if result.AwsKms.Enabled == nil {
+		result.AwsKms.Enabled = pointer.MakePtr(false)
+	}
+	return result
+}
+
+func prunedGCPSpecCopy(source *EncryptionAtRest) GoogleCloudKms {
+	var result GoogleCloudKms
+
+	if source == nil {
+		return result
+	}
+
+	result.GoogleCloudKms = *source.GCP.GoogleCloudKms.DeepCopy()
+	result.GoogleCloudKms.SecretRef = common.ResourceRefNamespaced{}
+	if result.GoogleCloudKms.Enabled == nil {
+		result.GoogleCloudKms.Enabled = pointer.MakePtr(false)
+	}
+	return result
+}
+
+func prunedAzureSpecCopy(source *EncryptionAtRest) AzureKeyVault {
+	var result AzureKeyVault
+
+	if source == nil {
+		return result
+	}
+
+	result.AzureKeyVault = *source.Azure.AzureKeyVault.DeepCopy()
+	result.AzureKeyVault.SecretRef = common.ResourceRefNamespaced{}
+	if result.AzureKeyVault.Enabled == nil {
+		result.AzureKeyVault.Enabled = pointer.MakePtr(false)
+	}
+	return result
+}
+
+func setDefaultsFromAtlas(spec, atlas *EncryptionAtRest) {
+	if spec.AWS.Valid == nil && atlas.AWS.Valid != nil {
+		spec.AWS.Valid = atlas.AWS.Valid
+	}
+
+	if spec.AWS.Enabled == nil && atlas.AWS.Enabled != nil {
+		spec.AWS.Enabled = atlas.AWS.Enabled
+	}
+
+	if spec.GCP.Enabled == nil && atlas.GCP.Enabled != nil {
+		spec.GCP.Enabled = atlas.GCP.Enabled
+	}
+
+	if spec.Azure.Enabled == nil && atlas.Azure.Enabled != nil {
+		spec.Azure.Enabled = atlas.Azure.Enabled
+	}
 }
