@@ -57,16 +57,15 @@ var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authent
 
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
-	Client                        client.Client
-	Log                           *zap.SugaredLogger
-	Scheme                        *runtime.Scheme
-	EventRecorder                 record.EventRecorder
-	AtlasProvider                 atlas.Provider
-	GlobalPredicates              []predicate.Predicate
-	ObjectDeletionProtection      bool
-	SubObjectDeletionProtection   bool
-	FeaturePreviewOIDCAuthEnabled bool
-	independentSyncPeriod         time.Duration
+	Client                      client.Client
+	Log                         *zap.SugaredLogger
+	Scheme                      *runtime.Scheme
+	EventRecorder               record.EventRecorder
+	AtlasProvider               atlas.Provider
+	GlobalPredicates            []predicate.Predicate
+	ObjectDeletionProtection    bool
+	SubObjectDeletionProtection bool
+	independentSyncPeriod       time.Duration
 
 	dbUserService     dbuser.AtlasUsersService
 	deploymentService deployment.AtlasDeploymentsService
@@ -286,14 +285,13 @@ func NewAtlasDatabaseUserReconciler(
 	logger *zap.Logger,
 ) *AtlasDatabaseUserReconciler {
 	return &AtlasDatabaseUserReconciler{
-		Scheme:                        mgr.GetScheme(),
-		Client:                        mgr.GetClient(),
-		EventRecorder:                 mgr.GetEventRecorderFor("AtlasDatabaseUser"),
-		GlobalPredicates:              predicates,
-		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		AtlasProvider:                 atlasProvider,
-		ObjectDeletionProtection:      deletionProtection,
-		FeaturePreviewOIDCAuthEnabled: featureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
-		independentSyncPeriod:         independentSyncPeriod,
+		Scheme:                   mgr.GetScheme(),
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		GlobalPredicates:         predicates,
+		Log:                      logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		AtlasProvider:            atlasProvider,
+		ObjectDeletionProtection: deletionProtection,
+		independentSyncPeriod:    independentSyncPeriod,
 	}
 }

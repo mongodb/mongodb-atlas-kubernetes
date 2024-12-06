@@ -94,7 +94,16 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+
+	atlasClientSet, _, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, fedauth.ConnectionSecretObjectKey(), log)
+	if err != nil {
+		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
 	workflowCtx.SdkClient = atlasClient
+	workflowCtx.SdkClientSet = atlasClientSet
 	workflowCtx.OrgID = orgID
 
 	result = r.ensureFederatedAuth(workflowCtx, fedauth)

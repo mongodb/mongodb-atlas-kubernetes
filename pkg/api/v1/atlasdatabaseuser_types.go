@@ -61,7 +61,10 @@ type AtlasDatabaseUserSpec struct {
 	// ExternalProjectRef holds the Atlas project ID the user belongs to
 	ExternalProjectRef *ExternalProjectReference `json:"externalProjectRef,omitempty"`
 
-	// DatabaseName is a Database against which Atlas authenticates the user. Default value is 'admin'.
+	// DatabaseName is a Database against which Atlas authenticates the user.
+	// If the user authenticates with AWS IAM, x.509, LDAP, or OIDC Workload this value should be '$external'.
+	// If the user authenticates with SCRAM-SHA or OIDC Workforce, this value should be 'admin'.
+	// Default value is 'admin'.
 	// +kubebuilder:default=admin
 	DatabaseName string `json:"databaseName,omitempty"`
 
@@ -87,17 +90,16 @@ type AtlasDatabaseUserSpec struct {
 	// Username is a username for authenticating to MongoDB
 	// Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
 	// In case of AWS IAM: the value should be AWS ARN for the IAM User/Role;
-	// In case of OIDC: the value should be the Identity Provider ID;
+	// In case of OIDC Workload or Workforce: the value should be the Atlas OIDC IdP ID, followed by a '/', followed by the IdP group name;
 	// In case of Plain text auth: the value can be anything
 	// +kubebuilder:validation:MaxLength:=1024
 	Username string `json:"username"`
 
-	// Human-readable label that indicates whether the new database Username
-	// with OIDC federated authentication.
-	// To create a federated authentication user, specify the value
-	// of IDP_GROUP for this field
+	// Human-readable label that indicates whether the new database Username with OIDC federated authentication.
+	// To create a federated authentication group (Workforce), specify the value of IDP_GROUP in this field.
+	// To create a federated authentication user (Workload), specify the value of USER in this field.
 	// +kubebuilder:default:=NONE
-	// +kubebuilder:validation:Enum:=NONE;IDP_GROUP
+	// +kubebuilder:validation:Enum:=NONE;IDP_GROUP;USER
 	// +optional
 	OIDCAuthType string `json:"oidcAuthType,omitempty"`
 

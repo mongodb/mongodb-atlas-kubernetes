@@ -7,9 +7,6 @@ import (
 const (
 	featurePrefix    = "FEATURE_"
 	featureSeparator = "="
-
-	//nolint:stylecheck
-	FeatureOIDC = "FEATURE_PREVIEW_OIDC_DB_ACCESS"
 )
 
 type FeatureFlags struct {

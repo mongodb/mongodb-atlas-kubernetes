@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -41,6 +41,10 @@ type AtlasFederatedAuthSpec struct {
 	// Map IDP groups to Atlas roles.
 	// +optional
 	RoleMappings []RoleMapping `json:"roleMappings,omitempty"`
+	// The collection of unique ids representing the identity providers that can be used for data access in this organization.
+	// Currently connected data access identity providers missing from the this field will be disconnected.
+	// +optional
+	DataAccessIdentityProviders *[]string `json:"dataAccessIdentityProviders,omitempty"`
 }
 
 func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID map[string]string) (*admin.ConnectedOrgConfig, error) {
@@ -73,11 +77,21 @@ func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID ma
 	}
 
 	result := &admin.ConnectedOrgConfig{
-		DomainAllowList:          &f.DomainAllowList,
-		DomainRestrictionEnabled: *f.DomainRestrictionEnabled,
-		IdentityProviderId:       idpID,
-		OrgId:                    orgID,
-		PostAuthRoleGrants:       &f.PostAuthRoleGrants,
+		DataAccessIdentityProviderIds: f.DataAccessIdentityProviders,
+		DomainRestrictionEnabled:      *f.DomainRestrictionEnabled,
+		OrgId:                         orgID,
+	}
+
+	if len(f.DomainAllowList) > 0 {
+		result.SetDomainAllowList(f.DomainAllowList)
+	}
+
+	if idpID != "" {
+		result.SetIdentityProviderId(idpID)
+	}
+
+	if len(f.PostAuthRoleGrants) > 0 {
+		result.SetPostAuthRoleGrants(f.PostAuthRoleGrants)
 	}
 
 	if len(atlasRoleMappings) > 0 {

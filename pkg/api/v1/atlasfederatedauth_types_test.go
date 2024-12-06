@@ -3,9 +3,10 @@ package v1
 import (
 	"testing"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 
 	"github.com/go-test/deep"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -24,12 +25,13 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		}
 
 		spec := &AtlasFederatedAuthSpec{
-			Enabled:                  true,
-			ConnectionSecretRef:      common.ResourceRefNamespaced{},
-			DomainAllowList:          []string{"test.com"},
-			DomainRestrictionEnabled: pointer.MakePtr(true),
-			SSODebugEnabled:          pointer.MakePtr(true),
-			PostAuthRoleGrants:       []string{"role-3", "role-4"},
+			Enabled:                     true,
+			ConnectionSecretRef:         common.ResourceRefNamespaced{},
+			DomainAllowList:             []string{"test.com"},
+			DomainRestrictionEnabled:    pointer.MakePtr(true),
+			DataAccessIdentityProviders: &[]string{"test-123", "test-456"},
+			SSODebugEnabled:             pointer.MakePtr(true),
+			PostAuthRoleGrants:          []string{"role-3", "role-4"},
 			RoleMappings: []RoleMapping{
 				{
 					ExternalGroupName: "test-group",
@@ -49,11 +51,12 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		assert.NotNil(t, result, "ToAtlas() result is nil")
 
 		expected := &admin.ConnectedOrgConfig{
-			DomainAllowList:          &spec.DomainAllowList,
-			DomainRestrictionEnabled: *spec.DomainRestrictionEnabled,
-			IdentityProviderId:       idpID,
-			OrgId:                    orgID,
-			PostAuthRoleGrants:       &spec.PostAuthRoleGrants,
+			DomainAllowList:               &spec.DomainAllowList,
+			DomainRestrictionEnabled:      *spec.DomainRestrictionEnabled,
+			DataAccessIdentityProviderIds: spec.DataAccessIdentityProviders,
+			IdentityProviderId:            &idpID,
+			OrgId:                         orgID,
+			PostAuthRoleGrants:            &spec.PostAuthRoleGrants,
 			RoleMappings: &[]admin.AuthFederationRoleMapping{
 				{
 					ExternalGroupName: spec.RoleMappings[0].ExternalGroupName,
@@ -69,6 +72,9 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		}
 
 		diff := deep.Equal(expected, result)
+		if diff != nil {
+			t.Log(cmp.Diff(expected, result))
+		}
 		assert.Nil(t, diff, diff)
 	})
 
