@@ -136,7 +136,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	var atlasProject *project.Project
 	var err error
-	if atlasDeployment.Spec.ExternalProjectRef != nil {
+	if atlasDeployment.Spec.ExternalProject != nil {
 		atlasProject, err = r.getProjectFromAtlas(workflowCtx, atlasDeployment)
 	} else {
 		atlasProject, err = r.getProjectFromKube(workflowCtx, atlasDeployment)
@@ -191,7 +191,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func (r *AtlasDeploymentReconciler) getProjectFromAtlas(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment) (*project.Project, error) {
 	sdkClient, orgID, err := r.AtlasProvider.SdkClient(
 		ctx.Context,
-		&client.ObjectKey{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Credentials().Name},
+		&client.ObjectKey{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Spec.ConnectionSecret.Name},
 		r.Log,
 	)
 	if err != nil {
@@ -213,7 +213,7 @@ func (r *AtlasDeploymentReconciler) getProjectFromAtlas(ctx *workflow.Context, a
 	r.projectService = project.NewProjectAPIService(sdkClient.ProjectsApi)
 	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
 
-	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDeployment.Spec.ExternalProjectRef.ID)
+	atlasProject, err := r.projectService.GetProject(ctx.Context, atlasDeployment.Spec.ExternalProject.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (r *AtlasDeploymentReconciler) getProjectFromAtlas(ctx *workflow.Context, a
 	// Need to still set old client for component not yet migrated
 	ctx.Client, _, err = r.AtlasProvider.Client(
 		ctx.Context,
-		&client.ObjectKey{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Credentials().Name},
+		&client.ObjectKey{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Spec.ConnectionSecret.Name},
 		r.Log,
 	)
 	if err != nil {
@@ -430,7 +430,7 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
 
-	if atlasDeployment.Spec.ExternalProjectRef != nil {
+	if atlasDeployment.Spec.ExternalProject != nil {
 		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
 	}
 

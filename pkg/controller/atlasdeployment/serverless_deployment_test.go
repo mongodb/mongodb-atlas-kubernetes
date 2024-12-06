@@ -477,8 +477,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
@@ -559,8 +561,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
@@ -646,8 +650,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
@@ -718,8 +724,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",

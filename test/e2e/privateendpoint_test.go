@@ -424,9 +424,11 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Namespace: testData.Resources.Namespace,
 					},
 					Spec: akov2.AtlasPrivateEndpointSpec{
-						Project: &common.ResourceRefNamespaced{
-							Name:      testData.Project.Name,
-							Namespace: testData.Project.Namespace,
+						ProjectDualReference: akov2.ProjectDualReference{
+							Project: &common.ResourceRefNamespaced{
+								Name:      testData.Project.Name,
+								Namespace: testData.Project.Namespace,
+							},
 						},
 						Provider: "AWS",
 						Region:   awsRegion,
@@ -461,9 +463,11 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Namespace: testData.Resources.Namespace,
 					},
 					Spec: akov2.AtlasPrivateEndpointSpec{
-						Project: &common.ResourceRefNamespaced{
-							Name:      testData.Project.Name,
-							Namespace: testData.Project.Namespace,
+						ProjectDualReference: akov2.ProjectDualReference{
+							Project: &common.ResourceRefNamespaced{
+								Name:      testData.Project.Name,
+								Namespace: testData.Project.Namespace,
+							},
 						},
 						Provider: "AZURE",
 						Region:   azureRegion,
@@ -510,9 +514,11 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Namespace: testData.Resources.Namespace,
 					},
 					Spec: akov2.AtlasPrivateEndpointSpec{
-						Project: &common.ResourceRefNamespaced{
-							Name:      testData.Project.Name,
-							Namespace: testData.Project.Namespace,
+						ProjectDualReference: akov2.ProjectDualReference{
+							Project: &common.ResourceRefNamespaced{
+								Name:      testData.Project.Name,
+								Namespace: testData.Project.Namespace,
+							},
 						},
 						Provider: "GCP",
 						Region:   gcpRegion,

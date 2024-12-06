@@ -448,9 +448,11 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					Namespace: testData.Resources.Namespace,
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      projectName,
-						Namespace: testData.Resources.Namespace,
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      projectName,
+							Namespace: testData.Resources.Namespace,
+						},
 					},
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:          clusterName,
@@ -549,9 +551,11 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					Namespace: testData.Resources.Namespace,
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      projectName,
-						Namespace: testData.Resources.Namespace,
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      projectName,
+							Namespace: testData.Resources.Namespace,
+						},
 					},
 					DatabaseName: "admin",
 					Labels: []common.LabelSpec{
@@ -631,9 +635,11 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					Namespace: testData.Resources.Namespace,
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      projectName,
-						Namespace: testData.Resources.Namespace,
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      projectName,
+							Namespace: testData.Resources.Namespace,
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: clusterName,
