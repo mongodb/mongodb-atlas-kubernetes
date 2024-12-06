@@ -39,7 +39,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 	calls := 0
 	for _, tc := range []struct {
 		title          string
-		toUpdate       [][]set.Identifiable
+		toUpdate       [][]set.DeprecatedIdentifiable
 		client         *mongodbatlas.Client
 		expectedResult workflow.Result
 		expectedCalls  int
@@ -51,13 +51,13 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 
 		{
 			title:          "empty list does nothing",
-			toUpdate:       [][]set.Identifiable{},
+			toUpdate:       [][]set.DeprecatedIdentifiable{},
 			expectedResult: workflow.OK(),
 		},
 
 		{
 			title: "different integrations get updated",
-			toUpdate: set.Intersection(
+			toUpdate: set.DeprecatedIntersection(
 				[]aliasThirdPartyIntegration{
 					{
 						Type:                     "MICROSOFT_TEAMS",
@@ -87,7 +87,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 
 		{
 			title: "matching integrations get updated anyway",
-			toUpdate: set.Intersection(
+			toUpdate: set.DeprecatedIntersection(
 				[]aliasThirdPartyIntegration{
 					{
 						Type:                     "MICROSOFT_TEAMS",
@@ -117,7 +117,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 
 		{
 			title: "integrations fail to update and return error",
-			toUpdate: set.Intersection(
+			toUpdate: set.DeprecatedIntersection(
 				[]aliasThirdPartyIntegration{
 					{
 						Type:                     "MICROSOFT_TEAMS",
@@ -163,7 +163,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 func TestCheckIntegrationsReady(t *testing.T) {
 	for _, tc := range []struct {
 		title     string
-		toCheck   [][]set.Identifiable
+		toCheck   [][]set.DeprecatedIdentifiable
 		requested []project.Integration
 		expected  bool
 	}{
@@ -174,21 +174,21 @@ func TestCheckIntegrationsReady(t *testing.T) {
 
 		{
 			title:     "empty list does nothing",
-			toCheck:   [][]set.Identifiable{},
+			toCheck:   [][]set.DeprecatedIdentifiable{},
 			requested: []project.Integration{},
 			expected:  true,
 		},
 
 		{
 			title:     "when requested list differs in length it bails early",
-			toCheck:   [][]set.Identifiable{},
+			toCheck:   [][]set.DeprecatedIdentifiable{},
 			requested: []project.Integration{{}},
 			expected:  false,
 		},
 
 		{
 			title: "matching integrations are considered applied",
-			toCheck: set.Intersection(
+			toCheck: set.DeprecatedIntersection(
 				[]aliasThirdPartyIntegration{
 					{
 						Type:                     "MICROSOFT_TEAMS",
@@ -210,7 +210,7 @@ func TestCheckIntegrationsReady(t *testing.T) {
 
 		{
 			title: "different integrations are considered also applied",
-			toCheck: set.Intersection(
+			toCheck: set.DeprecatedIntersection(
 				[]aliasThirdPartyIntegration{
 					{
 						Type:                     "MICROSOFT_TEAMS",
@@ -232,7 +232,7 @@ func TestCheckIntegrationsReady(t *testing.T) {
 
 		{
 			title: "matching integrations including prometheus are considered applied",
-			toCheck: set.Intersection(
+			toCheck: set.DeprecatedIntersection(
 				[]aliasThirdPartyIntegration{
 					{
 						Type:                     "MICROSOFT_TEAMS",
@@ -266,7 +266,7 @@ func TestCheckIntegrationsReady(t *testing.T) {
 
 		{
 			title: "matching integrations with a differing prometheus are considered different",
-			toCheck: set.Intersection(
+			toCheck: set.DeprecatedIntersection(
 				[]aliasThirdPartyIntegration{
 					{
 						Type:                     "MICROSOFT_TEAMS",

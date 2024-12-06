@@ -32,19 +32,19 @@ func Test_SetDifference(t *testing.T) {
 	fourRight := newSome("4", "right")
 
 	testCases := []struct {
-		left  []Identifiable
-		right []Identifiable
-		out   []Identifiable
+		left  []DeprecatedIdentifiable
+		right []DeprecatedIdentifiable
+		out   []DeprecatedIdentifiable
 	}{
-		{left: []Identifiable{oneLeft, twoLeft}, right: []Identifiable{twoRight, threeRight}, out: []Identifiable{oneLeft}},
-		{left: []Identifiable{twoRight, threeRight}, right: []Identifiable{oneLeft, twoLeft}, out: []Identifiable{threeRight}},
-		{left: []Identifiable{oneLeft, twoLeft}, right: []Identifiable{threeRight, fourRight}, out: []Identifiable{oneLeft, twoLeft}},
+		{left: []DeprecatedIdentifiable{oneLeft, twoLeft}, right: []DeprecatedIdentifiable{twoRight, threeRight}, out: []DeprecatedIdentifiable{oneLeft}},
+		{left: []DeprecatedIdentifiable{twoRight, threeRight}, right: []DeprecatedIdentifiable{oneLeft, twoLeft}, out: []DeprecatedIdentifiable{threeRight}},
+		{left: []DeprecatedIdentifiable{oneLeft, twoLeft}, right: []DeprecatedIdentifiable{threeRight, fourRight}, out: []DeprecatedIdentifiable{oneLeft, twoLeft}},
 		// Empty
-		{left: []Identifiable{}, right: []Identifiable{threeRight, fourRight}, out: []Identifiable{}},
-		{left: []Identifiable{threeRight, fourRight}, right: []Identifiable{}, out: []Identifiable{threeRight, fourRight}},
+		{left: []DeprecatedIdentifiable{}, right: []DeprecatedIdentifiable{threeRight, fourRight}, out: []DeprecatedIdentifiable{}},
+		{left: []DeprecatedIdentifiable{threeRight, fourRight}, right: []DeprecatedIdentifiable{}, out: []DeprecatedIdentifiable{threeRight, fourRight}},
 		// Nil
-		{left: nil, right: []Identifiable{threeRight, fourRight}, out: []Identifiable{}},
-		{left: []Identifiable{threeRight, fourRight}, right: nil, out: []Identifiable{threeRight, fourRight}},
+		{left: nil, right: []DeprecatedIdentifiable{threeRight, fourRight}, out: []DeprecatedIdentifiable{}},
+		{left: []DeprecatedIdentifiable{threeRight, fourRight}, right: nil, out: []DeprecatedIdentifiable{threeRight, fourRight}},
 	}
 
 	for _, testCase := range testCases {
@@ -64,8 +64,8 @@ func Test_SetDifferenceCovariant(t *testing.T) {
 	leftNotIdentifiable := []someID{oneLeft, twoLeft}
 	rightNotIdentifiable := []someID{twoRight, threeRight}
 
-	assert.Equal(t, []Identifiable{oneLeft}, Difference(leftNotIdentifiable, rightNotIdentifiable))
-	assert.Equal(t, []Identifiable{threeRight}, Difference(rightNotIdentifiable, leftNotIdentifiable))
+	assert.Equal(t, []DeprecatedIdentifiable{oneLeft}, DeprecatedDifference(leftNotIdentifiable, rightNotIdentifiable))
+	assert.Equal(t, []DeprecatedIdentifiable{threeRight}, DeprecatedDifference(rightNotIdentifiable, leftNotIdentifiable))
 }
 
 func Test_SetIntersection(t *testing.T) {
@@ -76,22 +76,22 @@ func Test_SetIntersection(t *testing.T) {
 	fourRight := newSome("4", "right")
 
 	testCases := []struct {
-		left  []Identifiable
-		right []Identifiable
-		out   [][]Identifiable
+		left  []DeprecatedIdentifiable
+		right []DeprecatedIdentifiable
+		out   [][]DeprecatedIdentifiable
 	}{
 		// intersectionIdentifiable on "2"
-		{left: []Identifiable{oneLeft, twoLeft}, right: []Identifiable{twoRight, threeRight}, out: [][]Identifiable{pair(twoLeft, twoRight)}},
-		{left: []Identifiable{twoRight, threeRight}, right: []Identifiable{oneLeft, twoLeft}, out: [][]Identifiable{pair(twoRight, twoLeft)}},
+		{left: []DeprecatedIdentifiable{oneLeft, twoLeft}, right: []DeprecatedIdentifiable{twoRight, threeRight}, out: [][]DeprecatedIdentifiable{pair(twoLeft, twoRight)}},
+		{left: []DeprecatedIdentifiable{twoRight, threeRight}, right: []DeprecatedIdentifiable{oneLeft, twoLeft}, out: [][]DeprecatedIdentifiable{pair(twoRight, twoLeft)}},
 		// No intersection
-		{left: []Identifiable{oneLeft, twoLeft}, right: []Identifiable{threeRight, fourRight}, out: [][]Identifiable{}},
-		{left: []Identifiable{threeRight, fourRight}, right: []Identifiable{oneLeft, twoLeft}, out: [][]Identifiable{}},
+		{left: []DeprecatedIdentifiable{oneLeft, twoLeft}, right: []DeprecatedIdentifiable{threeRight, fourRight}, out: [][]DeprecatedIdentifiable{}},
+		{left: []DeprecatedIdentifiable{threeRight, fourRight}, right: []DeprecatedIdentifiable{oneLeft, twoLeft}, out: [][]DeprecatedIdentifiable{}},
 		// Empty
-		{left: []Identifiable{}, right: []Identifiable{threeRight, fourRight}, out: [][]Identifiable{}},
-		{left: []Identifiable{threeRight, fourRight}, right: []Identifiable{}, out: [][]Identifiable{}},
+		{left: []DeprecatedIdentifiable{}, right: []DeprecatedIdentifiable{threeRight, fourRight}, out: [][]DeprecatedIdentifiable{}},
+		{left: []DeprecatedIdentifiable{threeRight, fourRight}, right: []DeprecatedIdentifiable{}, out: [][]DeprecatedIdentifiable{}},
 		// Nil
-		{left: nil, right: []Identifiable{threeRight, fourRight}, out: [][]Identifiable{}},
-		{left: []Identifiable{threeRight, fourRight}, right: nil, out: [][]Identifiable{}},
+		{left: nil, right: []DeprecatedIdentifiable{threeRight, fourRight}, out: [][]DeprecatedIdentifiable{}},
+		{left: []DeprecatedIdentifiable{threeRight, fourRight}, right: nil, out: [][]DeprecatedIdentifiable{}},
 	}
 
 	for _, testCase := range testCases {
@@ -113,10 +113,10 @@ func Test_SetIntersectionCovariant(t *testing.T) {
 	leftNotIdentifiable := []someID{oneLeft, twoLeft}
 	rightNotIdentifiable := []someID{oneRight, twoRight, threeRight}
 
-	assert.Equal(t, [][]Identifiable{pair(oneLeft, oneRight), pair(twoLeft, twoRight)}, Intersection(leftNotIdentifiable, rightNotIdentifiable))
-	assert.Equal(t, [][]Identifiable{pair(oneRight, oneLeft), pair(twoRight, twoLeft)}, Intersection(rightNotIdentifiable, leftNotIdentifiable))
+	assert.Equal(t, [][]DeprecatedIdentifiable{pair(oneLeft, oneRight), pair(twoLeft, twoRight)}, DeprecatedIntersection(leftNotIdentifiable, rightNotIdentifiable))
+	assert.Equal(t, [][]DeprecatedIdentifiable{pair(oneRight, oneLeft), pair(twoRight, twoLeft)}, DeprecatedIntersection(rightNotIdentifiable, leftNotIdentifiable))
 }
 
-func pair(left, right Identifiable) []Identifiable {
-	return []Identifiable{left, right}
+func pair(left, right DeprecatedIdentifiable) []DeprecatedIdentifiable {
+	return []DeprecatedIdentifiable{left, right}
 }

@@ -119,10 +119,6 @@ type DataFederationPE struct {
 	Type       string `json:"type,omitempty"`
 }
 
-func (pe DataFederationPE) Identifier() interface{} {
-	return pe.EndpointID
-}
-
 var _ api.AtlasCustomResource = &AtlasDataFederation{}
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

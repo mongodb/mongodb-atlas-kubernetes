@@ -33,10 +33,6 @@ type GCPEndpoint struct {
 	IPAddress    string `json:"ipAddress"`
 }
 
-func (pe ProjectPrivateEndpoint) Identifier() interface{} {
-	return string(pe.Provider) + TransformRegionToID(pe.Region)
-}
-
 // TransformRegionToID makes the same ID from region and regionName fields for PE Connections to match them
 // it leaves only characters which are letters or numbers starting from 2
 // it also makes a couple swaps and sorts the resulting string

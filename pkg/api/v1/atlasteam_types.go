@@ -18,12 +18,11 @@ package v1
 
 import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ api.AtlasCustomResource = &AtlasTeam{}
@@ -67,10 +66,6 @@ type AtlasTeamList struct {
 
 func init() {
 	SchemeBuilder.Register(&AtlasTeam{}, &AtlasTeamList{})
-}
-
-func (in *AtlasTeam) Identifier() interface{} {
-	return in.Status.ID
 }
 
 func (in *AtlasTeam) GetStatus() api.Status {

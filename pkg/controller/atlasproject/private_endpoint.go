@@ -526,7 +526,7 @@ func getEndpointsNotInAtlas(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE)
 }
 
 func getUniqueDifference[ResultType interface{}, OtherType interface{}](left []ResultType, right []OtherType) (uniques []ResultType, counts []int) {
-	difference := set.Difference(left, right)
+	difference := set.DeprecatedDifference(left, right)
 
 	uniqueItems := make(map[string]itemCount)
 	for _, item := range difference {
@@ -556,7 +556,7 @@ type itemCount struct {
 }
 
 func getEndpointsIntersection(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) []intersectionPair {
-	intersection := set.Intersection(specPEs, atlasPEs)
+	intersection := set.DeprecatedIntersection(specPEs, atlasPEs)
 	result := []intersectionPair{}
 	for _, item := range intersection {
 		pair := intersectionPair{}
