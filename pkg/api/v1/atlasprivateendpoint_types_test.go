@@ -21,7 +21,7 @@ func TestPrivateEndpointProjectReference(t *testing.T) {
 					Project: &common.ResourceRefNamespaced{
 						Name: "my-project",
 					},
-					ExternalProject: &ExternalProjectReference{
+					ExternalProjectRef: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
 				},
@@ -34,7 +34,7 @@ func TestPrivateEndpointProjectReference(t *testing.T) {
 		"external project references is set": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					ExternalProject: &ExternalProjectReference{
+					ExternalProjectRef: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
 				},
@@ -62,7 +62,7 @@ func TestPrivateEndpointExternalProjectReferenceConnectionSecret(t *testing.T) {
 		"external project references is set without connection secret": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					ExternalProject: &ExternalProjectReference{
+					ExternalProjectRef: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
 				},
@@ -74,7 +74,7 @@ func TestPrivateEndpointExternalProjectReferenceConnectionSecret(t *testing.T) {
 		"external project references is set with connection secret": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					ExternalProject: &ExternalProjectReference{
+					ExternalProjectRef: &ExternalProjectReference{
 						ID: "my-project-id",
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{

@@ -48,7 +48,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -81,7 +81,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -115,7 +115,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Finalizers:        []string{customresource.FinalizerLabel},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -148,7 +148,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -178,7 +178,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Finalizers:        []string{customresource.FinalizerLabel},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -223,7 +223,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -266,7 +266,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -309,7 +309,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -353,7 +353,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -396,7 +396,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -490,7 +490,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -561,7 +561,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -658,7 +658,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -739,7 +739,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -817,7 +817,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -893,7 +893,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -980,7 +980,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -1121,7 +1121,7 @@ func TestGetPrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -1145,7 +1145,7 @@ func TestGetPrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},

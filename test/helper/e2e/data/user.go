@@ -119,6 +119,7 @@ func WithExternalProjectRef(projectID, credentialsName string) func(user *akov2.
 		user.Spec.ExternalProjectRef = &akov2.ExternalProjectReference{
 			ID: projectID,
 		}
+		// lint:ignore SA1019 must replace api.LocalCredentialHolder with api.ProjectRefs in users
 		user.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
 			ConnectionSecret: &api.LocalObjectReference{
 				Name: credentialsName,

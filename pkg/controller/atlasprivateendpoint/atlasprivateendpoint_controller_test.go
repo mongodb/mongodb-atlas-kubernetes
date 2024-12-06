@@ -77,7 +77,7 @@ func TestReconcile(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -132,7 +132,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -159,7 +159,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -185,7 +185,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{},
@@ -218,7 +218,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{
@@ -293,7 +293,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
+					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
 					},
 					LocalCredentialHolder: api.LocalCredentialHolder{
@@ -517,7 +517,7 @@ func TestFailManageFinalizer(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: akov2.AtlasPrivateEndpointSpec{
-			ExternalProject: &akov2.ExternalProjectReference{
+			ExternalProjectRef: &akov2.ExternalProjectReference{
 				ID: "project-id",
 			},
 			LocalCredentialHolder: api.LocalCredentialHolder{},
