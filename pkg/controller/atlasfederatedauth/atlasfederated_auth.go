@@ -27,9 +27,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err.Error())
 	}
 
-	identityProvider, _, err := service.SdkClientSet.SdkClient20241113001.FederatedAuthenticationApi.
-		GetIdentityProvider(service.Context, atlasFedSettings.GetId(), atlasFedSettings.GetIdentityProviderId()).
-		Execute()
+	identityProvider, err := GetIdentityProviderForFederatedSettings(service.Context, service.SdkClientSet.SdkClient20241113001, atlasFedSettings)
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err.Error())
 	}
@@ -124,4 +122,19 @@ func federatedSettingsAreEqual(operator, atlas *admin.ConnectedOrgConfig) bool {
 	operator.UserConflicts = nil
 	atlas.UserConflicts = nil
 	return cmp.Diff(operator, atlas) == ""
+}
+
+func GetIdentityProviderForFederatedSettings(ctx context.Context, atlasClient *admin.APIClient, fedSettings *admin.OrgFederationSettings) (*admin.FederationIdentityProvider, error) {
+	identityProviders, _, err := atlasClient.FederatedAuthenticationApi.ListIdentityProviders(ctx, fedSettings.GetId()).Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, identityProvider := range identityProviders.GetResults() {
+		if identityProvider.GetOktaIdpId() == fedSettings.GetIdentityProviderId() {
+			return &identityProvider, nil
+		}
+	}
+
+	return nil, fmt.Errorf("identity provider for Org Federation Settings %s not found", fedSettings.GetId())
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 )
 
 var _ = Describe("Operator to run db-user with the OIDC feature flags disabled", Ordered, Label("users-oidc"), func() {
@@ -102,16 +103,15 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags disabled",
 			}).WithTimeout(1 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 		})
 		By("Try to enabled the OIDC Group feature for the user", func() {
-			currentUser := &akov2.AtlasDatabaseUser{}
-			Expect(testData.K8SClient.Get(context.Background(),
+			_, err := akoretry.RetryUpdateOnConflict(testData.Context, testData.K8SClient,
 				types.NamespacedName{
 					Name:      testData.Users[0].Name,
 					Namespace: testData.Users[0].Namespace,
-				}, currentUser)).NotTo(HaveOccurred())
-
-			currentUser.Spec.OIDCAuthType = "IDP_GROUP"
-			currentUser.Spec.PasswordSecret = nil
-			Expect(testData.K8SClient.Update(context.Background(), currentUser)).NotTo(HaveOccurred())
+				}, func(u *akov2.AtlasDatabaseUser) {
+					u.Spec.OIDCAuthType = "IDP_GROUP"
+					u.Spec.PasswordSecret = nil
+				})
+			Expect(err).To(BeNil())
 		})
 
 		By("Verify if user is ready", func() {
@@ -130,15 +130,14 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags disabled",
 			}).WithTimeout(1 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 		})
 		By("Try to enabled the OIDC User feature for the user", func() {
-			currentUser := &akov2.AtlasDatabaseUser{}
-			Expect(testData.K8SClient.Get(context.Background(),
+			_, err := akoretry.RetryUpdateOnConflict(testData.Context, testData.K8SClient,
 				types.NamespacedName{
 					Name:      testData.Users[0].Name,
 					Namespace: testData.Users[0].Namespace,
-				}, currentUser)).NotTo(HaveOccurred())
-
-			currentUser.Spec.OIDCAuthType = "USER"
-			Expect(testData.K8SClient.Update(context.Background(), currentUser)).NotTo(HaveOccurred())
+				}, func(u *akov2.AtlasDatabaseUser) {
+					u.Spec.OIDCAuthType = "USER"
+				})
+			Expect(err).To(BeNil())
 		})
 
 		By("Verify if user is ready", func() {

@@ -109,13 +109,18 @@ func TestReconcile(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		fedAuthAPI.EXPECT().GetIdentityProvider(context.Background(), fedSettingsID, "0oawce8e76SR9K7Tq357").
-			Return(adminv20241113001.GetIdentityProviderApiRequest{ApiService: fedAuthAPI})
-		fedAuthAPI.EXPECT().GetIdentityProviderExecute(mock.Anything).
+		fedAuthAPI.EXPECT().ListIdentityProviders(context.Background(), fedSettingsID).
+			Return(adminv20241113001.ListIdentityProvidersApiRequest{ApiService: fedAuthAPI})
+		fedAuthAPI.EXPECT().ListIdentityProvidersExecute(mock.Anything).
 			Return(
-				&adminv20241113001.FederationIdentityProvider{
-					Id:        "65143bd1612f01218e885cf2",
-					OktaIdpId: "0oawce8e76SR9K7Tq357",
+				&adminv20241113001.PaginatedFederationIdentityProvider{
+					Results: &[]adminv20241113001.FederationIdentityProvider{
+						{
+							Id:        "65143bd1612f01218e885cf2",
+							OktaIdpId: "0oawce8e76SR9K7Tq357",
+						},
+					},
+					TotalCount: pointer.MakePtr(1),
 				},
 				&http.Response{},
 				nil,
