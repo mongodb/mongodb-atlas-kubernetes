@@ -4,35 +4,41 @@ import (
 	"reflect"
 )
 
-// Identifiable is a simple interface wrapping any object which has some key field which can be used for later
+// DeprecatedIdentifiable is a simple interface wrapping any object which has some key field which can be used for later
 // aggregation operations (grouping, intersection, difference etc)
-type Identifiable interface {
+//
+// Note: this construct is DEPRECATED. Instead, use the translation layer for comparing types.
+type DeprecatedIdentifiable interface {
 	Identifier() interface{}
 }
 
-// Difference returns all 'Identifiable' elements that are in left slice and not in the right one.
+// DeprecatedDifference returns all 'Identifiable' elements that are in left slice and not in the right one.
 // Note, that despite the parameters being declared as 'interface{}' they must contain only the elements implementing
 // 'Identifiable' interface (this is needed to solve lack of covariance in Go).
-func Difference(left, right interface{}) []Identifiable {
+//
+// Note: this construct is DEPRECATED. Instead, use the translation layer for comparing types.
+func DeprecatedDifference(left, right interface{}) []DeprecatedIdentifiable {
 	leftIdentifiers := toIdentifiableSlice(left)
 	rightIdentifiers := toIdentifiableSlice(right)
 
 	return differenceIdentifiable(leftIdentifiers, rightIdentifiers)
 }
 
-// Intersection returns all 'Identifiable' elements from 'left' and 'right' slice that intersect by 'Identifier()' value.
+// DeprecatedIntersection returns all 'Identifiable' elements from 'left' and 'right' slice that intersect by 'Identifier()' value.
 // Each intersection is represented as a tuple of two elements - matching elements from 'left' and 'right'.
 // Note, that despite the parameters being declared as 'interface{}' they must contain only the elements implementing
 // 'Identifiable' interface (this is needed to solve lack of covariance in Go)
-func Intersection(left, right interface{}) [][]Identifiable {
+//
+// Note: this construct is DEPRECATED. Instead, use the translation layer for comparing types.
+func DeprecatedIntersection(left, right interface{}) [][]DeprecatedIdentifiable {
 	leftIdentifiers := toIdentifiableSlice(left)
 	rightIdentifiers := toIdentifiableSlice(right)
 
 	return intersectionIdentifiable(leftIdentifiers, rightIdentifiers)
 }
 
-func differenceIdentifiable(left, right []Identifiable) []Identifiable {
-	result := make([]Identifiable, 0)
+func differenceIdentifiable(left, right []DeprecatedIdentifiable) []DeprecatedIdentifiable {
+	result := make([]DeprecatedIdentifiable, 0)
 	for _, l := range left {
 		found := false
 		for _, r := range right {
@@ -48,12 +54,12 @@ func differenceIdentifiable(left, right []Identifiable) []Identifiable {
 	return result
 }
 
-func intersectionIdentifiable(left, right []Identifiable) [][]Identifiable {
-	result := make([][]Identifiable, 0)
+func intersectionIdentifiable(left, right []DeprecatedIdentifiable) [][]DeprecatedIdentifiable {
+	result := make([][]DeprecatedIdentifiable, 0)
 	for _, l := range left {
 		for _, r := range right {
 			if r.Identifier() == l.Identifier() {
-				result = append(result, []Identifiable{l, r})
+				result = append(result, []DeprecatedIdentifiable{l, r})
 			}
 		}
 	}
@@ -61,12 +67,12 @@ func intersectionIdentifiable(left, right []Identifiable) [][]Identifiable {
 }
 
 // toIdentifiableSlice uses reflection to cast the array
-func toIdentifiableSlice(data interface{}) []Identifiable {
+func toIdentifiableSlice(data interface{}) []DeprecatedIdentifiable {
 	value := reflect.ValueOf(data)
 
-	result := make([]Identifiable, value.Len())
+	result := make([]DeprecatedIdentifiable, value.Len())
 	for i := 0; i < value.Len(); i++ {
-		result[i] = value.Index(i).Interface().(Identifiable)
+		result[i] = value.Index(i).Interface().(DeprecatedIdentifiable)
 	}
 	return result
 }

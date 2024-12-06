@@ -303,10 +303,6 @@ func deleteCloudProviderAccess(workflowCtx *workflow.Context, projectID string, 
 
 type CloudProviderIntegrationIdentifiable akov2.CloudProviderIntegration
 
-func (cpa CloudProviderIntegrationIdentifiable) Identifier() interface{} {
-	return fmt.Sprintf("%s.%s", cpa.ProviderName, cpa.IamAssumedRoleArn)
-}
-
 func convertCloudProviderAccessRole(cpa admin.CloudProviderAccessRole) admin.CloudProviderAccessAWSIAMRole {
 	return admin.CloudProviderAccessAWSIAMRole{
 		Id:            cpa.Id,
