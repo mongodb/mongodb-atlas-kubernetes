@@ -14,7 +14,7 @@ spec:
     listKind: AtlasPrivateEndpointList
     plural: atlasprivateendpoints
     shortNames:
-    - pe
+    - ape
     singular: atlasprivateendpoint
   scope: Namespaced
   versions:
