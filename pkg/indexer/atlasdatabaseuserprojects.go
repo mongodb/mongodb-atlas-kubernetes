@@ -43,8 +43,8 @@ func (a *AtlasDatabaseUserByProjectIndexer) Keys(object client.Object) []string 
 		return nil
 	}
 
-	if user.Spec.ExternalProjectRef != nil && user.Spec.ExternalProjectRef.ID != "" {
-		return []string{user.Spec.ExternalProjectRef.ID}
+	if user.Spec.ExternalProject != nil && user.Spec.ExternalProject.ID != "" {
+		return []string{user.Spec.ExternalProject.ID}
 	}
 
 	if user.Spec.Project != nil && user.Spec.Project.Name != "" {

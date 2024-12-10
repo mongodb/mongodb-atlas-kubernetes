@@ -36,13 +36,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "independent
 				Lightweight()
 
 			By("Failing to create deployment with duplicated reference to the project", func() {
-				deployment.Spec.ExternalProjectRef = &akov2.ExternalProjectReference{
+				deployment.Spec.ExternalProject = &akov2.ExternalProjectReference{
 					ID: project.ID(),
 				}
-				deployment.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
-					ConnectionSecret: &api.LocalObjectReference{
-						Name: project.Spec.ConnectionSecret.Name,
-					},
+				deployment.Spec.ConnectionSecret = &api.LocalObjectReference{
+					Name: project.Spec.ConnectionSecret.Name,
 				}
 
 				Expect(k8sClient.Create(ctx, deployment)).ToNot(Succeed())

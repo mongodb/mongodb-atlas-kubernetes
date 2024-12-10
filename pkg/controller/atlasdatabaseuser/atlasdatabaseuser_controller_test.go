@@ -49,9 +49,11 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -74,9 +76,11 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -97,9 +101,11 @@ func TestReconcile(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -117,9 +123,11 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -302,9 +310,11 @@ func TestReady(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -333,9 +343,11 @@ func TestReady(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -368,9 +380,11 @@ func TestReady(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						Project: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -393,10 +407,10 @@ func TestReady(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProject: &akov2.ExternalProjectReference{
+							ID: "project-id",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "user-creds",
 						},
