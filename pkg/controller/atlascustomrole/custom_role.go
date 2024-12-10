@@ -37,7 +37,9 @@ func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, akoCustomR
 		k8sClient: k8sClient,
 	}
 
-	return r.Reconcile()
+	result := r.Reconcile()
+	ctx.SetConditionFromResult(api.ReadyType, result)
+	return result
 }
 
 func (r *roleController) Reconcile() workflow.Result {

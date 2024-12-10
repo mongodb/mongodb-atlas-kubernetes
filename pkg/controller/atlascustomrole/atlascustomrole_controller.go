@@ -165,8 +165,7 @@ func selectCredentials(ctx context.Context, k8sClient client.Client, akoRole *ak
 		}
 		// otherwise, use those attached to the AtlasProject that is referenced by the externalProjectRef
 		project := &akov2.AtlasProject{}
-		err := k8sClient.Get(ctx,
-			client.ObjectKey{Name: akoRole.Spec.ProjectRef.Name, Namespace: akoRole.Spec.ProjectRef.Namespace}, project)
+		err := k8sClient.Get(ctx, *akoRole.Spec.ProjectRef.GetObject(akoRole.Namespace), project)
 		if err != nil {
 			return nil, errors.Wrap(err, "can not read credentials from AtlasProject")
 		}
@@ -225,7 +224,7 @@ func (r *AtlasCustomRoleReconciler) notFound(req ctrl.Request) ctrl.Result {
 func (r *AtlasCustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasCustomRole").
-		For(&akov2.AtlasCustomRole{}).
+		For(&akov2.AtlasCustomRole{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.customRolesCredentials()),
