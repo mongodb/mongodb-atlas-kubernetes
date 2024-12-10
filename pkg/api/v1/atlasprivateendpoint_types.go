@@ -113,7 +113,7 @@ type GCPPrivateEndpoint struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
-// +kubebuilder:resource:categories=atlas,shortName=pe
+// +kubebuilder:resource:categories=atlas,shortName=ape
 // +kubebuilder:printcolumn:name="Provider",type=string,JSONPath=`.spec.provider`
 // +kubebuilder:printcolumn:name="Region",type=string,JSONPath=`.spec.region`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
