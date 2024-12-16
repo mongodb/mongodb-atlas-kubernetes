@@ -18,3 +18,10 @@ type ObjectWithCredentials interface {
 	client.Object
 	CredentialsProvider
 }
+
+// +k8s:deepcopy-gen=false
+
+// ResourceWithCredentials is to be implemented by all CRDs using custom local credentials
+type ResourceWithCredentials interface {
+	CredentialsProvider
+}

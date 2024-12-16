@@ -191,9 +191,8 @@ func TestSyncAssignedTeams(t *testing.T) {
 				Client:        k8sClient,
 				EventRecorder: record.NewFakeRecorder(10),
 				Log:           logger,
-				teamsService:  teamService(),
 			}
-			err := r.syncAssignedTeams(ctx, "projectID", project, tt.teamsToAssign)
+			err := r.syncAssignedTeams(ctx, teamService(), "projectID", project, tt.teamsToAssign)
 			assert.Equal(t, tt.expectedErr, err)
 		})
 	}
