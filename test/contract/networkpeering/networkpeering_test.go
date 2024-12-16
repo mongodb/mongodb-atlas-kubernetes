@@ -87,7 +87,7 @@ func TestPeerContainerServiceCRUD(t *testing.T) {
 
 func TestPeerServiceCRUD(t *testing.T) {
 	ctx := context.Background()
-	contract.RunGoContractTest(ctx, t, "test container CRUD", func(ch contract.ContractHelper) {
+	contract.RunGoContractTest(ctx, t, "test peer CRUD", func(ch contract.ContractHelper) {
 		projectName := utils.RandomName("peer-connection-crud-project")
 		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
@@ -158,11 +158,17 @@ func TestPeerServiceCRUD(t *testing.T) {
 					createdPeer = newPeer
 				})
 
-				t.Run(fmt.Sprintf("list %s peer connections", tc.provider), func(t *testing.T) {
-					containers, err := ps.ListPeers(ctx, testProjectID)
+				t.Run(fmt.Sprintf("get %s peer connection", tc.provider), func(t *testing.T) {
+					peer, err := ps.GetPeer(ctx, testProjectID, createdPeer.ContainerID)
 					require.NoError(t, err)
-					assert.NotEmpty(t, containers)
-					assert.GreaterOrEqual(t, len(containers), 1)
+					assert.Equal(t, createdPeer, peer)
+				})
+
+				t.Run(fmt.Sprintf("list %s peer connections", tc.provider), func(t *testing.T) {
+					peers, err := ps.ListPeers(ctx, testProjectID)
+					require.NoError(t, err)
+					assert.NotEmpty(t, peers)
+					assert.GreaterOrEqual(t, len(peers), 1)
 				})
 
 				t.Run(fmt.Sprintf("delete %s peer connection", tc.provider), func(t *testing.T) {

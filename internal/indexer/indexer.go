@@ -40,6 +40,8 @@ func RegisterAll(ctx context.Context, mgr manager.Manager, logger *zap.Logger) e
 		NewAtlasCustomRoleByProjectIndexer(logger),
 		NewAtlasPrivateEndpointByCredentialIndexer(logger),
 		NewAtlasPrivateEndpointByProjectIndexer(logger),
+		NewAtlasNetworkPeeringByCredentialIndexer(logger),
+		NewAtlasNetworkPeeringByProjectIndexer(logger),
 	)
 }
 

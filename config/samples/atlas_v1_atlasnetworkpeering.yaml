@@ -1,0 +1,6 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasNetworkPeering
+metadata:
+  name: atlasnetworkpeering-sample
+spec:
+  # TODO(user): Add fields here

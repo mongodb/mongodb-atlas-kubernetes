@@ -18,7 +18,7 @@ import (
 func TestDefaultAuditingGet(t *testing.T) {
 	ctx := context.Background()
 	contract.RunGoContractTest(ctx, t, "get default auditing", func(ch contract.ContractHelper) {
-		projectName := "default-auditing-project"
+		projectName := utils.RandomName("default-auditing-project")
 		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
 		require.NoError(t, err)
