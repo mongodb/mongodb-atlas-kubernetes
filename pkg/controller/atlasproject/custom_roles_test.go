@@ -2,8 +2,11 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -53,6 +56,8 @@ func TestEnsureCustomRoles(t *testing.T) {
 		roleAPI *mockadmin.CustomDatabaseRolesApi
 
 		isOK bool
+
+		projectAnnotations map[string]string
 	}{
 		{
 			name: "No Roles in AKO or Atlas (no op)",
@@ -136,7 +141,30 @@ func TestEnsureCustomRoles(t *testing.T) {
 			isOK: true,
 		},
 		{
-			name: "Roles not in AKO but are in Atlas (Delete)",
+			projectAnnotations: map[string]string{
+				customresource.AnnotationLastAppliedConfiguration: func() string {
+					d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+						CustomRoles: []akov2.CustomRole{
+							{
+								Name: "test-role",
+								InheritedRoles: []akov2.Role{
+									{Name: "role3", Database: "db1"},
+								},
+								Actions: []akov2.Action{
+									{
+										Name: "action1",
+										Resources: []akov2.Resource{
+											{Database: pointer.MakePtr("db2")},
+										},
+									},
+								},
+							},
+						},
+					})
+					return string(d)
+				}(),
+			},
+			name: "Roles not in AKO but are in Atlas (Delete) if there were previous in AKO",
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
@@ -173,6 +201,37 @@ func TestEnsureCustomRoles(t *testing.T) {
 			}(),
 			isOK: true,
 		},
+		{
+			name: "Roles not in AKO but are in Atlas (Do not Delete) and NO previous in AKO",
+			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
+				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+					Return(
+						[]admin.UserCustomDBRole{
+							{
+								RoleName: "test-role",
+								InheritedRoles: &[]admin.DatabaseInheritedRole{
+									{Role: "role3", Db: "db1"},
+								},
+								Actions: &[]admin.DatabasePrivilegeAction{
+									{
+										Action: "action1",
+										Resources: &[]admin.DatabasePermittedNamespaceResource{
+											{Db: "db2"},
+										},
+									},
+								},
+							},
+						},
+						&http.Response{},
+						nil,
+					)
+				return roleAPI
+			}(),
+			isOK: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
@@ -185,6 +244,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 
 			project := akov2.DefaultProject("test-namespace", "test-connnection")
 			project.Spec.CustomRoles = tc.roles
+			project.Annotations = tc.projectAnnotations
 
 			result := ensureCustomRoles(workflowCtx, project)
 
