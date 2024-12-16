@@ -31,10 +31,24 @@ func hasSkippedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
 			return false, fmt.Errorf("failed to parse last skipped configuration: %w", err)
 		}
 
-		return len(lastSkippedSpec.CustomRoles) == 0, nil
+		return len(lastSkippedSpec.CustomRoles) != 0, nil
 	}
 
 	return false, nil
+}
+
+func hasLastAppliedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
+	lastAppliedSpec := akov2.AtlasProjectSpec{}
+	lastAppliedSpecStr, ok := atlasProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if !ok {
+		return false, nil
+	}
+
+	if err := json.Unmarshal([]byte(lastAppliedSpecStr), &lastAppliedSpec); err != nil {
+		return false, fmt.Errorf("failed to parse last applied configuration: %w", err)
+	}
+
+	return len(lastAppliedSpec.CustomRoles) != 0, nil
 }
 
 func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
@@ -47,6 +61,11 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 		workflowCtx.UnsetCondition(api.ProjectCustomRolesReadyType)
 
 		return workflow.OK()
+	}
+
+	hadPreviousCustomRoles, err := hasLastAppliedCustomRoles(project)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
 	r := roleController{
@@ -67,7 +86,10 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 
 	ops := calculateChanges(currentCustomRoles, akoRoles)
 
-	deleteStatus := r.deleteCustomRoles(workflowCtx, project.ID(), ops.Delete)
+	var deleteStatus map[string]status.CustomRole
+	if hadPreviousCustomRoles {
+		deleteStatus = r.deleteCustomRoles(workflowCtx, project.ID(), ops.Delete)
+	}
 	updateStatus := r.updateCustomRoles(workflowCtx, project.ID(), ops.Update)
 	createStatus := r.createCustomRoles(workflowCtx, project.ID(), ops.Create)
 
