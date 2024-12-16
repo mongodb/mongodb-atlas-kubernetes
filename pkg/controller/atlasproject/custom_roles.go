@@ -49,13 +49,6 @@ func hasLastAppliedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
 	}
 
 	return len(lastAppliedSpec.CustomRoles) != 0, nil
-		if err := json.Unmarshal([]byte(lastAppliedSpecStr), &lastAppliedSpec); err != nil {
-			return false, fmt.Errorf("failed to parse last applied configuration: %w", err)
-		}
-
-		return len(lastAppliedSpec.CustomRoles) != 0, nil
-	}
-	return false, nil
 }
 
 func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
