@@ -40,7 +40,15 @@ func hasSkippedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
 func hasLastAppliedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
 	lastAppliedSpec := akov2.AtlasProjectSpec{}
 	lastAppliedSpecStr, ok := atlasProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if ok {
+	if !ok {
+		return false, nil
+	}
+
+	if err := json.Unmarshal([]byte(lastAppliedSpecStr), &lastAppliedSpec); err != nil {
+		return false, fmt.Errorf("failed to parse last applied configuration: %w", err)
+	}
+
+	return len(lastAppliedSpec.CustomRoles) != 0, nil
 		if err := json.Unmarshal([]byte(lastAppliedSpecStr), &lastAppliedSpec); err != nil {
 			return false, fmt.Errorf("failed to parse last applied configuration: %w", err)
 		}
