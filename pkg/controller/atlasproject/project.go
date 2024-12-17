@@ -99,7 +99,7 @@ func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, orgID string, atl
 		if customresource.IsResourcePolicyKeepOrDefault(atlasProject, r.ObjectDeletionProtection) {
 			r.Log.Info("Not removing Project from Atlas as per configuration")
 		} else {
-			if result := DeleteAllPrivateEndpoints(ctx, atlasProject.ID()); !result.IsOk() {
+			if result := DeleteAllPrivateEndpoints(ctx, atlasProject); !result.IsOk() {
 				return r.terminate(ctx, workflow.ServerlessPrivateEndpointReady, errors.New(result.GetMessage()))
 			}
 			if result := DeleteAllNetworkPeers(ctx.Context, atlasProject.ID(), ctx.SdkClient.NetworkPeeringApi, ctx.Log); !result.IsOk() {
