@@ -98,7 +98,7 @@ var _ = Describe("Deployment wide operator can work with resources in different 
 			deployment := NortonData.InitialDeployments[0]
 			if deployment.Namespace == "" {
 				deployment.Namespace = NortonData.Resources.Namespace
-				deployment.Spec.Project.Namespace = NortonData.Resources.Namespace
+				deployment.Spec.ProjectRef.Namespace = NortonData.Resources.Namespace
 			}
 			err := k8sClient.Create(ctx, deployment)
 			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Deployment was not created: %v", deployment))
@@ -110,7 +110,7 @@ var _ = Describe("Deployment wide operator can work with resources in different 
 			deployment := NimnulData.InitialDeployments[0]
 			if deployment.Namespace == "" {
 				deployment.Namespace = NimnulData.Resources.Namespace
-				deployment.Spec.Project.Namespace = NimnulData.Resources.Namespace
+				deployment.Spec.ProjectRef.Namespace = NimnulData.Resources.Namespace
 			}
 			err := k8sClient.Create(ctx, deployment)
 			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Deployment was not created: %v", deployment))

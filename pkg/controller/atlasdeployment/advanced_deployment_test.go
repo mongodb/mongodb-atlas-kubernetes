@@ -20,8 +20,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -725,9 +727,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
 			reconciler := &AtlasDeploymentReconciler{
-				Client:            k8sClient,
-				Log:               logger,
-				deploymentService: tt.deploymentService(),
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: k8sClient,
+					Log:    logger,
+				},
 			}
 			ctx := &workflow.Context{
 				Context:   context.Background(),
@@ -736,7 +739,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			}
 
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Cluster)
-			result, err := reconciler.handleAdvancedDeployment(ctx, deploymentInAKO, tt.deploymentInAtlas)
+			var projectService project.ProjectService // nil projetc service
+			result, err := reconciler.handleAdvancedDeployment(ctx, projectService, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
