@@ -17,9 +17,6 @@ limitations under the License.
 package v1
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"go.uber.org/zap/zapcore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -296,22 +293,6 @@ func (p *AtlasProject) WithIPAccessList(ipAccess project.IPAccessList) *AtlasPro
 func (p *AtlasProject) WithMaintenanceWindow(window project.MaintenanceWindow) *AtlasProject {
 	p.Spec.MaintenanceWindow = window
 	return p
-}
-
-func (p *AtlasProject) LastSpecFrom(annotation string) (*AtlasProjectSpec, error) {
-	var lastApplied AtlasProject
-	ann, ok := p.GetAnnotations()[annotation]
-
-	if !ok {
-		return nil, nil
-	}
-
-	err := json.Unmarshal([]byte(ann), &lastApplied.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("error reading AtlasProject Spec from annotation [%s]: %w", annotation, err)
-	}
-
-	return &lastApplied.Spec, nil
 }
 
 func DefaultProject(namespace, connectionSecretName string) *AtlasProject {

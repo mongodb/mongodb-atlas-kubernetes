@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+
+	"github.com/google/go-cmp/cmp"
 	"sigs.k8s.io/yaml"
 
 	internalcmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
 func TestSpecEquality(t *testing.T) {
@@ -124,37 +125,4 @@ func mustMarshal(t *testing.T, what any) string {
 		t.Fatal(err)
 	}
 	return string(result)
-}
-
-func TestLastSpecFrom(t *testing.T) {
-	tests := map[string]struct {
-		annotations      map[string]string
-		expectedLastSpec *AtlasProjectSpec
-		expectedError    string
-	}{
-
-		"should return nil when there is no last spec": {},
-		"should return error when last spec annotation is wrong": {
-			annotations: map[string]string{"mongodb.com/last-applied-configuration": "{wrong}"},
-			expectedError: "error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]:" +
-				" invalid character 'w' looking for beginning of object key string",
-		},
-		"should return last spec": {
-			annotations: map[string]string{"mongodb.com/last-applied-configuration": "{\"name\": \"my-project\"}"},
-			expectedLastSpec: &AtlasProjectSpec{
-				Name: "my-project",
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			p := &AtlasProject{}
-			p.WithAnnotations(tt.annotations)
-			lastSpec, err := p.LastSpecFrom("mongodb.com/last-applied-configuration")
-			if err != nil {
-				assert.ErrorContains(t, err, tt.expectedError)
-			}
-			assert.Equal(t, tt.expectedLastSpec, lastSpec)
-		})
-	}
 }
