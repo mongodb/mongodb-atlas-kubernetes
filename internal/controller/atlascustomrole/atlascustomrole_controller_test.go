@@ -12,7 +12,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,8 +23,8 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -69,8 +68,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -111,8 +112,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -151,8 +154,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -188,8 +193,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -228,8 +235,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							},
 						},
 					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -244,8 +253,11 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "test"},
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 					Role: akov2.CustomRole{
 						Name: "TestRoleName",
@@ -267,9 +279,6 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								},
 							},
 						},
-					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -285,8 +294,11 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "test"},
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "testProjectID",
+						},
 					},
 					Role: akov2.CustomRole{
 						Name: "TestRoleName",
@@ -308,9 +320,6 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								},
 							},
 						},
-					},
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "testProjectID",
 					},
 				},
 				Status: status.AtlasCustomRoleStatus{},
@@ -329,8 +338,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
 			r := &AtlasCustomRoleReconciler{
-				Client:        k8sClient,
-				Log:           zap.S(),
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: k8sClient,
+					Log:    zap.S(),
+				},
 				Scheme:        testScheme,
 				EventRecorder: record.NewFakeRecorder(10),
 				AtlasProvider: &atlasmocks.TestProvider{
@@ -348,8 +359,21 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
 						cdrAPI.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
 							Return(nil, nil, nil)
+
+						pAPI := mockadmin.NewProjectsApi(t)
+						if tt.akoCustomRole.Spec.ExternalProjectRef != nil {
+							grp := &admin.Group{
+								Id:   &tt.akoCustomRole.Spec.ExternalProjectRef.ID,
+								Name: tt.akoCustomRole.Spec.ExternalProjectRef.ID,
+							}
+							pAPI.EXPECT().GetProject(context.Background(), tt.akoCustomRole.Spec.ExternalProjectRef.ID).
+								Return(admin.GetProjectApiRequest{ApiService: pAPI})
+							pAPI.EXPECT().GetProjectExecute(admin.GetProjectApiRequest{ApiService: pAPI}).
+								Return(grp, nil, nil)
+						}
 						return &admin.APIClient{
 							CustomDatabaseRolesApi: cdrAPI,
+							ProjectsApi:            pAPI,
 						}, "", nil
 					},
 					IsCloudGovFunc: func() bool {
@@ -369,187 +393,6 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestAtlasCustomRoleReconciler_selectCredentials(t *testing.T) {
-	tests := map[string]struct {
-		k8sObjects []client.Object
-		resultErr  bool
-		result     *client.ObjectKey
-		role       *akov2.AtlasCustomRole
-	}{
-		"Should select CustomRoleCredentials from CustomRole when externalProjectID is set": {
-			k8sObjects: nil,
-			resultErr:  false,
-			result:     &client.ObjectKey{Name: "credentials", Namespace: "testNamespace"},
-			role: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testRole",
-					Namespace: "testNamespace",
-				},
-				Spec: akov2.AtlasCustomRoleSpec{
-					ExternalProjectIDRef:  &akov2.ExternalProjectReference{ID: "testProjectID"},
-					LocalCredentialHolder: api.LocalCredentialHolder{ConnectionSecret: &api.LocalObjectReference{Name: "credentials"}},
-				},
-				Status: status.AtlasCustomRoleStatus{},
-			},
-		},
-		"Should NOT select CustomRoleCredentials from CustomRole when externalProjectID is set with empty local credentials": {
-			k8sObjects: nil,
-			resultErr:  true,
-			result:     nil,
-			role: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testRole",
-					Namespace: "testNamespace",
-				},
-				Spec: akov2.AtlasCustomRoleSpec{
-					ExternalProjectIDRef:  &akov2.ExternalProjectReference{ID: "testProjectID"},
-					LocalCredentialHolder: api.LocalCredentialHolder{ConnectionSecret: nil},
-				},
-				Status: status.AtlasCustomRoleStatus{},
-			},
-		},
-		"Should select CustomRoleCredentials when projectRef is set with LocalCredentials": {
-			k8sObjects: []client.Object{
-				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testProject",
-						Namespace: "testNamespace",
-					},
-					Spec: akov2.AtlasProjectSpec{
-						ConnectionSecret: &common.ResourceRefNamespaced{
-							Name:      "testCredentials",
-							Namespace: "testNamespace",
-						},
-					},
-					Status: status.AtlasProjectStatus{},
-				},
-			},
-			resultErr: false,
-			result:    &client.ObjectKey{Name: "credentials", Namespace: "testNamespace"},
-			role: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testRole",
-					Namespace: "testNamespace",
-				},
-				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef:            &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
-					LocalCredentialHolder: api.LocalCredentialHolder{ConnectionSecret: &api.LocalObjectReference{Name: "credentials"}},
-				},
-				Status: status.AtlasCustomRoleStatus{},
-			},
-		},
-		"Should select AtlasProject credentials when projectRef is set but LocalCredentials are empty": {
-			k8sObjects: []client.Object{
-				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testProject",
-						Namespace: "testNamespace",
-					},
-					Spec: akov2.AtlasProjectSpec{
-						ConnectionSecret: &common.ResourceRefNamespaced{
-							Name:      "testCredentials",
-							Namespace: "testNamespace",
-						},
-					},
-					Status: status.AtlasProjectStatus{},
-				},
-				&v1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testCredentials",
-						Namespace: "testNamespace",
-					},
-				},
-			},
-			resultErr: false,
-			result:    &client.ObjectKey{Name: "testCredentials", Namespace: "testNamespace"},
-			role: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testRole",
-					Namespace: "testNamespace",
-				},
-				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
-				},
-				Status: status.AtlasCustomRoleStatus{},
-			},
-		},
-		"Should NOT select AtlasProject credentials when projectRef is set but AtlasProject credentials are not configured": {
-			k8sObjects: []client.Object{
-				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testProject",
-						Namespace: "testNamespace",
-					},
-					Spec:   akov2.AtlasProjectSpec{},
-					Status: status.AtlasProjectStatus{},
-				},
-				&v1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testCredentials",
-						Namespace: "testNamespace",
-					},
-				},
-			},
-			resultErr: true,
-			result:    nil,
-			role: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testRole",
-					Namespace: "testNamespace",
-				},
-				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
-				},
-				Status: status.AtlasCustomRoleStatus{},
-			},
-		},
-		"Should NOT select AtlasProject credentials when projectRef is set and AtlasProject doesn't exist": {
-			k8sObjects: []client.Object{},
-			resultErr:  true,
-			result:     nil,
-			role: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testRole",
-					Namespace: "testNamespace",
-				},
-				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{Name: "testProject", Namespace: "testNamespace"},
-				},
-				Status: status.AtlasCustomRoleStatus{},
-			},
-		},
-		"Should NOT select credentials when both projectRef and externalProjectId are empty": {
-			k8sObjects: []client.Object{},
-			resultErr:  true,
-			result:     nil,
-			role: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testRole",
-					Namespace: "testNamespace",
-				},
-				Spec:   akov2.AtlasCustomRoleSpec{},
-				Status: status.AtlasCustomRoleStatus{},
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			testScheme := runtime.NewScheme()
-			assert.NoError(t, akov2.AddToScheme(testScheme))
-			assert.NoError(t, v1.AddToScheme(testScheme))
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(tt.k8sObjects...).Build()
-
-			result, err := selectCredentials(context.Background(), k8sClient, tt.role)
-			if err != nil && !tt.resultErr {
-				t.Fatalf("Unexpected error: %v", err)
-			}
-			assert.Equal(t, result, tt.result)
 		})
 	}
 }
