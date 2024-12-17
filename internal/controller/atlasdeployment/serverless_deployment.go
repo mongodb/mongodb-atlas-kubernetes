@@ -11,12 +11,13 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
-func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Serverless) (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, deploymentInAKO, deploymentInAtlas *deployment.Serverless) (ctrl.Result, error) {
 	if deploymentInAtlas == nil {
 		ctx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", deploymentInAKO.GetName())
-		newServerlessDeployment, err := r.deploymentService.CreateDeployment(ctx.Context, deploymentInAKO)
+		newServerlessDeployment, err := deploymentService.CreateDeployment(ctx.Context, deploymentInAKO)
 		if err != nil {
 			return r.terminate(ctx, workflow.DeploymentNotCreatedInAtlas, err)
 		}
@@ -27,7 +28,7 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Conte
 	switch deploymentInAtlas.GetState() {
 	case status.StateIDLE:
 		if !reflect.DeepEqual(deploymentInAKO.ServerlessSpec, deploymentInAtlas.ServerlessSpec) {
-			_, err := r.deploymentService.UpdateDeployment(ctx.Context, deploymentInAKO)
+			_, err := deploymentService.UpdateDeployment(ctx.Context, deploymentInAKO)
 			if err != nil {
 				return r.terminate(ctx, workflow.DeploymentNotUpdatedInAtlas, err)
 			}
@@ -35,7 +36,7 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Conte
 			return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentUpdating, "deployment is updating")
 		}
 
-		err := r.ensureConnectionSecrets(ctx, deploymentInAKO, deploymentInAtlas.GetConnection())
+		err := r.ensureConnectionSecrets(ctx, projectService, deploymentInAKO, deploymentInAtlas.GetConnection())
 		if err != nil {
 			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}

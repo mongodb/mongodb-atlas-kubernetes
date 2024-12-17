@@ -12,12 +12,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 )
 
-func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Context, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.Result {
+func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.Result {
 	if clusterType != string(akov2.TypeGeoSharded) && managedNamespace != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, "Managed namespace is only supported by GeoSharded clusters")
 	}
 
-	result := r.syncManagedNamespaces(service, groupID, deploymentName, managedNamespace)
+	result := r.syncManagedNamespaces(service, deploymentService, groupID, deploymentName, managedNamespace)
 	if !result.IsOk() {
 		service.SetConditionFromResult(api.ManagedNamespacesReadyType, result)
 		return result
@@ -32,21 +32,21 @@ func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Co
 	return result
 }
 
-func (r *AtlasDeploymentReconciler) syncManagedNamespaces(service *workflow.Context, groupID string, deploymentName string, managedNamespaces []akov2.ManagedNamespace) workflow.Result {
+func (r *AtlasDeploymentReconciler) syncManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, deploymentName string, managedNamespaces []akov2.ManagedNamespace) workflow.Result {
 	logger := service.Log
-	existingManagedNamespaces, err := r.deploymentService.GetManagedNamespaces(service.Context, groupID, deploymentName)
+	existingManagedNamespaces, err := deploymentService.GetManagedNamespaces(service.Context, groupID, deploymentName)
 	logger.Debugf("Syncing managed namespaces %s", deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to get managed namespaces: %v", err))
 	}
 	diff := sortManagedNamespaces(existingManagedNamespaces, managedNamespaces)
 	logger.Debugw("diff", "To create: %v", diff.ToCreate, "To delete: %v", diff.ToDelete, "To update status: %v", diff.ToUpdateStatus)
-	err = deleteManagedNamespaces(service.Context, r.deploymentService, groupID, deploymentName, diff.ToDelete)
+	err = deleteManagedNamespaces(service.Context, deploymentService, groupID, deploymentName, diff.ToDelete)
 	if err != nil {
 		logger.Errorf("failed to delete managed namespaces: %v", err)
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to delete managed namespaces: %v", err))
 	}
-	nsStatuses := createManagedNamespaces(service.Context, r.deploymentService, groupID, deploymentName, diff.ToCreate)
+	nsStatuses := createManagedNamespaces(service.Context, deploymentService, groupID, deploymentName, diff.ToCreate)
 	for _, ns := range diff.ToUpdateStatus {
 		nsStatuses = append(nsStatuses, akov2.NewCreatedManagedNamespaceStatus(ns))
 	}

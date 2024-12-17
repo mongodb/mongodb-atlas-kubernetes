@@ -149,9 +149,7 @@ func TestEnsureManagedNamespaces(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			r := &AtlasDeploymentReconciler{
-				deploymentService: tc.deploymentAPI,
-			}
+			r := &AtlasDeploymentReconciler{}
 			ctx := &workflow.Context{
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
@@ -159,6 +157,7 @@ func TestEnsureManagedNamespaces(t *testing.T) {
 
 			result := r.ensureManagedNamespaces(
 				ctx,
+				tc.deploymentAPI,
 				projectID,
 				string(akov2.TypeGeoSharded),
 				tc.managedNamespaces,

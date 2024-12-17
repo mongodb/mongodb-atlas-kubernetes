@@ -7,10 +7,11 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 )
 
-func (r *AtlasDeploymentReconciler) ensureCustomZoneMapping(service *workflow.Context, groupID string, customZoneMappings []akov2.CustomZoneMapping, deploymentName string) workflow.Result {
-	result := r.syncCustomZoneMapping(service, groupID, deploymentName, customZoneMappings)
+func (r *AtlasDeploymentReconciler) ensureCustomZoneMapping(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, customZoneMappings []akov2.CustomZoneMapping, deploymentName string) workflow.Result {
+	result := r.syncCustomZoneMapping(service, deploymentService, groupID, deploymentName, customZoneMappings)
 	if !result.IsOk() {
 		service.SetConditionFromResult(api.CustomZoneMappingReadyType, result)
 		return result
@@ -26,19 +27,19 @@ func (r *AtlasDeploymentReconciler) ensureCustomZoneMapping(service *workflow.Co
 	return result
 }
 
-func (r *AtlasDeploymentReconciler) syncCustomZoneMapping(service *workflow.Context, groupID string, deploymentName string, customZoneMappings []akov2.CustomZoneMapping) workflow.Result {
+func (r *AtlasDeploymentReconciler) syncCustomZoneMapping(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, deploymentName string, customZoneMappings []akov2.CustomZoneMapping) workflow.Result {
 	logger := service.Log
 	err := verifyZoneMapping(customZoneMappings)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, err.Error())
 	}
-	existingZoneMapping, err := r.deploymentService.GetCustomZones(service.Context, groupID, deploymentName)
+	existingZoneMapping, err := deploymentService.GetCustomZones(service.Context, groupID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping state: %v", err))
 	}
 	logger.Debugf("Existing zone mapping: %v", existingZoneMapping)
 	var customZoneMappingStatus status.CustomZoneMapping
-	zoneMappingMap, err := r.deploymentService.GetZoneMapping(service.Context, groupID, deploymentName)
+	zoneMappingMap, err := deploymentService.GetZoneMapping(service.Context, groupID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping map: %v", err))
 	}
@@ -46,7 +47,7 @@ func (r *AtlasDeploymentReconciler) syncCustomZoneMapping(service *workflow.Cont
 	if shouldAdd, shouldDelete := compareZoneMappingStates(existingZoneMapping, customZoneMappings, zoneMappingMap); shouldDelete || shouldAdd {
 		skipAdd := false
 		if shouldDelete {
-			err = r.deploymentService.DeleteCustomZones(service.Context, groupID, deploymentName)
+			err = deploymentService.DeleteCustomZones(service.Context, groupID, deploymentName)
 			if err != nil {
 				skipAdd = true
 				logger.Errorf("failed to sync zone mapping: %v", err)
@@ -59,7 +60,7 @@ func (r *AtlasDeploymentReconciler) syncCustomZoneMapping(service *workflow.Cont
 		}
 
 		if shouldAdd && !skipAdd {
-			zoneMapping, err := r.deploymentService.CreateCustomZones(service.Context, groupID, deploymentName, customZoneMappings)
+			zoneMapping, err := deploymentService.CreateCustomZones(service.Context, groupID, deploymentName, customZoneMappings)
 			if err != nil {
 				logger.Errorf("failed to sync zone mapping: %v", err)
 				customZoneMappingStatus.ZoneMappingErrMessage = fmt.Sprintf("Failed to sync zone mapping: %v", err)
