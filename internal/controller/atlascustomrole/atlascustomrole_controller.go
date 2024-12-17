@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -13,7 +12,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -24,16 +22,17 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 type AtlasCustomRoleReconciler struct {
-	Client                      client.Client
-	Log                         *zap.SugaredLogger
+	reconciler.AtlasReconciler
 	Scheme                      *runtime.Scheme
 	EventRecorder               record.EventRecorder
 	AtlasProvider               atlas.Provider
@@ -52,8 +51,10 @@ func NewAtlasCustomRoleReconciler(
 	logger *zap.Logger,
 ) *AtlasCustomRoleReconciler {
 	return &AtlasCustomRoleReconciler{
-		Client:                   mgr.GetClient(),
-		Log:                      logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client: mgr.GetClient(),
+			Log:    logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
+		},
 		Scheme:                   mgr.GetScheme(),
 		EventRecorder:            mgr.GetEventRecorderFor("AtlasCustomRoles"),
 		AtlasProvider:            atlasProvider,
@@ -123,53 +124,23 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			fmt.Errorf("the %T is not supported by Atlas for government", atlasCustomRole)), nil
 	}
 
-	credentials, err := selectCredentials(workflowCtx.Context, r.Client, atlasCustomRole)
+	credentials, err := r.ResolveCredentials(ctx, atlasCustomRole)
 	if err != nil {
 		return r.fail(req, err), nil
 	}
-
-	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, workflowCtx.Log)
+	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, workflowCtx.Log)
 	if err != nil {
-		return r.terminate(workflowCtx,
-			atlasCustomRole,
-			api.ProjectCustomRolesReadyType,
-			workflow.AtlasAPIAccessNotConfigured,
-			true,
-			fmt.Errorf("unable to create atlas client: %s", err.Error())), nil
+		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
 	}
-	workflowCtx.SdkClient = atlasSdkClient
-	if res := handleCustomRole(workflowCtx, r.Client, atlasCustomRole, r.ObjectDeletionProtection); !res.IsOk() {
+	service := customroles.NewCustomRoles(atlasSdkClient.CustomDatabaseRolesApi)
+	project, err := r.ResolveProject(ctx, atlasSdkClient, atlasCustomRole, orgID)
+	if err != nil {
+		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
+	}
+	if res := handleCustomRole(workflowCtx, r.Client, project, service, atlasCustomRole, r.ObjectDeletionProtection); !res.IsOk() {
 		return r.fail(req, fmt.Errorf("%s", res.GetMessage())), nil
 	}
 	return r.idle(workflowCtx), nil
-}
-
-func selectCredentials(ctx context.Context, k8sClient client.Client, akoRole *akov2.AtlasCustomRole) (*client.ObjectKey, error) {
-	switch {
-	// First, try the externalProjectID and it's credentials
-	case akoRole.Spec.ExternalProjectIDRef != nil:
-		if akoRole.Spec.ConnectionSecret == nil {
-			return nil, errors.New("the 'externalProjectIDRef' is set but the 'connectionSecret' is missing")
-		}
-		return &client.ObjectKey{Name: akoRole.Spec.ConnectionSecret.Name, Namespace: akoRole.GetNamespace()}, nil
-	// Try the external project ref
-	case akoRole.Spec.ProjectRef != nil:
-		// if the local credentials are set, use them
-		if akoRole.Spec.ConnectionSecret != nil {
-			return &client.ObjectKey{Name: akoRole.Spec.ConnectionSecret.Name, Namespace: akoRole.GetNamespace()}, nil
-		}
-		// otherwise, use those attached to the AtlasProject that is referenced by the externalProjectRef
-		project := &akov2.AtlasProject{}
-		err := k8sClient.Get(ctx, *akoRole.Spec.ProjectRef.GetObject(akoRole.Namespace), project)
-		if err != nil {
-			return nil, errors.Wrap(err, "can not read credentials from AtlasProject")
-		}
-		if project.Spec.ConnectionSecret == nil || project.Spec.ConnectionSecret.Name == "" {
-			return nil, errors.Wrapf(err, "credentials for AtlasProject '%s' are not configured", project.GetName())
-		}
-		return project.ConnectionSecretObjectKey(), nil
-	}
-	return nil, errors.New("either 'externalProjectIDRef' or 'projectRef' must be set for the AtlasCustomRole resource")
 }
 
 func (r *AtlasCustomRoleReconciler) terminate(

@@ -12,25 +12,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 type roleController struct {
 	ctx       *workflow.Context
-	projectID string
+	project   *project.Project
 	service   customroles.CustomRoleService
 	role      *akov2.AtlasCustomRole
 	dpEnabled bool
 	k8sClient client.Client
 }
 
-func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, akoCustomRole *akov2.AtlasCustomRole,
-	dpEnabled bool) workflow.Result {
+func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, project *project.Project, service customroles.CustomRoleService, akoCustomRole *akov2.AtlasCustomRole, dpEnabled bool) workflow.Result {
 	ctx.Log.Debug("starting custom role processing")
 	defer ctx.Log.Debug("finished custom role processing")
 
 	r := roleController{
 		ctx:       ctx,
-		service:   customroles.NewCustomRoles(ctx.SdkClient.CustomDatabaseRolesApi),
+		project:   project,
+		service:   service,
 		role:      akoCustomRole,
 		dpEnabled: dpEnabled,
 		k8sClient: k8sClient,
@@ -42,23 +43,12 @@ func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, akoCustomR
 }
 
 func (r *roleController) Reconcile() workflow.Result {
-	if r.role.Spec.ProjectRef != nil {
-		project := &akov2.AtlasProject{}
-		err := r.k8sClient.Get(r.ctx.Context, *(r.role.Spec.ProjectRef.GetObject(r.role.GetNamespace())), project)
-		if err != nil {
-			return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
-		}
-		if project.Status.ID == "" {
-			return workflow.Terminate(workflow.ProjectCustomRolesReady,
-				fmt.Sprintf("the referenced AtlasProject resource '%s' doesn't have ID (status.ID is empty)", project.GetName()))
-		}
-		r.projectID = project.Status.ID
-	} else if r.role.Spec.ExternalProjectIDRef != nil {
-		r.projectID = r.role.Spec.ExternalProjectIDRef.ID
+	if r.project.ID == "" {
+		return workflow.Terminate(workflow.ProjectCustomRolesReady,
+			fmt.Sprintf("the referenced AtlasProject resource '%s' doesn't have ID (status.ID is empty)", r.project.Name))
 	}
-
 	roleFoundInAtlas := false
-	roleInAtlas, err := r.service.Get(r.ctx.Context, r.projectID, r.role.Spec.Role.Name)
+	roleInAtlas, err := r.service.Get(r.ctx.Context, r.project.ID, r.role.Spec.Role.Name)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
 	}
@@ -95,7 +85,7 @@ func (r *roleController) managed() workflow.Result {
 }
 
 func (r *roleController) create(role customroles.CustomRole) workflow.Result {
-	err := r.service.Create(r.ctx.Context, r.projectID, role)
+	err := r.service.Create(r.ctx.Context, r.project.ID, role)
 	if err != nil {
 		return r.terminate(workflow.AtlasCustomRoleNotCreated, err)
 	}
@@ -106,7 +96,7 @@ func (r *roleController) update(roleInAKO, roleInAtlas customroles.CustomRole) w
 	if reflect.DeepEqual(roleInAKO, roleInAtlas) {
 		return r.idle()
 	}
-	err := r.service.Update(r.ctx.Context, r.projectID, roleInAKO.Name, roleInAKO)
+	err := r.service.Update(r.ctx.Context, r.project.ID, roleInAKO.Name, roleInAKO)
 	if err != nil {
 		return r.terminate(workflow.AtlasCustomRoleNotUpdated, err)
 	}
@@ -114,7 +104,7 @@ func (r *roleController) update(roleInAKO, roleInAtlas customroles.CustomRole) w
 }
 
 func (r *roleController) delete(roleInAtlas customroles.CustomRole) workflow.Result {
-	err := r.service.Delete(r.ctx.Context, r.projectID, roleInAtlas.Name)
+	err := r.service.Delete(r.ctx.Context, r.project.ID, roleInAtlas.Name)
 	if err != nil {
 		return r.terminate(workflow.AtlasCustomRoleNotDeleted, err)
 	}

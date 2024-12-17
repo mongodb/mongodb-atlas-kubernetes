@@ -23,7 +23,7 @@ func (r *AtlasReconciler) ResolveProject(ctx context.Context, sdkClient *admin.A
 	if pdr.ProjectRef != nil {
 		project, err := r.projectFromKube(ctx, pro, orgID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get Project from Kubernetes: %w", err)
+			return nil, fmt.Errorf("failed to query Kubernetes: %w", err)
 		}
 		return project, nil
 	}
