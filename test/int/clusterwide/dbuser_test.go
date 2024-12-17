@@ -118,7 +118,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 			}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 			createdDBUser = akov2.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
-			createdDBUser.Spec.Project.Namespace = namespace.Name
+			createdDBUser.Spec.ProjectRef.Namespace = namespace.Name
 			Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, createdDBUser, api.TrueCondition(api.ReadyType))

@@ -47,7 +47,7 @@ func TestAtlasDatabaseUserLocalCredentialsIndexer(t *testing.T) {
 			name: "should return no keys when there is an empty reference",
 			object: &akov2.AtlasDatabaseUser{
 				Spec: akov2.AtlasDatabaseUserSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{},
 					},
 				},
@@ -62,7 +62,7 @@ func TestAtlasDatabaseUserLocalCredentialsIndexer(t *testing.T) {
 					Namespace: "ns",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
 					},
 				},
@@ -197,7 +197,7 @@ func newTestUser(username string) *akov2.AtlasDatabaseUser {
 			Namespace: "ns",
 		},
 		Spec: akov2.AtlasDatabaseUserSpec{
-			LocalCredentialHolder: api.LocalCredentialHolder{
+			ProjectDualReference: akov2.ProjectDualReference{
 				ConnectionSecret: &api.LocalObjectReference{
 					Name: fmt.Sprintf("%s-secret-ref", username),
 				},

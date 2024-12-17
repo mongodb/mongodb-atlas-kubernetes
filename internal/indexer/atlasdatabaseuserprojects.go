@@ -47,9 +47,9 @@ func (a *AtlasDatabaseUserByProjectIndexer) Keys(object client.Object) []string 
 		return []string{user.Spec.ExternalProjectRef.ID}
 	}
 
-	if user.Spec.Project != nil && user.Spec.Project.Name != "" {
+	if user.Spec.ProjectRef != nil && user.Spec.ProjectRef.Name != "" {
 		project := &akov2.AtlasProject{}
-		err := a.client.Get(a.ctx, *user.Spec.Project.GetObject(user.Namespace), project)
+		err := a.client.Get(a.ctx, *user.Spec.ProjectRef.GetObject(user.Namespace), project)
 		if err != nil {
 			a.logger.Errorf("unable to find project to index: %s", err)
 

@@ -99,8 +99,8 @@ func CreateUsers(testData *model.TestDataProvider) {
 				user.Namespace = testData.Resources.Namespace
 			}
 
-			if user.Spec.Project != nil {
-				user.Spec.Project.Namespace = testData.Resources.Namespace
+			if user.Spec.ProjectRef != nil {
+				user.Spec.ProjectRef.Namespace = testData.Resources.Namespace
 			}
 
 			if user.Spec.PasswordSecret != nil {

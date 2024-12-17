@@ -42,7 +42,9 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 		"should return nil when there is an empty reference for external project": {
 			object: &akov2.AtlasDatabaseUser{
 				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{},
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{},
+					},
 				},
 			},
 			expectedLogs: []observer.LoggedEntry{},
@@ -50,8 +52,10 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 		"should return external project reference": {
 			object: &akov2.AtlasDatabaseUser{
 				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "external-project-id",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "external-project-id",
+						},
 					},
 				},
 			},
@@ -61,8 +65,10 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 		"should return nil when there is an empty reference for project": {
 			object: &akov2.AtlasDatabaseUser{
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "",
+						},
 					},
 				},
 			},
@@ -71,8 +77,10 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 		"should return nil when referenced project was not found": {
 			object: &akov2.AtlasDatabaseUser{
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "not-found-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "not-found-project",
+						},
 					},
 				},
 			},
@@ -90,8 +98,10 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 					Namespace: "ns",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "internal-project-id",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "internal-project-id",
+						},
 					},
 				},
 			},
@@ -105,9 +115,11 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 					Namespace: "nsUser",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "internal-project-id",
-						Namespace: "ns",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "internal-project-id",
+							Namespace: "ns",
+						},
 					},
 				},
 			},
