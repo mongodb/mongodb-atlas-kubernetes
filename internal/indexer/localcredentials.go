@@ -21,7 +21,7 @@ type LocalCredentialIndexer struct {
 	logger *zap.SugaredLogger
 }
 
-func NewLocalCredentialsIndexer(name string, obj client.Object, logger *zap.Logger) *LocalCredentialIndexer {
+func NewLocalCredentialsIndexer(name string, obj api.ObjectWithCredentials, logger *zap.Logger) *LocalCredentialIndexer {
 	return &LocalCredentialIndexer{
 		obj:    obj,
 		name:   name,

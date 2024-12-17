@@ -10,9 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -31,9 +28,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 )
 
 func TestReconcile(t *testing.T) {
@@ -49,9 +46,11 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -74,9 +73,11 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -97,9 +98,11 @@ func TestReconcile(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -117,9 +120,11 @@ func TestReconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -142,35 +147,12 @@ func TestReconcile(t *testing.T) {
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
 			r := &AtlasDatabaseUserReconciler{
-				Client: k8sClient,
-				AtlasProvider: &atlasmock.TestProvider{ //nolint:dupl
-					IsSupportedFunc: func() bool {
-						return true
-					},
-					IsCloudGovFunc: func() bool {
-						return false
-					},
-					SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-						userAPI := mockadmin.NewDatabaseUsersApi(t)
-						userAPI.EXPECT().GetDatabaseUser(context.Background(), "", "admin", "user1").
-							Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
-						userAPI.EXPECT().GetDatabaseUserExecute(mock.AnythingOfType("admin.GetDatabaseUserApiRequest")).
-							Return(nil, nil, nil)
-						userAPI.EXPECT().CreateDatabaseUser(context.Background(), "", mock.AnythingOfType("*admin.CloudDatabaseUser")).
-							Return(admin.CreateDatabaseUserApiRequest{ApiService: userAPI})
-						userAPI.EXPECT().CreateDatabaseUserExecute(mock.AnythingOfType("admin.CreateDatabaseUserApiRequest")).
-							Return(&admin.CloudDatabaseUser{}, nil, nil)
-
-						clusterAPI := mockadmin.NewClustersApi(t)
-
-						return &admin.APIClient{
-							ClustersApi:      clusterAPI,
-							DatabaseUsersApi: userAPI,
-						}, "", nil
-					},
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: k8sClient,
+					Log:    zaptest.NewLogger(t).Sugar(),
 				},
+				AtlasProvider: DefaultTestProvider(t),
 				EventRecorder: record.NewFakeRecorder(10),
-				Log:           zaptest.NewLogger(t).Sugar(),
 			}
 
 			result, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Name: "user1", Namespace: "default"}})
@@ -184,7 +166,9 @@ func TestNotFound(t *testing.T) {
 	t.Run("custom resource was not found", func(t *testing.T) {
 		core, logs := observer.New(zap.DebugLevel)
 		c := &AtlasDatabaseUserReconciler{
-			Log: zap.New(core).Sugar(),
+			AtlasReconciler: reconciler.AtlasReconciler{
+				Log: zap.New(core).Sugar(),
+			},
 		}
 
 		assert.Equal(t, ctrl.Result{}, c.notFound(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}))
@@ -198,7 +182,9 @@ func TestFail(t *testing.T) {
 	t.Run("failed to retrieve custom resource", func(t *testing.T) {
 		core, logs := observer.New(zap.DebugLevel)
 		c := &AtlasDatabaseUserReconciler{
-			Log: zap.New(core).Sugar(),
+			AtlasReconciler: reconciler.AtlasReconciler{
+				Log: zap.New(core).Sugar(),
+			},
 		}
 
 		assert.Equal(
@@ -216,7 +202,9 @@ func TestSkip(t *testing.T) {
 	t.Run("skip reconciliation of custom resource", func(t *testing.T) {
 		core, logs := observer.New(zap.DebugLevel)
 		c := &AtlasDatabaseUserReconciler{
-			Log: zap.New(core).Sugar(),
+			AtlasReconciler: reconciler.AtlasReconciler{
+				Log: zap.New(core).Sugar(),
+			},
 		}
 
 		assert.Equal(t, ctrl.Result{}, c.skip())
@@ -273,7 +261,9 @@ func TestTerminate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			core, logs := observer.New(zap.DebugLevel)
 			c := &AtlasDatabaseUserReconciler{
-				Log: zap.New(core).Sugar(),
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Log: zap.New(core).Sugar(),
+				},
 			}
 
 			assert.Equal(t, tt.expectedResult, c.terminate(&workflow.Context{}, tt.object, tt.condition, tt.reason, tt.retry, tt.err))
@@ -302,9 +292,11 @@ func TestReady(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -333,9 +325,11 @@ func TestReady(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -368,9 +362,11 @@ func TestReady(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -393,10 +389,10 @@ func TestReady(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "project-id",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "user-creds",
 						},
@@ -431,8 +427,10 @@ func TestReady(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			c := &AtlasDatabaseUserReconciler{
-				Client:                k8sClient,
-				Log:                   logger,
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: k8sClient,
+					Log:    logger,
+				},
 				independentSyncPeriod: 10 * time.Minute,
 			}
 			ctx := &workflow.Context{
@@ -508,8 +506,10 @@ func TestFindAtlasDatabaseUserForSecret(t *testing.T) {
 				WithIndex(secretsIndexer.Object(), secretsIndexer.Name(), secretsIndexer.Keys).
 				Build()
 			reconciler := &AtlasDatabaseUserReconciler{
-				Log:    zaptest.NewLogger(t).Sugar(),
-				Client: k8sClient,
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Log:    zaptest.NewLogger(t).Sugar(),
+					Client: k8sClient,
+				},
 			}
 			got := reconciler.findAtlasDatabaseUserForSecret(context.Background(), tc.obj)
 			if !reflect.DeepEqual(got, tc.want) {

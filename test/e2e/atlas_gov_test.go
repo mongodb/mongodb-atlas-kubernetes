@@ -549,9 +549,11 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					Namespace: testData.Resources.Namespace,
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      projectName,
-						Namespace: testData.Resources.Namespace,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      projectName,
+							Namespace: testData.Resources.Namespace,
+						},
 					},
 					DatabaseName: "admin",
 					Labels: []common.LabelSpec{

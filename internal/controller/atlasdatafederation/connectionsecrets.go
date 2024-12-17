@@ -88,15 +88,15 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 }
 
 func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, project *akov2.AtlasProject) bool {
-	if dbUser.Spec.Project.Name != project.Name {
+	if dbUser.Spec.ProjectRef.Name != project.Name {
 		return false
 	}
 
-	if dbUser.Spec.Project.Namespace == "" && dbUser.Namespace != project.Namespace {
+	if dbUser.Spec.ProjectRef.Namespace == "" && dbUser.Namespace != project.Namespace {
 		return false
 	}
 
-	if dbUser.Spec.Project.Namespace != "" && dbUser.Spec.Project.Namespace != project.Namespace {
+	if dbUser.Spec.ProjectRef.Namespace != "" && dbUser.Spec.ProjectRef.Namespace != project.Namespace {
 		return false
 	}
 
