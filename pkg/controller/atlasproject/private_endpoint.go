@@ -61,7 +61,7 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasPr
 		return workflow.OK()
 	}
 
-	serviceStatus := getStatusForServices(atlasPEs, lastAppliedPEs)
+	serviceStatus := getStatusForServices(atlasPEs)
 	if !serviceStatus.IsOk() {
 		workflowCtx.SetConditionFromResult(api.PrivateEndpointServiceReadyType, serviceStatus)
 		return serviceStatus
@@ -80,7 +80,7 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasPr
 		}
 	}
 
-	interfaceStatus := getStatusForInterfaces(workflowCtx, project.ID(), specPEs, atlasPEs, lastAppliedPEs)
+	interfaceStatus := getStatusForInterfaces(workflowCtx, project.ID(), specPEs, atlasPEs)
 	workflowCtx.SetConditionFromResult(api.PrivateEndpointReadyType, interfaceStatus)
 
 	return interfaceStatus
@@ -126,13 +126,9 @@ func syncPrivateEndpointsWithAtlas(
 	return workflow.OK(), api.PrivateEndpointReadyType
 }
 
-func getStatusForServices(atlasPEs []atlasPE, lastAppliedPEs map[string]akov2.PrivateEndpoint) workflow.Result {
+func getStatusForServices(atlasPEs []atlasPE) workflow.Result {
 	allAvailable := true
 	for _, conn := range atlasPEs {
-		if _, ok := lastAppliedPEs[conn.Identifier().(string)]; !ok {
-			continue
-		}
-
 		if isFailed(conn.GetStatus()) {
 			return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, conn.GetErrorMessage())
 		}
@@ -149,14 +145,10 @@ func getStatusForServices(atlasPEs []atlasPE, lastAppliedPEs map[string]akov2.Pr
 	return workflow.OK()
 }
 
-func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE, lastAppliedPEs map[string]akov2.PrivateEndpoint) workflow.Result {
+func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) workflow.Result {
 	totalInterfaceCount := 0
 
 	for _, atlasPeService := range atlasPEs {
-		if _, ok := lastAppliedPEs[atlasPeService.Identifier().(string)]; !ok {
-			continue
-		}
-
 		interfaceEndpointIDs := atlasPeService.InterfaceEndpointIDs()
 		totalInterfaceCount += len(interfaceEndpointIDs)
 
