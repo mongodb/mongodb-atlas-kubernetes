@@ -58,7 +58,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), func() {
 
 			By("Preparing private endpoint resource", func() {
 				pe.Namespace = test.Resources.Namespace
-				pe.Spec.Project = &common.ResourceRefNamespaced{
+				pe.Spec.ProjectRef = &common.ResourceRefNamespaced{
 					Name:      test.Project.Name,
 					Namespace: test.Project.Namespace,
 				}
@@ -426,9 +426,11 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Namespace: testData.Resources.Namespace,
 					},
 					Spec: akov2.AtlasPrivateEndpointSpec{
-						Project: &common.ResourceRefNamespaced{
-							Name:      testData.Project.Name,
-							Namespace: testData.Project.Namespace,
+						ProjectDualReference: akov2.ProjectDualReference{
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      testData.Project.Name,
+								Namespace: testData.Project.Namespace,
+							},
 						},
 						Provider: "AWS",
 						Region:   awsRegion,
@@ -463,9 +465,11 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Namespace: testData.Resources.Namespace,
 					},
 					Spec: akov2.AtlasPrivateEndpointSpec{
-						Project: &common.ResourceRefNamespaced{
-							Name:      testData.Project.Name,
-							Namespace: testData.Project.Namespace,
+						ProjectDualReference: akov2.ProjectDualReference{
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      testData.Project.Name,
+								Namespace: testData.Project.Namespace,
+							},
 						},
 						Provider: "AZURE",
 						Region:   azureRegion,
@@ -512,9 +516,11 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Namespace: testData.Resources.Namespace,
 					},
 					Spec: akov2.AtlasPrivateEndpointSpec{
-						Project: &common.ResourceRefNamespaced{
-							Name:      testData.Project.Name,
-							Namespace: testData.Project.Namespace,
+						ProjectDualReference: akov2.ProjectDualReference{
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      testData.Project.Name,
+								Namespace: testData.Project.Namespace,
+							},
 						},
 						Provider: "GCP",
 						Region:   gcpRegion,
@@ -656,9 +662,11 @@ var _ = Describe("Independent resource should no conflict with sub-resource", La
 					Namespace: testData.Resources.Namespace,
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      testData.Project.Name,
-						Namespace: testData.Project.Namespace,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      testData.Project.Name,
+							Namespace: testData.Project.Namespace,
+						},
 					},
 					Provider: "AWS",
 					Region:   awsRegion,

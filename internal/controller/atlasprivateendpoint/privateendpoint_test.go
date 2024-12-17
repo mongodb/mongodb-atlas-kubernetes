@@ -22,6 +22,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint"
@@ -48,12 +49,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -81,12 +84,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
@@ -115,12 +120,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Finalizers:        []string{customresource.FinalizerLabel},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -148,12 +155,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -178,12 +187,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Finalizers:        []string{customresource.FinalizerLabel},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -223,12 +234,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -266,12 +279,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -309,12 +324,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -353,12 +370,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -396,12 +415,14 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -444,17 +465,18 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := &AtlasPrivateEndpointReconciler{
-				Client:                 fakeClient,
-				EventRecorder:          record.NewFakeRecorder(10),
-				Log:                    logger,
-				privateEndpointService: tt.peClient(),
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: fakeClient,
+					Log:    logger,
+				},
+				EventRecorder: record.NewFakeRecorder(10),
 			}
 			workflowCtx := workflow.Context{
 				Context: ctx,
 				Log:     logger,
 			}
 
-			result, err := r.handlePrivateEndpointService(&workflowCtx, projectID, tt.atlasPrivateEndpoint)
+			result, err := r.handlePrivateEndpointService(&workflowCtx, tt.peClient(), projectID, tt.atlasPrivateEndpoint)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
@@ -490,12 +512,14 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 					AWSConfiguration: []akov2.AWSPrivateEndpointConfiguration{
 						{
 							ID: "vpcpe-123456",
@@ -561,12 +585,14 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "GCP",
-					Region:                "EUROPE_WEST_3",
+					Provider: "GCP",
+					Region:   "EUROPE_WEST_3",
 					GCPConfiguration: []akov2.GCPPrivateEndpointConfiguration{
 						{
 							ProjectID: "customer-project-id1",
@@ -658,12 +684,14 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 					AWSConfiguration: []akov2.AWSPrivateEndpointConfiguration{
 						{
 							ID: "vpcpe-123456",
@@ -739,12 +767,14 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					Common: api.Common{
@@ -817,12 +847,14 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					Common: api.Common{
@@ -893,12 +925,14 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AZURE",
-					Region:                "GERMANY_NORTH",
+					Provider: "AZURE",
+					Region:   "GERMANY_NORTH",
 					AzureConfiguration: []akov2.AzurePrivateEndpointConfiguration{
 						{
 							ID: "azure/resource/id",
@@ -980,12 +1014,14 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AZURE",
-					Region:                "GERMANY_NORTH",
+					Provider: "AZURE",
+					Region:   "GERMANY_NORTH",
 					AzureConfiguration: []akov2.AzurePrivateEndpointConfiguration{
 						{
 							ID: "azure/resource/id",
@@ -1070,10 +1106,11 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := &AtlasPrivateEndpointReconciler{
-				Client:                 fakeClient,
-				EventRecorder:          record.NewFakeRecorder(10),
-				Log:                    logger,
-				privateEndpointService: tt.peClient(),
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: fakeClient,
+					Log:    logger,
+				},
+				EventRecorder: record.NewFakeRecorder(10),
 			}
 			workflowCtx := workflow.Context{
 				Context: ctx,
@@ -1081,7 +1118,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			}
 
 			akoPEService := privateendpoint.NewPrivateEndpoint(tt.atlasPrivateEndpoint)
-			result, err := r.handlePrivateEndpointInterface(&workflowCtx, projectID, tt.atlasPrivateEndpoint, akoPEService, tt.atlasPEService())
+			result, err := r.handlePrivateEndpointInterface(&workflowCtx, tt.peClient(), projectID, tt.atlasPrivateEndpoint, akoPEService, tt.atlasPEService())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			t.Log(cmp.Diff(
@@ -1121,12 +1158,14 @@ func TestGetPrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
@@ -1145,12 +1184,14 @@ func TestGetPrivateEndpointService(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
@@ -1189,11 +1230,9 @@ func TestGetPrivateEndpointService(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			r := &AtlasPrivateEndpointReconciler{
-				privateEndpointService: tt.peClient(),
-			}
+			r := &AtlasPrivateEndpointReconciler{}
 
-			result, err := r.getOrMatchPrivateEndpointService(ctx, projectID, tt.atlasPrivateEndpoint)
+			result, err := r.getOrMatchPrivateEndpointService(ctx, tt.peClient(), projectID, tt.atlasPrivateEndpoint)
 			assert.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
@@ -1266,11 +1305,9 @@ func TestDeletePrivateEndpoint(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			r := &AtlasPrivateEndpointReconciler{
-				privateEndpointService: tt.peClient(),
-			}
+			r := &AtlasPrivateEndpointReconciler{}
 
-			_, err := r.deletePrivateEndpoint(ctx, projectID, tt.peService)
+			_, err := r.deletePrivateEndpoint(ctx, tt.peClient(), projectID, tt.peService)
 			assert.Equal(t, tt.expectedErr, err)
 		})
 	}

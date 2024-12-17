@@ -21,7 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
@@ -35,15 +34,8 @@ func init() {
 
 // AtlasPrivateEndpointSpec is the specification of the desired configuration of a project private endpoint
 type AtlasPrivateEndpointSpec struct {
-	// Project is a reference to AtlasProject resource the user belongs to
-	// +kubebuilder:validation:Optional
-	Project *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
-	// ExternalProject holds the Atlas project ID the user belongs to
-	// +kubebuilder:validation:Optional
-	ExternalProject *ExternalProjectReference `json:"externalProjectRef,omitempty"`
-
-	// Local credentials
-	api.LocalCredentialHolder `json:",inline"`
+	// ProjectReference is the dual external or kubernetes reference with access credentials
+	ProjectDualReference `json:",inline"`
 
 	// Name of the cloud service provider for which you want to create the private endpoint service.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE
@@ -141,19 +133,23 @@ type AtlasPrivateEndpointList struct {
 
 func (pe *AtlasPrivateEndpoint) AtlasProjectObjectKey() client.ObjectKey {
 	ns := pe.Namespace
-	if pe.Spec.Project.Namespace != "" {
-		ns = pe.Spec.Project.Namespace
+	if pe.Spec.ProjectRef.Namespace != "" {
+		ns = pe.Spec.ProjectRef.Namespace
 	}
 
-	return kube.ObjectKey(ns, pe.Spec.Project.Name)
-}
-
-func (pe *AtlasPrivateEndpoint) Credentials() *api.LocalObjectReference {
-	return pe.Spec.Credentials()
+	return kube.ObjectKey(ns, pe.Spec.ProjectRef.Name)
 }
 
 func (pe *AtlasPrivateEndpoint) GetStatus() api.Status {
 	return pe.Status
+}
+
+func (pe *AtlasPrivateEndpoint) Credentials() *api.LocalObjectReference {
+	return pe.Spec.ConnectionSecret
+}
+
+func (pe *AtlasPrivateEndpoint) ProjectDualRef() *ProjectDualReference {
+	return &pe.Spec.ProjectDualReference
 }
 
 func (pe *AtlasPrivateEndpoint) UpdateStatus(conditions []api.Condition, options ...api.Option) {

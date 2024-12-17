@@ -18,11 +18,13 @@ func TestPrivateEndpointProjectReference(t *testing.T) {
 		"both project references are set": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
-					},
-					ExternalProject: &ExternalProjectReference{
-						ID: "my-project-id",
+					ProjectDualReference: ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
+						ExternalProjectRef: &ExternalProjectReference{
+							ID: "my-project-id",
+						},
 					},
 				},
 			},
@@ -34,8 +36,10 @@ func TestPrivateEndpointProjectReference(t *testing.T) {
 		"external project references is set": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					ExternalProject: &ExternalProjectReference{
-						ID: "my-project-id",
+					ProjectDualReference: ProjectDualReference{
+						ExternalProjectRef: &ExternalProjectReference{
+							ID: "my-project-id",
+						},
 					},
 				},
 			},
@@ -46,8 +50,10 @@ func TestPrivateEndpointProjectReference(t *testing.T) {
 		"kubernetes project references is set": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 				},
 			},
@@ -62,8 +68,10 @@ func TestPrivateEndpointExternalProjectReferenceConnectionSecret(t *testing.T) {
 		"external project references is set without connection secret": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					ExternalProject: &ExternalProjectReference{
-						ID: "my-project-id",
+					ProjectDualReference: ProjectDualReference{
+						ExternalProjectRef: &ExternalProjectReference{
+							ID: "my-project-id",
+						},
 					},
 				},
 			},
@@ -74,10 +82,10 @@ func TestPrivateEndpointExternalProjectReferenceConnectionSecret(t *testing.T) {
 		"external project references is set with connection secret": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					ExternalProject: &ExternalProjectReference{
-						ID: "my-project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: ProjectDualReference{
+						ExternalProjectRef: &ExternalProjectReference{
+							ID: "my-project-id",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "my-dbuser-connection-secret",
 						},
@@ -88,8 +96,10 @@ func TestPrivateEndpointExternalProjectReferenceConnectionSecret(t *testing.T) {
 		"kubernetes project references is set without connection secret": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 				},
 			},
@@ -97,10 +107,10 @@ func TestPrivateEndpointExternalProjectReferenceConnectionSecret(t *testing.T) {
 		"kubernetes project references is set with connection secret": {
 			object: &AtlasPrivateEndpoint{
 				Spec: AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "my-dbuser-connection-secret",
 						},
