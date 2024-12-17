@@ -404,7 +404,7 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 		})
 		if len(data.Resources.Deployments) > 0 {
 			By("Create deployment spec", func() {
-				data.Resources.Deployments[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
+				data.Resources.Deployments[0].Spec.ProjectRef.Name = data.Resources.Project.GetK8sMetaName()
 				utils.SaveToFile(
 					data.Resources.Deployments[0].DeploymentFileName(data.Resources),
 					utils.JSONToYAMLConvert(data.Resources.Deployments[0]),
