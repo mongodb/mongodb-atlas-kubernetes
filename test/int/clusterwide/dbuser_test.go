@@ -109,7 +109,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 			createdDeploymentAWS = akov2.DefaultAWSDeployment(deploymentNS.Name, createdProject.Name).Lightweight()
 			// The project namespace is different from the deployment one - need to specify explicitly
-			createdDeploymentAWS.Spec.Project.Namespace = namespace.Name
+			createdDeploymentAWS.Spec.ProjectRef.Namespace = namespace.Name
 
 			Expect(k8sClient.Create(context.Background(), createdDeploymentAWS)).ToNot(HaveOccurred())
 

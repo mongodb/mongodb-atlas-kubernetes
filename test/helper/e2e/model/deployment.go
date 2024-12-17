@@ -33,7 +33,7 @@ func LoadUserDeploymentConfig(path string) AtlasDeployment {
 
 func (ad *AtlasDeployment) DeploymentFileName(input UserInputs) string {
 	// return "data/deployment-" + ac.ObjectMeta.Name + "-" + ac.Spec.Project.Name + ".yaml"
-	return filepath.Dir(input.ProjectPath) + "/" + ad.ObjectMeta.Name + "-" + ad.Spec.Project.Name + ".yaml"
+	return filepath.Dir(input.ProjectPath) + "/" + ad.ObjectMeta.Name + "-" + ad.Spec.ProjectRef.Name + ".yaml"
 }
 
 func (ad *AtlasDeployment) GetDeploymentNameResource() string {

@@ -83,7 +83,7 @@ func CreateInitialDeployments(testData *model.TestDataProvider) {
 		for _, deployment := range testData.InitialDeployments {
 			if deployment.Namespace == "" {
 				deployment.Namespace = testData.Resources.Namespace
-				deployment.Spec.Project.Namespace = testData.Resources.Namespace
+				deployment.Spec.ProjectRef.Namespace = testData.Resources.Namespace
 			}
 			err := testData.K8SClient.Create(testData.Context, deployment)
 			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Deployment was not created: %v", deployment))
