@@ -146,7 +146,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 					d, _ := json.Marshal(&akov2.AtlasProjectSpec{
 						CustomRoles: []akov2.CustomRole{
 							{
-								Name: "test-role",
+								Name: "test-role-1",
 								InheritedRoles: []akov2.Role{
 									{Name: "role3", Database: "db1"},
 								},
@@ -164,7 +164,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 					return string(d)
 				}(),
 			},
-			name: "Roles not in AKO but are in Atlas (Delete) if there were previous in AKO",
+			name: "Roles not in AKO but are in Atlas (Delete) if there were previous in AKO. Remove only those that were in AKO",
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
@@ -186,11 +186,25 @@ func TestEnsureCustomRoles(t *testing.T) {
 									},
 								},
 							},
+							{
+								RoleName: "test-role-1",
+								InheritedRoles: &[]admin.DatabaseInheritedRole{
+									{Role: "role3", Db: "db1"},
+								},
+								Actions: &[]admin.DatabasePrivilegeAction{
+									{
+										Action: "action1",
+										Resources: &[]admin.DatabasePermittedNamespaceResource{
+											{Db: "db2"},
+										},
+									},
+								},
+							},
 						},
 						&http.Response{},
 						nil,
 					)
-				roleAPI.EXPECT().DeleteCustomDatabaseRole(context.Background(), "", "test-role").
+				roleAPI.EXPECT().DeleteCustomDatabaseRole(context.Background(), "", "test-role-1").
 					Return(admin.DeleteCustomDatabaseRoleApiRequest{ApiService: roleAPI})
 				roleAPI.EXPECT().DeleteCustomDatabaseRoleExecute(mock.Anything).
 					Return(

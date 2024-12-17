@@ -37,18 +37,39 @@ func hasSkippedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
 	return false, nil
 }
 
-func hasLastAppliedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
+func getLastAppliedCustomRoles(atlasProject *akov2.AtlasProject) ([]akov2.CustomRole, error) {
 	lastAppliedSpec := akov2.AtlasProjectSpec{}
 	lastAppliedSpecStr, ok := atlasProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if !ok {
-		return false, nil
+		return nil, nil
 	}
 
 	if err := json.Unmarshal([]byte(lastAppliedSpecStr), &lastAppliedSpec); err != nil {
-		return false, fmt.Errorf("failed to parse last applied configuration: %w", err)
+		return nil, fmt.Errorf("failed to parse last applied configuration: %w", err)
 	}
 
-	return len(lastAppliedSpec.CustomRoles) != 0, nil
+	return lastAppliedSpec.CustomRoles, nil
+}
+
+func findRolesToDelete(prevSpec, atlasRoles []customroles.CustomRole) map[string]customroles.CustomRole {
+	result := map[string]customroles.CustomRole{}
+	for atlasRoleIdx := range atlasRoles {
+		for specRoleIdx := range prevSpec {
+			if atlasRoles[atlasRoleIdx].Name == prevSpec[specRoleIdx].Name {
+				result[prevSpec[specRoleIdx].Name] = prevSpec[specRoleIdx]
+				continue
+			}
+		}
+	}
+	return result
+}
+
+func convertToInternalRoles(roles []akov2.CustomRole) []customroles.CustomRole {
+	result := make([]customroles.CustomRole, 0, len(roles))
+	for i := range roles {
+		result = append(result, customroles.NewCustomRole(&roles[i]))
+	}
+	return result
 }
 
 func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
@@ -63,7 +84,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 		return workflow.OK()
 	}
 
-	hadPreviousCustomRoles, err := hasLastAppliedCustomRoles(project)
+	lastAppliedCustomRoles, err := getLastAppliedCustomRoles(project)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -87,8 +108,9 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 	ops := calculateChanges(currentCustomRoles, akoRoles)
 
 	var deleteStatus map[string]status.CustomRole
-	if hadPreviousCustomRoles {
-		deleteStatus = r.deleteCustomRoles(workflowCtx, project.ID(), ops.Delete)
+	if len(lastAppliedCustomRoles) > 0 {
+		deleteStatus = r.deleteCustomRoles(workflowCtx, project.ID(),
+			findRolesToDelete(convertToInternalRoles(lastAppliedCustomRoles), currentCustomRoles))
 	}
 	updateStatus := r.updateCustomRoles(workflowCtx, project.ID(), ops.Update)
 	createStatus := r.createCustomRoles(workflowCtx, project.ID(), ops.Create)
