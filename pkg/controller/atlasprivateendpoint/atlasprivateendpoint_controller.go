@@ -39,11 +39,11 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
@@ -51,13 +51,11 @@ import (
 
 // AtlasPrivateEndpointReconciler reconciles a AtlasPrivateEndpoint object
 type AtlasPrivateEndpointReconciler struct {
-	Scheme                 *runtime.Scheme
-	Client                 client.Client
-	EventRecorder          record.EventRecorder
-	AtlasProvider          atlas.Provider
-	GlobalPredicates       []predicate.Predicate
-	Log                    *zap.SugaredLogger
-	privateEndpointService privateendpoint.PrivateEndpointService
+	reconciler.Reconciler
+	Scheme           *runtime.Scheme
+	EventRecorder    record.EventRecorder
+	AtlasProvider    atlas.Provider
+	GlobalPredicates []predicate.Predicate
 
 	ObjectDeletionProtection bool
 	independentSyncPeriod    time.Duration
@@ -100,60 +98,21 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 		return r.unsupport(workflowCtx)
 	}
 
-	var atlasProject *project.Project
-	var err error
-	if akoPrivateEndpoint.Spec.ExternalProject != nil {
-		atlasProject, err = r.getProjectFromAtlas(ctx, akoPrivateEndpoint)
-	} else {
-		atlasProject, err = r.getProjectFromKube(ctx, akoPrivateEndpoint)
-	}
+	credentials, err := r.SolveCredentials(ctx, akoPrivateEndpoint)
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-
-	return r.handlePrivateEndpointService(workflowCtx, atlasProject.ID, akoPrivateEndpoint)
-}
-
-func (r *AtlasPrivateEndpointReconciler) getProjectFromAtlas(ctx context.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) (*project.Project, error) {
-	sdkClient, _, err := r.AtlasProvider.SdkClient(
-		ctx,
-		&client.ObjectKey{Namespace: akoPrivateEndpoint.Namespace, Name: akoPrivateEndpoint.Credentials().Name},
-		r.Log,
-	)
+	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx, credentials, r.Log)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Atlas SDK client: %w", err)
+		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-
-	projectService := project.NewProjectAPIService(sdkClient.ProjectsApi)
-	r.privateEndpointService = privateendpoint.NewPrivateEndpointAPI(sdkClient.PrivateEndpointServicesApi)
-
-	atlasProject, err := projectService.GetProject(ctx, akoPrivateEndpoint.Spec.ExternalProject.ID)
+	atlasProject, err := r.SolveProject(ctx, sdkClient, akoPrivateEndpoint, orgID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve project from Atlas: %w", err)
+		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
+	privateEndpointService := privateendpoint.NewPrivateEndpointAPI(sdkClient.PrivateEndpointServicesApi)
 
-	return atlasProject, nil
-}
-
-func (r *AtlasPrivateEndpointReconciler) getProjectFromKube(ctx context.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) (*project.Project, error) {
-	atlasProject := &akov2.AtlasProject{}
-	if err := r.Client.Get(ctx, akoPrivateEndpoint.AtlasProjectObjectKey(), atlasProject); err != nil {
-		return nil, fmt.Errorf("failed to retrieve project custom resource: %w", err)
-	}
-
-	credentialsSecret, err := customresource.ComputeSecret(atlasProject, akoPrivateEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compute secret: %w", err)
-	}
-
-	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx, credentialsSecret, r.Log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Atlas SDK client: %w", err)
-	}
-
-	r.privateEndpointService = privateendpoint.NewPrivateEndpointAPI(sdkClient.PrivateEndpointServicesApi)
-
-	return project.NewProject(atlasProject, orgID), nil
+	return r.handlePrivateEndpointService(workflowCtx, privateEndpointService, atlasProject.ID, akoPrivateEndpoint)
 }
 
 func (r *AtlasPrivateEndpointReconciler) skip(ctx context.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) (ctrl.Result, error) {
@@ -234,7 +193,7 @@ func (r *AtlasPrivateEndpointReconciler) ready(ctx *workflow.Context, akoPrivate
 		SetConditionTrue(api.ReadyType).
 		EnsureStatusOption(privateendpoint.NewPrivateEndpointStatus(atlasPEService))
 
-	if akoPrivateEndpoint.Spec.ExternalProject != nil {
+	if akoPrivateEndpoint.Spec.ExternalProjectRef != nil {
 		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
 	}
 
@@ -332,12 +291,14 @@ func NewAtlasPrivateEndpointReconciler(
 	logger *zap.Logger,
 ) *AtlasPrivateEndpointReconciler {
 	return &AtlasPrivateEndpointReconciler{
+		Reconciler: reconciler.Reconciler{
+			Client: mgr.GetClient(),
+			Log:    logger.Named("controllers").Named("AtlasPrivateEndpoint").Sugar(),
+		},
 		Scheme:                   mgr.GetScheme(),
-		Client:                   mgr.GetClient(),
 		EventRecorder:            mgr.GetEventRecorderFor("AtlasPrivateEndpoint"),
 		AtlasProvider:            atlasProvider,
 		GlobalPredicates:         predicates,
-		Log:                      logger.Named("controllers").Named("AtlasPrivateEndpoint").Sugar(),
 		ObjectDeletionProtection: deletionProtection,
 	}
 }
