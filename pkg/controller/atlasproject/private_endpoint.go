@@ -55,7 +55,7 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasPr
 		return result
 	}
 
-	if (len(specPEs) == 0 && len(atlasPEs) == 0) || !hasManagedPrivateEndpoints(atlasPEs, lastAppliedPEs) {
+	if (len(specPEs) == 0 && len(atlasPEs) == 0) || !hasManagedPrivateEndpoints(specPEs, atlasPEs, lastAppliedPEs) {
 		workflowCtx.UnsetCondition(api.PrivateEndpointServiceReadyType)
 		workflowCtx.UnsetCondition(api.PrivateEndpointReadyType)
 		return workflow.OK()
@@ -608,7 +608,7 @@ func hasSkippedPrivateEndpointConfiguration(atlasProject *akov2.AtlasProject) (b
 }
 
 func mapLastAppliedPrivateEndpoint(atlasProject *akov2.AtlasProject) (map[string]akov2.PrivateEndpoint, error) {
-	lastApplied, err := atlasProject.LastSpecFrom(customresource.AnnotationLastAppliedConfiguration)
+	lastApplied, err := lastSpecFrom(atlasProject, customresource.AnnotationLastAppliedConfiguration)
 	if err != nil {
 		return nil, err
 	}
@@ -625,12 +625,12 @@ func mapLastAppliedPrivateEndpoint(atlasProject *akov2.AtlasProject) (map[string
 	return result, nil
 }
 
-func hasManagedPrivateEndpoints(atlasPEs []atlasPE, lastAppliedPEs map[string]akov2.PrivateEndpoint) bool {
+func hasManagedPrivateEndpoints(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE, lastAppliedPEs map[string]akov2.PrivateEndpoint) bool {
 	for _, pe := range atlasPEs {
 		if _, ok := lastAppliedPEs[pe.Identifier().(string)]; ok {
 			return true
 		}
 	}
 
-	return false
+	return len(set.DeprecatedDifference(specPEs, atlasPEs)) == 0
 }
