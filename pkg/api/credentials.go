@@ -1,5 +1,7 @@
 package api
 
+import "sigs.k8s.io/controller-runtime/pkg/client"
+
 type LocalRef string
 
 // +k8s:deepcopy-gen=false
@@ -11,19 +13,8 @@ type CredentialsProvider interface {
 
 // +k8s:deepcopy-gen=false
 
-// ResourceWithCredentials is to be implemented by all CRDs using custom local credentials
-type ResourceWithCredentials interface {
+// ObjectWithCredentials is a Kubernetes Object interface with credentials
+type ObjectWithCredentials interface {
+	client.Object
 	CredentialsProvider
-	GetName() string
-	GetNamespace() string
-}
-
-// LocalCredentialHolder is to be embedded by Specs of CRDs using custom local credentials
-type LocalCredentialHolder struct {
-	// Name of the secret containing Atlas API private and public keys
-	ConnectionSecret *LocalObjectReference `json:"connectionSecret,omitempty"`
-}
-
-func (ch *LocalCredentialHolder) Credentials() *LocalObjectReference {
-	return ch.ConnectionSecret
 }

@@ -34,6 +34,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
@@ -135,10 +136,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "project-id",
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "project-creds",
 						},
@@ -210,9 +211,11 @@ func TestHandleDatabaseUser(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -299,9 +302,11 @@ func TestHandleDatabaseUser(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				Client:        k8sClient.Build(),
+				Reconciler: reconciler.Reconciler{
+					Client: k8sClient.Build(),
+					Log:    logger,
+				},
 				AtlasProvider: tt.atlasProvider,
-				Log:           logger,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
@@ -802,17 +807,17 @@ func TestDbuLifeCycle(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				Client:            k8sClient.Build(),
-				Log:               logger,
-				dbUserService:     tt.dbUserService(),
-				deploymentService: tt.dService(),
+				Reconciler: reconciler.Reconciler{
+					Client: k8sClient.Build(),
+					Log:    logger,
+				},
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				Log:     logger,
 			}
 
-			result := r.dbuLifeCycle(ctx, tt.dbUserInAKO, &project.Project{})
+			result := r.dbuLifeCycle(ctx, tt.dbUserService(), tt.dService(), tt.dbUserInAKO, &project.Project{})
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1040,16 +1045,17 @@ func TestCreate(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				Client:        k8sClient.Build(),
-				Log:           logger,
-				dbUserService: tt.dbUserService(),
+				Reconciler: reconciler.Reconciler{
+					Client: k8sClient.Build(),
+					Log:    logger,
+				},
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				Log:     logger,
 			}
 
-			result := r.create(ctx, "project-id", tt.dbUserInAKO)
+			result := r.create(ctx, tt.dbUserService(), "project-id", tt.dbUserInAKO)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1319,17 +1325,17 @@ func TestUpdate(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				Client:            k8sClient.Build(),
-				Log:               logger,
-				dbUserService:     tt.dbUserService(),
-				deploymentService: tt.dService(),
+				Reconciler: reconciler.Reconciler{
+					Client: k8sClient.Build(),
+					Log:    logger,
+				},
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				Log:     logger,
 			}
 
-			result := r.update(ctx, &project.Project{}, tt.dbUserInAKO, tt.dbUserInAtlas)
+			result := r.update(ctx, tt.dbUserService(), tt.dService(), &project.Project{}, tt.dbUserInAKO, tt.dbUserInAtlas)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1487,9 +1493,10 @@ func TestDelete(t *testing.T) {
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				Client:                   k8sClient,
-				Log:                      logger,
-				dbUserService:            tt.dbUserService(),
+				Reconciler: reconciler.Reconciler{
+					Client: k8sClient,
+					Log:    logger,
+				},
 				ObjectDeletionProtection: tt.deletionProtection,
 			}
 			ctx := &workflow.Context{
@@ -1497,7 +1504,7 @@ func TestDelete(t *testing.T) {
 				Log:     logger,
 			}
 
-			result := r.delete(ctx, "project-id", tt.dbUser)
+			result := r.delete(ctx, tt.dbUserService(), "project-id", tt.dbUser)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1702,16 +1709,17 @@ func TestReadiness(t *testing.T) {
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				Client:            k8sClient,
-				Log:               logger,
-				deploymentService: tt.dService(),
+				Reconciler: reconciler.Reconciler{
+					Client: k8sClient,
+					Log:    logger,
+				},
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				Log:     logger,
 			}
 
-			result := r.readiness(ctx, &project.Project{}, tt.dbUser, "999")
+			result := r.readiness(ctx, tt.dService(), &project.Project{}, tt.dbUser, "999")
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1849,7 +1857,9 @@ func TestReadPassword(t *testing.T) {
 			}
 
 			r := AtlasDatabaseUserReconciler{
-				Client: k8sClient.Build(),
+				Reconciler: reconciler.Reconciler{
+					Client: k8sClient.Build(),
+				},
 			}
 
 			pass, passVersion, err := r.readPassword(context.Background(), tt.dbUser)
@@ -1958,13 +1968,11 @@ func TestAreDeploymentScopesValid(t *testing.T) {
 				deploymentService.EXPECT().ClusterExists(context.Background(), "project-id", mock.AnythingOfType("string")).
 					RunAndReturn(tt.call)
 			}
-			r := AtlasDatabaseUserReconciler{
-				deploymentService: deploymentService,
-			}
+			r := AtlasDatabaseUserReconciler{}
 			ctx := &workflow.Context{
 				Context: context.Background(),
 			}
-			valid, err := r.areDeploymentScopesValid(ctx, "project-id", tt.dbUser)
+			valid, err := r.areDeploymentScopesValid(ctx, deploymentService, "project-id", tt.dbUser)
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.expected, valid)
 		})
@@ -2026,8 +2034,9 @@ func TestRemoveOldUser(t *testing.T) {
 			dbUserService.EXPECT().Delete(context.Background(), "admin", "project-id", "old-name").
 				RunAndReturn(tt.call)
 			r := &AtlasDatabaseUserReconciler{
-				Log:           zaptest.NewLogger(t).Sugar(),
-				dbUserService: dbUserService,
+				Reconciler: reconciler.Reconciler{
+					Log: zaptest.NewLogger(t).Sugar(),
+				},
 			}
 
 			user := &akov2.AtlasDatabaseUser{
@@ -2039,364 +2048,7 @@ func TestRemoveOldUser(t *testing.T) {
 					UserName: "old-name",
 				},
 			}
-			assert.Equal(t, tt.err, r.removeOldUser(context.Background(), "project-id", user))
-		})
-	}
-}
-
-func TestGetProjectFromAtlas(t *testing.T) {
-	tests := map[string]struct {
-		dbUserInAKO   *akov2.AtlasDatabaseUser
-		dbUserSecret  *corev1.Secret
-		atlasProvider atlas.Provider
-		expectedErr   error
-	}{
-		"failed to create atlas client": {
-			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &api.LocalObjectReference{
-							Name: "project-creds",
-						},
-					},
-					Username: "user1",
-					PasswordSecret: &common.ResourceRef{
-						Name: "user-pass",
-					},
-					DatabaseName: "admin",
-				},
-			},
-			atlasProvider: &atlasmock.TestProvider{
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					return nil, "", errors.New("failed to create client")
-				},
-			},
-			expectedErr: errors.New("failed to create client"),
-		},
-		"failed to get project from atlas": {
-			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &api.LocalObjectReference{
-							Name: "project-creds",
-						},
-					},
-					Username: "user1",
-					PasswordSecret: &common.ResourceRef{
-						Name: "user-pass",
-					},
-					DatabaseName: "admin",
-				},
-			},
-			atlasProvider: &atlasmock.TestProvider{
-				IsCloudGovFunc: func() bool {
-					return false
-				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProject(context.Background(), "project-id").
-						Return(admin.GetProjectApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
-						Return(nil, nil, errors.New("failed to get project"))
-
-					return &admin.APIClient{ProjectsApi: projectAPI}, "", nil
-				},
-			},
-			expectedErr: errors.New("failed to get project"),
-		},
-		"get project": {
-			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					ExternalProjectRef: &akov2.ExternalProjectReference{
-						ID: "project-id",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &api.LocalObjectReference{
-							Name: "project-creds",
-						},
-					},
-					Username: "user1",
-					PasswordSecret: &common.ResourceRef{
-						Name: "user-pass",
-					},
-					DatabaseName: "admin",
-				},
-			},
-			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
-				},
-				Data: map[string][]byte{
-					"password": []byte("Passw0rd!"),
-				},
-			},
-			atlasProvider: &atlasmock.TestProvider{
-				IsCloudGovFunc: func() bool {
-					return false
-				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProject(context.Background(), "project-id").
-						Return(admin.GetProjectApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
-						Return(&admin.Group{Id: pointer.MakePtr("project-id")}, nil, nil)
-
-					return &admin.APIClient{ProjectsApi: projectAPI}, "", nil
-				},
-			},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			testScheme := runtime.NewScheme()
-			assert.NoError(t, akov2.AddToScheme(testScheme))
-			assert.NoError(t, corev1.AddToScheme(testScheme))
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(tt.dbUserInAKO).
-				WithStatusSubresource(tt.dbUserInAKO)
-
-			if tt.dbUserSecret != nil {
-				k8sClient.WithObjects(tt.dbUserSecret)
-			}
-
-			logger := zaptest.NewLogger(t).Sugar()
-			r := AtlasDatabaseUserReconciler{
-				Client:        k8sClient.Build(),
-				AtlasProvider: tt.atlasProvider,
-				Log:           logger,
-			}
-			ctx := &workflow.Context{
-				Context: context.Background(),
-				Log:     logger,
-			}
-			version.Version = "2.4.1"
-
-			_, err := r.getProjectFromAtlas(ctx, tt.dbUserInAKO)
-			assert.Equal(t, tt.expectedErr, err)
-		})
-	}
-}
-
-func TestGetProjectFromKube(t *testing.T) {
-	tests := map[string]struct {
-		dbUserInAKO   *akov2.AtlasDatabaseUser
-		project       *akov2.AtlasProject
-		projectSecret *corev1.Secret
-		atlasProvider atlas.Provider
-		expectedErr   error
-	}{
-		"failed to get project": {
-			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-					Labels: map[string]string{
-						"mongodb.com/atlas-resource-version": "2.4.1",
-					},
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
-					},
-					Username: "user1",
-					PasswordSecret: &common.ResourceRef{
-						Name: "user-pass",
-					},
-					DatabaseName: "admin",
-				},
-			},
-			atlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return true
-				},
-			},
-			expectedErr: &k8serrors.StatusError{
-				ErrStatus: metav1.Status{
-					Status:  "Failure",
-					Message: "atlasprojects.atlas.mongodb.com \"my-project\" not found",
-					Reason:  "NotFound",
-					Code:    404,
-					Details: &metav1.StatusDetails{
-						Group: "atlas.mongodb.com",
-						Kind:  "atlasprojects",
-						Name:  "my-project",
-					},
-				},
-			},
-		},
-		"failed to create atlas sdk": {
-			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-					Labels: map[string]string{
-						"mongodb.com/atlas-resource-version": "2.4.1",
-					},
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
-					},
-					Username: "user1",
-					PasswordSecret: &common.ResourceRef{
-						Name: "user-pass",
-					},
-					DatabaseName: "admin",
-				},
-			},
-			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasProjectSpec{
-					Name: "my-project",
-					ConnectionSecret: &common.ResourceRefNamespaced{
-						Name: "project-secret",
-					},
-				},
-			},
-			projectSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "project-secret",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
-				},
-				Data: map[string][]byte{
-					"publicKey":  []byte("publicKey"),
-					"privateKey": []byte("privateKey"),
-					"orgID":      []byte("orgID"),
-				},
-			},
-			atlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return true
-				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					return nil, "", errors.New("failed to create client")
-				},
-			},
-			expectedErr: errors.New("failed to create client"),
-		},
-		"get project": {
-			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
-						ConnectionSecret: &api.LocalObjectReference{
-							Name: "project-creds",
-						},
-					},
-					Username: "user1",
-					PasswordSecret: &common.ResourceRef{
-						Name: "user-pass",
-					},
-					DatabaseName: "admin",
-				},
-			},
-			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasProjectSpec{
-					Name: "my-project",
-					ConnectionSecret: &common.ResourceRefNamespaced{
-						Name: "project-secret",
-					},
-				},
-			},
-			projectSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "project-secret",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
-				},
-				Data: map[string][]byte{
-					"publicKey":  []byte("publicKey"),
-					"privateKey": []byte("privateKey"),
-					"orgID":      []byte("orgID"),
-				},
-			},
-			atlasProvider: &atlasmock.TestProvider{
-				IsCloudGovFunc: func() bool {
-					return false
-				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					return &admin.APIClient{}, "", nil
-				},
-			},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			testScheme := runtime.NewScheme()
-			assert.NoError(t, akov2.AddToScheme(testScheme))
-			assert.NoError(t, corev1.AddToScheme(testScheme))
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(tt.dbUserInAKO).
-				WithStatusSubresource(tt.dbUserInAKO)
-
-			if tt.project != nil {
-				k8sClient.WithObjects(tt.project)
-			}
-
-			if tt.projectSecret != nil {
-				k8sClient.WithObjects(tt.projectSecret)
-			}
-
-			logger := zaptest.NewLogger(t).Sugar()
-			r := AtlasDatabaseUserReconciler{
-				Client:        k8sClient.Build(),
-				AtlasProvider: tt.atlasProvider,
-				Log:           logger,
-			}
-			ctx := &workflow.Context{
-				Context: context.Background(),
-				Log:     logger,
-			}
-			version.Version = "2.4.1"
-
-			_, err := r.getProjectFromKube(ctx, tt.dbUserInAKO)
-			assert.Equal(t, tt.expectedErr, err)
+			assert.Equal(t, tt.err, r.removeOldUser(context.Background(), dbUserService, "project-id", user))
 		})
 	}
 }

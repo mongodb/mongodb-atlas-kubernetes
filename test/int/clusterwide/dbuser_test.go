@@ -109,7 +109,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 			createdDeploymentAWS = akov2.DefaultAWSDeployment(deploymentNS.Name, createdProject.Name).Lightweight()
 			// The project namespace is different from the deployment one - need to specify explicitly
-			createdDeploymentAWS.Spec.Project.Namespace = namespace.Name
+			createdDeploymentAWS.Spec.ProjectRef.Namespace = namespace.Name
 
 			Expect(k8sClient.Create(context.Background(), createdDeploymentAWS)).ToNot(HaveOccurred())
 
@@ -118,7 +118,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 			}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 			createdDBUser = akov2.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
-			createdDBUser.Spec.Project.Namespace = namespace.Name
+			createdDBUser.Spec.ProjectRef.Namespace = namespace.Name
 			Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, createdDBUser, api.TrueCondition(api.ReadyType))

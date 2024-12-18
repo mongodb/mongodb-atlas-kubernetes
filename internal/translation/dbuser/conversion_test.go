@@ -391,7 +391,7 @@ func TestDiffSpecs(t *testing.T) {
 						{Name: "lake1", Type: "DATA_LAKE"},
 						{Name: "lake2", Type: "DATA_LAKE"},
 					}
-					spec.Project = &common.ResourceRefNamespaced{
+					spec.ProjectRef = &common.ResourceRefNamespaced{
 						Name:      "some-project",
 						Namespace: "some-namespace",
 					}
@@ -409,7 +409,7 @@ func TestDiffSpecs(t *testing.T) {
 						{Name: "lake1", Type: "DATA_LAKE"},
 						{Name: "lake2", Type: "DATA_LAKE"},
 					}
-					spec.Project = &common.ResourceRefNamespaced{
+					spec.ProjectRef = &common.ResourceRefNamespaced{
 						Name:      "another-project",
 						Namespace: "another-namespace",
 					}
