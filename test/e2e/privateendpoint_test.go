@@ -16,6 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
@@ -417,6 +418,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 		})
 
 		By("Migrate private endpoint as separate custom resource", func() {
+			//nolint:dupl
 			By("Migrating AWS private endpoint", func() {
 				awsPE = &akov2.AtlasPrivateEndpoint{
 					ObjectMeta: metav1.ObjectMeta{
@@ -446,7 +448,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						api.TrueCondition(api.ReadyType),
 					)
 					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(awsPE), awsPE)).To(Succeed())
-					g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+					g.Expect(awsPE.Status.Conditions).To(ContainElements(expectedConditions))
 					g.Expect(awsPE.Status.ServiceStatus).To(Equal("AVAILABLE"))
 					for _, eStatus := range awsPE.Status.Endpoints {
 						g.Expect(eStatus.Status).To(Equal("AVAILABLE"))
@@ -484,7 +486,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						api.TrueCondition(api.ReadyType),
 					)
 					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(azurePE), azurePE)).To(Succeed())
-					g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+					g.Expect(azurePE.Status.Conditions).To(ContainElements(expectedConditions))
 					g.Expect(azurePE.Status.ServiceStatus).To(Equal("AVAILABLE"))
 					for _, eStatus := range azurePE.Status.Endpoints {
 						g.Expect(eStatus.Status).To(Equal("AVAILABLE"))
@@ -534,7 +536,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						api.TrueCondition(api.ReadyType),
 					)
 					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(gcpPE), gcpPE)).To(Succeed())
-					g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+					g.Expect(gcpPE.Status.Conditions).To(ContainElements(expectedConditions))
 					g.Expect(gcpPE.Status.ServiceStatus).To(Equal("AVAILABLE"))
 					for _, eStatus := range gcpPE.Status.Endpoints {
 						g.Expect(eStatus.Status).To(Equal("AVAILABLE"))
@@ -584,7 +586,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 				)
 				for _, pe := range []*akov2.AtlasPrivateEndpoint{awsPE, azurePE, gcpPE} {
 					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
-					g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+					g.Expect(pe.Status.Conditions).To(ContainElements(expectedConditions))
 					g.Expect(pe.Status.ServiceStatus).To(Equal("AVAILABLE"))
 					for _, eStatus := range pe.Status.Endpoints {
 						g.Expect(eStatus.Status).To(Equal("AVAILABLE"))
@@ -602,6 +604,125 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(awsPE), awsPE)).ShouldNot(Succeed())
 				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(azurePE), azurePE)).ShouldNot(Succeed())
 				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(gcpPE), gcpPE)).ShouldNot(Succeed())
+			}).WithTimeout(15 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
+		})
+	})
+})
+
+var _ = Describe("Independent resource should no conflict with sub-resource", Label("private-endpoint"), func() {
+	var testData *model.TestDataProvider
+	var awsPE *akov2.AtlasPrivateEndpoint
+
+	_ = BeforeEach(func() {
+		checkUpAWSEnvironment()
+		checkUpAzureEnvironment()
+		checkNSetUpGCPEnvironment()
+	})
+
+	_ = AfterEach(func() {
+		GinkgoWriter.Println()
+		GinkgoWriter.Println("===============================================")
+		GinkgoWriter.Println("Operator namespace: " + testData.Resources.Namespace)
+		GinkgoWriter.Println("===============================================")
+		if CurrentSpecReport().Failed() {
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		}
+		By("Delete Project and cluster resources", func() {
+			actions.DeleteTestDataProject(testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
+		})
+	})
+
+	It("Should migrate a private endpoint configured in a project as sub-resource to a separate custom resource", func() {
+		By("Setting up project", func() {
+			testData = model.DataProvider(
+				"migrate-private-endpoint",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject())
+
+			actions.ProjectCreationFlow(testData)
+		})
+
+		//nolint:dupl
+		By("Creating AWS private endpoint", func() {
+			awsRegion, err := cloud.GetAtlasRegionByProvider("AWS")
+			Expect(err).ToNot(HaveOccurred())
+
+			awsPE = &akov2.AtlasPrivateEndpoint{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pe-aws-" + testData.Resources.TestID,
+					Namespace: testData.Resources.Namespace,
+				},
+				Spec: akov2.AtlasPrivateEndpointSpec{
+					Project: &common.ResourceRefNamespaced{
+						Name:      testData.Project.Name,
+						Namespace: testData.Project.Namespace,
+					},
+					Provider: "AWS",
+					Region:   awsRegion,
+				},
+			}
+
+			Expect(testData.K8SClient.Create(testData.Context, awsPE)).To(Succeed())
+			Eventually(func(g Gomega) { //nolint:dupl
+				expectedConditions := conditions.MatchConditions(
+					api.TrueCondition(api.PrivateEndpointServiceReady),
+					api.FalseCondition(api.PrivateEndpointReady).
+						WithReason(string(workflow.PrivateEndpointConfigurationPending)).
+						WithMessageRegexp("waiting for private endpoint configuration from customer side"),
+					api.FalseCondition(api.ReadyType),
+				)
+				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(awsPE), awsPE)).To(Succeed())
+				g.Expect(awsPE.Status.Conditions).To(ContainElements(expectedConditions))
+				g.Expect(awsPE.Status.ServiceStatus).To(Equal("AVAILABLE"))
+			}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+		})
+
+		By("Updating project doesn't affect private endpoint", func() {
+			Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			testData.Project.Spec.Settings = &akov2.ProjectSettings{
+				IsSchemaAdvisorEnabled:            pointer.MakePtr(true),
+				IsRealtimePerformancePanelEnabled: pointer.MakePtr(true),
+			}
+
+			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
+			Eventually(func(g Gomega) {
+				notExpectedConditions := conditions.MatchConditions(
+					api.TrueCondition(api.PrivateEndpointServiceReady),
+					api.TrueCondition(api.PrivateEndpointReady),
+					api.FalseCondition(api.PrivateEndpointServiceReady),
+					api.FalseCondition(api.PrivateEndpointReady),
+				)
+
+				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.Project.Status.Conditions).ToNot(ContainElements(notExpectedConditions))
+				g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(api.TrueCondition(api.ReadyType))))
+			}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+		})
+
+		By("Private endpoint are still ready", func() {
+			Eventually(func(g Gomega) { //nolint:dupl
+				expectedConditions := conditions.MatchConditions(
+					api.TrueCondition(api.PrivateEndpointServiceReady),
+					api.FalseCondition(api.PrivateEndpointReady).
+						WithReason(string(workflow.PrivateEndpointConfigurationPending)).
+						WithMessageRegexp("waiting for private endpoint configuration from customer side"),
+					api.FalseCondition(api.ReadyType),
+				)
+
+				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(awsPE), awsPE)).To(Succeed())
+				g.Expect(awsPE.Status.Conditions).To(ContainElements(expectedConditions))
+				g.Expect(awsPE.Status.ServiceStatus).To(Equal("AVAILABLE"))
+			}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+		})
+
+		By("Removing private endpoints", func() {
+			Expect(testData.K8SClient.Delete(testData.Context, awsPE)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(awsPE), awsPE)).ShouldNot(Succeed())
 			}).WithTimeout(15 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 		})
 	})
