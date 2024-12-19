@@ -30,6 +30,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasnetworkpeering"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasprivateendpoint"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlassearchindexconfig"
@@ -344,6 +345,17 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 	)
 	if err = peReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasPrivateEndpoint: %w", err)
+	}
+
+	npeReconciler := atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(
+		mgr,
+		b.predicates,
+		b.atlasProvider,
+		b.deletionProtection,
+		b.logger,
+	)
+	if err = npeReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
+		return nil, fmt.Errorf("unable to create controller AtlasNetworkPeeringsReconciler: %w", err)
 	}
 
 	return mgr, nil
