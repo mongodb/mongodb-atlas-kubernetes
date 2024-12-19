@@ -72,8 +72,8 @@ spec:
                 - name
                 type: object
               connectionSecret:
-                description: LocalObjectReference is a reference to an object in the
-                  same namespace as the referent
+                description: Name of the secret containing Atlas API private and public
+                  keys
                 properties:
                   name:
                     description: |-

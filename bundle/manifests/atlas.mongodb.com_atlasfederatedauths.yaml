@@ -64,6 +64,13 @@ spec:
                 required:
                 - name
                 type: object
+              dataAccessIdentityProviders:
+                description: |-
+                  The collection of unique ids representing the identity providers that can be used for data access in this organization.
+                  Currently connected data access identity providers missing from the this field will be disconnected.
+                items:
+                  type: string
+                type: array
               domainAllowList:
                 description: Approved domains that restrict users who can join the
                   organization based on their email address.
