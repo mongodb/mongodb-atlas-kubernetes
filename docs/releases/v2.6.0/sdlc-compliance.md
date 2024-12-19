@@ -1,7 +1,7 @@
 SSDLC Compliance Report: Atlas Kubernetes Operator Manager v2.6.0
 =================================================================
 
-- Release Creators: s.urbaniak@mongodb.com,igor.karpukhin@mongodb.com,helder.santana@mongodb.com,jose.vazquez@mongodb.com
+- Release Creators: igor.karpukhin@mongodb.com
 - Created On:       2024-12-18
 
 Overview:
