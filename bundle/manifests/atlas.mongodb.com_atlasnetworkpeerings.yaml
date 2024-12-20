@@ -8,31 +8,38 @@ metadata:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
     app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
-  name: atlascustomroles.atlas.mongodb.com
+  name: atlasnetworkpeerings.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
   names:
     categories:
     - atlas
-    kind: AtlasCustomRole
-    listKind: AtlasCustomRoleList
-    plural: atlascustomroles
+    kind: AtlasNetworkPeering
+    listKind: AtlasNetworkPeeringList
+    plural: atlasnetworkpeerings
     shortNames:
-    - acr
-    singular: atlascustomrole
+    - anp
+    singular: atlasnetworkpeering
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
       type: string
-    - jsonPath: .spec.role.name
-      name: Name
+    - jsonPath: .spec.providerName
+      name: Provider
+      type: string
+    - jsonPath: .spec.containerId
+      name: Container ID
+      type: string
+    - jsonPath: .spec.projectIDRef.id
+      name: Project ID
       type: string
     name: v1
     schema:
       openAPIV3Schema:
-        description: AtlasCustomRole is the Schema for the AtlasCustomRole API
+        description: AtlasNetworkPeering is the Schema for the AtlasNetworkPeering
+          API
         properties:
           apiVersion:
             description: |-
@@ -52,9 +59,53 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtlasCustomRoleSpec defines the desired state of CustomRole
-              in Atlas
+            description: AtlasNetworkPeeringSpec defines the desired state of AtlasNetworkPeering
             properties:
+              atlasCidrBlock:
+                description: Atlas CIDR. It needs to be set if ContainerID is not
+                  set.
+                type: string
+              awsConfiguration:
+                description: AWSConfiguration is the specific AWS settings for network
+                  peering
+                properties:
+                  accepterRegionName:
+                    description: AccepterRegionName is the provider region name of
+                      user's vpc.
+                    type: string
+                  awsAccountId:
+                    description: AccountID of the user's vpc.
+                    type: string
+                  routeTableCidrBlock:
+                    description: User VPC CIDR.
+                    type: string
+                  vpcId:
+                    description: AWS VPC ID.
+                    type: string
+                required:
+                - accepterRegionName
+                type: object
+              azureConfiguration:
+                description: AzureConfiguration is the specific Azure settings for
+                  network peering
+                properties:
+                  azureDirectoryId:
+                    description: AzureDirectoryID is the unique identifier for an
+                      Azure AD directory.
+                    type: string
+                  azureSubscriptionId:
+                    description: AzureSubscriptionID is the unique identifier of the
+                      Azure subscription in which the VNet resides.
+                    type: string
+                  resourceGroupName:
+                    description: ResourceGroupName is the name of your Azure resource
+                      group.
+                    type: string
+                  vnetName:
+                    description: VNetName is name of your Azure VNet. Its applicable
+                      only for Azure.
+                    type: string
+                type: object
               connectionSecret:
                 description: Name of the secret containing Atlas API private and public
                   keys
@@ -67,6 +118,15 @@ spec:
                 required:
                 - name
                 type: object
+              containerId:
+                description: ID of the network peer container. If not set, operator
+                  will create a new container with ContainerRegion and AtlasCIDRBlock
+                  input.
+                type: string
+              containerRegion:
+                description: ContainerRegion is the provider region name of Atlas
+                  network peer container.
+                type: string
               externalProjectRef:
                 description: |-
                   "externalProjectRef" holds the parent Atlas project ID.
@@ -77,6 +137,17 @@ spec:
                     type: string
                 required:
                 - id
+                type: object
+              gcpConfiguration:
+                description: GCPConfiguration is the specific Google Cloud settings
+                  for network peering
+                properties:
+                  gcpProjectId:
+                    description: User GCP Project ID. Its applicable only for GCP.
+                    type: string
+                  networkName:
+                    description: GCP Network Peer Name. Its applicable only for GCP.
+                    type: string
                 type: object
               projectRef:
                 description: |-
@@ -92,70 +163,16 @@ spec:
                 required:
                 - name
                 type: object
-              role:
-                properties:
-                  actions:
-                    description: List of the individual privilege actions that the
-                      role grants.
-                    items:
-                      properties:
-                        name:
-                          description: Human-readable label that identifies the privilege
-                            action.
-                          type: string
-                        resources:
-                          description: List of resources on which you grant the action.
-                          items:
-                            properties:
-                              cluster:
-                                description: Flag that indicates whether to grant
-                                  the action on the cluster resource. If true, MongoDB
-                                  Cloud ignores Database and Collection parameters.
-                                type: boolean
-                              collection:
-                                description: Human-readable label that identifies
-                                  the collection on which you grant the action to
-                                  one MongoDB user.
-                                type: string
-                              database:
-                                description: Human-readable label that identifies
-                                  the database on which you grant the action to one
-                                  MongoDB user.
-                                type: string
-                            type: object
-                          type: array
-                      required:
-                      - name
-                      - resources
-                      type: object
-                    type: array
-                  inheritedRoles:
-                    description: List of the built-in roles that this custom role
-                      inherits.
-                    items:
-                      properties:
-                        database:
-                          description: Human-readable label that identifies the database
-                            on which someone grants the action to one MongoDB user.
-                          type: string
-                        name:
-                          description: Human-readable label that identifies the role
-                            inherited.
-                          type: string
-                      required:
-                      - database
-                      - name
-                      type: object
-                    type: array
-                  name:
-                    description: Human-readable label that identifies the role. This
-                      name must be unique for this custom role in this project.
-                    type: string
-                required:
-                - name
-                type: object
+              provider:
+                description: Name of the cloud service provider for which you want
+                  to create the network peering service.
+                enum:
+                - AWS
+                - GCP
+                - AZURE
+                type: string
             required:
-            - role
+            - provider
             type: object
             x-kubernetes-validations:
             - message: must define only one project reference through externalProjectRef
@@ -168,7 +185,7 @@ spec:
                 !has(self.externalProjectRef)
           status:
             description: |-
-              AtlasCustomRoleStatus is a status for the AtlasCustomRole Custom resource.
+              AtlasNetworkPeeringStatus is a status for the AtlasNetworkPeering Custom resource.
               Not the one included in the AtlasProject
             properties:
               conditions:
@@ -201,6 +218,13 @@ spec:
                   - type
                   type: object
                 type: array
+              containerId:
+                description: ContainerID records the ID of the container created by
+                  atlas for this peering
+                type: string
+              id:
+                description: ID recrods the identified of thr peer created by Atlas
+                type: string
               observedGeneration:
                 description: |-
                   ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
