@@ -16,7 +16,7 @@ import (
 	"github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 )
 
 const (

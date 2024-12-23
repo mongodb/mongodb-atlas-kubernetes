@@ -6,17 +6,15 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
 
 const (

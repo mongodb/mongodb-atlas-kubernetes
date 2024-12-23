@@ -5,8 +5,8 @@ import (
 	"github.com/onsi/gomega/types"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 )
 
 // MatchIPAccessList returns the GomegaMatcher that checks if the 'actual' mongodbatlas.ProjectIPAccessList matches

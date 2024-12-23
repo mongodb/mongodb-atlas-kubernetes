@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 )
 
 const fuzzIterations = 100
