@@ -3,14 +3,13 @@ package atlas
 import (
 	"context"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 )
 
 type TestProvider struct {

@@ -41,9 +41,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/operator"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 

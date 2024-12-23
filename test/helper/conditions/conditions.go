@@ -5,7 +5,7 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 )
 
 // MatchCondition returns the GomegaMatcher that checks if the 'actual' status.Condition matches the 'expected' one.

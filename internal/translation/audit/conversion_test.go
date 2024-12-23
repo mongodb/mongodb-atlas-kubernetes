@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
 
 func TestNewAuditConfig(t *testing.T) {

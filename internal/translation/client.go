@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 )
 
 func NewVersionedClient(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*admin.APIClient, error) {

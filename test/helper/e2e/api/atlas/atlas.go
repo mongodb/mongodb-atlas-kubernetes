@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/debug"
 )
 

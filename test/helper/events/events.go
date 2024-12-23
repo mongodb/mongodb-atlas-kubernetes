@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 )
 
 func EventExists(k8sClient client.Client, createdResource api.AtlasCustomResource, expectedType, expectedReason, expectedMessageRegexp string) {

@@ -8,8 +8,8 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 )
 
 type IPAccessEntry struct {

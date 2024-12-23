@@ -16,7 +16,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 )
 

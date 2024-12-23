@@ -6,15 +6,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
-
 	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 // SearchIndex is the internal representation of the Atlas SearchIndex resource for the AKO usage

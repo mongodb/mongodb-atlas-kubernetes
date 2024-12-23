@@ -5,7 +5,7 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: mongodb-atlas-kubernetes
-repo: github.com/mongodb/mongodb-atlas-kubernetes
+repo: github.com/mongodb/mongodb-atlas-kubernetes/v2
 resources:
 - api:
     crdVersion: v1
@@ -14,7 +14,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasDeployment
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -23,7 +23,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasProject
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -32,7 +32,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasDatabaseUser
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -41,7 +41,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasBackupPolicy
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -50,7 +50,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasBackupSchedule
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -59,7 +59,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasTeam
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -68,7 +68,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasDataFederation
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -76,7 +76,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasStreamInstance
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -84,7 +84,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasStreamConnection
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -93,7 +93,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasSearchIndexConfigs
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -102,7 +102,7 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasPrivateEndpoint
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -111,6 +111,6 @@ resources:
   domain: mongodb.com
   group: atlas
   kind: AtlasCustomRole
-  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 version: "3"

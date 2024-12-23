@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
 
 func TestRetryUpdateOnConflict(t *testing.T) {
