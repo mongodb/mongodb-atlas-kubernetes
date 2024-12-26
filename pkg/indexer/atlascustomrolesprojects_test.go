@@ -39,7 +39,9 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 		"should return nil when there is an empty reference for external project": {
 			object: &akov2.AtlasCustomRole{
 				Spec: akov2.AtlasCustomRoleSpec{
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{},
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{},
+					},
 				},
 			},
 			expectedLogs: []observer.LoggedEntry{},
@@ -47,8 +49,10 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 		"should NOT return external project reference": {
 			object: &akov2.AtlasCustomRole{
 				Spec: akov2.AtlasCustomRoleSpec{
-					ExternalProjectIDRef: &akov2.ExternalProjectReference{
-						ID: "external-project-id",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: "external-project-id",
+						},
 					},
 				},
 			},
@@ -58,8 +62,10 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 		"should return nil when there is an empty reference for project": {
 			object: &akov2.AtlasCustomRole{
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{
-						Name: "",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "",
+						},
 					},
 				},
 			},
@@ -72,8 +78,10 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 					Namespace: "testNamespace",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{
-						Name: "not-found-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "not-found-project",
+						},
 					},
 				},
 			},
@@ -87,8 +95,10 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 					Namespace: "ns",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{
-						Name: "internal-project-id",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "internal-project-id",
+						},
 					},
 				},
 			},
@@ -102,9 +112,11 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 					Namespace: "nsCustomRole",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
-					ProjectRef: &common.ResourceRefNamespaced{
-						Name:      "internal-project-id",
-						Namespace: "ns",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "internal-project-id",
+							Namespace: "ns",
+						},
 					},
 				},
 			},

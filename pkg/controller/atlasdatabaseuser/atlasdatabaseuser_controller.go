@@ -39,14 +39,13 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
@@ -57,18 +56,14 @@ var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authent
 
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
-	Client                      client.Client
-	Log                         *zap.SugaredLogger
+	reconciler.AtlasReconciler
+	AtlasProvider               atlas.Provider
 	Scheme                      *runtime.Scheme
 	EventRecorder               record.EventRecorder
-	AtlasProvider               atlas.Provider
 	GlobalPredicates            []predicate.Predicate
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	independentSyncPeriod       time.Duration
-
-	dbUserService     dbuser.AtlasUsersService
-	deploymentService deployment.AtlasDeploymentsService
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
@@ -285,12 +280,14 @@ func NewAtlasDatabaseUserReconciler(
 	logger *zap.Logger,
 ) *AtlasDatabaseUserReconciler {
 	return &AtlasDatabaseUserReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client: mgr.GetClient(),
+			Log:    logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		},
+		AtlasProvider:            atlasProvider,
 		Scheme:                   mgr.GetScheme(),
-		Client:                   mgr.GetClient(),
 		EventRecorder:            mgr.GetEventRecorderFor("AtlasDatabaseUser"),
 		GlobalPredicates:         predicates,
-		Log:                      logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
 	}
