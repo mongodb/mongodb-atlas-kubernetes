@@ -7,7 +7,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 )
 
 func TestRoundtrip_EncryptionAtRest(t *testing.T) {
