@@ -135,6 +135,7 @@ func isGCPWithoutPrivateEndpoints(deployment *akov2.ServerlessSpec) bool {
 }
 
 func listServerlessPrivateEndpoints(service *workflow.Context, projectID, deploymentName string) ([]admin.ServerlessTenantEndpoint, error) {
+	// this endpoint does not offer paginated responses
 	privateEndpoints, _, err := service.SdkClient.ServerlessPrivateEndpointsApi.
 		ListServerlessPrivateEndpoints(service.Context, projectID, deploymentName).
 		Execute()

@@ -11,6 +11,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
@@ -275,32 +276,41 @@ func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, g
 
 func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeeringApi, groupID string) ([]admin.BaseNetworkPeeringConnectionSettings, error) {
 	var peersList []admin.BaseNetworkPeeringConnectionSettings
-	listAWS, _, err := peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
-		GroupId:      groupID,
-		ProviderName: admin.PtrString(string(provider.ProviderAWS)),
-	}).Execute()
+	listAWS, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
+		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
+			GroupId:      groupID,
+			ProviderName: admin.PtrString(string(provider.ProviderAWS)),
+			PageNum:      &pageNum,
+		}).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network peers for AWS: %w", err)
 	}
-	peersList = append(peersList, listAWS.GetResults()...)
+	peersList = append(peersList, listAWS...)
 
-	listGCP, _, err := peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
-		GroupId:      groupID,
-		ProviderName: admin.PtrString(string(provider.ProviderGCP)),
-	}).Execute()
+	listGCP, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
+		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
+			GroupId:      groupID,
+			ProviderName: admin.PtrString(string(provider.ProviderGCP)),
+			PageNum:      &pageNum,
+		}).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network peers for GCP: %w", err)
 	}
-	peersList = append(peersList, listGCP.GetResults()...)
+	peersList = append(peersList, listGCP...)
 
-	listAzure, _, err := peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
-		GroupId:      groupID,
-		ProviderName: admin.PtrString(string(provider.ProviderAzure)),
-	}).Execute()
+	listAzure, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
+		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
+			GroupId:      groupID,
+			ProviderName: admin.PtrString(string(provider.ProviderAzure)),
+			PageNum:      &pageNum,
+		}).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network peers for Azure: %w", err)
 	}
-	peersList = append(peersList, listAzure.GetResults()...)
+	peersList = append(peersList, listAzure...)
 	return peersList, nil
 }
 

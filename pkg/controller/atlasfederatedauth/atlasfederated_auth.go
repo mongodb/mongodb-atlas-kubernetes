@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/google/go-cmp/cmp"
 	adminv20231115008 "go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -83,13 +85,15 @@ func prepareProjectList(ctx context.Context, client *adminv20231115008.APIClient
 		return nil, errors.New("client is not created")
 	}
 
-	projects, _, err := client.ProjectsApi.ListProjects(ctx).Execute()
+	projects, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[adminv20231115008.Group], *http.Response, error) {
+		return client.ProjectsApi.ListProjects(ctx).PageNum(pageNum).Execute()
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	result := make(map[string]string, len(projects.GetResults()))
-	for _, p := range projects.GetResults() {
+	result := make(map[string]string, len(projects))
+	for _, p := range projects {
 		result[p.GetName()] = p.GetId()
 	}
 

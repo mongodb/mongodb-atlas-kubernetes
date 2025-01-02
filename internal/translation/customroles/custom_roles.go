@@ -38,6 +38,7 @@ func (s *CustomRoles) Get(ctx context.Context, projectID string, roleName string
 }
 
 func (s *CustomRoles) List(ctx context.Context, projectID string) ([]CustomRole, error) {
+	// custom database roles does not offer paginated resources.
 	atlasRoles, _, err := s.roleAPI.ListCustomDatabaseRoles(ctx, projectID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list custom roles from Atlas: %w", err)

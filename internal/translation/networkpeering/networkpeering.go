@@ -3,10 +3,12 @@ package networkpeering
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 )
 
@@ -66,28 +68,19 @@ func (np *networkPeeringService) ListPeers(ctx context.Context, projectID string
 }
 
 func (np *networkPeeringService) listPeersForProvider(ctx context.Context, projectID string, providerName provider.ProviderName) ([]NetworkPeer, error) {
-	results := []NetworkPeer{}
-	pageNum := 1
-	listOpts := &admin.ListPeeringConnectionsApiParams{
-		GroupId:      projectID,
-		ProviderName: admin.PtrString(string(providerName)),
-		PageNum:      pointer.MakePtr(pageNum),
+	results, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
+		p := &admin.ListPeeringConnectionsApiParams{
+			GroupId:      projectID,
+			ProviderName: admin.PtrString(string(providerName)),
+			PageNum:      pointer.MakePtr(pageNum),
+		}
+		return np.peeringAPI.ListPeeringConnectionsWithParams(ctx, p).Execute()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list network peers: %w", err)
 	}
-	for {
-		page, _, err := np.peeringAPI.ListPeeringConnectionsWithParams(ctx, listOpts).Execute()
-		if err != nil {
-			return nil, fmt.Errorf("failed to list network peers: %w", err)
-		}
-		list, err := fromAtlasConnectionList(page.GetResults())
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert results to peer list: %w", err)
-		}
-		results = append(results, list...)
-		if len(results) >= page.GetTotalCount() {
-			return results, nil
-		}
-		pageNum += 1
-	}
+
+	return fromAtlasConnectionList(results)
 }
 
 func (np *networkPeeringService) DeletePeer(ctx context.Context, projectID, peerID string) error {

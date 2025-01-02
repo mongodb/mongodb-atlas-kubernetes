@@ -7,6 +7,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
@@ -49,11 +50,13 @@ func NewTeamsAPIService(teamAPI admin.TeamsApi, userAPI admin.MongoDBCloudUsersA
 }
 
 func (tm *TeamsAPI) ListProjectTeams(ctx context.Context, projectID string) ([]AssignedTeam, error) {
-	atlasAssignedTeams, _, err := tm.teamsAPI.ListProjectTeams(ctx, projectID).Execute()
+	atlasAssignedTeams, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.TeamRole], *http.Response, error) {
+		return tm.teamsAPI.ListProjectTeams(ctx, projectID).PageNum(pageNum).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project team list from Atlas: %w", err)
 	}
-	return TeamRolesFromAtlas(atlasAssignedTeams.GetResults()), err
+	return TeamRolesFromAtlas(atlasAssignedTeams), err
 }
 
 func (tm *TeamsAPI) GetTeamByName(ctx context.Context, orgID, teamName string) (*AssignedTeam, error) {
