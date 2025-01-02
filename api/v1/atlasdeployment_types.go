@@ -68,6 +68,9 @@ type AtlasDeploymentSpec struct {
 	// ProcessArgs allows to modify Advanced Configuration Options
 	// +optional
 	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+
+	// Configuration for the Flex cluster API. https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Flex-Clusters
+	FlexSpec *FlexSpec `json:"flexSpec,omitempty"`
 }
 
 type SearchNode struct {
@@ -482,6 +485,10 @@ func (c *AtlasDeployment) IsAdvancedDeployment() bool {
 	return c.Spec.DeploymentSpec != nil
 }
 
+func (c *AtlasDeployment) IsFlex() bool {
+	return c.Spec.FlexSpec != nil
+}
+
 func (c *AtlasDeployment) GetReplicationSetID() string {
 	if len(c.Status.ReplicaSets) > 0 {
 		return c.Status.ReplicaSets[0].ID
@@ -528,6 +535,34 @@ func (c *AtlasDeployment) Credentials() *api.LocalObjectReference {
 
 func (c *AtlasDeployment) ProjectDualRef() *ProjectDualReference {
 	return &c.Spec.ProjectDualReference
+}
+
+type FlexSpec struct {
+	// Human-readable label that identifies the instance.
+	Name string `json:"name"`
+
+	// List that contains key-value pairs between 1 to 255 characters in length for tagging and categorizing the instance.
+	// +kubebuilder:validation:MaxItems=50
+	// +optional
+	Tags []*TagSpec `json:"tags,omitempty"`
+
+	// Flag that indicates whether termination protection is enabled on the cluster.
+	// If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
+	// +kubebuilder:default:=false
+	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
+
+	// Group of cloud provider settings that configure the provisioned MongoDB flex cluster.
+	ProviderSettings *FlexProviderSettings `json:"providerSettings"`
+}
+
+type FlexProviderSettings struct {
+	// Cloud service provider on which MongoDB Atlas provisions the flex cluster.
+	// +kubebuilder:validation:Enum=AWS;GCP;AZURE
+	BackingProviderName string `json:"backingProviderName,omitempty"`
+
+	// Human-readable label that identifies the geographic location of your MongoDB flex cluster.
+	// The region you choose can affect network latency for clients accessing your databases.
+	RegionName string `json:"regionName,omitempty"`
 }
 
 // ************************************ Builder methods *************************************************

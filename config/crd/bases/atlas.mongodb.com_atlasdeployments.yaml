@@ -628,6 +628,63 @@ spec:
                 required:
                 - id
                 type: object
+              flexSpec:
+                description: Configuration for the Flex cluster API. https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Flex-Clusters
+                properties:
+                  name:
+                    description: Human-readable label that identifies the instance.
+                    type: string
+                  providerSettings:
+                    description: Group of cloud provider settings that configure the
+                      provisioned MongoDB flex cluster.
+                    properties:
+                      backingProviderName:
+                        description: Cloud service provider on which MongoDB Atlas
+                          provisions the flex cluster.
+                        enum:
+                        - AWS
+                        - GCP
+                        - AZURE
+                        type: string
+                      regionName:
+                        description: |-
+                          Human-readable label that identifies the geographic location of your MongoDB flex cluster.
+                          The region you choose can affect network latency for clients accessing your databases.
+                        type: string
+                    type: object
+                  tags:
+                    description: List that contains key-value pairs between 1 to 255
+                      characters in length for tagging and categorizing the instance.
+                    items:
+                      description: TagSpec holds a key-value pair for resource tagging
+                        on this deployment.
+                      properties:
+                        key:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+                          type: string
+                        value:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    maxItems: 50
+                    type: array
+                  terminationProtectionEnabled:
+                    default: false
+                    description: |-
+                      Flag that indicates whether termination protection is enabled on the cluster.
+                      If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
+                    type: boolean
+                required:
+                - name
+                - providerSettings
+                type: object
               processArgs:
                 description: ProcessArgs allows to modify Advanced Configuration Options
                 properties:
