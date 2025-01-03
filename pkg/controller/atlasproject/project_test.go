@@ -154,7 +154,7 @@ func TestHandleProject(t *testing.T) {
 				mockPeeringEndpointAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
 					Return(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI})
 				mockPeeringEndpointAPI.EXPECT().
-					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
+					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}.PageNum(1)).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
 
 				return &admin.APIClient{
@@ -1023,9 +1023,9 @@ func TestDelete(t *testing.T) {
 
 				mockPeeringEndpointAPI := mockadmin.NewNetworkPeeringApi(t)
 				mockPeeringEndpointAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
-					Return(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI})
+					Return(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}.PageNum(1))
 				mockPeeringEndpointAPI.EXPECT().
-					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}).
+					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}.PageNum(1)).
 					Return(&admin.PaginatedContainerPeer{}, nil, nil)
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,

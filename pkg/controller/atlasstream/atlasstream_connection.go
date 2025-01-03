@@ -3,6 +3,7 @@ package atlasstream
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -11,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -52,14 +54,17 @@ func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 	akoStreamInstance *akov2.AtlasStreamInstance,
 	atlasStreamInstance *admin.StreamsTenant,
 ) (ctrl.Result, error) {
-	streamConnections, _, err := ctx.SdkClient.StreamsApi.
-		ListStreamConnections(ctx.Context, project.ID(), akoStreamInstance.Spec.Name).
-		Execute()
+	streamConnections, err := paging.ListAll(ctx.Context, func(c context.Context, pageNum int) (paging.Response[admin.StreamsConnection], *http.Response, error) {
+		return ctx.SdkClient.StreamsApi.
+			ListStreamConnections(c, project.ID(), akoStreamInstance.Spec.Name).
+			PageNum(pageNum).
+			Execute()
+	})
 	if err != nil {
 		return r.terminate(ctx, workflow.StreamConnectionNotConfigured, err)
 	}
 
-	ops, err := r.sortConnectionRegistryTasks(ctx, akoStreamInstance, streamConnections.GetResults())
+	ops, err := r.sortConnectionRegistryTasks(ctx, akoStreamInstance, streamConnections)
 	if err != nil {
 		return r.terminate(ctx, workflow.StreamConnectionNotConfigured, err)
 	}

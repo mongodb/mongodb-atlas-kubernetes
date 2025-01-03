@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
@@ -11,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -130,15 +132,18 @@ func readNotificationSecret(ctx context.Context, kubeClient client.Client, res c
 
 func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.Result {
 	logger := service.Log
-	existedAlertConfigs, _, err := service.SdkClient.AlertConfigurationsApi.
-		ListAlertConfigurations(service.Context, groupID).
-		Execute()
+	existedAlertConfigs, err := paging.ListAll(service.Context, func(ctx context.Context, pageNum int) (paging.Response[admin.GroupAlertsConfig], *http.Response, error) {
+		return service.SdkClient.AlertConfigurationsApi.
+			ListAlertConfigurations(ctx, groupID).
+			PageNum(pageNum).
+			Execute()
+	})
 	if err != nil {
 		logger.Errorf("failed to list alert configurations: %v", err)
 		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to list alert configurations: %v", err))
 	}
 
-	diff := sortAlertConfigs(logger, alertSpec, existedAlertConfigs.GetResults())
+	diff := sortAlertConfigs(logger, alertSpec, existedAlertConfigs)
 	logger.Debugf("to create %v, to create statuses %v, to delete %v", len(diff.Create), len(diff.CreateStatus), len(diff.Delete))
 
 	newStatuses := createAlertConfigs(service, groupID, diff.Create)

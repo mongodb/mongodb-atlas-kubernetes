@@ -3,8 +3,11 @@ package ipaccesslist
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
 type IPAccessListService interface {
@@ -19,12 +22,14 @@ type IPAccessList struct {
 }
 
 func (i *IPAccessList) List(ctx context.Context, projectID string) (IPAccessEntries, error) {
-	netPermResult, _, err := i.ipAccessListAPI.ListProjectIpAccessLists(ctx, projectID).Execute()
+	netPermResult, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.NetworkPermissionEntry], *http.Response, error) {
+		return i.ipAccessListAPI.ListProjectIpAccessLists(ctx, projectID).PageNum(pageNum).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ip access list from Atlas: %w", err)
 	}
 
-	return fromAtlas(netPermResult.GetResults()), nil
+	return fromAtlas(netPermResult), nil
 }
 
 func (i *IPAccessList) Add(ctx context.Context, projectID string, entries IPAccessEntries) error {

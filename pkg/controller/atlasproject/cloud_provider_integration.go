@@ -48,6 +48,7 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov
 }
 
 func syncCloudProviderIntegration(workflowCtx *workflow.Context, projectID string, cpaSpecs []akov2.CloudProviderIntegration) (bool, error) {
+	// this endpoint does not offer paginated responses
 	atlasCPAs, _, err := workflowCtx.SdkClient.CloudProviderAccessApi.
 		ListCloudProviderAccessRoles(workflowCtx.Context, projectID).
 		Execute()

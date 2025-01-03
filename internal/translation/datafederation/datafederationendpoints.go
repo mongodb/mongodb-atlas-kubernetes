@@ -3,12 +3,14 @@ package datafederation
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 )
 
@@ -31,12 +33,14 @@ func NewDatafederationPrivateEndpointService(ctx context.Context, provider atlas
 }
 
 func (d *DatafederationPrivateEndpoints) List(ctx context.Context, projectID string) ([]*DatafederationPrivateEndpointEntry, error) {
-	paginatedResponse, _, err := d.api.ListDataFederationPrivateEndpoints(ctx, projectID).Execute()
+	results, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.PrivateNetworkEndpointIdEntry], *http.Response, error) {
+		return d.api.ListDataFederationPrivateEndpoints(ctx, projectID).PageNum(pageNum).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list data federation private endpoints from Atlas: %w", err)
 	}
 
-	return endpointsFromAtlas(paginatedResponse.GetResults(), projectID)
+	return endpointsFromAtlas(results, projectID)
 }
 
 func (d *DatafederationPrivateEndpoints) Create(ctx context.Context, aep *DatafederationPrivateEndpointEntry) error {

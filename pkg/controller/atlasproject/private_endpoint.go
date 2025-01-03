@@ -226,6 +226,7 @@ func (a atlasPE) InterfaceEndpointIDs() []string {
 func getAllPrivateEndpoints(ctx context.Context, client *admin.APIClient, projectID string) (result []atlasPE, err error) {
 	providers := []string{"AWS", "AZURE", "GCP"}
 	for _, p := range providers {
+		// this endpoint does not offer paginated resources.
 		atlasPeConnections, _, err := client.PrivateEndpointServicesApi.ListPrivateEndpointServices(ctx, projectID, p).Execute()
 		if err != nil {
 			return nil, err
