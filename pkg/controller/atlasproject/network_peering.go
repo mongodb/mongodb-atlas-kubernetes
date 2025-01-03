@@ -280,8 +280,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderAWS)),
-			PageNum:      &pageNum,
-		}).Execute()
+		}).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network peers for AWS: %w", err)
@@ -292,8 +291,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderGCP)),
-			PageNum:      &pageNum,
-		}).Execute()
+		}).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network peers for GCP: %w", err)
@@ -304,8 +302,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderAzure)),
-			PageNum:      &pageNum,
-		}).Execute()
+		}).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network peers for Azure: %w", err)

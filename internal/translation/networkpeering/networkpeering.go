@@ -72,9 +72,8 @@ func (np *networkPeeringService) listPeersForProvider(ctx context.Context, proje
 		p := &admin.ListPeeringConnectionsApiParams{
 			GroupId:      projectID,
 			ProviderName: admin.PtrString(string(providerName)),
-			PageNum:      pointer.MakePtr(pageNum),
 		}
-		return np.peeringAPI.ListPeeringConnectionsWithParams(ctx, p).Execute()
+		return np.peeringAPI.ListPeeringConnectionsWithParams(ctx, p).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network peers: %w", err)
