@@ -134,7 +134,7 @@ func TestAll(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			response, err := All(ctx, responder(tc.pages))
+			response, err := ListAll(ctx, responder(tc.pages))
 			gotErr := ""
 			if err != nil {
 				gotErr = err.Error()

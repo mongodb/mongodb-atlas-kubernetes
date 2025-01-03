@@ -68,7 +68,7 @@ func (np *networkPeeringService) ListPeers(ctx context.Context, projectID string
 }
 
 func (np *networkPeeringService) listPeersForProvider(ctx context.Context, projectID string, providerName provider.ProviderName) ([]NetworkPeer, error) {
-	results, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
+	results, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
 		p := &admin.ListPeeringConnectionsApiParams{
 			GroupId:      projectID,
 			ProviderName: admin.PtrString(string(providerName)),

@@ -33,7 +33,7 @@ func NewDatafederationPrivateEndpointService(ctx context.Context, provider atlas
 }
 
 func (d *DatafederationPrivateEndpoints) List(ctx context.Context, projectID string) ([]*DatafederationPrivateEndpointEntry, error) {
-	results, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.PrivateNetworkEndpointIdEntry], *http.Response, error) {
+	results, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.PrivateNetworkEndpointIdEntry], *http.Response, error) {
 		return d.api.ListDataFederationPrivateEndpoints(ctx, projectID).PageNum(pageNum).Execute()
 	})
 	if err != nil {

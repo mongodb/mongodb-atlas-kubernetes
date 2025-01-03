@@ -85,7 +85,7 @@ func prepareProjectList(ctx context.Context, client *adminv20231115008.APIClient
 		return nil, errors.New("client is not created")
 	}
 
-	projects, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[adminv20231115008.Group], *http.Response, error) {
+	projects, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[adminv20231115008.Group], *http.Response, error) {
 		return client.ProjectsApi.ListProjects(ctx).PageNum(pageNum).Execute()
 	})
 	if err != nil {

@@ -50,7 +50,7 @@ func NewTeamsAPIService(teamAPI admin.TeamsApi, userAPI admin.MongoDBCloudUsersA
 }
 
 func (tm *TeamsAPI) ListProjectTeams(ctx context.Context, projectID string) ([]AssignedTeam, error) {
-	atlasAssignedTeams, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.TeamRole], *http.Response, error) {
+	atlasAssignedTeams, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.TeamRole], *http.Response, error) {
 		return tm.teamsAPI.ListProjectTeams(ctx, projectID).PageNum(pageNum).Execute()
 	})
 	if err != nil {

@@ -132,7 +132,7 @@ func readNotificationSecret(ctx context.Context, kubeClient client.Client, res c
 
 func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.Result {
 	logger := service.Log
-	existedAlertConfigs, err := paging.All(service.Context, func(ctx context.Context, pageNum int) (paging.Response[admin.GroupAlertsConfig], *http.Response, error) {
+	existedAlertConfigs, err := paging.ListAll(service.Context, func(ctx context.Context, pageNum int) (paging.Response[admin.GroupAlertsConfig], *http.Response, error) {
 		return service.SdkClient.AlertConfigurationsApi.
 			ListAlertConfigurations(ctx, groupID).
 			PageNum(pageNum).

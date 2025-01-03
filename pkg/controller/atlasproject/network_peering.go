@@ -276,7 +276,7 @@ func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, g
 
 func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeeringApi, groupID string) ([]admin.BaseNetworkPeeringConnectionSettings, error) {
 	var peersList []admin.BaseNetworkPeeringConnectionSettings
-	listAWS, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
+	listAWS, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
 		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderAWS)),
@@ -288,7 +288,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 	}
 	peersList = append(peersList, listAWS...)
 
-	listGCP, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
+	listGCP, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
 		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderGCP)),
@@ -300,7 +300,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 	}
 	peersList = append(peersList, listGCP...)
 
-	listAzure, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
+	listAzure, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
 		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderAzure)),

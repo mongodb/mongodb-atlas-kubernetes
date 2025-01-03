@@ -22,7 +22,7 @@ type IPAccessList struct {
 }
 
 func (i *IPAccessList) List(ctx context.Context, projectID string) (IPAccessEntries, error) {
-	netPermResult, err := paging.All(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.NetworkPermissionEntry], *http.Response, error) {
+	netPermResult, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.NetworkPermissionEntry], *http.Response, error) {
 		return i.ipAccessListAPI.ListProjectIpAccessLists(ctx, projectID).PageNum(pageNum).Execute()
 	})
 	if err != nil {
