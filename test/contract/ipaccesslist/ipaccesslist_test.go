@@ -41,6 +41,7 @@ func TestList(t *testing.T) {
 func generateRandomIP() string {
 	ip := make(net.IP, net.IPv4len)
 	for i := 0; i < net.IPv4len; i++ {
+		//nolint:gosec
 		ip[i] = byte(rand.Intn(256))
 	}
 	return ip.String()
