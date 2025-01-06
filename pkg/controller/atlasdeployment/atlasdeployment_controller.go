@@ -159,6 +159,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	isServerless := atlasDeployment.IsServerless()
+	isFlex := atlasDeployment.IsFlex()
 	wasDeleted := !atlasDeployment.GetDeletionTimestamp().IsZero()
 	existsInAtlas := deploymentInAtlas != nil
 
@@ -177,6 +178,12 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			serverlessDeployment = deploymentInAtlas.(*deployment.Serverless)
 		}
 		return r.handleServerlessInstance(workflowCtx, deploymentInAKO.(*deployment.Serverless), serverlessDeployment)
+	case !wasDeleted && isFlex:
+		var flexDeployment *deployment.Flex
+		if existsInAtlas {
+			flexDeployment = deploymentInAtlas.(*deployment.Flex)
+		}
+		return r.handleFlexInstance(workflowCtx, deploymentInAKO.(*deployment.Flex), flexDeployment)
 	case !wasDeleted && !isServerless:
 		var clusterDeployment *deployment.Cluster
 		if existsInAtlas {
