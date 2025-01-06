@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
@@ -48,6 +50,7 @@ type GlobalClusterService interface {
 type ProductionAtlasDeployments struct {
 	clustersAPI      admin.ClustersApi
 	serverlessAPI    admin.ServerlessInstancesApi
+	flexAPI          adminv20241113001.FlexClustersApi
 	globalClusterAPI admin.GlobalClustersApi
 	isGov            bool
 }
@@ -155,6 +158,15 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		return nil, err
 	}
 
+	flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
+	if err == nil {
+		return flexFromAtlas(flex), err
+	}
+
+	if !admin.IsErrorCode(err, atlas.ClusterNotFound) {
+		return nil, err
+	}
+
 	return nil, nil
 }
 
@@ -174,6 +186,12 @@ func (ds *ProductionAtlasDeployments) CreateDeployment(ctx context.Context, depl
 		}
 
 		return serverlessFromAtlas(serverless), nil
+	case *Flex:
+		flex, _, err := ds.flexAPI.CreateFlexCluster(ctx, deployment.GetProjectID(), flexCreateToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+		return flexFromAtlas(flex), nil
 	}
 
 	return nil, errors.New("unable to create deployment: unknown type")
@@ -195,6 +213,13 @@ func (ds *ProductionAtlasDeployments) UpdateDeployment(ctx context.Context, depl
 		}
 
 		return serverlessFromAtlas(serverless), nil
+	case *Flex:
+		flex, _, err := ds.flexAPI.UpdateFlexCluster(ctx, deployment.GetProjectID(), deployment.GetName(), flexUpdateToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		return flexFromAtlas(flex), nil
 	}
 
 	return nil, errors.New("unable to create deployment: unknown type")
@@ -208,6 +233,8 @@ func (ds *ProductionAtlasDeployments) DeleteDeployment(ctx context.Context, depl
 		_, err = ds.clustersAPI.DeleteCluster(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
 	case *Serverless:
 		_, _, err = ds.serverlessAPI.DeleteServerlessInstance(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
+	case *Flex:
+		_, _, err = ds.flexAPI.DeleteFlexCluster(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
 	}
 
 	if err != nil {
