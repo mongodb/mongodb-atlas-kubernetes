@@ -8,6 +8,7 @@ import (
 	mock "github.com/stretchr/testify/mock"
 
 	deployment "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 

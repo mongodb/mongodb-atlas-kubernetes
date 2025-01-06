@@ -343,6 +343,51 @@ func (_c *DeploymentMock_GetState_Call) RunAndReturn(run func() string) *Deploym
 	return _c
 }
 
+// IsFlex provides a mock function with given fields:
+func (_m *DeploymentMock) IsFlex() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsFlex")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// DeploymentMock_IsFlex_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsFlex'
+type DeploymentMock_IsFlex_Call struct {
+	*mock.Call
+}
+
+// IsFlex is a helper method to define mock.On call
+func (_e *DeploymentMock_Expecter) IsFlex() *DeploymentMock_IsFlex_Call {
+	return &DeploymentMock_IsFlex_Call{Call: _e.mock.On("IsFlex")}
+}
+
+func (_c *DeploymentMock_IsFlex_Call) Run(run func()) *DeploymentMock_IsFlex_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DeploymentMock_IsFlex_Call) Return(_a0 bool) *DeploymentMock_IsFlex_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *DeploymentMock_IsFlex_Call) RunAndReturn(run func() bool) *DeploymentMock_IsFlex_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsServerless provides a mock function with given fields:
 func (_m *DeploymentMock) IsServerless() bool {
 	ret := _m.Called()
