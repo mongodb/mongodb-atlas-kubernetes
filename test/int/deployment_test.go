@@ -19,19 +19,19 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasdeployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
@@ -798,8 +798,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					return resources.CheckCondition(
 						k8sClient,
 						createdDeployment,
-						api.
-							FalseCondition(api.DeploymentReadyType).
+						api.FalseCondition(api.DeploymentReadyType).
 							WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
 							WithMessageRegexp("CANNOT_UPDATE_PAUSED_CLUSTER"),
 					)
@@ -852,8 +851,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					return resources.CheckCondition(
 						k8sClient,
 						createdDeployment,
-						api.
-							FalseCondition(api.DeploymentReadyType).
+						api.FalseCondition(api.DeploymentReadyType).
 							WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
 							WithMessageRegexp(".*INVALID_ENUM_VALUE.*"),
 					)
@@ -1170,8 +1168,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					return resources.CheckCondition(
 						k8sClient,
 						createdDeployment,
-						api.
-							FalseCondition(api.ValidationSucceeded).
+						api.FalseCondition(api.ValidationSucceeded).
 							WithReason(string(workflow.Internal)).
 							WithMessageRegexp("instance size is invalid"),
 					)

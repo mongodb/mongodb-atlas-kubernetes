@@ -209,7 +209,7 @@ bin/$(TARGET_OS)/$(TARGET_ARCH):
 
 bin/$(TARGET_OS)/$(TARGET_ARCH)/manager: $(GO_SOURCES) bin/$(TARGET_OS)/$(TARGET_ARCH)
 	@echo "Building operator with version $(VERSION); $(TARGET_OS) - $(TARGET_ARCH)"
-	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version.Version=$(VERSION)" cmd/manager/main.go
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version.Version=$(VERSION)" cmd/main.go
 	@touch $@
 
 bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
@@ -234,7 +234,7 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
-	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/..." output:crd:artifacts:config=config/crd/bases
+	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./internal/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 
 
@@ -252,8 +252,7 @@ fmt: $(TIMESTAMPS_DIR)/fmt ## Run go fmt against code
 
 fix-lint:
 	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
-	goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -w ./pkg
-	goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -w ./test
+	goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -w ./internal ./pkg ./test
 	golangci-lint run --fix
 
 $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
@@ -265,7 +264,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
+	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/..."
 	$(MAKE) fmt
 
 .PHONY: check-missing-files

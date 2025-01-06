@@ -14,7 +14,7 @@ mkdir -p "${crds_dir}"
 mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
-controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./pkg/..." output:crd:artifacts:config=config/crd/bases
+controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./internal/..." output:crd:artifacts:config=config/crd/bases
 cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
 cd -
 ./scripts/split_roles_yaml.sh
@@ -45,7 +45,7 @@ echo "Created namespaced config"
 cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
-operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
+operator-sdk generate kustomize manifests -q --apis-dir=api
 # get the current version so we could put it into the "replaces:"
 current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml)"
 

@@ -16,9 +16,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sethvargo/go-password/password"
-	yaml "gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v3"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
 
 // LoadUserProjectConfig load configuration into object

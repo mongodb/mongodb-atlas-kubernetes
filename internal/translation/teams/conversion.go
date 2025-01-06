@@ -3,9 +3,8 @@ package teams
 import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 type Team struct {
