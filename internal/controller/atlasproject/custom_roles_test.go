@@ -215,6 +215,137 @@ func TestEnsureCustomRoles(t *testing.T) {
 			isOK: true,
 		},
 		{
+			name: "Roles in AKO and in last applied config. Delete only those that were deleted from the spec",
+			projectAnnotations: map[string]string{
+				customresource.AnnotationLastAppliedConfiguration: func() string {
+					d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+						CustomRoles: []akov2.CustomRole{
+							{
+								Name: "test-role",
+								InheritedRoles: []akov2.Role{
+									{Name: "role", Database: "db"},
+								},
+								Actions: []akov2.Action{
+									{
+										Name: "action",
+										Resources: []akov2.Resource{
+											{
+												Database:   pointer.MakePtr("db"),
+												Cluster:    pointer.MakePtr(true),
+												Collection: pointer.MakePtr("test-collection"),
+											},
+										},
+									},
+								},
+							},
+							{
+								Name: "test-role-2",
+								InheritedRoles: []akov2.Role{
+									{Name: "role2", Database: "db2"},
+								},
+								Actions: []akov2.Action{
+									{
+										Name: "action2",
+										Resources: []akov2.Resource{
+											{Database: pointer.MakePtr("db2")},
+										},
+									},
+								},
+							},
+						},
+					})
+					return string(d)
+				}(),
+			},
+			roles: []akov2.CustomRole{
+				{
+					Name: "test-role",
+					InheritedRoles: []akov2.Role{
+						{Name: "role", Database: "db"},
+					},
+					Actions: []akov2.Action{
+						{
+							Name: "action",
+							Resources: []akov2.Resource{
+								{
+									Database:   pointer.MakePtr("db"),
+									Cluster:    pointer.MakePtr(true),
+									Collection: pointer.MakePtr("test-collection"),
+								},
+							},
+						},
+					},
+				},
+			},
+			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
+				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+					Return(
+						[]admin.UserCustomDBRole{
+							{
+								RoleName: "test-role",
+								InheritedRoles: &[]admin.DatabaseInheritedRole{
+									{Role: "role", Db: "db"},
+								},
+								Actions: &[]admin.DatabasePrivilegeAction{
+									{
+										Action: "action",
+										Resources: &[]admin.DatabasePermittedNamespaceResource{
+											{
+												Db:         "db",
+												Collection: "test-collection",
+												Cluster:    true,
+											},
+										},
+									},
+								},
+							},
+							{
+								RoleName: "test-role-1",
+								InheritedRoles: &[]admin.DatabaseInheritedRole{
+									{Role: "role1", Db: "db1"},
+								},
+								Actions: &[]admin.DatabasePrivilegeAction{
+									{
+										Action: "action1",
+										Resources: &[]admin.DatabasePermittedNamespaceResource{
+											{Db: "db1"},
+										},
+									},
+								},
+							},
+							{
+								RoleName: "test-role-2",
+								InheritedRoles: &[]admin.DatabaseInheritedRole{
+									{Role: "role2", Db: "db2"},
+								},
+								Actions: &[]admin.DatabasePrivilegeAction{
+									{
+										Action: "action2",
+										Resources: &[]admin.DatabasePermittedNamespaceResource{
+											{Db: "db2"},
+										},
+									},
+								},
+							},
+						},
+						&http.Response{},
+						nil,
+					)
+				roleAPI.EXPECT().DeleteCustomDatabaseRole(context.Background(), "", "test-role-2").
+					Return(admin.DeleteCustomDatabaseRoleApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().DeleteCustomDatabaseRoleExecute(mock.Anything).
+					Return(
+						&http.Response{},
+						nil,
+					)
+				return roleAPI
+			}(),
+			isOK: true,
+		},
+		{
 			name: "Roles not in AKO but are in Atlas (Do not Delete) and NO previous in AKO",
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
