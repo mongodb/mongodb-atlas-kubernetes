@@ -61,9 +61,7 @@ func findRolesToDelete(prevSpec, akoRoles, atlasRoles []customroles.CustomRole) 
 	}
 	// Get roles from the current spec and remove the ones that are in the previous spec
 	for _, customRole := range akoRoles {
-		if _, exists := combinedAkoRoles[customRole.Name]; exists {
-			delete(combinedAkoRoles, customRole.Name)
-		}
+		delete(combinedAkoRoles, customRole.Name)
 	}
 
 	// Compare combinedAkoRoles with the current Atlas roles
