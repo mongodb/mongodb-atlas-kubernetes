@@ -45,12 +45,21 @@ Expect this branch to include the Software Security Development Lifecycle Policy
 
 ## Approve the Pull Request named "Release x.y.z"
 
-Review the Pull Request. Approve and merge it to `main`.
-The new job "Create Release" will be triggered and the following will be done:
+1. Review the Pull Request.
+1. Approve and merge it to `main`.
+
+At this point `main` represents what would become the next release, cut the release by doing:
+
+```shell
+$ git checkout -b main origin/main
+$ git tag vX.Y.Z # where X.Y.Z represent the version to be released
+$ git push origin vX.Y.Z
+```
+
+A new job "Create Release" will be triggered and the following will be done:
 * Atlas Operator image is built and pushed to DockerHub
 * Draft Release will be created with all commits since the previous release
-
-The "Create Release Branch" workflow is going to create a Pull Request pointing to a `release/X.Y.Z` branch. Once approved and merged, automation is going to create a `vX.Y.Z` tag.
+* A subsequent job will be triggered to create a SBOMs update PR
 
 ### SSDLC SBOMs PR
 
