@@ -50,16 +50,29 @@ func getLastAppliedCustomRoles(atlasProject *akov2.AtlasProject) ([]akov2.Custom
 	return lastAppliedSpec.CustomRoles, nil
 }
 
-func findRolesToDelete(prevSpec, atlasRoles []customroles.CustomRole) map[string]customroles.CustomRole {
+func findRolesToDelete(prevSpec, akoRoles, atlasRoles []customroles.CustomRole) map[string]customroles.CustomRole {
 	result := map[string]customroles.CustomRole{}
-	for atlasRoleIdx := range atlasRoles {
-		for specRoleIdx := range prevSpec {
-			if atlasRoles[atlasRoleIdx].Name == prevSpec[specRoleIdx].Name {
-				result[prevSpec[specRoleIdx].Name] = prevSpec[specRoleIdx]
-				continue
-			}
+	combinedAkoRoles := map[string]customroles.CustomRole{}
+	atlasRolesMap := mapCustomRolesByName(atlasRoles)
+
+	// Get roles from the previous spec
+	for _, customRole := range prevSpec {
+		combinedAkoRoles[customRole.Name] = customRole
+	}
+	// Get roles from the current spec and remove the ones that are in the previous spec
+	for _, customRole := range akoRoles {
+		if _, exists := combinedAkoRoles[customRole.Name]; exists {
+			delete(combinedAkoRoles, customRole.Name)
 		}
 	}
+
+	// Compare combinedAkoRoles with the current Atlas roles
+	for _, role := range combinedAkoRoles {
+		if _, exists := atlasRolesMap[role.Name]; exists {
+			result[role.Name] = role
+		}
+	}
+
 	return result
 }
 
@@ -94,7 +107,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 		service: customroles.NewCustomRoles(workflowCtx.SdkClient.CustomDatabaseRolesApi),
 	}
 
-	currentCustomRoles, err := r.service.List(r.ctx.Context, r.project.ID())
+	currentAtlasCustomRoles, err := r.service.List(r.ctx.Context, r.project.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
 	}
@@ -104,12 +117,12 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 		akoRoles[i] = customroles.NewCustomRole(&project.Spec.CustomRoles[i])
 	}
 
-	ops := calculateChanges(currentCustomRoles, akoRoles)
+	ops := calculateChanges(currentAtlasCustomRoles, akoRoles)
 
 	var deleteStatus map[string]status.CustomRole
 	if len(lastAppliedCustomRoles) > 0 {
 		deleteStatus = r.deleteCustomRoles(workflowCtx, project.ID(),
-			findRolesToDelete(convertToInternalRoles(lastAppliedCustomRoles), currentCustomRoles))
+			findRolesToDelete(convertToInternalRoles(lastAppliedCustomRoles), akoRoles, currentAtlasCustomRoles))
 	}
 	updateStatus := r.updateCustomRoles(workflowCtx, project.ID(), ops.Update)
 	createStatus := r.createCustomRoles(workflowCtx, project.ID(), ops.Create)
