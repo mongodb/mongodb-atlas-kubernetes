@@ -109,13 +109,12 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	results := make([]workflow.Result, 0, len(allIndexes))
 	for indexName, val := range allIndexes {
 		results = append(results, (&searchIndexReconciler{
-			ctx:           sr.ctx,
-			deployment:    sr.deployment,
-			k8sClient:     sr.k8sClient,
-			projectID:     sr.projectID,
-			indexName:     indexName,
-			searchService: sr.searchService,
-		}).Reconcile(val.spec, val.previous))
+			ctx:        sr.ctx,
+			deployment: sr.deployment,
+			k8sClient:  sr.k8sClient,
+			projectID:  sr.projectID,
+			indexName:  indexName,
+		}).Reconcile(val.spec, val.previous, sr.searchService))
 	}
 
 	allDeleted := true
