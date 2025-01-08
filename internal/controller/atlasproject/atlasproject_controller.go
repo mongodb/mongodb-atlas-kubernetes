@@ -61,7 +61,9 @@ type AtlasProjectReconciler struct {
 	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+}
 
+type AtlasProjectServices struct {
 	projectService          project.ProjectService
 	teamsService            teams.TeamsService
 	maintenanceService      maintenancewindow.MaintenanceWindowService
@@ -150,10 +152,11 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.SdkClient = atlasSdkClient
-	r.projectService = project.NewProjectAPIService(atlasSdkClient.ProjectsApi)
-	r.teamsService = teams.NewTeamsAPIService(atlasSdkClient.TeamsApi, atlasSdkClient.MongoDBCloudUsersApi)
-	r.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.MaintenanceWindowsApi)
-	r.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.EncryptionAtRestUsingCustomerKeyManagementApi)
+	services := AtlasProjectServices{}
+	services.projectService = project.NewProjectAPIService(atlasSdkClient.ProjectsApi)
+	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.TeamsApi, atlasSdkClient.MongoDBCloudUsersApi)
+	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.MaintenanceWindowsApi)
+	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.EncryptionAtRestUsingCustomerKeyManagementApi)
 
 	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
 	if err != nil {
@@ -164,11 +167,11 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx.OrgID = orgID
 	workflowCtx.Client = atlasClient
 
-	return r.handleProject(workflowCtx, orgID, atlasProject)
+	return r.handleProject(workflowCtx, orgID, atlasProject, &services)
 }
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
-func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Context, project *akov2.AtlasProject) (results []workflow.Result) {
+func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Context, project *akov2.AtlasProject, services *AtlasProjectServices) (results []workflow.Result) {
 	for k, v := range project.Annotations {
 		workflowCtx.Log.Debugf(k)
 		workflowCtx.Log.Debugf(v)
@@ -205,12 +208,12 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = r.ensureMaintenanceWindow(workflowCtx, project); result.IsOk() {
+	if result = r.ensureMaintenanceWindow(workflowCtx, project, services.maintenanceService); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.MaintenanceWindowReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureEncryptionAtRest(workflowCtx, project); result.IsOk() {
+	if result = r.ensureEncryptionAtRest(workflowCtx, project, services.encryptionAtRestService); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.EncryptionAtRestReadyType), "")
 	}
 	results = append(results, result)
@@ -230,7 +233,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = r.ensureAssignedTeams(workflowCtx, project); result.IsOk() {
+	if result = r.ensureAssignedTeams(workflowCtx, services.teamsService, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.ProjectTeamsReadyType), "")
 	}
 	results = append(results, result)

@@ -667,15 +667,17 @@ func TestHandleProject(t *testing.T) {
 				Build()
 
 			reconciler := &AtlasProjectReconciler{
-				Client:                  k8sClient,
-				Log:                     logger,
+				Client:        k8sClient,
+				Log:           logger,
+				EventRecorder: record.NewFakeRecorder(30),
+			}
+			services := &AtlasProjectServices{
 				projectService:          tt.projectServiceMocker(),
 				teamsService:            tt.teamServiceMocker(),
 				encryptionAtRestService: tt.encryptionAtRestMocker(),
-				EventRecorder:           record.NewFakeRecorder(30),
 			}
 
-			result, err := reconciler.handleProject(ctx, "my-org-id", tt.project)
+			result, err := reconciler.handleProject(ctx, "my-org-id", tt.project, services)
 			require.NoError(t, err)
 			assert.Equal(t, tt.result, result)
 			assert.True(
@@ -818,8 +820,10 @@ func TestCreate(t *testing.T) {
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
 			reconciler := &AtlasProjectReconciler{
-				Client:         k8sClient,
-				Log:            logger,
+				Client: k8sClient,
+				Log:    logger,
+			}
+			services := &AtlasProjectServices{
 				projectService: tt.projectServiceMocker(),
 			}
 			ctx := &workflow.Context{
@@ -827,7 +831,7 @@ func TestCreate(t *testing.T) {
 				Log:     logger,
 			}
 
-			result, err := reconciler.create(ctx, "my-org-id", tt.project)
+			result, err := reconciler.create(ctx, "my-org-id", tt.project, services.projectService)
 			require.NoError(t, err)
 			assert.Equal(t, tt.result, result)
 			assert.True(
@@ -1136,13 +1140,15 @@ func TestDelete(t *testing.T) {
 						return tt.atlasClientMocker(), "", nil
 					},
 				},
-				projectService: tt.projectServiceMocker(),
-				teamsService:   tt.teamServiceMocker(),
-				EventRecorder:  record.NewFakeRecorder(1),
+				EventRecorder: record.NewFakeRecorder(1),
 			}
 
 			atlasProject := tt.objects[0].(*akov2.AtlasProject)
-			result, err := reconciler.delete(ctx, "my-org-id", atlasProject)
+			services := &AtlasProjectServices{
+				projectService: tt.projectServiceMocker(),
+				teamsService:   tt.teamServiceMocker(),
+			}
+			result, err := reconciler.delete(ctx, services, "my-org-id", atlasProject)
 			require.NoError(t, err)
 			assert.Equal(t, tt.result, result)
 			assert.True(

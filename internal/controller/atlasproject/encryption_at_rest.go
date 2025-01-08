@@ -20,7 +20,7 @@ const (
 	ObjectIDRegex = "^([a-f0-9]{24})$"
 )
 
-func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *akov2.AtlasProject, encryptionAtRestService encryptionatrest.EncryptionAtRestService) workflow.Result {
 	encRest := encryptionatrest.NewEncryptionAtRest(project)
 
 	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, encRest, project.Namespace); err != nil {
@@ -28,7 +28,7 @@ func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Co
 		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
 	}
 
-	result := createOrDeleteEncryptionAtRests(workflowCtx, r.encryptionAtRestService, project.ID(), encRest)
+	result := createOrDeleteEncryptionAtRests(workflowCtx, encryptionAtRestService, project.ID(), encRest)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(api.EncryptionAtRestReadyType, result)
 		return result
