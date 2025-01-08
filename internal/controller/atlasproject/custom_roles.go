@@ -55,7 +55,7 @@ func findRolesToDelete(prevSpec, akoRoles, atlasRoles []customroles.CustomRole) 
 	lastAppliedRolesMap := mapCustomRolesByName(prevSpec)
 	akoRolesMap := mapCustomRolesByName(akoRoles)
 	atlasRolesMap := mapCustomRolesByName(atlasRoles)
-	
+
 	for atlasIx, atlasRole := range atlasRolesMap {
 		_, inAKO := akoRolesMap[atlasIx]
 		_, inLastApplied := lastAppliedRolesMap[atlasIx]
