@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -154,10 +155,11 @@ func TestSyncAssignedTeams(t *testing.T) {
 			ctx := &workflow.Context{
 				Log:       logger,
 				SdkClient: atlasClient,
+				Context:   context.Background(),
 			}
 			teamService := func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(nil, "projectID").Return([]teams.AssignedTeam{
+				service.EXPECT().ListProjectTeams(mock.Anything, "projectID").Return([]teams.AssignedTeam{
 					{
 						Roles:    []string{"GROUP_OWNER"},
 						TeamID:   team1.Status.ID,
@@ -174,9 +176,9 @@ func TestSyncAssignedTeams(t *testing.T) {
 						TeamName: "teamName_3",
 					},
 				}, nil)
-				service.EXPECT().Unassign(nil, "projectID", "teamID_2").Return(nil)
-				service.EXPECT().Unassign(nil, "projectID", "teamID_3").Return(nil)
-				service.EXPECT().Assign(nil,
+				service.EXPECT().Unassign(mock.Anything, "projectID", "teamID_2").Return(nil)
+				service.EXPECT().Unassign(mock.Anything, "projectID", "teamID_3").Return(nil)
+				service.EXPECT().Assign(mock.Anything,
 					&[]teams.AssignedTeam{
 						{
 							Roles:  []string{"GROUP_READ_ONLY"},

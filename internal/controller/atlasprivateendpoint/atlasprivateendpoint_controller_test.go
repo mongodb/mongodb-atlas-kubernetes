@@ -318,12 +318,12 @@ func TestEnsureCustomResource(t *testing.T) {
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProject(ctx, projectID).Return(admin.GetProjectApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetProject(mock.Anything, projectID).Return(admin.GetProjectApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
 						Return(&admin.Group{Id: &projectID}, nil, nil)
 
 					peAPI := mockadmin.NewPrivateEndpointServicesApi(t)
-					peAPI.EXPECT().GetPrivateEndpointService(ctx, projectID, "AWS", "pe-service-id").
+					peAPI.EXPECT().GetPrivateEndpointService(mock.Anything, projectID, "AWS", "pe-service-id").
 						Return(admin.GetPrivateEndpointServiceApiRequest{ApiService: peAPI})
 					peAPI.EXPECT().GetPrivateEndpointServiceExecute(mock.AnythingOfType("admin.GetPrivateEndpointServiceApiRequest")).
 						Return(
