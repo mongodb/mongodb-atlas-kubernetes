@@ -218,7 +218,7 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 	}
 
 	if b.atlasProvider == nil {
-		b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, mgr.GetClient())
+		b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, mgr.GetClient(), nil)
 	}
 
 	projectReconciler := atlasproject.NewAtlasProjectReconciler(

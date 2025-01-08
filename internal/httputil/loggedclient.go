@@ -18,6 +18,14 @@ func LoggingTransport(log *zap.SugaredLogger) ClientOpt {
 	}
 }
 
+func NewLoggingTransport(log *zap.SugaredLogger, logBody bool, delegate http.RoundTripper) http.RoundTripper {
+	return &loggedRoundTripper{
+		rt:      delegate,
+		log:     log,
+		logBody: logBody,
+	}
+}
+
 type loggedRoundTripper struct {
 	rt      http.RoundTripper
 	log     *zap.SugaredLogger
