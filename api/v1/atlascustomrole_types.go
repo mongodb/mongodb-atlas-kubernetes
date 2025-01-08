@@ -17,7 +17,6 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.role.name`
-// +kubebuilder:printcolumn:name="Project ID",type=string,JSONPath=`.spec.projectIDRef.id`
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
 // +kubebuilder:resource:categories=atlas,shortName=acr

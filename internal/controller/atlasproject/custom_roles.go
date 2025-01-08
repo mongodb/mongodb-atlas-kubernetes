@@ -229,22 +229,13 @@ func mapCustomRolesByName(customRoles []customroles.CustomRole) map[string]custo
 type CustomRolesOperations struct {
 	Create map[string]customroles.CustomRole
 	Update map[string]customroles.CustomRole
-	Delete map[string]customroles.CustomRole
 }
 
 func calculateChanges(currentCustomRoles []customroles.CustomRole, desiredCustomRoles []customroles.CustomRole) CustomRolesOperations {
 	currentCustomRolesByName := mapCustomRolesByName(currentCustomRoles)
-	desiredCustomRolesByName := mapCustomRolesByName(desiredCustomRoles)
 	ops := CustomRolesOperations{
 		Create: map[string]customroles.CustomRole{},
 		Update: map[string]customroles.CustomRole{},
-		Delete: map[string]customroles.CustomRole{},
-	}
-
-	for _, currentCustomRole := range currentCustomRoles {
-		if _, ok := desiredCustomRolesByName[currentCustomRole.Name]; !ok {
-			ops.Delete[currentCustomRole.Name] = currentCustomRole
-		}
 	}
 
 	for _, desiredCustomRole := range desiredCustomRoles {
