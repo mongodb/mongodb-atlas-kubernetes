@@ -192,7 +192,7 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 
 	log := r.Log.With("atlasteam", teamRef)
 	conditions := akov2.InitCondition(team, api.FalseCondition(api.ReadyType))
-	teamCtx := workflow.NewContext(log, conditions, ctx.Context)
+	teamCtx := workflow.NewContext(log, conditions, ctx.Context, team)
 
 	if len(assignedProjects) == 0 {
 		if err = customresource.ManageFinalizer(ctx.Context, r.Client, team, customresource.UnsetFinalizer); err != nil {

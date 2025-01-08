@@ -70,7 +70,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 
 	conditions := akov2.InitCondition(fedauth, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(log, conditions, ctx)
+	workflowCtx := workflow.NewContext(log, conditions, ctx, fedauth)
 	log.Infow("-> Starting AtlasFederatedAuth reconciliation")
 
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, fedauth)

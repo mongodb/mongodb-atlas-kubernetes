@@ -62,7 +62,7 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	conditions := api.InitCondition(atlasSearchIndexConfig, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(log, conditions, ctx)
+	workflowCtx := workflow.NewContext(log, conditions, ctx, atlasSearchIndexConfig)
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, atlasSearchIndexConfig)
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, atlasSearchIndexConfig, r.Log)

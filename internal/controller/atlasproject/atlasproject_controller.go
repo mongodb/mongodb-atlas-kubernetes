@@ -115,7 +115,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	conditions := akov2.InitCondition(atlasProject, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(log, conditions, ctx)
+	workflowCtx := workflow.NewContext(log, conditions, ctx, atlasProject)
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", atlasProject.Spec)
 
 	// This update will make sure the status is always updated in case of any errors or successful result

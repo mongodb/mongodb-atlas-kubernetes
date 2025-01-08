@@ -64,7 +64,7 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 	}
 
 	conditions := api.InitCondition(akoStreamConnection, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(log, conditions, ctx)
+	workflowCtx := workflow.NewContext(log, conditions, ctx, akoStreamConnection)
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, akoStreamConnection)
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, akoStreamConnection, r.Log)
