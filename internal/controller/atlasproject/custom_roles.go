@@ -52,20 +52,20 @@ func getLastAppliedCustomRoles(atlasProject *akov2.AtlasProject) ([]akov2.Custom
 
 func findRolesToDelete(prevSpec, akoRoles, atlasRoles []customroles.CustomRole) map[string]customroles.CustomRole {
 	result := map[string]customroles.CustomRole{}
-	combinedAkoRoles := map[string]customroles.CustomRole{}
+	deletionCandidates := map[string]customroles.CustomRole{}
 	atlasRolesMap := mapCustomRolesByName(atlasRoles)
 
 	// Get roles from the previous spec
 	for _, customRole := range prevSpec {
-		combinedAkoRoles[customRole.Name] = customRole
+		deletionCandidates[customRole.Name] = customRole
 	}
 	// Get roles from the current spec and remove the ones that are in the previous spec
 	for _, customRole := range akoRoles {
-		delete(combinedAkoRoles, customRole.Name)
+		delete(deletionCandidates, customRole.Name)
 	}
 
 	// Compare combinedAkoRoles with the current Atlas roles
-	for _, role := range combinedAkoRoles {
+	for _, role := range deletionCandidates {
 		if _, exists := atlasRolesMap[role.Name]; exists {
 			result[role.Name] = role
 		}
