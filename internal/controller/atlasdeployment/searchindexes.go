@@ -45,11 +45,10 @@ func verifyAllIndexesNamesAreUnique(indexes []akov2.SearchIndex) bool {
 }
 
 type searchIndexesReconciler struct {
-	ctx           *workflow.Context
-	deployment    *akov2.AtlasDeployment
-	k8sClient     client.Client
-	projectID     string
-	searchService searchindex.AtlasSearchIdxService
+	ctx        *workflow.Context
+	deployment *akov2.AtlasDeployment
+	k8sClient  client.Client
+	projectID  string
 }
 
 func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, searchService searchindex.AtlasSearchIdxService, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
@@ -57,17 +56,16 @@ func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, searchS
 	defer ctx.Log.Debug("finished indexes processing")
 
 	reconciler := &searchIndexesReconciler{
-		ctx:           ctx,
-		k8sClient:     k8sClient,
-		deployment:    deployment,
-		projectID:     projectID,
-		searchService: searchService,
+		ctx:        ctx,
+		k8sClient:  k8sClient,
+		deployment: deployment,
+		projectID:  projectID,
 	}
 
-	return reconciler.Reconcile()
+	return reconciler.Reconcile(searchService)
 }
 
-func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
+func (sr *searchIndexesReconciler) Reconcile(searchService searchindex.AtlasSearchIdxService) workflow.Result {
 	if !verifyAllIndexesNamesAreUnique(sr.deployment.Spec.DeploymentSpec.SearchIndexes) {
 		return sr.terminate(api.SearchIndexesNamesAreNotUnique, fmt.Errorf("every index 'Name' must be unique"))
 	}
@@ -114,7 +112,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 			k8sClient:  sr.k8sClient,
 			projectID:  sr.projectID,
 			indexName:  indexName,
-		}).Reconcile(val.spec, val.previous, sr.searchService))
+		}).Reconcile(val.spec, val.previous, searchService))
 	}
 
 	allDeleted := true
