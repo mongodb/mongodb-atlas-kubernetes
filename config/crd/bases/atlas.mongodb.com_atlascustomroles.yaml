@@ -25,9 +25,6 @@ spec:
     - jsonPath: .spec.role.name
       name: Name
       type: string
-    - jsonPath: .spec.projectIDRef.id
-      name: Project ID
-      type: string
     name: v1
     schema:
       openAPIV3Schema:
