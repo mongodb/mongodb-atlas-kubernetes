@@ -12,6 +12,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 )
 
 func DefaultAtlasProject(name string) client.Object {
@@ -42,6 +43,27 @@ func mustCreateVersionedAtlasClient(ctx context.Context) *admin.APIClient {
 		panic(fmt.Sprintf("Failed to create an Atlas versioned client: %v", err))
 	}
 	return client
+}
+
+func mustCreateVersionedAtlasClientSet(ctx context.Context) *atlas.ClientSet {
+	domain := os.Getenv("MCLI_OPS_MANAGER_URL")
+	pubKey := os.Getenv("MCLI_PUBLIC_API_KEY")
+	prvKey := os.Getenv("MCLI_PRIVATE_API_KEY")
+	c2024, err := adminv20241113001.NewClient(
+		adminv20241113001.UseBaseURL(domain),
+		adminv20241113001.UseDigestAuth(pubKey, prvKey),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create an Atlas versioned client: %v", err))
+	}
+	_, _, err = c2024.ProjectsApi.ListProjects(ctx).Execute()
+	if err != nil {
+		panic(fmt.Sprintf("non working Atlas Client: %v", err))
+	}
+
+	return &atlas.ClientSet{
+		SdkClient20241113001: c2024,
+	}
 }
 
 func globalSecret(namespace string) client.Object {
