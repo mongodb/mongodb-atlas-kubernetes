@@ -288,7 +288,7 @@ validate-manifests: generate manifests
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
-	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=pkg/api
+	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=api
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
