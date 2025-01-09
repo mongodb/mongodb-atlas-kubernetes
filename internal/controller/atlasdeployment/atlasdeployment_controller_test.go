@@ -31,6 +31,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -1237,7 +1238,12 @@ func TestChangeDeploymentType(t *testing.T) {
 					return true
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return &atlas.ClientSet{}, "", nil
+					flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{
+							FlexClustersApi: flexAPI,
+						},
+					}, "", nil
 				},
 				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 					return &mongodbatlas.Client{}, "org-id", nil

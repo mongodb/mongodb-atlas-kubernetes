@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	//mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -190,6 +192,9 @@ func TestHandleDatabaseUser(t *testing.T) {
 					clusterAPI := mockadmin.NewClustersApi(t)
 
 					return &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI}, "", nil
+				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -2246,6 +2251,9 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 				ClustersApi:      clusterAPI,
 				DatabaseUsersApi: userAPI,
 			}, "", nil
+		},
+		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
 		},
 	}
 }
