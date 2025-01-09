@@ -60,11 +60,15 @@ func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, se
 	if err != nil {
 		return nil, fmt.Errorf("failed to create versioned client: %w", err)
 	}
-	return NewAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, client.GlobalClustersApi, isGov), nil
+	clientSet, _, err := provider.SdkClientSet(ctx, secretRef, log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate Versioned Atlas client: %w", err)
+	}
+	return NewAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, client.GlobalClustersApi, clientSet.SdkClient20241113001.FlexClustersApi, isGov), nil
 }
 
-func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, globalClusterAPI admin.GlobalClustersApi, isGov bool) *ProductionAtlasDeployments {
-	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, globalClusterAPI: globalClusterAPI, isGov: isGov}
+func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, globalClusterAPI admin.GlobalClustersApi, flexAPI adminv20241113001.FlexClustersApi, isGov bool) *ProductionAtlasDeployments {
+	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, globalClusterAPI: globalClusterAPI, flexAPI: flexAPI, isGov: isGov}
 }
 
 func (ds *ProductionAtlasDeployments) ListDeploymentNames(ctx context.Context, projectID string) ([]string, error) {
@@ -163,7 +167,7 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		return flexFromAtlas(flex), err
 	}
 
-	if !admin.IsErrorCode(err, atlas.ClusterNotFound) {
+	if !admin.IsErrorCode(err, atlas.ClusterNotFound) && !admin.IsErrorCode(err, atlas.NonFlexInFlexAPI) {
 		return nil, err
 	}
 

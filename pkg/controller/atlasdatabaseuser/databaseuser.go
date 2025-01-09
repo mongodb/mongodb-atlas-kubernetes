@@ -289,9 +289,18 @@ func (r *AtlasDatabaseUserReconciler) getProjectFromAtlas(ctx *workflow.Context,
 		return nil, err
 	}
 
+	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(
+		ctx.Context,
+		&client.ObjectKey{Namespace: atlasDatabaseUser.Namespace, Name: atlasDatabaseUser.Credentials().Name},
+		r.Log,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	projectService := project.NewProjectAPIService(sdkClient.ProjectsApi)
 	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
-	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, sdkClientSet.SdkClient20241113001.FlexClustersApi, r.AtlasProvider.IsCloudGov())
 
 	atlasProject, err := projectService.GetProject(ctx.Context, atlasDatabaseUser.Spec.ExternalProjectRef.ID)
 	if err != nil {
@@ -316,9 +325,12 @@ func (r *AtlasDatabaseUserReconciler) getProjectFromKube(ctx *workflow.Context, 
 	if err != nil {
 		return nil, err
 	}
-
+	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx.Context, credentialsSecret, r.Log)
+	if err != nil {
+		return nil, err
+	}
 	r.dbUserService = dbuser.NewAtlasUsers(sdkClient.DatabaseUsersApi)
-	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, r.AtlasProvider.IsCloudGov())
+	r.deploymentService = deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, sdkClientSet.SdkClient20241113001.FlexClustersApi, r.AtlasProvider.IsCloudGov())
 
 	return project.NewProject(atlasProject, orgID), nil
 }
