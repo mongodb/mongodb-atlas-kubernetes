@@ -50,16 +50,20 @@ func getLastAppliedCustomRoles(atlasProject *akov2.AtlasProject) ([]akov2.Custom
 	return lastAppliedSpec.CustomRoles, nil
 }
 
-func findRolesToDelete(prevSpec, atlasRoles []customroles.CustomRole) map[string]customroles.CustomRole {
+func findRolesToDelete(prevSpec, akoRoles, atlasRoles []customroles.CustomRole) map[string]customroles.CustomRole {
 	result := map[string]customroles.CustomRole{}
-	for atlasRoleIdx := range atlasRoles {
-		for specRoleIdx := range prevSpec {
-			if atlasRoles[atlasRoleIdx].Name == prevSpec[specRoleIdx].Name {
-				result[prevSpec[specRoleIdx].Name] = prevSpec[specRoleIdx]
-				continue
-			}
+	lastAppliedRolesMap := mapCustomRolesByName(prevSpec)
+	akoRolesMap := mapCustomRolesByName(akoRoles)
+	atlasRolesMap := mapCustomRolesByName(atlasRoles)
+
+	for atlasName, atlasRole := range atlasRolesMap {
+		_, inAKO := akoRolesMap[atlasName]
+		_, inLastApplied := lastAppliedRolesMap[atlasName]
+		if !inAKO && inLastApplied {
+			result[atlasName] = atlasRole
 		}
 	}
+
 	return result
 }
 
@@ -94,7 +98,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 		service: customroles.NewCustomRoles(workflowCtx.SdkClient.CustomDatabaseRolesApi),
 	}
 
-	currentCustomRoles, err := r.service.List(r.ctx.Context, r.project.ID())
+	currentAtlasCustomRoles, err := r.service.List(r.ctx.Context, r.project.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
 	}
@@ -104,12 +108,12 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 		akoRoles[i] = customroles.NewCustomRole(&project.Spec.CustomRoles[i])
 	}
 
-	ops := calculateChanges(currentCustomRoles, akoRoles)
+	ops := calculateChanges(currentAtlasCustomRoles, akoRoles)
 
 	var deleteStatus map[string]status.CustomRole
 	if len(lastAppliedCustomRoles) > 0 {
 		deleteStatus = r.deleteCustomRoles(workflowCtx, project.ID(),
-			findRolesToDelete(convertToInternalRoles(lastAppliedCustomRoles), currentCustomRoles))
+			findRolesToDelete(convertToInternalRoles(lastAppliedCustomRoles), akoRoles, currentAtlasCustomRoles))
 	}
 	updateStatus := r.updateCustomRoles(workflowCtx, project.ID(), ops.Update)
 	createStatus := r.createCustomRoles(workflowCtx, project.ID(), ops.Create)
@@ -218,22 +222,13 @@ func mapCustomRolesByName(customRoles []customroles.CustomRole) map[string]custo
 type CustomRolesOperations struct {
 	Create map[string]customroles.CustomRole
 	Update map[string]customroles.CustomRole
-	Delete map[string]customroles.CustomRole
 }
 
 func calculateChanges(currentCustomRoles []customroles.CustomRole, desiredCustomRoles []customroles.CustomRole) CustomRolesOperations {
 	currentCustomRolesByName := mapCustomRolesByName(currentCustomRoles)
-	desiredCustomRolesByName := mapCustomRolesByName(desiredCustomRoles)
 	ops := CustomRolesOperations{
 		Create: map[string]customroles.CustomRole{},
 		Update: map[string]customroles.CustomRole{},
-		Delete: map[string]customroles.CustomRole{},
-	}
-
-	for _, currentCustomRole := range currentCustomRoles {
-		if _, ok := desiredCustomRolesByName[currentCustomRole.Name]; !ok {
-			ops.Delete[currentCustomRole.Name] = currentCustomRole
-		}
 	}
 
 	for _, desiredCustomRole := range desiredCustomRoles {
