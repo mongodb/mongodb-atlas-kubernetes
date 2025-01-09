@@ -35,7 +35,7 @@ func TestListDeployments(t *testing.T) {
 				WithName(serverlessName).WithAtlasName(serverlessName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
 		require.NoError(t, err)
-		ds := deployment.NewAtlasDeployments(ch.AtlasClient().ClustersApi, ch.AtlasClient().ServerlessInstancesApi, nil, false)
+		ds := deployment.NewAtlasDeployments(ch.AtlasClient().ClustersApi, ch.AtlasClient().ServerlessInstancesApi, nil, ch.AtlasClientSet().SdkClient20241113001.FlexClustersApi, false)
 
 		names, err := ds.ListDeploymentNames(ctx, testProjectID)
 		require.NoError(t, err)
