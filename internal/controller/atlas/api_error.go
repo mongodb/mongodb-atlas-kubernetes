@@ -37,4 +37,7 @@ const (
 	BackupComplianceNotMet = "BACKUP_POLICIES_NOT_MEETING_BACKUP_COMPLIANCE_POLICY_REQUIREMENTS"
 
 	ProviderUnsupported = "PROVIDER_UNSUPPORTED"
+
+	// Cannot use the Flex API to interact with non-Flex clusters
+	NonFlexInFlexAPI = "CANNOT_USE_NON_FLEX_CLUSTER_IN_FLEX_API"
 )
