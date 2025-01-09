@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	//mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -190,6 +192,9 @@ func TestHandleDatabaseUser(t *testing.T) {
 
 					return &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI}, "", nil
 				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
@@ -266,6 +271,9 @@ func TestHandleDatabaseUser(t *testing.T) {
 						ClustersApi:      clusterAPI,
 						DatabaseUsersApi: userAPI,
 					}, "", nil
+				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -2115,6 +2123,11 @@ func TestGetProjectFromAtlas(t *testing.T) {
 
 					return &admin.APIClient{ProjectsApi: projectAPI}, "", nil
 				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
+				},
 			},
 			expectedErr: errors.New("failed to get project"),
 		},
@@ -2164,6 +2177,11 @@ func TestGetProjectFromAtlas(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("project-id")}, nil, nil)
 
 					return &admin.APIClient{ProjectsApi: projectAPI}, "", nil
+				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
 				},
 			},
 		},
@@ -2360,6 +2378,11 @@ func TestGetProjectFromKube(t *testing.T) {
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					return &admin.APIClient{}, "", nil
+				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
 				},
 			},
 		},

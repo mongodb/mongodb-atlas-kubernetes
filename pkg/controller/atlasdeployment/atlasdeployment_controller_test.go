@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -1135,6 +1136,11 @@ func TestGetProjectFromAtlas(t *testing.T) {
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					return nil, "", errors.New("failed to create client")
 				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
+				},
 			},
 			expectedErr: errors.New("failed to create client"),
 		},
@@ -1160,7 +1166,9 @@ func TestGetProjectFromAtlas(t *testing.T) {
 					return false
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return &atlas.ClientSet{}, "", nil
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
@@ -1208,7 +1216,9 @@ func TestGetProjectFromAtlas(t *testing.T) {
 					return false
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return &atlas.ClientSet{}, "", nil
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
@@ -1400,7 +1410,9 @@ func TestGetProjectFromKube(t *testing.T) {
 					return false
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return &atlas.ClientSet{}, "", nil
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					return &admin.APIClient{}, "", nil
@@ -1551,7 +1563,12 @@ func TestChangeDeploymentType(t *testing.T) {
 					return true
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return &atlas.ClientSet{}, "", nil
+					flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+					return &atlas.ClientSet{
+						SdkClient20241113001: &adminv20241113001.APIClient{
+							FlexClustersApi: flexAPI,
+						},
+					}, "", nil
 				},
 				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 					return &mongodbatlas.Client{}, "org-id", nil
