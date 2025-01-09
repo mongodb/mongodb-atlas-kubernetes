@@ -97,7 +97,7 @@ KUBEBUILDER_ASSETS ?= $(ENVTEST_ASSETS_DIR)/k8s/$(ENVTEST_K8S_VERSION)-$(TARGET_
 # Ginkgo configuration
 GINKGO_NODES ?= 12
 GINKGO_EDITOR_INTEGRATION ?= true
-GINKGO_OPTS = -vv --randomize-all --output-interceptor-mode=none --trace --timeout 90m --flake-attempts=1 --race --nodes=$(GINKGO_NODES) --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
+GINKGO_OPTS = -vv --randomize-all --output-interceptor-mode=none --trace --timeout 90m --flake-attempts=1 --race --nodes=$(GINKGO_NODES) --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/...
 GINKGO_FILTER_LABEL ?=
 ifneq ($(GINKGO_FILTER_LABEL),)
 GINKGO_FILTER_LABEL_OPT := --label-filter="$(GINKGO_FILTER_LABEL)"
@@ -209,7 +209,7 @@ bin/$(TARGET_OS)/$(TARGET_ARCH):
 
 bin/$(TARGET_OS)/$(TARGET_ARCH)/manager: $(GO_SOURCES) bin/$(TARGET_OS)/$(TARGET_ARCH)
 	@echo "Building operator with version $(VERSION); $(TARGET_OS) - $(TARGET_ARCH)"
-	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version.Version=$(VERSION)" cmd/main.go
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version.Version=$(VERSION)" cmd/main.go
 	@touch $@
 
 bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
@@ -234,7 +234,7 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
-	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./internal/..." output:crd:artifacts:config=config/crd/bases
+	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 
 
@@ -252,7 +252,7 @@ fmt: $(TIMESTAMPS_DIR)/fmt ## Run go fmt against code
 
 fix-lint:
 	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
-	goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -w ./internal ./pkg ./test
+	goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -w ./internal ./api ./test
 	golangci-lint run --fix
 
 $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
@@ -264,7 +264,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/..."
+	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
 	$(MAKE) fmt
 
 .PHONY: check-missing-files
@@ -288,7 +288,7 @@ validate-manifests: generate manifests
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
-	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=pkg/api
+	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=api
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
