@@ -2,6 +2,18 @@
 
 set -eou pipefail
 
+echo -n "Determining SHA for arm64 ... "
+IMG_SHA_ARM64=$(docker \
+  manifest inspect quay.io/mongodb/mongodb-atlas-kubernetes-operator:${VERSION}-certified | \
+  jq --raw-output '.manifests[] | select(.platform.architecture == "arm64") | .digest')
+echo ${IMG_SHA_ARM64}
+
+echo -n "Determining SHA for amd64 ... "
+IMG_SHA_AMD64=$(docker \
+  manifest inspect quay.io/mongodb/mongodb-atlas-kubernetes-operator:${VERSION}-certified | \
+  jq --raw-output '.manifests[] | select(.platform.architecture == "amd64") | .digest')
+echo ${IMG_SHA_AMD64}
+
 REPO="${RH_CERTIFIED_OPENSHIFT_REPO_PATH}/operators/mongodb-atlas-kubernetes"
 
 cd "${REPO}"

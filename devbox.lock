@@ -161,6 +161,54 @@
         }
       }
     },
+    "docker-sbom@latest": {
+      "last_modified": "2024-12-23T21:10:33Z",
+      "resolved": "github:NixOS/nixpkgs/de1864217bfa9b5845f465e771e0ecb48b30e02d#docker-sbom",
+      "source": "devbox-search",
+      "version": "0.6.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ak21fwjq9gn2320qhwsimja8wmhmg4a1-docker-sbom-0.6.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/ak21fwjq9gn2320qhwsimja8wmhmg4a1-docker-sbom-0.6.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/9lv5wrjfc8rk5pnx90kdrnz9hl56lj7f-docker-sbom-0.6.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/9lv5wrjfc8rk5pnx90kdrnz9hl56lj7f-docker-sbom-0.6.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/2ys1ya14x447wcc1kic2hvlrp589273b-docker-sbom-0.6.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/2ys1ya14x447wcc1kic2hvlrp589273b-docker-sbom-0.6.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ybacpma8gg5dc3xzqslr1rn5ly1zh10a-docker-sbom-0.6.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/ybacpma8gg5dc3xzqslr1rn5ly1zh10a-docker-sbom-0.6.1"
+        }
+      }
+    },
     "docker@latest": {
       "last_modified": "2024-12-23T21:10:33Z",
       "resolved": "github:NixOS/nixpkgs/de1864217bfa9b5845f465e771e0ecb48b30e02d#docker",
