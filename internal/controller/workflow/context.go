@@ -7,9 +7,11 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 )
 
 // Context is a container for some information that is needed on all levels of function calls during reconciliation.
@@ -44,11 +46,11 @@ type Context struct {
 	Context context.Context
 }
 
-func NewContext(log *zap.SugaredLogger, conditions []api.Condition, context context.Context) *Context {
+func NewContext(log *zap.SugaredLogger, conditions []api.Condition, context context.Context, obj runtime.Object) *Context {
 	return &Context{
 		status:  NewStatus(conditions),
 		Log:     log,
-		Context: context,
+		Context: dryrun.WithRuntimeObject(context, obj),
 	}
 }
 

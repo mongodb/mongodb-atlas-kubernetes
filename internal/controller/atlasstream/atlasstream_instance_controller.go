@@ -74,7 +74,7 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 	}
 
 	conditions := api.InitCondition(akoStreamInstance, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(log, conditions, ctx)
+	workflowCtx := workflow.NewContext(log, conditions, ctx, akoStreamInstance)
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, akoStreamInstance)
 
 	// check if stream instance is in "invalid" state

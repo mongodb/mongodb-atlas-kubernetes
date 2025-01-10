@@ -40,7 +40,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		}
 
 		conditions := akov2.InitCondition(team, api.FalseCondition(api.ReadyType))
-		teamCtx := workflow.NewContext(log, conditions, ctx)
+		teamCtx := workflow.NewContext(log, conditions, ctx, team)
 		log.Infow("-> Starting AtlasTeam reconciliation", "spec", team.Spec)
 		defer statushandler.Update(teamCtx, r.Client, r.EventRecorder, team)
 

@@ -94,7 +94,7 @@ func TestReconcile(t *testing.T) {
 
 		logger := zaptest.NewLogger(t).Sugar()
 		fedAuthAPI := mockadminv20241113001.NewFederatedAuthenticationApi(t)
-		fedAuthAPI.EXPECT().GetFederationSettings(context.Background(), orgID).
+		fedAuthAPI.EXPECT().GetFederationSettings(mock.Anything, orgID).
 			Return(adminv20241113001.GetFederationSettingsApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().GetFederationSettingsExecute(mock.Anything).
 			Return(
@@ -108,7 +108,7 @@ func TestReconcile(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		fedAuthAPI.EXPECT().ListIdentityProviders(context.Background(), fedSettingsID).
+		fedAuthAPI.EXPECT().ListIdentityProviders(mock.Anything, fedSettingsID).
 			Return(adminv20241113001.ListIdentityProvidersApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().ListIdentityProvidersExecute(mock.Anything).
 			Return(
@@ -124,7 +124,7 @@ func TestReconcile(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		fedAuthAPI.EXPECT().GetConnectedOrgConfig(context.Background(), fedSettingsID, orgID).
+		fedAuthAPI.EXPECT().GetConnectedOrgConfig(mock.Anything, fedSettingsID, orgID).
 			Return(adminv20241113001.GetConnectedOrgConfigApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().GetConnectedOrgConfigExecute(mock.Anything).
 			Return(
@@ -139,7 +139,7 @@ func TestReconcile(t *testing.T) {
 				nil,
 			)
 		groupAPI := mockadmin.NewProjectsApi(t)
-		groupAPI.EXPECT().ListProjects(context.Background()).
+		groupAPI.EXPECT().ListProjects(mock.Anything).
 			Return(admin.ListProjectsApiRequest{ApiService: groupAPI})
 		groupAPI.EXPECT().ListProjectsExecute(mock.Anything).
 			Return(

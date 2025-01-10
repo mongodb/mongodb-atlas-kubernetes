@@ -94,7 +94,7 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	r.Log.Infow("-> Starting AtlasCustomRole reconciliation", "spec", atlasCustomRole.Spec, "status",
 		atlasCustomRole.GetStatus())
 	conditions := akov2.InitCondition(atlasCustomRole, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(r.Log, conditions, ctx)
+	workflowCtx := workflow.NewContext(r.Log, conditions, ctx, atlasCustomRole)
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, atlasCustomRole)
 		r.Log.Infow("-> Finished AtlasCustomRole reconciliation", "spec", atlasCustomRole.Spec, "status",

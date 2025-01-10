@@ -115,7 +115,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	conditions := akov2.InitCondition(atlasDeployment, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(log, conditions, ctx)
+	workflowCtx := workflow.NewContext(log, conditions, ctx, atlasDeployment)
 	log.Infow("-> Starting AtlasDeployment reconciliation", "spec", atlasDeployment.Spec, "status", atlasDeployment.Status)
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, atlasDeployment)

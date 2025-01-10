@@ -101,7 +101,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	r.Log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", atlasDatabaseUser.Spec, "status", atlasDatabaseUser.GetStatus())
 	conditions := akov2.InitCondition(atlasDatabaseUser, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(r.Log, conditions, ctx)
+	workflowCtx := workflow.NewContext(r.Log, conditions, ctx, atlasDatabaseUser)
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, atlasDatabaseUser)
 	}()

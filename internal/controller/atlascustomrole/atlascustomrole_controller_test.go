@@ -339,11 +339,11 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							return nil, "", fmt.Errorf("failed to create sdk")
 						}
 						cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-						cdrAPI.EXPECT().GetCustomDatabaseRole(context.Background(), "testProjectID", "TestRoleName").
+						cdrAPI.EXPECT().GetCustomDatabaseRole(mock.Anything, "testProjectID", "TestRoleName").
 							Return(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
 						cdrAPI.EXPECT().GetCustomDatabaseRoleExecute(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
 							Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
-						cdrAPI.EXPECT().CreateCustomDatabaseRole(context.Background(), "testProjectID",
+						cdrAPI.EXPECT().CreateCustomDatabaseRole(mock.Anything, "testProjectID",
 							mock.AnythingOfType("*admin.UserCustomDBRole")).
 							Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
 						cdrAPI.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).

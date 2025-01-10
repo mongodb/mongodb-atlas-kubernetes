@@ -392,7 +392,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
-			clusterAPI.EXPECT().GetCluster(context.Background(), project.ID(), d.GetDeploymentName()).
+			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
@@ -423,7 +423,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 					&http.Response{},
 					nil,
 				)
-			clusterAPI.EXPECT().GetClusterAdvancedConfiguration(context.Background(), project.ID(), d.GetDeploymentName()).
+			clusterAPI.EXPECT().GetClusterAdvancedConfiguration(mock.Anything, project.ID(), d.GetDeploymentName()).
 				Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
 				Return(
@@ -433,7 +433,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				)
 
 			searchAPI := mockadmin.NewAtlasSearchApi(t)
-			searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), project.ID(), d.Spec.DeploymentSpec.Name).
+			searchAPI.EXPECT().GetAtlasSearchDeployment(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
 				Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
 			searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
 				Return(
@@ -452,7 +452,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				)
 
 			globalAPI := mockadmin.NewGlobalClustersApi(t)
-			globalAPI.EXPECT().GetManagedNamespace(context.Background(), project.ID(), d.Spec.DeploymentSpec.Name).
+			globalAPI.EXPECT().GetManagedNamespace(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
 				Return(admin.GetManagedNamespaceApiRequest{ApiService: globalAPI})
 			globalAPI.EXPECT().GetManagedNamespaceExecute(mock.Anything).
 				Return(&admin.GeoSharding{}, nil, nil)
@@ -615,13 +615,13 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 			err := &admin.GenericOpenAPIError{}
 			err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
 			clusterAPI := mockadmin.NewClustersApi(t)
-			clusterAPI.EXPECT().GetCluster(context.Background(), project.ID(), d.GetDeploymentName()).
+			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(nil, nil, err)
 
 			serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
-			serverlessAPI.EXPECT().GetServerlessInstance(context.Background(), project.ID(), d.GetDeploymentName()).
+			serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, project.ID(), d.GetDeploymentName()).
 				Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
 			serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 				Return(
@@ -644,7 +644,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 				)
 
 			speClient := mockadmin.NewServerlessPrivateEndpointsApi(t)
-			speClient.EXPECT().ListServerlessPrivateEndpoints(context.Background(), project.ID(), d.GetDeploymentName()).
+			speClient.EXPECT().ListServerlessPrivateEndpoints(mock.Anything, project.ID(), d.GetDeploymentName()).
 				Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speClient})
 			speClient.EXPECT().ListServerlessPrivateEndpointsExecute(mock.AnythingOfType("admin.ListServerlessPrivateEndpointsApiRequest")).
 				Return(nil, &http.Response{}, nil)
@@ -785,7 +785,7 @@ func TestDeletionReconciliation(t *testing.T) {
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
-			clusterAPI.EXPECT().GetCluster(context.Background(), project.ID(), d.GetDeploymentName()).
+			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
@@ -816,7 +816,7 @@ func TestDeletionReconciliation(t *testing.T) {
 					&http.Response{},
 					nil,
 				)
-			clusterAPI.EXPECT().DeleteCluster(context.Background(), project.ID(), d.GetDeploymentName()).
+			clusterAPI.EXPECT().DeleteCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
 				Return(admin.DeleteClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().DeleteClusterExecute(mock.AnythingOfType("admin.DeleteClusterApiRequest")).
 				Return(&http.Response{}, nil)
@@ -1163,7 +1163,7 @@ func TestGetProjectFromAtlas(t *testing.T) {
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProject(context.Background(), "project-id").
+					projectAPI.EXPECT().GetProject(mock.Anything, "project-id").
 						Return(admin.GetProjectApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
 						Return(nil, nil, errors.New("failed to get project"))
@@ -1211,7 +1211,7 @@ func TestGetProjectFromAtlas(t *testing.T) {
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProject(context.Background(), "project-id").
+					projectAPI.EXPECT().GetProject(mock.Anything, "project-id").
 						Return(admin.GetProjectApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
 						Return(&admin.Group{Id: pointer.MakePtr("project-id")}, nil, nil)
@@ -1557,7 +1557,7 @@ func TestChangeDeploymentType(t *testing.T) {
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					clusterAPI := mockadmin.NewClustersApi(t)
-					clusterAPI.EXPECT().GetCluster(ctx, "abc123", "cluster0").
+					clusterAPI.EXPECT().GetCluster(mock.Anything, "abc123", "cluster0").
 						Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 					clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 						RunAndReturn(
@@ -1573,7 +1573,7 @@ func TestChangeDeploymentType(t *testing.T) {
 
 					serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
 					if !tt.deployment.IsServerless() {
-						serverlessAPI.EXPECT().GetServerlessInstance(ctx, "abc123", "cluster0").
+						serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, "abc123", "cluster0").
 							Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
 						serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 							Return(&admin.ServerlessInstanceDescription{Name: pointer.MakePtr("cluster0")}, nil, nil)

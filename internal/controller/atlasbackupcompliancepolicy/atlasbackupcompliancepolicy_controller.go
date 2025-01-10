@@ -60,7 +60,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, r
 	}
 
 	conditions := akov2.InitCondition(bcp, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(log, conditions, ctx)
+	workflowCtx := workflow.NewContext(log, conditions, ctx, bcp)
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, bcp)
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, bcp, r.Log)

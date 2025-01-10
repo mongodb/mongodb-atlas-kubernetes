@@ -88,7 +88,7 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 	}
 
 	conditions := api.InitCondition(akoPrivateEndpoint, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(r.Log, conditions, ctx)
+	workflowCtx := workflow.NewContext(r.Log, conditions, ctx, akoPrivateEndpoint)
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, akoPrivateEndpoint)
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, akoPrivateEndpoint, r.Log)
