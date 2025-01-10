@@ -10,7 +10,7 @@ bucket_name=""
 registry_name=""
 s3_path=""
 output_folder="$PWD"
-docker_sbom_binary="docker"
+docker_sbom_binary="docker-sbom"
 
 function usage() {
   echo "Generates and uploads an SBOM to an S3 bucket.
@@ -39,15 +39,6 @@ function validate() {
     usage
     exit 1
 
-  fi
-}
-
-function detect_docker_sbom_binary() {
-  if [[ -f ./docker-sbom ]]; then
-    docker_sbom_binary="./docker-sbom"
-    echo "detected local override ${docker_sbom_binary} binary"
-  else
-    echo "falling back to docker sbom preinstalled plugin"
   fi
 }
 
@@ -105,8 +96,6 @@ echo "Image: $image_name"
 echo "Tag: $tag_name"
 echo "Platforms:" "${platforms[@]}"
 echo "S3 Path: $s3_path"
-
-detect_docker_sbom_binary
 
 for platform in "${platforms[@]}"; do
   os=${platform%/*}

@@ -14,8 +14,8 @@ Finally, make sure you have a "RedHat Connect" account and are a [team member wi
 
 Most tools are automatically installed for you. Most of them are Go binaries and use `go install`. There are a few that might cause issues and you might want to pre-install manually:
 
-- [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) for autogenerating the SDLC checklist. Install manually, else makefile automation will install it using `go install`.
-- [Docker SBOM plugin](https://github.com/docker/sbom-cli-plugin/) for generating SBOM files. It is available as an experimental feature on Docker for Mac or can be installed manually by [following the official instructions](https://github.com/docker/sbom-cli-plugin/?tab=readme-ov-file#getting-started). Another option is a [helper install script](../../scripts/sudo-install-docker-sbom-plugin.sh). Note: the helper scripts executes command using `sudo` privileges.
+- [devbox](https://www.jetify.com/devbox) to be able to enter a sandbox development environment that includes necessary tools for the release process.
+- [Docker](https://www.docker.com/) to be able to deal with containers.
 
 ## Before starting the Release
 
@@ -31,8 +31,9 @@ The reason for this preparatory step is to avoid customers getting new or breaki
 
 Once the release notes and documentation are ready and got explicit approval to start the release:
 
-- Use the GitHub UI to create the new "Create Release Branch" workflow.
-- Specify the `version` to be released in the text box and the author or `authors` involved in the release.
+- Use the [GitHub UI](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-branch.yml) to create the new "Create Release Branch" workflow.
+- Specify the `version` to be released in the text box and the author MongoDB email or multiple emails in the case of multiple release authors involved in the release.
+Do not specify the whole team but only the release authors to respect SSDLC compliance requirements.
 
 The deployment scripts (K8s configs, OLM bundle) will be generated and PR will be created with new changes on behalf
 of the `github-actions` bot.
@@ -41,7 +42,8 @@ Pass the version with the `X.Y.Z` eg. `1.2.3`, **without** the `v...` prefix.
 
 See [Troubleshooting](#troubleshooting) in case of issues, such as [errors with the major version](#major-version-issues-when-create-release-branch).
 
-Expect this branch to include the Software Security Development Lifecycle Policy Checklist (SSDLC) document at path `docs/releases/v${VERSION}/sdlc-compliance.md`. Note the SBOM files cannot be generated yet, as they require the image to have been published already.
+Expect this branch to include the Software Security Development Lifecycle Policy Checklist (SSDLC) document at path `docs/releases/v${VERSION}/sdlc-compliance.md`.
+Note the SBOM files cannot be generated yet, as they require the image to have been published already.
 
 ## Approve the Pull Request named "Release x.y.z"
 
@@ -51,9 +53,10 @@ Expect this branch to include the Software Security Development Lifecycle Policy
 At this point `main` represents what would become the next release, cut the release by doing:
 
 ```shell
+$ export VERSION=x.y.z
 $ git checkout -b main origin/main
-$ git tag vX.Y.Z # where X.Y.Z represent the version to be released
-$ git push origin vX.Y.Z
+$ git tag v${VERSION}
+$ git push origin v${VERSION}
 ```
 
 A new job "Create Release" will be triggered and the following will be done:
@@ -71,10 +74,10 @@ A new PR should have been created titled `Add SBOMs for version ...`. Please rev
 
 ### Process Overview
 
-The SSDLC process requirements are as follows.
+The SSDLC process requirements are as follows:
 
-1. Sign our images with a MongoDB owned signature
-1. Produce SBOM (Software Bill Of Materials) for each platform we support: `linux-amd64` & `linux-arm64`
+1. Sign our images with a MongoDB owned signature.
+1. Produce SBOM (Software Bill Of Materials) for each platform we support (`linux-amd64` and `linux-arm64`).
 1. Upload the plain SBOMs to a MongoDB internal Silk service instance.
 1. Download the augmented SBOMS, including vulnerability metadata, from Silk.
 1. Store both sets of SBOM files for internal reference.
@@ -94,32 +97,49 @@ What follows is a quick reference of the make rules involved, assuming the crede
 
 ### Upload SBOMs to Silk
 
+Make sure that you have the credentials configured to handle SBOM artifacts.
+Read through the wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual" on how to retrieve them.
+
+Update the local `main` branch to point to the commit which includes the merged SSDLC files from the previous step:
+
 ```shell
-make upload-sbom-to-silk SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_amd64.sbom.json"
-make upload-sbom-to-silk SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
+$ git checkout main
+$ git pull
+```
+
+```shell
+$ make upload-sbom-to-silk SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_amd64.sbom.json"
+$ make upload-sbom-to-silk SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
 ```
 
 ### Download SBOMs from Silk
 
 ```shell
-make download-from-silk TARGET_ARCH=arm64
-make download-from-silk TARGET_ARCH=amd64
+$ make download-from-silk TARGET_ARCH=arm64
+$ make download-from-silk TARGET_ARCH=amd64
 ```
 
 ### Register SBOMs internally
 
+To be able to store SBOMs in S3, you need special credentials.
+Please advise the Wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual".
+
 ```shell
-make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=amd64
-make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=arm64
+$ make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=amd64
+$ make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=arm64
 ```
 
 ## Edit the Release Notes and publish the release
 
-Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file. Paste the release notes content approved before the release was started. Once the image is out, publish the release notes draft as soon as possible.
+Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file.
+Paste the release notes content approved before the release was started.
+Once the image is out, publish the release notes draft as soon as possible.
 
 ## Synchronize configuration changes with the Helm Charts
 
-Go to the [helm-chart repo](https://github.com/mongodb/helm-charts) and use GitHub Action [Create PR with Atlas Operator Release](https://github.com/mongodb/helm-charts/actions/workflows/post-atlas-operator-release.yaml). Run the workflow on branch `main` setting the version that is being release, eg. `1.9.0`.
+Go to the [helm-chart repo](https://github.com/mongodb/helm-charts) and locate the [Pull Request](https://github.com/mongodb/helm-charts/pulls)
+that is being automatically generated by the [GitHub "Create PR with Atlas Operator Release" action](https://github.com/mongodb/helm-charts/actions/workflows/post-atlas-operator-release.yaml).
+It is named "Release Atlas Operator x.y.z.".
 
 The will update two Helm charts:
 * [atlas-operator-crds](https://github.com/mongodb/helm-charts/tree/main/charts/atlas-operator-crds)
@@ -196,40 +216,9 @@ After the PR is approved it will soon appear in the [Atlas Operator openshift cl
 ### Create a Pull Request for the `certified-operators` repository
 
 This is necessary for the Operator to appear on "operators" tab in Openshift clusters in the "certified" section.
+Ensure the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable is set.
 
-1. Ensure the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable is set.
-2. Set the image SHA environment variables of the **certified** images. 
-To get the SHAs:
-
-1. Go to https://connect.redhat.com/manage/components
-2. search for "mongodb-atlas-kubernetes-operator"
-3. select "[Quay] mongodb-atlas-kubernetes-operator"
-4. filter for the given tag, i.e. "2.2.0"
-
-The direct link, at the time of writing is https://connect.redhat.com/component/view/63568bb95612f26f8db42d7a/images.
-
-Copy the **certified** image SHAs of the **amd64** and the **arm64** image:
-
-![img.png](certified-image-sha.png)
-> **NOTE**
-> 
-> In case you can't see the images tags in the https://connect.redhat.com go to the https://quay.io/repository/mongodb/mongodb-atlas-kubernetes-operator?tab=tags
-and select the latest released tag that ends with `-certified` e.g. `2.4.0-certified`. Then click on `manifest` link for the selected image.
-You should see two available manifests for `amd64` and `arm64` that you can use. Here is the example: https://quay.io/repository/mongodb/mongodb-atlas-kubernetes-operator/manifest/sha256:20740f06db3b6e768b40562ee50c729aba9870a9051045b4fc49d0c404cc18f6
-![img.png](img.png)
-```
-export IMG_SHA_AMD64=sha256:c997f8ab49ed5680c258ee4a3e6a9e5bbd8d8d0eef26574345d4c78a4f728186
-export IMG_SHA_ARM64=sha256:aa3ed7b73f8409dda9ac32375dfddb25ee52d7ea172e08a54ecd144d52fe44da
-```
-
-
- - Use the version of the release as `VERSION`, remember the SEMVER x.y.z version without the `v`prefix.
-
-```
-export VERSION=<image-version>
-```
-
-Invoke the following script:
+Invoke the following script and ensure to have the `VERSION` variable set from above:
 ```
 ./scripts/release-redhat-certified.sh
 ```

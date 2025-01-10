@@ -23,6 +23,7 @@
     "kubernetes-controller-tools@0.16.1",
     "setup-envtest@0.18.2",
     "awscli2@latest",
-    "go-mockery@latest"
+    "go-mockery@latest",
+    "docker-sbom@latest"
   ]
 }
