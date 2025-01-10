@@ -4,7 +4,21 @@ import (
 	"context"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
+
+// ProjectReferrer is anything that holds a ProjectDualReference
+type ProjectReferrer interface {
+	ProjectDualRef() *akov2.ProjectDualReference
+}
+
+// ProjectReferrerObject is an project referrer that is also an Kubernetes Object
+type ProjectReferrerObject interface {
+	client.Object
+	ProjectReferrer
+}
 
 type ProjectService interface {
 	GetProjectByName(ctx context.Context, name string) (*Project, error)

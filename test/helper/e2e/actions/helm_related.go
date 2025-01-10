@@ -23,7 +23,7 @@ func HelmDefaultUpgradeResources(data *model.TestDataProvider) {
 		data.Resources.Deployments[0].Spec.DeploymentSpec.BackupEnabled = &enabled
 		data.Resources.Users[0].DeleteAllRoles()
 		data.Resources.Users[0].AddBuildInAdminRole()
-		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
+		data.Resources.Users[0].Spec.ProjectRef.Name = data.Resources.GetAtlasProjectFullKubeName()
 		generation, err := kubecli.GetDeploymentObservedGeneration(data.Context, data.K8SClient, data.Resources.Namespace, data.Resources.Deployments[0].ObjectMeta.GetName())
 		Expect(err).NotTo(HaveOccurred())
 		helm.UpgradeAtlasDeploymentChartDev(data.Resources)

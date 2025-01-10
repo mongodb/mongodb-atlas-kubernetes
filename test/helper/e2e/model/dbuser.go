@@ -43,8 +43,10 @@ func NewDBUser(userName string) *DBUser {
 		},
 		Spec: UserSpec{
 			Username: userName,
-			Project: &common.ResourceRefNamespaced{
-				Name: "my-project",
+			ProjectDualReference: akov2.ProjectDualReference{
+				ProjectRef: &common.ResourceRefNamespaced{
+					Name: "my-project",
+				},
 			},
 		},
 	}
@@ -56,7 +58,7 @@ func (s *DBUser) WithAuthDatabase(name string) *DBUser {
 }
 
 func (s *DBUser) WithProjectRef(name string) *DBUser {
-	s.Spec.Project.Name = name
+	s.Spec.ProjectRef.Name = name
 	return s
 }
 

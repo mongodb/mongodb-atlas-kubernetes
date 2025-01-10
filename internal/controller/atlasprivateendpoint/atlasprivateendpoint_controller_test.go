@@ -3,7 +3,6 @@ package atlasprivateendpoint
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -30,11 +28,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 func TestReconcile(t *testing.T) {
@@ -77,12 +75,14 @@ func TestReconcile(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -96,8 +96,10 @@ func TestReconcile(t *testing.T) {
 				WithObjects(pe).
 				Build()
 			r := &AtlasPrivateEndpointReconciler{
-				Client: fakeClient,
-				Log:    zap.New(core).Sugar(),
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: fakeClient,
+					Log:    zap.New(core).Sugar(),
+				},
 			}
 			result, _ := r.Reconcile(ctx, tt.request)
 			assert.Equal(t, tt.expectedResult, result)
@@ -132,12 +134,14 @@ func TestEnsureCustomResource(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -159,12 +163,14 @@ func TestEnsureCustomResource(t *testing.T) {
 					},
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -185,12 +191,14 @@ func TestEnsureCustomResource(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
 					},
-					LocalCredentialHolder: api.LocalCredentialHolder{},
-					Provider:              "AWS",
-					Region:                "US_EAST_1",
+					Provider: "AWS",
+					Region:   "US_EAST_1",
 				},
 				Status: status.AtlasPrivateEndpointStatus{
 					ServiceID:     "pe-service-id",
@@ -218,10 +226,11 @@ func TestEnsureCustomResource(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "my-secret",
 						},
@@ -248,7 +257,7 @@ func TestEnsureCustomResource(t *testing.T) {
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
-				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: failed to create Atlas SDK client: failed to create sdk client",
+				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: failed to create sdk client",
 				"Status update",
 			},
 		},
@@ -259,9 +268,11 @@ func TestEnsureCustomResource(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name:      "my-project",
+							Namespace: "default",
+						},
 					},
 					Provider: "AWS",
 					Region:   "US_EAST_1",
@@ -282,7 +293,7 @@ func TestEnsureCustomResource(t *testing.T) {
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
-				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: failed to retrieve project custom resource: atlasprojects.atlas.mongodb.com \"my-project\" not found",
+				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: can not fetch AtlasProject: atlasprojects.atlas.mongodb.com \"my-project\" not found",
 				"Status update",
 			},
 		},
@@ -293,10 +304,10 @@ func TestEnsureCustomResource(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
-					ExternalProject: &akov2.ExternalProjectReference{
-						ID: projectID,
-					},
-					LocalCredentialHolder: api.LocalCredentialHolder{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
 						ConnectionSecret: &api.LocalObjectReference{
 							Name: "my-secret",
 						},
@@ -356,10 +367,12 @@ func TestEnsureCustomResource(t *testing.T) {
 				WithStatusSubresource(tt.atlasPrivateEndpoint).
 				Build()
 			r := &AtlasPrivateEndpointReconciler{
-				Client:        fakeClient,
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: fakeClient,
+					Log:    zap.New(core).Sugar(),
+				},
 				AtlasProvider: tt.provider,
 				EventRecorder: record.NewFakeRecorder(10),
-				Log:           zap.New(core).Sugar(),
 			}
 			result, err := r.ensureCustomResource(ctx, tt.atlasPrivateEndpoint)
 			assert.NoError(t, err)
@@ -368,142 +381,6 @@ func TestEnsureCustomResource(t *testing.T) {
 			for i, logMsg := range tt.expectedLogs {
 				assert.Equal(t, logMsg, logs.All()[i].Message)
 			}
-		})
-	}
-}
-
-func TestGetProjectFromKube(t *testing.T) {
-	ctx := context.Background()
-	projectID := "project-id"
-
-	testScheme := runtime.NewScheme()
-	require.NoError(t, akov2.AddToScheme(testScheme))
-
-	tests := map[string]struct {
-		atlasPrivateEndpoint *akov2.AtlasPrivateEndpoint
-		provider             atlas.Provider
-		expectedProject      *project.Project
-		expectedErr          error
-	}{
-		"failed to resolve secret": {
-			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-missing-project",
-						Namespace: "default",
-					},
-					Provider: "AWS",
-					Region:   "US_EAST_1",
-				},
-				Status: status.AtlasPrivateEndpointStatus{
-					ServiceID:     "pe-service-id",
-					ServiceStatus: "AVAILABLE",
-				},
-			},
-			expectedErr: fmt.Errorf(
-				"failed to retrieve project custom resource: %w",
-				&k8serrors.StatusError{
-					ErrStatus: metav1.Status{
-						Status:  "Failure",
-						Message: "atlasprojects.atlas.mongodb.com \"my-missing-project\" not found",
-						Reason:  "NotFound",
-						Details: &metav1.StatusDetails{
-							Name:  "my-missing-project",
-							Group: "atlas.mongodb.com",
-							Kind:  "atlasprojects",
-						},
-						Code: 404,
-					},
-				},
-			),
-		},
-		"failed to create sdk client": {
-			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
-					},
-					Provider: "AWS",
-					Region:   "US_EAST_1",
-				},
-				Status: status.AtlasPrivateEndpointStatus{
-					ServiceID:     "pe-service-id",
-					ServiceStatus: "AVAILABLE",
-				},
-			},
-			provider: &atlasmock.TestProvider{
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					return nil, "", errors.New("failed to create sdk client")
-				},
-			},
-			expectedErr: fmt.Errorf("failed to create Atlas SDK client: %w", errors.New("failed to create sdk client")),
-		},
-		"get project from cluster": {
-			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasPrivateEndpointSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name:      "my-project",
-						Namespace: "default",
-					},
-					Provider: "AWS",
-					Region:   "US_EAST_1",
-				},
-				Status: status.AtlasPrivateEndpointStatus{
-					ServiceID:     "pe-service-id",
-					ServiceStatus: "AVAILABLE",
-				},
-			},
-			provider: &atlasmock.TestProvider{
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					return &admin.APIClient{}, "org-id", nil
-				},
-			},
-			expectedProject: &project.Project{
-				OrgID: "org-id",
-				ID:    "project-id",
-				Name:  "My Project",
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			akoProject := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasProjectSpec{
-					Name: "My Project",
-				},
-				Status: status.AtlasProjectStatus{
-					ID: projectID,
-				},
-			}
-
-			fakeClient := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(akoProject).
-				Build()
-			r := &AtlasPrivateEndpointReconciler{
-				Client:        fakeClient,
-				AtlasProvider: tt.provider,
-			}
-			p, err := r.getProjectFromKube(ctx, tt.atlasPrivateEndpoint)
-			assert.Equal(t, tt.expectedProject, p)
-			assert.Equal(t, tt.expectedErr, err)
 		})
 	}
 }
@@ -517,12 +394,14 @@ func TestFailManageFinalizer(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: akov2.AtlasPrivateEndpointSpec{
-			ExternalProject: &akov2.ExternalProjectReference{
-				ID: "project-id",
+			ProjectDualReference: akov2.ProjectDualReference{
+				ExternalProjectRef: &akov2.ExternalProjectReference{
+					ID: "project-id",
+				},
+				ConnectionSecret: &api.LocalObjectReference{},
 			},
-			LocalCredentialHolder: api.LocalCredentialHolder{},
-			Provider:              "AWS",
-			Region:                "US_EAST_1",
+			Provider: "AWS",
+			Region:   "US_EAST_1",
 		},
 		Status: status.AtlasPrivateEndpointStatus{
 			ServiceID:     "pe-service-id",
@@ -588,8 +467,10 @@ func TestFailManageFinalizer(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := &AtlasPrivateEndpointReconciler{
-				Client: fakeClient,
-				Log:    zaptest.NewLogger(t).Sugar(),
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: fakeClient,
+					Log:    zaptest.NewLogger(t).Sugar(),
+				},
 			}
 
 			result, err := tt.transition(r)

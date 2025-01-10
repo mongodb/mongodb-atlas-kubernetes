@@ -23,10 +23,12 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 func TestHandleServerlessInstance(t *testing.T) {
@@ -477,8 +479,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
@@ -559,8 +563,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
@@ -646,8 +652,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
@@ -718,8 +726,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: akov2.AtlasDeploymentSpec{
-					Project: &common.ResourceRefNamespaced{
-						Name: "my-project",
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: "instance0",
@@ -791,9 +801,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 				WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
 				Build()
 			reconciler := &AtlasDeploymentReconciler{
-				Client:            k8sClient,
-				Log:               logger.Sugar(),
-				deploymentService: tt.deploymentService(),
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: k8sClient,
+					Log:    logger.Sugar(),
+				},
 			}
 			workflowCtx := &workflow.Context{
 				Context:   ctx,
@@ -802,7 +813,8 @@ func TestHandleServerlessInstance(t *testing.T) {
 			}
 
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Serverless)
-			result, err := reconciler.handleServerlessInstance(workflowCtx, deploymentInAKO, tt.deploymentInAtlas)
+			var projectService project.ProjectService
+			result, err := reconciler.handleServerlessInstance(workflowCtx, projectService, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(

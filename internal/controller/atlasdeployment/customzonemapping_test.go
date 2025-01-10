@@ -289,9 +289,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			r := &AtlasDeploymentReconciler{
-				deploymentService: tc.deploymentAPI,
-			}
+			r := &AtlasDeploymentReconciler{}
 			ctx := &workflow.Context{
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
@@ -299,6 +297,7 @@ func TestEnsureCustomZoneMapping(t *testing.T) {
 
 			result := r.ensureCustomZoneMapping(
 				ctx,
+				tc.deploymentAPI,
 				projectID,
 				tc.customZoneMappings,
 				deploymentName,

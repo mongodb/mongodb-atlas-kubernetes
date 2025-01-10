@@ -50,12 +50,8 @@ const (
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasDeploymentSpec struct {
-	api.LocalCredentialHolder `json:",inline"`
-
-	// Project is a reference to AtlasProject resource the deployment belongs to
-	Project *common.ResourceRefNamespaced `json:"projectRef,omitempty"`
-	// ExternalProjectRef holds the Atlas project ID the user belongs to
-	ExternalProjectRef *ExternalProjectReference `json:"externalProjectRef,omitempty"`
+	// ProjectReference is the dual external or kubernetes reference with access credentials
+	ProjectDualReference `json:",inline"`
 
 	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
 	// +optional
@@ -505,10 +501,10 @@ type AtlasDeploymentList struct {
 
 func (c AtlasDeployment) AtlasProjectObjectKey() client.ObjectKey {
 	ns := c.Namespace
-	if c.Spec.Project.Namespace != "" {
-		ns = c.Spec.Project.Namespace
+	if c.Spec.ProjectRef.Namespace != "" {
+		ns = c.Spec.ProjectRef.Namespace
 	}
-	return kube.ObjectKey(ns, c.Spec.Project.Name)
+	return kube.ObjectKey(ns, c.Spec.ProjectRef.Name)
 }
 
 func (c *AtlasDeployment) GetStatus() api.Status {
@@ -527,7 +523,11 @@ func (c *AtlasDeployment) UpdateStatus(conditions []api.Condition, options ...ap
 }
 
 func (c *AtlasDeployment) Credentials() *api.LocalObjectReference {
-	return c.Spec.Credentials()
+	return c.Spec.ConnectionSecret
+}
+
+func (c *AtlasDeployment) ProjectDualRef() *ProjectDualReference {
+	return &c.Spec.ProjectDualReference
 }
 
 // ************************************ Builder methods *************************************************
@@ -633,7 +633,7 @@ func (c *AtlasDeployment) WithAtlasName(name string) *AtlasDeployment {
 }
 
 func (c *AtlasDeployment) WithProjectName(projectName string) *AtlasDeployment {
-	c.Spec.Project = &common.ResourceRefNamespaced{Name: projectName}
+	c.Spec.ProjectRef = &common.ResourceRefNamespaced{Name: projectName}
 	return c
 }
 
@@ -689,14 +689,12 @@ func (c *AtlasDeployment) WithSearchNodes(instanceSize string, count uint8) *Atl
 }
 
 func (c *AtlasDeployment) WithExternaLProject(projectID, credentialsName string) *AtlasDeployment {
-	c.Spec.Project = nil
+	c.Spec.ProjectRef = nil
 	c.Spec.ExternalProjectRef = &ExternalProjectReference{
 		ID: projectID,
 	}
-	c.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
-		ConnectionSecret: &api.LocalObjectReference{
-			Name: credentialsName,
-		},
+	c.Spec.ConnectionSecret = &api.LocalObjectReference{
+		Name: credentialsName,
 	}
 
 	return c

@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
@@ -22,10 +23,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 func Test_roleController_Reconcile(t *testing.T) {
@@ -84,8 +87,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -163,8 +168,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -209,8 +216,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -268,8 +277,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -354,8 +365,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -422,8 +435,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -480,8 +495,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -569,8 +586,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -605,8 +624,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 									},
 								},
 							},
-							ExternalProjectIDRef: &akov2.ExternalProjectReference{
-								ID: "testProjectID",
+							ProjectDualReference: akov2.ProjectDualReference{
+								ExternalProjectRef: &akov2.ExternalProjectReference{
+									ID: "testProjectID",
+								},
 							},
 						},
 						Status: status.AtlasCustomRoleStatus{},
@@ -663,8 +684,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 								},
 							},
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -683,6 +706,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &roleController{
 				ctx:       tt.fields.ctx,
+				project:   &project.Project{ID: "testProjectID"},
 				service:   tt.fields.service(),
 				role:      tt.fields.role,
 				dpEnabled: tt.fields.deletionProtectionEnabled,
@@ -695,17 +719,19 @@ func Test_roleController_Reconcile(t *testing.T) {
 	}
 }
 
+type args struct {
+	ctx                       *workflow.Context
+	akoCustomRole             *akov2.AtlasCustomRole
+	deletionProtectionEnabled bool
+	k8sObjects                []client.Object
+}
+
 func Test_handleCustomRole(t *testing.T) {
-	type args struct {
-		ctx                       *workflow.Context
-		akoCustomRole             *akov2.AtlasCustomRole
-		deletionProtectionEnabled bool
-		k8sObjects                []client.Object
-	}
 	tests := []struct {
-		name string
-		args args
-		want workflow.Result
+		name       string
+		args       args
+		solveError error
+		want       workflow.Result
 	}{
 		{
 			name: "Create custom role successfully using external project ID",
@@ -743,8 +769,10 @@ func Test_handleCustomRole(t *testing.T) {
 							InheritedRoles: nil,
 							Actions:        nil,
 						},
-						ExternalProjectIDRef: &akov2.ExternalProjectReference{
-							ID: "testProjectID",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{
+								ID: "testProjectID",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -761,9 +789,11 @@ func Test_handleCustomRole(t *testing.T) {
 								InheritedRoles: nil,
 								Actions:        nil,
 							},
-							ProjectRef: &common.ResourceRefNamespaced{
-								Name:      "testProject",
-								Namespace: "testNamespace",
+							ProjectDualReference: akov2.ProjectDualReference{
+								ProjectRef: &common.ResourceRefNamespaced{
+									Name:      "testProject",
+									Namespace: "testNamespace",
+								},
 							},
 						},
 						Status: status.AtlasCustomRoleStatus{},
@@ -808,9 +838,11 @@ func Test_handleCustomRole(t *testing.T) {
 							InheritedRoles: nil,
 							Actions:        nil,
 						},
-						ProjectRef: &common.ResourceRefNamespaced{
-							Name:      "testProject",
-							Namespace: "testNamespace",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      "testProject",
+								Namespace: "testNamespace",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -837,9 +869,11 @@ func Test_handleCustomRole(t *testing.T) {
 								InheritedRoles: nil,
 								Actions:        nil,
 							},
-							ProjectRef: &common.ResourceRefNamespaced{
-								Name:      "testProject",
-								Namespace: "testNamespace",
+							ProjectDualReference: akov2.ProjectDualReference{
+								ProjectRef: &common.ResourceRefNamespaced{
+									Name:      "testProject",
+									Namespace: "testNamespace",
+								},
 							},
 						},
 						Status: status.AtlasCustomRoleStatus{},
@@ -871,9 +905,11 @@ func Test_handleCustomRole(t *testing.T) {
 							InheritedRoles: nil,
 							Actions:        nil,
 						},
-						ProjectRef: &common.ResourceRefNamespaced{
-							Name:      "testProject",
-							Namespace: "testNamespace",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      "testProject",
+								Namespace: "testNamespace",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
@@ -884,7 +920,9 @@ func Test_handleCustomRole(t *testing.T) {
 							Name:      "testProject",
 							Namespace: "testNamespace",
 						},
-						Spec: akov2.AtlasProjectSpec{},
+						Spec: akov2.AtlasProjectSpec{
+							Name: "testProject",
+						},
 						Status: status.AtlasProjectStatus{
 							ID: "",
 						},
@@ -916,16 +954,18 @@ func Test_handleCustomRole(t *testing.T) {
 							InheritedRoles: nil,
 							Actions:        nil,
 						},
-						ProjectRef: &common.ResourceRefNamespaced{
-							Name:      "testProject",
-							Namespace: "testNamespace",
+						ProjectDualReference: akov2.ProjectDualReference{
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      "testProject",
+								Namespace: "testNamespace",
+							},
 						},
 					},
 					Status: status.AtlasCustomRoleStatus{},
 				},
 				k8sObjects: []client.Object{},
 			},
-			want: workflow.Terminate(workflow.ProjectCustomRolesReady, "atlasprojects.atlas.mongodb.com \"testProject\" not found"),
+			solveError: fmt.Errorf("atlasprojects.atlas.mongodb.com \"testProject\" not found"),
 		},
 	}
 	for _, tt := range tests {
@@ -936,9 +976,27 @@ func Test_handleCustomRole(t *testing.T) {
 				WithScheme(testScheme).
 				WithObjects(tt.args.k8sObjects...).
 				Build()
-			if got := handleCustomRole(tt.args.ctx, k8sClient, tt.args.akoCustomRole, tt.args.deletionProtectionEnabled); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("handleCustomRole() = %v, want %v", got, tt.want)
+			service := customroles.NewCustomRoles(tt.args.ctx.SdkClient.CustomDatabaseRolesApi)
+			r := AtlasCustomRoleReconciler{
+				AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient},
+			}
+			prj, err := solveProjectID(t, &r, tt.args)
+			if tt.solveError == nil {
+				require.NoError(t, err)
+				if got := handleCustomRole(tt.args.ctx, k8sClient, prj, service, tt.args.akoCustomRole, tt.args.deletionProtectionEnabled); !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("handleCustomRole() = %v, want %v", got, tt.want)
+				}
+			} else {
+				assert.ErrorContains(t, err, tt.solveError.Error())
 			}
 		})
 	}
+}
+
+func solveProjectID(t *testing.T, r *AtlasCustomRoleReconciler, args args) (*project.Project, error) {
+	t.Helper()
+	if args.akoCustomRole.Spec.ProjectDualReference.ExternalProjectRef != nil {
+		return &project.Project{ID: args.akoCustomRole.Spec.ExternalProjectRef.ID}, nil
+	}
+	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClient, args.akoCustomRole, args.ctx.OrgID)
 }

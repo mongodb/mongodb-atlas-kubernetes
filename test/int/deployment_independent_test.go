@@ -39,17 +39,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "independent
 				deployment.Spec.ExternalProjectRef = &akov2.ExternalProjectReference{
 					ID: project.ID(),
 				}
-				deployment.Spec.LocalCredentialHolder = api.LocalCredentialHolder{
-					ConnectionSecret: &api.LocalObjectReference{
-						Name: project.Spec.ConnectionSecret.Name,
-					},
+				deployment.Spec.ConnectionSecret = &api.LocalObjectReference{
+					Name: project.Spec.ConnectionSecret.Name,
 				}
 
 				Expect(k8sClient.Create(ctx, deployment)).ToNot(Succeed())
 			})
 
 			By("Creating a independent deployment resource", func() {
-				deployment.Spec.Project = nil
+				deployment.Spec.ProjectRef = nil
 				Expect(k8sClient.Create(ctx, deployment)).To(Succeed())
 				Eventually(func(g Gomega) bool {
 					return resources.CheckCondition(k8sClient, deployment, api.TrueCondition(api.ReadyType), validateDeploymentCreatingFunc(g))

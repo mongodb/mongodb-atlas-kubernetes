@@ -19,15 +19,16 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex"
 )
 
 const FreeTier = "M0"
 
-func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Cluster) (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, deploymentInAKO, deploymentInAtlas *deployment.Cluster) (ctrl.Result, error) {
 	if deploymentInAtlas == nil {
 		ctx.Log.Infof("Advanced Deployment %s doesn't exist in Atlas - creating", deploymentInAKO.GetName())
-		newDeployment, err := r.deploymentService.CreateDeployment(ctx.Context, deploymentInAKO)
+		newDeployment, err := deploymentService.CreateDeployment(ctx.Context, deploymentInAKO)
 		if err != nil {
 			return r.terminate(ctx, workflow.DeploymentNotCreatedInAtlas, err)
 		}
@@ -38,7 +39,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 	switch deploymentInAtlas.GetState() {
 	case status.StateIDLE:
 		if changes, occurred := deployment.ComputeChanges(deploymentInAKO, deploymentInAtlas); occurred {
-			updatedDeployment, err := r.deploymentService.UpdateDeployment(ctx.Context, changes)
+			updatedDeployment, err := deploymentService.UpdateDeployment(ctx.Context, changes)
 			if err != nil {
 				return r.terminate(ctx, workflow.DeploymentNotUpdatedInAtlas, err)
 			}
@@ -46,52 +47,54 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), updatedDeployment, workflow.DeploymentUpdating, "deployment is updating")
 		}
 
-		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource())
+		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource())
 		if transition != nil {
 			return transition(workflow.Internal)
 		}
 
-		transition = r.ensureAdvancedOptions(ctx, deploymentInAKO, deploymentInAtlas)
+		transition = r.ensureAdvancedOptions(ctx, deploymentService, deploymentInAKO, deploymentInAtlas)
 		if transition != nil {
 			return transition(workflow.DeploymentAdvancedOptionsReady)
 		}
 
-		err := r.ensureConnectionSecrets(ctx, deploymentInAKO, deploymentInAtlas.GetConnection())
+		err := r.ensureConnectionSecrets(ctx, projectService, deploymentInAKO, deploymentInAtlas.GetConnection())
 		if err != nil {
 			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
 		if !r.AtlasProvider.IsCloudGov() {
 			searchNodeResult := handleSearchNodes(ctx, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
-			if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), searchNodeResult); transition != nil {
+			if transition = r.transitionFromResult(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), searchNodeResult); transition != nil {
 				return transition(workflow.Internal)
 			}
 		}
 
 		searchService := searchindex.NewSearchIndexes(ctx.SdkClientSet.SdkClient20241113001.AtlasSearchApi)
 		result := handleSearchIndexes(ctx, r.Client, searchService, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
-		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+		if transition = r.transitionFromResult(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
 			return transition(workflow.Internal)
 		}
 
 		result = r.ensureCustomZoneMapping(
 			ctx,
+			deploymentService,
 			deploymentInAKO.GetProjectID(),
 			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.CustomZoneMapping,
 			deploymentInAKO.GetName(),
 		)
-		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+		if transition = r.transitionFromResult(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
 			return transition(workflow.Internal)
 		}
 
 		result = r.ensureManagedNamespaces(
 			ctx,
+			deploymentService,
 			deploymentInAKO.GetProjectID(),
 			deploymentInAKO.ClusterType,
 			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.ManagedNamespaces,
 			deploymentInAKO.GetName(),
 		)
-		if transition = r.transitionFromResult(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+		if transition = r.transitionFromResult(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
 			return transition(workflow.Internal)
 		}
 
@@ -112,7 +115,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 	}
 }
 
-func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, deploymentInAKO deployment.Deployment, connection *status.ConnectionStrings) error {
+func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, projectService project.ProjectService, deploymentInAKO deployment.Deployment, connection *status.ConnectionStrings) error {
 	databaseUsers := &akov2.AtlasDatabaseUserList{}
 	listOpts := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProject, deploymentInAKO.GetProjectID()),
@@ -168,7 +171,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 			})
 		}
 
-		project, err := r.projectService.GetProject(ctx.Context, deploymentInAKO.GetProjectID())
+		project, err := projectService.GetProject(ctx.Context, deploymentInAKO.GetProjectID())
 		if err != nil {
 			return err
 		}
@@ -188,23 +191,23 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 	return nil
 }
 
-func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas *deployment.Cluster) transitionFn {
+func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService, deploymentInAKO, deploymentInAtlas *deployment.Cluster) transitionFn {
 	if deploymentInAKO.IsTenant() {
 		return nil
 	}
 
-	err := r.deploymentService.ClusterWithProcessArgs(ctx.Context, deploymentInAtlas)
+	err := deploymentService.ClusterWithProcessArgs(ctx.Context, deploymentInAtlas)
 	if err != nil {
-		return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
+		return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
 	}
 
 	if deploymentInAKO.ProcessArgs != nil && !reflect.DeepEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
-		err = r.deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
+		err = deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
 		if err != nil {
-			return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
+			return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
 		}
 
-		return r.transitionFromLegacy(ctx, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), nil)
+		return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), nil)
 	}
 
 	return nil

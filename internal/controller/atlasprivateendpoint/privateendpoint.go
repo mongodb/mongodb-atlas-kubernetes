@@ -31,11 +31,12 @@ import (
 
 func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointService(
 	ctx *workflow.Context,
+	privateEndpointService privateendpoint.PrivateEndpointService,
 	projectID string,
 	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
 ) (ctrl.Result, error) {
 	akoPEService := privateendpoint.NewPrivateEndpoint(akoPrivateEndpoint)
-	atlasPEService, err := r.getOrMatchPrivateEndpointService(ctx.Context, projectID, akoPrivateEndpoint)
+	atlasPEService, err := r.getOrMatchPrivateEndpointService(ctx.Context, privateEndpointService, projectID, akoPrivateEndpoint)
 	if err != nil {
 		return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.ReadyType, workflow.Internal, err)
 	}
@@ -45,32 +46,34 @@ func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointService(
 
 	switch {
 	case !existInAtlas && !wasDeleted:
-		return r.createPrivateEndpointService(ctx, projectID, akoPrivateEndpoint, akoPEService)
+		return r.createPrivateEndpointService(ctx, privateEndpointService, projectID, akoPrivateEndpoint, akoPEService)
 	case !existInAtlas && wasDeleted:
 		return r.unmanage(ctx, akoPrivateEndpoint)
 	case existInAtlas && wasDeleted:
-		return r.deletePrivateEndpointService(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
+		return r.deletePrivateEndpointService(ctx, privateEndpointService, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
 	}
 
-	return r.watchServiceState(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
+	return r.watchServiceState(ctx, privateEndpointService, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
 }
 
 func (r *AtlasPrivateEndpointReconciler) createPrivateEndpointService(
 	ctx *workflow.Context,
+	privateEndpointService privateendpoint.PrivateEndpointService,
 	projectID string,
 	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
 	akoPEService privateendpoint.EndpointService,
 ) (ctrl.Result, error) {
-	atlasPEService, err := r.privateEndpointService.CreatePrivateEndpointService(ctx.Context, projectID, akoPEService)
+	atlasPEService, err := privateEndpointService.CreatePrivateEndpointService(ctx.Context, projectID, akoPEService)
 	if err != nil {
 		return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointServiceReady, workflow.PrivateEndpointServiceFailedToCreate, err)
 	}
 
-	return r.watchServiceState(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
+	return r.watchServiceState(ctx, privateEndpointService, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
 }
 
 func (r *AtlasPrivateEndpointReconciler) deletePrivateEndpointService(
 	ctx *workflow.Context,
+	privateEndpointService privateendpoint.PrivateEndpointService,
 	projectID string,
 	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
 	akoPEService privateendpoint.EndpointService,
@@ -80,16 +83,17 @@ func (r *AtlasPrivateEndpointReconciler) deletePrivateEndpointService(
 		return r.unmanage(ctx, akoPrivateEndpoint)
 	}
 
-	atlasPEService, err := r.deletePrivateEndpoint(ctx.Context, projectID, atlasPEService)
+	atlasPEService, err := r.deletePrivateEndpoint(ctx.Context, privateEndpointService, projectID, atlasPEService)
 	if err != nil {
 		return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointServiceReady, workflow.PrivateEndpointFailedToDelete, err)
 	}
 
-	return r.watchServiceState(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
+	return r.watchServiceState(ctx, privateEndpointService, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
 }
 
 func (r *AtlasPrivateEndpointReconciler) watchServiceState(
 	ctx *workflow.Context,
+	privateEndpointService privateendpoint.PrivateEndpointService,
 	projectID string,
 	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
 	akoPEService privateendpoint.EndpointService,
@@ -109,11 +113,12 @@ func (r *AtlasPrivateEndpointReconciler) watchServiceState(
 	ctx.SetConditionTrue(api.PrivateEndpointServiceReady)
 	r.EventRecorder.Event(akoPrivateEndpoint, "Normal", string(workflow.PrivateEndpointServiceCreated), "Private Endpoint Service is available")
 
-	return r.handlePrivateEndpointInterface(ctx, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
+	return r.handlePrivateEndpointInterface(ctx, privateEndpointService, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
 }
 
 func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointInterface(
 	ctx *workflow.Context,
+	privateEndpointService privateendpoint.PrivateEndpointService,
 	projectID string,
 	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
 	akoPEService privateendpoint.EndpointService,
@@ -153,7 +158,7 @@ func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointInterface(
 			continue
 		case inAKO && !inAtlas:
 			gcpProjectID := getGCPProjectID(akoPrivateEndpoint, compositeInterfaceMap.AKO.InterfaceID())
-			_, err := r.privateEndpointService.CreatePrivateEndpointInterface(
+			_, err := privateEndpointService.CreatePrivateEndpointInterface(
 				ctx.Context,
 				projectID,
 				akoPrivateEndpoint.Spec.Provider,
@@ -166,7 +171,7 @@ func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointInterface(
 			}
 			pendingResources = true
 		case !inAKO && inAtlas:
-			err := r.privateEndpointService.DeleteEndpointInterface(
+			err := privateEndpointService.DeleteEndpointInterface(
 				ctx.Context,
 				projectID,
 				akoPrivateEndpoint.Spec.Provider,
@@ -191,14 +196,15 @@ func (r *AtlasPrivateEndpointReconciler) handlePrivateEndpointInterface(
 // only one private endpoint service per provider/region is allowed
 func (r *AtlasPrivateEndpointReconciler) getOrMatchPrivateEndpointService(
 	ctx context.Context,
+	privateEndpointService privateendpoint.PrivateEndpointService,
 	projectID string,
 	akoPrivateEndpoint *akov2.AtlasPrivateEndpoint,
 ) (privateendpoint.EndpointService, error) {
 	if akoPrivateEndpoint.Status.ServiceID != "" {
-		return r.privateEndpointService.GetPrivateEndpoint(ctx, projectID, akoPrivateEndpoint.Spec.Provider, akoPrivateEndpoint.Status.ServiceID)
+		return privateEndpointService.GetPrivateEndpoint(ctx, projectID, akoPrivateEndpoint.Spec.Provider, akoPrivateEndpoint.Status.ServiceID)
 	}
 
-	endpointServices, err := r.privateEndpointService.ListPrivateEndpoints(ctx, projectID, akoPrivateEndpoint.Spec.Provider)
+	endpointServices, err := privateEndpointService.ListPrivateEndpoints(ctx, projectID, akoPrivateEndpoint.Spec.Provider)
 	if err != nil {
 		return nil, err
 	}
@@ -214,11 +220,12 @@ func (r *AtlasPrivateEndpointReconciler) getOrMatchPrivateEndpointService(
 
 func (r *AtlasPrivateEndpointReconciler) deletePrivateEndpoint(
 	ctx context.Context,
+	privateEndpointService privateendpoint.PrivateEndpointService,
 	projectID string,
 	atlasPEService privateendpoint.EndpointService,
 ) (privateendpoint.EndpointService, error) {
 	if len(atlasPEService.EndpointInterfaces()) == 0 && atlasPEService.Status() != privateendpoint.StatusDeleting {
-		err := r.privateEndpointService.DeleteEndpointService(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID())
+		err := privateEndpointService.DeleteEndpointService(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID())
 		if err != nil {
 			return nil, err
 		}
@@ -226,14 +233,14 @@ func (r *AtlasPrivateEndpointReconciler) deletePrivateEndpoint(
 
 	for _, i := range atlasPEService.EndpointInterfaces() {
 		if i.Status() != privateendpoint.StatusDeleting {
-			err := r.privateEndpointService.DeleteEndpointInterface(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID(), i.InterfaceID())
+			err := privateEndpointService.DeleteEndpointInterface(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID(), i.InterfaceID())
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	return r.privateEndpointService.GetPrivateEndpoint(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID())
+	return privateEndpointService.GetPrivateEndpoint(ctx, projectID, atlasPEService.Provider(), atlasPEService.ServiceID())
 }
 
 func isInterfaceInProgress(ep privateendpoint.EndpointInterface) bool {
