@@ -151,3 +151,6 @@ const (
 	PrivateEndpointFailedToConfigure        ConditionReason = "PrivateEndpointFailedToConfigure"
 	PrivateEndpointFailedToDelete           ConditionReason = "PrivateEndpointFailedToDelete"
 )
+
+// Atlas Network Peering reasons
+const ()

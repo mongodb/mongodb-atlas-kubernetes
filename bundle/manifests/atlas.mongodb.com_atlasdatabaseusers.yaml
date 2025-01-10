@@ -96,8 +96,9 @@ spec:
                   The specified date must be in the future and within one week.
                 type: string
               externalProjectRef:
-                description: ExternalProjectRef holds the Atlas project ID the user
-                  belongs to
+                description: |-
+                  "externalProjectRef" holds the parent Atlas project ID.
+                  Mutually exclusive with the "projectRef" field
                 properties:
                   id:
                     description: ID is the Atlas project ID
@@ -145,8 +146,9 @@ spec:
                 - name
                 type: object
               projectRef:
-                description: Project is a reference to AtlasProject resource the user
-                  belongs to
+                description: |-
+                  "projectRef" is a reference to the parent AtlasProject resource.
+                  Mutually exclusive with the "externalProjectRef" field
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource

@@ -48,8 +48,15 @@ func (ct *contractTest) cleanup(ctx context.Context) error {
 }
 
 func RunGoContractTest(ctx context.Context, t *testing.T, name string, contractTest func(ch ContractHelper)) {
-	if !control.Enabled("AKO_CONTRACT_TEST") {
-		t.Skip("Skipping contract test as AKO_CONTRACT_TEST is unset")
+	enabled := control.Enabled("AKO_CONTRACT_TEST")
+	focus := os.Getenv("AKO_CONTRACT_TEST_FOCUS")
+	focused := focus != "" && focus == name
+	if !enabled || !focused {
+		if !focused {
+			t.Skipf("Skipping contract test %q as focus is %q", name, focus)
+		} else {
+			t.Skip("Skipping contract test as AKO_CONTRACT_TEST is unset")
+		}
 		return
 	}
 	ct := newContractTest(ctx)

@@ -6,6 +6,6 @@ generatorOptions:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-  - name: controller
-    newName: mongodb-atlas-controller
-    newTag: latest
+- name: controller
+  newName: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+  newTag: 2.5.0-110-g8b60dfe8-dirty
