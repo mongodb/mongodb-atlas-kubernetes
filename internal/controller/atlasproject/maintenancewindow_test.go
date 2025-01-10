@@ -430,11 +430,9 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 			}
 			ctx.SetConditionTrue(api.MaintenanceWindowReadyType)
 
-			r := AtlasProjectReconciler{
-				maintenanceService: tc.maintenanceService,
-			}
+			r := AtlasProjectReconciler{}
 
-			result := r.ensureMaintenanceWindow(ctx, proj)
+			result := r.ensureMaintenanceWindow(ctx, proj, tc.maintenanceService)
 
 			assert.Equal(t, tc.isOK, result.IsOk())
 

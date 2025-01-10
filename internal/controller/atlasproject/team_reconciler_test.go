@@ -25,7 +25,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			SdkClient: &admin.APIClient{},
 			Context:   context.Background(),
 		}
-		checker := r.teamsManagedByAtlas(workflowCtx)
+		checker := r.teamsManagedByAtlas(workflowCtx, translation.NewTeamsServiceMock(t))
 		result, err := checker(&akov2.AtlasProject{})
 		assert.EqualError(t, err, "failed to match resource type as AtlasTeams")
 		assert.False(t, result)
@@ -37,7 +37,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			SdkClient: &admin.APIClient{},
 			Context:   context.Background(),
 		}
-		checker := r.teamsManagedByAtlas(workflowCtx)
+		checker := r.teamsManagedByAtlas(workflowCtx, translation.NewTeamsServiceMock(t))
 		result, err := checker(&akov2.AtlasTeam{})
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -61,8 +61,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				Return(nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound})
 			return service
 		}
-		r = AtlasProjectReconciler{teamsService: teamService()}
-		checker := r.teamsManagedByAtlas(workflowCtx)
+		r = AtlasProjectReconciler{}
+		checker := r.teamsManagedByAtlas(workflowCtx, teamService())
 		result, err := checker(team)
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -86,8 +86,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				Return(nil, errors.New("unavailable"))
 			return service
 		}
-		r = AtlasProjectReconciler{teamsService: teamService()}
-		checker := r.teamsManagedByAtlas(workflowCtx)
+		r = AtlasProjectReconciler{}
+		checker := r.teamsManagedByAtlas(workflowCtx, teamService())
 		result, err := checker(team)
 		assert.EqualError(t, err, "unavailable")
 		assert.False(t, result)
@@ -128,8 +128,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				}, nil)
 			return service
 		}
-		r = AtlasProjectReconciler{teamsService: teamService()}
-		checker := r.teamsManagedByAtlas(workflowCtx)
+		r = AtlasProjectReconciler{}
+		checker := r.teamsManagedByAtlas(workflowCtx, teamService())
 		result, err := checker(team)
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -170,8 +170,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				}, nil)
 			return service
 		}
-		r = AtlasProjectReconciler{teamsService: teamService()}
-		checker := r.teamsManagedByAtlas(workflowCtx)
+		r = AtlasProjectReconciler{}
+		checker := r.teamsManagedByAtlas(workflowCtx, teamService())
 		result, err := checker(team)
 		assert.NoError(t, err)
 		assert.True(t, result)

@@ -120,7 +120,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			},
 			deployment: deployment,
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Reconcile(nil)
 		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNamesAreNotUnique))
 		assert.False(t, result.IsOk())
 	})
@@ -211,13 +211,12 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Client:  nil,
 				Context: context.Background(),
 			},
-			deployment:    deployment,
-			k8sClient:     k8sClient,
-			projectID:     "testProjectID",
-			searchService: fakeAtlasSearch,
+			deployment: deployment,
+			k8sClient:  k8sClient,
+			projectID:  "testProjectID",
 		}
 
-		result := reconciler.Reconcile()
+		result := reconciler.Reconcile(fakeAtlasSearch)
 		assert.True(t, result.IsOk())
 		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.Len(t, deployment.Status.SearchIndexes, 1)
@@ -294,12 +293,11 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Client:  nil,
 				Context: context.Background(),
 			},
-			deployment:    deployment,
-			k8sClient:     k8sClient,
-			projectID:     "testProjectID",
-			searchService: fakeAtlasSearch,
+			deployment: deployment,
+			k8sClient:  k8sClient,
+			projectID:  "testProjectID",
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Reconcile(fakeAtlasSearch)
 		assert.False(t, result.IsOk())
 	})
 
@@ -390,14 +388,13 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Client:  nil,
 				Context: context.Background(),
 			},
-			deployment:    deployment,
-			k8sClient:     k8sClient,
-			projectID:     "testProjectID",
-			searchService: fakeAtlasSearch,
+			deployment: deployment,
+			k8sClient:  k8sClient,
+			projectID:  "testProjectID",
 		}
 
 		// first reconcile succeeds, creation succeeds
-		result := reconciler.Reconcile()
+		result := reconciler.Reconcile(fakeAtlasSearch)
 		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.False(t, result.IsOk())
 		assert.Equal(t, []status.DeploymentSearchIndexStatus{
@@ -422,7 +419,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		})
 
 		// create fails
-		result = reconciler.Reconcile()
+		result = reconciler.Reconcile(fakeAtlasSearch)
 		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.False(t, result.IsOk())
 		assert.Equal(t, []status.DeploymentSearchIndexStatus{
@@ -444,7 +441,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		deployment.Spec.DeploymentSpec.SearchIndexes = []akov2.SearchIndex{deployment.Spec.DeploymentSpec.SearchIndexes[0]}
 
 		// third reconcile succeeds, creation succeeds
-		result = reconciler.Reconcile()
+		result = reconciler.Reconcile(fakeAtlasSearch)
 		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.True(t, result.IsOk())
 		assert.Equal(t, []status.DeploymentSearchIndexStatus{
@@ -545,12 +542,11 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Client:  nil,
 				Context: context.Background(),
 			},
-			deployment:    cluster,
-			k8sClient:     k8sClient,
-			projectID:     "testProjectID",
-			searchService: fakeAtlasSearch,
+			deployment: cluster,
+			k8sClient:  k8sClient,
+			projectID:  "testProjectID",
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Reconcile(fakeAtlasSearch)
 		fmt.Println("Result", result)
 		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
@@ -644,12 +640,11 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Client:  nil,
 				Context: context.Background(),
 			},
-			deployment:    cluster,
-			k8sClient:     k8sClient,
-			projectID:     "testProjectID",
-			searchService: fakeAtlasSearch,
+			deployment: cluster,
+			k8sClient:  k8sClient,
+			projectID:  "testProjectID",
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Reconcile(fakeAtlasSearch)
 		fmt.Println("Result", result)
 		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
@@ -748,12 +743,11 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Client:  nil,
 				Context: context.Background(),
 			},
-			deployment:    cluster,
-			k8sClient:     k8sClient,
-			projectID:     "testProjectID",
-			searchService: fakeAtlasSearch,
+			deployment: cluster,
+			k8sClient:  k8sClient,
+			projectID:  "testProjectID",
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Reconcile(fakeAtlasSearch)
 		cluster.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.Empty(t, cluster.Status.SearchIndexes)
 		assert.True(t, result.IsOk())
