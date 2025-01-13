@@ -301,14 +301,14 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		return nil, fmt.Errorf("unable to create controller AtlasStreamsConnection: %w", err)
 	}
 
-	searchIndexReconciler := atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(
+	searchIndexConfigReconciler := atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(
 		mgr,
 		b.predicates,
 		b.atlasProvider,
 		b.deletionProtection,
 		b.logger,
 	)
-	if err = searchIndexReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
+	if err = searchIndexConfigReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
 		return nil, fmt.Errorf("unable to create controller AtlasSearchIndexConfig: %w", err)
 	}
 

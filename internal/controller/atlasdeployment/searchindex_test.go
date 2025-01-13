@@ -26,7 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex/fake"
 )
 
-func Test_searchIndexReconciler(t *testing.T) {
+func Test_searchIndexReconcileRequest(t *testing.T) {
 	t.Run("create: must reconcile index to create", func(t *testing.T) {
 		sch := runtime.NewScheme()
 		assert.Nil(t, akov2.AddToScheme(sch))
