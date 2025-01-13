@@ -271,6 +271,15 @@ func serverlessPrivateEndpoints(privateEndpoints []akov2.ServerlessPrivateEndpoi
 }
 
 func flexDeployment(spec *akov2.FlexSpec) error {
-	// TODO
+	supportedProviders := provider.SupportedProviders()
+	switch {
+	case spec.ProviderSettings == nil:
+		return errors.New("provider settings cannot be empty")
+	case !supportedProviders.IsSupported(provider.ProviderName(spec.ProviderSettings.BackingProviderName)):
+		return errors.New("backing provider name is not supported")
+	case spec.ProviderSettings.RegionName == "":
+		return errors.New("regionName cannot be empty")
+	}
+
 	return nil
 }

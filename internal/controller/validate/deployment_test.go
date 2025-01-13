@@ -17,7 +17,19 @@ func TestAtlasDeployment(t *testing.T) {
 		regionUsageRestrictions string
 		expectedError           string
 	}{
-		"Both specs present": {
+		"All specs present": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
+					ServerlessSpec: &akov2.ServerlessSpec{},
+					FlexSpec:       &akov2.FlexSpec{},
+				},
+			},
+			isGov:                   false,
+			regionUsageRestrictions: "",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
+		},
+		"Advanced & Serverless specs present": {
 			atlasDeployment: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
@@ -26,15 +38,37 @@ func TestAtlasDeployment(t *testing.T) {
 			},
 			isGov:                   false,
 			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec to be present, but none were",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
 		},
-		"Neither spec present": {
+		"Advanced & Flex specs present": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
+					FlexSpec:       &akov2.FlexSpec{},
+				},
+			},
+			isGov:                   false,
+			regionUsageRestrictions: "",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
+		},
+		"Serverless & Flex specs present": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					ServerlessSpec: &akov2.ServerlessSpec{},
+					FlexSpec:       &akov2.FlexSpec{},
+				},
+			},
+			isGov:                   false,
+			regionUsageRestrictions: "",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
+		},
+		"No spec present": {
 			atlasDeployment: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{},
 			},
 			isGov:                   false,
 			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec to be present, but none were",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
 		},
 		"Only DeploymentSpec present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -64,6 +98,21 @@ func TestAtlasDeployment(t *testing.T) {
 						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 							ProviderName:        provider.ProviderServerless,
 							BackingProviderName: "AZURE",
+						},
+					},
+				},
+			},
+			isGov:                   false,
+			regionUsageRestrictions: "",
+			expectedError:           "",
+		},
+		"Only FlexSpec present": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					FlexSpec: &akov2.FlexSpec{
+						ProviderSettings: &akov2.FlexProviderSettings{
+							BackingProviderName: "AWS",
+							RegionName:          "US_EAST_1",
 						},
 					},
 				},

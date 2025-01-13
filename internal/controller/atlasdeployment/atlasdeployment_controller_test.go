@@ -398,7 +398,15 @@ func TestRegularClusterReconciliation(t *testing.T) {
 	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
 		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+			err := &adminv20241113001.GenericOpenAPIError{}
+			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
+			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
+				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+				Return(nil, &http.Response{}, err)
+			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
@@ -621,7 +629,15 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
 		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+			err := &adminv20241113001.GenericOpenAPIError{}
+			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
+			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
+				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+				Return(nil, &http.Response{}, err)
+			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			err := &admin.GenericOpenAPIError{}
@@ -795,7 +811,15 @@ func TestDeletionReconciliation(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
 		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+			err := &adminv20241113001.GenericOpenAPIError{}
+			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
+			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
+				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+				Return(nil, &http.Response{}, err)
+			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
@@ -1238,12 +1262,15 @@ func TestChangeDeploymentType(t *testing.T) {
 					return true
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					err := &adminv20241113001.GenericOpenAPIError{}
+					err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 					flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-					return &atlas.ClientSet{
-						SdkClient20241113001: &adminv20241113001.APIClient{
-							FlexClustersApi: flexAPI,
-						},
-					}, "", nil
+					flexAPI.EXPECT().GetFlexCluster(mock.Anything, "abc123", "cluster0").
+						Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+					flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+						Return(nil, &http.Response{}, err)
+					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
 				},
 				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 					return &mongodbatlas.Client{}, "org-id", nil

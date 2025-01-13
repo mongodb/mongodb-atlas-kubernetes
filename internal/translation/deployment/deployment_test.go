@@ -84,7 +84,15 @@ func TestClusterExists(t *testing.T) {
 					Return(nil, nil, errors.New("failed to get cluster from atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
+					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -105,11 +113,14 @@ func TestClusterExists(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, errors.New("failed to get serverless instance from atlas"))
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.ClusterNotFound))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -130,11 +141,14 @@ func TestClusterExists(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, atlasAPIError(atlas.ProviderUnsupported))
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -154,11 +168,14 @@ func TestClusterExists(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceNotFound))
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -177,7 +194,15 @@ func TestClusterExists(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI.EXPECT().GetFlexCluster(mock.Anything, "project-id", "cluster0").
+					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+					Return(nil, &http.Response{}, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -202,11 +227,14 @@ func TestClusterExists(t *testing.T) {
 						nil,
 					)
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -223,11 +251,14 @@ func TestClusterExists(t *testing.T) {
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -265,7 +296,15 @@ func TestGetDeployment(t *testing.T) {
 					Return(nil, nil, errors.New("failed to get cluster from atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
+					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -286,11 +325,14 @@ func TestGetDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, errors.New("failed to get serverless instance from atlas"))
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.ClusterNotFound))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -311,11 +353,14 @@ func TestGetDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, atlasAPIError(atlas.ProviderUnsupported))
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -335,11 +380,14 @@ func TestGetDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceNotFound))
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -358,7 +406,15 @@ func TestGetDeployment(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
+					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -383,11 +439,14 @@ func TestGetDeployment(t *testing.T) {
 						nil,
 					)
 
+				err := &adminv20241113001.GenericOpenAPIError{}
+				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
 					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
+					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
