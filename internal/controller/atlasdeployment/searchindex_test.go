@@ -67,7 +67,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -125,7 +125,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -182,7 +182,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Return(nil, &http.Response{StatusCode: http.StatusOK}, nil)
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -233,7 +233,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -289,7 +289,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -347,7 +347,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -398,7 +398,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -415,7 +415,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 	})
 
 	t.Run("must return InProgress if index status is anything but ACTIVE", func(t *testing.T) {
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
@@ -432,7 +432,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 	})
 
 	t.Run("update: must not call update API if indexes are equal", func(t *testing.T) {
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
@@ -477,7 +477,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -538,7 +538,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -604,7 +604,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -661,7 +661,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		reconciler := &searchIndexReconciler{
+		reconciler := &searchIndexReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -732,7 +732,7 @@ func Test_searchIndexReconciler(t *testing.T) {
 					Status: status.AtlasDeploymentStatus{},
 				}
 
-				reconciler := &searchIndexReconciler{
+				reconciler := &searchIndexReconcileRequest{
 					ctx: &workflow.Context{
 						Log:     zap.S(),
 						OrgID:   "testOrgID",
