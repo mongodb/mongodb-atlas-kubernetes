@@ -113,14 +113,14 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		reconciler := searchIndexesReconciler{
+		reconciler := searchIndexesReconcileRequest{
 			ctx: &workflow.Context{
 				Log:   zap.S(),
 				OrgID: "testOrgID",
 			},
 			deployment: deployment,
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Handle()
 		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNamesAreNotUnique))
 		assert.False(t, result.IsOk())
 	})
@@ -204,7 +204,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			WithObjects(deployment, searchIndexConfig).
 			Build()
 
-		reconciler := searchIndexesReconciler{
+		reconciler := searchIndexesReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -217,7 +217,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 
-		result := reconciler.Reconcile()
+		result := reconciler.Handle()
 		assert.True(t, result.IsOk())
 		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.Len(t, deployment.Status.SearchIndexes, 1)
@@ -287,7 +287,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			WithObjects(deployment, searchIndexConfig).
 			Build()
 
-		reconciler := searchIndexesReconciler{
+		reconciler := searchIndexesReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -299,7 +299,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			projectID:     "testProjectID",
 			searchService: fakeAtlasSearch,
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Handle()
 		assert.False(t, result.IsOk())
 	})
 
@@ -383,7 +383,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			WithObjects(deployment, searchIndexConfig).
 			Build()
 
-		reconciler := searchIndexesReconciler{
+		reconciler := searchIndexesReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -397,7 +397,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 
 		// first reconcile succeeds, creation succeeds
-		result := reconciler.Reconcile()
+		result := reconciler.Handle()
 		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.False(t, result.IsOk())
 		assert.Equal(t, []status.DeploymentSearchIndexStatus{
@@ -422,7 +422,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		})
 
 		// create fails
-		result = reconciler.Reconcile()
+		result = reconciler.Handle()
 		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.False(t, result.IsOk())
 		assert.Equal(t, []status.DeploymentSearchIndexStatus{
@@ -444,7 +444,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		deployment.Spec.DeploymentSpec.SearchIndexes = []akov2.SearchIndex{deployment.Spec.DeploymentSpec.SearchIndexes[0]}
 
 		// third reconcile succeeds, creation succeeds
-		result = reconciler.Reconcile()
+		result = reconciler.Handle()
 		deployment.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.True(t, result.IsOk())
 		assert.Equal(t, []status.DeploymentSearchIndexStatus{
@@ -538,7 +538,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			WithObjects(cluster, searchIndexConfig).
 			Build()
 
-		reconciler := searchIndexesReconciler{
+		reconciler := searchIndexesReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -550,7 +550,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			projectID:     "testProjectID",
 			searchService: fakeAtlasSearch,
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Handle()
 		fmt.Println("Result", result)
 		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
@@ -637,7 +637,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			WithObjects(cluster, searchIndexConfig).
 			Build()
 
-		reconciler := searchIndexesReconciler{
+		reconciler := searchIndexesReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -649,7 +649,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			projectID:     "testProjectID",
 			searchService: fakeAtlasSearch,
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Handle()
 		fmt.Println("Result", result)
 		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
@@ -741,7 +741,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			WithObjects(cluster, searchIndexConfig).
 			Build()
 
-		reconciler := searchIndexesReconciler{
+		reconciler := searchIndexesReconcileRequest{
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
@@ -753,7 +753,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			projectID:     "testProjectID",
 			searchService: fakeAtlasSearch,
 		}
-		result := reconciler.Reconcile()
+		result := reconciler.Handle()
 		cluster.UpdateStatus(reconciler.ctx.Conditions(), reconciler.ctx.StatusOptions()...)
 		assert.Empty(t, cluster.Status.SearchIndexes)
 		assert.True(t, result.IsOk())

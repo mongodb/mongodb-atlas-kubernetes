@@ -44,7 +44,7 @@ func verifyAllIndexesNamesAreUnique(indexes []akov2.SearchIndex) bool {
 	return true
 }
 
-type searchIndexesReconciler struct {
+type searchIndexesReconcileRequest struct {
 	ctx           *workflow.Context
 	deployment    *akov2.AtlasDeployment
 	k8sClient     client.Client
@@ -56,7 +56,7 @@ func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, searchS
 	ctx.Log.Debug("starting indexes processing")
 	defer ctx.Log.Debug("finished indexes processing")
 
-	reconciler := &searchIndexesReconciler{
+	reconciler := &searchIndexesReconcileRequest{
 		ctx:           ctx,
 		k8sClient:     k8sClient,
 		deployment:    deployment,
@@ -64,10 +64,10 @@ func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, searchS
 		searchService: searchService,
 	}
 
-	return reconciler.Reconcile()
+	return reconciler.Handle()
 }
 
-func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
+func (sr *searchIndexesReconcileRequest) Handle() workflow.Result {
 	if !verifyAllIndexesNamesAreUnique(sr.deployment.Spec.DeploymentSpec.SearchIndexes) {
 		return sr.terminate(api.SearchIndexesNamesAreNotUnique, fmt.Errorf("every index 'Name' must be unique"))
 	}
@@ -108,14 +108,14 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 
 	results := make([]workflow.Result, 0, len(allIndexes))
 	for indexName, val := range allIndexes {
-		results = append(results, (&searchIndexReconciler{
+		results = append(results, (&searchIndexReconcileRequest{
 			ctx:           sr.ctx,
 			deployment:    sr.deployment,
 			k8sClient:     sr.k8sClient,
 			projectID:     sr.projectID,
 			indexName:     indexName,
 			searchService: sr.searchService,
-		}).Reconcile(val.spec, val.previous))
+		}).Handle(val.spec, val.previous))
 	}
 
 	allDeleted := true
@@ -132,7 +132,7 @@ func (sr *searchIndexesReconciler) Reconcile() workflow.Result {
 	return sr.idle()
 }
 
-func (sr *searchIndexesReconciler) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+func (sr *searchIndexesReconcileRequest) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	sr.ctx.Log.Error(err)
 	var errMsg string
 	if err != nil {
@@ -143,18 +143,18 @@ func (sr *searchIndexesReconciler) terminate(reason workflow.ConditionReason, er
 	return result
 }
 
-func (sr *searchIndexesReconciler) progress() workflow.Result {
+func (sr *searchIndexesReconcileRequest) progress() workflow.Result {
 	result := workflow.InProgress(api.SearchIndexesNotReady, "not all indexes are in READY state")
 	sr.ctx.SetConditionFromResult(status.SearchIndexStatusReady, result)
 	return result
 }
 
-func (sr *searchIndexesReconciler) empty() workflow.Result {
+func (sr *searchIndexesReconcileRequest) empty() workflow.Result {
 	sr.ctx.UnsetCondition(api.SearchIndexesReadyType)
 	return workflow.OK()
 }
 
-func (sr *searchIndexesReconciler) idle() workflow.Result {
+func (sr *searchIndexesReconcileRequest) idle() workflow.Result {
 	sr.ctx.SetConditionTrue(api.SearchIndexesReadyType)
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentRemoveStatusesWithEmptyIDs())
 	return workflow.OK()

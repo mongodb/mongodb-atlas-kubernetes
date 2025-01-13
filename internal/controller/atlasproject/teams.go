@@ -21,7 +21,7 @@ type TeamDataContainer struct {
 	Context     *workflow.Context
 }
 
-func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, teamsService teams.TeamsService, project *akov2.AtlasProject) workflow.Result {
 	teamsToAssign := map[string]*akov2.Team{}
 	for _, entry := range project.Spec.Teams {
 		assignedTeam := entry
@@ -36,7 +36,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		}
 
 		team := &akov2.AtlasTeam{}
-		teamReconciler := r.teamReconcile(team, project.ConnectionSecretObjectKey())
+		teamReconciler := r.teamReconcile(team, project.ConnectionSecretObjectKey(), teamsService)
 		_, err := teamReconciler(
 			workflowCtx.Context,
 			controllerruntime.Request{NamespacedName: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},
@@ -49,7 +49,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		teamsToAssign[team.Status.ID] = &assignedTeam
 	}
 
-	err := r.syncAssignedTeams(workflowCtx, project.ID(), project, teamsToAssign)
+	err := r.syncAssignedTeams(workflowCtx, teamsService, project.ID(), project, teamsToAssign)
 	if err != nil {
 		workflowCtx.SetConditionFalse(api.ProjectTeamsReadyType)
 		return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
@@ -65,10 +65,10 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 	return workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projectID string, project *akov2.AtlasProject, teamsToAssign map[string]*akov2.Team) error {
+func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, teamsService teams.TeamsService, projectID string, project *akov2.AtlasProject, teamsToAssign map[string]*akov2.Team) error {
 	ctx.Log.Debug("fetching assigned teams from atlas")
 
-	atlasAssignedTeams, err := r.teamsService.ListProjectTeams(ctx.Context, projectID)
+	atlasAssignedTeams, err := teamsService.ListProjectTeams(ctx.Context, projectID)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 		}
 
 		ctx.Log.Debugf("removing team %s from project for later update", atlasAssignedTeam.TeamID)
-		err := r.teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
+		err := teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
 			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
@@ -113,7 +113,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	for _, atlasAssignedTeam := range toDelete {
 		ctx.Log.Debugf("removing team %s from project", atlasAssignedTeam.TeamID)
-		err := r.teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
+		err := teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
 			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
@@ -147,7 +147,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 			}
 		}
 
-		err = r.teamsService.Assign(ctx.Context, &projectTeams, projectID)
+		err = teamsService.Assign(ctx.Context, &projectTeams, projectID)
 		if err != nil {
 			return err
 		}

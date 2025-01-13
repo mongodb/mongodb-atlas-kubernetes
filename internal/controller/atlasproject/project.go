@@ -18,8 +18,8 @@ import (
 )
 
 // handleProject creates the project if it doesn't exist yet. Returns the project ID
-func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
-	projectInAtlas, err := r.projectService.GetProjectByName(ctx.Context, atlasProject.Spec.Name)
+func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject, services *AtlasProjectServices) (ctrl.Result, error) {
+	projectInAtlas, err := services.projectService.GetProjectByName(ctx.Context, atlasProject.Spec.Name)
 	if err != nil {
 		return r.terminate(ctx, workflow.ProjectNotCreatedInAtlas, err)
 	}
@@ -29,9 +29,9 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 
 	switch {
 	case !existInAtlas && !wasDeleted:
-		return r.create(ctx, orgID, atlasProject)
+		return r.create(ctx, orgID, atlasProject, services.projectService)
 	case existInAtlas && wasDeleted:
-		return r.delete(ctx, orgID, atlasProject)
+		return r.delete(ctx, services, orgID, atlasProject)
 	case !existInAtlas && wasDeleted:
 		return r.release(ctx, atlasProject)
 	case existInAtlas && !wasDeleted && atlasProject.Status.ID == "":
@@ -45,7 +45,7 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 	ctx.SetConditionTrue(api.ProjectReadyType)
 	r.EventRecorder.Event(atlasProject, "Normal", string(api.ProjectReadyType), "")
 
-	results := r.ensureProjectResources(ctx, atlasProject)
+	results := r.ensureProjectResources(ctx, atlasProject, services)
 	for i := range results {
 		if !results[i].IsOk() {
 			logIfWarning(ctx, results[i])
@@ -62,9 +62,9 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 	return r.ready(ctx, projectInAtlas.ID)
 }
 
-func (r *AtlasProjectReconciler) create(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
+func (r *AtlasProjectReconciler) create(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject, projectService project.ProjectService) (ctrl.Result, error) {
 	projectInAKO := project.NewProject(atlasProject, orgID)
-	err := r.projectService.CreateProject(ctx.Context, projectInAKO)
+	err := projectService.CreateProject(ctx.Context, projectInAKO)
 	if err != nil {
 		return r.terminate(ctx, workflow.ProjectNotCreatedInAtlas, err)
 	}
@@ -85,7 +85,7 @@ func (r *AtlasProjectReconciler) terminate(ctx *workflow.Context, errorCondition
 	return terminated.ReconcileResult(), nil
 }
 
-func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
+func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, services *AtlasProjectServices, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
 	hasDeps, err := r.hasDependencies(ctx, atlasProject)
 	if err != nil {
 		return r.terminate(ctx, workflow.Internal, fmt.Errorf("failed to determine if project has dependencies: %w", err))
@@ -106,13 +106,13 @@ func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, orgID string, atl
 				return r.terminate(ctx, workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New(result.GetMessage()))
 			}
 
-			err = r.syncAssignedTeams(ctx, atlasProject.ID(), atlasProject, nil)
+			err = r.syncAssignedTeams(ctx, services.teamsService, atlasProject.ID(), atlasProject, nil)
 			if err != nil {
 				ctx.SetConditionFalse(api.ProjectTeamsReadyType)
 				return r.terminate(ctx, workflow.TeamNotCleaned, err)
 			}
 
-			if err = r.projectService.DeleteProject(ctx.Context, project.NewProject(atlasProject, orgID)); err != nil {
+			if err = services.projectService.DeleteProject(ctx.Context, project.NewProject(atlasProject, orgID)); err != nil {
 				return r.terminate(ctx, workflow.Internal, err)
 			}
 		}
