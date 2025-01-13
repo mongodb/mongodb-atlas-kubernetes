@@ -171,6 +171,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	isServerless := atlasDeployment.IsServerless()
 	isFlex := atlasDeployment.IsFlex()
+
 	wasDeleted := !atlasDeployment.GetDeletionTimestamp().IsZero()
 	existsInAtlas := deploymentInAtlas != nil
 

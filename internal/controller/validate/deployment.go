@@ -14,20 +14,24 @@ import (
 func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment, isGov bool, regionUsageRestrictions string) error {
 	isRegularDeployment := atlasDeployment.Spec.DeploymentSpec != nil
 	isServerlessDeployment := atlasDeployment.Spec.ServerlessSpec != nil
+	isFlexDeployment := atlasDeployment.Spec.FlexSpec != nil
 	var err error
 	var tagsSpec []*akov2.TagSpec
 
 	switch {
-	case !isRegularDeployment && !isServerlessDeployment:
-		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec to be present, but none were")
-	case isRegularDeployment && isServerlessDeployment:
-		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec to be present, but none were")
-	case !isRegularDeployment && isServerlessDeployment:
-		tagsSpec = atlasDeployment.Spec.ServerlessSpec.Tags
-		err = serverlessDeployment(atlasDeployment.Spec.ServerlessSpec)
-	default:
+	case !isRegularDeployment && !isServerlessDeployment && !isFlexDeployment:
+		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were")
+	case isRegularDeployment && !isServerlessDeployment && !isFlexDeployment:
 		tagsSpec = atlasDeployment.Spec.DeploymentSpec.Tags
 		err = regularDeployment(atlasDeployment.Spec.DeploymentSpec, isGov, regionUsageRestrictions)
+	case !isRegularDeployment && isServerlessDeployment && !isFlexDeployment:
+		tagsSpec = atlasDeployment.Spec.ServerlessSpec.Tags
+		err = serverlessDeployment(atlasDeployment.Spec.ServerlessSpec)
+	case !isRegularDeployment && !isServerlessDeployment && isFlexDeployment:
+		tagsSpec = atlasDeployment.Spec.FlexSpec.Tags
+		err = flexDeployment(atlasDeployment.Spec.FlexSpec)
+	default:
+		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were")
 	}
 
 	if err != nil {
@@ -263,5 +267,10 @@ func serverlessPrivateEndpoints(privateEndpoints []akov2.ServerlessPrivateEndpoi
 		namesMap[privateEndpoint.Name] = struct{}{}
 	}
 
+	return nil
+}
+
+func flexDeployment(spec *akov2.FlexSpec) error {
+	// TODO
 	return nil
 }
