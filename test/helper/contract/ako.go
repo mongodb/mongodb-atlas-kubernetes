@@ -10,9 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 )
 
 func DefaultAtlasProject(name string) client.Object {
