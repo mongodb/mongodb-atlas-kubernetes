@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -78,6 +81,7 @@ type Builder struct {
 	featureFlags       *featureflags.FeatureFlags
 	deletionProtection bool
 	skipNameValidation bool
+	dryRun             bool
 }
 
 func (b *Builder) WithConfig(config *rest.Config) *Builder {
@@ -150,6 +154,11 @@ func (b *Builder) WithIndependentSyncPeriod(period time.Duration) *Builder {
 	return b
 }
 
+func (b *Builder) WithDryRun(dryRun bool) *Builder {
+	b.dryRun = dryRun
+	return b
+}
+
 // WithSkipNameValidation skips name validation in controller-runtime
 // to prevent duplicate controller names.
 //
@@ -200,6 +209,13 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 			LeaderElectionID:       b.leaderElectionID,
 		},
 	)
+
+	// Wrap the manager's client with a dry-run client
+	if b.dryRun {
+		dK8sClient := dryrun.NewClient(mgr.GetClient())
+		dTransport := dryrun.NewDryRunTransport(mgr.GetEventRecorderFor("dry-run"), http.DefaultTransport)
+		mgr = dryrun.NewManager(mgr, dTransport, dK8sClient)
+	}
 
 	if err != nil {
 		return nil, err
