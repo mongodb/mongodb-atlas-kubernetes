@@ -211,6 +211,16 @@ func NewDeployment(projectID string, atlasDeployment *akov2.AtlasDeployment) Dep
 		return serverless
 	}
 
+	if atlasDeployment.IsFlex() {
+		flex := &Flex{
+			customResource: atlasDeployment,
+			ProjectID:      projectID,
+			FlexSpec:       atlasDeployment.Spec.FlexSpec.DeepCopy(),
+		}
+		normalizeFlexDeployment(flex)
+		return flex
+	}
+
 	cluster := &Cluster{
 		customResource:         atlasDeployment,
 		ProjectID:              projectID,

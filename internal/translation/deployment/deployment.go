@@ -140,6 +140,15 @@ func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, pro
 }
 
 func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, projectID, name string) (Deployment, error) {
+	flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
+	if err == nil {
+		return flexFromAtlas(flex), err
+	}
+
+	if !adminv20241113001.IsErrorCode(err, atlas.ClusterNotFound) && !adminv20241113001.IsErrorCode(err, atlas.NonFlexInFlexAPI) {
+		return nil, err
+	}
+
 	cluster, _, err := ds.clustersAPI.GetCluster(ctx, projectID, name).Execute()
 	if err == nil {
 		return clusterFromAtlas(cluster), nil
@@ -159,15 +168,6 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 	}
 
 	if !admin.IsErrorCode(err, atlas.ServerlessInstanceNotFound) && !admin.IsErrorCode(err, atlas.ProviderUnsupported) {
-		return nil, err
-	}
-
-	flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
-	if err == nil {
-		return flexFromAtlas(flex), err
-	}
-
-	if !admin.IsErrorCode(err, atlas.ClusterNotFound) && !admin.IsErrorCode(err, atlas.NonFlexInFlexAPI) {
 		return nil, err
 	}
 
