@@ -468,6 +468,9 @@ func (c *AtlasDeployment) GetDeploymentName() string {
 	if c.IsServerless() {
 		return c.Spec.ServerlessSpec.Name
 	}
+	if c.IsFlex() {
+		return c.Spec.FlexSpec.Name
+	}
 	if c.IsAdvancedDeployment() {
 		return c.Spec.DeploymentSpec.Name
 	}
@@ -611,6 +614,24 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 				ProviderSettings: &ServerlessProviderSettingsSpec{
 					BackingProviderName: backingProviderName,
 					ProviderName:        "SERVERLESS",
+					RegionName:          regionName,
+				},
+			},
+		},
+	}
+}
+
+func newFlexInstance(namespace, name, nameInAtlas, backingProviderName, regionName string) *AtlasDeployment {
+	return &AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasDeploymentSpec{
+			FlexSpec: &FlexSpec{
+				Name: nameInAtlas,
+				ProviderSettings: &FlexProviderSettings{
+					BackingProviderName: backingProviderName,
 					RegionName:          regionName,
 				},
 			},
@@ -797,6 +818,16 @@ func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasDeploy
 		namespace,
 		"test-serverless-instance-k8s",
 		"test-serverless-instance",
+		"AWS",
+		"US_EAST_1",
+	).WithProjectName(projectName)
+}
+
+func NewDefaultAWSFlexInstance(namespace, projectName string) *AtlasDeployment {
+	return newFlexInstance(
+		namespace,
+		"test-flex-instance-k8s",
+		"test-flex-instance",
 		"AWS",
 		"US_EAST_1",
 	).WithProjectName(projectName)
