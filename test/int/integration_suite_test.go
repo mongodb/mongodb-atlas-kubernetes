@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,8 +63,9 @@ var (
 	testEnv *envtest.Environment
 
 	// These variables are initialized once per each node
-	k8sClient   client.Client
-	atlasClient *admin.APIClient
+	k8sClient               client.Client
+	atlasClient             *admin.APIClient
+	atlasClientv20241113001 *adminv20241113001.APIClient
 
 	// These variables are per each test and are changed by each BeforeRun
 	namespace         corev1.Namespace
@@ -144,6 +146,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 		atlasClient, err = atlas.NewClient(atlasDomain, publicKey, privateKey)
 		Expect(err).ToNot(HaveOccurred())
+
+		atlasClientv20241113001, err = adminv20241113001.NewClient(
+			adminv20241113001.UseBaseURL(atlasDomain),
+			adminv20241113001.UseDigestAuth(publicKey, privateKey),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
 		defaultTimeouts()
 	})
 })
