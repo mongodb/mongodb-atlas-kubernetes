@@ -28,7 +28,7 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 			expectedLogs: []observer.LoggedEntry{
 				{
 					Context: []zapcore.Field{},
-					Entry:   zapcore.Entry{LoggerName: AtlasCustomRoleByProject, Level: zap.ErrorLevel, Message: "expected *v1.AtlasCustomRole but got *v1.AtlasStreamInstance"},
+					Entry:   zapcore.Entry{LoggerName: AtlasCustomRoleByProject, Level: zap.ErrorLevel, Message: "expected a project.ProjectReferrerObject but got *v1.AtlasStreamInstance"},
 				},
 			},
 		},

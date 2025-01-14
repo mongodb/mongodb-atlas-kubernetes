@@ -12,33 +12,18 @@ const (
 )
 
 type AtlasPrivateEndpointByProjectIndexer struct {
-	logger *zap.SugaredLogger
+	AtlasReferrerByProjectIndexerBase
 }
 
 func NewAtlasPrivateEndpointByProjectIndexer(logger *zap.Logger) *AtlasPrivateEndpointByProjectIndexer {
 	return &AtlasPrivateEndpointByProjectIndexer{
-		logger: logger.Named(AtlasPrivateEndpointByProjectIndex).Sugar(),
+		AtlasReferrerByProjectIndexerBase: *NewAtlasReferrerByProjectIndexer(
+			logger,
+			AtlasPrivateEndpointByProjectIndex,
+		),
 	}
 }
 
 func (*AtlasPrivateEndpointByProjectIndexer) Object() client.Object {
 	return &akov2.AtlasPrivateEndpoint{}
-}
-
-func (*AtlasPrivateEndpointByProjectIndexer) Name() string {
-	return AtlasPrivateEndpointByProjectIndex
-}
-
-func (a *AtlasPrivateEndpointByProjectIndexer) Keys(object client.Object) []string {
-	pe, ok := object.(*akov2.AtlasPrivateEndpoint)
-	if !ok {
-		a.logger.Errorf("expected *akov2.AtlasPrivateEndpoint but got %T", object)
-		return nil
-	}
-
-	if pe.Spec.ProjectRef == nil || pe.Spec.ProjectRef.Name == "" {
-		return nil
-	}
-
-	return []string{pe.Spec.ProjectRef.GetObject(pe.GetNamespace()).String()}
 }
