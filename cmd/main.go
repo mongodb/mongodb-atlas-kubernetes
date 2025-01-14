@@ -86,7 +86,6 @@ func main() {
 		WithAPISecret(config.GlobalAPISecret).
 		WithDeletionProtection(config.ObjectDeletionProtection).
 		WithIndependentSyncPeriod(time.Duration(config.IndependentSyncPeriod) * time.Minute).
-		WithDryRun(config.DryRun).
 		Build(ctx)
 	if err != nil {
 		setupLog.Error(err, "unable to start operator")

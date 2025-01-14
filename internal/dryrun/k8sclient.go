@@ -34,23 +34,23 @@ func (r *Client) List(ctx context.Context, list client.ObjectList, opts ...clien
 	return r.origin.List(ctx, list, opts...)
 }
 
-func (r *Client) Create(ctx context.Context, obj client.Object, _ ...client.CreateOption) error {
+func (r *Client) Create(_ context.Context, obj client.Object, _ ...client.CreateOption) error {
 	return NewDryRunError(obj.GetObjectKind(), obj.(metav1.ObjectMetaAccessor), "Normal", DryRunReason, "Would CREATE %s", obj.GetName())
 }
 
-func (r *Client) Delete(ctx context.Context, obj client.Object, _ ...client.DeleteOption) error {
+func (r *Client) Delete(_ context.Context, obj client.Object, _ ...client.DeleteOption) error {
 	return NewDryRunError(obj.GetObjectKind(), obj.(metav1.ObjectMetaAccessor), "Normal", DryRunReason, "Would DELETE %s", obj.GetName())
 }
 
-func (r *Client) Update(ctx context.Context, obj client.Object, _ ...client.UpdateOption) error {
+func (r *Client) Update(_ context.Context, obj client.Object, _ ...client.UpdateOption) error {
 	return NewDryRunError(obj.GetObjectKind(), obj.(metav1.ObjectMetaAccessor), "Normal", DryRunReason, "Would UPDATE %s", obj.GetName())
 }
 
-func (r *Client) Patch(ctx context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
+func (r *Client) Patch(_ context.Context, obj client.Object, _ client.Patch, _ ...client.PatchOption) error {
 	return NewDryRunError(obj.GetObjectKind(), obj.(metav1.ObjectMetaAccessor), "Normal", DryRunReason, "Would PATCH %s", obj.GetName())
 }
 
-func (r *Client) DeleteAllOf(ctx context.Context, obj client.Object, _ ...client.DeleteAllOfOption) error {
+func (r *Client) DeleteAllOf(_ context.Context, obj client.Object, _ ...client.DeleteAllOfOption) error {
 	return NewDryRunError(obj.GetObjectKind(), obj.(metav1.ObjectMetaAccessor), "Normal", DryRunReason, "Would DELETE ALL OF %s", obj.GetName())
 }
 
