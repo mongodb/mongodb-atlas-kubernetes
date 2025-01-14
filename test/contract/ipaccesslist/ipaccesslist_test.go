@@ -14,12 +14,13 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/contract"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
 func TestList(t *testing.T) {
 	ctx := context.Background()
 	contract.RunGoContractTest(ctx, t, "get default auditing", func(ch contract.ContractHelper) {
-		projectName := "default-auditing-project"
+		projectName := utils.RandomName("default-auditing-project")
 
 		prj := contract.DefaultAtlasProject(projectName).(*akov2.AtlasProject)
 
