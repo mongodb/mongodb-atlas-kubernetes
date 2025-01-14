@@ -9,37 +9,22 @@ import (
 )
 
 const (
-	AtlasCustomRoleByProject = "atlascustomrole.spec.projectRef,externalProjectID"
+	AtlasCustomRoleByProject = "atlascustomrole.spec.projectRef"
 )
 
 type AtlasCustomRoleByProjectIndexer struct {
-	logger *zap.SugaredLogger
+	AtlasReferrerByProjectIndexerBase
 }
 
 func NewAtlasCustomRoleByProjectIndexer(logger *zap.Logger) *AtlasCustomRoleByProjectIndexer {
 	return &AtlasCustomRoleByProjectIndexer{
-		logger: logger.Named(AtlasCustomRoleByProject).Sugar(),
+		AtlasReferrerByProjectIndexerBase: *NewAtlasReferrerByProjectIndexer(
+			logger,
+			AtlasCustomRoleByProject,
+		),
 	}
 }
 
 func (*AtlasCustomRoleByProjectIndexer) Object() client.Object {
 	return &akov2.AtlasCustomRole{}
-}
-
-func (*AtlasCustomRoleByProjectIndexer) Name() string {
-	return AtlasCustomRoleByProject
-}
-
-func (a *AtlasCustomRoleByProjectIndexer) Keys(object client.Object) []string {
-	role, ok := object.(*akov2.AtlasCustomRole)
-	if !ok {
-		a.logger.Errorf("expected *v1.AtlasCustomRole but got %T", object)
-		return nil
-	}
-
-	if role.Spec.ProjectRef != nil && role.Spec.ProjectRef.Name != "" {
-		return []string{role.Spec.ProjectRef.GetObject(role.Namespace).String()}
-	}
-
-	return nil
 }
