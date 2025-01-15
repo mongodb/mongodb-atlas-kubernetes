@@ -17,7 +17,7 @@ RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docke
 
 RUN yum clean all
 
-RUN curl -LO https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.10.2/preflight-linux-amd64  && \
+RUN curl -LO https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/latest/download/preflight-linux-amd64  && \
   chmod +x ./preflight-linux-amd64 && \
   mv ./preflight-linux-amd64 /usr/local/bin/preflight
 
