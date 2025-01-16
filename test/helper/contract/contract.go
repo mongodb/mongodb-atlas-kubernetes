@@ -2,8 +2,10 @@ package contract
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -48,16 +50,8 @@ func (ct *contractTest) cleanup(ctx context.Context) error {
 }
 
 func RunGoContractTest(ctx context.Context, t *testing.T, name string, contractTest func(ch ContractHelper)) {
-	enabled := control.Enabled("AKO_CONTRACT_TEST")
-	focus := os.Getenv("AKO_CONTRACT_TEST_FOCUS")
-	focused := focus != "" && focus == name
-	if !enabled || !focused {
-		if !focused {
-			t.Skipf("Skipping contract test %q as focus is %q", name, focus)
-		} else {
-			t.Skip("Skipping contract test as AKO_CONTRACT_TEST is unset")
-		}
-		return
+	if err := skipCheck(name, os.Getenv("AKO_CONTRACT_TEST_FOCUS"), control.Enabled("AKO_CONTRACT_TEST")); err != nil {
+		t.Skipf("Skipping contract test: %v", err.Error())
 	}
 	ct := newContractTest(ctx)
 	defer func() {
@@ -66,6 +60,16 @@ func RunGoContractTest(ctx context.Context, t *testing.T, name string, contractT
 	t.Run(name, func(t *testing.T) {
 		contractTest(ct)
 	})
+}
+
+func skipCheck(name, focus string, enabled bool) error {
+	if !enabled {
+		return errors.New("AKO_CONTRACT_TEST is unset")
+	}
+	if focus != "" && !strings.Contains(name, focus) {
+		return fmt.Errorf("test %q does not contain focus string %q", name, focus)
+	}
+	return nil
 }
 
 func newContractTest(ctx context.Context) *contractTest {
