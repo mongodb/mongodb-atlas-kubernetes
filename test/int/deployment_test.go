@@ -1,3 +1,4 @@
+//nolint:dupl
 package int
 
 import (
@@ -1272,7 +1273,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doServerlessDeploymentStatusChecks()
 			})
 
-			//nolint:dupl
 			By("Updating the Instance tags", func() {
 				createdDeployment = performUpdate(ctx, 20*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.ServerlessSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
@@ -1290,7 +1290,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				}
 			})
 
-			//nolint:dupl
 			By("Updating the Instance tags with a duplicate key and removing all tags", func() {
 				var err error
 				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
@@ -1318,7 +1317,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doFlexDeploymentStatusChecks()
 			})
 
-			//nolint:dupl
 			By("Updating the Instance tags", func() {
 				createdDeployment = performUpdate(ctx, 20*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.FlexSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
@@ -1336,7 +1334,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				}
 			})
 
-			//nolint:dupl
 			By("Updating the Instance tags with a duplicate key and removing all tags", func() {
 				var err error
 				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {

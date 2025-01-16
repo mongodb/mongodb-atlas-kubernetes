@@ -1,3 +1,4 @@
+//nolint:dupl
 package deployment
 
 import (
@@ -997,7 +998,6 @@ func atlasAPIError(code string) *admin.GenericOpenAPIError {
 func geoShardedCluster() *Cluster {
 	return &Cluster{
 		ProjectID: "project-id",
-		//nolint:dupl
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:                         "cluster0",
 			ClusterType:                  "GEOSHARDED",
@@ -1192,7 +1192,6 @@ func geoShardedCluster() *Cluster {
 func expectedGeoShardedCluster() *Cluster {
 	return &Cluster{
 		ProjectID: "project-id",
-		//nolint:dupl
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:                         "cluster0",
 			ClusterType:                  "GEOSHARDED",
@@ -1458,7 +1457,6 @@ func atlasGeoShardedCluster() *admin.AdvancedClusterDescription {
 			},
 		},
 		ReplicationSpecs: &[]admin.ReplicationSpec{
-			//nolint:dupl
 			{
 				Id:        pointer.MakePtr("replication-id-2"),
 				ZoneName:  pointer.MakePtr("Zone 2"),
@@ -1534,7 +1532,6 @@ func atlasGeoShardedCluster() *admin.AdvancedClusterDescription {
 					},
 				},
 			},
-			//nolint:dupl
 			{
 				Id:        pointer.MakePtr("replication-id-1"),
 				ZoneName:  pointer.MakePtr("Zone 1"),
