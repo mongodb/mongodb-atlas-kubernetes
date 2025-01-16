@@ -52,7 +52,7 @@ func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, pr
 	case status.StateUPDATING, status.StateREPAIRING:
 		return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentUpdating, "deployment is updating")
 	case status.StateDELETING, status.StateDELETED:
-		return workflow.OK().ReconcileResult(), nil
+		return r.deleted()
 	default:
 		return r.terminate(ctx, workflow.Internal, fmt.Errorf("unknown deployment state: %s", deploymentInAtlas.GetState()))
 	}

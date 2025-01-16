@@ -7,7 +7,6 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
@@ -142,11 +141,17 @@ func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, pro
 func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, projectID, name string) (Deployment, error) {
 	flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
 	if err == nil {
-		return flexFromAtlas(flex), err
+		return flexFromAtlas(flex), nil
 	}
 
-	if !adminv20241113001.IsErrorCode(err, atlas.ClusterNotFound) && !adminv20241113001.IsErrorCode(err, atlas.NonFlexInFlexAPI) {
-		return nil, err
+	if sdkerr, ok := adminv20241113001.AsError(err); ok {
+		switch sdkerr.GetErrorCode() {
+		case atlas.ClusterNotFound:
+		case atlas.NonFlexInFlexAPI:
+		case atlas.FeatureUnsupported:
+		default:
+			return nil, err
+		}
 	}
 
 	cluster, _, err := ds.clustersAPI.GetCluster(ctx, projectID, name).Execute()

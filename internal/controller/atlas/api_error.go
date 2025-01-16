@@ -40,4 +40,6 @@ const (
 
 	// Cannot use the Flex API to interact with non-Flex clusters
 	NonFlexInFlexAPI = "CANNOT_USE_NON_FLEX_CLUSTER_IN_FLEX_API"
+
+	FeatureUnsupported = "FEATURE_UNSUPPORTED"
 )

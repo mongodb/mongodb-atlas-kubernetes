@@ -171,6 +171,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	isServerless := atlasDeployment.IsServerless()
 	isFlex := atlasDeployment.IsFlex()
+	isAdvanced := atlasDeployment.IsAdvancedDeployment()
 
 	wasDeleted := !atlasDeployment.GetDeletionTimestamp().IsZero()
 	existsInAtlas := deploymentInAtlas != nil
@@ -187,20 +188,34 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	case !wasDeleted && isServerless:
 		var serverlessDeployment *deployment.Serverless
 		if existsInAtlas {
-			serverlessDeployment = deploymentInAtlas.(*deployment.Serverless)
+			var ok bool
+			serverlessDeployment, ok = deploymentInAtlas.(*deployment.Serverless)
+			if !ok {
+				return r.terminate(workflowCtx, workflow.Internal, errors.New("deployment in Atlas is not a serverless cluster"))
+			}
 		}
 		return r.handleServerlessInstance(workflowCtx, projectService, deploymentService, deploymentInAKO.(*deployment.Serverless), serverlessDeployment)
 	case !wasDeleted && isFlex:
 		var flexDeployment *deployment.Flex
 		if existsInAtlas {
-			flexDeployment = deploymentInAtlas.(*deployment.Flex)
+			var ok bool
+			flexDeployment, ok = deploymentInAtlas.(*deployment.Flex)
+			if !ok {
+				return r.terminate(workflowCtx, workflow.Internal, errors.New("deployment in Atlas is not a flex cluster"))
+			}
 		}
+
 		return r.handleFlexInstance(workflowCtx, projectService, deploymentService, deploymentInAKO.(*deployment.Flex), flexDeployment)
-	case !wasDeleted && !isServerless:
+	case !wasDeleted && isAdvanced:
 		var clusterDeployment *deployment.Cluster
 		if existsInAtlas {
-			clusterDeployment = deploymentInAtlas.(*deployment.Cluster)
+			var ok bool
+			clusterDeployment, ok = deploymentInAtlas.(*deployment.Cluster)
+			if !ok {
+				return r.terminate(workflowCtx, workflow.Internal, errors.New("deployment in Atlas is not an advanced cluster"))
+			}
 		}
+
 		return r.handleAdvancedDeployment(workflowCtx, projectService, deploymentService, deploymentInAKO.(*deployment.Cluster), clusterDeployment)
 	}
 
@@ -557,4 +572,8 @@ func (r *AtlasDeploymentReconciler) deploymentsForCredentialMapFunc() handler.Ma
 		r.Client,
 		r.Log,
 	)
+}
+
+func (r *AtlasDeploymentReconciler) deleted() (ctrl.Result, error) {
+	return workflow.OK().ReconcileResult(), nil
 }
