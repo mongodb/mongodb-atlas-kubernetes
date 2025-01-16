@@ -52,7 +52,7 @@ func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, pr
 			return r.terminate(ctx, workflow.Internal, err)
 		}
 
-		return r.ready(ctx, akoFlex.GetCustomResource(), atlasFlex)
+		return r.ready(ctx, akoFlex.GetCustomResource(), atlasFlex, "")
 
 	case status.StateCREATING:
 		return r.inProgress(ctx, akoFlex.GetCustomResource(), atlasFlex, workflow.DeploymentCreating, "deployment is provisioning")
