@@ -139,18 +139,20 @@ func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, pro
 }
 
 func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, projectID, name string) (Deployment, error) {
-	flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
-	if err == nil {
-		return flexFromAtlas(flex), nil
-	}
+	if !ds.isGov {
+		flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
+		if err == nil {
+			return flexFromAtlas(flex), nil
+		}
 
-	if sdkerr, ok := adminv20241113001.AsError(err); ok {
-		switch sdkerr.GetErrorCode() {
-		case atlas.ClusterNotFound:
-		case atlas.NonFlexInFlexAPI:
-		case atlas.FeatureUnsupported:
-		default:
-			return nil, err
+		if sdkerr, ok := adminv20241113001.AsError(err); ok {
+			switch sdkerr.GetErrorCode() {
+			case atlas.ClusterNotFound:
+			case atlas.NonFlexInFlexAPI:
+			case atlas.FeatureUnsupported:
+			default:
+				return nil, err
+			}
 		}
 	}
 

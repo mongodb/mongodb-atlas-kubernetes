@@ -251,15 +251,7 @@ func TestClusterExists(t *testing.T) {
 					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceFromClusterAPI))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
-
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, err)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
