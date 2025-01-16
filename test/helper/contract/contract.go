@@ -63,7 +63,7 @@ func RunGoContractTest(ctx context.Context, t *testing.T, name string, contractT
 
 func skipCheck(name, focus string, enabled bool) error {
 	if !enabled {
-		return fmt.Errorf("AKO_CONTRACT_TEST is unset")
+		return errors.New("AKO_CONTRACT_TEST is unset")
 	}
 	if focus != "" && !strings.Contains(name, focus) {
 		return fmt.Errorf("test %q does not contain focus string %q", name, focus)
