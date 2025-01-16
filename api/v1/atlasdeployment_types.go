@@ -542,6 +542,7 @@ func (c *AtlasDeployment) ProjectDualRef() *ProjectDualReference {
 
 type FlexSpec struct {
 	// Human-readable label that identifies the instance.
+	// +required
 	Name string `json:"name"`
 
 	// List that contains key-value pairs between 1 to 255 characters in length for tagging and categorizing the instance.
@@ -552,19 +553,25 @@ type FlexSpec struct {
 	// Flag that indicates whether termination protection is enabled on the cluster.
 	// If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
 	// +kubebuilder:default:=false
+	// +optional
 	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
 
 	// Group of cloud provider settings that configure the provisioned MongoDB flex cluster.
+	// +required
 	ProviderSettings *FlexProviderSettings `json:"providerSettings"`
 }
 
 type FlexProviderSettings struct {
 	// Cloud service provider on which MongoDB Atlas provisions the flex cluster.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Backing Provider cannot be modified after cluster creation"
+	// +required
 	BackingProviderName string `json:"backingProviderName,omitempty"`
 
 	// Human-readable label that identifies the geographic location of your MongoDB flex cluster.
 	// The region you choose can affect network latency for clients accessing your databases.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Region Name cannot be modified after cluster creation"
+	// +required
 	RegionName string `json:"regionName,omitempty"`
 }
 

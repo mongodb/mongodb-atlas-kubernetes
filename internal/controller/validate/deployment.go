@@ -11,27 +11,43 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 )
 
+const (
+	DeploymentSet = 1 << iota
+	ServerlessSet
+	FlexSet
+)
+
+func deploymentSpecMask(atlasDeployment *akov2.AtlasDeployment) int {
+	mask := 0
+	if atlasDeployment.Spec.DeploymentSpec != nil {
+		mask = mask + DeploymentSet
+	}
+	if atlasDeployment.Spec.ServerlessSpec != nil {
+		mask = mask + ServerlessSet
+	}
+	if atlasDeployment.Spec.FlexSpec != nil {
+		mask = mask + FlexSet
+	}
+	return mask
+}
+
 func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment, isGov bool, regionUsageRestrictions string) error {
-	isRegularDeployment := atlasDeployment.Spec.DeploymentSpec != nil
-	isServerlessDeployment := atlasDeployment.Spec.ServerlessSpec != nil
-	isFlexDeployment := atlasDeployment.Spec.FlexSpec != nil
 	var err error
 	var tagsSpec []*akov2.TagSpec
-
-	switch {
-	case !isRegularDeployment && !isServerlessDeployment && !isFlexDeployment:
+	switch deploymentSpecMask(atlasDeployment) {
+	case 0:
 		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were")
-	case isRegularDeployment && !isServerlessDeployment && !isFlexDeployment:
+	case DeploymentSet:
 		tagsSpec = atlasDeployment.Spec.DeploymentSpec.Tags
 		err = regularDeployment(atlasDeployment.Spec.DeploymentSpec, isGov, regionUsageRestrictions)
-	case !isRegularDeployment && isServerlessDeployment && !isFlexDeployment:
+	case ServerlessSet:
 		tagsSpec = atlasDeployment.Spec.ServerlessSpec.Tags
 		err = serverlessDeployment(atlasDeployment.Spec.ServerlessSpec)
-	case !isRegularDeployment && !isServerlessDeployment && isFlexDeployment:
+	case FlexSet:
 		tagsSpec = atlasDeployment.Spec.FlexSpec.Tags
 		err = flexDeployment(atlasDeployment.Spec.FlexSpec)
 	default:
-		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were")
+		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were")
 	}
 
 	if err != nil {

@@ -24,9 +24,7 @@ func DefaultAtlasProject(name string) client.Object {
 }
 
 func newVersionedClient(ctx context.Context) (*admin.APIClient, error) {
-	domain := os.Getenv("MCLI_OPS_MANAGER_URL")
-	pubKey := os.Getenv("MCLI_PUBLIC_API_KEY")
-	prvKey := os.Getenv("MCLI_PRIVATE_API_KEY")
+	domain, pubKey, prvKey := getEnvSecrets()
 	client, err := atlas.NewClient(domain, pubKey, prvKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup Atlas Client: %w", err)
@@ -47,9 +45,7 @@ func mustCreateVersionedAtlasClient(ctx context.Context) *admin.APIClient {
 }
 
 func mustCreateVersionedAtlasClientSet(ctx context.Context) *atlas.ClientSet {
-	domain := os.Getenv("MCLI_OPS_MANAGER_URL")
-	pubKey := os.Getenv("MCLI_PUBLIC_API_KEY")
-	prvKey := os.Getenv("MCLI_PRIVATE_API_KEY")
+	domain, pubKey, prvKey := getEnvSecrets()
 	c2024, err := adminv20241113001.NewClient(
 		adminv20241113001.UseBaseURL(domain),
 		adminv20241113001.UseDigestAuth(pubKey, prvKey),
@@ -82,4 +78,11 @@ func globalSecret(namespace string) client.Object {
 			"privateApiKey": ([]byte)(os.Getenv("MCLI_PRIVATE_API_KEY")),
 		},
 	}
+}
+
+func getEnvSecrets() (string, string, string) {
+	domain := os.Getenv("MCLI_OPS_MANAGER_URL")
+	pubKey := os.Getenv("MCLI_PUBLIC_API_KEY")
+	prvKey := os.Getenv("MCLI_PRIVATE_API_KEY")
+	return domain, pubKey, prvKey
 }

@@ -646,11 +646,21 @@ spec:
                         - GCP
                         - AZURE
                         type: string
+                        x-kubernetes-validations:
+                        - message: Backing Provider cannot be modified after cluster
+                            creation
+                          rule: self == oldSelf
                       regionName:
                         description: |-
                           Human-readable label that identifies the geographic location of your MongoDB flex cluster.
                           The region you choose can affect network latency for clients accessing your databases.
                         type: string
+                        x-kubernetes-validations:
+                        - message: Region Name cannot be modified after cluster creation
+                          rule: self == oldSelf
+                    required:
+                    - backingProviderName
+                    - regionName
                     type: object
                   tags:
                     description: List that contains key-value pairs between 1 to 255

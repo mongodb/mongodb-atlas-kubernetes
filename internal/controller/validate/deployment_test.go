@@ -27,7 +27,7 @@ func TestAtlasDeployment(t *testing.T) {
 			},
 			isGov:                   false,
 			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
 		},
 		"Advanced & Serverless specs present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -38,7 +38,7 @@ func TestAtlasDeployment(t *testing.T) {
 			},
 			isGov:                   false,
 			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
 		},
 		"Advanced & Flex specs present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -49,7 +49,7 @@ func TestAtlasDeployment(t *testing.T) {
 			},
 			isGov:                   false,
 			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
 		},
 		"Serverless & Flex specs present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -60,7 +60,7 @@ func TestAtlasDeployment(t *testing.T) {
 			},
 			isGov:                   false,
 			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
+			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
 		},
 		"No spec present": {
 			atlasDeployment: &akov2.AtlasDeployment{
