@@ -62,8 +62,7 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Conte
 			return r.terminate(ctx, workflow.Internal, err)
 		}
 
-		return r.ready(ctx, akoServerless.GetCustomResource(), atlasServerless)
-
+		return r.ready(ctx, akoServerless.GetCustomResource(), atlasServerless, "")
 	case status.StateCREATING:
 		return r.inProgress(ctx, akoServerless.GetCustomResource(), atlasServerless, workflow.DeploymentCreating, "deployment is provisioning")
 	case status.StateUPDATING, status.StateREPAIRING:

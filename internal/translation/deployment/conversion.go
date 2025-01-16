@@ -27,6 +27,7 @@ type Deployment interface {
 	GetReplicaSet() []status.ReplicaSet
 	IsServerless() bool
 	IsFlex() bool
+	Deprecated() (bool, string)
 }
 
 type Cluster struct {
@@ -84,6 +85,29 @@ func (c *Cluster) IsTenant() bool {
 	return c.isTenant
 }
 
+func (c *Cluster) Deprecated() (bool, string) {
+	for _, replicationSpec := range c.ReplicationSpecs {
+		for _, regionConfig := range replicationSpec.RegionConfigs {
+			if deprecatedSpecs(regionConfig.ElectableSpecs) ||
+				deprecatedSpecs(regionConfig.ReadOnlySpecs) ||
+				deprecatedSpecs(regionConfig.AnalyticsSpecs) {
+				return true, "WARNING: M2 and M5 instance sizes are deprecated."
+			}
+		}
+	}
+	return false, ""
+}
+
+func deprecatedSpecs(specs *akov2.Specs) bool {
+	if specs == nil {
+		return false
+	}
+	if specs.InstanceSize == "M2" || specs.InstanceSize == "M5" {
+		return true
+	}
+	return false
+}
+
 type Serverless struct {
 	*akov2.ServerlessSpec
 	ProjectID      string
@@ -130,6 +154,10 @@ func (s *Serverless) IsFlex() bool {
 	return false
 }
 
+func (s *Serverless) Deprecated() (bool, string) {
+	return true, "WARNING: serverless is deprecated"
+}
+
 type Flex struct {
 	*akov2.FlexSpec
 	ProjectID      string
@@ -174,6 +202,10 @@ func (f *Flex) IsServerless() bool {
 
 func (f *Flex) IsFlex() bool {
 	return true
+}
+
+func (f *Flex) Deprecated() (bool, string) {
+	return false, ""
 }
 
 type Connection struct {
