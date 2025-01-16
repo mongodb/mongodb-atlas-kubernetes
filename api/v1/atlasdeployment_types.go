@@ -70,6 +70,7 @@ type AtlasDeploymentSpec struct {
 	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
 
 	// Configuration for the Flex cluster API. https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Flex-Clusters
+	// +optional
 	FlexSpec *FlexSpec `json:"flexSpec,omitempty"`
 }
 
