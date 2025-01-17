@@ -27,6 +27,8 @@ const (
 	// a serverless instance from the cluster API, which is not allowed
 	ServerlessInstanceFromClusterAPI = "CANNOT_USE_SERVERLESS_INSTANCE_IN_CLUSTER_API"
 
+	ClusterInstanceFromServerlessAPI = "CANNOT_USE_CLUSTER_IN_SERVERLESS_INSTANCE_API"
+
 	// Resource not found
 	ResourceNotFound = "RESOURCE_NOT_FOUND"
 
