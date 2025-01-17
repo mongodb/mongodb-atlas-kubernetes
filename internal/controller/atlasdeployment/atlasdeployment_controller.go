@@ -170,10 +170,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	existsInAtlas := deploymentInAtlas != nil
-	if existsInAtlas && deploymentInAKO.IsServerless() != deploymentInAtlas.IsServerless() {
-		return r.terminate(workflowCtx, workflow.Internal, errors.New("regular deployment cannot be converted into a serverless deployment and vice-versa"))
-	}
-
 	if !atlasDeployment.GetDeletionTimestamp().IsZero() {
 		if existsInAtlas {
 			return r.delete(workflowCtx, deploymentService, deploymentInAKO)
