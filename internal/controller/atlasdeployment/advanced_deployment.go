@@ -1,6 +1,7 @@
 package atlasdeployment
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -25,93 +26,99 @@ import (
 
 const FreeTier = "M0"
 
-func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, deploymentInAKO, deploymentInAtlas *deployment.Cluster) (ctrl.Result, error) {
-	if deploymentInAtlas == nil {
-		ctx.Log.Infof("Advanced Deployment %s doesn't exist in Atlas - creating", deploymentInAKO.GetName())
-		newDeployment, err := deploymentService.CreateDeployment(ctx.Context, deploymentInAKO)
+func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
+	akoCluster, ok := akoDeployment.(*deployment.Cluster)
+	if !ok {
+		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not a serverless cluster"))
+	}
+	atlasCluster, _ := atlasDeployment.(*deployment.Cluster)
+
+	if atlasCluster == nil {
+		ctx.Log.Infof("Advanced Deployment %s doesn't exist in Atlas - creating", akoCluster.GetName())
+		newDeployment, err := deploymentService.CreateDeployment(ctx.Context, akoCluster)
 		if err != nil {
 			return r.terminate(ctx, workflow.DeploymentNotCreatedInAtlas, err)
 		}
 
-		deploymentInAtlas = newDeployment.(*deployment.Cluster)
+		atlasCluster = newDeployment.(*deployment.Cluster)
 	}
 
-	switch deploymentInAtlas.GetState() {
+	switch atlasCluster.GetState() {
 	case status.StateIDLE:
-		if changes, occurred := deployment.ComputeChanges(deploymentInAKO, deploymentInAtlas); occurred {
+		if changes, occurred := deployment.ComputeChanges(akoCluster, atlasCluster); occurred {
 			updatedDeployment, err := deploymentService.UpdateDeployment(ctx.Context, changes)
 			if err != nil {
 				return r.terminate(ctx, workflow.DeploymentNotUpdatedInAtlas, err)
 			}
 
-			return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), updatedDeployment, workflow.DeploymentUpdating, "deployment is updating")
+			return r.inProgress(ctx, akoCluster.GetCustomResource(), updatedDeployment, workflow.DeploymentUpdating, "deployment is updating")
 		}
 
-		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource())
+		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource())
 		if transition != nil {
 			return transition(workflow.Internal)
 		}
 
-		transition = r.ensureAdvancedOptions(ctx, deploymentService, deploymentInAKO, deploymentInAtlas)
+		transition = r.ensureAdvancedOptions(ctx, deploymentService, akoCluster, atlasCluster)
 		if transition != nil {
 			return transition(workflow.DeploymentAdvancedOptionsReady)
 		}
 
-		err := r.ensureConnectionSecrets(ctx, projectService, deploymentInAKO, deploymentInAtlas.GetConnection())
+		err := r.ensureConnectionSecrets(ctx, projectService, akoCluster, atlasCluster.GetConnection())
 		if err != nil {
 			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
 		if !r.AtlasProvider.IsCloudGov() {
-			searchNodeResult := handleSearchNodes(ctx, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
-			if transition = r.transitionFromResult(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), searchNodeResult); transition != nil {
+			searchNodeResult := handleSearchNodes(ctx, akoCluster.GetCustomResource(), akoCluster.GetProjectID())
+			if transition = r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), searchNodeResult); transition != nil {
 				return transition(workflow.Internal)
 			}
 		}
 
 		searchService := searchindex.NewSearchIndexes(ctx.SdkClientSet.SdkClient20241113001.AtlasSearchApi)
-		result := handleSearchIndexes(ctx, r.Client, searchService, deploymentInAKO.GetCustomResource(), deploymentInAKO.GetProjectID())
-		if transition = r.transitionFromResult(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+		result := handleSearchIndexes(ctx, r.Client, searchService, akoCluster.GetCustomResource(), akoCluster.GetProjectID())
+		if transition = r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), result); transition != nil {
 			return transition(workflow.Internal)
 		}
 
 		result = r.ensureCustomZoneMapping(
 			ctx,
 			deploymentService,
-			deploymentInAKO.GetProjectID(),
-			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.CustomZoneMapping,
-			deploymentInAKO.GetName(),
+			akoCluster.GetProjectID(),
+			akoCluster.GetCustomResource().Spec.DeploymentSpec.CustomZoneMapping,
+			akoCluster.GetName(),
 		)
-		if transition = r.transitionFromResult(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+		if transition = r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), result); transition != nil {
 			return transition(workflow.Internal)
 		}
 
 		result = r.ensureManagedNamespaces(
 			ctx,
 			deploymentService,
-			deploymentInAKO.GetProjectID(),
-			deploymentInAKO.ClusterType,
-			deploymentInAKO.GetCustomResource().Spec.DeploymentSpec.ManagedNamespaces,
-			deploymentInAKO.GetName(),
+			akoCluster.GetProjectID(),
+			akoCluster.ClusterType,
+			akoCluster.GetCustomResource().Spec.DeploymentSpec.ManagedNamespaces,
+			akoCluster.GetName(),
 		)
-		if transition = r.transitionFromResult(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), result); transition != nil {
+		if transition = r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), result); transition != nil {
 			return transition(workflow.Internal)
 		}
 
-		err = customresource.ApplyLastConfigApplied(ctx.Context, deploymentInAKO.GetCustomResource(), r.Client)
+		err = customresource.ApplyLastConfigApplied(ctx.Context, akoCluster.GetCustomResource(), r.Client)
 		if err != nil {
 			return r.terminate(ctx, workflow.Internal, err)
 		}
 
-		return r.ready(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas)
+		return r.ready(ctx, akoCluster.GetCustomResource(), atlasCluster)
 	case status.StateCREATING:
-		return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentCreating, "deployment is provisioning")
+		return r.inProgress(ctx, akoCluster.GetCustomResource(), atlasCluster, workflow.DeploymentCreating, "deployment is provisioning")
 	case status.StateUPDATING, status.StateREPAIRING:
-		return r.inProgress(ctx, deploymentInAKO.GetCustomResource(), deploymentInAtlas, workflow.DeploymentUpdating, "deployment is updating")
+		return r.inProgress(ctx, akoCluster.GetCustomResource(), atlasCluster, workflow.DeploymentUpdating, "deployment is updating")
 	case status.StateDELETING, status.StateDELETED:
-		return r.deleted()
+		return r.handleDeleted()
 	default:
-		return r.terminate(ctx, workflow.Internal, fmt.Errorf("unknown deployment state: %s", deploymentInAtlas.GetState()))
+		return r.terminate(ctx, workflow.Internal, fmt.Errorf("unknown deployment state: %s", atlasCluster.GetState()))
 	}
 }
 

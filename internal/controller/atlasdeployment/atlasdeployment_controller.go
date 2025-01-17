@@ -169,54 +169,27 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
 
-	isServerless := atlasDeployment.IsServerless()
-	isFlex := atlasDeployment.IsFlex()
-	isAdvanced := atlasDeployment.IsAdvancedDeployment()
-
-	wasDeleted := !atlasDeployment.GetDeletionTimestamp().IsZero()
 	existsInAtlas := deploymentInAtlas != nil
-
 	if existsInAtlas && deploymentInAKO.IsServerless() != deploymentInAtlas.IsServerless() {
 		return r.terminate(workflowCtx, workflow.Internal, errors.New("regular deployment cannot be converted into a serverless deployment and vice-versa"))
 	}
 
+	if !atlasDeployment.GetDeletionTimestamp().IsZero() {
+		if existsInAtlas {
+			return r.delete(workflowCtx, deploymentService, deploymentInAKO)
+		}
+		return r.unmanage(workflowCtx, deploymentInAKO)
+	}
+
 	switch {
-	case existsInAtlas && wasDeleted:
-		return r.delete(workflowCtx, deploymentService, deploymentInAKO)
-	case !existsInAtlas && wasDeleted:
-		return r.unmanage(workflowCtx, atlasDeployment)
-	case !wasDeleted && isServerless:
-		var serverlessDeployment *deployment.Serverless
-		if existsInAtlas {
-			var ok bool
-			serverlessDeployment, ok = deploymentInAtlas.(*deployment.Serverless)
-			if !ok {
-				return r.terminate(workflowCtx, workflow.Internal, errors.New("deployment in Atlas is not a serverless cluster"))
-			}
-		}
-		return r.handleServerlessInstance(workflowCtx, projectService, deploymentService, deploymentInAKO.(*deployment.Serverless), serverlessDeployment)
-	case !wasDeleted && isFlex:
-		var flexDeployment *deployment.Flex
-		if existsInAtlas {
-			var ok bool
-			flexDeployment, ok = deploymentInAtlas.(*deployment.Flex)
-			if !ok {
-				return r.terminate(workflowCtx, workflow.Internal, errors.New("deployment in Atlas is not a flex cluster"))
-			}
-		}
+	case atlasDeployment.IsServerless():
+		return r.handleServerlessInstance(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
 
-		return r.handleFlexInstance(workflowCtx, projectService, deploymentService, deploymentInAKO.(*deployment.Flex), flexDeployment)
-	case !wasDeleted && isAdvanced:
-		var clusterDeployment *deployment.Cluster
-		if existsInAtlas {
-			var ok bool
-			clusterDeployment, ok = deploymentInAtlas.(*deployment.Cluster)
-			if !ok {
-				return r.terminate(workflowCtx, workflow.Internal, errors.New("deployment in Atlas is not an advanced cluster"))
-			}
-		}
+	case atlasDeployment.IsFlex():
+		return r.handleFlexInstance(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
 
-		return r.handleAdvancedDeployment(workflowCtx, projectService, deploymentService, deploymentInAKO.(*deployment.Cluster), clusterDeployment)
+	case atlasDeployment.IsAdvancedDeployment():
+		return r.handleAdvancedDeployment(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
 	}
 
 	return workflow.OK().ReconcileResult(), nil
@@ -393,8 +366,8 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasDeploymentReconciler) unmanage(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment) (ctrl.Result, error) {
-	err := r.removeDeletionFinalizer(ctx.Context, atlasDeployment)
+func (r *AtlasDeploymentReconciler) unmanage(ctx *workflow.Context, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
+	err := r.removeDeletionFinalizer(ctx.Context, atlasDeployment.GetCustomResource())
 	if err != nil {
 		return r.terminate(ctx, workflow.AtlasFinalizerNotRemoved, err)
 	}
@@ -574,6 +547,6 @@ func (r *AtlasDeploymentReconciler) deploymentsForCredentialMapFunc() handler.Ma
 	)
 }
 
-func (r *AtlasDeploymentReconciler) deleted() (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) handleDeleted() (ctrl.Result, error) {
 	return workflow.OK().ReconcileResult(), nil
 }
