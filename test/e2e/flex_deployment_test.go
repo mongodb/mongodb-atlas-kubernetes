@@ -9,7 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20241113001/admin"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -88,13 +90,34 @@ var _ = Describe("Flex", Label("flex"), func() {
 						Name: name,
 						ProviderSettings: &akov2.FlexProviderSettings{
 							BackingProviderName: "AWS",
-							RegionName:          "EU_WEST_1",
+							RegionName:          "US_EAST_1",
 						},
 					},
 				},
 			}
 			Expect(testData.K8SClient.Create(testData.Context, flexDeployment)).Should(Succeed())
-			actions.WaitForConditionsToBecomeTrue(testData, api.DeploymentReadyType, api.ReadyType)
+		})
+		By("Checking Deployment status conditions in Kube", func() {
+			Eventually(func(g Gomega) bool {
+				err := testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: name, Namespace: testData.Resources.Namespace}, flexDeployment)
+				Expect(err).To(BeNil())
+
+				conditionTypes := []api.ConditionType{api.DeploymentReadyType, api.ReadyType}
+
+				for _, conditionType := range conditionTypes {
+					found := false
+					for _, con := range flexDeployment.Status.Conditions {
+						if con.Type == conditionType && con.Status == corev1.ConditionTrue {
+							found = true
+							break
+						}
+					}
+					if !found {
+						return false
+					}
+				}
+				return true
+			}).WithTimeout(15 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
 		})
 		By("Checking the Flex cluster is ready in Atlas", func() {
 
