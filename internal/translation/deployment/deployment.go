@@ -167,14 +167,8 @@ func (ds *ProductionAtlasDeployments) GetFlexCluster(ctx context.Context, projec
 		return flexFromAtlas(flex), nil
 	}
 
-	if sdkerr, ok := adminv20241113001.AsError(err); ok {
-		switch sdkerr.GetErrorCode() {
-		case atlas.ClusterNotFound:
-		case atlas.NonFlexInFlexAPI:
-		case atlas.FeatureUnsupported:
-		default:
-			return nil, err
-		}
+	if !adminv20241113001.IsErrorCode(err, atlas.ClusterNotFound) {
+		return nil, err
 	}
 
 	return nil, nil
@@ -186,7 +180,7 @@ func (ds *ProductionAtlasDeployments) GetCluster(ctx context.Context, projectID,
 		return clusterFromAtlas(cluster), nil
 	}
 
-	if !admin.IsErrorCode(err, atlas.ClusterNotFound) && !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) {
+	if !admin.IsErrorCode(err, atlas.ClusterNotFound) {
 		return nil, err
 	}
 
