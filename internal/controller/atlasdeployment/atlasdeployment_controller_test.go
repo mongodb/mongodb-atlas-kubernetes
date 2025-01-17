@@ -1169,6 +1169,7 @@ func TestChangeDeploymentType(t *testing.T) {
 				},
 			},
 
+			//nolint:dupl
 			atlasProvider: &atlasmock.TestProvider{
 				IsCloudGovFunc: func() bool {
 					return false
@@ -1217,6 +1218,7 @@ func TestChangeDeploymentType(t *testing.T) {
 					StateName: "IDLE",
 				},
 			},
+			//nolint:dupl
 			atlasProvider: &atlasmock.TestProvider{
 				IsCloudGovFunc: func() bool {
 					return false
