@@ -654,7 +654,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			},
 			deploymentService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ClusterWithProcessArgs(context.Background(), mock.AnythingOfType("*deployment.Cluster")).
+				service.EXPECT().ClusterWithProcessArgs(context.Background(), mock.Anything).
 					RunAndReturn(func(_ context.Context, cluster *deployment.Cluster) error {
 						cluster.ProcessArgs = &akov2.ProcessArgs{
 							JavascriptEnabled:         pointer.MakePtr(true),
@@ -664,7 +664,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 						}
 						return nil
 					})
-				service.EXPECT().UpdateProcessArgs(context.Background(), mock.AnythingOfType("*deployment.Cluster")).
+				service.EXPECT().UpdateProcessArgs(context.Background(), mock.Anything).
 					RunAndReturn(func(_ context.Context, cluster *deployment.Cluster) error {
 						cluster.ProcessArgs = &akov2.ProcessArgs{
 							JavascriptEnabled:         pointer.MakePtr(true),
@@ -673,7 +673,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 						}
 						return nil
 					})
-				service.EXPECT().GetDeployment(context.Background(), "project-id", "cluster0").
+				service.EXPECT().GetDeployment(context.Background(), mock.Anything, mock.Anything).
 					Return(
 						&deployment.Cluster{
 							ProjectID: "project-id",

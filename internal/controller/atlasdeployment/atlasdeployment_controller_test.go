@@ -402,15 +402,11 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
 			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
-				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-				Return(nil, &http.Response{}, err)
 			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
-			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
+			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), mock.Anything).
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
@@ -633,23 +629,15 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
 			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
-				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-				Return(nil, &http.Response{}, err)
 			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			err := &admin.GenericOpenAPIError{}
 			err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
 			clusterAPI := mockadmin.NewClustersApi(t)
-			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
-				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
-			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
-				Return(nil, nil, err)
 
 			serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
-			serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, project.ID(), d.GetDeploymentName()).
+			serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, project.ID(), mock.Anything).
 				Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
 			serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 				Return(
@@ -815,15 +803,11 @@ func TestDeletionReconciliation(t *testing.T) {
 			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
 			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
-				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-				Return(nil, &http.Response{}, err)
 			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
-			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), d.GetDeploymentName()).
+			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), mock.Anything).
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
@@ -1266,10 +1250,6 @@ func TestChangeDeploymentType(t *testing.T) {
 					err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
 					flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-					flexAPI.EXPECT().GetFlexCluster(mock.Anything, "abc123", "cluster0").
-						Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-					flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-						Return(nil, &http.Response{}, err)
 					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
 				},
 				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
@@ -1277,22 +1257,24 @@ func TestChangeDeploymentType(t *testing.T) {
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					clusterAPI := mockadmin.NewClustersApi(t)
-					clusterAPI.EXPECT().GetCluster(mock.Anything, "abc123", "cluster0").
-						Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
-					clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
-						RunAndReturn(
-							func(request admin.GetClusterApiRequest) (*admin.AdvancedClusterDescription, *http.Response, error) {
-								if !tt.deployment.IsServerless() {
-									err := &admin.GenericOpenAPIError{}
-									err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
-									return nil, nil, err
-								}
-								return &admin.AdvancedClusterDescription{Name: pointer.MakePtr("cluster0")}, nil, nil
-							},
-						)
+					if tt.deployment.IsAdvancedDeployment() {
+						clusterAPI.EXPECT().GetCluster(mock.Anything, "abc123", "cluster0").
+							Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+						clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
+							RunAndReturn(
+								func(request admin.GetClusterApiRequest) (*admin.AdvancedClusterDescription, *http.Response, error) {
+									if !tt.deployment.IsServerless() {
+										err := &admin.GenericOpenAPIError{}
+										err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
+										return nil, nil, err
+									}
+									return &admin.AdvancedClusterDescription{Name: pointer.MakePtr("cluster0")}, nil, nil
+								},
+							)
+					}
 
 					serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
-					if !tt.deployment.IsServerless() {
+					if tt.deployment.IsServerless() {
 						serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, "abc123", "cluster0").
 							Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
 						serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
