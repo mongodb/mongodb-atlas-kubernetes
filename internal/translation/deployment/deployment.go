@@ -122,7 +122,7 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 
 func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, name string) (bool, error) {
 	flex, err := ds.GetFlexCluster(ctx, projectID, name)
-	if err != nil {
+	if !adminv20241113001.IsErrorCode(err, atlas.NonFlexInFlexAPI) && err != nil {
 		return false, err
 	}
 	if flex != nil {
@@ -130,7 +130,7 @@ func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, project
 	}
 
 	cluster, err := ds.GetCluster(ctx, projectID, name)
-	if err != nil {
+	if !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) && err != nil {
 		return false, err
 	}
 	if cluster != nil {
@@ -138,7 +138,7 @@ func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, project
 	}
 
 	serverless, err := ds.GetServerless(ctx, projectID, name)
-	if err != nil {
+	if !admin.IsErrorCode(err, atlas.ClusterInstanceFromServerlessAPI) && err != nil {
 		return false, err
 	}
 	if serverless != nil {
