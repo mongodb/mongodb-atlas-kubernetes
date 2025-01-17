@@ -211,7 +211,7 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 
 	switch {
 	case deployment.IsFlex():
-		flex, err := ds.GetFlexCluster(ctx, projectID, deployment.Name)
+		flex, err := ds.GetFlexCluster(ctx, projectID, deployment.GetDeploymentName())
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +220,7 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		}
 
 	case deployment.IsServerless():
-		serverless, err := ds.GetServerless(ctx, projectID, deployment.Name)
+		serverless, err := ds.GetServerless(ctx, projectID, deployment.GetDeploymentName())
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +229,7 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		}
 
 	case deployment.IsAdvancedDeployment():
-		cluster, err := ds.GetCluster(ctx, projectID, deployment.Name)
+		cluster, err := ds.GetCluster(ctx, projectID, deployment.GetDeploymentName())
 		if err != nil {
 			return nil, err
 		}
