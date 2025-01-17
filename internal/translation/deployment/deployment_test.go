@@ -15,6 +15,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -69,7 +70,7 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 
 func TestClusterExists(t *testing.T) {
 	tests := map[string]struct {
-		deployment Deployment
+		deployment *akov2.AtlasDeployment
 		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
 		gov        bool
 		result     bool
@@ -265,7 +266,7 @@ func TestClusterExists(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI, flexAPI := tt.apiMocker()
 			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, nil, flexAPI, tt.gov)
 
-			result, err := service.ClusterExists(context.Background(), tt.deployment.GetProjectID(), tt.deployment.GetName())
+			result, err := service.ClusterExists(context.Background(), "project-id", tt.deployment.GetName())
 			require.Equal(t, tt.err, err)
 			assert.Equal(t, tt.result, result)
 		})
@@ -274,7 +275,7 @@ func TestClusterExists(t *testing.T) {
 
 func TestGetDeployment(t *testing.T) {
 	tests := map[string]struct {
-		deployment Deployment
+		deployment *akov2.AtlasDeployment
 		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
 		result     Deployment
 		err        error
@@ -289,16 +290,7 @@ func TestGetDeployment(t *testing.T) {
 					Return(nil, nil, errors.New("failed to get cluster from atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
-
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, err)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to get cluster from atlas"),
@@ -307,10 +299,6 @@ func TestGetDeployment(t *testing.T) {
 			deployment: serverlessInstance(),
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
-					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
-				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.ClusterNotFound))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").
@@ -318,15 +306,7 @@ func TestGetDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, errors.New("failed to get serverless instance from atlas"))
 
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
-
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, err)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to get serverless instance from atlas"),
@@ -341,20 +321,7 @@ func TestGetDeployment(t *testing.T) {
 					Return(nil, nil, atlasAPIError(atlas.ClusterNotFound))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "cluster0").
-					Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessInstanceAPI})
-				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.ProviderUnsupported))
-
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
-
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, err)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 		},
@@ -362,10 +329,6 @@ func TestGetDeployment(t *testing.T) {
 			deployment: serverlessInstance(),
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
-					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
-				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceFromClusterAPI))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").
@@ -373,15 +336,7 @@ func TestGetDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceNotFound))
 
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
-
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, err)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 		},
@@ -399,16 +354,7 @@ func TestGetDeployment(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
-
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, err)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			result: expectedGeoShardedCluster(),
@@ -417,10 +363,6 @@ func TestGetDeployment(t *testing.T) {
 			deployment: serverlessInstance(),
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
-					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
-				clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
-					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceFromClusterAPI))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").
@@ -432,15 +374,7 @@ func TestGetDeployment(t *testing.T) {
 						nil,
 					)
 
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
-
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
-					Return(nil, nil, err)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			result: expectedServerlessInstance(),
@@ -452,7 +386,7 @@ func TestGetDeployment(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI, flexAPI := tt.apiMocker()
 			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, nil, flexAPI, false)
 
-			result, err := service.GetDeployment(context.Background(), tt.deployment.GetProjectID(), tt.deployment.GetName())
+			result, err := service.GetDeployment(context.Background(), "project-id", tt.deployment)
 			require.Equal(t, tt.err, err)
 			assert.Equal(t, tt.result, result)
 		})
@@ -461,7 +395,7 @@ func TestGetDeployment(t *testing.T) {
 
 func TestCreateDeployment(t *testing.T) {
 	tests := map[string]struct {
-		deployment Deployment
+		deployment *akov2.AtlasDeployment
 		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
 		result     Deployment
 		err        error
@@ -477,7 +411,6 @@ func TestCreateDeployment(t *testing.T) {
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to create cluster in atlas"),
@@ -494,7 +427,6 @@ func TestCreateDeployment(t *testing.T) {
 					Return(nil, nil, errors.New("failed to create serverless instance in atlas"))
 
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to create serverless instance in atlas"),
@@ -535,7 +467,6 @@ func TestCreateDeployment(t *testing.T) {
 					)
 
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			result: expectedServerlessInstance(),
@@ -547,7 +478,7 @@ func TestCreateDeployment(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI, flexAPI := tt.apiMocker()
 			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, nil, flexAPI, false)
 
-			result, err := service.CreateDeployment(context.Background(), tt.deployment)
+			result, err := service.CreateDeployment(context.Background(), NewDeployment("project-id", tt.deployment))
 			require.Equal(t, tt.err, err)
 			assert.Equal(t, tt.result, result)
 		})
@@ -556,7 +487,7 @@ func TestCreateDeployment(t *testing.T) {
 
 func TestUpdateDeployment(t *testing.T) {
 	tests := map[string]struct {
-		deployment Deployment
+		deployment *akov2.AtlasDeployment
 		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
 		result     Deployment
 		err        error
@@ -572,7 +503,6 @@ func TestUpdateDeployment(t *testing.T) {
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to update cluster in atlas"),
@@ -589,7 +519,6 @@ func TestUpdateDeployment(t *testing.T) {
 					Return(nil, nil, errors.New("failed to update serverless instance in atlas"))
 
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to update serverless instance in atlas"),
@@ -609,7 +538,6 @@ func TestUpdateDeployment(t *testing.T) {
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			result: expectedGeoShardedCluster(),
@@ -642,7 +570,7 @@ func TestUpdateDeployment(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI, flexAPI := tt.apiMocker()
 			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, nil, flexAPI, false)
 
-			result, err := service.UpdateDeployment(context.Background(), tt.deployment)
+			result, err := service.UpdateDeployment(context.Background(), NewDeployment("project-id", tt.deployment))
 			require.Equal(t, tt.err, err)
 			assert.Equal(t, tt.result, result)
 		})
@@ -651,7 +579,7 @@ func TestUpdateDeployment(t *testing.T) {
 
 func TestDeleteDeployment(t *testing.T) {
 	tests := map[string]struct {
-		deployment Deployment
+		deployment *akov2.AtlasDeployment
 		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
 		result     Deployment
 		err        error
@@ -729,7 +657,7 @@ func TestDeleteDeployment(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI, flexAPI := tt.apiMocker()
 			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, nil, flexAPI, false)
 
-			err := service.DeleteDeployment(context.Background(), tt.deployment)
+			err := service.DeleteDeployment(context.Background(), NewDeployment("project-id", tt.deployment))
 			require.Equal(t, tt.err, err)
 		})
 	}
@@ -737,7 +665,7 @@ func TestDeleteDeployment(t *testing.T) {
 
 func TestClusterWithProcessArgs(t *testing.T) {
 	tests := map[string]struct {
-		deployment Deployment
+		deployment *akov2.AtlasDeployment
 		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
 		result     Deployment
 		err        error
@@ -839,11 +767,12 @@ func TestClusterWithProcessArgs(t *testing.T) {
 			clusterAPI, serverlessInstanceAPI, flexAPI := tt.apiMocker()
 			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, nil, flexAPI, false)
 
-			cluster := tt.deployment.(*Cluster)
+			d := NewDeployment("project-id", tt.deployment)
+			cluster := d.(*Cluster)
 			err := service.ClusterWithProcessArgs(context.Background(), cluster)
 			require.Equal(t, tt.err, err)
 
-			expectedCluster := tt.deployment.(*Cluster)
+			expectedCluster := d.(*Cluster)
 			assert.Equal(t, expectedCluster.ProcessArgs, cluster.ProcessArgs)
 		})
 	}
@@ -987,190 +916,194 @@ func atlasAPIError(code string) *admin.GenericOpenAPIError {
 	return &err
 }
 
-func geoShardedCluster() *Cluster {
-	return &Cluster{
-		ProjectID: "project-id",
-		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
-			Name:                         "cluster0",
-			ClusterType:                  "GEOSHARDED",
-			DiskSizeGB:                   pointer.MakePtr(40),
-			BackupEnabled:                pointer.MakePtr(true),
-			PitEnabled:                   pointer.MakePtr(true),
-			Paused:                       pointer.MakePtr(false),
-			TerminationProtectionEnabled: true,
-			EncryptionAtRestProvider:     "AWS",
-			RootCertType:                 "ISRGROOTX1",
-			MongoDBMajorVersion:          "7.0",
-			VersionReleaseSystem:         "LTS",
-			BiConnector: &akov2.BiConnectorSpec{
-				Enabled:        pointer.MakePtr(true),
-				ReadPreference: "secondary",
-			},
-			Labels: []common.LabelSpec{
-				{
-					Key:   "B",
-					Value: "B",
+func geoShardedCluster() *akov2.AtlasDeployment {
+	return &akov2.AtlasDeployment{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "cluster0",
+		},
+		Spec: akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Name:                         "cluster0",
+				ClusterType:                  "GEOSHARDED",
+				DiskSizeGB:                   pointer.MakePtr(40),
+				BackupEnabled:                pointer.MakePtr(true),
+				PitEnabled:                   pointer.MakePtr(true),
+				Paused:                       pointer.MakePtr(false),
+				TerminationProtectionEnabled: true,
+				EncryptionAtRestProvider:     "AWS",
+				RootCertType:                 "ISRGROOTX1",
+				MongoDBMajorVersion:          "7.0",
+				VersionReleaseSystem:         "LTS",
+				BiConnector: &akov2.BiConnectorSpec{
+					Enabled:        pointer.MakePtr(true),
+					ReadPreference: "secondary",
 				},
-				{
-					Key:   "A",
-					Value: "A",
+				Labels: []common.LabelSpec{
+					{
+						Key:   "B",
+						Value: "B",
+					},
+					{
+						Key:   "A",
+						Value: "A",
+					},
 				},
-			},
-			Tags: []*akov2.TagSpec{
-				{
-					Key:   "B",
-					Value: "B",
+				Tags: []*akov2.TagSpec{
+					{
+						Key:   "B",
+						Value: "B",
+					},
+					{
+						Key:   "A",
+						Value: "A",
+					},
 				},
-				{
-					Key:   "A",
-					Value: "A",
-				},
-			},
-			MongoDBVersion: "7.3.3",
-			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
-				{
-					ZoneName:  "Zone 1",
-					NumShards: 1,
-					RegionConfigs: []*akov2.AdvancedRegionConfig{
-						{
-							ProviderName: "AWS",
-							RegionName:   "EU_WEST_1",
-							Priority:     pointer.MakePtr(5),
-							ElectableSpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(3),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							ReadOnlySpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(3),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							AnalyticsSpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(1),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							AutoScaling: &akov2.AdvancedAutoScalingSpec{
-								DiskGB: &akov2.DiskGB{
-									Enabled: pointer.MakePtr(true),
+				MongoDBVersion: "7.3.3",
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						ZoneName:  "Zone 1",
+						NumShards: 1,
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "EU_WEST_1",
+								Priority:     pointer.MakePtr(5),
+								ElectableSpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(3),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
 								},
-								Compute: &akov2.ComputeSpec{
-									Enabled:          pointer.MakePtr(true),
-									ScaleDownEnabled: pointer.MakePtr(true),
-									MinInstanceSize:  "M30",
-									MaxInstanceSize:  "M60",
+								ReadOnlySpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(3),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
+								},
+								AnalyticsSpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(1),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
+								},
+								AutoScaling: &akov2.AdvancedAutoScalingSpec{
+									DiskGB: &akov2.DiskGB{
+										Enabled: pointer.MakePtr(true),
+									},
+									Compute: &akov2.ComputeSpec{
+										Enabled:          pointer.MakePtr(true),
+										ScaleDownEnabled: pointer.MakePtr(true),
+										MinInstanceSize:  "M30",
+										MaxInstanceSize:  "M60",
+									},
 								},
 							},
-						},
-						{
-							ProviderName: "AWS",
-							RegionName:   "US_EAST_1",
-							Priority:     pointer.MakePtr(7),
-							ElectableSpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(3),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							ReadOnlySpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(3),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							AnalyticsSpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(1),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							AutoScaling: &akov2.AdvancedAutoScalingSpec{
-								DiskGB: &akov2.DiskGB{
-									Enabled: pointer.MakePtr(true),
+							{
+								ProviderName: "AWS",
+								RegionName:   "US_EAST_1",
+								Priority:     pointer.MakePtr(7),
+								ElectableSpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(3),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
 								},
-								Compute: &akov2.ComputeSpec{
-									Enabled:          pointer.MakePtr(true),
-									ScaleDownEnabled: pointer.MakePtr(true),
-									MinInstanceSize:  "M30",
-									MaxInstanceSize:  "M60",
+								ReadOnlySpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(3),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
+								},
+								AnalyticsSpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(1),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
+								},
+								AutoScaling: &akov2.AdvancedAutoScalingSpec{
+									DiskGB: &akov2.DiskGB{
+										Enabled: pointer.MakePtr(true),
+									},
+									Compute: &akov2.ComputeSpec{
+										Enabled:          pointer.MakePtr(true),
+										ScaleDownEnabled: pointer.MakePtr(true),
+										MinInstanceSize:  "M30",
+										MaxInstanceSize:  "M60",
+									},
 								},
 							},
 						},
 					},
-				},
-				{
-					ZoneName:  "Zone 2",
-					NumShards: 1,
-					RegionConfigs: []*akov2.AdvancedRegionConfig{
-						{
-							ProviderName: "AWS",
-							RegionName:   "EU_CENTRAL_1",
-							Priority:     pointer.MakePtr(6),
-							ElectableSpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(2),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							ReadOnlySpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(3),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							AnalyticsSpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(1),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							AutoScaling: &akov2.AdvancedAutoScalingSpec{
-								DiskGB: &akov2.DiskGB{
-									Enabled: pointer.MakePtr(true),
+					{
+						ZoneName:  "Zone 2",
+						NumShards: 1,
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "EU_CENTRAL_1",
+								Priority:     pointer.MakePtr(6),
+								ElectableSpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(2),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
 								},
-								Compute: &akov2.ComputeSpec{
-									Enabled:          pointer.MakePtr(true),
-									ScaleDownEnabled: pointer.MakePtr(true),
-									MinInstanceSize:  "M30",
-									MaxInstanceSize:  "M60",
+								ReadOnlySpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(3),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
+								},
+								AnalyticsSpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(1),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
+								},
+								AutoScaling: &akov2.AdvancedAutoScalingSpec{
+									DiskGB: &akov2.DiskGB{
+										Enabled: pointer.MakePtr(true),
+									},
+									Compute: &akov2.ComputeSpec{
+										Enabled:          pointer.MakePtr(true),
+										ScaleDownEnabled: pointer.MakePtr(true),
+										MinInstanceSize:  "M30",
+										MaxInstanceSize:  "M60",
+									},
 								},
 							},
-						},
-						{
-							ProviderName: "AWS",
-							RegionName:   "EU_WEST_1",
-							Priority:     pointer.MakePtr(4),
-							ElectableSpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(3),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							ReadOnlySpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(3),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							AnalyticsSpecs: &akov2.Specs{
-								InstanceSize:  "M30",
-								NodeCount:     pointer.MakePtr(1),
-								EbsVolumeType: "STANDARD",
-								DiskIOPS:      pointer.MakePtr(int64(3000)),
-							},
-							AutoScaling: &akov2.AdvancedAutoScalingSpec{
-								DiskGB: &akov2.DiskGB{
-									Enabled: pointer.MakePtr(true),
+							{
+								ProviderName: "AWS",
+								RegionName:   "EU_WEST_1",
+								Priority:     pointer.MakePtr(4),
+								ElectableSpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(3),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
 								},
-								Compute: &akov2.ComputeSpec{
-									Enabled:          pointer.MakePtr(true),
-									ScaleDownEnabled: pointer.MakePtr(true),
-									MinInstanceSize:  "M30",
-									MaxInstanceSize:  "M60",
+								ReadOnlySpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(3),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
+								},
+								AnalyticsSpecs: &akov2.Specs{
+									InstanceSize:  "M30",
+									NodeCount:     pointer.MakePtr(1),
+									EbsVolumeType: "STANDARD",
+									DiskIOPS:      pointer.MakePtr(int64(3000)),
+								},
+								AutoScaling: &akov2.AdvancedAutoScalingSpec{
+									DiskGB: &akov2.DiskGB{
+										Enabled: pointer.MakePtr(true),
+									},
+									Compute: &akov2.ComputeSpec{
+										Enabled:          pointer.MakePtr(true),
+										ScaleDownEnabled: pointer.MakePtr(true),
+										MinInstanceSize:  "M30",
+										MaxInstanceSize:  "M60",
+									},
 								},
 							},
 						},
@@ -1626,28 +1559,32 @@ func atlasGeoShardedCluster() *admin.AdvancedClusterDescription {
 	}
 }
 
-func serverlessInstance() *Serverless {
-	return &Serverless{
-		ProjectID: "project-id",
-		ServerlessSpec: &akov2.ServerlessSpec{
+func serverlessInstance() *akov2.AtlasDeployment {
+	return &akov2.AtlasDeployment{
+		ObjectMeta: v1.ObjectMeta{
 			Name: "instance0",
-			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
-				ProviderName:        "SERVERLESS",
-				BackingProviderName: "AWS",
-				RegionName:          "US_EAST_1",
-			},
-			BackupOptions: akov2.ServerlessBackupOptions{
-				ServerlessContinuousBackupEnabled: true,
-			},
-			TerminationProtectionEnabled: true,
-			Tags: []*akov2.TagSpec{
-				{
-					Key:   "B",
-					Value: "B",
+		},
+		Spec: akov2.AtlasDeploymentSpec{
+			ServerlessSpec: &akov2.ServerlessSpec{
+				Name: "instance0",
+				ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
+					ProviderName:        "SERVERLESS",
+					BackingProviderName: "AWS",
+					RegionName:          "US_EAST_1",
 				},
-				{
-					Key:   "A",
-					Value: "A",
+				BackupOptions: akov2.ServerlessBackupOptions{
+					ServerlessContinuousBackupEnabled: true,
+				},
+				TerminationProtectionEnabled: true,
+				Tags: []*akov2.TagSpec{
+					{
+						Key:   "B",
+						Value: "B",
+					},
+					{
+						Key:   "A",
+						Value: "A",
+					},
 				},
 			},
 		},
