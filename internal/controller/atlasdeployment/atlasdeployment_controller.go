@@ -164,7 +164,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
 	deploymentInAKO := deployment.NewDeployment(atlasProject.ID, atlasDeployment)
-	deploymentInAtlas, err := deploymentService.GetDeployment(workflowCtx.Context, atlasProject.ID, atlasDeployment.GetDeploymentName())
+	deploymentInAtlas, err := deploymentService.GetDeployment(workflowCtx.Context, atlasProject.ID, atlasDeployment)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
@@ -295,7 +295,7 @@ func (r *AtlasDeploymentReconciler) transitionFromLegacy(ctx *workflow.Context, 
 			return r.terminate(ctx, reason, err)
 		}
 
-		deploymentInAtlas, err := deploymentService.GetDeployment(ctx.Context, projectID, atlasDeployment.GetDeploymentName())
+		deploymentInAtlas, err := deploymentService.GetDeployment(ctx.Context, projectID, atlasDeployment)
 		if err != nil {
 			return r.terminate(ctx, workflow.Internal, err)
 		}
@@ -307,7 +307,7 @@ func (r *AtlasDeploymentReconciler) transitionFromLegacy(ctx *workflow.Context, 
 func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService, projectID string, atlasDeployment *akov2.AtlasDeployment, result workflow.Result) transitionFn {
 	if result.IsInProgress() {
 		return func(reason workflow.ConditionReason) (ctrl.Result, error) {
-			deploymentInAtlas, err := deploymentService.GetDeployment(ctx.Context, projectID, atlasDeployment.GetDeploymentName())
+			deploymentInAtlas, err := deploymentService.GetDeployment(ctx.Context, projectID, atlasDeployment)
 			if err != nil {
 				return r.terminate(ctx, workflow.Internal, err)
 			}

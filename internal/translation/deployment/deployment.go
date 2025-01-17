@@ -28,7 +28,7 @@ type DeploymentService interface {
 	ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error)
 	DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error)
 
-	GetDeployment(ctx context.Context, projectID, name string) (Deployment, error)
+	GetDeployment(ctx context.Context, projectID string, deployment *akov2.AtlasDeployment) (Deployment, error)
 	CreateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
 	UpdateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
 	DeleteDeployment(ctx context.Context, deployment Deployment) error
@@ -120,13 +120,32 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 	return connectionSet(clusterConns, serverlessConns), nil
 }
 
-func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error) {
-	d, err := ds.GetDeployment(ctx, projectID, clusterName)
+func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, name string) (bool, error) {
+	flex, err := ds.GetFlexCluster(ctx, projectID, name)
 	if err != nil {
 		return false, err
 	}
+	if flex != nil {
+		return true, nil
+	}
 
-	return d != nil, nil
+	cluster, err := ds.GetCluster(ctx, projectID, name)
+	if err != nil {
+		return false, err
+	}
+	if cluster != nil {
+		return true, nil
+	}
+
+	serverless, err := ds.GetServerless(ctx, projectID, name)
+	if err != nil {
+		return false, err
+	}
+	if serverless != nil {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error) {
@@ -138,24 +157,30 @@ func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, pro
 	return clusterStatus.GetChangeStatus() == string(mongodbatlas.ChangeStatusApplied), nil
 }
 
-func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, projectID, name string) (Deployment, error) {
-	if !ds.isGov {
-		flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
-		if err == nil {
-			return flexFromAtlas(flex), nil
-		}
+func (ds *ProductionAtlasDeployments) GetFlexCluster(ctx context.Context, projectID, name string) (*Flex, error) {
+	if ds.isGov {
+		return nil, nil
+	}
 
-		if sdkerr, ok := adminv20241113001.AsError(err); ok {
-			switch sdkerr.GetErrorCode() {
-			case atlas.ClusterNotFound:
-			case atlas.NonFlexInFlexAPI:
-			case atlas.FeatureUnsupported:
-			default:
-				return nil, err
-			}
+	flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
+	if err == nil {
+		return flexFromAtlas(flex), nil
+	}
+
+	if sdkerr, ok := adminv20241113001.AsError(err); ok {
+		switch sdkerr.GetErrorCode() {
+		case atlas.ClusterNotFound:
+		case atlas.NonFlexInFlexAPI:
+		case atlas.FeatureUnsupported:
+		default:
+			return nil, err
 		}
 	}
 
+	return nil, nil
+}
+
+func (ds *ProductionAtlasDeployments) GetCluster(ctx context.Context, projectID, name string) (*Cluster, error) {
 	cluster, _, err := ds.clustersAPI.GetCluster(ctx, projectID, name).Execute()
 	if err == nil {
 		return clusterFromAtlas(cluster), nil
@@ -165,6 +190,10 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		return nil, err
 	}
 
+	return nil, nil
+}
+
+func (ds *ProductionAtlasDeployments) GetServerless(ctx context.Context, projectID, name string) (*Serverless, error) {
 	if ds.isGov {
 		return nil, nil
 	}
@@ -178,6 +207,44 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		return nil, err
 	}
 
+	return nil, nil
+}
+
+func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, projectID string, deployment *akov2.AtlasDeployment) (Deployment, error) {
+	if deployment == nil {
+		return nil, errors.New("deployment is nil")
+	}
+
+	switch {
+	case deployment.IsFlex():
+		flex, err := ds.GetFlexCluster(ctx, projectID, deployment.Name)
+		if err != nil {
+			return nil, err
+		}
+		if flex != nil {
+			return flex, err
+		}
+
+	case deployment.IsServerless():
+		serverless, err := ds.GetServerless(ctx, projectID, deployment.Name)
+		if err != nil {
+			return nil, err
+		}
+		if serverless != nil {
+			return serverless, err
+		}
+
+	case deployment.IsAdvancedDeployment():
+		cluster, err := ds.GetCluster(ctx, projectID, deployment.Name)
+		if err != nil {
+			return nil, err
+		}
+		if cluster != nil {
+			return cluster, err
+		}
+	}
+
+	// not found
 	return nil, nil
 }
 
