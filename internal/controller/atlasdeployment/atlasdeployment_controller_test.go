@@ -1140,7 +1140,8 @@ func TestFindDeploymentsForBackupSchedule(t *testing.T) {
 
 func TestChangeDeploymentType(t *testing.T) {
 	tests := map[string]struct {
-		deployment *akov2.AtlasDeployment
+		deployment    *akov2.AtlasDeployment
+		atlasProvider atlas.Provider
 	}{
 		"should fail when existing cluster is regular but manifest defines a serverless instance": {
 			deployment: &akov2.AtlasDeployment{
@@ -1167,6 +1168,33 @@ func TestChangeDeploymentType(t *testing.T) {
 					StateName: "IDLE",
 				},
 			},
+
+			atlasProvider: &atlasmock.TestProvider{
+				IsCloudGovFunc: func() bool {
+					return false
+				},
+				IsSupportedFunc: func() bool {
+					return true
+				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+				},
+				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+					return &mongodbatlas.Client{}, "org-id", nil
+				},
+				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+					serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
+					serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, "abc123", "cluster0").
+						Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
+
+					err := &admin.GenericOpenAPIError{}
+					err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ClusterInstanceFromServerlessAPI)})
+					err.SetError("wrong API")
+					serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.Anything).Return(nil, nil, err)
+
+					return &admin.APIClient{ServerlessInstancesApi: serverlessAPI}, "org-id", nil
+				},
+			},
 		},
 		"should fail when existing cluster is serverless instance but manifest defines a regular deployment": {
 			deployment: &akov2.AtlasDeployment{
@@ -1187,6 +1215,31 @@ func TestChangeDeploymentType(t *testing.T) {
 				},
 				Status: status.AtlasDeploymentStatus{
 					StateName: "IDLE",
+				},
+			},
+			atlasProvider: &atlasmock.TestProvider{
+				IsCloudGovFunc: func() bool {
+					return false
+				},
+				IsSupportedFunc: func() bool {
+					return true
+				},
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+				},
+				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+					return &mongodbatlas.Client{}, "org-id", nil
+				},
+				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+					clusterAPI := mockadmin.NewClustersApi(t)
+					clusterAPI.EXPECT().GetCluster(mock.Anything, "abc123", "cluster0").
+						Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
+
+					err := &admin.GenericOpenAPIError{}
+					err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
+					err.SetError("wrong API")
+					clusterAPI.EXPECT().GetClusterExecute(mock.Anything).Return(nil, nil, err)
+					return &admin.APIClient{ClustersApi: clusterAPI}, "org-id", nil
 				},
 			},
 		},
@@ -1238,59 +1291,12 @@ func TestChangeDeploymentType(t *testing.T) {
 				WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
 				Build()
 
-			atlasProvider := &atlasmock.TestProvider{
-				IsCloudGovFunc: func() bool {
-					return false
-				},
-				IsSupportedFunc: func() bool {
-					return true
-				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					err := &adminv20241113001.GenericOpenAPIError{}
-					err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
-
-					flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
-					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
-				},
-				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-					return &mongodbatlas.Client{}, "org-id", nil
-				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					clusterAPI := mockadmin.NewClustersApi(t)
-					if tt.deployment.IsAdvancedDeployment() {
-						clusterAPI.EXPECT().GetCluster(mock.Anything, "abc123", "cluster0").
-							Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
-						clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
-							RunAndReturn(
-								func(request admin.GetClusterApiRequest) (*admin.AdvancedClusterDescription, *http.Response, error) {
-									if !tt.deployment.IsServerless() {
-										err := &admin.GenericOpenAPIError{}
-										err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
-										return nil, nil, err
-									}
-									return &admin.AdvancedClusterDescription{Name: pointer.MakePtr("cluster0")}, nil, nil
-								},
-							)
-					}
-
-					serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
-					if tt.deployment.IsServerless() {
-						serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, "abc123", "cluster0").
-							Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
-						serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
-							Return(&admin.ServerlessInstanceDescription{Name: pointer.MakePtr("cluster0")}, nil, nil)
-					}
-
-					return &admin.APIClient{ClustersApi: clusterAPI, ServerlessInstancesApi: serverlessAPI}, "org-id", nil
-				},
-			}
-
 			r := &AtlasDeploymentReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{
 					Client: k8sClient,
 					Log:    logger.Sugar(),
 				},
-				AtlasProvider: atlasProvider,
+				AtlasProvider: tt.atlasProvider,
 				EventRecorder: record.NewFakeRecorder(1),
 			}
 			result, err := r.Reconcile(
@@ -1315,7 +1321,7 @@ func TestChangeDeploymentType(t *testing.T) {
 						api.TrueCondition(api.ValidationSucceeded),
 						api.FalseCondition(api.DeploymentReadyType).
 							WithReason(string(workflow.Internal)).
-							WithMessageRegexp("regular deployment cannot be converted into a serverless deployment and vice-versa"),
+							WithMessageRegexp("wrong API"),
 					},
 					tt.deployment.Status.Conditions,
 					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),

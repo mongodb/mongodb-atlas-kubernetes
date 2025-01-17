@@ -1322,7 +1322,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment.Spec.FlexSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
 				})
 
-				doServerlessDeploymentStatusChecks()
+				doFlexDeploymentStatusChecks()
 				atlasDeployment, _, _ := atlasClientv20241113001.FlexClustersApi.
 					GetFlexCluster(context.Background(), createdProject.Status.ID, createdDeployment.Spec.FlexSpec.Name).
 					Execute()
