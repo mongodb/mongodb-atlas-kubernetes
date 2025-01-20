@@ -11,23 +11,43 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 )
 
+const (
+	DeploymentSet = 1 << iota
+	ServerlessSet
+	FlexSet
+)
+
+func deploymentSpecMask(atlasDeployment *akov2.AtlasDeployment) int {
+	mask := 0
+	if atlasDeployment.Spec.DeploymentSpec != nil {
+		mask = mask + DeploymentSet
+	}
+	if atlasDeployment.Spec.ServerlessSpec != nil {
+		mask = mask + ServerlessSet
+	}
+	if atlasDeployment.Spec.FlexSpec != nil {
+		mask = mask + FlexSet
+	}
+	return mask
+}
+
 func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment, isGov bool, regionUsageRestrictions string) error {
-	isRegularDeployment := atlasDeployment.Spec.DeploymentSpec != nil
-	isServerlessDeployment := atlasDeployment.Spec.ServerlessSpec != nil
 	var err error
 	var tagsSpec []*akov2.TagSpec
-
-	switch {
-	case !isRegularDeployment && !isServerlessDeployment:
-		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec to be present, but none were")
-	case isRegularDeployment && isServerlessDeployment:
-		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec to be present, but none were")
-	case !isRegularDeployment && isServerlessDeployment:
-		tagsSpec = atlasDeployment.Spec.ServerlessSpec.Tags
-		err = serverlessDeployment(atlasDeployment.Spec.ServerlessSpec)
-	default:
+	switch deploymentSpecMask(atlasDeployment) {
+	case 0:
+		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were")
+	case DeploymentSet:
 		tagsSpec = atlasDeployment.Spec.DeploymentSpec.Tags
 		err = regularDeployment(atlasDeployment.Spec.DeploymentSpec, isGov, regionUsageRestrictions)
+	case ServerlessSet:
+		tagsSpec = atlasDeployment.Spec.ServerlessSpec.Tags
+		err = serverlessDeployment(atlasDeployment.Spec.ServerlessSpec)
+	case FlexSet:
+		tagsSpec = atlasDeployment.Spec.FlexSpec.Tags
+		err = flexDeployment(atlasDeployment.Spec.FlexSpec)
+	default:
+		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were")
 	}
 
 	if err != nil {
@@ -261,6 +281,20 @@ func serverlessPrivateEndpoints(privateEndpoints []akov2.ServerlessPrivateEndpoi
 		}
 
 		namesMap[privateEndpoint.Name] = struct{}{}
+	}
+
+	return nil
+}
+
+func flexDeployment(spec *akov2.FlexSpec) error {
+	supportedProviders := provider.SupportedProviders()
+	switch {
+	case spec.ProviderSettings == nil:
+		return errors.New("provider settings cannot be empty")
+	case !supportedProviders.IsSupported(provider.ProviderName(spec.ProviderSettings.BackingProviderName)):
+		return errors.New("backing provider name is not supported")
+	case spec.ProviderSettings.RegionName == "":
+		return errors.New("regionName cannot be empty")
 	}
 
 	return nil
