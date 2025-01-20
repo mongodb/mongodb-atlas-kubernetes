@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
@@ -27,7 +28,7 @@ type DeploymentService interface {
 	ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error)
 	DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error)
 
-	GetDeployment(ctx context.Context, projectID, name string) (Deployment, error)
+	GetDeployment(ctx context.Context, projectID string, deployment *akov2.AtlasDeployment) (Deployment, error)
 	CreateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
 	UpdateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
 	DeleteDeployment(ctx context.Context, deployment Deployment) error
@@ -48,6 +49,7 @@ type GlobalClusterService interface {
 type ProductionAtlasDeployments struct {
 	clustersAPI      admin.ClustersApi
 	serverlessAPI    admin.ServerlessInstancesApi
+	flexAPI          adminv20241113001.FlexClustersApi
 	globalClusterAPI admin.GlobalClustersApi
 	isGov            bool
 }
@@ -57,11 +59,15 @@ func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, se
 	if err != nil {
 		return nil, fmt.Errorf("failed to create versioned client: %w", err)
 	}
-	return NewAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, client.GlobalClustersApi, isGov), nil
+	clientSet, _, err := provider.SdkClientSet(ctx, secretRef, log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate Versioned Atlas client: %w", err)
+	}
+	return NewAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, client.GlobalClustersApi, clientSet.SdkClient20241113001.FlexClustersApi, isGov), nil
 }
 
-func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, globalClusterAPI admin.GlobalClustersApi, isGov bool) *ProductionAtlasDeployments {
-	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, globalClusterAPI: globalClusterAPI, isGov: isGov}
+func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, globalClusterAPI admin.GlobalClustersApi, flexAPI adminv20241113001.FlexClustersApi, isGov bool) *ProductionAtlasDeployments {
+	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, globalClusterAPI: globalClusterAPI, flexAPI: flexAPI, isGov: isGov}
 }
 
 func (ds *ProductionAtlasDeployments) ListDeploymentNames(ctx context.Context, projectID string) ([]string, error) {
@@ -114,13 +120,32 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 	return connectionSet(clusterConns, serverlessConns), nil
 }
 
-func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, clusterName string) (bool, error) {
-	d, err := ds.GetDeployment(ctx, projectID, clusterName)
-	if err != nil {
+func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, name string) (bool, error) {
+	flex, err := ds.GetFlexCluster(ctx, projectID, name)
+	if !adminv20241113001.IsErrorCode(err, atlas.NonFlexInFlexAPI) && err != nil {
 		return false, err
 	}
+	if flex != nil {
+		return true, nil
+	}
 
-	return d != nil, nil
+	cluster, err := ds.GetCluster(ctx, projectID, name)
+	if !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) && err != nil {
+		return false, err
+	}
+	if cluster != nil {
+		return true, nil
+	}
+
+	serverless, err := ds.GetServerless(ctx, projectID, name)
+	if !admin.IsErrorCode(err, atlas.ClusterInstanceFromServerlessAPI) && err != nil {
+		return false, err
+	}
+	if serverless != nil {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, projectID, deploymentName string) (bool, error) {
@@ -132,16 +157,37 @@ func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, pro
 	return clusterStatus.GetChangeStatus() == string(mongodbatlas.ChangeStatusApplied), nil
 }
 
-func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, projectID, name string) (Deployment, error) {
+func (ds *ProductionAtlasDeployments) GetFlexCluster(ctx context.Context, projectID, name string) (*Flex, error) {
+	if ds.isGov {
+		return nil, nil
+	}
+
+	flex, _, err := ds.flexAPI.GetFlexCluster(ctx, projectID, name).Execute()
+	if err == nil {
+		return flexFromAtlas(flex), nil
+	}
+
+	if !adminv20241113001.IsErrorCode(err, atlas.ClusterNotFound) {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (ds *ProductionAtlasDeployments) GetCluster(ctx context.Context, projectID, name string) (*Cluster, error) {
 	cluster, _, err := ds.clustersAPI.GetCluster(ctx, projectID, name).Execute()
 	if err == nil {
 		return clusterFromAtlas(cluster), nil
 	}
 
-	if !admin.IsErrorCode(err, atlas.ClusterNotFound) && !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) {
+	if !admin.IsErrorCode(err, atlas.ClusterNotFound) {
 		return nil, err
 	}
 
+	return nil, nil
+}
+
+func (ds *ProductionAtlasDeployments) GetServerless(ctx context.Context, projectID, name string) (*Serverless, error) {
 	if ds.isGov {
 		return nil, nil
 	}
@@ -155,6 +201,44 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		return nil, err
 	}
 
+	return nil, nil
+}
+
+func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, projectID string, deployment *akov2.AtlasDeployment) (Deployment, error) {
+	if deployment == nil {
+		return nil, errors.New("deployment is nil")
+	}
+
+	switch {
+	case deployment.IsFlex():
+		flex, err := ds.GetFlexCluster(ctx, projectID, deployment.GetDeploymentName())
+		if err != nil {
+			return nil, err
+		}
+		if flex != nil {
+			return flex, err
+		}
+
+	case deployment.IsServerless():
+		serverless, err := ds.GetServerless(ctx, projectID, deployment.GetDeploymentName())
+		if err != nil {
+			return nil, err
+		}
+		if serverless != nil {
+			return serverless, err
+		}
+
+	case deployment.IsAdvancedDeployment():
+		cluster, err := ds.GetCluster(ctx, projectID, deployment.GetDeploymentName())
+		if err != nil {
+			return nil, err
+		}
+		if cluster != nil {
+			return cluster, err
+		}
+	}
+
+	// not found
 	return nil, nil
 }
 
@@ -174,6 +258,12 @@ func (ds *ProductionAtlasDeployments) CreateDeployment(ctx context.Context, depl
 		}
 
 		return serverlessFromAtlas(serverless), nil
+	case *Flex:
+		flex, _, err := ds.flexAPI.CreateFlexCluster(ctx, deployment.GetProjectID(), flexCreateToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+		return flexFromAtlas(flex), nil
 	}
 
 	return nil, errors.New("unable to create deployment: unknown type")
@@ -195,6 +285,13 @@ func (ds *ProductionAtlasDeployments) UpdateDeployment(ctx context.Context, depl
 		}
 
 		return serverlessFromAtlas(serverless), nil
+	case *Flex:
+		flex, _, err := ds.flexAPI.UpdateFlexCluster(ctx, deployment.GetProjectID(), deployment.GetName(), flexUpdateToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		return flexFromAtlas(flex), nil
 	}
 
 	return nil, errors.New("unable to create deployment: unknown type")
@@ -208,6 +305,8 @@ func (ds *ProductionAtlasDeployments) DeleteDeployment(ctx context.Context, depl
 		_, err = ds.clustersAPI.DeleteCluster(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
 	case *Serverless:
 		_, _, err = ds.serverlessAPI.DeleteServerlessInstance(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
+	case *Flex:
+		_, _, err = ds.flexAPI.DeleteFlexCluster(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
 	}
 
 	if err != nil {

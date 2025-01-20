@@ -2,6 +2,7 @@ package tag
 
 import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -35,6 +36,22 @@ func ToAtlas(tags []*akov2.TagSpec) *[]admin.ResourceTag {
 		rTags = append(
 			rTags,
 			*admin.NewResourceTag(tag.Key, tag.Value),
+		)
+	}
+
+	return &rTags
+}
+
+func FlexToAtlas(tags []*akov2.TagSpec) *[]adminv20241113001.ResourceTag {
+	if tags == nil {
+		return nil
+	}
+
+	rTags := make([]adminv20241113001.ResourceTag, 0, len(tags))
+	for _, tag := range tags {
+		rTags = append(
+			rTags,
+			*adminv20241113001.NewResourceTag(tag.Key, tag.Value),
 		)
 	}
 
