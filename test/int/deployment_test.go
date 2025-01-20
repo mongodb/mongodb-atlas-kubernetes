@@ -1,3 +1,4 @@
+//nolint:dupl
 package int
 
 import (
@@ -65,7 +66,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, false)
+		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, atlasClientv20241113001.FlexClustersApi, false)
 		createdDeployment = &akov2.AtlasDeployment{}
 
 		manualDeletion = false
@@ -147,6 +148,26 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	}
 
+	doFlexDeploymentStatusChecks := func() {
+		By("Checking observed Flex state", func() {
+			atlasDeployment, _, err := atlasClientv20241113001.FlexClustersApi.GetFlexCluster(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).Execute()
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
+			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.GetStandardSrv()))
+			Expect(createdDeployment.Status.MongoDBVersion).To(Not(BeEmpty()))
+			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
+			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
+			Expect(createdDeployment.Status.Conditions).To(ConsistOf(conditions.MatchConditions(
+				api.TrueCondition(api.DeploymentReadyType),
+				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.ValidationSucceeded),
+				api.TrueCondition(api.ResourceVersionStatus),
+			)))
+			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
+		})
+	}
+
 	checkAtlasState := func(additionalChecks ...func(c *admin.AdvancedClusterDescription)) {
 		By("Verifying Deployment state in Atlas", func() {
 			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersApi.
@@ -162,10 +183,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	checkAdvancedAtlasState := func() {
 		By("Verifying Advanced Deployment state in Atlas", func() {
-			deploymentInAKO := deployment.NewDeployment(createdProject.ID(), createdDeployment)
-			deploymentInAtlas, err := deploymentService.GetDeployment(context.Background(), createdProject.ID(), deploymentInAKO.GetName())
+			deploymentInAtlas, err := deploymentService.GetDeployment(context.Background(), createdProject.ID(), createdDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
+			deploymentInAKO := deployment.NewDeployment(createdProject.ID(), createdDeployment)
 			_, hasChanges := deployment.ComputeChanges(deploymentInAKO.(*deployment.Cluster), deploymentInAtlas.(*deployment.Cluster))
 			Expect(hasChanges).ShouldNot(BeTrue())
 		})
@@ -174,7 +195,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	checkAdvancedDeploymentOptions := func(ctx context.Context, projectID string, atlasDeployment *akov2.AtlasDeployment) {
 		By("Checking that Atlas Advanced Options are equal to the Spec Options", func() {
 			deploymentInAKO := deployment.NewDeployment(projectID, atlasDeployment).(*deployment.Cluster)
-			deploymentInAtlas, err := deploymentService.GetDeployment(ctx, projectID, atlasDeployment.GetDeploymentName())
+			deploymentInAtlas, err := deploymentService.GetDeployment(ctx, projectID, atlasDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
 			cluster := deploymentInAtlas.(*deployment.Cluster)
@@ -1252,7 +1273,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doServerlessDeploymentStatusChecks()
 			})
 
-			//nolint:dupl
 			By("Updating the Instance tags", func() {
 				createdDeployment = performUpdate(ctx, 20*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.ServerlessSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
@@ -1270,7 +1290,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				}
 			})
 
-			//nolint:dupl
 			By("Updating the Instance tags with a duplicate key and removing all tags", func() {
 				var err error
 				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
@@ -1284,6 +1303,50 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment = performUpdate(ctx, 20*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					// Removing tags
 					deployment.Spec.ServerlessSpec.Tags = []*akov2.TagSpec{}
+				})
+			})
+		})
+	})
+
+	Describe("Create Flex instance", func() {
+		It("Should Succeed", func(ctx context.Context) {
+			createdDeployment = akov2.NewDefaultAWSFlexInstance(namespace.Name, createdProject.Name)
+			createdDeployment.Spec.FlexSpec.Tags = []*akov2.TagSpec{}
+			By(fmt.Sprintf("Creating the Flex Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				performCreate(createdDeployment, 30*time.Minute)
+				doFlexDeploymentStatusChecks()
+			})
+
+			By("Updating the Instance tags", func() {
+				createdDeployment = performUpdate(ctx, 20*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+					deployment.Spec.FlexSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
+				})
+
+				doFlexDeploymentStatusChecks()
+				atlasDeployment, _, _ := atlasClientv20241113001.FlexClustersApi.
+					GetFlexCluster(context.Background(), createdProject.Status.ID, createdDeployment.Spec.FlexSpec.Name).
+					Execute()
+				if createdDeployment != nil {
+					for i, tag := range createdDeployment.Spec.FlexSpec.Tags {
+						Expect(atlasDeployment.GetTags()[i].GetKey() == tag.Key).To(BeTrue())
+						Expect(atlasDeployment.GetTags()[i].GetValue() == tag.Value).To(BeTrue())
+					}
+				}
+			})
+
+			By("Updating the Instance tags with a duplicate key and removing all tags", func() {
+				var err error
+				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+					deployment.Spec.FlexSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-1", Value: "value-2"}}
+				})
+				Expect(err).To(BeNil())
+
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, createdDeployment, api.FalseCondition(api.ValidationSucceeded))
+				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
+				createdDeployment = performUpdate(ctx, 20*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+					// Removing tags
+					deployment.Spec.FlexSpec.Tags = []*akov2.TagSpec{}
 				})
 			})
 		})
