@@ -708,6 +708,124 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	})
 }
 
+func TestFlexClusterReconciliation(t *testing.T) {
+	ctx := context.Background()
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "api-secret",
+			Namespace: "default",
+			Labels: map[string]string{
+				"atlas.mongodb.com/type": "credentials",
+			},
+		},
+		Data: map[string][]byte{
+			"orgId":         []byte("1234567890"),
+			"publicApiKey":  []byte("a1b2c3"),
+			"privateApiKey": []byte("abcdef123456"),
+		},
+		Type: "Opaque",
+	}
+	project := &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-project",
+			Namespace: "default",
+		},
+		Spec: akov2.AtlasProjectSpec{
+			Name: "MyProject",
+			ConnectionSecret: &common.ResourceRefNamespaced{
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+			},
+		},
+		Status: status.AtlasProjectStatus{ID: "abc123"},
+	}
+	d := akov2.NewDefaultAWSFlexInstance(project.Namespace, project.Name)
+
+	logger := zaptest.NewLogger(t)
+
+	sch := runtime.NewScheme()
+	require.NoError(t, akov2.AddToScheme(sch))
+	require.NoError(t, corev1.AddToScheme(sch))
+	dbUserProjectIndexer := indexer.NewAtlasDatabaseUserByProjectIndexer(ctx, nil, logger)
+	// Subresources need to be explicitly set now since controller-runtime 1.15
+	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
+	k8sClient := fake.NewClientBuilder().
+		WithScheme(sch).
+		WithObjects(secret, project, d).
+		WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
+		Build()
+
+	orgID := "0987654321"
+	atlasProvider := &atlasmock.TestProvider{
+		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+
+			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), mock.Anything).
+				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
+				Return(
+					&adminv20241113001.FlexClusterDescription20241113{
+						GroupId: pointer.MakePtr(project.ID()),
+						Name:    pointer.MakePtr(d.GetDeploymentName()),
+						ProviderSettings: adminv20241113001.FlexProviderSettings20241113{
+							BackingProviderName: pointer.MakePtr("AWS"),
+							ProviderName:        pointer.MakePtr("FLEX"),
+							RegionName:          pointer.MakePtr("US_EAST_1"),
+						},
+						StateName:                    pointer.MakePtr("IDLE"),
+						TerminationProtectionEnabled: pointer.MakePtr(false),
+					},
+					nil,
+					nil,
+				)
+
+			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI}}, "", nil
+		},
+		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+			clusterAPI := mockadmin.NewClustersApi(t)
+			serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
+			return &admin.APIClient{
+				ClustersApi:            clusterAPI,
+				ServerlessInstancesApi: serverlessAPI,
+			}, orgID, nil
+		},
+		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+			return &mongodbatlas.Client{}, orgID, nil
+		},
+		IsCloudGovFunc: func() bool {
+			return false
+		},
+		IsSupportedFunc: func() bool {
+			return true
+		},
+	}
+
+	reconciler := &AtlasDeploymentReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client: k8sClient,
+			Log:    logger.Sugar(),
+		},
+		AtlasProvider:               atlasProvider,
+		EventRecorder:               record.NewFakeRecorder(10),
+		ObjectDeletionProtection:    false,
+		SubObjectDeletionProtection: false,
+	}
+
+	t.Run("should reconcile with existing Flex cluster", func(t *testing.T) {
+		result, err := reconciler.Reconcile(
+			ctx,
+			ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: d.Namespace,
+					Name:      d.Name,
+				},
+			},
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, ctrl.Result{Requeue: false, RequeueAfter: 0}, result)
+	})
+}
+
 func TestDeletionReconciliation(t *testing.T) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
