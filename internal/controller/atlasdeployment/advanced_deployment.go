@@ -29,7 +29,7 @@ const FreeTier = "M0"
 func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
 	akoCluster, ok := akoDeployment.(*deployment.Cluster)
 	if !ok {
-		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not a serverless cluster"))
+		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not an advanced cluster"))
 	}
 	atlasCluster, _ := atlasDeployment.(*deployment.Cluster)
 
