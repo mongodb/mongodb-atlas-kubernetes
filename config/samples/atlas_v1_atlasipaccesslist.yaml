@@ -1,0 +1,18 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIPAccessList
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasipaccesslist-sample
+spec:
+  externalProjectRef:
+    id: p-123456
+  connectionSecret:
+    name: my-secret
+  entries:
+    - cidrBlock: 192.168.1.0/24
+    - ipAddress: 10.0.0.1
+      deleteAfterDate: 2025-03-31T23:59:59+02:00
+    - awsSecurityGroup: sg-1234
+      comment: "AWS Access"
