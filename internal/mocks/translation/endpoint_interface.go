@@ -17,7 +17,7 @@ func (_m *EndpointInterfaceMock) EXPECT() *EndpointInterfaceMock_Expecter {
 	return &EndpointInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
-// ErrorMessage provides a mock function with given fields:
+// ErrorMessage provides a mock function with no fields
 func (_m *EndpointInterfaceMock) ErrorMessage() string {
 	ret := _m.Called()
 
@@ -62,7 +62,7 @@ func (_c *EndpointInterfaceMock_ErrorMessage_Call) RunAndReturn(run func() strin
 	return _c
 }
 
-// InterfaceID provides a mock function with given fields:
+// InterfaceID provides a mock function with no fields
 func (_m *EndpointInterfaceMock) InterfaceID() string {
 	ret := _m.Called()
 
@@ -107,7 +107,7 @@ func (_c *EndpointInterfaceMock_InterfaceID_Call) RunAndReturn(run func() string
 	return _c
 }
 
-// Status provides a mock function with given fields:
+// Status provides a mock function with no fields
 func (_m *EndpointInterfaceMock) Status() string {
 	ret := _m.Called()
 
