@@ -9,7 +9,7 @@ cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v
 cloud.google.com/go/longrunning,https://github.com/googleapis/google-cloud-go/blob/longrunning/v0.6.2/longrunning/LICENSE,Apache-2.0
 github.com/Azure/azure-sdk-for-go,https://github.com/Azure/azure-sdk-for-go/blob/v68.0.0/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/azcore,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azcore/v1.17.0/sdk/azcore/LICENSE.txt,MIT
-github.com/Azure/azure-sdk-for-go/sdk/azidentity,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azidentity/v1.8.0/sdk/azidentity/LICENSE.txt,MIT
+github.com/Azure/azure-sdk-for-go/sdk/azidentity,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azidentity/v1.8.1/sdk/azidentity/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/internal,https://github.com/Azure/azure-sdk-for-go/blob/sdk/internal/v1.10.0/sdk/internal/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault,https://github.com/Azure/azure-sdk-for-go/blob/sdk/resourcemanager/keyvault/armkeyvault/v1.4.0/sdk/resourcemanager/keyvault/armkeyvault/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2,https://github.com/Azure/azure-sdk-for-go/blob/sdk/resourcemanager/network/armnetwork/v2.2.1/sdk/resourcemanager/network/armnetwork/LICENSE.txt,MIT
@@ -22,7 +22,7 @@ github.com/Azure/go-autorest/autorest/to,https://github.com/Azure/go-autorest/bl
 github.com/Azure/go-autorest/autorest/validation,https://github.com/Azure/go-autorest/blob/autorest/validation/v0.3.1/autorest/validation/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/logger,https://github.com/Azure/go-autorest/blob/logger/v0.2.1/logger/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/tracing,https://github.com/Azure/go-autorest/blob/tracing/v0.6.0/tracing/LICENSE,Apache-2.0
-github.com/AzureAD/microsoft-authentication-library-for-go/apps,https://github.com/AzureAD/microsoft-authentication-library-for-go/blob/v1.2.2/LICENSE,MIT
+github.com/AzureAD/microsoft-authentication-library-for-go/apps,https://github.com/AzureAD/microsoft-authentication-library-for-go/blob/v1.3.2/LICENSE,MIT
 github.com/Masterminds/semver,https://github.com/Masterminds/semver/blob/v1.5.0/LICENSE.txt,MIT
 github.com/antlr4-go/antlr/v4,https://github.com/antlr4-go/antlr/blob/v4.13.0/LICENSE,BSD-3-Clause
 github.com/asaskevich/govalidator,https://github.com/asaskevich/govalidator/blob/f61b66f89f4a/LICENSE,MIT
