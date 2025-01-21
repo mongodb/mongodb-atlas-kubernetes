@@ -716,7 +716,8 @@ func TestHandleServerlessInstance(t *testing.T) {
 			expectedResult: ctrl.Result{},
 			expectedConditions: []api.Condition{
 				api.TrueCondition(api.DeploymentReadyType),
-				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.ReadyType).
+					WithMessageRegexp("WARNING: serverless is deprecated"),
 			},
 		},
 		"serverless instance has an unknown state": {
