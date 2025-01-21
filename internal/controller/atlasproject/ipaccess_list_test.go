@@ -18,6 +18,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -28,6 +29,7 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 	tests := map[string]struct {
 		service            func(serviceMock *translation.IPAccessListServiceMock) ipaccesslist.IPAccessListService
 		ipAccessList       []project.IPAccessList
+		lastApplied        ipaccesslist.IPAccessEntries
 		expectedResult     workflow.Result
 		expectedConditions []api.Condition
 	}{
@@ -114,7 +116,10 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 
 				return serviceMock
 			},
-			ipAccessList:   nil,
+			ipAccessList: nil,
+			lastApplied: ipaccesslist.IPAccessEntries{
+				"sg-12345": {AWSSecurityGroup: "sg-12345"},
+			},
 			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, errors.New("failed to delete")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
@@ -140,7 +145,10 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 
 				return serviceMock
 			},
-			ipAccessList:       nil,
+			ipAccessList: nil,
+			lastApplied: ipaccesslist.IPAccessEntries{
+				"sg-12345": {AWSSecurityGroup: "sg-12345"},
+			},
 			expectedResult:     workflow.OK(),
 			expectedConditions: []api.Condition{},
 		},
@@ -261,7 +269,8 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 						ID: "my-project",
 					},
 				},
-				service: tt.service(translation.NewIPAccessListServiceMock(t)),
+				service:     tt.service(translation.NewIPAccessListServiceMock(t)),
+				lastApplied: tt.lastApplied,
 			}
 
 			result := c.reconcile()
@@ -271,13 +280,118 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 	}
 }
 
+func TestConfigure(t *testing.T) {
+	tests := map[string]struct {
+		current            ipaccesslist.IPAccessEntries
+		desired            ipaccesslist.IPAccessEntries
+		lastApplied        ipaccesslist.IPAccessEntries
+		expectedCalls      func() ipaccesslist.IPAccessListService
+		expectedResult     workflow.Result
+		expectedConditions []api.Condition
+	}{
+		"should fail to add ip access list": {
+			current:     ipaccesslist.IPAccessEntries{},
+			desired:     ipaccesslist.IPAccessEntries{"10.0.0.0/24": {CIDR: "10.0.0.0/24"}},
+			lastApplied: ipaccesslist.IPAccessEntries{},
+			expectedCalls: func() ipaccesslist.IPAccessListService {
+				s := translation.NewIPAccessListServiceMock(t)
+				s.EXPECT().Add(context.Background(), "", ipaccesslist.IPAccessEntries{"10.0.0.0/24": {CIDR: "10.0.0.0/24"}}).
+					Return(errors.New("failed to add ip access list"))
+
+				return s
+			},
+			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, "failed to add ip access list"),
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.IPAccessListReadyType).
+					WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
+					WithMessageRegexp("failed to add ip access list"),
+			},
+		},
+		"should fail to delete ip access list": {
+			current:     ipaccesslist.IPAccessEntries{"10.0.0.0/24": {CIDR: "10.0.0.0/24"}},
+			desired:     ipaccesslist.IPAccessEntries{},
+			lastApplied: ipaccesslist.IPAccessEntries{"10.0.0.0/24": {CIDR: "10.0.0.0/24"}},
+			expectedCalls: func() ipaccesslist.IPAccessListService {
+				s := translation.NewIPAccessListServiceMock(t)
+				s.EXPECT().Add(context.Background(), "", ipaccesslist.IPAccessEntries{}).
+					Return(nil)
+				s.EXPECT().Delete(context.Background(), "", &ipaccesslist.IPAccessEntry{CIDR: "10.0.0.0/24"}).
+					Return(errors.New("failed to delete ip access list entry"))
+
+				return s
+			},
+			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, "failed to delete ip access list entry"),
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.IPAccessListReadyType).
+					WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
+					WithMessageRegexp("failed to delete ip access list entry"),
+			},
+		},
+		"should no delete ip access list which were not previously managed": {
+			current:     ipaccesslist.IPAccessEntries{"10.0.0.0/24": {CIDR: "10.0.0.0/24"}},
+			desired:     ipaccesslist.IPAccessEntries{},
+			lastApplied: ipaccesslist.IPAccessEntries{},
+			expectedCalls: func() ipaccesslist.IPAccessListService {
+				s := translation.NewIPAccessListServiceMock(t)
+				s.EXPECT().Add(context.Background(), "", ipaccesslist.IPAccessEntries{}).
+					Return(nil)
+
+				return s
+			},
+			expectedResult:     workflow.OK(),
+			expectedConditions: []api.Condition{api.TrueCondition(api.IPAccessListReadyType)},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctx := &workflow.Context{
+				Context: context.Background(),
+				Log:     zaptest.NewLogger(t).Sugar(),
+			}
+			reconciler := ipAccessListController{
+				ctx:         ctx,
+				project:     &akov2.AtlasProject{},
+				service:     tt.expectedCalls(),
+				lastApplied: tt.lastApplied,
+			}
+
+			result := reconciler.configure(tt.current, tt.desired, false)
+			assert.Equal(t, tt.expectedResult, result)
+			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
+		})
+	}
+}
+
 func TestHandleIPAccessList(t *testing.T) {
 	tests := map[string]struct {
 		ipAccessList       []project.IPAccessList
+		annotations        map[string]string
 		expectedCalls      func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi
 		expectedResult     workflow.Result
 		expectedConditions []api.Condition
 	}{
+		"should fail resolving last skipped flag": {
+			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{wrong}"},
+			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+				return apiMock
+			},
+			expectedResult: workflow.Terminate(workflow.Internal, "failed to parse last skipped configuration: invalid character 'w' looking for beginning of object key string"),
+		},
+		"should skip reconciliation": {
+			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": [{\"ipAddress\":\"192.168.0.100\"}]}"},
+			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+				return apiMock
+			},
+			expectedResult:     workflow.OK(),
+			expectedConditions: []api.Condition{},
+		},
+		"should fail getting last applied configuration": {
+			annotations: map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
+			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+				return apiMock
+			},
+			expectedResult: workflow.Terminate(workflow.Internal, "failed to get last applied configuration: error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]: invalid character 'w' looking for beginning of object key string"),
+		},
 		"should successfully handle ip access list reconciliation": {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
 				apiMock.EXPECT().ListProjectIpAccessLists(context.Background(), "project-id").
@@ -372,10 +486,83 @@ func TestHandleIPAccessList(t *testing.T) {
 					ID: "project-id",
 				},
 			}
+			p.WithAnnotations(tt.annotations)
 
 			result := handleIPAccessList(ctx, p)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
+		})
+	}
+}
+
+func TestMapLastAppliedIPAccessList(t *testing.T) {
+	tests := map[string]struct {
+		annotations         map[string]string
+		expectedIPAccessLst ipaccesslist.IPAccessEntries
+		expectedError       string
+	}{
+		"should return error when last spec annotation is wrong": {
+			annotations: map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
+			expectedError: "error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]:" +
+				" invalid character 'w' looking for beginning of object key string",
+		},
+		"should return nil when there is no last spec": {},
+		"should return map of last ip access list": {
+			annotations: map[string]string{
+				customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\": [{\"ipAddress\":\"192.168.0.100\"},{\"awsSecurityGroup\":\"sg-123456\",\"comment\":\"My AWS SG\"}]}"},
+			expectedIPAccessLst: ipaccesslist.IPAccessEntries{
+				"192.168.0.100/32": {
+					CIDR: "192.168.0.100/32",
+				},
+				"sg-123456": {
+					AWSSecurityGroup: "sg-123456",
+					Comment:          "My AWS SG",
+				},
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			p := &akov2.AtlasProject{}
+			p.WithAnnotations(tt.annotations)
+
+			result, err := mapLastAppliedIPAccessList(p)
+			if err != nil {
+				assert.ErrorContains(t, err, tt.expectedError)
+			}
+			assert.Equal(t, tt.expectedIPAccessLst, result)
+		})
+	}
+}
+
+func TestHasSkippedIPAccessListConfiguration(t *testing.T) {
+	tests := map[string]struct {
+		annotations   map[string]string
+		expected      bool
+		expectedError string
+	}{
+		"should return error when last spec annotation is wrong": {
+			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{wrong}"},
+			expectedError: "failed to parse last skipped configuration:" +
+				" invalid character 'w' looking for beginning of object key string",
+		},
+		"should return false when there is no last ip access list": {},
+		"should return true where there are last ip access list": {
+			annotations: map[string]string{
+				customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": [{\"ipAddress\":\"192.168.0.100\"},{\"awsSecurityGroup\":\"sg-123456\",\"comment\":\"My AWS SG\"}]}"},
+			expected: true,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			p := &akov2.AtlasProject{}
+			p.WithAnnotations(tt.annotations)
+
+			result, err := hasSkippedIPAccessListConfiguration(p)
+			if err != nil {
+				assert.ErrorContains(t, err, tt.expectedError)
+			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

@@ -402,7 +402,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 				}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 			})
 		})
-
+		//nolint:dupl
 		By("Stopping reconciling project and its sub-resources", func() {
 			Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Annotations[customresource.ReconciliationPolicyAnnotation] = customresource.ReconciliationPolicySkip
@@ -550,7 +550,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 				}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 			})
 		})
-
+		//nolint:dupl
 		By("Restating project reconciliation", func() {
 			Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			delete(testData.Project.Annotations, customresource.ReconciliationPolicyAnnotation)

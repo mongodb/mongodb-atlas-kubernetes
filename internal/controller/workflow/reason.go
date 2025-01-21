@@ -151,3 +151,11 @@ const (
 	PrivateEndpointFailedToConfigure        ConditionReason = "PrivateEndpointFailedToConfigure"
 	PrivateEndpointFailedToDelete           ConditionReason = "PrivateEndpointFailedToDelete"
 )
+
+// Atlas IP Access List reasons
+const (
+	IPAccessListFailedToCreate   ConditionReason = "IPAccessListFailedToCreate"
+	IPAccessListFailedToDelete   ConditionReason = "IPAccessListFailedToDelete"
+	IPAccessListFailedToGetState ConditionReason = "IPAccessListFailedToGetState"
+	IPAccessListPending          ConditionReason = "IPAccessListPending"
+)

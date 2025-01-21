@@ -8,6 +8,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
@@ -71,6 +72,31 @@ func FromInternal(ipAccessEntries IPAccessEntries) []project.IPAccessList {
 	}
 
 	return list
+}
+
+func NewIPAccessEntry(ipAccessList *akov2.AtlasIPAccessList) (IPAccessEntries, error) {
+	entries := make(IPAccessEntries, len(ipAccessList.Spec.Entries))
+
+	for _, ipAccess := range ipAccessList.Spec.Entries {
+		cidr, err := parseIPNetwork(ipAccess.IPAddress, ipAccess.CIDRBlock)
+		if err != nil {
+			return nil, err
+		}
+
+		entry := &IPAccessEntry{
+			CIDR:             cidr,
+			AWSSecurityGroup: ipAccess.AwsSecurityGroup,
+			Comment:          ipAccess.Comment,
+		}
+
+		if ipAccess.DeleteAfterDate != nil {
+			entry.DeleteAfterDate = &ipAccess.DeleteAfterDate.Time
+		}
+
+		entries[entry.ID()] = entry
+	}
+
+	return entries, nil
 }
 
 func NewIPAccessEntries(ipAccessList []project.IPAccessList) (IPAccessEntries, error) {

@@ -100,6 +100,11 @@ const (
 	PrivateEndpointReady        ConditionType = "PrivateEndpointReady"
 )
 
+// Atlas IP Access List condition types
+const (
+	IPAccessListReady ConditionType = "IPAccessListReady"
+)
+
 // Generic condition type
 const (
 	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"
