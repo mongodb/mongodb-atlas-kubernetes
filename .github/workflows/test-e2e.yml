@@ -166,6 +166,7 @@ jobs:
             "long-run",
             "multinamespaced",
             "networkpeering",
+            "networkpeering-controller",
             "privatelink",
             "private-endpoint",
             "project-settings",

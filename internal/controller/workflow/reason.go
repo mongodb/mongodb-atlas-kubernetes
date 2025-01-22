@@ -160,3 +160,11 @@ const (
 	IPAccessListFailedToGetState ConditionReason = "IPAccessListFailedToGetState"
 	IPAccessListPending          ConditionReason = "IPAccessListPending"
 )
+
+// Atlas Network Peering reasons
+const (
+	NetworkPeeringConnectionCreating  ConditionReason = "NetworkPeeringConnectionCreating"
+	NetworkPeeringConnectionResetting ConditionReason = "NetworkPeeringConnectionResetting"
+	NetworkPeeringConnectionPending   ConditionReason = "NetworkPeeringConnectionPending"
+	NetworkPeeringRemovingContainer   ConditionReason = "NetworkPeeringRemovingContainer"
+)
