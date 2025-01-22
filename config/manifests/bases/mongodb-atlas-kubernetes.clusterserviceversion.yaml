@@ -45,6 +45,11 @@ spec:
       kind: AtlasBackupSchedule
       name: atlasbackupschedules.atlas.mongodb.com
       version: v1
+    - description: AtlasCustomRole is the Schema for the AtlasCustomRole API
+      displayName: Atlas Custom Role
+      kind: AtlasCustomRole
+      name: atlascustomroles.atlas.mongodb.com
+      version: v1
     - description: AtlasDatabaseUser is the Schema for the Atlas Database User API
       displayName: Atlas Database User
       kind: AtlasDatabaseUser
@@ -60,6 +65,16 @@ spec:
       displayName: Atlas Deployment
       kind: AtlasDeployment
       name: atlasdeployments.atlas.mongodb.com
+      version: v1
+    - description: AtlasNetworkPeering is the Schema for the AtlasNetworkPeering API
+      displayName: Atlas Network Peering
+      kind: AtlasNetworkPeering
+      name: atlasnetworkpeerings.atlas.mongodb.com
+      version: v1
+    - description: AtlasPrivateEndpoint is the Schema for the AtlasPrivateEndpoint API
+      displayName: Atlas Private Endpoint
+      kind: AtlasPrivateEndpoint
+      name: atlasprivateendpoints.atlas.mongodb.com
       version: v1
     - description: AtlasProject is the Schema for the atlasprojects API
       displayName: Atlas Project
