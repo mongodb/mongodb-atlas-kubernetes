@@ -2,26 +2,33 @@ package networkpeering
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
+)
+
+var (
+	// ErrNotFound means an resource is missing
+	ErrNotFound = errors.New("not found")
+
+	// ErrContainerInUse is a failure to remove a containe still in use
+	ErrContainerInUse = errors.New("container still in use")
 )
 
 type PeerConnectionsService interface {
 	CreatePeer(ctx context.Context, projectID string, conn *NetworkPeer) (*NetworkPeer, error)
-	ListPeers(ctx context.Context, projectID string) ([]NetworkPeer, error)
+	GetPeer(ctx context.Context, projectID, containerID string) (*NetworkPeer, error)
 	DeletePeer(ctx context.Context, projectID, containerID string) error
 }
 
 type PeeringContainerService interface {
 	CreateContainer(ctx context.Context, projectID string, container *ProviderContainer) (*ProviderContainer, error)
 	GetContainer(ctx context.Context, projectID, containerID string) (*ProviderContainer, error)
-	ListContainers(ctx context.Context, projectID, providerName string) ([]ProviderContainer, error)
+	FindContainer(ctx context.Context, projectID, provider, cidrBlock string) (*ProviderContainer, error)
 	DeleteContainer(ctx context.Context, projectID, containerID string) error
 }
 
@@ -47,39 +54,26 @@ func (np *networkPeeringService) CreatePeer(ctx context.Context, projectID strin
 	if err != nil {
 		return nil, fmt.Errorf("failed to create network peer %v: %w", conn, err)
 	}
-	newConn, err := fromAtlasConnection(newAtlasConn)
+	newPeer, err := fromAtlasConnection(newAtlasConn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert peer from Atlas: %w", err)
 	}
-	return newConn, nil
+	return newPeer, nil
 }
 
-func (np *networkPeeringService) ListPeers(ctx context.Context, projectID string) ([]NetworkPeer, error) {
-	var peersList []NetworkPeer
-	providers := []provider.ProviderName{provider.ProviderAWS, provider.ProviderAzure, provider.ProviderGCP}
-	for _, providerName := range providers {
-		peers, err := np.listPeersForProvider(ctx, projectID, providerName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list network peers for %s: %w", string(providerName), err)
-		}
-		peersList = append(peersList, peers...)
-	}
-	return peersList, nil
-}
-
-func (np *networkPeeringService) listPeersForProvider(ctx context.Context, projectID string, providerName provider.ProviderName) ([]NetworkPeer, error) {
-	results, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
-		p := &admin.ListPeeringConnectionsApiParams{
-			GroupId:      projectID,
-			ProviderName: admin.PtrString(string(providerName)),
-		}
-		return np.peeringAPI.ListPeeringConnectionsWithParams(ctx, p).PageNum(pageNum).Execute()
-	})
+func (np *networkPeeringService) GetPeer(ctx context.Context, projectID, peerID string) (*NetworkPeer, error) {
+	atlasConn, _, err := np.peeringAPI.GetPeeringConnection(ctx, projectID, peerID).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list network peers: %w", err)
+		if admin.IsErrorCode(err, "PEER_NOT_FOUND") {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to get network peer for peer id %v: %w", peerID, err)
 	}
-
-	return fromAtlasConnectionList(results)
+	peer, err := fromAtlasConnection(atlasConn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert peer from Atlas: %w", err)
+	}
+	return peer, nil
 }
 
 func (np *networkPeeringService) DeletePeer(ctx context.Context, projectID, peerID string) error {
@@ -103,37 +97,37 @@ func (np *networkPeeringService) CreateContainer(ctx context.Context, projectID 
 
 func (np *networkPeeringService) GetContainer(ctx context.Context, projectID, containerID string) (*ProviderContainer, error) {
 	container, _, err := np.peeringAPI.GetPeeringContainer(ctx, projectID, containerID).Execute()
+	if admin.IsErrorCode(err, "CLOUD_PROVIDER_CONTAINER_NOT_FOUND") {
+		return nil, ErrNotFound
+	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get container for gcp status %s: %w", containerID, err)
+		return nil, fmt.Errorf("failed to get container %s: %w", containerID, err)
 	}
 	return fromAtlasContainer(container), nil
 }
 
-func (np *networkPeeringService) ListContainers(ctx context.Context, projectID, providerName string) ([]ProviderContainer, error) {
-	results := []ProviderContainer{}
-	pageNum := 1
-	listOpts := &admin.ListPeeringContainerByCloudProviderApiParams{
-		GroupId:      projectID,
-		ProviderName: pointer.SetOrNil(providerName, ""),
-		PageNum:      pointer.MakePtr(pageNum),
+func (np *networkPeeringService) FindContainer(ctx context.Context, projectID, provider, cidrBlock string) (*ProviderContainer, error) {
+	containers, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.CloudProviderContainer], *http.Response, error) {
+		return np.peeringAPI.ListPeeringContainerByCloudProvider(ctx, projectID).ProviderName(provider).PageNum(pageNum).Execute()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list containers at project %s: %w", projectID, err)
 	}
-	for {
-		page, _, err := np.peeringAPI.ListPeeringContainerByCloudProviderWithParams(ctx, listOpts).Execute()
-		if err != nil {
-			return nil, fmt.Errorf("failed to list containers: %w", err)
+	for _, container := range containers {
+		if container.GetAtlasCidrBlock() == cidrBlock {
+			return fromAtlasContainer(&container), nil
 		}
-		results = append(results, fromAtlasContainerList(page.GetResults())...)
-		if len(results) >= page.GetTotalCount() {
-			return results, nil
-		}
-		pageNum += 1
 	}
+	return nil, ErrNotFound
 }
 
 func (np *networkPeeringService) DeleteContainer(ctx context.Context, projectID, containerID string) error {
 	_, _, err := np.peeringAPI.DeletePeeringContainer(ctx, projectID, containerID).Execute()
 	if admin.IsErrorCode(err, "CLOUD_PROVIDER_CONTAINER_NOT_FOUND") {
-		return nil
+		return ErrNotFound
+	}
+	if admin.IsErrorCode(err, "CONTAINERS_IN_USE") {
+		return fmt.Errorf("failed to remove container %s as it is still in use: %w", containerID, ErrContainerInUse)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to delete container: %w", err)
