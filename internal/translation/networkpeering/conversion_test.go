@@ -72,6 +72,7 @@ func FuzzConvertContainer(f *testing.F) {
 		containerData := ProviderContainer{}
 		gofuzz.NewFromGoFuzz(data).Fuzz(&containerData)
 		containerData.Provider = providerNames[index%3]
+		cleanupContainer(&containerData)
 		result := fromAtlasContainer(toAtlasContainer(&containerData))
 		assert.Equal(t, &containerData, result, "failed for index=%d", index)
 	})
@@ -88,6 +89,7 @@ func FuzzConvertListOfContainers(f *testing.F) {
 			containerData := ProviderContainer{}
 			gofuzz.NewFromGoFuzz(data).Fuzz(&containerData)
 			containerData.Provider = providerNames[index%3]
+			cleanupContainer(&containerData)
 			expectedContainer := fromAtlasContainer(toAtlasContainer(&containerData))
 			expected = append(expected, *expectedContainer)
 			containers = append(containers, *toAtlasContainer(&containerData))
@@ -108,4 +110,15 @@ func cleanupPeer(peer *NetworkPeer) {
 	if peer.Provider != string(provider.ProviderAzure) {
 		peer.AzureConfiguration = nil
 	}
+	// status fields are only populated from Atlas they do not complete a roundtrip
+	peer.Status = ""
+	peer.ErrorMessage = ""
+	peer.AWSStatus = nil
+}
+
+func cleanupContainer(container *ProviderContainer) {
+	// status fields are only populated from Atlas they do not complete a roundtrip
+	container.AWSStatus = nil
+	container.AzureStatus = nil
+	container.GoogleStatus = nil
 }
