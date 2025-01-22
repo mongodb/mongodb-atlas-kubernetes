@@ -95,7 +95,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)).To(Succeed())
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, localSecretName, secondNamespace)
 
-			mgr, err := k8s.BuildManager(&k8s.Config{
+			c, err := k8s.BuildCluster(&k8s.Config{
 				GlobalAPISecret: client.ObjectKey{
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
@@ -109,7 +109,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			Expect(err).NotTo(HaveOccurred())
 
 			go func(ctx context.Context) context.Context {
-				err := mgr.Start(ctx)
+				err := c.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 				return ctx
 			}(testData.Context)
@@ -207,7 +207,7 @@ var _ = Describe("Operator fails if local credentials is mentioned but unavailab
 			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, namespace)).NotTo(HaveOccurred())
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, namespace)
 
-			mgr, err := k8s.BuildManager(&k8s.Config{
+			c, err := k8s.BuildCluster(&k8s.Config{
 				GlobalAPISecret: client.ObjectKey{
 					Namespace: namespace,
 					Name:      config.DefaultOperatorGlobalKey,
@@ -220,7 +220,7 @@ var _ = Describe("Operator fails if local credentials is mentioned but unavailab
 			Expect(err).NotTo(HaveOccurred())
 
 			go func(ctx context.Context) context.Context {
-				err := mgr.Start(ctx)
+				err := c.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 				return ctx
 			}(testData.Context)

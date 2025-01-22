@@ -29,7 +29,7 @@ func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []strin
 		for _, ns := range watchNamespace {
 			watchNamespaceMap[ns] = true
 		}
-		mgr, err := k8s.BuildManager(&k8s.Config{
+		c, err := k8s.BuildCluster(&k8s.Config{
 			GlobalAPISecret: client.ObjectKey{
 				Namespace: config.DefaultOperatorNS,
 				Name:      config.DefaultOperatorGlobalKey,
@@ -40,7 +40,7 @@ func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []strin
 		Expect(err).Should(Succeed())
 		ctx := context.Background()
 		go func(ctx context.Context) {
-			err = mgr.Start(ctx)
+			err = c.Start(ctx)
 			Expect(err).Should(Succeed(), "Operator should be started")
 		}(ctx)
 		data.ManagerContext = ctx

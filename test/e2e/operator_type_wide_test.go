@@ -76,7 +76,7 @@ var _ = Describe("Deployment wide operator can work with resources in different 
 			k8s.CreateNamespace(ctx, k8sClient, config.DefaultOperatorNS)
 			k8s.CreateDefaultSecret(ctx, k8sClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
 
-			mgr, err := k8s.BuildManager(&k8s.Config{
+			c, err := k8s.BuildCluster(&k8s.Config{
 				GlobalAPISecret: client.ObjectKey{
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
@@ -85,7 +85,7 @@ var _ = Describe("Deployment wide operator can work with resources in different 
 			})
 			Expect(err).NotTo(HaveOccurred())
 			go func(ctx context.Context) context.Context {
-				err := mgr.Start(ctx)
+				err := c.Start(ctx)
 				Expect(err).NotTo(HaveOccurred())
 				return ctx
 			}(ctx)

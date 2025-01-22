@@ -15,6 +15,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -22,17 +23,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasbackupcompliancepolicy"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlascustomrole"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasdatabaseuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasdatafederation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasfederatedauth"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasprivateendpoint"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasproject"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlassearchindexconfig"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasstream"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
@@ -159,8 +151,8 @@ func (b *Builder) WithSkipNameValidation(skip bool) *Builder {
 	return b
 }
 
-// Build builds the controller manager and configure operator controllers
-func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
+// Build builds the cluster object and configures operator controllers
+func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 	mergeDefaults(b)
 
 	if b.independentSyncPeriod < b.minimumIndependentSyncPeriod {
@@ -185,6 +177,8 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 			cacheOpts.DefaultNamespaces[namespace] = cache.Config{}
 		}
 	}
+
+	controllerRegistry := controller.NewRegistry(b.predicates, b.deletionProtection, b.logger, b.independentSyncPeriod, b.featureFlags)
 
 	mgr, err := b.managerProvider.New(
 		b.config,
@@ -213,137 +207,16 @@ func (b *Builder) Build(ctx context.Context) (manager.Manager, error) {
 		return nil, err
 	}
 
-	if err = indexer.RegisterAll(ctx, mgr, b.logger); err != nil {
-		return nil, fmt.Errorf("unable to create indexers: %w", err)
-	}
-
 	if b.atlasProvider == nil {
 		b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, mgr.GetClient(), nil)
 	}
 
-	projectReconciler := atlasproject.NewAtlasProjectReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-	)
-	if err = projectReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasProject: %w", err)
+	if err := controllerRegistry.RegisterWithManager(mgr, b.skipNameValidation, b.atlasProvider); err != nil {
+		return nil, err
 	}
 
-	deploymentReconciler := atlasdeployment.NewAtlasDeploymentReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.independentSyncPeriod,
-		b.logger,
-	)
-	if err = deploymentReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasDeployment: %w", err)
-	}
-
-	dbUserReconciler := atlasdatabaseuser.NewAtlasDatabaseUserReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.independentSyncPeriod,
-		b.featureFlags,
-		b.logger,
-	)
-	if err = dbUserReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasDatabaseUser: %w", err)
-	}
-
-	dataFedReconciler := atlasdatafederation.NewAtlasDataFederationReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-	)
-	if err = dataFedReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasDataFederation: %w", err)
-	}
-
-	fedAuthReconciler := atlasfederatedauth.NewAtlasFederatedAuthReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-	)
-	if err = fedAuthReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasFederatedAuth: %w", err)
-	}
-
-	streamsInstanceReconciler := atlasstream.NewAtlasStreamsInstanceReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-	)
-	if err = streamsInstanceReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasStreamsInstance: %w", err)
-	}
-
-	streamsConnReconciler := atlasstream.NewAtlasStreamsConnectionReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-	)
-	if err = streamsConnReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasStreamsConnection: %w", err)
-	}
-
-	searchIndexConfigReconciler := atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-	)
-	if err = searchIndexConfigReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasSearchIndexConfig: %w", err)
-	}
-
-	bcpReconciler := atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-	)
-	if err = bcpReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasBackupCompliancePolicy: %w", err)
-	}
-
-	customRolesReconciler := atlascustomrole.NewAtlasCustomRoleReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.independentSyncPeriod,
-		b.logger,
-	)
-	if err = customRolesReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasCustomRole: %w", err)
-	}
-
-	peReconciler := atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-	)
-	if err = peReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasPrivateEndpoint: %w", err)
+	if err := indexer.RegisterAll(ctx, mgr, b.logger); err != nil {
+		return nil, fmt.Errorf("unable to create indexers: %w", err)
 	}
 
 	return mgr, nil
