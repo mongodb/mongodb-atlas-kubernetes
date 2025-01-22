@@ -73,6 +73,12 @@ func (np *NetworkPeer) Available() bool {
 	return np.Status == "AVAILABLE"
 }
 
+// Closing returns whether or not the Network Peering is being shut down
+func (np *NetworkPeer) Closing() bool {
+	// GCP DELETING AWS TERMINATING AZURE ?
+	return np.Status == "DELETING" || np.Status == "TERMINATING"
+}
+
 // UpdateStatus copies the network peering status fields only from the given peer input
 func (np *NetworkPeer) UpdateStatus(atlas *NetworkPeer) {
 	np.Status = atlas.Status

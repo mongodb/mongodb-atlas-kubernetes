@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -512,6 +513,26 @@ func DeleteAtlasGlobalKeyIfExist(data model.TestDataProvider) {
 			}
 		})
 	}
+}
+
+func DeleteTestDataNetworkPeerings(data *model.TestDataProvider) {
+	By("Delete network peerings", func() {
+		peerings := &akov2.AtlasNetworkPeeringList{}
+		Expect(data.K8SClient.List(data.Context, peerings, &client.ListOptions{Namespace: data.Resources.Namespace})).Should(Succeed())
+		for _, peering := range peerings.Items {
+			Expect(data.K8SClient.Delete(data.Context, &peering)).Should(Succeed())
+		}
+		for _, peering := range peerings.Items {
+			key := client.ObjectKey{Name: peering.Name, Namespace: peering.Namespace}
+			Eventually(
+				func() bool {
+					foundPeering := &akov2.AtlasNetworkPeering{}
+					err := data.K8SClient.Get(data.Context, key, foundPeering)
+					return err != nil && errors.IsNotFound(err)
+				},
+			).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Network peering should be deleted from Atlas")
+		}
+	})
 }
 
 func AfterEachFinalCleanup(datas []model.TestDataProvider) {
