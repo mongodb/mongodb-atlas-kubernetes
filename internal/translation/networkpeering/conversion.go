@@ -10,11 +10,81 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-type NetworkPeer struct {
-	akov2.AtlasNetworkPeeringConfig
-	ID string
+type AWSStatus struct {
+	ConnectionID string
 }
 
+type NetworkPeer struct {
+	akov2.AtlasNetworkPeeringConfig
+	ID           string
+	Status       string
+	ErrorMessage string
+	AWSStatus    *AWSStatus
+}
+
+func (np *NetworkPeer) Failed() bool {
+	return np.ErrorMessage != ""
+}
+
+func (np *NetworkPeer) AWSConnectionID() string {
+	if np.AWSStatus == nil {
+		return ""
+	}
+	return np.AWSStatus.ConnectionID
+}
+
+func (np *NetworkPeer) String() string {
+	return fmt.Sprintf("NetworkPeer for %s ID=%s ContainerID=%s\nConfig:%v\nStatus:%v",
+		np.Provider, np.ID, np.ContainerID, np.configString(), np.statusString())
+}
+
+func (np *NetworkPeer) configString() string {
+	aws := ""
+	if np.AWSConfiguration != nil {
+		cfg := np.AWSConfiguration
+		aws = fmt.Sprintf("AWSCfg:{ AccepterRegionName=%s AccountID=%s RouteTableCIDRBlock=%s VpcID=%s } ",
+			cfg.AccepterRegionName, cfg.AWSAccountID, cfg.RouteTableCIDRBlock, cfg.VpcID)
+	}
+	azure := ""
+	if np.AzureConfiguration != nil {
+		cfg := np.AzureConfiguration
+		azure = fmt.Sprintf("AzureCfg:{ AzureDirectoryID=%s AzureSubscriptionID=%s ResourceGroupName=%s VnetName=%s } ",
+			cfg.AzureDirectoryID, cfg.AzureSubscriptionID, cfg.ResourceGroupName, cfg.VNetName)
+	}
+	google := ""
+	if np.GCPConfiguration != nil {
+		cfg := np.GCPConfiguration
+		google = fmt.Sprintf("GoogleCfg:{ GCPProjectID=%s NetworkName=%s } ",
+			cfg.GCPProjectID, cfg.NetworkName)
+	}
+	return fmt.Sprintf("{%s%s%s}", aws, azure, google)
+}
+
+func (np *NetworkPeer) statusString() string {
+	tail := ""
+	if np.AWSStatus != nil {
+		tail = fmt.Sprintf(" AWSStatus:{ConnectionId=%s}", np.AWSStatus.ConnectionID)
+	}
+	return fmt.Sprintf("{Status=%q ErrorMessage=%q%s}", np.Status, np.ErrorMessage, tail)
+}
+
+// Available returns whether or not the Network Peering is connected and ready to use
+func (np *NetworkPeer) Available() bool {
+	return np.Status == "AVAILABLE"
+}
+
+// UpdateStatus copies the network peering status fields only from the given peer input
+func (np *NetworkPeer) UpdateStatus(atlas *NetworkPeer) {
+	np.Status = atlas.Status
+	np.ErrorMessage = atlas.ErrorMessage
+	if np.Provider == string(provider.ProviderAWS) && atlas.AWSStatus != nil {
+		np.AWSStatus = &AWSStatus{
+			ConnectionID: atlas.AWSStatus.ConnectionID,
+		}
+	}
+}
+
+// NewNetworkPeer creates a network peering from the given config
 func NewNetworkPeer(id string, cfg *akov2.AtlasNetworkPeeringConfig) *NetworkPeer {
 	return &NetworkPeer{
 		AtlasNetworkPeeringConfig: *cfg,
@@ -22,10 +92,33 @@ func NewNetworkPeer(id string, cfg *akov2.AtlasNetworkPeeringConfig) *NetworkPee
 	}
 }
 
+// NewNetworkPeeringSpec creates an spec for network peering from the given config
+func NewNetworkPeeringSpec(cfg *akov2.AtlasNetworkPeeringConfig) *NetworkPeer {
+	return NewNetworkPeer("", cfg)
+}
+
 type ProviderContainer struct {
 	akov2.AtlasProviderContainerConfig
-	ID       string
-	Provider string
+	ID           string
+	Provider     string
+	Provisioned  bool
+	AWSStatus    *AWSContainerStatus
+	AzureStatus  *AzureContainerStatus
+	GoogleStatus *GoogleContainerStatus
+}
+
+type AWSContainerStatus struct {
+	VpcID string
+}
+
+type AzureContainerStatus struct {
+	AzureSubscriptionID string
+	VnetName            string
+}
+
+type GoogleContainerStatus struct {
+	GCPProjectID string
+	NetworkName  string
 }
 
 func NewProviderContainer(id string, provider string, cfg *akov2.AtlasProviderContainerConfig) *ProviderContainer {
@@ -34,6 +127,49 @@ func NewProviderContainer(id string, provider string, cfg *akov2.AtlasProviderCo
 		ID:                           id,
 		Provider:                     provider,
 	}
+}
+
+func (pc *ProviderContainer) UpdateStatus(atlas *ProviderContainer) {
+	pc.ID = atlas.ID
+	pc.Provisioned = atlas.Provisioned
+	switch provider.ProviderName(pc.Provider) {
+	case provider.ProviderAWS:
+		pc.AWSStatus = atlas.AWSStatus
+	case provider.ProviderAzure:
+		pc.AzureStatus = atlas.AzureStatus
+	case provider.ProviderGCP:
+		pc.GoogleStatus = atlas.GoogleStatus
+	}
+}
+
+func (pc *ProviderContainer) String() string {
+	return fmt.Sprintf("ProviderContainer for %s ID=%s\nConfig:%v\nStatus:%v",
+		pc.Provider, pc.ID, pc.configString(), pc.statusString())
+}
+
+func (pc *ProviderContainer) configString() string {
+	return fmt.Sprintf("{ ContainerRegion=%s AtlasCIDRBlock=%s }", pc.ContainerRegion, pc.AtlasCIDRBlock)
+}
+
+func (pc *ProviderContainer) statusString() string {
+	aws := ""
+	if pc.AWSStatus != nil {
+		status := pc.AWSStatus
+		aws = fmt.Sprintf("AWSStatus:{ VpcID=%s } ", status.VpcID)
+	}
+	azure := ""
+	if pc.AzureStatus != nil {
+		status := pc.AzureStatus
+		azure = fmt.Sprintf("AzureStatus:{ AzureSubscriptionID=%s VnetName=%s } ",
+			status.AzureSubscriptionID, status.VnetName)
+	}
+	google := ""
+	if pc.GoogleStatus != nil {
+		status := pc.GoogleStatus
+		google = fmt.Sprintf("GoogleStatus:{GCPProjectID=%s NetworkName=%s } ",
+			status.GCPProjectID, status.NetworkName)
+	}
+	return fmt.Sprintf("{ Provisioned=%v %s%s%s}", pc.Provisioned, aws, azure, google)
 }
 
 func toAtlasConnection(peer *NetworkPeer) (*admin.BaseNetworkPeeringConnectionSettings, error) {
@@ -78,6 +214,37 @@ func toAtlasConnection(peer *NetworkPeer) (*admin.BaseNetworkPeeringConnectionSe
 }
 
 func fromAtlasConnection(conn *admin.BaseNetworkPeeringConnectionSettings) (*NetworkPeer, error) {
+	networkPeer, err := fromAtlasConnectionNoStatus(conn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert BaseNetworkPeeringConnectionSettings to NetworkPeer: %w", err)
+	}
+	switch provider.ProviderName(conn.GetProviderName()) {
+	case provider.ProviderAWS:
+		networkPeer.Status = conn.GetStatusName()
+		networkPeer.ErrorMessage = conn.GetErrorStateName()
+		networkPeer.AWSStatus = fromAtlasAWSStatus(conn)
+	case provider.ProviderGCP:
+		networkPeer.Status = conn.GetStatus()
+		networkPeer.ErrorMessage = conn.GetErrorMessage()
+	case provider.ProviderAzure:
+		networkPeer.Status = conn.GetStatus()
+		networkPeer.ErrorMessage = conn.GetErrorState()
+	default:
+		return nil, fmt.Errorf("unsupported provider %q", conn.GetProviderName())
+	}
+	return networkPeer, nil
+}
+
+func fromAtlasAWSStatus(conn *admin.BaseNetworkPeeringConnectionSettings) *AWSStatus {
+	if conn.ConnectionId == nil {
+		return nil
+	}
+	return &AWSStatus{
+		ConnectionID: conn.GetConnectionId(),
+	}
+}
+
+func fromAtlasConnectionNoStatus(conn *admin.BaseNetworkPeeringConnectionSettings) (*NetworkPeer, error) {
 	switch provider.ProviderName(conn.GetProviderName()) {
 	case provider.ProviderAWS:
 		return &NetworkPeer{
@@ -154,6 +321,49 @@ func toAtlasContainer(container *ProviderContainer) *admin.CloudProviderContaine
 }
 
 func fromAtlasContainer(container *admin.CloudProviderContainer) *ProviderContainer {
+	pc := fromAtlasContainerNoStatus(container)
+	pc.Provisioned = container.GetProvisioned()
+	switch provider.ProviderName(pc.Provider) {
+	case provider.ProviderAWS:
+		pc.AWSStatus = fromAtlasAWSContainerStatus(container)
+	case provider.ProviderAzure:
+		pc.AzureStatus = fromAtlasAzureContainerStatus(container)
+	case provider.ProviderGCP:
+		pc.GoogleStatus = fromAtlasGoogleContainerStatus(container)
+	}
+	return pc
+}
+
+func fromAtlasAWSContainerStatus(container *admin.CloudProviderContainer) *AWSContainerStatus {
+	if container.VpcId == nil {
+		return nil
+	}
+	return &AWSContainerStatus{
+		VpcID: container.GetVpcId(),
+	}
+}
+
+func fromAtlasAzureContainerStatus(container *admin.CloudProviderContainer) *AzureContainerStatus {
+	if container.AzureSubscriptionId == nil && container.VnetName == nil {
+		return nil
+	}
+	return &AzureContainerStatus{
+		AzureSubscriptionID: container.GetAzureSubscriptionId(),
+		VnetName:            container.GetVnetName(),
+	}
+}
+
+func fromAtlasGoogleContainerStatus(container *admin.CloudProviderContainer) *GoogleContainerStatus {
+	if container.GcpProjectId == nil && container.NetworkName == nil {
+		return nil
+	}
+	return &GoogleContainerStatus{
+		GCPProjectID: container.GetGcpProjectId(),
+		NetworkName:  container.GetNetworkName(),
+	}
+}
+
+func fromAtlasContainerNoStatus(container *admin.CloudProviderContainer) *ProviderContainer {
 	region := container.GetRegion()
 	if container.GetProviderName() == string(provider.ProviderAWS) {
 		region = container.GetRegionName()
