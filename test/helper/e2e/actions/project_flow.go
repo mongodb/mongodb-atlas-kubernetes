@@ -25,10 +25,10 @@ import (
 
 func ProjectCreationFlow(userData *model.TestDataProvider) {
 	By("Prepare operator configurations", func() {
-		mgr := PrepareOperatorConfigurations(userData)
+		r := PrepareOperatorConfigurations(userData)
 		ctx := context.Background()
 		go func(ctx context.Context) context.Context {
-			err := mgr.Start(ctx)
+			err := r.Start(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			return ctx
 		}(ctx)
@@ -37,9 +37,9 @@ func ProjectCreationFlow(userData *model.TestDataProvider) {
 	})
 }
 
-func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Manager {
+func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Runnable {
 	CreateNamespaceAndSecrets(userData)
-	mgr, err := k8s.BuildManager(&k8s.Config{
+	c, err := k8s.BuildCluster(&k8s.Config{
 		WatchedNamespaces: map[string]bool{
 			userData.Resources.Namespace: true,
 		},
@@ -52,7 +52,7 @@ func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Man
 		FeatureFlags:                featureflags.NewFeatureFlags(os.Environ),
 	})
 	Expect(err).NotTo(HaveOccurred())
-	return mgr
+	return c
 }
 
 func CreateNamespaceAndSecrets(userData *model.TestDataProvider) {

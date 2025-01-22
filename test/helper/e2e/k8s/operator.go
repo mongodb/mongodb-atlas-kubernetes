@@ -17,7 +17,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
@@ -30,7 +30,7 @@ var (
 	signalCancelledCtx     context.Context
 )
 
-func BuildManager(initCfg *Config) (manager.Manager, error) {
+func BuildCluster(initCfg *Config) (cluster.Cluster, error) {
 	akoScheme := runtime.NewScheme()
 	utilruntime.Must(scheme.AddToScheme(akoScheme))
 	utilruntime.Must(akov2.AddToScheme(akoScheme))
@@ -151,13 +151,13 @@ func RunManager(withConfigs ...ManagerConfig) (ManagerStart, error) {
 		withConfig(managerConfig)
 	}
 
-	mgr, err := BuildManager(managerConfig)
+	c, err := BuildCluster(managerConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return func(ctx context.Context) error {
-		err = mgr.Start(ctx)
+		err = c.Start(ctx)
 		if err != nil {
 			return err
 		}

@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -44,12 +44,12 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 			setupSecrets(ctx, testData, namespaces)
 			defer clearSecrets(ctx, testData, namespaces)
 
-			mgr, stop := setupManager(ctx, namespaces, testCase.watchNamespaces)
+			c, stop := setupCluster(ctx, namespaces, testCase.watchNamespaces)
 			defer stop()
 
 			wantToFindSet := sets.NewString(testCase.wantToFind...)
 			By("Using the manager cache to get all secrets in all namespaces and checking the expected results", func() {
-				cache := mgr.GetCache()
+				cache := c.GetCache()
 				for _, ns := range namespaces {
 					err := cache.Get(ctx, types.NamespacedName{Name: config.DefaultOperatorGlobalKey, Namespace: ns.GetName()}, &corev1.Secret{})
 
@@ -96,12 +96,12 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 			setupSecrets(ctx, testData, namespaces)
 			defer clearSecrets(ctx, testData, namespaces)
 
-			mgr, stop := setupManager(ctx, namespaces, testCase.watchNamespaces)
+			c, stop := setupCluster(ctx, namespaces, testCase.watchNamespaces)
 			defer stop()
 
 			wantToFindSet := sets.NewString(testCase.wantToFind...)
 			By("Using the manager cache to list all secrets in all namespaces and checking the expected results", func() {
-				cache := mgr.GetCache()
+				cache := c.GetCache()
 				for _, ns := range namespaces {
 					err := cache.List(ctx, &corev1.SecretList{}, &client.ListOptions{Namespace: ns.GetName()})
 
@@ -157,7 +157,7 @@ var _ = Describe("Reconciles test:", func() {
 			setupSecrets(ctx, testData, namespaces)
 			defer clearSecrets(ctx, testData, namespaces)
 
-			_, stop := setupManager(ctx, namespaces, testCase.watchNamespaces)
+			_, stop := setupCluster(ctx, namespaces, testCase.watchNamespaces)
 			defer stop()
 
 			By("Launching an atlas project on each namespace, expect only listened namespaces to update status", func() {
@@ -286,10 +286,10 @@ func setupSecrets(ctx context.Context, testData *model.TestDataProvider, namespa
 
 type stopper func()
 
-func setupManager(ctx context.Context, namespaces []*corev1.Namespace, wantToWatch []string) (manager.Manager, stopper) {
+func setupCluster(ctx context.Context, namespaces []*corev1.Namespace, wantToWatch []string) (cluster.Cluster, stopper) {
 	var (
-		wg  sync.WaitGroup
-		mgr manager.Manager
+		wg sync.WaitGroup
+		c  cluster.Cluster
 	)
 
 	wantToWatchSet := sets.NewString(wantToWatch...)
@@ -315,13 +315,13 @@ func setupManager(ctx context.Context, namespaces []*corev1.Namespace, wantToWat
 		}
 
 		var err error
-		mgr, err = k8s.BuildManager(managerConfig)
+		c, err = k8s.BuildCluster(managerConfig)
 		Expect(err).NotTo(HaveOccurred())
 
 		wg.Add(1)
 		go func(ctx context.Context) {
 			defer wg.Done()
-			err := mgr.Start(ctx)
+			err := c.Start(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}(mgrCtx)
 	})
@@ -330,7 +330,7 @@ func setupManager(ctx context.Context, namespaces []*corev1.Namespace, wantToWat
 		// the first namespace should always be cache-accessible
 		Eventually(func(g Gomega) bool {
 			return g.Expect(
-				mgr.GetCache().Get(ctx, types.NamespacedName{Name: namespaces[0].GetName()}, &corev1.Namespace{}),
+				c.GetCache().Get(ctx, types.NamespacedName{Name: namespaces[0].GetName()}, &corev1.Namespace{}),
 			).To(Succeed())
 		}).WithTimeout(time.Minute).Should(BeTrue())
 	})
@@ -340,7 +340,7 @@ func setupManager(ctx context.Context, namespaces []*corev1.Namespace, wantToWat
 		wg.Wait()
 	}
 
-	return mgr, stopper
+	return c, stopper
 }
 
 func clearSecrets(ctx context.Context, testData *model.TestDataProvider, namespaces []*corev1.Namespace) {

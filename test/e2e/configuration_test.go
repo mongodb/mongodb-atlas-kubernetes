@@ -159,10 +159,10 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 })
 
 func mainCycle(testData *model.TestDataProvider) {
-	mgr := actions.PrepareOperatorConfigurations(testData)
+	r := actions.PrepareOperatorConfigurations(testData)
 	ctx := context.Background()
 	go func(ctx context.Context) {
-		err := mgr.Start(ctx)
+		err := r.Start(ctx)
 		Expect(err).NotTo(HaveOccurred())
 	}(ctx)
 
