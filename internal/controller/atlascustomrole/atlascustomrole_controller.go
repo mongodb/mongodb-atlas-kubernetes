@@ -12,9 +12,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -43,7 +43,7 @@ type AtlasCustomRoleReconciler struct {
 }
 
 func NewAtlasCustomRoleReconciler(
-	mgr manager.Manager,
+	c cluster.Cluster,
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
@@ -52,11 +52,11 @@ func NewAtlasCustomRoleReconciler(
 ) *AtlasCustomRoleReconciler {
 	return &AtlasCustomRoleReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: mgr.GetClient(),
+			Client: c.GetClient(),
 			Log:    logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
 		},
-		Scheme:                   mgr.GetScheme(),
-		EventRecorder:            mgr.GetEventRecorderFor("AtlasCustomRoles"),
+		Scheme:                   c.GetScheme(),
+		EventRecorder:            c.GetEventRecorderFor("AtlasCustomRoles"),
 		AtlasProvider:            atlasProvider,
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,

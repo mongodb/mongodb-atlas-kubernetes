@@ -31,9 +31,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -271,7 +271,7 @@ func (r *AtlasDatabaseUserReconciler) databaseUsersForCredentialMapFunc() handle
 }
 
 func NewAtlasDatabaseUserReconciler(
-	mgr manager.Manager,
+	c cluster.Cluster,
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
@@ -281,12 +281,12 @@ func NewAtlasDatabaseUserReconciler(
 ) *AtlasDatabaseUserReconciler {
 	return &AtlasDatabaseUserReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: mgr.GetClient(),
+			Client: c.GetClient(),
 			Log:    logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		},
 		AtlasProvider:            atlasProvider,
-		Scheme:                   mgr.GetScheme(),
-		EventRecorder:            mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		Scheme:                   c.GetScheme(),
+		EventRecorder:            c.GetEventRecorderFor("AtlasDatabaseUser"),
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,

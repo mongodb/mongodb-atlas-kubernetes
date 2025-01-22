@@ -11,9 +11,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -109,16 +109,16 @@ func (r *AtlasStreamsConnectionReconciler) SetupWithManager(mgr ctrl.Manager, sk
 }
 
 func NewAtlasStreamsConnectionReconciler(
-	mgr manager.Manager,
+	c cluster.Cluster,
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
 	logger *zap.Logger,
 ) *AtlasStreamsConnectionReconciler {
 	return &AtlasStreamsConnectionReconciler{
-		Scheme:                   mgr.GetScheme(),
-		Client:                   mgr.GetClient(),
-		EventRecorder:            mgr.GetEventRecorderFor("AtlasStreamsConnection"),
+		Scheme:                   c.GetScheme(),
+		Client:                   c.GetClient(),
+		EventRecorder:            c.GetEventRecorderFor("AtlasStreamsConnection"),
 		GlobalPredicates:         predicates,
 		Log:                      logger.Named("controllers").Named("AtlasStreamsConnection").Sugar(),
 		AtlasProvider:            atlasProvider,
