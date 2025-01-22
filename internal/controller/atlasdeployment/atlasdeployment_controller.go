@@ -32,9 +32,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -407,7 +407,7 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 }
 
 func NewAtlasDeploymentReconciler(
-	mgr manager.Manager,
+	c cluster.Cluster,
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
@@ -418,11 +418,11 @@ func NewAtlasDeploymentReconciler(
 
 	return &AtlasDeploymentReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: mgr.GetClient(),
+			Client: c.GetClient(),
 			Log:    suggaredLogger,
 		},
-		Scheme:                   mgr.GetScheme(),
-		EventRecorder:            mgr.GetEventRecorderFor("AtlasDeployment"),
+		Scheme:                   c.GetScheme(),
+		EventRecorder:            c.GetEventRecorderFor("AtlasDeployment"),
 		GlobalPredicates:         predicates,
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
