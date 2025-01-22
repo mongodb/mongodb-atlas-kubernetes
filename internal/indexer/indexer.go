@@ -6,7 +6,7 @@ import (
 
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type Indexer interface {
@@ -18,9 +18,9 @@ type Indexer interface {
 // RegisterAll registers all known indexers to the given manager.
 // It uses the given logger to create a new named "indexer" logger,
 // passing that to each indexer.
-func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) error {
+func RegisterAll(ctx context.Context, mgr manager.Manager, logger *zap.Logger) error {
 	logger = logger.Named("indexer")
-	return Register(ctx, c,
+	return Register(ctx, mgr,
 		NewAtlasBackupScheduleByBackupPolicyIndexer(logger),
 		NewAtlasDeploymentByBackupScheduleIndexer(logger),
 		NewAtlasDeploymentBySearchIndexIndexer(logger),
@@ -34,7 +34,7 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasDatabaseUserBySecretsIndexer(logger),
 		NewAtlasDatabaseUserByCredentialIndexer(logger),
 		NewAtlasDeploymentByCredentialIndexer(logger),
-		NewAtlasDatabaseUserByProjectIndexer(ctx, c.GetClient(), logger),
+		NewAtlasDatabaseUserByProjectIndexer(ctx, mgr.GetClient(), logger),
 		NewAtlasDataFederationByProjectIndexer(logger),
 		NewAtlasCustomRoleByCredentialIndexer(logger),
 		NewAtlasCustomRoleByProjectIndexer(logger),
@@ -42,13 +42,15 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasPrivateEndpointByProjectIndexer(logger),
 		NewAtlasIPAccessListCredentialsByCredentialIndexer(logger),
 		NewAtlasIPAccessListByProjectIndexer(logger),
+		NewAtlasNetworkPeeringByCredentialIndexer(logger),
+		NewAtlasNetworkPeeringByProjectIndexer(logger),
 	)
 }
 
 // Register registers the given indexers to the given manager's field indexer.
-func Register(ctx context.Context, c cluster.Cluster, indexers ...Indexer) error {
+func Register(ctx context.Context, mgr manager.Manager, indexers ...Indexer) error {
 	for _, indexer := range indexers {
-		err := c.GetFieldIndexer().IndexField(ctx, indexer.Object(), indexer.Name(), indexer.Keys)
+		err := mgr.GetFieldIndexer().IndexField(ctx, indexer.Object(), indexer.Name(), indexer.Keys)
 		if err != nil {
 			return fmt.Errorf("error registering indexer %q: %w", indexer.Name(), err)
 		}
