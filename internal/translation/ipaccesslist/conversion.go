@@ -74,7 +74,7 @@ func FromInternal(ipAccessEntries IPAccessEntries) []project.IPAccessList {
 	return list
 }
 
-func NewIPAccessEntry(ipAccessList *akov2.AtlasIPAccessList) (IPAccessEntries, error) {
+func NewIPAccessListEntries(ipAccessList *akov2.AtlasIPAccessList) (IPAccessEntries, error) {
 	entries := make(IPAccessEntries, len(ipAccessList.Spec.Entries))
 
 	for _, ipAccess := range ipAccessList.Spec.Entries {

@@ -16,7 +16,7 @@ func (r *AtlasIPAccessListReconciler) handleIPAccessList(
 	projectID string,
 	ipAccessList *akov2.AtlasIPAccessList,
 ) ctrl.Result {
-	akoIPAccessList, err := ipaccesslist.NewIPAccessEntry(ipAccessList)
+	akoIPAccessList, err := ipaccesslist.NewIPAccessListEntries(ipAccessList)
 	if err != nil {
 		return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.Internal, err)
 	}
