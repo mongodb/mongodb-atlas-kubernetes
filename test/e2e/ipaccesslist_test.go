@@ -84,7 +84,6 @@ var _ = Describe("Migrate ip access list from sub-resources to separate custom r
 			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Generation).ToNot(Equal(testData.Project.Status.ObservedGeneration))
 				g.Expect(customresource.AnnotationLastSkippedConfiguration).To(BeKeyOf(testData.Project.GetAnnotations()))
 				g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(api.TrueCondition(api.ReadyType))))
 			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())

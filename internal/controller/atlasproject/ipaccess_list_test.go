@@ -378,7 +378,7 @@ func TestHandleIPAccessList(t *testing.T) {
 			expectedResult: workflow.Terminate(workflow.Internal, "failed to parse last skipped configuration: invalid character 'w' looking for beginning of object key string"),
 		},
 		"should skip reconciliation": {
-			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": [{\"ipAddress\":\"192.168.0.100\"}]}"},
+			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": []}"},
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
 				return apiMock
 			},
@@ -546,10 +546,14 @@ func TestHasSkippedIPAccessListConfiguration(t *testing.T) {
 			expectedError: "failed to parse last skipped configuration:" +
 				" invalid character 'w' looking for beginning of object key string",
 		},
-		"should return false when there is no last ip access list": {},
-		"should return true where there are last ip access list": {
+		"should return false when there is no annotation": {},
+		"should return false where there are last ip access list": {
 			annotations: map[string]string{
 				customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": [{\"ipAddress\":\"192.168.0.100\"},{\"awsSecurityGroup\":\"sg-123456\",\"comment\":\"My AWS SG\"}]}"},
+		},
+		"should return true where last ip access list is empty": {
+			annotations: map[string]string{
+				customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": []}"},
 			expected: true,
 		},
 	}
@@ -558,7 +562,7 @@ func TestHasSkippedIPAccessListConfiguration(t *testing.T) {
 			p := &akov2.AtlasProject{}
 			p.WithAnnotations(tt.annotations)
 
-			result, err := hasSkippedIPAccessListConfiguration(p)
+			result, err := shouldIPAccessListSkipReconciliation(p)
 			if err != nil {
 				assert.ErrorContains(t, err, tt.expectedError)
 			}

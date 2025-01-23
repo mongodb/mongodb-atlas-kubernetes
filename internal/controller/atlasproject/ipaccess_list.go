@@ -131,7 +131,7 @@ func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) work
 	ctx.Log.Debug("starting ip access list processing")
 	defer ctx.Log.Debug("finished ip access list processing")
 
-	skipped, err := hasSkippedIPAccessListConfiguration(project)
+	skipped, err := shouldIPAccessListSkipReconciliation(project)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -158,7 +158,7 @@ func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) work
 	return c.reconcile()
 }
 
-func hasSkippedIPAccessListConfiguration(atlasProject *akov2.AtlasProject) (bool, error) {
+func shouldIPAccessListSkipReconciliation(atlasProject *akov2.AtlasProject) (bool, error) {
 	lastSkippedSpec := akov2.AtlasProjectSpec{}
 	lastSkippedSpecString, ok := atlasProject.Annotations[customresource.AnnotationLastSkippedConfiguration]
 	if ok {
@@ -166,7 +166,7 @@ func hasSkippedIPAccessListConfiguration(atlasProject *akov2.AtlasProject) (bool
 			return false, fmt.Errorf("failed to parse last skipped configuration: %w", err)
 		}
 
-		return len(lastSkippedSpec.ProjectIPAccessList) > 0, nil
+		return len(lastSkippedSpec.ProjectIPAccessList) == 0, nil
 	}
 
 	return false, nil

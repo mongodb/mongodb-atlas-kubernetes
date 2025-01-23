@@ -21,3 +21,14 @@ func Keys[K comparable, V any](m map[K]V) []K {
 
 	return s
 }
+
+func MapDiff[K comparable, V any](a, b map[K]V) map[K]V {
+	d := make(map[K]V, len(a))
+	for i, val := range a {
+		if _, ok := b[i]; !ok {
+			d[i] = val
+		}
+	}
+
+	return d
+}
