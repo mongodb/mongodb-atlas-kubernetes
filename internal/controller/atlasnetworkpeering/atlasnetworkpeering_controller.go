@@ -33,9 +33,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -65,7 +65,7 @@ type AtlasNetworkPeeringReconciler struct {
 }
 
 func NewAtlasNetworkPeeringsReconciler(
-	mgr manager.Manager,
+	c cluster.Cluster,
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
@@ -74,11 +74,11 @@ func NewAtlasNetworkPeeringsReconciler(
 ) *AtlasNetworkPeeringReconciler {
 	return &AtlasNetworkPeeringReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: mgr.GetClient(),
+			Client: c.GetClient(),
 			Log:    logger.Named("controllers").Named("AtlasNetworkPeering").Sugar(),
 		},
-		Scheme:                   mgr.GetScheme(),
-		EventRecorder:            mgr.GetEventRecorderFor("AtlasPrivateEndpoint"),
+		Scheme:                   c.GetScheme(),
+		EventRecorder:            c.GetEventRecorderFor("AtlasPrivateEndpoint"),
 		AtlasProvider:            atlasProvider,
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
