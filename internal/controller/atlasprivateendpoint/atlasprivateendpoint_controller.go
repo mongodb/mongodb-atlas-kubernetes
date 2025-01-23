@@ -288,6 +288,7 @@ func NewAtlasPrivateEndpointReconciler(
 	predicates []predicate.Predicate,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
+	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
 ) *AtlasPrivateEndpointReconciler {
 	return &AtlasPrivateEndpointReconciler{
@@ -300,5 +301,6 @@ func NewAtlasPrivateEndpointReconciler(
 		AtlasProvider:            atlasProvider,
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
+		independentSyncPeriod:    independentSyncPeriod,
 	}
 }

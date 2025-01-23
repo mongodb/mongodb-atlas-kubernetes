@@ -76,6 +76,6 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	reconcilers = append(reconcilers, atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
 	reconcilers = append(reconcilers, atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
 	reconcilers = append(reconcilers, atlascustomrole.NewAtlasCustomRoleReconciler(c, r.predicates, ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
-	reconcilers = append(reconcilers, atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(c, r.predicates, ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
 	r.reconcilers = reconcilers
 }
