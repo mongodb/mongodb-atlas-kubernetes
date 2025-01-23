@@ -163,8 +163,7 @@ const (
 
 // Atlas Network Peering reasons
 const (
-	NetworkPeeringConnectionCreating  ConditionReason = "NetworkPeeringConnectionCreating"
-	NetworkPeeringConnectionResetting ConditionReason = "NetworkPeeringConnectionResetting"
-	NetworkPeeringConnectionPending   ConditionReason = "NetworkPeeringConnectionPending"
-	NetworkPeeringRemovingContainer   ConditionReason = "NetworkPeeringRemovingContainer"
+	NetworkPeeringConnectionCreating ConditionReason = "NetworkPeeringConnectionCreating"
+	NetworkPeeringConnectionPending  ConditionReason = "NetworkPeeringConnectionPending"
+	NetworkPeeringRemovingContainer  ConditionReason = "NetworkPeeringRemovingContainer"
 )
