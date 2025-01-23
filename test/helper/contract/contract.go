@@ -15,22 +15,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
 type ContractHelper interface {
 	AtlasClient() *admin.APIClient
+	AtlasClientSet() *atlas.ClientSet
 	AddResources(ctx context.Context, timeout time.Duration, resources ...client.Object) error
 	ProjectID(ctx context.Context, projectName string) (string, error)
 }
 
 type contractTest struct {
-	credentials bool
-	namespace   string
-	resources   []client.Object
-	k8sClient   client.Client
-	atlasClient *admin.APIClient
+	credentials    bool
+	namespace      string
+	resources      []client.Object
+	k8sClient      client.Client
+	atlasClient    *admin.APIClient
+	atlasClientSet *atlas.ClientSet
 }
 
 func (ct *contractTest) cleanup(ctx context.Context) error {
@@ -74,15 +77,20 @@ func skipCheck(name, focus string, enabled bool) error {
 
 func newContractTest(ctx context.Context) *contractTest {
 	return &contractTest{
-		k8sClient:   mustCreateK8sClient(),
-		credentials: false,
-		resources:   []client.Object{},
-		atlasClient: mustCreateVersionedAtlasClient(ctx),
+		k8sClient:      mustCreateK8sClient(),
+		credentials:    false,
+		resources:      []client.Object{},
+		atlasClient:    mustCreateVersionedAtlasClient(ctx),
+		atlasClientSet: mustCreateVersionedAtlasClientSet(ctx),
 	}
 }
 
 func (ct *contractTest) AtlasClient() *admin.APIClient {
 	return ct.atlasClient
+}
+
+func (ct *contractTest) AtlasClientSet() *atlas.ClientSet {
+	return ct.atlasClientSet
 }
 
 func (ct *contractTest) AddResources(ctx context.Context, timeout time.Duration, resources ...client.Object) error {

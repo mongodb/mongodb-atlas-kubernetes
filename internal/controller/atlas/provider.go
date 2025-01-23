@@ -97,9 +97,8 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 		return false
 	case *akov2.AtlasDeployment:
 		hasSearchNodes := atlasResource.Spec.DeploymentSpec != nil && len(atlasResource.Spec.DeploymentSpec.SearchNodes) > 0
-		isServerless := atlasResource.Spec.ServerlessSpec != nil
 
-		return !(isServerless || hasSearchNodes)
+		return !(atlasResource.IsServerless() || atlasResource.IsFlex() || hasSearchNodes)
 	}
 
 	return false

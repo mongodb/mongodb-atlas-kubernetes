@@ -21,7 +21,7 @@ func (_m *EndpointServiceMock) EXPECT() *EndpointServiceMock_Expecter {
 	return &EndpointServiceMock_Expecter{mock: &_m.Mock}
 }
 
-// EndpointInterfaces provides a mock function with given fields:
+// EndpointInterfaces provides a mock function with no fields
 func (_m *EndpointServiceMock) EndpointInterfaces() privateendpoint.EndpointInterfaces {
 	ret := _m.Called()
 
@@ -68,7 +68,7 @@ func (_c *EndpointServiceMock_EndpointInterfaces_Call) RunAndReturn(run func() p
 	return _c
 }
 
-// ErrorMessage provides a mock function with given fields:
+// ErrorMessage provides a mock function with no fields
 func (_m *EndpointServiceMock) ErrorMessage() string {
 	ret := _m.Called()
 
@@ -113,7 +113,7 @@ func (_c *EndpointServiceMock_ErrorMessage_Call) RunAndReturn(run func() string)
 	return _c
 }
 
-// Provider provides a mock function with given fields:
+// Provider provides a mock function with no fields
 func (_m *EndpointServiceMock) Provider() string {
 	ret := _m.Called()
 
@@ -158,7 +158,7 @@ func (_c *EndpointServiceMock_Provider_Call) RunAndReturn(run func() string) *En
 	return _c
 }
 
-// Region provides a mock function with given fields:
+// Region provides a mock function with no fields
 func (_m *EndpointServiceMock) Region() string {
 	ret := _m.Called()
 
@@ -203,7 +203,7 @@ func (_c *EndpointServiceMock_Region_Call) RunAndReturn(run func() string) *Endp
 	return _c
 }
 
-// ServiceID provides a mock function with given fields:
+// ServiceID provides a mock function with no fields
 func (_m *EndpointServiceMock) ServiceID() string {
 	ret := _m.Called()
 
@@ -248,7 +248,7 @@ func (_c *EndpointServiceMock_ServiceID_Call) RunAndReturn(run func() string) *E
 	return _c
 }
 
-// Status provides a mock function with given fields:
+// Status provides a mock function with no fields
 func (_m *EndpointServiceMock) Status() string {
 	ret := _m.Called()
 

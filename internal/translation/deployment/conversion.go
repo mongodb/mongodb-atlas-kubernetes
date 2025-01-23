@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -25,6 +26,7 @@ type Deployment interface {
 	GetConnection() *status.ConnectionStrings
 	GetReplicaSet() []status.ReplicaSet
 	IsServerless() bool
+	IsFlex() bool
 }
 
 type Cluster struct {
@@ -74,6 +76,10 @@ func (c *Cluster) IsServerless() bool {
 	return false
 }
 
+func (c *Cluster) IsFlex() bool {
+	return false
+}
+
 func (c *Cluster) IsTenant() bool {
 	return c.isTenant
 }
@@ -120,6 +126,56 @@ func (s *Serverless) IsServerless() bool {
 	return true
 }
 
+func (s *Serverless) IsFlex() bool {
+	return false
+}
+
+type Flex struct {
+	*akov2.FlexSpec
+	ProjectID      string
+	State          string
+	MongoDBVersion string
+	Connection     *status.ConnectionStrings
+
+	customResource *akov2.AtlasDeployment
+}
+
+func (f *Flex) GetName() string {
+	return f.Name
+}
+
+func (f *Flex) GetProjectID() string {
+	return f.ProjectID
+}
+
+func (f *Flex) GetState() string {
+	return f.State
+}
+
+func (f *Flex) GetMongoDBVersion() string {
+	return f.MongoDBVersion
+}
+
+func (f *Flex) GetConnection() *status.ConnectionStrings {
+	return f.Connection
+}
+
+func (f *Flex) GetReplicaSet() []status.ReplicaSet {
+	return nil
+}
+
+func (f *Flex) GetCustomResource() *akov2.AtlasDeployment {
+	return f.customResource
+}
+
+func (f *Flex) IsServerless() bool {
+	return false
+}
+
+func (f *Flex) IsFlex() bool {
+	return true
+}
+
 type Connection struct {
 	Name             string
 	ConnURL          string
@@ -155,6 +211,16 @@ func NewDeployment(projectID string, atlasDeployment *akov2.AtlasDeployment) Dep
 		return serverless
 	}
 
+	if atlasDeployment.IsFlex() {
+		flex := &Flex{
+			customResource: atlasDeployment,
+			ProjectID:      projectID,
+			FlexSpec:       atlasDeployment.Spec.FlexSpec.DeepCopy(),
+		}
+		normalizeFlexDeployment(flex)
+		return flex
+	}
+
 	cluster := &Cluster{
 		customResource:         atlasDeployment,
 		ProjectID:              projectID,
@@ -173,6 +239,15 @@ func normalizeServerlessDeployment(serverless *Serverless) {
 	}
 
 	cmp.NormalizeSlice(serverless.Tags, func(a, b *akov2.TagSpec) int {
+		return strings.Compare(a.Key, b.Key)
+	})
+}
+
+func normalizeFlexDeployment(flex *Flex) {
+	if flex.FlexSpec.Tags == nil {
+		flex.FlexSpec.Tags = []*akov2.TagSpec{}
+	}
+	cmp.NormalizeSlice(flex.Tags, func(a, b *akov2.TagSpec) int {
 		return strings.Compare(a.Key, b.Key)
 	})
 }
@@ -973,5 +1048,63 @@ func managedNamespaceToAtlas(in *akov2.ManagedNamespace) *admin.ManagedNamespace
 		IsShardKeyUnique:       in.IsShardKeyUnique,
 		NumInitialChunks:       pointer.MakePtr(int64(in.NumInitialChunks)),
 		PresplitHashedZones:    in.PresplitHashedZones,
+	}
+}
+
+func flexFromAtlas(instance *adminv20241113001.FlexClusterDescription20241113) *Flex {
+	connectionStrings := instance.GetConnectionStrings()
+	providerSettings := instance.GetProviderSettings()
+
+	// Copying this because the existing tags.FromAtlas uses a different SDK version
+	t := instance.GetTags()
+	tags := make([]*akov2.TagSpec, 0, len(t))
+	for _, rTag := range t {
+		tags = append(
+			tags,
+			&akov2.TagSpec{
+				Key:   rTag.GetKey(),
+				Value: rTag.GetValue(),
+			},
+		)
+	}
+
+	f := &Flex{
+		ProjectID: instance.GetGroupId(),
+		FlexSpec: &akov2.FlexSpec{
+			Name:                         instance.GetName(),
+			Tags:                         tags,
+			TerminationProtectionEnabled: instance.GetTerminationProtectionEnabled(),
+			ProviderSettings: &akov2.FlexProviderSettings{
+				BackingProviderName: providerSettings.GetBackingProviderName(),
+				RegionName:          providerSettings.GetRegionName(),
+			},
+		},
+		State:          instance.GetStateName(),
+		MongoDBVersion: instance.GetMongoDBVersion(),
+		Connection: &status.ConnectionStrings{
+			StandardSrv: connectionStrings.GetStandardSrv(),
+		},
+	}
+	normalizeFlexDeployment(f)
+
+	return f
+}
+
+func flexCreateToAtlas(flex *Flex) *adminv20241113001.FlexClusterDescriptionCreate20241113 {
+	return &adminv20241113001.FlexClusterDescriptionCreate20241113{
+		Name:                         flex.Name,
+		Tags:                         tag.FlexToAtlas(flex.Tags),
+		TerminationProtectionEnabled: &flex.TerminationProtectionEnabled,
+		ProviderSettings: adminv20241113001.FlexProviderSettingsCreate20241113{
+			BackingProviderName: flex.ProviderSettings.BackingProviderName,
+			RegionName:          flex.ProviderSettings.RegionName,
+		},
+	}
+}
+
+func flexUpdateToAtlas(flex *Flex) *adminv20241113001.FlexClusterDescriptionUpdate20241113 {
+	return &adminv20241113001.FlexClusterDescriptionUpdate20241113{
+		Tags:                         tag.FlexToAtlas(flex.Tags),
+		TerminationProtectionEnabled: &flex.TerminationProtectionEnabled,
 	}
 }

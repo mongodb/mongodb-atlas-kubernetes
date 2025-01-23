@@ -27,6 +27,8 @@ const (
 	// a serverless instance from the cluster API, which is not allowed
 	ServerlessInstanceFromClusterAPI = "CANNOT_USE_SERVERLESS_INSTANCE_IN_CLUSTER_API"
 
+	ClusterInstanceFromServerlessAPI = "CANNOT_USE_CLUSTER_IN_SERVERLESS_INSTANCE_API"
+
 	// Resource not found
 	ResourceNotFound = "RESOURCE_NOT_FOUND"
 
@@ -37,4 +39,9 @@ const (
 	BackupComplianceNotMet = "BACKUP_POLICIES_NOT_MEETING_BACKUP_COMPLIANCE_POLICY_REQUIREMENTS"
 
 	ProviderUnsupported = "PROVIDER_UNSUPPORTED"
+
+	// Cannot use the Flex API to interact with non-Flex clusters
+	NonFlexInFlexAPI = "CANNOT_USE_NON_FLEX_CLUSTER_IN_FLEX_API"
+
+	FeatureUnsupported = "FEATURE_UNSUPPORTED"
 )

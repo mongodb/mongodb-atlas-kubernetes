@@ -560,9 +560,9 @@ func (_c *AtlasDeploymentsServiceMock_GetCustomZones_Call) RunAndReturn(run func
 	return _c
 }
 
-// GetDeployment provides a mock function with given fields: ctx, projectID, name
-func (_m *AtlasDeploymentsServiceMock) GetDeployment(ctx context.Context, projectID string, name string) (deployment.Deployment, error) {
-	ret := _m.Called(ctx, projectID, name)
+// GetDeployment provides a mock function with given fields: ctx, projectID, _a2
+func (_m *AtlasDeploymentsServiceMock) GetDeployment(ctx context.Context, projectID string, _a2 *v1.AtlasDeployment) (deployment.Deployment, error) {
+	ret := _m.Called(ctx, projectID, _a2)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetDeployment")
@@ -570,19 +570,19 @@ func (_m *AtlasDeploymentsServiceMock) GetDeployment(ctx context.Context, projec
 
 	var r0 deployment.Deployment
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (deployment.Deployment, error)); ok {
-		return rf(ctx, projectID, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.AtlasDeployment) (deployment.Deployment, error)); ok {
+		return rf(ctx, projectID, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) deployment.Deployment); ok {
-		r0 = rf(ctx, projectID, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.AtlasDeployment) deployment.Deployment); ok {
+		r0 = rf(ctx, projectID, _a2)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(deployment.Deployment)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, projectID, name)
+	if rf, ok := ret.Get(1).(func(context.Context, string, *v1.AtlasDeployment) error); ok {
+		r1 = rf(ctx, projectID, _a2)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -598,14 +598,14 @@ type AtlasDeploymentsServiceMock_GetDeployment_Call struct {
 // GetDeployment is a helper method to define mock.On call
 //   - ctx context.Context
 //   - projectID string
-//   - name string
-func (_e *AtlasDeploymentsServiceMock_Expecter) GetDeployment(ctx interface{}, projectID interface{}, name interface{}) *AtlasDeploymentsServiceMock_GetDeployment_Call {
-	return &AtlasDeploymentsServiceMock_GetDeployment_Call{Call: _e.mock.On("GetDeployment", ctx, projectID, name)}
+//   - _a2 *v1.AtlasDeployment
+func (_e *AtlasDeploymentsServiceMock_Expecter) GetDeployment(ctx interface{}, projectID interface{}, _a2 interface{}) *AtlasDeploymentsServiceMock_GetDeployment_Call {
+	return &AtlasDeploymentsServiceMock_GetDeployment_Call{Call: _e.mock.On("GetDeployment", ctx, projectID, _a2)}
 }
 
-func (_c *AtlasDeploymentsServiceMock_GetDeployment_Call) Run(run func(ctx context.Context, projectID string, name string)) *AtlasDeploymentsServiceMock_GetDeployment_Call {
+func (_c *AtlasDeploymentsServiceMock_GetDeployment_Call) Run(run func(ctx context.Context, projectID string, _a2 *v1.AtlasDeployment)) *AtlasDeploymentsServiceMock_GetDeployment_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(*v1.AtlasDeployment))
 	})
 	return _c
 }
@@ -615,7 +615,7 @@ func (_c *AtlasDeploymentsServiceMock_GetDeployment_Call) Return(_a0 deployment.
 	return _c
 }
 
-func (_c *AtlasDeploymentsServiceMock_GetDeployment_Call) RunAndReturn(run func(context.Context, string, string) (deployment.Deployment, error)) *AtlasDeploymentsServiceMock_GetDeployment_Call {
+func (_c *AtlasDeploymentsServiceMock_GetDeployment_Call) RunAndReturn(run func(context.Context, string, *v1.AtlasDeployment) (deployment.Deployment, error)) *AtlasDeploymentsServiceMock_GetDeployment_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -182,6 +182,7 @@ jobs:
             "reconcile-one",
             "reconcile-two",
             "backup-compliance",
+            "flex",
           ]
     steps:
       - name: Get repo files from cache

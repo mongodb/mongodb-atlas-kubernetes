@@ -135,6 +135,15 @@ func TestProvider_IsResourceSupported(t *testing.T) {
 			},
 			expectation: false,
 		},
+		"should return false when it's Atlas Gov and resource is Flex Deployment": {
+			domain: "https://cloud.mongodbgov.com",
+			resource: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					FlexSpec: &akov2.FlexSpec{},
+				},
+			},
+			expectation: false,
+		},
 		"should return false when it's Atlas Gov and resource is a Deployment with search nodes": {
 			domain: "https://cloud.mongodbgov.com",
 			resource: &akov2.AtlasDeployment{

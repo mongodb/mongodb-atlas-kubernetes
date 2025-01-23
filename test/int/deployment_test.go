@@ -65,7 +65,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, false)
+		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, atlasClientv20241113001.FlexClustersApi, false)
 		createdDeployment = &akov2.AtlasDeployment{}
 
 		manualDeletion = false
@@ -162,10 +162,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	checkAdvancedAtlasState := func() {
 		By("Verifying Advanced Deployment state in Atlas", func() {
-			deploymentInAKO := deployment.NewDeployment(createdProject.ID(), createdDeployment)
-			deploymentInAtlas, err := deploymentService.GetDeployment(context.Background(), createdProject.ID(), deploymentInAKO.GetName())
+			deploymentInAtlas, err := deploymentService.GetDeployment(context.Background(), createdProject.ID(), createdDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
+			deploymentInAKO := deployment.NewDeployment(createdProject.ID(), createdDeployment)
 			_, hasChanges := deployment.ComputeChanges(deploymentInAKO.(*deployment.Cluster), deploymentInAtlas.(*deployment.Cluster))
 			Expect(hasChanges).ShouldNot(BeTrue())
 		})
@@ -174,7 +174,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	checkAdvancedDeploymentOptions := func(ctx context.Context, projectID string, atlasDeployment *akov2.AtlasDeployment) {
 		By("Checking that Atlas Advanced Options are equal to the Spec Options", func() {
 			deploymentInAKO := deployment.NewDeployment(projectID, atlasDeployment).(*deployment.Cluster)
-			deploymentInAtlas, err := deploymentService.GetDeployment(ctx, projectID, atlasDeployment.GetDeploymentName())
+			deploymentInAtlas, err := deploymentService.GetDeployment(ctx, projectID, atlasDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
 			cluster := deploymentInAtlas.(*deployment.Cluster)

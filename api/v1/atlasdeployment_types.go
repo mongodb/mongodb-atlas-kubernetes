@@ -68,6 +68,10 @@ type AtlasDeploymentSpec struct {
 	// ProcessArgs allows to modify Advanced Configuration Options
 	// +optional
 	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+
+	// Configuration for the Flex cluster API. https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Flex-Clusters
+	// +optional
+	FlexSpec *FlexSpec `json:"flexSpec,omitempty"`
 }
 
 type SearchNode struct {
@@ -465,6 +469,9 @@ func (c *AtlasDeployment) GetDeploymentName() string {
 	if c.IsServerless() {
 		return c.Spec.ServerlessSpec.Name
 	}
+	if c.IsFlex() {
+		return c.Spec.FlexSpec.Name
+	}
 	if c.IsAdvancedDeployment() {
 		return c.Spec.DeploymentSpec.Name
 	}
@@ -480,6 +487,10 @@ func (c *AtlasDeployment) IsServerless() bool {
 // IsAdvancedDeployment returns true if the AtlasDeployment is configured to be an advanced deployment.
 func (c *AtlasDeployment) IsAdvancedDeployment() bool {
 	return c.Spec.DeploymentSpec != nil
+}
+
+func (c *AtlasDeployment) IsFlex() bool {
+	return c.Spec.FlexSpec != nil
 }
 
 func (c *AtlasDeployment) GetReplicationSetID() string {
@@ -530,6 +541,41 @@ func (c *AtlasDeployment) ProjectDualRef() *ProjectDualReference {
 	return &c.Spec.ProjectDualReference
 }
 
+type FlexSpec struct {
+	// Human-readable label that identifies the instance.
+	// +required
+	Name string `json:"name"`
+
+	// List that contains key-value pairs between 1 to 255 characters in length for tagging and categorizing the instance.
+	// +kubebuilder:validation:MaxItems=50
+	// +optional
+	Tags []*TagSpec `json:"tags,omitempty"`
+
+	// Flag that indicates whether termination protection is enabled on the cluster.
+	// If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
+	// +kubebuilder:default:=false
+	// +optional
+	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
+
+	// Group of cloud provider settings that configure the provisioned MongoDB flex cluster.
+	// +required
+	ProviderSettings *FlexProviderSettings `json:"providerSettings"`
+}
+
+type FlexProviderSettings struct {
+	// Cloud service provider on which MongoDB Atlas provisions the flex cluster.
+	// +kubebuilder:validation:Enum=AWS;GCP;AZURE
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Backing Provider cannot be modified after cluster creation"
+	// +required
+	BackingProviderName string `json:"backingProviderName,omitempty"`
+
+	// Human-readable label that identifies the geographic location of your MongoDB flex cluster.
+	// The region you choose can affect network latency for clients accessing your databases.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Region Name cannot be modified after cluster creation"
+	// +required
+	RegionName string `json:"regionName,omitempty"`
+}
+
 // ************************************ Builder methods *************************************************
 
 func NewDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
@@ -576,6 +622,24 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 				ProviderSettings: &ServerlessProviderSettingsSpec{
 					BackingProviderName: backingProviderName,
 					ProviderName:        "SERVERLESS",
+					RegionName:          regionName,
+				},
+			},
+		},
+	}
+}
+
+func newFlexInstance(namespace, name, nameInAtlas, backingProviderName, regionName string) *AtlasDeployment {
+	return &AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasDeploymentSpec{
+			FlexSpec: &FlexSpec{
+				Name: nameInAtlas,
+				ProviderSettings: &FlexProviderSettings{
+					BackingProviderName: backingProviderName,
 					RegionName:          regionName,
 				},
 			},
@@ -762,6 +826,16 @@ func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasDeploy
 		namespace,
 		"test-serverless-instance-k8s",
 		"test-serverless-instance",
+		"AWS",
+		"US_EAST_1",
+	).WithProjectName(projectName)
+}
+
+func NewDefaultAWSFlexInstance(namespace, projectName string) *AtlasDeployment {
+	return newFlexInstance(
+		namespace,
+		"test-flex-instance-k8s",
+		"test-flex-instance",
 		"AWS",
 		"US_EAST_1",
 	).WithProjectName(projectName)
