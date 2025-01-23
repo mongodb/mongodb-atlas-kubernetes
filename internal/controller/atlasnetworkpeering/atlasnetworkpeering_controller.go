@@ -237,14 +237,10 @@ func (r *AtlasNetworkPeeringReconciler) unmanage(req *reconcileRequest) ctrl.Res
 	req.workflowCtx.EnsureStatusOption(clearPeeringStatusOption())
 	if _, err := r.handleContainer(req); err != nil {
 		containerID := containerID(req.networkPeering)
-		if errors.Is(err, networkpeering.ErrContainerInUse) {
-			return workflow.InProgress(
-				workflow.NetworkPeeringRemovingContainer,
-				fmt.Sprintf("Container %s is still in use, must retry removal later", containerID),
-			).ReconcileResult()
+		if !errors.Is(err, networkpeering.ErrContainerInUse) {
+			wrappedErr := fmt.Errorf("failed to clear container %s: %w", containerID, err)
+			return r.terminate(req.workflowCtx, req.networkPeering, workflow.Internal, wrappedErr)
 		}
-		wrappedErr := fmt.Errorf("failed to clear container %s: %w", containerID, err)
-		return r.terminate(req.workflowCtx, req.networkPeering, workflow.Internal, wrappedErr)
 	}
 	req.workflowCtx.EnsureStatusOption(clearContainerStatusOption())
 	if err := customresource.ManageFinalizer(req.workflowCtx.Context, r.Client, req.networkPeering, customresource.UnsetFinalizer); err != nil {

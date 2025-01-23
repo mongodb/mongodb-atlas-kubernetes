@@ -521,8 +521,6 @@ func DeleteTestDataNetworkPeerings(data *model.TestDataProvider) {
 		Expect(data.K8SClient.List(data.Context, peerings, &client.ListOptions{Namespace: data.Resources.Namespace})).Should(Succeed())
 		for _, peering := range peerings.Items {
 			Expect(data.K8SClient.Delete(data.Context, &peering)).Should(Succeed())
-		}
-		for _, peering := range peerings.Items {
 			key := client.ObjectKey{Name: peering.Name, Namespace: peering.Namespace}
 			Eventually(
 				func() bool {
