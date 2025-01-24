@@ -333,6 +333,7 @@ func TestHandleCustomResource(t *testing.T) {
 
 func TestHandleIPAccessList(t *testing.T) {
 	deletionTime := metav1.Now()
+	deleteAfterDate := metav1.NewTime(time.Now().Add(time.Minute * -5))
 	tests := map[string]struct {
 		akoIPAccessList     *akov2.AtlasIPAccessList
 		partial             bool
@@ -458,6 +459,41 @@ func TestHandleIPAccessList(t *testing.T) {
 					WithMessageRegexp("Atlas has started to add access list entries"),
 			},
 		},
+		"should fail to add an expired entry": {
+			akoIPAccessList: &akov2.AtlasIPAccessList{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ip-access-list",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasIPAccessListSpec{
+					Entries: []akov2.IPAccessEntry{
+						{
+							CIDRBlock: "192.168.0.0/24",
+						},
+						{
+							IPAddress:       "192.168.10.100",
+							DeleteAfterDate: pointer.MakePtr(deleteAfterDate),
+						},
+					},
+				},
+			},
+			ipAccessListService: func() ipaccesslist.IPAccessListService {
+				s := translation.NewIPAccessListServiceMock(t)
+				s.EXPECT().List(context.Background(), "").
+					Return(ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}}, nil)
+				s.EXPECT().Add(context.Background(), "", ipaccesslist.IPAccessEntries{"192.168.10.100/32": {CIDR: "192.168.10.100/32", DeleteAfterDate: pointer.MakePtr(deleteAfterDate.Time)}}).
+					Return(errors.New("fail to add, expired entry"))
+
+				return s
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType),
+				api.FalseCondition(api.IPAccessListReady).
+					WithReason(string(workflow.IPAccessListFailedToCreate)).
+					WithMessageRegexp("fail to add, expired entry"),
+			},
+		},
 		"should delete ip access list entry in atlas": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
 				ObjectMeta: metav1.ObjectMeta{
@@ -561,10 +597,6 @@ func TestHandleIPAccessList(t *testing.T) {
 					Entries: []akov2.IPAccessEntry{
 						{
 							CIDRBlock: "192.168.0.0/24",
-						},
-						{
-							IPAddress:       "192.168.10.100",
-							DeleteAfterDate: pointer.MakePtr(metav1.NewTime(time.Now().Add(time.Minute * -5))),
 						},
 					},
 				},

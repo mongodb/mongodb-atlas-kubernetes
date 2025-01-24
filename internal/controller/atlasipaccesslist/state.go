@@ -10,7 +10,6 @@ package atlasipaccesslist
 
 import (
 	"context"
-	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -80,30 +79,25 @@ func (r *AtlasIPAccessListReconciler) handleIPAccessList(
 	if !ipAccessList.GetDeletionTimestamp().IsZero() {
 		if existInAtlas {
 			r.Log.Infof("deleting ip access list from project %s", projectID)
-			return r.delete(ctx, ipAccessListService, ipAccessList, projectID, atlasIPAccessList, false)
+			return r.deleteAll(ctx, ipAccessListService, ipAccessList, projectID, atlasIPAccessList)
 		}
 
 		r.Log.Info("releasing ip access list resource for deletion")
 		return r.unmanage(ctx, ipAccessList)
 	}
 
-	if toAdd := collection.MapDiff(akoIPAccessList.GetByStatus(false), atlasIPAccessList); len(toAdd) > 0 {
+	if toAdd := collection.MapDiff(akoIPAccessList, atlasIPAccessList); len(toAdd) > 0 {
 		r.Log.Infof("adding ip access list %v on project %s", toAdd, projectID)
-		return r.create(ctx, ipAccessListService, ipAccessList, projectID, collection.MapDiff(akoIPAccessList, atlasIPAccessList))
+		return r.create(ctx, ipAccessListService, ipAccessList, projectID, toAdd)
 	}
 
 	if toDelete := collection.MapDiff(atlasIPAccessList, akoIPAccessList); len(toDelete) > 0 {
 		r.Log.Infof("deleting ip access list %v from project %s", toDelete, projectID)
-		return r.delete(ctx, ipAccessListService, ipAccessList, projectID, toDelete, true)
+		return r.deletePartial(ctx, ipAccessListService, ipAccessList, projectID, toDelete)
 	}
 
 	pending := false
 	for _, entry := range akoIPAccessList {
-		if entry.IsExpired(time.Now()) {
-			ctx.EnsureStatusOption(status.AddIPAccessListEntryStatus(entry.ID(), "EXPIRED"))
-			continue
-		}
-
 		r.Log.Debugf("retrieving status of ip access list entry %s at project %s", entry.ID(), projectID)
 		entryStatus, err := ipAccessListService.Status(ctx.Context, projectID, entry)
 		if err != nil {
@@ -119,7 +113,7 @@ func (r *AtlasIPAccessListReconciler) handleIPAccessList(
 	}
 
 	if pending {
-		return r.inProgress(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListPending, "Atlas has started to add access list entries")
+		return r.inProgress(ctx, ipAccessList, "Atlas has started to add access list entries")
 	}
 
 	return r.ready(ctx, ipAccessList)

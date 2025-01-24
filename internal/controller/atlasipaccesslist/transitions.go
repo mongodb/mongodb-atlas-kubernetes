@@ -34,31 +34,55 @@ func (r *AtlasIPAccessListReconciler) create(
 		return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListFailedToCreate, err)
 	}
 
-	return r.inProgress(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListPending, "Atlas has started to add access list entries")
+	return r.inProgress(ctx, ipAccessList, "Atlas has started to add access list entries")
 }
 
-func (r *AtlasIPAccessListReconciler) delete(
+func (r *AtlasIPAccessListReconciler) deleteAll(
 	ctx *workflow.Context,
 	ipAccessListService ipaccesslist.IPAccessListService,
 	ipAccessList *akov2.AtlasIPAccessList,
 	projectID string,
 	atlasIPAccessList ipaccesslist.IPAccessEntries,
-	partial bool,
 ) ctrl.Result {
+	err := r.delete(ctx, ipAccessListService, projectID, atlasIPAccessList)
+	if err != nil {
+		return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListFailedToDelete, err)
+	}
+
+	return r.unmanage(ctx, ipAccessList)
+}
+
+func (r *AtlasIPAccessListReconciler) deletePartial(
+	ctx *workflow.Context,
+	ipAccessListService ipaccesslist.IPAccessListService,
+	ipAccessList *akov2.AtlasIPAccessList,
+	projectID string,
+	atlasIPAccessList ipaccesslist.IPAccessEntries,
+) ctrl.Result {
+	err := r.delete(ctx, ipAccessListService, projectID, atlasIPAccessList)
+	if err != nil {
+		return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListFailedToDelete, err)
+	}
+
+	return r.inProgress(ctx, ipAccessList, "Atlas has started to delete access list entries")
+}
+
+func (r *AtlasIPAccessListReconciler) delete(
+	ctx *workflow.Context,
+	ipAccessListService ipaccesslist.IPAccessListService,
+	projectID string,
+	atlasIPAccessList ipaccesslist.IPAccessEntries,
+) error {
 	for _, entry := range atlasIPAccessList {
 		err := ipAccessListService.Delete(ctx.Context, projectID, entry)
 		if err != nil {
-			return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListFailedToDelete, err)
+			return err
 		}
 
 		ctx.EnsureStatusOption(status.RemoveIPAccessListEntryStatus(entry.ID()))
 	}
 
-	if partial {
-		return r.inProgress(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListPending, "Atlas has started to delete access list entries")
-	}
-
-	return r.unmanage(ctx, ipAccessList)
+	return nil
 }
 
 func (r *AtlasIPAccessListReconciler) skip(ctx context.Context, ipAccessList *akov2.AtlasIPAccessList) ctrl.Result {
@@ -92,17 +116,15 @@ func (r *AtlasIPAccessListReconciler) unsupport(ctx *workflow.Context) ctrl.Resu
 func (r *AtlasIPAccessListReconciler) inProgress(
 	ctx *workflow.Context,
 	ipAccessList *akov2.AtlasIPAccessList,
-	condition api.ConditionType,
-	reason workflow.ConditionReason,
 	msg string,
 ) ctrl.Result {
 	if err := customresource.ManageFinalizer(ctx.Context, r.Client, ipAccessList, customresource.SetFinalizer); err != nil {
 		return r.terminate(ctx, ipAccessList, api.ReadyType, workflow.AtlasFinalizerNotSet, err)
 	}
 
-	result := workflow.InProgress(reason, msg)
+	result := workflow.InProgress(workflow.IPAccessListPending, msg)
 	ctx.SetConditionFalse(api.ReadyType).
-		SetConditionFromResult(condition, result)
+		SetConditionFromResult(api.IPAccessListReady, result)
 
 	return result.ReconcileResult()
 }
