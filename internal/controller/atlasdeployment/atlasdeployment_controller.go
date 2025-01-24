@@ -351,10 +351,12 @@ func (r *AtlasDeploymentReconciler) inProgress(ctx *workflow.Context, atlasDeplo
 	return result.ReconcileResult(), nil
 }
 
-func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, deploymentInAtlas deployment.Deployment, deprecationMsg string) (ctrl.Result, error) {
-	if err := customresource.ManageFinalizer(ctx.Context, r.Client, atlasDeployment, customresource.SetFinalizer); err != nil {
+func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+	if err := customresource.ManageFinalizer(ctx.Context, r.Client, deploymentInAKO.GetCustomResource(), customresource.SetFinalizer); err != nil {
 		return r.terminate(ctx, workflow.AtlasFinalizerNotSet, err)
 	}
+
+	_, deprecationMsg := deploymentInAKO.Deprecated()
 
 	ctx.SetConditionTrue(api.DeploymentReadyType).
 		SetConditionTrueMsg(api.ReadyType, deprecationMsg).
@@ -363,7 +365,7 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
 
-	if atlasDeployment.Spec.ExternalProjectRef != nil {
+	if deploymentInAKO.GetCustomResource().Spec.ExternalProjectRef != nil {
 		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
 	}
 
