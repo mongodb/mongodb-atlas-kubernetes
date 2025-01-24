@@ -91,7 +91,7 @@ func (c *Cluster) Deprecated() (bool, string) {
 			if deprecatedSpecs(regionConfig.ElectableSpecs) ||
 				deprecatedSpecs(regionConfig.ReadOnlySpecs) ||
 				deprecatedSpecs(regionConfig.AnalyticsSpecs) {
-				return true, "WARNING: M2 and M5 instance sizes are deprecated."
+				return true, "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
 			}
 		}
 	}
@@ -155,7 +155,7 @@ func (s *Serverless) IsFlex() bool {
 }
 
 func (s *Serverless) Deprecated() (bool, string) {
-	return true, "WARNING: serverless is deprecated"
+	return true, "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
 }
 
 type Flex struct {
