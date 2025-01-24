@@ -1,0 +1,70 @@
+name: PR Labels
+
+on:
+  workflow_call:
+    inputs:
+      labels:
+        type: string
+        description: "Comma separated list of labels to run"
+        required: false
+        default: ""
+      branch:
+        type: string
+        description: "Branch to run the tests"
+        required: false
+        default: "main"
+  pull_request:
+    types: ["opened", "edited", "labeled", "unlabeled"]
+
+jobs:
+  test-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup GO
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23
+
+      - name: Get PR labels
+        id: get-labels
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(label => label.name).filter(label => label.startsWith('test/'));
+            core.setOutput('labels', labels.join(','));
+
+      - name: Determine if all tests should run
+        id: check-all
+        run: |
+          if [[ "${{ steps.get-labels.outputs.labels }}" == *"test/all"* ]]; then
+            echo "Run all tests: true"
+            echo "run-all=true" >> $GITHUB_ENV
+          else
+            echo "Run all tests: false"
+            echo "run-all=false" >> $GITHUB_ENV
+          fi
+
+      - name: List all ginkgo tests labels
+        run: |
+          sudo apt-get install -y jq
+          go install github.com/onsi/ginkgo/v2/ginkgo@latest
+          ginkgo labels ./test/e2e | cut -c 5- > e2e_labels.txt
+          ginkgo labels ./test/int | cut -c 5- > int_labels.txt
+          labels=$(jq -s '.[0] + .[1] | unique' e2e_labels.txt int_labels.txt)
+          echo "Available labels: $labels"
+          echo "available-labels=$labels" >> $GITHUB_ENV
+
+      - name: Run e2e tests
+        if: ${{ steps.get-labels.outputs.labels != '' }}
+        run: | 
+          echo "Labels from PR: ${{ steps.get-labels.outputs.labels }}"
+#          if [ "${{ env.run_all }}" == "true" ]; then
+#            echo "Running all tests..."
+#            ginkgo -r
+#          else
+#            echo "Running filtered tests..."
+#            cd ./test/e2e && ginkgo -r --label-filter "${{ steps.get-labels.outputs.labels}}"
+#          fi
