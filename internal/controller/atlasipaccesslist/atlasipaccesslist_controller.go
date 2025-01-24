@@ -97,7 +97,7 @@ func (r *AtlasIPAccessListReconciler) ipAccessListForProjectMapFunc() handler.Ma
 		list := &akov2.AtlasIPAccessListList{}
 		listOpts := &client.ListOptions{
 			FieldSelector: fields.OneTermEqualSelector(
-				indexer.AtlasIPAccessListCredentialsIndex,
+				indexer.AtlasIPAccessListByProjectIndex,
 				client.ObjectKeyFromObject(atlasProject).String(),
 			),
 		}
