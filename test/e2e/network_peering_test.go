@@ -74,11 +74,13 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			).WithProject(data.DefaultProject()),
 			[]akov2.NetworkPeer{
 				{
-					ProviderName:        provider.ProviderAWS,
+					ProviderName: provider.ProviderAWS,
+					// Container config
+					ContainerRegion: config.AWSRegionUS,
+					AtlasCIDRBlock:  "10.8.0.0/22",
+					// Peering config
 					AccepterRegionName:  config.AWSRegionUS,
-					ContainerRegion:     config.AWSRegionUS,
 					RouteTableCIDRBlock: "10.0.0.0/24",
-					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 			},
 		),
@@ -92,11 +94,13 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			).WithProject(data.DefaultProject()),
 			[]akov2.NetworkPeer{
 				{
-					ProviderName:        provider.ProviderAWS,
+					ProviderName: provider.ProviderAWS,
+					// Container config
+					ContainerRegion: config.AWSRegionUS,
+					AtlasCIDRBlock:  "10.8.0.0/22",
+					// Peering config
 					AccepterRegionName:  config.AWSRegionEU,
-					ContainerRegion:     config.AWSRegionUS,
 					RouteTableCIDRBlock: "10.0.0.0/24",
-					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 			},
 		),
@@ -110,17 +114,22 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			).WithProject(data.DefaultProject()),
 			[]akov2.NetworkPeer{
 				{
-					ProviderName:        provider.ProviderAWS,
+					ProviderName: provider.ProviderAWS,
+					// Container config
+					ContainerRegion: config.AWSRegionUS,
+					AtlasCIDRBlock:  "10.8.0.0/22",
+					// Peering config
 					AccepterRegionName:  config.AWSRegionEU,
-					ContainerRegion:     config.AWSRegionUS,
 					RouteTableCIDRBlock: "192.168.0.0/16",
-					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 				{
-					ProviderName:        provider.ProviderAWS,
+					ProviderName: provider.ProviderAWS,
+					// Container config
+					// Missing ContainerRegion would match AccepterRegionName
+					AtlasCIDRBlock: "10.8.0.0/22",
+					// Peering config
 					AccepterRegionName:  config.AWSRegionUS,
 					RouteTableCIDRBlock: "10.0.0.0/24",
-					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 			},
 		),
@@ -134,12 +143,12 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			).WithProject(data.DefaultProject()),
 			[]akov2.NetworkPeer{
 				{
-					ProviderName:        provider.ProviderGCP,
-					AccepterRegionName:  config.GCPRegion,
-					RouteTableCIDRBlock: "192.168.0.0/16",
-					AtlasCIDRBlock:      "10.8.0.0/18",
-					NetworkName:         newRandomName(GCPVPCName),
-					GCPProjectID:        cloud.GoogleProjectID,
+					ProviderName: provider.ProviderGCP,
+					// Container config (no region setting for GCP)
+					AtlasCIDRBlock: "10.8.0.0/18",
+					// Peering config
+					GCPProjectID: cloud.GoogleProjectID,
+					NetworkName:  newRandomName(GCPVPCName),
 				},
 			},
 		),
@@ -153,13 +162,15 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			).WithProject(data.DefaultProject()),
 			[]akov2.NetworkPeer{
 				{
-					ProviderName:        provider.ProviderAzure,
-					AccepterRegionName:  "US_EAST_2",
-					AtlasCIDRBlock:      "192.168.248.0/21",
-					VNetName:            newRandomName(AzureVPCName),
+					ProviderName: provider.ProviderAzure,
+					// Container config
+					ContainerRegion: "US_EAST_2",
+					AtlasCIDRBlock:  "192.168.248.0/21",
+					// Peering config
 					AzureSubscriptionID: os.Getenv(SubscriptionID),
-					ResourceGroupName:   cloud.ResourceGroupName,
 					AzureDirectoryID:    os.Getenv(DirectoryID),
+					ResourceGroupName:   cloud.ResourceGroupName,
+					VNetName:            newRandomName(AzureVPCName),
 				},
 			},
 		),
