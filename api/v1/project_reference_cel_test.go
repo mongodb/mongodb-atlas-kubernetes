@@ -48,6 +48,18 @@ var dualRefCRDs = []struct {
 		obj:      &AtlasIPAccessList{},
 		filename: "atlas.mongodb.com_atlasipaccesslists.yaml",
 	},
+	{
+		obj: &AtlasNetworkContainer{
+			Spec: AtlasNetworkContainerSpec{
+				Provider: "GCP", // Avoid triggering container specific validations
+			},
+		},
+		filename: "atlas.mongodb.com_atlasnetworkcontainers.yaml",
+	},
+	{
+		obj:      &AtlasNetworkPeering{},
+		filename: "atlas.mongodb.com_atlasnetworkpeerings.yaml",
+	},
 }
 
 var testCases = []struct {
@@ -158,8 +170,11 @@ func TestProjectDualReferenceCELValidations(t *testing.T) {
 				assert.NoError(t, err)
 				errs := validator(unstructuredObject, unstructuredOldObject)
 
-				require.Equal(t, len(tc.expectedErrors), len(errs))
+				for i, err := range errs {
+					fmt.Printf("%s error %d: %v\n", title, i, err)
+				}
 
+				require.Equal(t, len(tc.expectedErrors), len(errs))
 				for i, err := range errs {
 					assert.Equal(t, tc.expectedErrors[i], err.Error())
 				}
