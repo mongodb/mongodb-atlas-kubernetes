@@ -17,6 +17,7 @@ resources:
   - bases/atlas.mongodb.com_atlasprivateendpoints.yaml
   - bases/atlas.mongodb.com_atlascustomroles.yaml
   - bases/atlas.mongodb.com_atlasipaccesslists.yaml
+  - bases/atlas.mongodb.com_atlasnetworkcontainers.yaml
   - bases/atlas.mongodb.com_atlasnetworkpeerings.yaml
 configurations:
   - kustomizeconfig.yaml

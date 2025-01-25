@@ -1,0 +1,15 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasNetworkContainer
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasnetworkcontainer-sample
+spec:
+  externalProjectRef:
+    projectId: 66e2f2b621571b7e69a89b66
+  connectionSecret:
+    name: atlas-connection-secret
+  provider: AWS
+  cidrBlock: 10.11.0.0/16
+  region: US_EAST_1
