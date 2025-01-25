@@ -35,6 +35,7 @@ rules:
   - atlasdeployments
   - atlasfederatedauths
   - atlasipaccesslists
+  - atlasnetworkcontainers
   - atlasnetworkpeerings
   - atlasprivateendpoints
   - atlasprojects
@@ -62,6 +63,7 @@ rules:
   - atlasdeployments/status
   - atlasfederatedauths/status
   - atlasipaccesslists/status
+  - atlasnetworkcontainers/status
   - atlasnetworkpeerings/status
   - atlasprivateendpoints/status
   - atlasprojects/status
@@ -77,6 +79,7 @@ rules:
   - atlas.mongodb.com
   resources:
   - atlasipaccesslists/finalizers
+  - atlasnetworkcontainers/finalizers
   - atlasnetworkpeerings/finalizers
   verbs:
   - update
