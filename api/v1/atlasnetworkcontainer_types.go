@@ -56,7 +56,6 @@ type AtlasNetworkContainerList struct {
 
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
-
 // +kubebuilder:validation:XValidation:rule="(self.provider == 'GCP' && !has(self.region)) || (self.provider != 'GCP')",message="must not set region for GCP containers"
 // +kubebuilder:validation:XValidation:rule="((self.provider == 'AWS' || self.provider == 'Azure') && has(self.region)) || (self.provider == 'GCP')",message="must set region for AWS and Azure containers"
 

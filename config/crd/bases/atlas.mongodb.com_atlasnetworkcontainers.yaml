@@ -117,6 +117,14 @@ spec:
             - provider
             type: object
             x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
             - message: must not set region for GCP containers
               rule: (self.provider == 'GCP' && !has(self.region)) || (self.provider
                 != 'GCP')

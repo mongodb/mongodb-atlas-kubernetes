@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel"
 )
 
@@ -78,6 +79,8 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
+			// inject a project to avoid other CEL validations being hit
+			tc.obj.Spec.ProjectRef = &common.ResourceRefNamespaced{Name: "some-project"}
 			unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.obj)
 			require.NoError(t, err)
 
