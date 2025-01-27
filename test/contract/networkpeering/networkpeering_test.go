@@ -29,7 +29,7 @@ func TestPeerContainerServiceCRUD(t *testing.T) {
 	ctx := context.Background()
 	contract.RunGoContractTest(ctx, t, "test container CRUD", func(ch contract.ContractHelper) {
 		projectName := utils.RandomName("peer-container-crud-project")
-		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
+		require.NoError(t, ch.AddResources(ctx, 5 * time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
 		require.NoError(t, err)
 		nps := networkpeering.NewNetworkPeeringService(ch.AtlasClient().NetworkPeeringApi)
