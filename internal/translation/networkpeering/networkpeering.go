@@ -84,6 +84,9 @@ func (np *networkPeeringService) listPeersForProvider(ctx context.Context, proje
 
 func (np *networkPeeringService) DeletePeer(ctx context.Context, projectID, peerID string) error {
 	_, _, err := np.peeringAPI.DeletePeeringConnection(ctx, projectID, peerID).Execute()
+	if admin.IsErrorCode(err, "PEER_ALREADY_REQUESTED_DELETION") || admin.IsErrorCode(err, "PEER_NOT_FOUND") {
+		return nil // if it was already removed or being removed it is also fine
+	}
 	if err != nil {
 		return fmt.Errorf("failed to delete peering connection for peer %s: %w", peerID, err)
 	}

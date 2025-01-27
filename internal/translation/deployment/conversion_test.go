@@ -380,6 +380,210 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 		deployment *Cluster
 		expected   *Cluster
 	}{
+		"nil replication spec": {
+			deployment: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: nil,
+				},
+			},
+			expected: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ClusterType:              "REPLICASET",
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					BackupEnabled:            pointer.MakePtr(false),
+					Tags:                     []*akov2.TagSpec{},
+
+					ReplicationSpecs: nil,
+				},
+			},
+		},
+		"nil replication spec entries": {
+			deployment: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						nil, nil, nil,
+					},
+				},
+			},
+			expected: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ClusterType:              "REPLICASET",
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					BackupEnabled:            pointer.MakePtr(false),
+					Tags:                     []*akov2.TagSpec{},
+
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						nil, nil, nil,
+					},
+				},
+			},
+		},
+		"nil region configs": {
+			deployment: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: nil,
+						},
+					},
+				},
+			},
+			expected: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ClusterType:              "REPLICASET",
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					BackupEnabled:            pointer.MakePtr(false),
+					Tags:                     []*akov2.TagSpec{},
+
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							NumShards:     1,
+							ZoneName:      "Zone 1",
+							RegionConfigs: nil,
+						},
+					},
+				},
+			},
+		},
+		"nil region config entries": {
+			deployment: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								nil, nil, nil,
+							},
+						},
+					},
+				},
+			},
+			expected: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ClusterType:              "REPLICASET",
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					BackupEnabled:            pointer.MakePtr(false),
+					Tags:                     []*akov2.TagSpec{},
+
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							NumShards: 1,
+							ZoneName:  "Zone 1",
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								nil, nil, nil,
+							},
+						},
+					},
+				},
+			},
+		},
+		"nil regionconfig specs": {
+			deployment: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									AnalyticsSpecs: nil,
+									ElectableSpecs: nil,
+									ReadOnlySpecs:  nil,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ClusterType:              "REPLICASET",
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					BackupEnabled:            pointer.MakePtr(false),
+					Tags:                     []*akov2.TagSpec{},
+
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							NumShards: 1,
+							ZoneName:  "Zone 1",
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									AnalyticsSpecs: nil,
+									ElectableSpecs: nil,
+									ReadOnlySpecs:  nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"empty regionconfig specs": {
+			deployment: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									AnalyticsSpecs: &akov2.Specs{},
+									ElectableSpecs: &akov2.Specs{},
+									ReadOnlySpecs:  &akov2.Specs{},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ClusterType:              "REPLICASET",
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					BackupEnabled:            pointer.MakePtr(false),
+					Tags:                     []*akov2.TagSpec{},
+
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							NumShards: 1,
+							ZoneName:  "Zone 1",
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									AnalyticsSpecs: nil,
+									ElectableSpecs: nil,
+									ReadOnlySpecs:  nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		"normalize deployment configuration": {
 			deployment: &Cluster{
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{

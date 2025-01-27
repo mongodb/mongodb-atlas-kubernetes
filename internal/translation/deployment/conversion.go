@@ -305,51 +305,77 @@ func normalizeClusterDeployment(cluster *Cluster) {
 
 func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
 	for ix, replicationSpec := range cluster.ReplicationSpecs {
+		if replicationSpec == nil {
+			continue
+		}
 		if replicationSpec.NumShards == 0 {
 			replicationSpec.NumShards = 1
 		}
 		if replicationSpec.ZoneName == "" {
 			replicationSpec.ZoneName = fmt.Sprintf("Zone %d", ix+1)
 		}
-		cmp.NormalizeSlice(replicationSpec.RegionConfigs, func(a, b *akov2.AdvancedRegionConfig) int {
-			aPriority := "0"
-			if a.Priority != nil {
-				aPriority = strconv.Itoa(*a.Priority)
-			}
-			bPriority := "0"
-			if b.Priority != nil {
-				bPriority = strconv.Itoa(*b.Priority)
-			}
-			return strings.Compare(a.ProviderName+a.RegionName+aPriority, b.ProviderName+b.RegionName+bPriority)
-		})
-		for _, regionConfig := range replicationSpec.RegionConfigs {
-			if regionConfig.ProviderName != string(provider.ProviderTenant) {
-				regionConfig.BackingProviderName = ""
-			}
-			if regionConfig.ElectableSpecs != nil {
-				if !isTenant && (regionConfig.ElectableSpecs.NodeCount == nil || *regionConfig.ElectableSpecs.NodeCount == 0) {
-					regionConfig.ElectableSpecs = nil
-				}
-			}
-			if regionConfig.ReadOnlySpecs != nil && (regionConfig.ReadOnlySpecs.NodeCount == nil || *regionConfig.ReadOnlySpecs.NodeCount == 0) {
-				regionConfig.ReadOnlySpecs = nil
-			}
-			if regionConfig.AnalyticsSpecs != nil && (regionConfig.AnalyticsSpecs.NodeCount == nil || *regionConfig.AnalyticsSpecs.NodeCount == 0) {
-				regionConfig.AnalyticsSpecs = nil
-			}
 
-			computeUnsetOrDisabled := regionConfig.AutoScaling == nil || regionConfig.AutoScaling.Compute == nil ||
-				regionConfig.AutoScaling.Compute.Enabled == nil || !*regionConfig.AutoScaling.Compute.Enabled
-			diskUnsetOrDisabled := regionConfig.AutoScaling == nil || regionConfig.AutoScaling.DiskGB == nil ||
-				regionConfig.AutoScaling.DiskGB.Enabled == nil || !*regionConfig.AutoScaling.DiskGB.Enabled
-			if computeUnsetOrDisabled && diskUnsetOrDisabled {
-				regionConfig.AutoScaling = nil
-			}
-		}
+		normalizeRegionConfigs(replicationSpec.RegionConfigs, isTenant)
 	}
 	cmp.NormalizeSlice(cluster.ReplicationSpecs, func(a, b *akov2.AdvancedReplicationSpec) int {
-		return strings.Compare(a.ZoneName, b.ZoneName)
+		var zoneA, zoneB string
+		if a != nil {
+			zoneA = a.ZoneName
+		}
+		if b != nil {
+			zoneB = b.ZoneName
+		}
+		return strings.Compare(zoneA, zoneB)
 	})
+}
+
+func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenant bool) {
+	cmp.NormalizeSlice(regionConfigs, func(a, b *akov2.AdvancedRegionConfig) int {
+		aPriority := "0"
+		if a != nil && a.Priority != nil {
+			aPriority = strconv.Itoa(*a.Priority)
+		}
+		bPriority := "0"
+		if b != nil && b.Priority != nil {
+			bPriority = strconv.Itoa(*b.Priority)
+		}
+		var aProviderRegion, bProviderRegion string
+		if a != nil {
+			aProviderRegion = a.ProviderName + a.RegionName
+		}
+		if b != nil {
+			bProviderRegion = b.ProviderName + b.RegionName
+		}
+		return strings.Compare(aProviderRegion+aPriority, bProviderRegion+bPriority)
+	})
+
+	for _, regionConfig := range regionConfigs {
+		if regionConfig == nil {
+			continue
+		}
+		if regionConfig.ProviderName != string(provider.ProviderTenant) {
+			regionConfig.BackingProviderName = ""
+		}
+		if regionConfig.ElectableSpecs != nil {
+			if !isTenant && (regionConfig.ElectableSpecs.NodeCount == nil || *regionConfig.ElectableSpecs.NodeCount == 0) {
+				regionConfig.ElectableSpecs = nil
+			}
+		}
+		if regionConfig.ReadOnlySpecs != nil && (regionConfig.ReadOnlySpecs.NodeCount == nil || *regionConfig.ReadOnlySpecs.NodeCount == 0) {
+			regionConfig.ReadOnlySpecs = nil
+		}
+		if regionConfig.AnalyticsSpecs != nil && (regionConfig.AnalyticsSpecs.NodeCount == nil || *regionConfig.AnalyticsSpecs.NodeCount == 0) {
+			regionConfig.AnalyticsSpecs = nil
+		}
+
+		computeUnsetOrDisabled := regionConfig.AutoScaling == nil || regionConfig.AutoScaling.Compute == nil ||
+			regionConfig.AutoScaling.Compute.Enabled == nil || !*regionConfig.AutoScaling.Compute.Enabled
+		diskUnsetOrDisabled := regionConfig.AutoScaling == nil || regionConfig.AutoScaling.DiskGB == nil ||
+			regionConfig.AutoScaling.DiskGB.Enabled == nil || !*regionConfig.AutoScaling.DiskGB.Enabled
+		if computeUnsetOrDisabled && diskUnsetOrDisabled {
+			regionConfig.AutoScaling = nil
+		}
+	}
 }
 
 func normalizeProcessArgs(args *akov2.ProcessArgs) {
@@ -374,7 +400,13 @@ func getAutoscalingOverride(replications []*akov2.AdvancedReplicationSpec) (bool
 	var instanceSize string
 	var isTenant bool
 	for _, replica := range replications {
+		if replica == nil {
+			continue
+		}
 		for _, region := range replica.RegionConfigs {
+			if region == nil {
+				continue
+			}
 			if region.ProviderName == string(provider.ProviderTenant) {
 				isTenant = true
 			}
