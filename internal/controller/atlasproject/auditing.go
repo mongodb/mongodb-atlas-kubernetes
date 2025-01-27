@@ -6,7 +6,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 )
 
@@ -62,7 +61,7 @@ func (a *auditController) ready() workflow.Result {
 // terminate ends a state transition if an error occurred.
 func (a *auditController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	a.ctx.Log.Error(err)
-	result := workflow.Terminate(reason, err.Error())
+	result := workflow.Terminate(reason, err)
 	a.ctx.SetConditionFromResult(api.AuditingReadyType, result)
 
 	return result

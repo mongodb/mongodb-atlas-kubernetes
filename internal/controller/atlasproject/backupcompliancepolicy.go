@@ -194,7 +194,7 @@ func (b *backupComplianceController) progress(state workflow.ConditionReason, fi
 // terminate transitions to pending state if an error occurred.
 func (b *backupComplianceController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	b.ctx.Log.Error(err)
-	result := workflow.Terminate(reason, err.Error())
+	result := workflow.Terminate(reason, err)
 	b.ctx.SetConditionFromResult(api.BackupComplianceReadyType, result)
 	return result
 }

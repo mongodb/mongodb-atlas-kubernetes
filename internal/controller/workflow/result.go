@@ -40,12 +40,12 @@ func Requeue(period time.Duration) Result {
 // This is not an expected termination of the reconciliation process so 'warning' flag is set to 'true'.
 // 'reason' and 'message' indicate the error state and are supposed to be reflected in the `conditions` for the
 // reconciled Custom Resource.
-func Terminate(reason ConditionReason, message string) Result {
+func Terminate(reason ConditionReason, err error) Result {
 	return Result{
 		terminated:   true,
 		requeueAfter: DefaultRetry,
 		reason:       reason,
-		message:      message,
+		message:      err.Error(),
 		warning:      true,
 	}
 }
@@ -77,7 +77,7 @@ func (r Result) IsDeleted() bool {
 
 // TerminateSilently indicates that the reconciliation logic cannot proceed and needs to be finished (and possibly requeued)
 // The status of the reconciled Custom Resource is not supposed to be updated.
-func TerminateSilently() Result {
+func TerminateSilently(err error) Result {
 	return Result{terminated: true, requeueAfter: DefaultRetry}
 }
 

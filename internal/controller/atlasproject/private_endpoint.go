@@ -23,7 +23,7 @@ import (
 func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
 	skipped, err := hasSkippedPrivateEndpointConfiguration(project)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	if skipped {
@@ -38,12 +38,12 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasPr
 
 	lastAppliedPEs, err := mapLastAppliedPrivateEndpoint(project)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	atlasPEs, err := getAllPrivateEndpoints(workflowCtx.Context, workflowCtx.SdkClient, project.ID())
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	result, conditionType := syncPrivateEndpointsWithAtlas(workflowCtx, project.ID(), specPEs, atlasPEs, lastAppliedPEs)
@@ -76,7 +76,7 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasPr
 			workflowCtx.UnsetCondition(api.PrivateEndpointReadyType)
 			return serviceStatus
 		} else {
-			return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "Not All Interface Private Endpoint are fully configured")
+			return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, errors.New("not all interface private endpoints are fully configured"))
 		}
 	}
 
@@ -130,7 +130,7 @@ func getStatusForServices(atlasPEs []atlasPE) workflow.Result {
 	allAvailable := true
 	for _, conn := range atlasPEs {
 		if isFailed(conn.GetStatus()) {
-			return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, conn.GetErrorMessage())
+			return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, errors.New(conn.GetErrorMessage()))
 		}
 
 		if !isAvailable(conn.GetStatus()) {
@@ -164,12 +164,12 @@ func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []a
 				EndpointServiceId: atlasPeService.GetId(),
 			}).Execute()
 			if err != nil {
-				return workflow.Terminate(workflow.Internal, err.Error())
+				return workflow.Terminate(workflow.Internal, err)
 			}
 
 			interfaceIsAvailable, interfaceFailureMessage := checkIfInterfaceIsAvailable(interfaceEndpoint)
 			if interfaceFailureMessage != "" {
-				return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, interfaceFailureMessage)
+				return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, errors.New(interfaceFailureMessage))
 			}
 			if !interfaceIsAvailable {
 				return notReadyInterfaceResult
@@ -337,12 +337,12 @@ func endpointDefinedInSpec(specEndpoint akov2.PrivateEndpoint) bool {
 func DeleteAllPrivateEndpoints(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.Result {
 	atlasPEs, err := getAllPrivateEndpoints(ctx.Context, ctx.SdkClient, atlasProject.ID())
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	lastAppliedSpecPEs, err := mapLastAppliedPrivateEndpoint(atlasProject)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	endpointsToDelete := getEndpointsNotInSpec([]akov2.PrivateEndpoint{}, atlasPEs, lastAppliedSpecPEs)
@@ -370,7 +370,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 					EndpointServiceId: peService.GetId(),
 				}).Execute()
 				if err != nil {
-					return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "failed to delete Private Endpoint")
+					return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, errors.New("failed to delete Private Endpoint"))
 				}
 			}
 
@@ -383,7 +383,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 			EndpointServiceId: peService.GetId(),
 		}).Execute()
 		if err != nil {
-			return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, "failed to delete Private Endpoint Service")
+			return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, errors.New("failed to delete Private Endpoint Service"))
 		}
 
 		ctx.Log.Debugw("Removed Private Endpoint Service from Atlas as it's not specified in current AtlasProject", "provider", peService.GetCloudProvider(), "regionName", peService.RegionName)
@@ -516,7 +516,7 @@ func isFailed(status string) bool {
 
 func terminateWithError(ctx *workflow.Context, conditionType api.ConditionType, message string, err error) (workflow.Result, api.ConditionType) {
 	ctx.Log.Debugw(message, "error", err)
-	result := workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, err.Error()).WithoutRetry()
+	result := workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, err).WithoutRetry()
 	return result, conditionType
 }
 

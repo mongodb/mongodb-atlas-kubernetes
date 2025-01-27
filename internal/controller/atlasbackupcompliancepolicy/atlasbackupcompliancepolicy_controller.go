@@ -2,6 +2,7 @@ package atlasbackupcompliancepolicy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -148,7 +149,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) skip(ctx context.Context, log *z
 	log.Infow(fmt.Sprintf("-> Skipping AtlasBackupCompliancePolicy reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", bcp.Spec)
 	if !bcp.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, bcp, customresource.UnsetFinalizer); err != nil {
-			result := workflow.Terminate(workflow.Internal, err.Error())
+			result := workflow.Terminate(workflow.Internal, err)
 			log.Errorw("Failed to remove finalizer", "terminate", err)
 
 			return result.ReconcileResult()
@@ -166,7 +167,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) invalidate(invalid workflow.Resu
 
 func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
 	unsupported := workflow.Terminate(
-		workflow.AtlasGovUnsupported, "the AtlasBackupCompliancePolicy is not supported by Atlas for government").
+		workflow.AtlasGovUnsupported, errors.New("the AtlasBackupCompliancePolicy is not supported by Atlas for government")).
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.ReadyType, unsupported)
 	return unsupported.ReconcileResult()
@@ -174,7 +175,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context)
 
 func (r *AtlasBackupCompliancePolicyReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) ctrl.Result {
 	r.Log.Error(err)
-	terminated := workflow.Terminate(errorCondition, err.Error())
+	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ReadyType, terminated)
 	return terminated.ReconcileResult()
 }

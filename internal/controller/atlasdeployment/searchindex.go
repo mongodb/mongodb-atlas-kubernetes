@@ -129,7 +129,7 @@ func (sr *searchIndexReconcileRequest) terminate(index *searchindex.SearchIndex,
 		status.WithMsg(msg.Error()),
 		status.WithName(index.Name),
 	)))
-	terminate := workflow.Terminate(status.SearchIndexStatusError, msg.Error())
+	terminate := workflow.Terminate(status.SearchIndexStatusError, msg)
 	sr.ctx.SetConditionFromResult(api.SearchIndexesReadyType, terminate)
 	return terminate
 }

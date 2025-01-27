@@ -273,7 +273,7 @@ func (s *searchNodeController) progress(state workflow.ConditionReason, fineMsg,
 // terminate transitions to pending state if an error occurred.
 func (s *searchNodeController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	s.ctx.Log.Error(err)
-	result := workflow.Terminate(reason, err.Error())
+	result := workflow.Terminate(reason, err)
 	s.ctx.SetConditionFromResult(api.SearchNodesReadyType, result)
 	return result
 }

@@ -2,6 +2,7 @@ package atlasstream
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -183,7 +184,7 @@ func (r *AtlasStreamsInstanceReconciler) skip(ctx context.Context, log *zap.Suga
 	log.Infow(fmt.Sprintf("-> Skipping AtlasStreamInstance reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", streamInstance.Spec)
 	if !streamInstance.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, streamInstance, customresource.UnsetFinalizer); err != nil {
-			result := workflow.Terminate(workflow.Internal, err.Error())
+			result := workflow.Terminate(workflow.Internal, err)
 			log.Errorw("Failed to remove finalizer", "terminate", err)
 
 			return result.ReconcileResult()
@@ -203,7 +204,7 @@ func (r *AtlasStreamsInstanceReconciler) invalidate(invalid workflow.Result) ctr
 // transitions back to pending setting unsupported state
 func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
 	unsupported := workflow.Terminate(
-		workflow.AtlasGovUnsupported, "the AtlasStreamInstance is not supported by Atlas for government").
+		workflow.AtlasGovUnsupported, errors.New("the AtlasStreamInstance is not supported by Atlas for government")).
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.StreamInstanceReadyType, unsupported)
 	return unsupported.ReconcileResult()
@@ -212,7 +213,7 @@ func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) ctrl.R
 // transitions back to pending state setting an error status
 func (r *AtlasStreamsInstanceReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
-	terminated := workflow.Terminate(errorCondition, err.Error())
+	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.StreamInstanceReadyType, terminated)
 	return terminated.ReconcileResult(), nil
 }

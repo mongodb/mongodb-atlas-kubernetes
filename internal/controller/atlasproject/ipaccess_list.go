@@ -105,7 +105,7 @@ func (i *ipAccessListController) ready(ipAccessEntries ipaccesslist.IPAccessEntr
 // terminate ends a state transition if an error occurred.
 func (i *ipAccessListController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	i.ctx.Log.Error(err)
-	result := workflow.Terminate(reason, err.Error())
+	result := workflow.Terminate(reason, err)
 	i.ctx.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 	return result

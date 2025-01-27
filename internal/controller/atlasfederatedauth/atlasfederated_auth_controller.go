@@ -2,6 +2,7 @@ package atlasfederatedauth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -61,7 +62,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		log.Infow(fmt.Sprintf("-> Skipping AtlasFederatedAuth reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", fedauth.Spec)
 		if !fedauth.GetDeletionTimestamp().IsZero() {
 			if err := customresource.ManageFinalizer(ctx, r.Client, fedauth, customresource.UnsetFinalizer); err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
+				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("Failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
@@ -82,7 +83,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(fedauth) {
-		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasFederatedAuth is not supported by Atlas for government").
+		result := workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasFederatedAuth is not supported by Atlas for government")).
 			WithoutRetry()
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
@@ -90,14 +91,14 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	atlasClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, fedauth.ConnectionSecretObjectKey(), log)
 	if err != nil {
-		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	atlasClientSet, _, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, fedauth.ConnectionSecretObjectKey(), log)
 	if err != nil {
-		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
 	}

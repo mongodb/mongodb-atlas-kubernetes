@@ -2,6 +2,7 @@ package atlascustomrole
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -177,7 +178,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Status: status.AtlasCustomRoleStatus{},
 				},
 			},
-			want: workflow.Terminate(workflow.AtlasCustomRoleNotCreated, "unable to create role"),
+			want: workflow.Terminate(workflow.AtlasCustomRoleNotCreated, errors.New("unable to create role")),
 		},
 		{
 			name: "Create custom role with error on Getting roles",
@@ -225,7 +226,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Status: status.AtlasCustomRoleStatus{},
 				},
 			},
-			want: workflow.Terminate(workflow.ProjectCustomRolesReady, "unable to Get roles"),
+			want: workflow.Terminate(workflow.ProjectCustomRolesReady, errors.New("unable to Get roles")),
 		},
 		{
 			name: "Update custom role successfully",
@@ -374,7 +375,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Status: status.AtlasCustomRoleStatus{},
 				},
 			},
-			want: workflow.Terminate(workflow.AtlasCustomRoleNotUpdated, "unable to update custom role"),
+			want: workflow.Terminate(workflow.AtlasCustomRoleNotUpdated, errors.New("unable to update custom role")),
 		},
 		{
 			name: "Update custom role successfully no update",
@@ -693,7 +694,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Status: status.AtlasCustomRoleStatus{},
 				},
 			},
-			want: workflow.Terminate(workflow.AtlasCustomRoleNotDeleted, "unable to delete custom role"),
+			want: workflow.Terminate(workflow.AtlasCustomRoleNotDeleted, errors.New("unable to delete custom role")),
 		},
 	}
 	for _, tt := range tests {
@@ -929,7 +930,7 @@ func Test_handleCustomRole(t *testing.T) {
 					},
 				},
 			},
-			want: workflow.Terminate(workflow.ProjectCustomRolesReady, "the referenced AtlasProject resource 'testProject' doesn't have ID (status.ID is empty)"),
+			want: workflow.Terminate(workflow.ProjectCustomRolesReady, errors.New("the referenced AtlasProject resource 'testProject' doesn't have ID (status.ID is empty)")),
 		},
 		{
 			name: "DO NOT create custom role if external project reference doesn't exist",

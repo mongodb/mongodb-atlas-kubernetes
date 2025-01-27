@@ -35,12 +35,12 @@ func PrepareResource(ctx context.Context, client client.Client, request reconcil
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
 			log.Debugf("Object %s doesn't exist, was it deleted after reconcile request?", request.NamespacedName)
-			return workflow.TerminateSilently().WithoutRetry()
+			return workflow.TerminateSilently(err).WithoutRetry()
 		}
 		// Error reading the object - requeue the request. Note, that we don't intend to update resource status
 		// as most of all it will fail as well.
 		log.Errorf("Failed to query object %s: %s", request.NamespacedName, err)
-		return workflow.TerminateSilently()
+		return workflow.TerminateSilently(err)
 	}
 
 	return workflow.OK()
@@ -50,7 +50,7 @@ func ValidateResourceVersion(ctx *workflow.Context, resource akov2.AtlasCustomRe
 	valid, err := ResourceVersionIsValid(resource)
 	if err != nil {
 		log.Debugf("resource version for '%s' is invalid", resource.GetName())
-		result := workflow.Terminate(workflow.AtlasResourceVersionIsInvalid, err.Error())
+		result := workflow.Terminate(workflow.AtlasResourceVersionIsInvalid, err)
 		ctx.SetConditionFromResult(api.ResourceVersionStatus, result)
 		return result
 	}
@@ -58,7 +58,7 @@ func ValidateResourceVersion(ctx *workflow.Context, resource akov2.AtlasCustomRe
 	if !valid {
 		log.Debugf("resource '%s' version mismatch", resource.GetName())
 		result := workflow.Terminate(workflow.AtlasResourceVersionMismatch,
-			fmt.Sprintf("version of the resource '%s' is higher than the operator version '%s'. ",
+			fmt.Errorf("version of the resource '%s' is higher than the operator version '%s'. ",
 				resource.GetName(),
 				version.Version))
 		ctx.SetConditionFromResult(api.ResourceVersionStatus, result)

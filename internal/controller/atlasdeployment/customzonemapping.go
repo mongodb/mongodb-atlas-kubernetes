@@ -31,17 +31,17 @@ func (r *AtlasDeploymentReconciler) syncCustomZoneMapping(service *workflow.Cont
 	logger := service.Log
 	err := verifyZoneMapping(customZoneMappings)
 	if err != nil {
-		return workflow.Terminate(workflow.CustomZoneMappingReady, err.Error())
+		return workflow.Terminate(workflow.CustomZoneMappingReady, err)
 	}
 	existingZoneMapping, err := deploymentService.GetCustomZones(service.Context, groupID, deploymentName)
 	if err != nil {
-		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping state: %v", err))
+		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Errorf("failed to get zone mapping state: %w", err))
 	}
 	logger.Debugf("Existing zone mapping: %v", existingZoneMapping)
 	var customZoneMappingStatus status.CustomZoneMapping
 	zoneMappingMap, err := deploymentService.GetZoneMapping(service.Context, groupID, deploymentName)
 	if err != nil {
-		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping map: %v", err))
+		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Errorf("failed to get zone mapping map: %w", err))
 	}
 
 	if shouldAdd, shouldDelete := compareZoneMappingStates(existingZoneMapping, customZoneMappings, zoneMappingMap); shouldDelete || shouldAdd {
@@ -94,7 +94,7 @@ func verifyZoneMapping(desired []akov2.CustomZoneMapping) error {
 
 func checkCustomZoneMapping(customZoneMapping status.CustomZoneMapping) workflow.Result {
 	if customZoneMapping.ZoneMappingState != status.StatusReady {
-		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Zone mapping is not ready: %v", customZoneMapping.ZoneMappingErrMessage))
+		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Errorf("zone mapping is not ready: %v", customZoneMapping.ZoneMappingErrMessage))
 	}
 	return workflow.OK()
 }

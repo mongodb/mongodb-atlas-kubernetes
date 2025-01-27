@@ -141,7 +141,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 					},
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Sprintf("Can not apply integration: %v", errTest)),
+			expectedResult: workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Errorf("cannot apply integration: %w", errTest)),
 			expectedCalls:  1,
 		},
 	} {

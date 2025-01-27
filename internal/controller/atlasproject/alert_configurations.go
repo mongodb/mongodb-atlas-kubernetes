@@ -35,7 +35,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 		err := r.readAlertConfigurationsSecretsData(project, service, specToSync)
 		if err != nil {
 			service.SetConditionFalseMsg(alertConfigurationCondition, err.Error())
-			return workflow.Terminate(workflow.Internal, err.Error())
+			return workflow.Terminate(workflow.Internal, err)
 		}
 		result := syncAlertConfigurations(service, project.ID(), specToSync)
 		if !result.IsOk() {
@@ -140,7 +140,7 @@ func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpe
 	})
 	if err != nil {
 		logger.Errorf("failed to list alert configurations: %v", err)
-		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to list alert configurations: %v", err))
+		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Errorf("failed to list alert configurations: %w", err))
 	}
 
 	diff := sortAlertConfigs(logger, alertSpec, existedAlertConfigs)
@@ -156,7 +156,7 @@ func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpe
 
 	err = deleteAlertConfigs(service, groupID, diff.Delete)
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to delete alert configurations: %v", err))
+		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Errorf("failed to delete alert configurations: %w", err))
 	}
 
 	return checkAlertConfigurationStatuses(newStatuses)
@@ -166,7 +166,7 @@ func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workf
 	for _, alertConfigurationStatus := range statuses {
 		if alertConfigurationStatus.ErrorMessage != "" {
 			return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas,
-				fmt.Sprintf("failed to create alert configuration: %s", alertConfigurationStatus.ErrorMessage))
+				fmt.Errorf("failed to create alert configuration: %s", alertConfigurationStatus.ErrorMessage))
 		}
 	}
 	return workflow.OK()

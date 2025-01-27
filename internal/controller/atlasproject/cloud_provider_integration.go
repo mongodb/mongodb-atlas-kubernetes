@@ -25,7 +25,7 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov
 
 	allAuthorized, err := syncCloudProviderIntegration(workflowCtx, project.ID(), roleSpecs)
 	if err != nil {
-		result := workflow.Terminate(workflow.ProjectCloudIntegrationsIsNotReadyInAtlas, err.Error())
+		result := workflow.Terminate(workflow.ProjectCloudIntegrationsIsNotReadyInAtlas, err)
 		workflowCtx.SetConditionFromResult(api.CloudProviderIntegrationReadyType, result)
 
 		return result

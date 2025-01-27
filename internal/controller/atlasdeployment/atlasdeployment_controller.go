@@ -103,7 +103,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if !atlasDeployment.GetDeletionTimestamp().IsZero() {
 			err := r.removeDeletionFinalizer(ctx, atlasDeployment)
 			if err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
+				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
@@ -125,7 +125,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(atlasDeployment) {
-		result = workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDeployment is not supported by Atlas for government").
+		result = workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasDeployment is not supported by Atlas for government")).
 			WithoutRetry()
 		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
@@ -157,7 +157,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	if err := validate.AtlasDeployment(atlasDeployment, r.AtlasProvider.IsCloudGov(), atlasProject.RegionUsageRestrictions); err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
+		result = workflow.Terminate(workflow.Internal, err)
 		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
@@ -323,7 +323,7 @@ func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, 
 
 func (r *AtlasDeploymentReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
-	terminated := workflow.Terminate(errorCondition, err.Error())
+	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.DeploymentReadyType, terminated)
 
 	return terminated.ReconcileResult(), nil

@@ -52,7 +52,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		}
 
 		if !r.AtlasProvider.IsResourceSupported(team) {
-			result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasTeam is not supported by Atlas for government").
+			result := workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasTeam is not supported by Atlas for government")).
 				WithoutRetry()
 			setCondition(teamCtx, api.ReadyType, result)
 			return result.ReconcileResult(), nil
@@ -60,7 +60,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		atlasClient, orgID, err := r.AtlasProvider.SdkClient(teamCtx.Context, connectionSecretKey, log)
 		if err != nil {
-			result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+			result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 			setCondition(teamCtx, api.ReadyType, result)
 			return result.ReconcileResult(), nil
 		}
@@ -95,7 +95,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			}
 
 			if err = r.Client.Update(teamCtx.Context, team); err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
+				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("Failed to update finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
@@ -113,14 +113,14 @@ func (r *AtlasProjectReconciler) teamReconcile(
 				var apiError *mongodbatlas.ErrorResponse
 				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
-					return workflow.Terminate(workflow.TeamDoesNotExist, err.Error()).ReconcileResult(), nil
+					return workflow.Terminate(workflow.TeamDoesNotExist, err).ReconcileResult(), nil
 				}
 			}
 		}
 
 		err = customresource.ApplyLastConfigApplied(teamCtx.Context, team, r.Client)
 		if err != nil {
-			result = workflow.Terminate(workflow.Internal, err.Error())
+			result = workflow.Terminate(workflow.Internal, err)
 			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			log.Error(result.GetMessage())
 
@@ -142,25 +142,25 @@ func (r *AtlasProjectReconciler) ensureTeamState(workflowCtx *workflow.Context, 
 		atlasAssignedTeam, err = r.fetchTeamByName(workflowCtx, teamsService, team.Spec.Name)
 	}
 	if err != nil {
-		return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
+		return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err)
 	}
 
 	if atlasAssignedTeam == nil {
 		desiredAtlasTeam := teams.NewTeam(&team.Spec, team.Status.ID)
 		if desiredAtlasTeam == nil {
-			return "", workflow.Terminate(workflow.TeamInvalidSpec, "teamspec is invalid")
+			return "", workflow.Terminate(workflow.TeamInvalidSpec, errors.New("teamspec is invalid"))
 		}
 
 		atlasTeam, err := r.createTeam(workflowCtx, teamsService, desiredAtlasTeam)
 		if err != nil {
-			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
+			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err)
 		}
 		return atlasTeam.TeamID, workflow.OK()
 	}
 
 	atlasAssignedTeam, err = r.renameTeam(workflowCtx, teamsService, atlasAssignedTeam, team.Spec.Name)
 	if err != nil {
-		return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
+		return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err)
 	}
 
 	return atlasAssignedTeam.TeamID, workflow.OK()
@@ -169,7 +169,7 @@ func (r *AtlasProjectReconciler) ensureTeamState(workflowCtx *workflow.Context, 
 func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamsService teams.TeamsService, teamID string, team *akov2.AtlasTeam) workflow.Result {
 	atlasUsers, err := teamsService.GetTeamUsers(workflowCtx.Context, workflowCtx.OrgID, teamID)
 	if err != nil {
-		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
+		return workflow.Terminate(workflow.TeamUsersNotReady, err)
 	}
 
 	usernamesMap := map[string]struct{}{}
@@ -197,7 +197,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 	if err = g.Wait(); err != nil {
 		workflowCtx.Log.Warnf("failed to remove user(s) from team %s", teamID)
 
-		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
+		return workflow.Terminate(workflow.TeamUsersNotReady, err)
 	}
 
 	g, taskContext = errgroup.WithContext(workflowCtx.Context)
@@ -225,7 +225,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 	if err = g.Wait(); err != nil {
 		workflowCtx.Log.Warnf("failed to retrieve users to add to the team %s", teamID)
 
-		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
+		return workflow.Terminate(workflow.TeamUsersNotReady, err)
 	}
 
 	if len(toAdd) == 0 {
@@ -235,7 +235,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 	workflowCtx.Log.Debugf("Adding users to team %s", teamID)
 	err = teamsService.AddUsers(workflowCtx.Context, &toAdd, workflowCtx.OrgID, teamID)
 	if err != nil {
-		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
+		return workflow.Terminate(workflow.TeamUsersNotReady, err)
 	}
 
 	return workflow.OK()

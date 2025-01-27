@@ -19,12 +19,12 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 	databaseUsers := akov2.AtlasDatabaseUserList{}
 	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	atlasDF, err := federationService.Get(ctx.Context, project.ID(), df.Spec.Name)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	connectionHosts := atlasDF.Hostnames
@@ -57,7 +57,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 
 		password, err := dbUser.ReadPassword(ctx.Context, r.Client)
 		if err != nil {
-			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
+			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
 		var connURLs []string
@@ -75,7 +75,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 
 		secretName, err := connectionsecret.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), df.Spec.Name, data)
 		if err != nil {
-			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
+			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 		secrets = append(secrets, secretName)
 	}
