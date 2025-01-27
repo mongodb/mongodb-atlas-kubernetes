@@ -27,6 +27,7 @@ type Deployment interface {
 	GetReplicaSet() []status.ReplicaSet
 	IsServerless() bool
 	IsFlex() bool
+	Deprecated() (bool, string)
 }
 
 type Cluster struct {
@@ -84,6 +85,37 @@ func (c *Cluster) IsTenant() bool {
 	return c.isTenant
 }
 
+func (c *Cluster) Deprecated() (bool, string) {
+	for _, replicationSpec := range c.ReplicationSpecs {
+		if replicationSpec == nil {
+			continue
+		}
+
+		for _, regionConfig := range replicationSpec.RegionConfigs {
+			if regionConfig == nil {
+				continue
+			}
+
+			if deprecatedSpecs(regionConfig.ElectableSpecs) ||
+				deprecatedSpecs(regionConfig.ReadOnlySpecs) ||
+				deprecatedSpecs(regionConfig.AnalyticsSpecs) {
+				return true, "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
+			}
+		}
+	}
+	return false, ""
+}
+
+func deprecatedSpecs(specs *akov2.Specs) bool {
+	if specs == nil {
+		return false
+	}
+	if specs.InstanceSize == "M2" || specs.InstanceSize == "M5" {
+		return true
+	}
+	return false
+}
+
 type Serverless struct {
 	*akov2.ServerlessSpec
 	ProjectID      string
@@ -130,6 +162,10 @@ func (s *Serverless) IsFlex() bool {
 	return false
 }
 
+func (s *Serverless) Deprecated() (bool, string) {
+	return true, "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
+}
+
 type Flex struct {
 	*akov2.FlexSpec
 	ProjectID      string
@@ -174,6 +210,10 @@ func (f *Flex) IsServerless() bool {
 
 func (f *Flex) IsFlex() bool {
 	return true
+}
+
+func (f *Flex) Deprecated() (bool, string) {
+	return false, ""
 }
 
 type Connection struct {

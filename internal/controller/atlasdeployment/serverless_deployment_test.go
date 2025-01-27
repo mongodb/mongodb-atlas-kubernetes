@@ -716,7 +716,8 @@ func TestHandleServerlessInstance(t *testing.T) {
 			expectedResult: ctrl.Result{},
 			expectedConditions: []api.Condition{
 				api.TrueCondition(api.DeploymentReadyType),
-				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.ReadyType).
+					WithMessageRegexp("WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."),
 			},
 		},
 		"serverless instance has an unknown state": {

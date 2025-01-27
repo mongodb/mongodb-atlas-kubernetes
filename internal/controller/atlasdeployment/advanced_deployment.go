@@ -110,7 +110,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			return r.terminate(ctx, workflow.Internal, err)
 		}
 
-		return r.ready(ctx, akoCluster.GetCustomResource(), atlasCluster)
+		return r.ready(ctx, akoCluster, atlasCluster)
 	case status.StateCREATING:
 		return r.inProgress(ctx, akoCluster.GetCustomResource(), atlasCluster, workflow.DeploymentCreating, "deployment is provisioning")
 	case status.StateUPDATING, status.StateREPAIRING:

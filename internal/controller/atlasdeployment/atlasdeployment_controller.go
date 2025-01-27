@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
@@ -164,7 +165,14 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
 	deploymentInAKO := deployment.NewDeployment(atlasProject.ID, atlasDeployment)
+
+	if ok, deprecationMsg := deploymentInAKO.Deprecated(); ok {
+		// emit Log and event
+		r.Log.Log(zapcore.WarnLevel, deprecationMsg)
+		r.EventRecorder.Event(deploymentInAKO.GetCustomResource(), corev1.EventTypeWarning, "DeprecationWarning", deprecationMsg)
+	}
 	deploymentInAtlas, err := deploymentService.GetDeployment(workflowCtx.Context, atlasProject.ID, atlasDeployment)
+
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
@@ -343,19 +351,21 @@ func (r *AtlasDeploymentReconciler) inProgress(ctx *workflow.Context, atlasDeplo
 	return result.ReconcileResult(), nil
 }
 
-func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
-	if err := customresource.ManageFinalizer(ctx.Context, r.Client, atlasDeployment, customresource.SetFinalizer); err != nil {
+func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
+	if err := customresource.ManageFinalizer(ctx.Context, r.Client, deploymentInAKO.GetCustomResource(), customresource.SetFinalizer); err != nil {
 		return r.terminate(ctx, workflow.AtlasFinalizerNotSet, err)
 	}
 
+	_, deprecationMsg := deploymentInAKO.Deprecated()
+
 	ctx.SetConditionTrue(api.DeploymentReadyType).
-		SetConditionTrue(api.ReadyType).
+		SetConditionTrueMsg(api.ReadyType, deprecationMsg).
 		EnsureStatusOption(status.AtlasDeploymentStateNameOption(deploymentInAtlas.GetState())).
 		EnsureStatusOption(status.AtlasDeploymentReplicaSet(deploymentInAtlas.GetReplicaSet())).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
 
-	if atlasDeployment.Spec.ExternalProjectRef != nil {
+	if deploymentInAKO.GetCustomResource().Spec.ExternalProjectRef != nil {
 		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
 	}
 
