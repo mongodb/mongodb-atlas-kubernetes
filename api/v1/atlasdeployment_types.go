@@ -62,6 +62,7 @@ type AtlasDeploymentSpec struct {
 	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
 
 	// Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
+	// DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 	// +optional
 	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
 
