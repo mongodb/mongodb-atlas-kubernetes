@@ -6,27 +6,30 @@ not use this file except in compliance with the License. You may obtain
 a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 */
 
-package controller
+package atlasnetworkcontainer
 
 import (
 	"context"
 	"errors"
-	"reflect"
+	"time"
 
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
@@ -38,7 +41,7 @@ type AtlasNetworkContainerReconciler struct {
 	EventRecorder            record.EventRecorder
 	GlobalPredicates         []predicate.Predicate
 	ObjectDeletionProtection bool
-	//independentSyncPeriod    time.Duration
+	independentSyncPeriod    time.Duration
 }
 
 // type reconcileRequest struct {
@@ -69,75 +72,65 @@ func (r *AtlasNetworkContainerReconciler) Reconcile(ctx context.Context, req ctr
 	if !result.IsOk() {
 		return result.ReconcileResult(), errors.New(result.GetMessage())
 	}
-
-	typeName := reflect.TypeOf(akoNetworkContainer).Name()
-	if customresource.ReconciliationShouldBeSkipped(&akoNetworkContainer) {
-		return r.Skip(ctx, typeName, &akoNetworkContainer, &akoNetworkContainer.Spec)
-	}
-
-	conditions := api.InitCondition(&akoNetworkContainer, api.FalseCondition(api.ReadyType))
-	workflowCtx := workflow.NewContext(r.Log, conditions, ctx, &akoNetworkContainer)
-	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, &akoNetworkContainer)
-
-	isValid := customresource.ValidateResourceVersion(workflowCtx, &akoNetworkContainer, r.Log)
-	if !isValid.IsOk() {
-		return r.Invalidate(typeName, isValid)
-	}
-
-	if !r.AtlasProvider.IsResourceSupported(&akoNetworkContainer) {
-		return r.Unsupport(workflowCtx, typeName)
-	}
-
-	// credentials, err := r.ResolveCredentials(ctx, &akoNetworkContainer)
-	// if err != nil {
-	// 	return r.terminate(workflowCtx, &akoNetworkContainer, workflow.AtlasAPIAccessNotConfigured, err), nil
-	// }
-	// sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx, credentials, r.Log)
-	// if err != nil {
-	// 	return r.terminate(workflowCtx, &akoNetworkContainer, workflow.AtlasAPIAccessNotConfigured, err), nil
-	// }
-	// project, err := r.ResolveProject(ctx, sdkClient, &akoNetworkContainer, orgID)
-	// if err != nil {
-	// 	return r.terminate(workflowCtx, &akoNetworkContainer, workflow.AtlasAPIAccessNotConfigured, err), nil
-	// }
-	return workflow.OK().ReconcileResult(), nil
-	// return r.handle(&reconcileRequest{
-	// 	workflowCtx:      workflowCtx,
-	// 	service:          NetworkContainer.NewNetworkContainerService(sdkClient.NetworkContainerApi),
-	// 	projectID:        project.ID,
-	// 	NetworkContainer: &akoNetworkContainer,
-	// }), nil
+	return r.handle(ctx, &akoNetworkContainer)
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *AtlasNetworkContainerReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&akov2.AtlasNetworkPeering{}).
-		// Watches(
-		// 	&akov2.AtlasProject{},
-		// 	handler.EnqueueRequestsFromMapFunc(r.networkContainerForProjectMapFunc()),
-		// 	builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-		// ).
-		// Watches(
-		// 	&corev1.Secret{},
-		// 	handler.EnqueueRequestsFromMapFunc(r.networkContainerForCredentialMapFunc()),
-		// 	builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-		// ).
+		For(&akov2.AtlasNetworkContainer{}).
+		Watches(
+			&akov2.AtlasProject{},
+			handler.EnqueueRequestsFromMapFunc(r.networkContainerForProjectMapFunc()),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(r.networkContainerForCredentialMapFunc()),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 
-// func (r *AtlasNetworkContainerReconciler) terminate(
-// 	ctx *workflow.Context,
-// 	resource api.AtlasCustomResource,
-// 	reason workflow.ConditionReason,
-// 	err error,
-// ) ctrl.Result {
-// 	condition := api.ReadyType
-// 	r.Log.Errorf("resource %T(%s/%s) failed on condition %s: %s",
-// 		resource, resource.GetNamespace(), resource.GetName(), condition, err)
-// 	result := workflow.Terminate(reason, err.Error())
-// 	ctx.SetConditionFalse(api.ReadyType).SetConditionFromResult(condition, result)
+func (r *AtlasNetworkContainerReconciler) networkContainerForProjectMapFunc() handler.MapFunc {
+	return indexer.ProjectsIndexMapperFunc(
+		indexer.AtlasNetworkContainerByProjectIndex,
+		func() *akov2.AtlasNetworkContainerList { return &akov2.AtlasNetworkContainerList{} },
+		indexer.NetworkContainerRequests,
+		r.Client,
+		r.Log,
+	)
+}
 
-// 	return result.ReconcileResult()
-// }
+func (r *AtlasNetworkContainerReconciler) networkContainerForCredentialMapFunc() handler.MapFunc {
+	return indexer.CredentialsIndexMapperFunc(
+		indexer.AtlasNetworkContainerCredentialsIndex,
+		func() *akov2.AtlasNetworkContainerList { return &akov2.AtlasNetworkContainerList{} },
+		indexer.NetworkContainerRequests,
+		r.Client,
+		r.Log,
+	)
+}
+
+func NewAtlasNetworkContainerReconciler(
+	c cluster.Cluster,
+	predicates []predicate.Predicate,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+	independentSyncPeriod time.Duration,
+) *AtlasNetworkContainerReconciler {
+	return &AtlasNetworkContainerReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client: c.GetClient(),
+			Log:    logger.Named("controllers").Named("AtlasNetworkContainer").Sugar(),
+		},
+		Scheme:                   c.GetScheme(),
+		EventRecorder:            c.GetEventRecorderFor("AtlasNetworkContainer"),
+		AtlasProvider:            atlasProvider,
+		GlobalPredicates:         predicates,
+		ObjectDeletionProtection: deletionProtection,
+		independentSyncPeriod:    independentSyncPeriod,
+	}
+}
