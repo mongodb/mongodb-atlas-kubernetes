@@ -737,7 +737,9 @@ spec:
                 - name
                 type: object
               serverlessSpec:
-                description: Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
+                description: |-
+                  Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
+                  DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
                 properties:
                   backupOptions:
                     description: Serverless Backup Options
