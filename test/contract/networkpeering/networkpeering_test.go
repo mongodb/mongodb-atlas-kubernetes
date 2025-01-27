@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkpeering"
@@ -29,7 +28,7 @@ func TestPeerContainerServiceCRUD(t *testing.T) {
 	ctx := context.Background()
 	contract.RunGoContractTest(ctx, t, "test container CRUD", func(ch contract.ContractHelper) {
 		projectName := utils.RandomName("peer-container-crud-project")
-		require.NoError(t, ch.AddResources(ctx, 5 * time.Minute, contract.DefaultAtlasProject(projectName)))
+		require.NoError(t, ch.AddResources(ctx, 5*time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
 		require.NoError(t, err)
 		nps := networkpeering.NewNetworkPeeringService(ch.AtlasClient().NetworkPeeringApi)
@@ -77,7 +76,7 @@ func TestPeerContainerServiceCRUD(t *testing.T) {
 
 			t.Run(fmt.Sprintf("delete %s container", tc.provider), func(t *testing.T) {
 				time.Sleep(time.Second) // Atlas may reject removal if it happened within a second of creation
-				assert.NoErrorf(t, ignoreRemoved(cs.DeleteContainer(ctx, testProjectID, createdContainer.ID)),
+				assert.NoErrorf(t, cs.DeleteContainer(ctx, testProjectID, createdContainer.ID),
 					"failed cleanup for provider %s Atlas project ID %s and container id %s",
 					tc.provider, testProjectID, createdContainer.ID)
 			})
@@ -251,11 +250,4 @@ func mustHaveEnvVar(t *testing.T, name string) string {
 		t.Fatalf("Unexpected unset env var %q", name)
 	}
 	return value
-}
-
-func ignoreRemoved(err error) error {
-	if admin.IsErrorCode(err, "CLOUD_PROVIDER_CONTAINER_NOT_FOUND") {
-		return nil
-	}
-	return err
 }
