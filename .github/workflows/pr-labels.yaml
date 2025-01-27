@@ -48,16 +48,30 @@ jobs:
           fi
 
       - name: List all ginkgo tests labels
+        id: list-ginkgo-labels
+        if: ${{ steps.check-all.outputs.run-all == 'false' }}
         run: |
           sudo apt-get install -y jq
           go install github.com/onsi/ginkgo/v2/ginkgo@latest
           ginkgo labels ./test/e2e | cut -c 5- > e2e_labels.txt
           ginkgo labels ./test/int | cut -c 5- > int_labels.txt
-          labels=$(jq -s '.[0] + .[1] | unique' e2e_labels.txt int_labels.txt)
-          echo "Available labels: $labels"
-          echo "available-labels=$labels" >> $GITHUB_ENV
+          jq -s '.[0] + .[1] | unique' e2e_labels.txt int_labels.txt > all_labels.json
+          available_labels=$(jq -r '.[]' all_labels.json)
+          echo "Available labels: $available_labels"
+          echo "available-labels=$available_labels" >> $GITHUB_ENV
+          
+          pr_labels="${{ steps.get-labels.outputs.labels }}"
+          intersection=$(echo $pr_labels $available_labels | tr ' ' '\n' | sort | uniq -d)
+          echo "Intersection of PR labels and available labels: $intersection"
+          echo "intersection-labels=$intersection" >> $GITHUB_ENV
+          
+          echo "${{ steps.get-labels.outputs.labels }}" | jq -R 'split(",")' > pr_labels.json
+          jq -s '.[0] as $all | .[1] | map(select($all[] == .))' all_labels.json pr_labels.json > merged_labels.json
 
-      - name: Run e2e tests
+      - name: Run all e2e tests
+        if: ${{ steps.check-all.outputs.run-all == 'true' }}
+
+      - name: Run selected e2e tests
         if: ${{ steps.get-labels.outputs.labels != '' }}
         run: | 
           echo "Labels from PR: ${{ steps.get-labels.outputs.labels }}"
