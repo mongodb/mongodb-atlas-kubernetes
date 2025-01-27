@@ -87,7 +87,15 @@ func (c *Cluster) IsTenant() bool {
 
 func (c *Cluster) Deprecated() (bool, string) {
 	for _, replicationSpec := range c.ReplicationSpecs {
+		if replicationSpec == nil {
+			continue
+		}
+
 		for _, regionConfig := range replicationSpec.RegionConfigs {
+			if regionConfig == nil {
+				continue
+			}
+
 			if deprecatedSpecs(regionConfig.ElectableSpecs) ||
 				deprecatedSpecs(regionConfig.ReadOnlySpecs) ||
 				deprecatedSpecs(regionConfig.AnalyticsSpecs) {

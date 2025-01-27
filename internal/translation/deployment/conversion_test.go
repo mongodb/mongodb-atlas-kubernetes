@@ -779,3 +779,213 @@ func TestRoundtrip_CustomZone(t *testing.T) {
 		}
 	}
 }
+
+func TestDeprecated(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		deployment     *akov2.AtlasDeployment
+		wantDeprecated bool
+		wantMsg        string
+	}{
+		{
+			name: "nil replication specs",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: nil,
+					},
+				},
+			},
+		},
+		{
+			name: "nil replication spec entries",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							nil, nil, nil,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "nil region configs",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: nil,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "nil region config entries",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									nil, nil, nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "nil regionconfig specs",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										AnalyticsSpecs: nil,
+										ElectableSpecs: nil,
+										ReadOnlySpecs:  nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "empty regionconfig specs",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										AnalyticsSpecs: &akov2.Specs{},
+										ElectableSpecs: &akov2.Specs{},
+										ReadOnlySpecs:  &akov2.Specs{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "non deprecated M10 instance",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										AnalyticsSpecs: &akov2.Specs{
+											InstanceSize: "M10",
+											NodeCount:    pointer.MakePtr(1),
+										},
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M10",
+											NodeCount:    pointer.MakePtr(1),
+										},
+										ReadOnlySpecs: &akov2.Specs{
+											InstanceSize: "M10",
+											NodeCount:    pointer.MakePtr(1),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "deprecated M2 instance",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										AnalyticsSpecs: &akov2.Specs{
+											InstanceSize: "M2",
+											NodeCount:    pointer.MakePtr(1),
+										},
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M2",
+											NodeCount:    pointer.MakePtr(1),
+										},
+										ReadOnlySpecs: &akov2.Specs{
+											InstanceSize: "M2",
+											NodeCount:    pointer.MakePtr(1),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantDeprecated: true,
+			wantMsg:        "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
+		},
+		{
+			name: "deprecated M2 instance",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										AnalyticsSpecs: &akov2.Specs{
+											InstanceSize: "M5",
+											NodeCount:    pointer.MakePtr(1),
+										},
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M5",
+											NodeCount:    pointer.MakePtr(1),
+										},
+										ReadOnlySpecs: &akov2.Specs{
+											InstanceSize: "M5",
+											NodeCount:    pointer.MakePtr(1),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantDeprecated: true,
+			wantMsg:        "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
+		},
+		{
+			name: "empty serverless instance",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					ServerlessSpec: &akov2.ServerlessSpec{},
+				},
+			},
+			wantDeprecated: true,
+			wantMsg:        "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d := NewDeployment("123", tc.deployment)
+			gotDeprecated, gotMsg := d.Deprecated()
+			require.Equal(t, tc.wantDeprecated, gotDeprecated)
+			require.Equal(t, tc.wantMsg, gotMsg)
+		})
+	}
+}
