@@ -37,7 +37,7 @@ func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Con
 
 func (r *AtlasDataFederationReconciler) privateEndpointsFailed(ctx *workflow.Context, err error) workflow.Result {
 	ctx.Log.Errorw("getAllDataFederationPEs error", "err", err.Error())
-	result := workflow.Terminate(workflow.Internal, err.Error())
+	result := workflow.Terminate(workflow.Internal, err)
 	ctx.SetConditionFromResult(api.DataFederationPEReadyType, result)
 	return result
 }

@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -75,7 +76,7 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 	list, err := GetAllExistedNetworkPeer(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID)
 	if err != nil {
 		logger.Errorf("failed to get all network peers: %v", err)
-		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to get all network peers"),
+		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("failed to get all network peers")),
 			api.NetworkPeerReadyType
 	}
 
@@ -87,7 +88,7 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 		errDelete := deletePeerByID(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, peerToDelete, logger)
 		if errDelete != nil {
 			logger.Errorf("failed to delete network peer %s: %v", peerToDelete, errDelete)
-			return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to delete network peer"),
+			return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("failed to delete network peer")),
 				api.NetworkPeerReadyType
 		}
 	}
@@ -97,13 +98,13 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 	if err != nil {
 		logger.Errorf("failed to update network peer statuses: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
-			"failed to update network peer statuses"), api.NetworkPeerReadyType
+			errors.New("failed to update network peer statuses")), api.NetworkPeerReadyType
 	}
 	err = deleteUnusedContainers(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, getPeerIDs(peerStatuses))
 	if err != nil {
 		logger.Errorf("failed to delete unused containers: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
-			fmt.Sprintf("failed to delete unused containers: %s", err)), api.NetworkPeerReadyType
+			fmt.Errorf("failed to delete unused containers: %w", err)), api.NetworkPeerReadyType
 	}
 	return ensurePeerStatus(peerStatuses, len(peerSpecs), logger), api.NetworkPeerReadyType
 }
@@ -183,7 +184,7 @@ func formVPC(peer admin.BaseNetworkPeeringConnectionSettings) string {
 
 func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, logger *zap.SugaredLogger) workflow.Result {
 	if len(peerStatuses) != lenOfSpec {
-		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
+		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("not all network peers are ready"))
 	}
 
 	for _, peerStatus := range peerStatuses {
@@ -191,21 +192,21 @@ func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, log
 		case provider.ProviderGCP:
 			if peerStatus.Status != StatusReady {
 				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
-				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("not all network peers are ready"))
 			}
 			if peerStatus.AtlasNetworkName == "" || peerStatus.AtlasGCPProjectID == "" { // We need this information to create the network peer connection
 				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
-				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("not all network peers are ready"))
 			}
 		case provider.ProviderAzure:
 			if peerStatus.Status != StatusReady {
 				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
-				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("not all network peers are ready"))
 			}
 		default:
 			if peerStatus.StatusName != StatusReady {
 				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.StatusName)
-				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready")
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("not all network peers are ready"))
 			}
 		}
 	}
@@ -551,7 +552,7 @@ func DeleteAllNetworkPeers(ctx context.Context, groupID string, service admin.Ne
 	result := workflow.OK()
 	err := deleteAllNetworkPeers(ctx, groupID, service, logger)
 	if err != nil {
-		result = workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to delete NetworkPeers")
+		result = workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("failed to delete NetworkPeers"))
 	}
 	return result
 }

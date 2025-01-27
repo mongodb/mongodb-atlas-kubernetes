@@ -27,7 +27,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 
 		assert.Equal(
 			t,
-			workflow.Terminate(workflow.Internal, "serverless deployment spec is empty"),
+			workflow.Terminate(workflow.Internal, errors.New("serverless deployment spec is empty")),
 			result,
 		)
 	})
@@ -37,7 +37,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 
 		assert.Equal(
 			t,
-			workflow.Terminate(workflow.Internal, "serverless deployment spec is empty"),
+			workflow.Terminate(workflow.Internal, errors.New("serverless deployment spec is empty")),
 			result,
 		)
 	})
@@ -63,7 +63,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 
 		assert.Equal(
 			t,
-			workflow.Terminate(workflow.AtlasUnsupportedFeature, "serverless private endpoints are not supported for GCP"),
+			workflow.Terminate(workflow.AtlasUnsupportedFeature, errors.New("serverless private endpoints are not supported for GCP")),
 			result,
 		)
 	})
@@ -147,7 +147,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 
 		assert.Equal(
 			t,
-			workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, "unable to retrieve list of serverless private endpoints from Atlas: connection failed"),
+			workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, errors.New("unable to retrieve list of serverless private endpoints from Atlas: connection failed")),
 			result,
 		)
 	})

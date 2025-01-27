@@ -119,7 +119,7 @@ func (r *AtlasPrivateEndpointReconciler) skip(ctx context.Context, akoPrivateEnd
 	r.Log.Infow(fmt.Sprintf("-> Skipping AtlasPrivateEndpoint reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", akoPrivateEndpoint.Spec)
 	if !akoPrivateEndpoint.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, akoPrivateEndpoint, customresource.UnsetFinalizer); err != nil {
-			result := workflow.Terminate(workflow.Internal, err.Error())
+			result := workflow.Terminate(workflow.Internal, err)
 			r.Log.Errorw("Failed to remove finalizer", "terminate", err)
 
 			return result.ReconcileResult()
@@ -137,7 +137,7 @@ func (r *AtlasPrivateEndpointReconciler) invalidate(invalid workflow.Result) ctr
 
 func (r *AtlasPrivateEndpointReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
 	unsupported := workflow.Terminate(
-		workflow.AtlasGovUnsupported, "the AtlasPrivateEndpoint is not supported by Atlas for government").
+		workflow.AtlasGovUnsupported, errors.New("the AtlasPrivateEndpoint is not supported by Atlas for government")).
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.ReadyType, unsupported)
 	return unsupported.ReconcileResult()
@@ -152,7 +152,7 @@ func (r *AtlasPrivateEndpointReconciler) terminate(
 	err error,
 ) (ctrl.Result, error) {
 	r.Log.Errorf("resource %T(%s/%s) failed on condition %s: %s", akoPrivateEndpoint, akoPrivateEndpoint.GetNamespace(), akoPrivateEndpoint.GetName(), condition, err)
-	result := workflow.Terminate(reason, err.Error())
+	result := workflow.Terminate(reason, err)
 	ctx.SetConditionFalse(api.ReadyType).
 		SetConditionFromResult(condition, result)
 

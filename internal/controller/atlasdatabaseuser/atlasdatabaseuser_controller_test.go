@@ -174,7 +174,7 @@ func TestNotFound(t *testing.T) {
 		assert.Equal(t, ctrl.Result{}, c.notFound(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}))
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, zapcore.Level(0), logs.All()[0].Level)
-		assert.Equal(t, "Object test/object doesn't exist, was it deleted after reconcile request?", logs.All()[0].Message)
+		assert.Equal(t, "object test/object doesn't exist, was it deleted after reconcile request?", logs.All()[0].Message)
 	})
 }
 
@@ -311,7 +311,7 @@ func TestReady(t *testing.T) {
 					return errors.New("failed to set finalizer")
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.AtlasFinalizerNotSet, "").ReconcileResult(),
+			expectedResult: workflow.Terminate(workflow.AtlasFinalizerNotSet, errors.New("")).ReconcileResult(),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.AtlasFinalizerNotSet)).
@@ -348,7 +348,7 @@ func TestReady(t *testing.T) {
 					return errors.New("failed to set last applied config")
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, "").ReconcileResult(),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("")).ReconcileResult(),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).

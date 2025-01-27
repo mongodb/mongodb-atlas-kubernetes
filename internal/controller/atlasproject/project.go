@@ -79,7 +79,7 @@ func (r *AtlasProjectReconciler) create(ctx *workflow.Context, orgID string, atl
 
 func (r *AtlasProjectReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
-	terminated := workflow.Terminate(errorCondition, err.Error())
+	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ProjectReadyType, terminated)
 
 	return terminated.ReconcileResult(), nil

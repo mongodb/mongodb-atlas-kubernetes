@@ -28,12 +28,12 @@ func syncProjectSettings(ctx *workflow.Context, projectID string, project *akov2
 
 	atlas, err := fetchSettings(ctx, projectID)
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectSettingsReady, err.Error())
+		return workflow.Terminate(workflow.ProjectSettingsReady, err)
 	}
 
 	if !areSettingsInSync(atlas, spec) {
 		if err := patchSettings(ctx, projectID, spec); err != nil {
-			return workflow.Terminate(workflow.ProjectSettingsReady, err.Error())
+			return workflow.Terminate(workflow.ProjectSettingsReady, err)
 		}
 	}
 

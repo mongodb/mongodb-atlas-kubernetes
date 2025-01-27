@@ -14,18 +14,18 @@ func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Conte
 
 	akoDataFederation, err := datafederation.NewDataFederation(&dataFederation.Spec, projectID, nil)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	atlasDataFederation, err := federationService.Get(ctx.Context, projectID, operatorSpec.Name)
 	if err != nil {
 		if !errors.Is(err, datafederation.ErrorNotFound) {
-			return workflow.Terminate(workflow.Internal, err.Error())
+			return workflow.Terminate(workflow.Internal, err)
 		}
 
 		err = federationService.Create(ctx.Context, akoDataFederation)
 		if err != nil {
-			return workflow.Terminate(workflow.DataFederationNotCreatedInAtlas, err.Error())
+			return workflow.Terminate(workflow.DataFederationNotCreatedInAtlas, err)
 		}
 
 		return workflow.InProgress(workflow.DataFederationCreating, "Data Federation is being created")
@@ -37,7 +37,7 @@ func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Conte
 
 	err = federationService.Update(ctx.Context, akoDataFederation)
 	if err != nil {
-		return workflow.Terminate(workflow.DataFederationNotUpdatedInAtlas, err.Error())
+		return workflow.Terminate(workflow.DataFederationNotUpdatedInAtlas, err)
 	}
 
 	return workflow.InProgress(workflow.DataFederationUpdating, "Data Federation is being updated")

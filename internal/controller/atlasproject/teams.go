@@ -52,7 +52,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 	err := r.syncAssignedTeams(workflowCtx, teamsService, project.ID(), project, teamsToAssign)
 	if err != nil {
 		workflowCtx.SetConditionFalse(api.ProjectTeamsReadyType)
-		return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
+		return workflow.Terminate(workflow.ProjectTeamUnavailable, err)
 	}
 
 	workflowCtx.SetConditionTrue(api.ProjectTeamsReadyType)

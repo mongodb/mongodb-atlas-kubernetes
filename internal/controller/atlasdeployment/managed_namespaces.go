@@ -2,6 +2,7 @@ package atlasdeployment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -14,7 +15,7 @@ import (
 
 func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.Result {
 	if clusterType != string(akov2.TypeGeoSharded) && managedNamespace != nil {
-		return workflow.Terminate(workflow.ManagedNamespacesReady, "Managed namespace is only supported by GeoSharded clusters")
+		return workflow.Terminate(workflow.ManagedNamespacesReady, errors.New("managed namespace is only supported by GeoSharded clusters"))
 	}
 
 	result := r.syncManagedNamespaces(service, deploymentService, groupID, deploymentName, managedNamespace)
@@ -37,14 +38,14 @@ func (r *AtlasDeploymentReconciler) syncManagedNamespaces(service *workflow.Cont
 	existingManagedNamespaces, err := deploymentService.GetManagedNamespaces(service.Context, groupID, deploymentName)
 	logger.Debugf("Syncing managed namespaces %s", deploymentName)
 	if err != nil {
-		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to get managed namespaces: %v", err))
+		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Errorf("failed to get managed namespaces: %w", err))
 	}
 	diff := sortManagedNamespaces(existingManagedNamespaces, managedNamespaces)
 	logger.Debugw("diff", "To create: %v", diff.ToCreate, "To delete: %v", diff.ToDelete, "To update status: %v", diff.ToUpdateStatus)
 	err = deleteManagedNamespaces(service.Context, deploymentService, groupID, deploymentName, diff.ToDelete)
 	if err != nil {
 		logger.Errorf("failed to delete managed namespaces: %v", err)
-		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to delete managed namespaces: %v", err))
+		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Errorf("failed to delete managed namespaces: %w", err))
 	}
 	nsStatuses := createManagedNamespaces(service.Context, deploymentService, groupID, deploymentName, diff.ToCreate)
 	for _, ns := range diff.ToUpdateStatus {
@@ -59,7 +60,7 @@ func (r *AtlasDeploymentReconciler) syncManagedNamespaces(service *workflow.Cont
 func checkManagedNamespaceStatus(managedNamespaces []status.ManagedNamespace) workflow.Result {
 	for _, ns := range managedNamespaces {
 		if ns.Status != status.StatusReady {
-			return workflow.Terminate(workflow.ManagedNamespacesReady, "Managed namespaces are not ready")
+			return workflow.Terminate(workflow.ManagedNamespacesReady, errors.New("managed namespaces are not ready"))
 		}
 	}
 	return workflow.OK()

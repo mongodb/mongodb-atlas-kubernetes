@@ -43,7 +43,7 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 					IPAddress: "wrong-ip",
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, "ip wrong-ip is invalid"),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("ip wrong-ip is invalid")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.Internal)).
@@ -68,7 +68,7 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 
 				return serviceMock
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, "failed to list"),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to list")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.Internal)).
@@ -89,7 +89,7 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 					IPAddress: "192.168.100.200",
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, "failed to add ip access list"),
+			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, errors.New("failed to add ip access list")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
@@ -115,7 +115,7 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 				return serviceMock
 			},
 			ipAccessList:   nil,
-			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, "failed to delete"),
+			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, errors.New("failed to delete")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
@@ -162,7 +162,7 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 			},
 			expectedResult: workflow.Terminate(
 				workflow.Internal,
-				"failed to get status"),
+				errors.New("failed to get status")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.Internal)).
@@ -214,7 +214,7 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 			},
 			expectedResult: workflow.Terminate(
 				workflow.ProjectIPNotCreatedInAtlas,
-				"atlas didn't succeed in adding this access entry"),
+				errors.New("atlas didn't succeed in adding this access entry")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
@@ -348,7 +348,7 @@ func TestHandleIPAccessList(t *testing.T) {
 					IPAddress: "192.168.100.150",
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, "failed to get ip access list from Atlas: failed to list"),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to get ip access list from Atlas: failed to list")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.Internal)).

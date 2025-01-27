@@ -1,6 +1,7 @@
 package atlasdeployment
 
 import (
+	"errors"
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -23,13 +24,13 @@ const (
 
 func ensureServerlessPrivateEndpoints(service *workflow.Context, projectID string, deployment *akov2.AtlasDeployment) workflow.Result {
 	if deployment == nil || deployment.Spec.ServerlessSpec == nil {
-		return workflow.Terminate(workflow.Internal, "serverless deployment spec is empty")
+		return workflow.Terminate(workflow.Internal, errors.New("serverless deployment spec is empty"))
 	}
 
 	deploymentSpec := deployment.Spec.ServerlessSpec
 
 	if isGCPWithPrivateEndpoints(deploymentSpec) {
-		return workflow.Terminate(workflow.AtlasUnsupportedFeature, "serverless private endpoints are not supported for GCP")
+		return workflow.Terminate(workflow.AtlasUnsupportedFeature, errors.New("serverless private endpoints are not supported for GCP"))
 	}
 
 	if isGCPWithoutPrivateEndpoints(deploymentSpec) {
@@ -40,7 +41,7 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, projectID strin
 	var result workflow.Result
 	switch {
 	case err != nil:
-		result = workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, err.Error())
+		result = workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, err)
 	case err == nil && !finished:
 		result = workflow.InProgress(workflow.ServerlessPrivateEndpointInProgress, "Waiting serverless private endpoint to be configured")
 	default:

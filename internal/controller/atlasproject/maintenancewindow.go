@@ -18,7 +18,7 @@ func (r *AtlasProjectReconciler) ensureMaintenanceWindow(workflowCtx *workflow.C
 		if condition, found := workflowCtx.GetCondition(api.MaintenanceWindowReadyType); found {
 			workflowCtx.Log.Debugw("Window is empty, deleting in Atlas")
 			if err := maintenanceService.Reset(workflowCtx.Context, atlasProject.ID()); err != nil {
-				result := workflow.Terminate(workflow.ProjectWindowNotDeletedInAtlas, err.Error())
+				result := workflow.Terminate(workflow.ProjectWindowNotDeletedInAtlas, err)
 				workflowCtx.SetConditionFromResult(condition.Type, result)
 				return result
 			}
@@ -40,13 +40,13 @@ func (r *AtlasProjectReconciler) ensureMaintenanceWindow(workflowCtx *workflow.C
 func (r *AtlasProjectReconciler) syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec project.MaintenanceWindow, maintenanceService maintenancewindow.MaintenanceWindowService) workflow.Result {
 	ctx.Log.Debugw("Validate the maintenance window")
 	if err := validateMaintenanceWindow(windowSpec); err != nil {
-		return workflow.Terminate(workflow.ProjectWindowInvalid, err.Error())
+		return workflow.Terminate(workflow.ProjectWindowInvalid, err)
 	}
 
 	ctx.Log.Debugw("Checking if window needs update")
 	windowInAtlas, err := maintenanceService.Get(ctx.Context, projectID)
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectWindowNotObtainedFromAtlas, err.Error())
+		return workflow.Terminate(workflow.ProjectWindowNotObtainedFromAtlas, err)
 	}
 
 	windowInAKO := maintenancewindow.NewMaintenanceWindow(&windowSpec)
@@ -56,13 +56,13 @@ func (r *AtlasProjectReconciler) syncAtlasWithSpec(ctx *workflow.Context, projec
 		// We set startASAP to false because the operator takes care of calling the API a second time if both
 		// startASAP and the new maintenance time-slots are defined
 		if err = maintenanceService.Update(ctx.Context, projectID, windowInAKO.WithStartASAP(false)); err != nil {
-			return workflow.Terminate(workflow.ProjectWindowNotCreatedInAtlas, err.Error())
+			return workflow.Terminate(workflow.ProjectWindowNotCreatedInAtlas, err)
 		}
 	} else if windowInAtlas.AutoDefer != windowInAKO.AutoDefer {
 		// If autoDefer flag is different in Atlas, and we haven't updated the window previously, we toggle the flag
 		ctx.Log.Debugw("Toggling autoDefer")
 		if err = maintenanceService.ToggleAutoDefer(ctx.Context, projectID); err != nil {
-			return workflow.Terminate(workflow.ProjectWindowNotAutoDeferredInAtlas, err.Error())
+			return workflow.Terminate(workflow.ProjectWindowNotAutoDeferredInAtlas, err)
 		}
 	}
 
@@ -72,7 +72,7 @@ func (r *AtlasProjectReconciler) syncAtlasWithSpec(ctx *workflow.Context, projec
 		// although the API should ignore other fields in that case
 		if err = maintenanceService.Update(ctx.Context, projectID,
 			maintenancewindow.NewMaintenanceWindow(&project.MaintenanceWindow{StartASAP: true})); err != nil {
-			return workflow.Terminate(workflow.ProjectWindowNotCreatedInAtlas, err.Error())
+			return workflow.Terminate(workflow.ProjectWindowNotCreatedInAtlas, err)
 		}
 		return workflow.OK()
 	}
@@ -80,7 +80,7 @@ func (r *AtlasProjectReconciler) syncAtlasWithSpec(ctx *workflow.Context, projec
 	if windowSpec.Defer {
 		ctx.Log.Debugw("Deferring scheduled maintenance")
 		if err = maintenanceService.Defer(ctx.Context, projectID); err != nil {
-			return workflow.Terminate(workflow.ProjectWindowNotDeferredInAtlas, err.Error())
+			return workflow.Terminate(workflow.ProjectWindowNotDeferredInAtlas, err)
 		}
 		// Nothing else should be done after deferring
 		return workflow.OK()

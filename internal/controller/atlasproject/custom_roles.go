@@ -78,7 +78,7 @@ func convertToInternalRoles(roles []akov2.CustomRole) []customroles.CustomRole {
 func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
 	skipped, err := hasSkippedCustomRoles(project)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	if skipped {
@@ -89,7 +89,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 
 	lastAppliedCustomRoles, err := getLastAppliedCustomRoles(project)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	r := roleController{
@@ -100,7 +100,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 
 	currentAtlasCustomRoles, err := r.service.List(r.ctx.Context, r.project.ID())
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
+		return workflow.Terminate(workflow.ProjectCustomRolesReady, err)
 	}
 
 	akoRoles := make([]customroles.CustomRole, len(project.Spec.CustomRoles))
@@ -301,7 +301,7 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []customrol
 	ctx.EnsureStatusOption(status.AtlasProjectSetCustomRolesOption(&statuses))
 
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectCustomRolesReady, fmt.Sprintf("failed to apply changes to custom roles: %s", err.Error()))
+		return workflow.Terminate(workflow.ProjectCustomRolesReady, fmt.Errorf("failed to apply changes to custom roles: %w", err))
 	}
 
 	return workflow.OK()

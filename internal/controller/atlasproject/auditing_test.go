@@ -50,7 +50,7 @@ func TestAuditController_reconcile(t *testing.T) {
 					return nil, errors.New("failed to get audit log config")
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, "failed to get audit log config"),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to get audit log config")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.AuditingReadyType).
 					WithReason(string(workflow.Internal)).
@@ -71,7 +71,7 @@ func TestAuditController_reconcile(t *testing.T) {
 			audit: &akov2.Auditing{
 				Enabled: true,
 			},
-			expectedResult: workflow.Terminate(workflow.ProjectAuditingReady, "failed to set audit log config"),
+			expectedResult: workflow.Terminate(workflow.ProjectAuditingReady, errors.New("failed to set audit log config")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.AuditingReadyType).
 					WithReason(string(workflow.ProjectAuditingReady)).
@@ -244,7 +244,7 @@ func TestHandleAudit(t *testing.T) {
 
 				return api
 			},
-			expectedResult: workflow.Terminate(workflow.ProjectAuditingReady, "failed to configure audit log"),
+			expectedResult: workflow.Terminate(workflow.ProjectAuditingReady, errors.New("failed to configure audit log")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.AuditingReadyType).
 					WithReason(string(workflow.ProjectAuditingReady)).

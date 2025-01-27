@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"reflect"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
@@ -45,12 +44,12 @@ func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, project *p
 func (r *roleController) Reconcile() workflow.Result {
 	if r.project.ID == "" {
 		return workflow.Terminate(workflow.ProjectCustomRolesReady,
-			fmt.Sprintf("the referenced AtlasProject resource '%s' doesn't have ID (status.ID is empty)", r.project.Name))
+			fmt.Errorf("the referenced AtlasProject resource '%s' doesn't have ID (status.ID is empty)", r.project.Name))
 	}
 	roleFoundInAtlas := false
 	roleInAtlas, err := r.service.Get(r.ctx.Context, r.project.ID, r.role.Spec.Role.Name)
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
+		return workflow.Terminate(workflow.ProjectCustomRolesReady, err)
 	}
 	roleFoundInAtlas = roleInAtlas != customroles.CustomRole{}
 
@@ -113,7 +112,7 @@ func (r *roleController) delete(roleInAtlas customroles.CustomRole) workflow.Res
 
 func (r *roleController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	r.ctx.Log.Error(err)
-	result := workflow.Terminate(reason, err.Error())
+	result := workflow.Terminate(reason, err)
 	r.ctx.SetConditionFromResult(api.ProjectCustomRolesReadyType, result)
 	return result
 }

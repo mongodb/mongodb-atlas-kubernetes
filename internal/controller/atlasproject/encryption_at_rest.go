@@ -25,7 +25,7 @@ func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Co
 
 	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, encRest, project.Namespace); err != nil {
 		workflowCtx.UnsetCondition(api.EncryptionAtRestReadyType)
-		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
+		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err)
 	}
 
 	result := createOrDeleteEncryptionAtRests(workflowCtx, encryptionAtRestService, project.ID(), encRest)
@@ -142,7 +142,7 @@ func readSecretData(ctx context.Context, kubeClient client.Client, res common.Re
 func createOrDeleteEncryptionAtRests(ctx *workflow.Context, service encryptionatrest.EncryptionAtRestService, projectID string, encRest *encryptionatrest.EncryptionAtRest) workflow.Result {
 	encryptionAtRestsInAtlas, err := service.Get(ctx.Context, projectID)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	inSync := encryptionatrest.EqualSpecs(encRest, encryptionAtRestsInAtlas)
@@ -153,10 +153,10 @@ func createOrDeleteEncryptionAtRests(ctx *workflow.Context, service encryptionat
 
 	if encRest != nil {
 		if err := normalizeAwsKms(ctx, projectID, &encRest.AWS); err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
+			return workflow.Terminate(workflow.Internal, err)
 		}
 		if err := service.Update(ctx.Context, projectID, *encRest); err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
+			return workflow.Terminate(workflow.Internal, err)
 		}
 	}
 

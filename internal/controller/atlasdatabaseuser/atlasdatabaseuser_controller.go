@@ -106,14 +106,15 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 // notFound terminates the reconciliation silently(no updates on conditions) and without retry
 func (r *AtlasDatabaseUserReconciler) notFound(req ctrl.Request) ctrl.Result {
-	r.Log.Infof("Object %s doesn't exist, was it deleted after reconcile request?", req.NamespacedName)
-	return workflow.TerminateSilently().WithoutRetry().ReconcileResult()
+	err := fmt.Errorf("object %s doesn't exist, was it deleted after reconcile request?", req.NamespacedName)
+	r.Log.Infof(err.Error())
+	return workflow.TerminateSilently(err).WithoutRetry().ReconcileResult()
 }
 
 // fail terminates the reconciliation silently(no updates on conditions)
 func (r *AtlasDatabaseUserReconciler) fail(req ctrl.Request, err error) ctrl.Result {
 	r.Log.Errorf("Failed to query object %s: %s", req.NamespacedName, err)
-	return workflow.TerminateSilently().ReconcileResult()
+	return workflow.TerminateSilently(err).ReconcileResult()
 }
 
 // skip prevents the reconciliation to start and successfully return
@@ -132,7 +133,7 @@ func (r *AtlasDatabaseUserReconciler) terminate(
 	err error,
 ) ctrl.Result {
 	r.Log.Errorf("resource %T(%s/%s) failed on condition %s: %s", object, object.GetNamespace(), object.GetName(), condition, err)
-	result := workflow.Terminate(reason, err.Error())
+	result := workflow.Terminate(reason, err)
 	ctx.SetConditionFromResult(condition, result)
 
 	if !retry {

@@ -2,6 +2,7 @@ package atlassearchindexconfig
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -153,7 +154,7 @@ func (r *AtlasSearchIndexConfigReconciler) skip(ctx context.Context, log *zap.Su
 	log.Infow(fmt.Sprintf("-> Skipping AtlasSearchIndexConfig reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", searchIndexConfig.Spec)
 	if !searchIndexConfig.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, searchIndexConfig, customresource.UnsetFinalizer); err != nil {
-			result := workflow.Terminate(workflow.Internal, err.Error())
+			result := workflow.Terminate(workflow.Internal, err)
 			log.Errorw("Failed to remove finalizer", "terminate", err)
 
 			return result.ReconcileResult()
@@ -171,7 +172,7 @@ func (r *AtlasSearchIndexConfigReconciler) invalidate(invalid workflow.Result) c
 // In case it is not going to be supported
 func (r *AtlasSearchIndexConfigReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
 	unsupported := workflow.Terminate(
-		workflow.AtlasGovUnsupported, "the AtlasSearchIndexConfig is not supported by Atlas for government").
+		workflow.AtlasGovUnsupported, errors.New("the AtlasSearchIndexConfig is not supported by Atlas for government")).
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.ReadyType, unsupported)
 	return unsupported.ReconcileResult()
@@ -179,7 +180,7 @@ func (r *AtlasSearchIndexConfigReconciler) unsupport(ctx *workflow.Context) ctrl
 
 func (r *AtlasSearchIndexConfigReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) ctrl.Result {
 	r.Log.Error(err)
-	terminated := workflow.Terminate(errorCondition, err.Error())
+	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ReadyType, terminated)
 	return terminated.ReconcileResult()
 }
