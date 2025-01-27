@@ -305,6 +305,9 @@ func normalizeClusterDeployment(cluster *Cluster) {
 
 func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
 	for ix, replicationSpec := range cluster.ReplicationSpecs {
+		if replicationSpec == nil {
+			continue
+		}
 		if replicationSpec.NumShards == 0 {
 			replicationSpec.NumShards = 1
 		}
@@ -313,16 +316,26 @@ func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
 		}
 		cmp.NormalizeSlice(replicationSpec.RegionConfigs, func(a, b *akov2.AdvancedRegionConfig) int {
 			aPriority := "0"
-			if a.Priority != nil {
+			if a != nil && a.Priority != nil {
 				aPriority = strconv.Itoa(*a.Priority)
 			}
 			bPriority := "0"
-			if b.Priority != nil {
+			if b != nil && b.Priority != nil {
 				bPriority = strconv.Itoa(*b.Priority)
 			}
-			return strings.Compare(a.ProviderName+a.RegionName+aPriority, b.ProviderName+b.RegionName+bPriority)
+			var aProviderRegion, bProviderRegion string
+			if a != nil {
+				aProviderRegion = a.ProviderName + a.RegionName
+			}
+			if b != nil {
+				bProviderRegion = b.ProviderName + b.RegionName
+			}
+			return strings.Compare(aProviderRegion+aPriority, bProviderRegion+bPriority)
 		})
 		for _, regionConfig := range replicationSpec.RegionConfigs {
+			if regionConfig == nil {
+				continue
+			}
 			if regionConfig.ProviderName != string(provider.ProviderTenant) {
 				regionConfig.BackingProviderName = ""
 			}
@@ -348,7 +361,14 @@ func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
 		}
 	}
 	cmp.NormalizeSlice(cluster.ReplicationSpecs, func(a, b *akov2.AdvancedReplicationSpec) int {
-		return strings.Compare(a.ZoneName, b.ZoneName)
+		var zoneA, zoneB string
+		if a != nil {
+			zoneA = a.ZoneName
+		}
+		if b != nil {
+			zoneB = b.ZoneName
+		}
+		return strings.Compare(zoneA, zoneB)
 	})
 }
 
@@ -374,7 +394,13 @@ func getAutoscalingOverride(replications []*akov2.AdvancedReplicationSpec) (bool
 	var instanceSize string
 	var isTenant bool
 	for _, replica := range replications {
+		if replica == nil {
+			continue
+		}
 		for _, region := range replica.RegionConfigs {
+			if region == nil {
+				continue
+			}
 			if region.ProviderName == string(provider.ProviderTenant) {
 				isTenant = true
 			}
