@@ -22,7 +22,7 @@ jobs:
           config: test/helper/e2e/config/kind.yaml
           node_image: kindest/node:v1.29.2
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.11.0
+        uses: jetify-com/devbox-install-action@v0.12.0
         with:
           enable-cache: 'true'
       - name: Run Contract Testing

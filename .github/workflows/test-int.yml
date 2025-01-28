@@ -39,7 +39,7 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.11.0
+        uses: jetify-com/devbox-install-action@v0.12.0
         with:
           enable-cache: 'true'
       - name: Run testing
