@@ -10,6 +10,7 @@ package atlasipaccesslist
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -89,7 +90,7 @@ func (r *AtlasIPAccessListReconciler) skip(ctx context.Context, ipAccessList *ak
 	r.Log.Infow(fmt.Sprintf("-> Skipping AtlasIPAccessList reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", ipAccessList.Spec)
 	if !ipAccessList.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, ipAccessList, customresource.UnsetFinalizer); err != nil {
-			result := workflow.Terminate(workflow.Internal, err.Error())
+			result := workflow.Terminate(workflow.Internal, err)
 			r.Log.Errorw("Failed to remove finalizer", "terminate", err)
 
 			return result.ReconcileResult()
@@ -107,7 +108,7 @@ func (r *AtlasIPAccessListReconciler) invalidate(invalid workflow.Result) ctrl.R
 
 func (r *AtlasIPAccessListReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
 	unsupported := workflow.Terminate(
-		workflow.AtlasGovUnsupported, "the AtlasIPAccessList is not supported by Atlas for government").
+		workflow.AtlasGovUnsupported, errors.New("the AtlasIPAccessList is not supported by Atlas for government")).
 		WithoutRetry()
 	ctx.SetConditionFromResult(api.ReadyType, unsupported)
 	return unsupported.ReconcileResult()
@@ -160,7 +161,7 @@ func (r *AtlasIPAccessListReconciler) terminate(
 	err error,
 ) ctrl.Result {
 	r.Log.Errorf("resource %T(%s/%s) failed on condition %s: %s", ipAccessList, ipAccessList.GetNamespace(), ipAccessList.GetName(), condition, err)
-	result := workflow.Terminate(reason, err.Error())
+	result := workflow.Terminate(reason, err)
 	ctx.SetConditionFalse(api.ReadyType).
 		SetConditionFromResult(condition, result)
 

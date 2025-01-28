@@ -300,7 +300,7 @@ func TestConfigure(t *testing.T) {
 
 				return s
 			},
-			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, "failed to add ip access list"),
+			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, errors.New("failed to add ip access list")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
@@ -320,7 +320,7 @@ func TestConfigure(t *testing.T) {
 
 				return s
 			},
-			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, "failed to delete ip access list entry"),
+			expectedResult: workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, errors.New("failed to delete ip access list entry")),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.IPAccessListReadyType).
 					WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
@@ -375,7 +375,7 @@ func TestHandleIPAccessList(t *testing.T) {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
 				return apiMock
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, "failed to parse last skipped configuration: invalid character 'w' looking for beginning of object key string"),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to parse last skipped configuration: invalid character 'w' looking for beginning of object key string")),
 		},
 		"should skip reconciliation": {
 			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": []}"},
@@ -390,7 +390,7 @@ func TestHandleIPAccessList(t *testing.T) {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
 				return apiMock
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, "failed to get last applied configuration: error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]: invalid character 'w' looking for beginning of object key string"),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to get last applied configuration: error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]: invalid character 'w' looking for beginning of object key string")),
 		},
 		"should successfully handle ip access list reconciliation": {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {

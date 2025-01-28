@@ -133,7 +133,7 @@ func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) work
 
 	skipped, err := shouldIPAccessListSkipReconciliation(project)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	if skipped {
@@ -145,7 +145,7 @@ func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) work
 
 	lastApplied, err := mapLastAppliedIPAccessList(project)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, fmt.Sprintf("failed to get last applied configuration: %s", err))
+		return workflow.Terminate(workflow.Internal, fmt.Errorf("failed to get last applied configuration: %w", err))
 	}
 
 	c := ipAccessListController{
