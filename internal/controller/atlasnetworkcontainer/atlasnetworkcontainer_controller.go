@@ -67,12 +67,12 @@ type AtlasNetworkContainerReconciler struct {
 func (r *AtlasNetworkContainerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.Infow("-> Starting AtlasNetworkContainer reconciliation")
 
-	akoNetworkContainer := akov2.AtlasNetworkContainer{}
-	result := customresource.PrepareResource(ctx, r.Client, req, &akoNetworkContainer, r.Log)
+	networkContainer := akov2.AtlasNetworkContainer{}
+	result := customresource.PrepareResource(ctx, r.Client, req, &networkContainer, r.Log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), errors.New(result.GetMessage())
 	}
-	return r.handle(ctx, &akoNetworkContainer)
+	return r.handleCustomResource(ctx, &networkContainer)
 }
 
 // SetupWithManager sets up the controller with the Manager.
