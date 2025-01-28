@@ -44,6 +44,8 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasIPAccessListByProjectIndexer(logger),
 		NewAtlasNetworkPeeringByCredentialIndexer(logger),
 		NewAtlasNetworkPeeringByProjectIndexer(logger),
+		NewAtlasNetworkContainerByCredentialIndexer(logger),
+		NewAtlasNetworkContainerByProjectIndexer(logger),
 	)
 }
 
