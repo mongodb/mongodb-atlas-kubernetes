@@ -130,6 +130,40 @@ func TestLocalCredentialsIndexer(t *testing.T) {
 			wantKeys:   []string{"ns/secret-ref"},
 			wantObject: &akov2.AtlasPrivateEndpoint{},
 		},
+		{
+			name: "should return keys when there is a reference on a network container",
+			object: &akov2.AtlasNetworkContainer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user",
+					Namespace: "ns",
+				},
+				Spec: akov2.AtlasNetworkContainerSpec{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
+					},
+				},
+			},
+			index:      AtlasNetworkContainerCredentialsIndex,
+			wantKeys:   []string{"ns/secret-ref"},
+			wantObject: &akov2.AtlasNetworkContainer{},
+		},
+		{
+			name: "should return keys when there is a reference on a network peering",
+			object: &akov2.AtlasNetworkPeering{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user",
+					Namespace: "ns",
+				},
+				Spec: akov2.AtlasNetworkPeeringSpec{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
+					},
+				},
+			},
+			index:      AtlasNetworkPeeringCredentialsIndex,
+			wantKeys:   []string{"ns/secret-ref"},
+			wantObject: &akov2.AtlasNetworkPeering{},
+		},
 	} {
 		indexers := testIndexers(t)
 		t.Run(tc.name, func(t *testing.T) {
@@ -311,6 +345,78 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 				}},
 			},
 		},
+		{
+			name:   "matching input credentials renders matching network container",
+			index:  AtlasNetworkContainerCredentialsIndex,
+			output: &akov2.AtlasNetworkContainer{},
+			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+				return CredentialsIndexMapperFunc[*akov2.AtlasNetworkContainerList](
+					AtlasNetworkContainerCredentialsIndex,
+					func() *akov2.AtlasNetworkContainerList { return &akov2.AtlasNetworkContainerList{} },
+					NetworkContainerRequests,
+					kubeClient,
+					logger,
+				)
+			},
+			input: newTestSecret("matching-container-secret-ref"),
+			objects: []client.Object{
+				&akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "matching-container",
+						Namespace: "ns",
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						ProjectDualReference: akov2.ProjectDualReference{
+							ConnectionSecret: &api.LocalObjectReference{
+								Name: "matching-container-secret-ref",
+							},
+						},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Name:      "matching-container",
+					Namespace: "ns",
+				}},
+			},
+		},
+		{
+			name:   "matching input credentials renders matching network peering",
+			index:  AtlasNetworkPeeringCredentialsIndex,
+			output: &akov2.AtlasNetworkPeering{},
+			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+				return CredentialsIndexMapperFunc[*akov2.AtlasNetworkPeeringList](
+					AtlasNetworkPeeringCredentialsIndex,
+					func() *akov2.AtlasNetworkPeeringList { return &akov2.AtlasNetworkPeeringList{} },
+					NetworkPeeringRequests,
+					kubeClient,
+					logger,
+				)
+			},
+			input: newTestSecret("matching-peering-secret-ref"),
+			objects: []client.Object{
+				&akov2.AtlasNetworkPeering{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "matching-peering",
+						Namespace: "ns",
+					},
+					Spec: akov2.AtlasNetworkPeeringSpec{
+						ProjectDualReference: akov2.ProjectDualReference{
+							ConnectionSecret: &api.LocalObjectReference{
+								Name: "matching-peering-secret-ref",
+							},
+						},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Name:      "matching-peering",
+					Namespace: "ns",
+				}},
+			},
+		},
 	} {
 		scheme := runtime.NewScheme()
 		assert.NoError(t, corev1.AddToScheme(scheme))
@@ -417,5 +523,7 @@ func testIndexers(t *testing.T) map[string]*LocalCredentialIndexer {
 	indexers[AtlasDeploymentCredentialsIndex] = NewAtlasDeploymentByCredentialIndexer(logger)
 	indexers[AtlasCustomRoleCredentialsIndex] = NewAtlasCustomRoleByCredentialIndexer(logger)
 	indexers[AtlasPrivateEndpointCredentialsIndex] = NewAtlasPrivateEndpointByCredentialIndexer(logger)
+	indexers[AtlasNetworkContainerCredentialsIndex] = NewAtlasNetworkContainerByCredentialIndexer(logger)
+	indexers[AtlasNetworkPeeringCredentialsIndex] = NewAtlasNetworkPeeringByCredentialIndexer(logger)
 	return indexers
 }
