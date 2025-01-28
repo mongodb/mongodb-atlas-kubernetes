@@ -166,3 +166,8 @@ const (
 	NetworkPeeringConnectionPending  ConditionReason = "NetworkPeeringConnectionPending"
 	NetworkPeeringRemovingContainer  ConditionReason = "NetworkPeeringRemovingContainer"
 )
+
+// Atlas Network Container reasons
+const (
+	NetworkContainerNotConfigured ConditionReason = "NetworkContainerNotConfigured"
+)

@@ -28,7 +28,7 @@ type networkContainerService struct {
 	peeringAPI admin.NetworkPeeringApi
 }
 
-func NewNetworkPeeringServiceFromClientSet(clientSet *atlas.ClientSet) NetworkContainerService {
+func NewNetworkContainerServiceFromClientSet(clientSet *atlas.ClientSet) NetworkContainerService {
 	return NewNetworkContainerService(clientSet.SdkClient20231115008.NetworkPeeringApi)
 }
 
