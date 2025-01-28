@@ -27,21 +27,27 @@ const (
 	testUsername = "matching-user"
 )
 
-func TestAtlasDatabaseUserLocalCredentialsIndexer(t *testing.T) {
+func TestLocalCredentialsIndexer(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		object   client.Object
-		wantKeys []string
+		name       string
+		object     client.Object
+		index      string
+		wantKeys   []string
+		wantObject client.Object
 	}{
 		{
-			name:     "should return nil on wrong type",
-			object:   &akov2.AtlasBackupPolicy{},
-			wantKeys: nil,
+			name:       "should return nil on wrong type",
+			object:     &akov2.AtlasBackupPolicy{},
+			index:      AtlasDatabaseUserCredentialsIndex,
+			wantKeys:   nil,
+			wantObject: &akov2.AtlasDatabaseUser{},
 		},
 		{
-			name:     "should return no keys when there are no references",
-			object:   &akov2.AtlasDatabaseUser{},
-			wantKeys: []string{},
+			name:       "should return no keys when there are no references",
+			object:     &akov2.AtlasDatabaseUser{},
+			index:      AtlasDatabaseUserCredentialsIndex,
+			wantKeys:   []string{},
+			wantObject: &akov2.AtlasDatabaseUser{},
 		},
 		{
 			name: "should return no keys when there is an empty reference",
@@ -52,7 +58,9 @@ func TestAtlasDatabaseUserLocalCredentialsIndexer(t *testing.T) {
 					},
 				},
 			},
-			wantKeys: []string{},
+			index:      AtlasDatabaseUserCredentialsIndex,
+			wantKeys:   []string{},
+			wantObject: &akov2.AtlasDatabaseUser{},
 		},
 		{
 			name: "should return keys when there is a reference",
@@ -67,20 +75,70 @@ func TestAtlasDatabaseUserLocalCredentialsIndexer(t *testing.T) {
 					},
 				},
 			},
-			wantKeys: []string{"ns/secret-ref"},
+			index:      AtlasDatabaseUserCredentialsIndex,
+			wantKeys:   []string{"ns/secret-ref"},
+			wantObject: &akov2.AtlasDatabaseUser{},
+		},
+		{
+			name: "should return keys when there is a reference on a deployment",
+			object: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deployment",
+					Namespace: "ns",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
+					},
+				},
+			},
+			index:      AtlasDeploymentCredentialsIndex,
+			wantKeys:   []string{"ns/secret-ref"},
+			wantObject: &akov2.AtlasDeployment{},
+		},
+		{
+			name: "should return keys when there is a reference on a custom role",
+			object: &akov2.AtlasCustomRole{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "custom-role",
+					Namespace: "ns",
+				},
+				Spec: akov2.AtlasCustomRoleSpec{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
+					},
+				},
+			},
+			index:      AtlasCustomRoleCredentialsIndex,
+			wantKeys:   []string{"ns/secret-ref"},
+			wantObject: &akov2.AtlasCustomRole{},
+		},
+		{
+			name: "should return keys when there is a reference on a private endpoint",
+			object: &akov2.AtlasPrivateEndpoint{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "private-endpoint",
+					Namespace: "ns",
+				},
+				Spec: akov2.AtlasPrivateEndpointSpec{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
+					},
+				},
+			},
+			index:      AtlasPrivateEndpointCredentialsIndex,
+			wantKeys:   []string{"ns/secret-ref"},
+			wantObject: &akov2.AtlasPrivateEndpoint{},
 		},
 	} {
+		indexers := testIndexers(t)
 		t.Run(tc.name, func(t *testing.T) {
-			indexer := NewLocalCredentialsIndexer(
-				AtlasDatabaseUserCredentialsIndex,
-				&akov2.AtlasDatabaseUser{},
-				zaptest.NewLogger(t),
-			)
+			indexer := indexers[tc.index]
 			keys := indexer.Keys(tc.object)
 			sort.Strings(keys)
 			assert.Equal(t, tc.wantKeys, keys)
-			assert.Equal(t, AtlasDatabaseUserCredentialsIndex, indexer.Name())
-			assert.Equal(t, &akov2.AtlasDatabaseUser{}, indexer.Object())
+			assert.Equal(t, tc.index, indexer.Name())
+			assert.Equal(t, tc.wantObject, indexer.Object())
 		})
 	}
 }
@@ -90,33 +148,165 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 		name     string
 		mapperFn func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc
 		objects  []client.Object
+		index    string
 		input    client.Object
+		output   client.Object
 		want     []reconcile.Request
 	}{
 		{
 			name:     "nil input & list renders nil",
+			index:    AtlasDatabaseUserCredentialsIndex,
+			output:   &akov2.AtlasDatabaseUser{},
 			mapperFn: dbUserMapperFunc,
 		},
 		{
 			name:     "nil list renders empty list",
+			index:    AtlasDatabaseUserCredentialsIndex,
+			output:   &akov2.AtlasDatabaseUser{},
 			mapperFn: dbUserMapperFunc,
 			input:    &corev1.Secret{},
 			want:     []reconcile.Request{},
 		},
 		{
 			name:     "empty input with proper empty list type renders empty list",
+			index:    AtlasDatabaseUserCredentialsIndex,
+			output:   &akov2.AtlasDatabaseUser{},
 			mapperFn: dbUserMapperFunc,
 			input:    &corev1.Secret{},
 			want:     []reconcile.Request{},
 		},
 		{
 			name:     "matching input credentials renders matching user",
+			index:    AtlasDatabaseUserCredentialsIndex,
+			output:   &akov2.AtlasDatabaseUser{},
 			mapperFn: dbUserMapperFunc,
 			input:    newTestSecret("matching-user-secret-ref"),
-			objects:  []client.Object{newTestUser("matching-user")},
+			objects: []client.Object{
+				&akov2.AtlasDatabaseUser{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "matching-user",
+						Namespace: "ns",
+					},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						ProjectDualReference: akov2.ProjectDualReference{
+							ConnectionSecret: &api.LocalObjectReference{
+								Name: "matching-user-secret-ref",
+							},
+						},
+					},
+				},
+			},
 			want: []reconcile.Request{
 				{NamespacedName: types.NamespacedName{
 					Name:      "matching-user",
+					Namespace: "ns",
+				}},
+			},
+		},
+		{
+			name:   "matching input credentials renders matching deployment",
+			index:  AtlasDeploymentCredentialsIndex,
+			output: &akov2.AtlasDeployment{},
+			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+				return CredentialsIndexMapperFunc[*akov2.AtlasDeploymentList](
+					AtlasDeploymentCredentialsIndex,
+					func() *akov2.AtlasDeploymentList { return &akov2.AtlasDeploymentList{} },
+					DeploymentRequests,
+					kubeClient,
+					logger,
+				)
+			},
+			input: newTestSecret("matching-deployment-secret-ref"),
+			objects: []client.Object{
+				&akov2.AtlasDeployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "matching-deployment",
+						Namespace: "ns",
+					},
+					Spec: akov2.AtlasDeploymentSpec{
+						ProjectDualReference: akov2.ProjectDualReference{
+							ConnectionSecret: &api.LocalObjectReference{
+								Name: "matching-deployment-secret-ref",
+							},
+						},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Name:      "matching-deployment",
+					Namespace: "ns",
+				}},
+			},
+		},
+		{
+			name:   "matching input credentials renders matching custom role",
+			index:  AtlasCustomRoleCredentialsIndex,
+			output: &akov2.AtlasCustomRole{},
+			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+				return CredentialsIndexMapperFunc[*akov2.AtlasCustomRoleList](
+					AtlasCustomRoleCredentialsIndex,
+					func() *akov2.AtlasCustomRoleList { return &akov2.AtlasCustomRoleList{} },
+					CustomRoleRequests,
+					kubeClient,
+					logger,
+				)
+			},
+			input: newTestSecret("matching-custom-role-secret-ref"),
+			objects: []client.Object{
+				&akov2.AtlasCustomRole{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "matching-custom-role",
+						Namespace: "ns",
+					},
+					Spec: akov2.AtlasCustomRoleSpec{
+						ProjectDualReference: akov2.ProjectDualReference{
+							ConnectionSecret: &api.LocalObjectReference{
+								Name: "matching-custom-role-secret-ref",
+							},
+						},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Name:      "matching-custom-role",
+					Namespace: "ns",
+				}},
+			},
+		},
+		{
+			name:   "matching input credentials renders matching private endpoint",
+			index:  AtlasPrivateEndpointCredentialsIndex,
+			output: &akov2.AtlasPrivateEndpoint{},
+			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
+				return CredentialsIndexMapperFunc[*akov2.AtlasPrivateEndpointList](
+					AtlasPrivateEndpointCredentialsIndex,
+					func() *akov2.AtlasPrivateEndpointList { return &akov2.AtlasPrivateEndpointList{} },
+					PrivateEndpointRequests,
+					kubeClient,
+					logger,
+				)
+			},
+			input: newTestSecret("matching-private-endpoint-secret-ref"),
+			objects: []client.Object{
+				&akov2.AtlasPrivateEndpoint{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "matching-private-endpoint",
+						Namespace: "ns",
+					},
+					Spec: akov2.AtlasPrivateEndpointSpec{
+						ProjectDualReference: akov2.ProjectDualReference{
+							ConnectionSecret: &api.LocalObjectReference{
+								Name: "matching-private-endpoint-secret-ref",
+							},
+						},
+					},
+				},
+			},
+			want: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{
+					Name:      "matching-private-endpoint",
 					Namespace: "ns",
 				}},
 			},
@@ -125,18 +315,15 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 		scheme := runtime.NewScheme()
 		assert.NoError(t, corev1.AddToScheme(scheme))
 		assert.NoError(t, akov2.AddToScheme(scheme))
-		indexer := NewLocalCredentialsIndexer(
-			AtlasDatabaseUserCredentialsIndex,
-			&akov2.AtlasDatabaseUser{},
-			zaptest.NewLogger(t),
-		)
+		indexers := testIndexers(t)
 		t.Run(tc.name, func(t *testing.T) {
+			indexer := indexers[tc.index]
 			fakeClient := fake.NewClientBuilder().
 				WithScheme(scheme).
 				WithObjects(tc.objects...).
 				WithIndex(
-					&akov2.AtlasDatabaseUser{},
-					AtlasDatabaseUserCredentialsIndex,
+					tc.output,
+					tc.index,
 					func(obj client.Object) []string {
 						return indexer.Keys(obj)
 					}).
@@ -159,7 +346,19 @@ func TestCredentialsIndexMapperFuncRace(t *testing.T) {
 	)
 	objs := make([]client.Object, 10)
 	for i := range objs {
-		objs[i] = newTestUser(fmt.Sprintf("%s-%d", testUsername, i))
+		objs[i] = &akov2.AtlasDatabaseUser{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-%d", testUsername, i),
+				Namespace: "ns",
+			},
+			Spec: akov2.AtlasDatabaseUserSpec{
+				ProjectDualReference: akov2.ProjectDualReference{
+					ConnectionSecret: &api.LocalObjectReference{
+						Name: fmt.Sprintf("%s-%d-secret-ref", testUsername, i),
+					},
+				},
+			},
+		}
 	}
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(scheme).
@@ -190,22 +389,6 @@ func TestCredentialsIndexMapperFuncRace(t *testing.T) {
 	wg.Wait()
 }
 
-func newTestUser(username string) *akov2.AtlasDatabaseUser {
-	return &akov2.AtlasDatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      username,
-			Namespace: "ns",
-		},
-		Spec: akov2.AtlasDatabaseUserSpec{
-			ProjectDualReference: akov2.ProjectDualReference{
-				ConnectionSecret: &api.LocalObjectReference{
-					Name: fmt.Sprintf("%s-secret-ref", username),
-				},
-			},
-		},
-	}
-}
-
 func newTestSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -223,4 +406,16 @@ func dbUserMapperFunc(kubeClient client.Client, logger *zap.SugaredLogger) handl
 		kubeClient,
 		logger,
 	)
+}
+
+func testIndexers(t *testing.T) map[string]*LocalCredentialIndexer {
+	t.Helper()
+
+	logger := zaptest.NewLogger(t)
+	indexers := map[string]*LocalCredentialIndexer{}
+	indexers[AtlasDatabaseUserCredentialsIndex] = NewAtlasDatabaseUserByCredentialIndexer(logger)
+	indexers[AtlasDeploymentCredentialsIndex] = NewAtlasDeploymentByCredentialIndexer(logger)
+	indexers[AtlasCustomRoleCredentialsIndex] = NewAtlasCustomRoleByCredentialIndexer(logger)
+	indexers[AtlasPrivateEndpointCredentialsIndex] = NewAtlasPrivateEndpointByCredentialIndexer(logger)
+	return indexers
 }
