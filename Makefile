@@ -121,7 +121,6 @@ AKO_SIGN_PUBKEY = https://cosign.mongodb.com/atlas-kubernetes-operator.pem
 GOMOD_SHA := $(shell git ls-files -s go.mod | awk '{print $$1" "$$2" "$$4}')
 LICENSES_GOMOD_SHA_FILE := .licenses-gomod.sha256
 GOMOD_LICENSES_SHA := $(shell cat $(LICENSES_GOMOD_SHA_FILE))
-GOTOOLCHAIN := go1.23.5
 
 OPERATOR_NAMESPACE=atlas-operator
 OPERATOR_POD_NAME=mongodb-atlas-operator
@@ -156,7 +155,6 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "========================================"
 	export GOOS=linux
 	export GOARCH=amd64
-	export GOTOOLCHAIN=$(GOTOOLCHAIN)
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
@@ -176,7 +174,6 @@ check-licenses: licenses-up-to-date ## Check licenses are compliant with our res
 	@echo "============================================"
 	export GOOS=linux
 	export GOARCH=amd64
-	export GOTOOLCHAIN=$(GOTOOLCHAIN)
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"

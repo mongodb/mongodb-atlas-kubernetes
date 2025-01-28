@@ -3,7 +3,7 @@
     "yq-go@latest",
     "kubebuilder@4.1.1",
     "jq@latest",
-    "go@1.23",
+    "github:NixOS/nixpkgs/nixos-24.11#go",
     "gotests@latest",
     "act@latest",
     "kubectl@latest",
