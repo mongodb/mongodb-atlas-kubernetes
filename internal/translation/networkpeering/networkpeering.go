@@ -8,6 +8,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
@@ -39,6 +40,10 @@ type NetworkPeeringService interface {
 
 type networkPeeringService struct {
 	peeringAPI admin.NetworkPeeringApi
+}
+
+func NewNetworkPeeringServiceFromClientSet(clientSet *atlas.ClientSet) NetworkPeeringService {
+	return NewNetworkPeeringService(clientSet.SdkClient20231115008.NetworkPeeringApi)
 }
 
 func NewNetworkPeeringService(peeringAPI admin.NetworkPeeringApi) NetworkPeeringService {
