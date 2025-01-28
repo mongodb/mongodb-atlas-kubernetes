@@ -11,13 +11,13 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkpeering"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
 
 type reconcileRequest struct {
 	projectID        string
 	networkContainer *akov2.AtlasNetworkContainer
-	service          networkpeering.NetworkPeeringService
+	service          networkcontainer.NetworkContainerService
 }
 
 func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Context, networkContainer *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
@@ -41,23 +41,23 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 
 	credentials, err := r.ResolveCredentials(ctx, networkContainer)
 	if err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.AtlasAPIAccessNotConfigured, err), nil
+		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err), nil
 	}
 	sdkClientSet, orgID, err := r.AtlasProvider.SdkClientSet(ctx, credentials, r.Log)
 	if err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.AtlasAPIAccessNotConfigured, err), nil
+		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err), nil
 	}
 	project, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20231115008, networkContainer, orgID)
 	if err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.AtlasAPIAccessNotConfigured, err), nil
+		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err), nil
 	}
 	return r.handle(workflowCtx, &reconcileRequest{
 		projectID:        project.ID,
 		networkContainer: networkContainer,
-		service:          networkpeering.NewNetworkPeeringServiceFromClientSet(sdkClientSet),
+		service:          networkcontainer.NewNetworkContainerServiceFromClientSet(sdkClientSet),
 	})
 }
 
-func (r *AtlasNetworkContainerReconciler) handle(_ *workflow.Context, _ *reconcileRequest) (ctrl.Result, error) {
-	return workflow.OK().ReconcileResult(), nil
+func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, req *reconcileRequest) (ctrl.Result, error) {
+	return r.ready(workflowCtx, req.networkContainer, req.service)
 }

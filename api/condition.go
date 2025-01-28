@@ -106,6 +106,11 @@ const (
 	IPAccessListReady ConditionType = "IPAccessListReady"
 )
 
+// Atlas Network Container condition types
+const (
+	NetworkContainerReady ConditionType = "PrivateEndpointReady"
+)
+
 // Generic condition type
 const (
 	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"

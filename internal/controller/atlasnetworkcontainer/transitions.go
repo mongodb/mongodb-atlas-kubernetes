@@ -1,10 +1,30 @@
 package atlasnetworkcontainer
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
+
+func (r *AtlasNetworkContainerReconciler) ready(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, service networkcontainer.NetworkContainerService) (ctrl.Result, error) {
+	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.SetFinalizer); err != nil {
+		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotSet, err), nil
+	}
+
+	workflowCtx.SetConditionTrue(api.NetworkContainerReady).
+		SetConditionTrue(api.ReadyType)
+		// TODO: add .EnsureStatusOption(networkContainer.NewNetworkContainerStatus(service)) ?
+
+	if networkContainer.Spec.ExternalProjectRef != nil {
+		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
+	}
+
+	return workflow.OK().ReconcileResult(), nil
+}
 
 func (r *AtlasNetworkContainerReconciler) terminate(
 	ctx *workflow.Context,
