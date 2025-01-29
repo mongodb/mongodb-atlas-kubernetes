@@ -2,6 +2,8 @@ package atlasnetworkcontainer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"reflect"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -59,5 +61,45 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 }
 
 func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, req *reconcileRequest) (ctrl.Result, error) {
-	return r.ready(workflowCtx, req.networkContainer, req.service)
+	var atlasContainer *networkcontainer.NetworkContainer
+	id := req.networkContainer.Status.ID
+	if id != "" {
+		container, err := req.service.Get(workflowCtx.Context, req.projectID, id)
+		if err != nil && !errors.Is(err, networkcontainer.ErrNotFound) {
+			wrappedErr := fmt.Errorf("failed to get container ID %s from project %s: %w", id, req.projectID, err)
+			return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
+		}
+		atlasContainer = container
+	}
+	inAtlas := atlasContainer != nil
+	deleted := req.networkContainer.DeletionTimestamp != nil
+	switch {
+	case !deleted && !inAtlas:
+		return r.create(workflowCtx, req)
+	case deleted && !inAtlas:
+		return r.unmanage(workflowCtx, req.networkContainer)
+	default:
+		panic(fmt.Sprintf("unsupported container state deleted: %v inAtlas %v", deleted, inAtlas))
+	}
+	/* 	case !deleted && inAtlas:
+	   		return atlasContainer, nil
+	   	case deleted && inAtlas:
+	   		return r.deleteContainer(req)
+	   	default:
+	   		return r.unmanageContainer()
+	   	}*/
+	//return r.ready(workflowCtx, req.networkContainer, req.service)
+}
+
+func (r *AtlasNetworkContainerReconciler) create(workflowCtx *workflow.Context, req *reconcileRequest) (ctrl.Result, error) {
+	specContainer := networkcontainer.NewNetworkContainerSpec(
+		req.networkContainer.Spec.Provider,
+		&req.networkContainer.Spec.AtlasNetworkContainerConfig,
+	)
+	createdContainer, err := req.service.Create(workflowCtx.Context, req.projectID, specContainer)
+	if err != nil {
+		wrappedErr := fmt.Errorf("failed to create container: %w", err)
+		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
+	}
+	return r.inProgress(workflowCtx, createdContainer)
 }
