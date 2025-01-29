@@ -25,7 +25,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasnetworkpeering"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
@@ -218,18 +217,6 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 
 	if err := indexer.RegisterAll(ctx, mgr, b.logger); err != nil {
 		return nil, fmt.Errorf("unable to create indexers: %w", err)
-	}
-
-	npeReconciler := atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(
-		mgr,
-		b.predicates,
-		b.atlasProvider,
-		b.deletionProtection,
-		b.logger,
-		b.independentSyncPeriod,
-	)
-	if err = npeReconciler.SetupWithManager(mgr, b.skipNameValidation); err != nil {
-		return nil, fmt.Errorf("unable to create controller AtlasNetworkPeeringsReconciler: %w", err)
 	}
 
 	return mgr, nil
