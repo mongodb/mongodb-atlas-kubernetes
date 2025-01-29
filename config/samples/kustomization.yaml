@@ -10,5 +10,5 @@ resources:
   - atlas_v1_atlasteam.yaml
   - atlas_v1_atlasipaccesslist.yaml
   - atlas_v1_atlasnetworkpeering.yaml
-- atlas_v1_atlasnetworkcontainer.yaml
+  - atlas_v1_atlasnetworkcontainer.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
