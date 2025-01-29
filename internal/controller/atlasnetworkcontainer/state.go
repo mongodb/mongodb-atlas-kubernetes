@@ -61,21 +61,17 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 }
 
 func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, req *reconcileRequest) (ctrl.Result, error) {
-	var atlasContainer *networkcontainer.NetworkContainer
-	id := req.networkContainer.Status.ID
-	if id != "" {
-		container, err := req.service.Get(workflowCtx.Context, req.projectID, id)
-		if err != nil && !errors.Is(err, networkcontainer.ErrNotFound) {
-			wrappedErr := fmt.Errorf("failed to get container ID %s from project %s: %w", id, req.projectID, err)
-			return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
-		}
-		atlasContainer = container
+	atlasContainer, err := discover(workflowCtx.Context, req)
+	if err != nil && !errors.Is(err, networkcontainer.ErrNotFound) {
+		return r.terminate(workflowCtx, req.networkContainer, workflow.AtlasAPIAccessNotConfigured, err), nil
 	}
 	inAtlas := atlasContainer != nil
 	deleted := req.networkContainer.DeletionTimestamp != nil
 	switch {
 	case !deleted && !inAtlas:
 		return r.create(workflowCtx, req)
+	case !deleted && inAtlas:
+		return r.sync(workflowCtx, req, atlasContainer)
 	case deleted && !inAtlas:
 		return r.unmanage(workflowCtx, req.networkContainer)
 	default:
@@ -91,15 +87,46 @@ func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, 
 	//return r.ready(workflowCtx, req.networkContainer, req.service)
 }
 
+func discover(ctx context.Context, req *reconcileRequest) (*networkcontainer.NetworkContainer, error) {
+	cfg := networkcontainer.NewNetworkContainerConfig(
+		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
+	container, err := req.service.Find(ctx, req.projectID, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find container from project %s: %w", req.projectID, err)
+	}
+	return container, nil
+}
+
 func (r *AtlasNetworkContainerReconciler) create(workflowCtx *workflow.Context, req *reconcileRequest) (ctrl.Result, error) {
-	specContainer := networkcontainer.NewNetworkContainerSpec(
+	cfg := networkcontainer.NewNetworkContainerConfig(
 		req.networkContainer.Spec.Provider,
 		&req.networkContainer.Spec.AtlasNetworkContainerConfig,
 	)
-	createdContainer, err := req.service.Create(workflowCtx.Context, req.projectID, specContainer)
+	createdContainer, err := req.service.Create(workflowCtx.Context, req.projectID, cfg)
 	if err != nil {
 		wrappedErr := fmt.Errorf("failed to create container: %w", err)
 		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
 	}
 	return r.inProgress(workflowCtx, createdContainer)
+}
+
+func (r *AtlasNetworkContainerReconciler) sync(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
+	if !container.Provisioned {
+		return r.inProgress(workflowCtx, container)
+	}
+	cfg := networkcontainer.NewNetworkContainerConfig(
+		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
+	if !reflect.DeepEqual(cfg, &container.NetworkContainerConfig) {
+		return r.update(workflowCtx, req, container.ID, cfg)
+	}
+	return r.ready(workflowCtx, req.networkContainer, container)
+}
+
+func (r *AtlasNetworkContainerReconciler) update(workflowCtx *workflow.Context, req *reconcileRequest, id string, cfg *networkcontainer.NetworkContainerConfig) (ctrl.Result, error) {
+	updatedContainer, err := req.service.Update(workflowCtx.Context, req.projectID, id, cfg)
+	if err != nil {
+		wrappedErr := fmt.Errorf("failed to update container: %w", err)
+		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
+	}
+	return r.inProgress(workflowCtx, updatedContainer)
 }

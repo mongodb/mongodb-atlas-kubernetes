@@ -40,14 +40,14 @@ var (
 func TestNetworkContainerCreate(t *testing.T) {
 	for _, tc := range []struct {
 		title             string
-		container         *networkcontainer.NetworkContainer
+		cfg               *networkcontainer.NetworkContainerConfig
 		api               admin.NetworkPeeringApi
 		expectedContainer *networkcontainer.NetworkContainer
 		expectedError     error
 	}{
 		{
 			title: "successful api create for AWS returns success",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    string(provider.ProviderAWS),
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
@@ -63,17 +63,19 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				ID:                          testContainerID,
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-				AWSStatus:                   &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderAWS),
+					AtlasNetworkContainerConfig: testContainerConfig(),
+				},
+				ID:        testContainerID,
+				AWSStatus: &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
 			},
 			expectedError: nil,
 		},
 
 		{
 			title: "successful api create for AWS returns success without VPC ID",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    string(provider.ProviderAWS),
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
@@ -88,16 +90,18 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				ID:                          testContainerID,
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderAWS),
+					AtlasNetworkContainerConfig: testContainerConfig(),
+				},
+				ID: testContainerID,
 			},
 			expectedError: nil,
 		},
 
 		{
 			title: "successful api create for Azure returns success",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    string(provider.ProviderAzure),
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
@@ -113,9 +117,11 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				ID:                          testContainerID,
-				Provider:                    string(provider.ProviderAzure),
-				AtlasNetworkContainerConfig: testContainerConfig(),
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderAzure),
+					AtlasNetworkContainerConfig: testContainerConfig(),
+				},
+				ID: testContainerID,
 				AzureStatus: &networkcontainer.AzureContainerStatus{
 					AzureSubscriptionID: testAzureSubcriptionID,
 					VnetName:            testVnet,
@@ -126,7 +132,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 
 		{
 			title: "successful api create for Azure without status updates returns success",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    string(provider.ProviderAzure),
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
@@ -140,16 +146,18 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				ID:                          testContainerID,
-				Provider:                    string(provider.ProviderAzure),
-				AtlasNetworkContainerConfig: testContainerConfig(),
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderAzure),
+					AtlasNetworkContainerConfig: testContainerConfig(),
+				},
+				ID: testContainerID,
 			},
 			expectedError: nil,
 		},
 
 		{
 			title: "successful api create for GCP returns success",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    string(provider.ProviderGCP),
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
@@ -164,9 +172,11 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				ID:                          testContainerID,
-				Provider:                    string(provider.ProviderGCP),
-				AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{CIDRBlock: "1.1.1.1/2"},
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderGCP),
+					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{CIDRBlock: "1.1.1.1/2"},
+				},
+				ID: testContainerID,
 				GCPStatus: &networkcontainer.GoogleContainerStatus{
 					GCPProjectID: testGCPProjectID,
 					NetworkName:  testNetworkName,
@@ -177,7 +187,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 
 		{
 			title: "successful api create for GCP without status returns success",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    string(provider.ProviderGCP),
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
@@ -190,16 +200,18 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				ID:                          testContainerID,
-				Provider:                    string(provider.ProviderGCP),
-				AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{CIDRBlock: "1.1.1.1/2"},
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderGCP),
+					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{CIDRBlock: "1.1.1.1/2"},
+				},
+				ID: testContainerID,
 			},
 			expectedError: nil,
 		},
 
 		{
 			title: "failed api create returns failure",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    "bad-provider",
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
@@ -211,7 +223,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 		ctx := context.Background()
 		t.Run(tc.title, func(t *testing.T) {
 			s := networkcontainer.NewNetworkContainerService(tc.api)
-			container, err := s.Create(ctx, testProjectID, tc.container)
+			container, err := s.Create(ctx, testProjectID, tc.cfg)
 			assert.Equal(t, tc.expectedContainer, container)
 			assert.ErrorIs(t, err, tc.expectedError)
 		})
@@ -221,17 +233,12 @@ func TestNetworkContainerCreate(t *testing.T) {
 func TestNetworkContainerGet(t *testing.T) {
 	for _, tc := range []struct {
 		title             string
-		container         *networkcontainer.NetworkContainer
 		api               admin.NetworkPeeringApi
 		expectedContainer *networkcontainer.NetworkContainer
 		expectedError     error
 	}{
 		{
 			title: "successful api get returns success",
-			container: &networkcontainer.NetworkContainer{
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-			},
 			api: testGetNetworkPeeringAPI(
 				&admin.CloudProviderContainer{
 					Id:             pointer.MakePtr(testContainerID),
@@ -244,31 +251,25 @@ func TestNetworkContainerGet(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				ID:                          testContainerID,
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-				AWSStatus:                   &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderAWS),
+					AtlasNetworkContainerConfig: testContainerConfig(),
+				},
+				ID:        testContainerID,
+				AWSStatus: &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
 			},
 			expectedError: nil,
 		},
 
 		{
-			title: "not found api get returns wrapped not found error",
-			container: &networkcontainer.NetworkContainer{
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-			},
+			title:             "not found api get returns wrapped not found error",
 			api:               testGetNetworkPeeringAPI(nil, testAPIError("CLOUD_PROVIDER_CONTAINER_NOT_FOUND")),
 			expectedContainer: nil,
 			expectedError:     networkcontainer.ErrNotFound,
 		},
 
 		{
-			title: "other api get failure returns wrapped error",
-			container: &networkcontainer.NetworkContainer{
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-			},
+			title:             "other api get failure returns wrapped error",
 			api:               testGetNetworkPeeringAPI(nil, ErrFakeFailure),
 			expectedContainer: nil,
 			expectedError:     ErrFakeFailure,
@@ -284,19 +285,190 @@ func TestNetworkContainerGet(t *testing.T) {
 	}
 }
 
+func TestNetworkContainerFind(t *testing.T) {
+	for _, tc := range []struct {
+		title             string
+		cfg               *networkcontainer.NetworkContainerConfig
+		api               admin.NetworkPeeringApi
+		expectedContainer *networkcontainer.NetworkContainer
+		expectedError     error
+	}{
+		{
+			title: "successful find returns success",
+			cfg: &networkcontainer.NetworkContainerConfig{
+				Provider:                    string(provider.ProviderAWS),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+			},
+			api: testFindNetworkPeeringAPI(
+				[]admin.CloudProviderContainer{
+					{
+						Id:             pointer.MakePtr(testContainerID),
+						ProviderName:   pointer.MakePtr(string(provider.ProviderAWS)),
+						Provisioned:    pointer.MakePtr(false),
+						AtlasCidrBlock: pointer.MakePtr(testContainerConfig().CIDRBlock),
+						RegionName:     pointer.MakePtr(testContainerConfig().Region),
+						VpcId:          pointer.MakePtr(testVpcID),
+					},
+				},
+				nil,
+			),
+			expectedContainer: &networkcontainer.NetworkContainer{
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderAWS),
+					AtlasNetworkContainerConfig: testContainerConfig(),
+				},
+				ID:        testContainerID,
+				AWSStatus: &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
+			},
+			expectedError: nil,
+		},
+
+		{
+			title: "find fails other error",
+			cfg: &networkcontainer.NetworkContainerConfig{
+				Provider:                    string(provider.ProviderAWS),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+			},
+			api: testFindNetworkPeeringAPI(
+				nil,
+				ErrFakeFailure,
+			),
+			expectedContainer: nil,
+			expectedError:     ErrFakeFailure,
+		},
+
+		{
+			title: "find fails not found",
+			cfg: &networkcontainer.NetworkContainerConfig{
+				Provider:                    string(provider.ProviderAWS),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+			},
+			api: testFindNetworkPeeringAPI(
+				[]admin.CloudProviderContainer{},
+				nil,
+			),
+			expectedContainer: nil,
+			expectedError:     networkcontainer.ErrNotFound,
+		},
+
+		{
+			title: "successful find on GCP",
+			cfg: &networkcontainer.NetworkContainerConfig{
+				Provider: string(provider.ProviderGCP),
+				AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+					CIDRBlock: "18.18.192.0/18",
+				},
+			},
+			api: testFindNetworkPeeringAPI(
+				[]admin.CloudProviderContainer{
+					{
+						Id:             pointer.MakePtr(testContainerID),
+						ProviderName:   pointer.MakePtr(string(provider.ProviderGCP)),
+						Provisioned:    pointer.MakePtr(false),
+						AtlasCidrBlock: pointer.MakePtr("18.18.192.0/18"),
+						GcpProjectId:   pointer.MakePtr(testGCPProjectID),
+						NetworkName:    pointer.MakePtr(testNetworkName),
+					},
+				},
+				nil,
+			),
+			expectedContainer: &networkcontainer.NetworkContainer{
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider: string(provider.ProviderGCP),
+					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+						CIDRBlock: "18.18.192.0/18",
+					},
+				},
+				ID: testContainerID,
+				GCPStatus: &networkcontainer.GoogleContainerStatus{
+					GCPProjectID: testGCPProjectID,
+					NetworkName:  testNetworkName,
+				},
+			},
+			expectedError: nil,
+		},
+
+		{
+			title: "successful find on Azure",
+			cfg: &networkcontainer.NetworkContainerConfig{
+				Provider: string(provider.ProviderAzure),
+				AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+					CIDRBlock: "11.11.0.0/16",
+					Region:    "US_EAST_2",
+				},
+			},
+			api: testFindNetworkPeeringAPI(
+				[]admin.CloudProviderContainer{
+					{
+						Id:             pointer.MakePtr(testContainerID),
+						ProviderName:   pointer.MakePtr(string(provider.ProviderAzure)),
+						Provisioned:    pointer.MakePtr(false),
+						AtlasCidrBlock: pointer.MakePtr("11.11.0.0/16"),
+						Region:         pointer.MakePtr("US_EAST_2"),
+					},
+				},
+				nil,
+			),
+			expectedContainer: &networkcontainer.NetworkContainer{
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider: string(provider.ProviderAzure),
+					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+						CIDRBlock: "11.11.0.0/16",
+						Region:    "US_EAST_2",
+					},
+				},
+				ID: testContainerID,
+			},
+			expectedError: nil,
+		},
+
+		{
+			title: "not found on Azure",
+			cfg: &networkcontainer.NetworkContainerConfig{
+				Provider: string(provider.ProviderAzure),
+				AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+					CIDRBlock: "11.11.0.0/16",
+					Region:    "US_CENTRAL_5",
+				},
+			},
+			api: testFindNetworkPeeringAPI(
+				[]admin.CloudProviderContainer{
+					{
+						Id:             pointer.MakePtr(testContainerID),
+						ProviderName:   pointer.MakePtr(string(provider.ProviderAzure)),
+						Provisioned:    pointer.MakePtr(false),
+						AtlasCidrBlock: pointer.MakePtr("11.11.0.0/16"),
+						Region:         pointer.MakePtr("US_EAST_2"),
+					},
+				},
+				nil,
+			),
+			expectedContainer: nil,
+			expectedError:     networkcontainer.ErrNotFound,
+		},
+	} {
+		ctx := context.Background()
+		t.Run(tc.title, func(t *testing.T) {
+			s := networkcontainer.NewNetworkContainerService(tc.api)
+			container, err := s.Find(ctx, testProjectID, tc.cfg)
+			assert.Equal(t, tc.expectedContainer, container)
+			assert.ErrorIs(t, err, tc.expectedError)
+		})
+	}
+}
+
 func TestNetworkContainerUpdate(t *testing.T) {
 	for _, tc := range []struct {
 		title             string
-		container         *networkcontainer.NetworkContainer
+		cfg               *networkcontainer.NetworkContainerConfig
 		api               admin.NetworkPeeringApi
 		expectedContainer *networkcontainer.NetworkContainer
 		expectedError     error
 	}{
 		{
 			title: "successful api update returns success",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    string(provider.ProviderAWS),
-				ID:                          testContainerID,
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
 			api: testUpdateNetworkPeeringAPI(
@@ -311,19 +483,20 @@ func TestNetworkContainerUpdate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				ID:                          testContainerID,
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-				AWSStatus:                   &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
+				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+					Provider:                    string(provider.ProviderAWS),
+					AtlasNetworkContainerConfig: testContainerConfig(),
+				},
+				ID:        testContainerID,
+				AWSStatus: &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
 			},
 			expectedError: nil,
 		},
 
 		{
 			title: "api update failure returns wrapped error",
-			container: &networkcontainer.NetworkContainer{
+			cfg: &networkcontainer.NetworkContainerConfig{
 				Provider:                    string(provider.ProviderAWS),
-				ID:                          testContainerID,
 				AtlasNetworkContainerConfig: testContainerConfig(),
 			},
 			api:               testUpdateNetworkPeeringAPI(nil, ErrFakeFailure),
@@ -334,7 +507,7 @@ func TestNetworkContainerUpdate(t *testing.T) {
 		ctx := context.Background()
 		t.Run(tc.title, func(t *testing.T) {
 			s := networkcontainer.NewNetworkContainerService(tc.api)
-			container, err := s.Update(ctx, testProjectID, tc.container)
+			container, err := s.Update(ctx, testProjectID, testContainerID, tc.cfg)
 			assert.Equal(t, tc.expectedContainer, container)
 			assert.ErrorIs(t, err, tc.expectedError)
 		})
@@ -344,46 +517,29 @@ func TestNetworkContainerUpdate(t *testing.T) {
 func TestNetworkContainerDelete(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
-		container     *networkcontainer.NetworkContainer
 		api           admin.NetworkPeeringApi
 		expectedError error
 	}{
 		{
-			title: "successful api delete returns success",
-			container: &networkcontainer.NetworkContainer{
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-			},
+			title:         "successful api delete returns success",
 			api:           testDeleteNetworkPeeringAPI(nil),
 			expectedError: nil,
 		},
 
 		{
-			title: "not found api delete failure returns wrapped not found error",
-			container: &networkcontainer.NetworkContainer{
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-			},
+			title:         "not found api delete failure returns wrapped not found error",
 			api:           testDeleteNetworkPeeringAPI(testAPIError("CLOUD_PROVIDER_CONTAINER_NOT_FOUND")),
 			expectedError: networkcontainer.ErrNotFound,
 		},
 
 		{
-			title: "container in api delete failure returns wrapped container in use",
-			container: &networkcontainer.NetworkContainer{
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-			},
+			title:         "container in api delete failure returns wrapped container in use",
 			api:           testDeleteNetworkPeeringAPI(testAPIError("CONTAINERS_IN_USE")),
 			expectedError: networkcontainer.ErrContainerInUse,
 		},
 
 		{
-			title: "other api get failure returns wrapped error",
-			container: &networkcontainer.NetworkContainer{
-				Provider:                    string(provider.ProviderAWS),
-				AtlasNetworkContainerConfig: testContainerConfig(),
-			},
+			title:         "other api get failure returns wrapped error",
 			api:           testDeleteNetworkPeeringAPI(ErrFakeFailure),
 			expectedError: ErrFakeFailure,
 		},
@@ -427,6 +583,22 @@ func testGetNetworkPeeringAPI(apiContainer *admin.CloudProviderContainer, err er
 	apiMock.EXPECT().GetPeeringContainerExecute(
 		mock.AnythingOfType("admin.GetPeeringContainerApiRequest"),
 	).Return(apiContainer, nil, err)
+	return &apiMock
+}
+
+func testFindNetworkPeeringAPI(apiContainers []admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
+	var apiMock mockadmin.NetworkPeeringApi
+
+	apiMock.EXPECT().ListPeeringContainerByCloudProvider(mock.Anything, testProjectID).Return(
+		admin.ListPeeringContainerByCloudProviderApiRequest{ApiService: &apiMock},
+	)
+
+	results := admin.PaginatedCloudProviderContainer{
+		Results: &apiContainers,
+	}
+	apiMock.EXPECT().ListPeeringContainerByCloudProviderExecute(
+		mock.AnythingOfType("admin.ListPeeringContainerByCloudProviderApiRequest"),
+	).Return(&results, nil, err)
 	return &apiMock
 }
 
