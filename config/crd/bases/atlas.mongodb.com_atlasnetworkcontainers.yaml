@@ -14,7 +14,7 @@ spec:
     listKind: AtlasNetworkContainerList
     plural: atlasnetworkcontainers
     shortNames:
-    - anp
+    - anc
     singular: atlasnetworkcontainer
   scope: Namespaced
   versions:
