@@ -5,6 +5,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
@@ -30,6 +31,18 @@ type AzureContainerStatus struct {
 type GoogleContainerStatus struct {
 	GCPProjectID string
 	NetworkName  string
+}
+
+func NewNetworkContainerSpec(provider string, config *akov2.AtlasNetworkContainerConfig) *NetworkContainer {
+	return &NetworkContainer{
+		Provider:                    provider,
+		AtlasNetworkContainerConfig: *config,
+	}
+}
+
+func ApplyNetworkContainerStatus(containerStatus *status.AtlasNetworkContainerStatus, container *NetworkContainer) {
+	containerStatus.ID = container.ID
+	containerStatus.Provisioned = container.Provisioned
 }
 
 func toAtlas(container *NetworkContainer) *admin.CloudProviderContainer {

@@ -108,7 +108,7 @@ const (
 
 // Atlas Network Container condition types
 const (
-	NetworkContainerReady ConditionType = "PrivateEndpointReady"
+	NetworkContainerReady ConditionType = "NetworkContainerReady"
 )
 
 // Generic condition type

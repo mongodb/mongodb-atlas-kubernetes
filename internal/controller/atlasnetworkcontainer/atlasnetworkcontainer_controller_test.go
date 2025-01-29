@@ -84,7 +84,6 @@ func TestReconcile(t *testing.T) {
 	}
 }
 
-
 func testNetworkContainer() *akov2.AtlasNetworkContainer {
 	return &akov2.AtlasNetworkContainer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -104,7 +103,7 @@ func testNetworkContainer() *akov2.AtlasNetworkContainer {
 			Provider: "AWS",
 		},
 		Status: status.AtlasNetworkContainerStatus{
-			ID:     "container-id",
+			ID:          "container-id",
 			Provisioned: true,
 		},
 	}
