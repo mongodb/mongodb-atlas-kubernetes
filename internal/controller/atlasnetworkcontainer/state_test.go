@@ -3,10 +3,9 @@ package atlasnetworkcontainer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -22,13 +21,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
@@ -36,21 +33,28 @@ import (
 	akomock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 )
 
+var (
+	// sample error test
+	ErrTestFail = errors.New("failure")
+)
+
 const (
 	testContainerID = "container-id"
 
-	testVpcId = "vpc-id"
+	testVpcID = "vpc-id"
 )
 
 func TestHandleCustomResource(t *testing.T) {
-	tests := map[string]struct {
-		networkContainer   *akov2.AtlasNetworkContainer
-		provider           atlas.Provider
-		expectedResult     ctrl.Result
-		expectedFinalizers []string
-		expectedConditions []api.Condition
+	tests := []struct {
+		title            string
+		networkContainer *akov2.AtlasNetworkContainer
+		provider         atlas.Provider
+		wantResult       ctrl.Result
+		wantFinalizers   []string
+		wantConditions   []api.Condition
 	}{
-		"should skip reconciliation": {
+		{
+			title: "should skip reconciliation",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-container",
@@ -68,10 +72,11 @@ func TestHandleCustomResource(t *testing.T) {
 					},
 				},
 			},
-			expectedResult:     ctrl.Result{},
-			expectedFinalizers: []string{customresource.FinalizerLabel},
+			wantResult:     ctrl.Result{},
+			wantFinalizers: []string{customresource.FinalizerLabel},
 		},
-		"should fail to validate resource": {
+		{
+			title: "should fail to validate resource",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-container",
@@ -88,15 +93,16 @@ func TestHandleCustomResource(t *testing.T) {
 					},
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			expectedConditions: []api.Condition{
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.ResourceVersionStatus).
 					WithReason(string(workflow.AtlasResourceVersionIsInvalid)).
 					WithMessageRegexp("wrong is not a valid semver version for label mongodb.com/atlas-resource-version"),
 			},
 		},
-		"should fail when not supported": {
+		{
+			title: "should fail when not supported",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-container",
@@ -115,15 +121,16 @@ func TestHandleCustomResource(t *testing.T) {
 					return false
 				},
 			},
-			expectedResult: ctrl.Result{},
-			expectedConditions: []api.Condition{
+			wantResult: ctrl.Result{},
+			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasGovUnsupported)).
 					WithMessageRegexp("the AtlasNetworkContainer is not supported by Atlas for government"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
-		"should fail to resolve credentials": {
+		{
+			title: "should fail to resolve credentials",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-container",
@@ -147,8 +154,8 @@ func TestHandleCustomResource(t *testing.T) {
 					return true
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			expectedConditions: []api.Condition{
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp("can not fetch AtlasProject: " +
@@ -156,7 +163,8 @@ func TestHandleCustomResource(t *testing.T) {
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
-		"should fail to create sdk": {
+		{
+			title: "should fail to create sdk",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-container",
@@ -183,15 +191,16 @@ func TestHandleCustomResource(t *testing.T) {
 					return nil, "", errors.New("failed to create sdk")
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			expectedConditions: []api.Condition{
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp("failed to create sdk"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
-		"should fail to resolve project": {
+		{
+			title: "should fail to resolve project",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-container",
@@ -221,15 +230,16 @@ func TestHandleCustomResource(t *testing.T) {
 					return &atlas.ClientSet{}, "", nil
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			expectedConditions: []api.Condition{
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp("failed to query Kubernetes: failed to get Project from Kubernetes: can not fetch AtlasProject: atlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
-		"should handle network container with unmanage": {
+		{
+			title: "should handle network container with unmanage",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "network-container",
@@ -252,9 +262,6 @@ func TestHandleCustomResource(t *testing.T) {
 						CIDRBlock: "11.10.0.0/16",
 					},
 				},
-				Status: status.AtlasNetworkContainerStatus{
-					ID: testContainerID,
-				},
 			},
 			provider: &atlasmock.TestProvider{
 				IsSupportedFunc: func() bool {
@@ -262,24 +269,26 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					ncAPI := mockadmin.NewNetworkPeeringApi(t)
-					ncAPI.EXPECT().GetPeeringContainer(mock.Anything, mock.Anything, mock.Anything).Return(
-						admin.GetPeeringContainerApiRequest{ApiService: ncAPI},
+					ncAPI.EXPECT().ListPeeringContainerByCloudProvider(mock.Anything, mock.Anything).Return(
+						admin.ListPeeringContainerByCloudProviderApiRequest{ApiService: ncAPI},
 					)
-					ncAPI.EXPECT().GetPeeringContainerExecute(mock.AnythingOfType("admin.GetPeeringContainerApiRequest")).Return(
-						nil, nil, apiError("CLOUD_PROVIDER_CONTAINER_NOT_FOUND"),
+					ncAPI.EXPECT().ListPeeringContainerByCloudProviderExecute(mock.AnythingOfType("admin.ListPeeringContainerByCloudProviderApiRequest")).Return(
+						&admin.PaginatedCloudProviderContainer{
+							Results: &[]admin.CloudProviderContainer{},
+						}, nil, nil,
 					)
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{NetworkPeeringApi: ncAPI},
 					}, "", nil
 				},
 			},
-			expectedResult:     ctrl.Result{},
-			expectedFinalizers: []string{customresource.FinalizerLabel},
-			expectedConditions: nil,
+			wantResult:     ctrl.Result{},
+			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantConditions: nil,
 		},
 	}
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.title, func(t *testing.T) {
 			project := &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-project",
@@ -303,9 +312,9 @@ func TestHandleCustomResource(t *testing.T) {
 			require.NoError(t, err)
 			networkContainer := &akov2.AtlasNetworkContainer{}
 			require.NoError(t, k8sClient.Get(ctx.Context, client.ObjectKeyFromObject(tc.networkContainer), networkContainer))
-			assert.Equal(t, tc.expectedResult, result)
-			assert.Equal(t, tc.expectedFinalizers, networkContainer.GetFinalizers())
-			assert.True(t, cmp.Equal(tc.expectedConditions, networkContainer.Status.GetConditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
+			assert.Equal(t, tc.wantResult, result)
+			assert.Equal(t, tc.wantFinalizers, networkContainer.GetFinalizers())
+			assert.Equal(t, cleanConditions(tc.wantConditions), cleanConditions(networkContainer.Status.GetConditions()))
 		})
 	}
 }
@@ -314,10 +323,11 @@ func TestHandle(t *testing.T) {
 	emptyProvider := &atlasmock.TestProvider{}
 	logger := zaptest.NewLogger(t)
 	for _, tc := range []struct {
-		title      string
-		req        *reconcileRequest
-		wantResult ctrl.Result
-		wantErr    error
+		title          string
+		req            *reconcileRequest
+		wantResult     ctrl.Result
+		wantErr        error
+		wantConditions []api.Condition
 	}{
 		{
 			title: "create succeeds",
@@ -334,17 +344,22 @@ func TestHandle(t *testing.T) {
 				},
 				service: func() networkcontainer.NetworkContainerService {
 					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
+						nil, networkcontainer.ErrNotFound,
+					)
 					ncs.EXPECT().Create(mock.Anything, testProjectID, mock.Anything).Return(
 						&networkcontainer.NetworkContainer{
-							ID:          testContainerID,
-							Provider:    "AWS",
-							Provisioned: false,
-							AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-								Region:    "US_EAST_1",
-								CIDRBlock: "10.11.0.0/16",
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "AWS",
+								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+									Region:    "US_EAST_1",
+									CIDRBlock: "10.11.0.0/16",
+								},
 							},
+							ID:          testContainerID,
+							Provisioned: false,
 							AWSStatus: &networkcontainer.AWSContainerStatus{
-								VpcID: testVpcId,
+								VpcID: testVpcID,
 							},
 						},
 						nil,
@@ -353,6 +368,125 @@ func TestHandle(t *testing.T) {
 				}(),
 			},
 			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
+					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
+			},
+		},
+
+		{
+			title: "create fails",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.11.0.0/16",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
+						nil, networkcontainer.ErrNotFound,
+					)
+					ncs.EXPECT().Create(mock.Anything, testProjectID, mock.Anything).Return(
+						nil,
+						ErrTestFail,
+					)
+					return ncs
+				}(),
+			},
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
+					WithMessageRegexp(fmt.Sprintf("failed to create container: %v", ErrTestFail)),
+			},
+		},
+
+		{
+			title: "sync still pending",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.11.0.0/16",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
+						&networkcontainer.NetworkContainer{
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "AWS",
+								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+									Region:    "US_EAST_1",
+									CIDRBlock: "10.11.0.0/16",
+								},
+							},
+							ID:          testContainerID,
+							Provisioned: false,
+						}, nil,
+					)
+					return ncs
+				}(),
+			},
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
+					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
+			},
+		},
+
+		{
+			title: "sync created",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-container",
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.11.0.0/16",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
+						&networkcontainer.NetworkContainer{
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "AWS",
+								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+									Region:    "US_EAST_1",
+									CIDRBlock: "10.11.0.0/16",
+								},
+							},
+							ID:          testContainerID,
+							Provisioned: true,
+							AWSStatus: &networkcontainer.AWSContainerStatus{
+								VpcID: testVpcID,
+							},
+						}, nil,
+					)
+					return ncs
+				}(),
+			},
+			wantResult: ctrl.Result{},
+			wantConditions: []api.Condition{
+				api.TrueCondition(api.NetworkContainerReady).
+					WithMessageRegexp(fmt.Sprintf("Network Container %s is ready", testContainerID)),
+				api.TrueCondition(api.ReadyType),
+			},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -360,11 +494,16 @@ func TestHandle(t *testing.T) {
 				Context: context.Background(),
 			}
 			testScheme := runtime.NewScheme()
-			k8sClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
+			require.NoError(t, akov2.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tc.req.networkContainer).
+				Build()
 			r := testReconciler(k8sClient, emptyProvider, logger)
 			result, err := r.handle(workflowCtx, tc.req)
 			assert.ErrorIs(t, err, tc.wantErr)
 			assert.Equal(t, tc.wantResult, result)
+			assert.Equal(t, cleanConditions(tc.wantConditions), cleanConditions(workflowCtx.Conditions()))
 		})
 	}
 }
@@ -380,8 +519,12 @@ func testReconciler(k8sClient client.Client, provider atlas.Provider, logger *za
 	}
 }
 
-func apiError(code string) *admin.GenericOpenAPIError {
-	err := &admin.GenericOpenAPIError{}
-	err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(code)})
-	return err
+func cleanConditions(inputs []api.Condition) []api.Condition {
+	outputs := make([]api.Condition, 0, len(inputs))
+	for _, condition := range inputs {
+		clean := condition
+		clean.LastTransitionTime = metav1.Time{}
+		outputs = append(outputs, clean)
+	}
+	return outputs
 }

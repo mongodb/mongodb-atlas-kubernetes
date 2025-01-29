@@ -170,10 +170,6 @@ spec:
                 description: Provisioned is true when the container has been provisioned
                   in Atlas
                 type: boolean
-              error:
-                description: Error refers to the last error seen in the network container
-                  setup
-                type: string
               id:
                 description: ID record the identifier of the container in Atlas
                 type: string
@@ -183,10 +179,6 @@ spec:
                   The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
                 format: int64
                 type: integer
-              provider:
-                description: Provider is the name of the cloud provider hosting the
-                  container
-                type: string
             required:
             - conditions
             type: object
