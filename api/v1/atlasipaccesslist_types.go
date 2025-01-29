@@ -66,7 +66,7 @@ type IPAccessEntry struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
-// +kubebuilder:resource:categories=atlas,shortName=aial
+// +kubebuilder:resource:categories=atlas,shortName=aip
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 
 // AtlasIPAccessList is the Schema for the atlasipaccesslists API.

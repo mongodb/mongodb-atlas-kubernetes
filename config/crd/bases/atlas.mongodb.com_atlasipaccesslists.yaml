@@ -14,7 +14,7 @@ spec:
     listKind: AtlasIPAccessListList
     plural: atlasipaccesslists
     shortNames:
-    - aial
+    - aip
     singular: atlasipaccesslist
   scope: Namespaced
   versions:
