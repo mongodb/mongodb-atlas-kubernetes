@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
@@ -21,13 +21,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	akomock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+)
+
+const (
+	testContainerID = "container-id"
+
+	testVpcId = "vpc-id"
 )
 
 func TestHandleCustomResource(t *testing.T) {
@@ -217,12 +229,13 @@ func TestHandleCustomResource(t *testing.T) {
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
-		"should handle network container": {
+		"should handle network container with unmanage": {
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-container",
-					Namespace: "default",
-					Finalizers: []string{customresource.FinalizerLabel},
+					Name:              "network-container",
+					Namespace:         "default",
+					Finalizers:        []string{customresource.FinalizerLabel},
+					DeletionTimestamp: &metav1.Time{}, // removed
 				},
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -239,25 +252,30 @@ func TestHandleCustomResource(t *testing.T) {
 						CIDRBlock: "11.10.0.0/16",
 					},
 				},
+				Status: status.AtlasNetworkContainerStatus{
+					ID: testContainerID,
+				},
 			},
 			provider: &atlasmock.TestProvider{
 				IsSupportedFunc: func() bool {
 					return true
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					ialAPI := mockadmin.NewNetworkPeeringApi(t)
+					ncAPI := mockadmin.NewNetworkPeeringApi(t)
+					ncAPI.EXPECT().GetPeeringContainer(mock.Anything, mock.Anything, mock.Anything).Return(
+						admin.GetPeeringContainerApiRequest{ApiService: ncAPI},
+					)
+					ncAPI.EXPECT().GetPeeringContainerExecute(mock.AnythingOfType("admin.GetPeeringContainerApiRequest")).Return(
+						nil, nil, apiError("CLOUD_PROVIDER_CONTAINER_NOT_FOUND"),
+					)
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{NetworkPeeringApi: ialAPI},
+						SdkClient20231115008: &admin.APIClient{NetworkPeeringApi: ncAPI},
 					}, "", nil
 				},
 			},
 			expectedResult:     ctrl.Result{},
 			expectedFinalizers: []string{customresource.FinalizerLabel},
-			expectedConditions: []api.Condition{
-				api.TrueCondition(api.ReadyType),
-				api.TrueCondition(api.ResourceVersionStatus),
-				api.TrueCondition(api.NetworkContainerReady),
-			},
+			expectedConditions: nil,
 		},
 	}
 	for name, tc := range tests {
@@ -275,18 +293,11 @@ func TestHandleCustomResource(t *testing.T) {
 				WithObjects(project, tc.networkContainer).
 				WithStatusSubresource(tc.networkContainer).
 				Build()
-			logger := zaptest.NewLogger(t).Sugar()
+			logger := zaptest.NewLogger(t)
 			ctx := &workflow.Context{
 				Context: context.Background(),
 			}
-			r := &AtlasNetworkContainerReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
-				AtlasProvider: tc.provider,
-				EventRecorder: record.NewFakeRecorder(10),
-			}
+			r := testReconciler(k8sClient, tc.provider, logger)
 			result, err := r.handleCustomResource(ctx.Context, tc.networkContainer)
 
 			require.NoError(t, err)
@@ -297,4 +308,80 @@ func TestHandleCustomResource(t *testing.T) {
 			assert.True(t, cmp.Equal(tc.expectedConditions, networkContainer.Status.GetConditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
 		})
 	}
+}
+
+func TestHandle(t *testing.T) {
+	emptyProvider := &atlasmock.TestProvider{}
+	logger := zaptest.NewLogger(t)
+	for _, tc := range []struct {
+		title      string
+		req        *reconcileRequest
+		wantResult ctrl.Result
+		wantErr    error
+	}{
+		{
+			title: "create succeeds",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.11.0.0/16",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Create(mock.Anything, testProjectID, mock.Anything).Return(
+						&networkcontainer.NetworkContainer{
+							ID:          testContainerID,
+							Provider:    "AWS",
+							Provisioned: false,
+							AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+								Region:    "US_EAST_1",
+								CIDRBlock: "10.11.0.0/16",
+							},
+							AWSStatus: &networkcontainer.AWSContainerStatus{
+								VpcID: testVpcId,
+							},
+						},
+						nil,
+					)
+					return ncs
+				}(),
+			},
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			workflowCtx := &workflow.Context{
+				Context: context.Background(),
+			}
+			testScheme := runtime.NewScheme()
+			k8sClient := fake.NewClientBuilder().WithScheme(testScheme).Build()
+			r := testReconciler(k8sClient, emptyProvider, logger)
+			result, err := r.handle(workflowCtx, tc.req)
+			assert.ErrorIs(t, err, tc.wantErr)
+			assert.Equal(t, tc.wantResult, result)
+		})
+	}
+}
+
+func testReconciler(k8sClient client.Client, provider atlas.Provider, logger *zap.Logger) *AtlasNetworkContainerReconciler {
+	return &AtlasNetworkContainerReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client: k8sClient,
+			Log:    logger.Sugar(),
+		},
+		AtlasProvider: provider,
+		EventRecorder: record.NewFakeRecorder(10),
+	}
+}
+
+func apiError(code string) *admin.GenericOpenAPIError {
+	err := &admin.GenericOpenAPIError{}
+	err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(code)})
+	return err
 }

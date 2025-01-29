@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 )
 
 var (
