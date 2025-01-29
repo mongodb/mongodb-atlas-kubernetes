@@ -14,26 +14,27 @@ import (
 )
 
 func (r *AtlasNetworkContainerReconciler) inProgress(workflowCtx *workflow.Context, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
-	workflowCtx.EnsureStatusOption(updateNetworkContainerStatusOption(container))
-
-	return workflow.InProgress(
+	result := workflow.InProgress(
 		workflow.NetworkContainerProvisioning,
 		fmt.Sprintf("Network Container %s is being provisioned", container.ID),
-	).ReconcileResult(), nil
+	)
+	workflowCtx.SetConditionFalse(api.ReadyType).SetConditionFromResult(api.ReadyType, result).
+		EnsureStatusOption(updateNetworkContainerStatusOption(container))
+
+	return result.ReconcileResult(), nil
 }
 
-func (r *AtlasNetworkContainerReconciler) unmanage(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
+func (r *AtlasNetworkContainerReconciler) unmanage(_ *workflow.Context, _ *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasNetworkContainerReconciler) ready(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
+func (r *AtlasNetworkContainerReconciler) ready(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
 	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.SetFinalizer); err != nil {
 		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotSet, err), nil
 	}
 
-	workflowCtx.SetConditionTrue(api.NetworkContainerReady).
-		SetConditionTrue(api.ReadyType)
-		// TODO: add .EnsureStatusOption(networkContainer.NewNetworkContainerStatus(service)) ?
+	workflowCtx.SetConditionTrueMsg(api.NetworkContainerReady, fmt.Sprintf("Network Container %s is ready", container.ID)).
+		SetConditionTrue(api.ReadyType).EnsureStatusOption(updateNetworkContainerStatusOption(container))
 
 	if networkContainer.Spec.ExternalProjectRef != nil {
 		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil

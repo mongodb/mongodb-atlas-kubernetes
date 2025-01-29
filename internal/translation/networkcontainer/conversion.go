@@ -9,10 +9,14 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-type NetworkContainer struct {
+type NetworkContainerConfig struct {
+	Provider string
 	akov2.AtlasNetworkContainerConfig
+}
+
+type NetworkContainer struct {
+	NetworkContainerConfig
 	ID          string
-	Provider    string
 	Provisioned bool
 	AWSStatus   *AWSContainerStatus
 	AzureStatus *AzureContainerStatus
@@ -33,8 +37,8 @@ type GoogleContainerStatus struct {
 	NetworkName  string
 }
 
-func NewNetworkContainerSpec(provider string, config *akov2.AtlasNetworkContainerConfig) *NetworkContainer {
-	return &NetworkContainer{
+func NewNetworkContainerConfig(provider string, config *akov2.AtlasNetworkContainerConfig) *NetworkContainerConfig {
+	return &NetworkContainerConfig{
 		Provider:                    provider,
 		AtlasNetworkContainerConfig: *config,
 	}
@@ -46,15 +50,20 @@ func ApplyNetworkContainerStatus(containerStatus *status.AtlasNetworkContainerSt
 }
 
 func toAtlas(container *NetworkContainer) *admin.CloudProviderContainer {
+	cpc := toAtlasConfig(&container.NetworkContainerConfig)
+	cpc.Id = pointer.SetOrNil(container.ID, "")
+	return cpc
+}
+
+func toAtlasConfig(cfg *NetworkContainerConfig) *admin.CloudProviderContainer {
 	cpc := &admin.CloudProviderContainer{
-		Id:             pointer.SetOrNil(container.ID, ""),
-		ProviderName:   pointer.SetOrNil(container.Provider, ""),
-		AtlasCidrBlock: pointer.SetOrNil(container.CIDRBlock, ""),
+		ProviderName:   pointer.SetOrNil(cfg.Provider, ""),
+		AtlasCidrBlock: pointer.SetOrNil(cfg.CIDRBlock, ""),
 	}
 	if cpc.GetProviderName() == string(provider.ProviderAWS) {
-		cpc.RegionName = pointer.SetOrNil(container.Region, "")
+		cpc.RegionName = pointer.SetOrNil(cfg.Region, "")
 	} else {
-		cpc.Region = pointer.SetOrNil(container.Region, "")
+		cpc.Region = pointer.SetOrNil(cfg.Region, "")
 	}
 	return cpc
 }
@@ -79,12 +88,14 @@ func fromAtlasNoStatus(container *admin.CloudProviderContainer) *NetworkContaine
 		region = container.GetRegionName()
 	}
 	return &NetworkContainer{
-		ID:       container.GetId(),
-		Provider: container.GetProviderName(),
-		AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-			CIDRBlock: container.GetAtlasCidrBlock(),
-			Region:    region,
+		NetworkContainerConfig: NetworkContainerConfig{
+			Provider: container.GetProviderName(),
+			AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+				CIDRBlock: container.GetAtlasCidrBlock(),
+				Region:    region,
+			},
 		},
+		ID: container.GetId(),
 	}
 }
 

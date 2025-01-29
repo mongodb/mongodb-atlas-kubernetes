@@ -23,9 +23,9 @@ func (_m *NetworkContainerServiceMock) EXPECT() *NetworkContainerServiceMock_Exp
 	return &NetworkContainerServiceMock_Expecter{mock: &_m.Mock}
 }
 
-// Create provides a mock function with given fields: ctx, projectID, container
-func (_m *NetworkContainerServiceMock) Create(ctx context.Context, projectID string, container *networkcontainer.NetworkContainer) (*networkcontainer.NetworkContainer, error) {
-	ret := _m.Called(ctx, projectID, container)
+// Create provides a mock function with given fields: ctx, projectID, cfg
+func (_m *NetworkContainerServiceMock) Create(ctx context.Context, projectID string, cfg *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error) {
+	ret := _m.Called(ctx, projectID, cfg)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -33,19 +33,19 @@ func (_m *NetworkContainerServiceMock) Create(ctx context.Context, projectID str
 
 	var r0 *networkcontainer.NetworkContainer
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *networkcontainer.NetworkContainer) (*networkcontainer.NetworkContainer, error)); ok {
-		return rf(ctx, projectID, container)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error)); ok {
+		return rf(ctx, projectID, cfg)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, *networkcontainer.NetworkContainer) *networkcontainer.NetworkContainer); ok {
-		r0 = rf(ctx, projectID, container)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *networkcontainer.NetworkContainerConfig) *networkcontainer.NetworkContainer); ok {
+		r0 = rf(ctx, projectID, cfg)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*networkcontainer.NetworkContainer)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, *networkcontainer.NetworkContainer) error); ok {
-		r1 = rf(ctx, projectID, container)
+	if rf, ok := ret.Get(1).(func(context.Context, string, *networkcontainer.NetworkContainerConfig) error); ok {
+		r1 = rf(ctx, projectID, cfg)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -61,14 +61,14 @@ type NetworkContainerServiceMock_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - projectID string
-//   - container *networkcontainer.NetworkContainer
-func (_e *NetworkContainerServiceMock_Expecter) Create(ctx interface{}, projectID interface{}, container interface{}) *NetworkContainerServiceMock_Create_Call {
-	return &NetworkContainerServiceMock_Create_Call{Call: _e.mock.On("Create", ctx, projectID, container)}
+//   - cfg *networkcontainer.NetworkContainerConfig
+func (_e *NetworkContainerServiceMock_Expecter) Create(ctx interface{}, projectID interface{}, cfg interface{}) *NetworkContainerServiceMock_Create_Call {
+	return &NetworkContainerServiceMock_Create_Call{Call: _e.mock.On("Create", ctx, projectID, cfg)}
 }
 
-func (_c *NetworkContainerServiceMock_Create_Call) Run(run func(ctx context.Context, projectID string, container *networkcontainer.NetworkContainer)) *NetworkContainerServiceMock_Create_Call {
+func (_c *NetworkContainerServiceMock_Create_Call) Run(run func(ctx context.Context, projectID string, cfg *networkcontainer.NetworkContainerConfig)) *NetworkContainerServiceMock_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(*networkcontainer.NetworkContainer))
+		run(args[0].(context.Context), args[1].(string), args[2].(*networkcontainer.NetworkContainerConfig))
 	})
 	return _c
 }
@@ -78,7 +78,7 @@ func (_c *NetworkContainerServiceMock_Create_Call) Return(_a0 *networkcontainer.
 	return _c
 }
 
-func (_c *NetworkContainerServiceMock_Create_Call) RunAndReturn(run func(context.Context, string, *networkcontainer.NetworkContainer) (*networkcontainer.NetworkContainer, error)) *NetworkContainerServiceMock_Create_Call {
+func (_c *NetworkContainerServiceMock_Create_Call) RunAndReturn(run func(context.Context, string, *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error)) *NetworkContainerServiceMock_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -127,6 +127,66 @@ func (_c *NetworkContainerServiceMock_Delete_Call) Return(_a0 error) *NetworkCon
 }
 
 func (_c *NetworkContainerServiceMock_Delete_Call) RunAndReturn(run func(context.Context, string, string) error) *NetworkContainerServiceMock_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Find provides a mock function with given fields: ctx, projectID, cfg
+func (_m *NetworkContainerServiceMock) Find(ctx context.Context, projectID string, cfg *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error) {
+	ret := _m.Called(ctx, projectID, cfg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Find")
+	}
+
+	var r0 *networkcontainer.NetworkContainer
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error)); ok {
+		return rf(ctx, projectID, cfg)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, *networkcontainer.NetworkContainerConfig) *networkcontainer.NetworkContainer); ok {
+		r0 = rf(ctx, projectID, cfg)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*networkcontainer.NetworkContainer)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, *networkcontainer.NetworkContainerConfig) error); ok {
+		r1 = rf(ctx, projectID, cfg)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// NetworkContainerServiceMock_Find_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Find'
+type NetworkContainerServiceMock_Find_Call struct {
+	*mock.Call
+}
+
+// Find is a helper method to define mock.On call
+//   - ctx context.Context
+//   - projectID string
+//   - cfg *networkcontainer.NetworkContainerConfig
+func (_e *NetworkContainerServiceMock_Expecter) Find(ctx interface{}, projectID interface{}, cfg interface{}) *NetworkContainerServiceMock_Find_Call {
+	return &NetworkContainerServiceMock_Find_Call{Call: _e.mock.On("Find", ctx, projectID, cfg)}
+}
+
+func (_c *NetworkContainerServiceMock_Find_Call) Run(run func(ctx context.Context, projectID string, cfg *networkcontainer.NetworkContainerConfig)) *NetworkContainerServiceMock_Find_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(*networkcontainer.NetworkContainerConfig))
+	})
+	return _c
+}
+
+func (_c *NetworkContainerServiceMock_Find_Call) Return(_a0 *networkcontainer.NetworkContainer, _a1 error) *NetworkContainerServiceMock_Find_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *NetworkContainerServiceMock_Find_Call) RunAndReturn(run func(context.Context, string, *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error)) *NetworkContainerServiceMock_Find_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -191,9 +251,9 @@ func (_c *NetworkContainerServiceMock_Get_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
-// Update provides a mock function with given fields: ctx, projectID, container
-func (_m *NetworkContainerServiceMock) Update(ctx context.Context, projectID string, container *networkcontainer.NetworkContainer) (*networkcontainer.NetworkContainer, error) {
-	ret := _m.Called(ctx, projectID, container)
+// Update provides a mock function with given fields: ctx, projectID, containerID, cfg
+func (_m *NetworkContainerServiceMock) Update(ctx context.Context, projectID string, containerID string, cfg *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error) {
+	ret := _m.Called(ctx, projectID, containerID, cfg)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -201,19 +261,19 @@ func (_m *NetworkContainerServiceMock) Update(ctx context.Context, projectID str
 
 	var r0 *networkcontainer.NetworkContainer
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *networkcontainer.NetworkContainer) (*networkcontainer.NetworkContainer, error)); ok {
-		return rf(ctx, projectID, container)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error)); ok {
+		return rf(ctx, projectID, containerID, cfg)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, *networkcontainer.NetworkContainer) *networkcontainer.NetworkContainer); ok {
-		r0 = rf(ctx, projectID, container)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, *networkcontainer.NetworkContainerConfig) *networkcontainer.NetworkContainer); ok {
+		r0 = rf(ctx, projectID, containerID, cfg)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*networkcontainer.NetworkContainer)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, *networkcontainer.NetworkContainer) error); ok {
-		r1 = rf(ctx, projectID, container)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, *networkcontainer.NetworkContainerConfig) error); ok {
+		r1 = rf(ctx, projectID, containerID, cfg)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -229,14 +289,15 @@ type NetworkContainerServiceMock_Update_Call struct {
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
 //   - projectID string
-//   - container *networkcontainer.NetworkContainer
-func (_e *NetworkContainerServiceMock_Expecter) Update(ctx interface{}, projectID interface{}, container interface{}) *NetworkContainerServiceMock_Update_Call {
-	return &NetworkContainerServiceMock_Update_Call{Call: _e.mock.On("Update", ctx, projectID, container)}
+//   - containerID string
+//   - cfg *networkcontainer.NetworkContainerConfig
+func (_e *NetworkContainerServiceMock_Expecter) Update(ctx interface{}, projectID interface{}, containerID interface{}, cfg interface{}) *NetworkContainerServiceMock_Update_Call {
+	return &NetworkContainerServiceMock_Update_Call{Call: _e.mock.On("Update", ctx, projectID, containerID, cfg)}
 }
 
-func (_c *NetworkContainerServiceMock_Update_Call) Run(run func(ctx context.Context, projectID string, container *networkcontainer.NetworkContainer)) *NetworkContainerServiceMock_Update_Call {
+func (_c *NetworkContainerServiceMock_Update_Call) Run(run func(ctx context.Context, projectID string, containerID string, cfg *networkcontainer.NetworkContainerConfig)) *NetworkContainerServiceMock_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(*networkcontainer.NetworkContainer))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(*networkcontainer.NetworkContainerConfig))
 	})
 	return _c
 }
@@ -246,7 +307,7 @@ func (_c *NetworkContainerServiceMock_Update_Call) Return(_a0 *networkcontainer.
 	return _c
 }
 
-func (_c *NetworkContainerServiceMock_Update_Call) RunAndReturn(run func(context.Context, string, *networkcontainer.NetworkContainer) (*networkcontainer.NetworkContainer, error)) *NetworkContainerServiceMock_Update_Call {
+func (_c *NetworkContainerServiceMock_Update_Call) RunAndReturn(run func(context.Context, string, string, *networkcontainer.NetworkContainerConfig) (*networkcontainer.NetworkContainer, error)) *NetworkContainerServiceMock_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
 var (
@@ -19,9 +22,10 @@ var (
 )
 
 type NetworkContainerService interface {
-	Create(ctx context.Context, projectID string, container *NetworkContainer) (*NetworkContainer, error)
+	Create(ctx context.Context, projectID string, cfg *NetworkContainerConfig) (*NetworkContainer, error)
 	Get(ctx context.Context, projectID, containerID string) (*NetworkContainer, error)
-	Update(ctx context.Context, projectID string, container *NetworkContainer) (*NetworkContainer, error)
+	Find(ctx context.Context, projectID string, cfg *NetworkContainerConfig) (*NetworkContainer, error)
+	Update(ctx context.Context, projectID, containerID string, cfg *NetworkContainerConfig) (*NetworkContainer, error)
 	Delete(ctx context.Context, projectID, containerID string) error
 }
 
@@ -37,10 +41,10 @@ func NewNetworkContainerService(peeringAPI admin.NetworkPeeringApi) NetworkConta
 	return &networkContainerService{peeringAPI: peeringAPI}
 }
 
-func (np *networkContainerService) Create(ctx context.Context, projectID string, container *NetworkContainer) (*NetworkContainer, error) {
-	newContainer, _, err := np.peeringAPI.CreatePeeringContainer(ctx, projectID, toAtlas(container)).Execute()
+func (np *networkContainerService) Create(ctx context.Context, projectID string, cfg *NetworkContainerConfig) (*NetworkContainer, error) {
+	newContainer, _, err := np.peeringAPI.CreatePeeringContainer(ctx, projectID, toAtlasConfig(cfg)).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create peering container %s: %w", container.ID, err)
+		return nil, fmt.Errorf("failed to create peering container at project %s: %w", projectID, err)
 	}
 	return fromAtlas(newContainer), nil
 }
@@ -56,10 +60,33 @@ func (np *networkContainerService) Get(ctx context.Context, projectID, container
 	return fromAtlas(container), nil
 }
 
-func (np *networkContainerService) Update(ctx context.Context, projectID string, container *NetworkContainer) (*NetworkContainer, error) {
-	updatedContainer, _, err := np.peeringAPI.UpdatePeeringContainer(ctx, projectID, container.ID, toAtlas(container)).Execute()
+func (np *networkContainerService) Find(ctx context.Context, projectID string, cfg *NetworkContainerConfig) (*NetworkContainer, error) {
+	atlasContainers, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.CloudProviderContainer], *http.Response, error) {
+		return np.peeringAPI.ListPeeringContainerByCloudProvider(ctx, projectID).ProviderName(cfg.Provider).PageNum(pageNum).Execute()
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to update peering container %s: %w", container.ID, err)
+		return nil, fmt.Errorf("failed to list containers at project %s: %w", projectID, err)
+	}
+	for _, atlasContainer := range atlasContainers {
+		container := fromAtlas(&atlasContainer)
+		switch provider.ProviderName(cfg.Provider) {
+		case provider.ProviderGCP:
+			if container.CIDRBlock == cfg.CIDRBlock {
+				return container, nil
+			}
+		default:
+			if container.CIDRBlock == cfg.CIDRBlock && container.Region == cfg.Region {
+				return container, nil
+			}
+		}
+	}
+	return nil, ErrNotFound
+}
+
+func (np *networkContainerService) Update(ctx context.Context, projectID, containerID string, cfg *NetworkContainerConfig) (*NetworkContainer, error) {
+	updatedContainer, _, err := np.peeringAPI.UpdatePeeringContainer(ctx, projectID, containerID, toAtlasConfig(cfg)).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to update peering container %s: %w", containerID, err)
 	}
 	return fromAtlas(updatedContainer), nil
 }
