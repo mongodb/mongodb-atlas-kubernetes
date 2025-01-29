@@ -36,7 +36,7 @@ func init() {
 // +kubebuilder:printcolumn:name="Provisioned",type=string,JSONPath=`.status.provisioned`
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
-// +kubebuilder:resource:categories=atlas,shortName=anp
+// +kubebuilder:resource:categories=atlas,shortName=anc
 type AtlasNetworkContainer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
