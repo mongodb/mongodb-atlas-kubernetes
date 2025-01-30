@@ -13,7 +13,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
 
-func (r *AtlasNetworkContainerReconciler) inProgress(workflowCtx *workflow.Context, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
+func (r *AtlasNetworkContainerReconciler) inProgress(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
+	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.SetFinalizer); err != nil {
+		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotSet, err), nil
+	}
 	result := workflow.InProgress(
 		workflow.NetworkContainerProvisioning,
 		fmt.Sprintf("Network Container %s is being provisioned", container.ID),
