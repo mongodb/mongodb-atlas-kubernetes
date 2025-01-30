@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -188,10 +189,14 @@ func (r *AtlasCustomRoleReconciler) notFound(req ctrl.Request) ctrl.Result {
 	return workflow.TerminateSilently(err).WithoutRetry().ReconcileResult()
 }
 
+func (r *AtlasCustomRoleReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasCustomRole{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasCustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasCustomRole").
-		For(&akov2.AtlasCustomRole{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.customRolesCredentials()),

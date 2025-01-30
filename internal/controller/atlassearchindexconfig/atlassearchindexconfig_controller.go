@@ -96,10 +96,14 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 	return r.release(workflowCtx, atlasSearchIndexConfig), nil
 }
 
+func (r *AtlasSearchIndexConfigReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasSearchIndexConfig{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasSearchIndexConfigReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasSearchIndexConfig").
-		For(&akov2.AtlasSearchIndexConfig{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasDeployment{},
 			handler.EnqueueRequestsFromMapFunc(r.findReferencesInAtlasDeployments),

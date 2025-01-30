@@ -212,10 +212,14 @@ func (r *AtlasDataFederationReconciler) readProjectResource(ctx context.Context,
 	return workflow.OK()
 }
 
+func (r *AtlasDataFederationReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasDataFederation{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDataFederation").
-		For(&akov2.AtlasDataFederation{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(r.findAtlasDataFederationForProjects),

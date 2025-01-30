@@ -381,10 +381,14 @@ func (r *AtlasDeploymentReconciler) unmanage(ctx *workflow.Context, atlasDeploym
 	return workflow.OK().ReconcileResult(), nil
 }
 
+func (r *AtlasDeploymentReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasDeployment{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDeployment").
-		For(&akov2.AtlasDeployment{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasBackupSchedule{},
 			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForBackupSchedule),
