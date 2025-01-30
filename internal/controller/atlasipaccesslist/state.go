@@ -45,11 +45,11 @@ func (r *AtlasIPAccessListReconciler) handleCustomResource(ctx context.Context, 
 	if err != nil {
 		return r.terminate(workflowCtx, ipAccessList, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx, credentials, r.Log)
+	sdkClient, _, err := r.AtlasProvider.SdkClient(ctx, credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, ipAccessList, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	atlasProject, err := r.ResolveProject(ctx, sdkClient, ipAccessList, orgID)
+	atlasProject, err := r.ResolveProject(ctx, sdkClient, ipAccessList)
 	if err != nil {
 		return r.terminate(workflowCtx, ipAccessList, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}

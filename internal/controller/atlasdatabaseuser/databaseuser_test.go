@@ -13,7 +13,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -2238,20 +2237,27 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 		},
 		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 			userAPI := mockadmin.NewDatabaseUsersApi(t)
-			userAPI.EXPECT().GetDatabaseUser(context.Background(), "", "admin", "user1").
+			userAPI.EXPECT().GetDatabaseUser(context.Background(), "my-project", "admin", "user1").
 				Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
 			userAPI.EXPECT().GetDatabaseUserExecute(mock.AnythingOfType("admin.GetDatabaseUserApiRequest")).
 				Return(nil, nil, nil)
-			userAPI.EXPECT().CreateDatabaseUser(context.Background(), "", mock.AnythingOfType("*admin.CloudDatabaseUser")).
+			userAPI.EXPECT().CreateDatabaseUser(context.Background(), "my-project", mock.AnythingOfType("*admin.CloudDatabaseUser")).
 				Return(admin.CreateDatabaseUserApiRequest{ApiService: userAPI})
 			userAPI.EXPECT().CreateDatabaseUserExecute(mock.AnythingOfType("admin.CreateDatabaseUserApiRequest")).
 				Return(&admin.CloudDatabaseUser{}, nil, nil)
 
 			clusterAPI := mockadmin.NewClustersApi(t)
 
+			projectAPI := mockadmin.NewProjectsApi(t)
+			projectAPI.EXPECT().GetProjectByName(mock.Anything, "my-project").
+				Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
+			projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+				Return(&admin.Group{Id: pointer.MakePtr("my-project")}, nil, nil)
+
 			return &admin.APIClient{
 				ClustersApi:      clusterAPI,
 				DatabaseUsersApi: userAPI,
+				ProjectsApi:      projectAPI,
 			}, "", nil
 		},
 		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
