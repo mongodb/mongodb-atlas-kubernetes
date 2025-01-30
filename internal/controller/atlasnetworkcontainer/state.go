@@ -72,19 +72,11 @@ func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, 
 		return r.create(workflowCtx, req)
 	case !deleted && inAtlas:
 		return r.sync(workflowCtx, req, atlasContainer)
-	case deleted && !inAtlas:
+	case deleted && inAtlas:
+		return r.delete(workflowCtx, req, atlasContainer)
+	default: // deleted && !inAtlas:
 		return r.unmanage(workflowCtx, req.networkContainer)
-	default:
-		panic(fmt.Sprintf("unsupported container state deleted: %v inAtlas %v", deleted, inAtlas))
 	}
-	/* 	case !deleted && inAtlas:
-	   		return atlasContainer, nil
-	   	case deleted && inAtlas:
-	   		return r.deleteContainer(req)
-	   	default:
-	   		return r.unmanageContainer()
-	   	}*/
-	//return r.ready(workflowCtx, req.networkContainer, req.service)
 }
 
 func discover(ctx context.Context, req *reconcileRequest) (*networkcontainer.NetworkContainer, error) {
@@ -117,16 +109,25 @@ func (r *AtlasNetworkContainerReconciler) sync(workflowCtx *workflow.Context, re
 	cfg := networkcontainer.NewNetworkContainerConfig(
 		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
 	if !reflect.DeepEqual(cfg, &container.NetworkContainerConfig) {
-		return r.update(workflowCtx, req, container.ID, cfg)
+		return r.update(workflowCtx, req, container)
 	}
 	return r.ready(workflowCtx, req.networkContainer, container)
 }
 
-func (r *AtlasNetworkContainerReconciler) update(workflowCtx *workflow.Context, req *reconcileRequest, id string, cfg *networkcontainer.NetworkContainerConfig) (ctrl.Result, error) {
-	updatedContainer, err := req.service.Update(workflowCtx.Context, req.projectID, id, cfg)
+func (r *AtlasNetworkContainerReconciler) update(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
+	updatedContainer, err := req.service.Update(workflowCtx.Context, req.projectID, container.ID, &container.NetworkContainerConfig)
 	if err != nil {
 		wrappedErr := fmt.Errorf("failed to update container: %w", err)
 		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
 	}
 	return r.inProgress(workflowCtx, updatedContainer)
+}
+
+func (r *AtlasNetworkContainerReconciler) delete(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
+	err := req.service.Delete(workflowCtx.Context, req.projectID, container.ID)
+	if err != nil {
+		wrappedErr := fmt.Errorf("failed to delete container: %w", err)
+		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotDeleted, wrappedErr), nil
+	}
+	return r.unmanage(workflowCtx, req.networkContainer)
 }

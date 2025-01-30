@@ -13,15 +13,13 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -30,7 +28,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akomock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
 
 var (
@@ -45,6 +45,7 @@ const (
 )
 
 func TestHandleCustomResource(t *testing.T) {
+	deletionTime := metav1.Now()
 	tests := []struct {
 		title            string
 		networkContainer *akov2.AtlasNetworkContainer
@@ -245,7 +246,7 @@ func TestHandleCustomResource(t *testing.T) {
 					Name:              "network-container",
 					Namespace:         "default",
 					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: &metav1.Time{}, // removed
+					DeletionTimestamp: &deletionTime,
 				},
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -283,7 +284,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			wantResult:     ctrl.Result{},
-			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantFinalizers: nil,
 			wantConditions: nil,
 		},
 	}
@@ -303,23 +304,20 @@ func TestHandleCustomResource(t *testing.T) {
 				WithStatusSubresource(tc.networkContainer).
 				Build()
 			logger := zaptest.NewLogger(t)
-			ctx := &workflow.Context{
-				Context: context.Background(),
-			}
+			ctx := context.Background()
 			r := testReconciler(k8sClient, tc.provider, logger)
-			result, err := r.handleCustomResource(ctx.Context, tc.networkContainer)
-
+			result, err := r.handleCustomResource(ctx, tc.networkContainer)
+			nc := getNetworkContainer(t, ctx, k8sClient, client.ObjectKeyFromObject(tc.networkContainer))
 			require.NoError(t, err)
-			networkContainer := &akov2.AtlasNetworkContainer{}
-			require.NoError(t, k8sClient.Get(ctx.Context, client.ObjectKeyFromObject(tc.networkContainer), networkContainer))
 			assert.Equal(t, tc.wantResult, result)
-			assert.Equal(t, tc.wantFinalizers, networkContainer.GetFinalizers())
-			assert.Equal(t, cleanConditions(tc.wantConditions), cleanConditions(networkContainer.Status.GetConditions()))
+			assert.Equal(t, tc.wantFinalizers, getFinalizers(nc))
+			assert.Equal(t, cleanConditions(tc.wantConditions), cleanConditions(getConditions(nc)))
 		})
 	}
 }
 
 func TestHandle(t *testing.T) {
+	deletionTime := metav1.Now()
 	emptyProvider := &atlasmock.TestProvider{}
 	logger := zaptest.NewLogger(t)
 	for _, tc := range []struct {
@@ -488,6 +486,199 @@ func TestHandle(t *testing.T) {
 				api.TrueCondition(api.ReadyType),
 			},
 		},
+
+		{
+			title: "update succeeds",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-container",
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.12.0.0/16",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
+						&networkcontainer.NetworkContainer{
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "AWS",
+								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+									Region:    "US_EAST_1",
+									CIDRBlock: "10.11.0.0/16",
+								},
+							},
+							ID:          testContainerID,
+							Provisioned: true,
+							AWSStatus: &networkcontainer.AWSContainerStatus{
+								VpcID: testVpcID,
+							},
+						}, nil,
+					)
+					ncs.EXPECT().Update(mock.Anything, testProjectID, testContainerID, mock.Anything).Return(
+						&networkcontainer.NetworkContainer{
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "AWS",
+								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+									Region:    "US_EAST_1",
+									CIDRBlock: "10.12.0.0/16",
+								},
+							},
+							ID:          testContainerID,
+							Provisioned: false,
+							AWSStatus:   nil,
+						}, nil,
+					)
+					return ncs
+				}(),
+			},
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
+					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
+			},
+		},
+
+		{
+			title: "update fails",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-container",
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.12.0.0/16",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
+						&networkcontainer.NetworkContainer{
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "AWS",
+								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+									Region:    "US_EAST_1",
+									CIDRBlock: "10.11.0.0/16",
+								},
+							},
+							ID:          testContainerID,
+							Provisioned: true,
+							AWSStatus: &networkcontainer.AWSContainerStatus{
+								VpcID: testVpcID,
+							},
+						}, nil,
+					)
+					ncs.EXPECT().Update(mock.Anything, testProjectID, testContainerID, mock.Anything).Return(
+						nil, ErrTestFail,
+					)
+					return ncs
+				}(),
+			},
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
+					WithMessageRegexp(fmt.Sprintf("failed to update container: %v", ErrTestFail)),
+			},
+		},
+
+		{
+			title: "delete succeeds",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-container",
+						Finalizers:        []string{customresource.FinalizerLabel},
+						DeletionTimestamp: &deletionTime,
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.12.0.0/16",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
+						&networkcontainer.NetworkContainer{
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "AWS",
+								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+									Region: "US_EAST_1",
+									// different CIDR, but it should not matter as we are removing
+									CIDRBlock: "10.11.0.0/16",
+								},
+							},
+							ID:          testContainerID,
+							Provisioned: true,
+							AWSStatus: &networkcontainer.AWSContainerStatus{
+								VpcID: testVpcID,
+							},
+						}, nil,
+					)
+					ncs.EXPECT().Delete(mock.Anything, testProjectID, testContainerID).Return(
+						nil,
+					)
+					return ncs
+				}(),
+			},
+			wantResult:     ctrl.Result{},
+			wantConditions: []api.Condition{},
+		},
+
+		{
+			title: "delete fails",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              "test-another-container",
+						Finalizers:        []string{customresource.FinalizerLabel},
+						DeletionTimestamp: &deletionTime,
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "Azure",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_2",
+							CIDRBlock: "10.14.0.0/16",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
+						&networkcontainer.NetworkContainer{
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "Azure", // almost empty, but we are removing anyways
+							},
+							ID: testContainerID,
+						}, nil,
+					)
+					ncs.EXPECT().Delete(mock.Anything, testProjectID, testContainerID).Return(
+						ErrTestFail,
+					)
+					return ncs
+				}(),
+			},
+			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotDeleted)).
+					WithMessageRegexp(fmt.Sprintf("failed to delete container: %v", ErrTestFail)),
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
@@ -506,6 +697,28 @@ func TestHandle(t *testing.T) {
 			assert.Equal(t, cleanConditions(tc.wantConditions), cleanConditions(workflowCtx.Conditions()))
 		})
 	}
+}
+
+func getNetworkContainer(t *testing.T, ctx context.Context, k8sClient client.Client, key client.ObjectKey) *akov2.AtlasNetworkContainer {
+	networkContainer := &akov2.AtlasNetworkContainer{}
+	if err := k8sClient.Get(ctx, key, networkContainer); err != nil && !k8serrors.IsNotFound(err) {
+		require.NoError(t, err)
+	}
+	return networkContainer
+}
+
+func getFinalizers(networkContainer *akov2.AtlasNetworkContainer) []string {
+	if networkContainer == nil {
+		return nil
+	}
+	return networkContainer.GetFinalizers()
+}
+
+func getConditions(networkContainer *akov2.AtlasNetworkContainer) []api.Condition {
+	if networkContainer == nil {
+		return nil
+	}
+	return networkContainer.Status.GetConditions()
 }
 
 func testReconciler(k8sClient client.Client, provider atlas.Provider, logger *zap.Logger) *AtlasNetworkContainerReconciler {
