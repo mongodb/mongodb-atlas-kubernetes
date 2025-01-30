@@ -172,4 +172,5 @@ const (
 	NetworkContainerNotConfigured ConditionReason = "NetworkContainerNotConfigured"
 	NetworkContainerProvisioning  ConditionReason = "NetworkContainerProvisioning"
 	NetworkContainerProvisioned   ConditionReason = "NetworkContainerProvisioned"
+	NetworkContainerNotDeleted    ConditionReason = "NetworkContainerNotDeleted"
 )

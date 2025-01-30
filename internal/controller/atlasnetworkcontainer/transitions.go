@@ -24,8 +24,11 @@ func (r *AtlasNetworkContainerReconciler) inProgress(workflowCtx *workflow.Conte
 	return result.ReconcileResult(), nil
 }
 
-func (r *AtlasNetworkContainerReconciler) unmanage(_ *workflow.Context, _ *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
-	return workflow.OK().ReconcileResult(), nil
+func (r *AtlasNetworkContainerReconciler) unmanage(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
+	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.UnsetFinalizer); err != nil {
+		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotRemoved, err), nil
+	}
+	return workflow.Deleted().ReconcileResult(), nil
 }
 
 func (r *AtlasNetworkContainerReconciler) ready(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
