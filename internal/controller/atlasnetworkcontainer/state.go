@@ -99,13 +99,10 @@ func (r *AtlasNetworkContainerReconciler) create(workflowCtx *workflow.Context, 
 		wrappedErr := fmt.Errorf("failed to create container: %w", err)
 		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
 	}
-	return r.inProgress(workflowCtx, req.networkContainer, createdContainer)
+	return r.ready(workflowCtx, req.networkContainer, createdContainer)
 }
 
 func (r *AtlasNetworkContainerReconciler) sync(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
-	if !container.Provisioned {
-		return r.inProgress(workflowCtx, req.networkContainer, container)
-	}
 	cfg := networkcontainer.NewNetworkContainerConfig(
 		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
 	if !reflect.DeepEqual(cfg, &container.NetworkContainerConfig) {
@@ -120,7 +117,7 @@ func (r *AtlasNetworkContainerReconciler) update(workflowCtx *workflow.Context, 
 		wrappedErr := fmt.Errorf("failed to update container: %w", err)
 		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
 	}
-	return r.inProgress(workflowCtx, req.networkContainer, updatedContainer)
+	return r.ready(workflowCtx, req.networkContainer, updatedContainer)
 }
 
 func (r *AtlasNetworkContainerReconciler) delete(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
