@@ -96,10 +96,14 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 	return r.release(workflowCtx, akoStreamConnection)
 }
 
+func (r *AtlasStreamsConnectionReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasStreamConnection{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasStreamsConnectionReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasStreamConnection").
-		For(&akov2.AtlasStreamConnection{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasStreamInstance{},
 			handler.EnqueueRequestsFromMapFunc(r.findStreamConnectionsForStreamInstances),

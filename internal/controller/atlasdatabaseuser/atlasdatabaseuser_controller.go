@@ -206,10 +206,14 @@ func (r *AtlasDatabaseUserReconciler) ready(ctx *workflow.Context, atlasDatabase
 	return workflow.OK().ReconcileResult()
 }
 
+func (r *AtlasDatabaseUserReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasDatabaseUser{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDatabaseUser").
-		For(&akov2.AtlasDatabaseUser{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.findAtlasDatabaseUserForSecret),

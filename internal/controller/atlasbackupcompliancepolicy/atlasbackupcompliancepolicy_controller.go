@@ -96,10 +96,14 @@ func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolic
 	return r.release(workflowCtx, bcp)
 }
 
+func (r *AtlasBackupCompliancePolicyReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasBackupCompliancePolicy{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasBackupCompliancePolicyReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasBackupCompliancePolicy").
-		For(&akov2.AtlasBackupCompliancePolicy{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(r.findBCPForProjects),
