@@ -136,7 +136,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	sdkClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, r.Log)
+	sdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
@@ -152,7 +152,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 	projectService := project.NewProjectAPIService(sdkClient.ProjectsApi)
 	deploymentService := deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, sdkClientSet.SdkClient20241113001.FlexClustersApi, r.AtlasProvider.IsCloudGov())
-	atlasProject, err := r.ResolveProject(workflowCtx.Context, sdkClient, atlasDeployment, orgID)
+	atlasProject, err := r.ResolveProject(workflowCtx.Context, sdkClient, atlasDeployment)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}

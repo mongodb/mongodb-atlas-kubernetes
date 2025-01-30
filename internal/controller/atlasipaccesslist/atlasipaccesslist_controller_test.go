@@ -48,7 +48,7 @@ func TestReconcile(t *testing.T) {
 				},
 				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
-					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "").
+					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "123").
 						Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ialAPI})
 					ialAPI.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
 						Return(
@@ -62,7 +62,7 @@ func TestReconcile(t *testing.T) {
 							nil,
 							nil,
 						)
-					ialAPI.EXPECT().GetProjectIpAccessListStatus(mock.Anything, "", "192.168.0.0/24").
+					ialAPI.EXPECT().GetProjectIpAccessListStatus(mock.Anything, "123", "192.168.0.0/24").
 						Return(admin.GetProjectIpAccessListStatusApiRequest{ApiService: ialAPI})
 					ialAPI.EXPECT().GetProjectIpAccessListStatusExecute(mock.AnythingOfType("admin.GetProjectIpAccessListStatusApiRequest")).
 						Return(
@@ -70,7 +70,17 @@ func TestReconcile(t *testing.T) {
 							nil,
 							nil,
 						)
-					return &admin.APIClient{ProjectIPAccessListApi: ialAPI}, "", nil
+
+					projectAPI := mockadmin.NewProjectsApi(t)
+					projectAPI.EXPECT().GetProjectByName(mock.Anything, "my-project").
+						Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
+
+					return &admin.APIClient{
+						ProjectIPAccessListApi: ialAPI,
+						ProjectsApi:            projectAPI,
+					}, "", nil
 				},
 			},
 			expectedResult: ctrl.Result{},
@@ -82,6 +92,9 @@ func TestReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-project",
 					Namespace: "default",
+				},
+				Spec: akov2.AtlasProjectSpec{
+					Name: "my-project",
 				},
 			}
 			ipAccessList := &akov2.AtlasIPAccessList{
