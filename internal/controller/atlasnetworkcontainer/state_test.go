@@ -325,6 +325,7 @@ func TestHandle(t *testing.T) {
 		req            *reconcileRequest
 		wantResult     ctrl.Result
 		wantErr        error
+		wantFinalizers []string
 		wantConditions []api.Condition
 	}{
 		{
@@ -332,6 +333,9 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-container",
+					},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -365,7 +369,8 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
 					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
@@ -377,6 +382,9 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-container",
+					},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -397,7 +405,8 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to create container: %v", ErrTestFail)),
@@ -409,6 +418,9 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-container",
+					},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -435,7 +447,8 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
 					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
@@ -448,7 +461,8 @@ func TestHandle(t *testing.T) {
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-container",
+						Name:       "test-container",
+						Finalizers: []string{customresource.FinalizerLabel},
 					},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
@@ -479,7 +493,8 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult: ctrl.Result{},
+			wantResult:     ctrl.Result{},
+			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantConditions: []api.Condition{
 				api.TrueCondition(api.NetworkContainerReady).
 					WithMessageRegexp(fmt.Sprintf("Network Container %s is ready", testContainerID)),
@@ -538,7 +553,8 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
 					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
@@ -585,7 +601,8 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to update container: %v", ErrTestFail)),
@@ -636,6 +653,7 @@ func TestHandle(t *testing.T) {
 				}(),
 			},
 			wantResult:     ctrl.Result{},
+			wantFinalizers: nil,
 			wantConditions: []api.Condition{},
 		},
 
@@ -673,7 +691,8 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotDeleted)).
 					WithMessageRegexp(fmt.Sprintf("failed to delete container: %v", ErrTestFail)),
@@ -694,6 +713,8 @@ func TestHandle(t *testing.T) {
 			result, err := r.handle(workflowCtx, tc.req)
 			assert.ErrorIs(t, err, tc.wantErr)
 			assert.Equal(t, tc.wantResult, result)
+			nc := getNetworkContainer(t, workflowCtx.Context, k8sClient, client.ObjectKeyFromObject(tc.req.networkContainer))
+			assert.Equal(t, tc.wantFinalizers, getFinalizers(nc))
 			assert.Equal(t, cleanConditions(tc.wantConditions), cleanConditions(workflowCtx.Conditions()))
 		})
 	}
