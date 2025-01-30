@@ -13,27 +13,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
 
-func (r *AtlasNetworkContainerReconciler) inProgress(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
-	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.SetFinalizer); err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotSet, err), nil
-	}
-	result := workflow.InProgress(
-		workflow.NetworkContainerProvisioning,
-		fmt.Sprintf("Network Container %s is being provisioned", container.ID),
-	)
-	workflowCtx.SetConditionFalse(api.ReadyType).SetConditionFromResult(api.ReadyType, result).
-		EnsureStatusOption(updateNetworkContainerStatusOption(container))
-
-	return result.ReconcileResult(), nil
-}
-
-func (r *AtlasNetworkContainerReconciler) unmanage(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
-	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.UnsetFinalizer); err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotRemoved, err), nil
-	}
-	return workflow.Deleted().ReconcileResult(), nil
-}
-
 func (r *AtlasNetworkContainerReconciler) ready(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
 	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.SetFinalizer); err != nil {
 		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotSet, err), nil
@@ -47,6 +26,13 @@ func (r *AtlasNetworkContainerReconciler) ready(workflowCtx *workflow.Context, n
 	}
 
 	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasNetworkContainerReconciler) unmanage(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
+	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.UnsetFinalizer); err != nil {
+		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotRemoved, err), nil
+	}
+	return workflow.Deleted().ReconcileResult(), nil
 }
 
 func (r *AtlasNetworkContainerReconciler) terminate(

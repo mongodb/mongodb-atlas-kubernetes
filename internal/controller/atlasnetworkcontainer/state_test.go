@@ -69,7 +69,7 @@ func TestHandleCustomResource(t *testing.T) {
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 						Region:    "US_EAST_1",
-						CIDRBlock: "11.10.0.0/16",
+						CIDRBlock: "11.10.0.0/21",
 					},
 				},
 			},
@@ -90,7 +90,7 @@ func TestHandleCustomResource(t *testing.T) {
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 						Region:    "US_EAST_1",
-						CIDRBlock: "11.10.0.0/16",
+						CIDRBlock: "11.10.0.0/21",
 					},
 				},
 			},
@@ -113,7 +113,7 @@ func TestHandleCustomResource(t *testing.T) {
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 						Region:    "US_EAST_1",
-						CIDRBlock: "11.10.0.0/16",
+						CIDRBlock: "11.10.0.0/21",
 					},
 				},
 			},
@@ -146,7 +146,7 @@ func TestHandleCustomResource(t *testing.T) {
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 						Region:    "US_EAST_1",
-						CIDRBlock: "11.10.0.0/16",
+						CIDRBlock: "11.10.0.0/21",
 					},
 				},
 			},
@@ -180,7 +180,7 @@ func TestHandleCustomResource(t *testing.T) {
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 						Region:    "US_EAST_1",
-						CIDRBlock: "11.10.0.0/16",
+						CIDRBlock: "11.10.0.0/21",
 					},
 				},
 			},
@@ -219,7 +219,7 @@ func TestHandleCustomResource(t *testing.T) {
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 						Region:    "US_EAST_1",
-						CIDRBlock: "11.10.0.0/16",
+						CIDRBlock: "11.10.0.0/21",
 					},
 				},
 			},
@@ -260,7 +260,7 @@ func TestHandleCustomResource(t *testing.T) {
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 						Region:    "US_EAST_1",
-						CIDRBlock: "11.10.0.0/16",
+						CIDRBlock: "11.10.0.0/21",
 					},
 				},
 			},
@@ -340,7 +340,7 @@ func TestHandle(t *testing.T) {
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 							Region:    "US_EAST_1",
-							CIDRBlock: "10.11.0.0/16",
+							CIDRBlock: "10.11.0.0/21",
 						},
 					},
 				},
@@ -355,7 +355,7 @@ func TestHandle(t *testing.T) {
 								Provider: "AWS",
 								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/16",
+									CIDRBlock: "10.11.0.0/21",
 								},
 							},
 							ID:          testContainerID,
@@ -369,11 +369,12 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantConditions: []api.Condition{
-				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
-					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
+				api.TrueCondition(api.NetworkContainerReady).
+					WithMessageRegexp(fmt.Sprintf("Network Container %s is ready", testContainerID)),
+				api.TrueCondition(api.ReadyType),
 			},
 		},
 
@@ -389,7 +390,7 @@ func TestHandle(t *testing.T) {
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 							Region:    "US_EAST_1",
-							CIDRBlock: "10.11.0.0/16",
+							CIDRBlock: "10.11.0.0/21",
 						},
 					},
 				},
@@ -414,49 +415,7 @@ func TestHandle(t *testing.T) {
 		},
 
 		{
-			title: "sync still pending",
-			req: &reconcileRequest{
-				projectID: testProjectID,
-				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-container",
-					},
-					Spec: akov2.AtlasNetworkContainerSpec{
-						Provider: "AWS",
-						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-							Region:    "US_EAST_1",
-							CIDRBlock: "10.11.0.0/16",
-						},
-					},
-				},
-				service: func() networkcontainer.NetworkContainerService {
-					ncs := akomock.NewNetworkContainerServiceMock(t)
-					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
-						&networkcontainer.NetworkContainer{
-							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-								Provider: "AWS",
-								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/16",
-								},
-							},
-							ID:          testContainerID,
-							Provisioned: false,
-						}, nil,
-					)
-					return ncs
-				}(),
-			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			wantFinalizers: []string{customresource.FinalizerLabel},
-			wantConditions: []api.Condition{
-				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
-					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
-			},
-		},
-
-		{
-			title: "sync created",
+			title: "in sync",
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
@@ -468,7 +427,7 @@ func TestHandle(t *testing.T) {
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 							Region:    "US_EAST_1",
-							CIDRBlock: "10.11.0.0/16",
+							CIDRBlock: "10.11.0.0/21",
 						},
 					},
 				},
@@ -480,7 +439,7 @@ func TestHandle(t *testing.T) {
 								Provider: "AWS",
 								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/16",
+									CIDRBlock: "10.11.0.0/21",
 								},
 							},
 							ID:          testContainerID,
@@ -514,7 +473,7 @@ func TestHandle(t *testing.T) {
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 							Region:    "US_EAST_1",
-							CIDRBlock: "10.12.0.0/16",
+							CIDRBlock: "10.12.0.0/21",
 						},
 					},
 				},
@@ -526,7 +485,7 @@ func TestHandle(t *testing.T) {
 								Provider: "AWS",
 								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/16",
+									CIDRBlock: "10.11.0.0/21",
 								},
 							},
 							ID:          testContainerID,
@@ -542,7 +501,7 @@ func TestHandle(t *testing.T) {
 								Provider: "AWS",
 								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 									Region:    "US_EAST_1",
-									CIDRBlock: "10.12.0.0/16",
+									CIDRBlock: "10.12.0.0/21",
 								},
 							},
 							ID:          testContainerID,
@@ -553,11 +512,12 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantConditions: []api.Condition{
-				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerProvisioning)).
-					WithMessageRegexp(fmt.Sprintf("Network Container %s is being provisioned", testContainerID)),
+				api.TrueCondition(api.NetworkContainerReady).
+					WithMessageRegexp(fmt.Sprintf("Network Container %s is ready", testContainerID)),
+				api.TrueCondition(api.ReadyType),
 			},
 		},
 
@@ -573,7 +533,7 @@ func TestHandle(t *testing.T) {
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 							Region:    "US_EAST_1",
-							CIDRBlock: "10.12.0.0/16",
+							CIDRBlock: "10.12.0.0/21",
 						},
 					},
 				},
@@ -585,7 +545,7 @@ func TestHandle(t *testing.T) {
 								Provider: "AWS",
 								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/16",
+									CIDRBlock: "10.11.0.0/21",
 								},
 							},
 							ID:          testContainerID,
@@ -623,7 +583,7 @@ func TestHandle(t *testing.T) {
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 							Region:    "US_EAST_1",
-							CIDRBlock: "10.12.0.0/16",
+							CIDRBlock: "10.12.0.0/21",
 						},
 					},
 				},
@@ -636,7 +596,7 @@ func TestHandle(t *testing.T) {
 								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 									Region: "US_EAST_1",
 									// different CIDR, but it should not matter as we are removing
-									CIDRBlock: "10.11.0.0/16",
+									CIDRBlock: "10.11.0.0/21",
 								},
 							},
 							ID:          testContainerID,
@@ -671,7 +631,7 @@ func TestHandle(t *testing.T) {
 						Provider: "Azure",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 							Region:    "US_EAST_2",
-							CIDRBlock: "10.14.0.0/16",
+							CIDRBlock: "10.14.0.0/21",
 						},
 					},
 				},
