@@ -23,7 +23,7 @@ func TestGetProjectByName(t *testing.T) {
 		api      func() admin.ProjectsApi
 		name     string
 		expected *Project
-		err      error
+		err      string
 	}{
 		"should fail to retrieve project from atlas": {
 			api: func() admin.ProjectsApi {
@@ -36,9 +36,9 @@ func TestGetProjectByName(t *testing.T) {
 				return sdk
 			},
 			name: "my-project",
-			err:  errors.New("fail to retrieve project from atlas"),
+			err:  "fail to retrieve project from atlas",
 		},
-		"should return nil when project was not found": {
+		"should return error when project was not found": {
 			api: func() admin.ProjectsApi {
 				sdk := mockadmin.NewProjectsApi(t)
 				sdk.EXPECT().GetProjectByName(context.Background(), "my-project").
@@ -49,6 +49,7 @@ func TestGetProjectByName(t *testing.T) {
 				return sdk
 			},
 			name: "my-project",
+			err:  "not found\n",
 		},
 		"should return project": {
 			api: func() admin.ProjectsApi {
@@ -99,7 +100,11 @@ func TestGetProjectByName(t *testing.T) {
 				projectAPI: tt.api(),
 			}
 			p, err := service.GetProjectByName(context.Background(), tt.name)
-			require.Equal(t, tt.err, err)
+			gotErr := ""
+			if err != nil {
+				gotErr = err.Error()
+			}
+			require.Equal(t, tt.err, gotErr)
 			assert.Equal(t, tt.expected, p)
 		})
 	}

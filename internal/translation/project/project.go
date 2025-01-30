@@ -2,11 +2,13 @@ package project
 
 import (
 	"context"
+	"errors"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 )
 
 // ProjectReferrer is anything that holds a ProjectDualReference
@@ -34,23 +36,19 @@ type ProjectAPI struct {
 func (a *ProjectAPI) GetProjectByName(ctx context.Context, name string) (*Project, error) {
 	group, _, err := a.projectAPI.GetProjectByName(ctx, name).Execute()
 	if err != nil {
-		if admin.IsErrorCode(err, "NOT_IN_GROUP") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
-			return nil, nil
-		}
-
-		return nil, err
+		return nil, translateError(err)
 	}
 
-	return fromAtlas(group), err
+	return fromAtlas(group), nil
 }
 
 func (a *ProjectAPI) GetProject(ctx context.Context, ID string) (*Project, error) {
 	group, _, err := a.projectAPI.GetProject(ctx, ID).Execute()
 	if err != nil {
-		return nil, err
+		return nil, translateError(err)
 	}
 
-	return fromAtlas(group), err
+	return fromAtlas(group), nil
 }
 
 func (a *ProjectAPI) CreateProject(ctx context.Context, project *Project) error {
@@ -67,11 +65,8 @@ func (a *ProjectAPI) CreateProject(ctx context.Context, project *Project) error 
 
 func (a *ProjectAPI) DeleteProject(ctx context.Context, project *Project) error {
 	_, _, err := a.projectAPI.DeleteProject(ctx, project.ID).Execute()
-	if err != nil {
-		if admin.IsErrorCode(err, "GROUP_NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
-			return nil
-		}
-
+	err = translateError(err)
+	if err != nil && !errors.Is(err, translation.ErrNotFound) {
 		return err
 	}
 
@@ -82,4 +77,16 @@ func NewProjectAPIService(sdk admin.ProjectsApi) *ProjectAPI {
 	return &ProjectAPI{
 		projectAPI: sdk,
 	}
+}
+
+func translateError(err error) error {
+	switch {
+	case admin.IsErrorCode(err, "RESOURCE_NOT_FOUND"):
+	case admin.IsErrorCode(err, "GROUP_NOT_FOUND"):
+	case admin.IsErrorCode(err, "NOT_IN_GROUP"):
+	default:
+		return err
+	}
+
+	return errors.Join(translation.ErrNotFound, err)
 }
