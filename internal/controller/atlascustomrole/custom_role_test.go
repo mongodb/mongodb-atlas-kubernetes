@@ -26,8 +26,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
@@ -54,7 +55,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{}, nil)
 					s.EXPECT().Create(context.Background(), "testProjectID",
@@ -139,7 +140,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{}, nil)
 					s.EXPECT().Create(context.Background(), "testProjectID",
@@ -189,7 +190,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{}, fmt.Errorf("unable to Get roles"))
 					return s
@@ -237,7 +238,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{
 							// This has to be different from the one described below
@@ -329,7 +330,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{
 							// This has to be different from the one described below
@@ -386,7 +387,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{
 							CustomRole: &akov2.CustomRole{
@@ -456,7 +457,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{
 							CustomRole: &akov2.CustomRole{
@@ -548,7 +549,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{
 							CustomRole: &akov2.CustomRole{
@@ -646,7 +647,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					Context: context.Background(),
 				},
 				service: func() customroles.CustomRoleService {
-					s := translation.NewCustomRoleServiceMock(t)
+					s := mocks.NewCustomRoleServiceMock(t)
 					s.EXPECT().Get(context.Background(), "testProjectID", "TestRoleName").
 						Return(customroles.CustomRole{
 							CustomRole: &akov2.CustomRole{
@@ -824,6 +825,14 @@ func Test_handleCustomRole(t *testing.T) {
 									Return(nil, nil, nil)
 								return cdrAPI
 							}(),
+							ProjectsApi: func() admin.ProjectsApi {
+								projectAPI := mockadmin.NewProjectsApi(t)
+								projectAPI.EXPECT().GetProjectByName(mock.Anything, "testProject").
+									Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
+								projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+									Return(&admin.Group{Id: pointer.MakePtr("testProjectID")}, nil, nil)
+								return projectAPI
+							}(),
 						}
 					}(),
 					Context: context.Background(),
@@ -854,7 +863,9 @@ func Test_handleCustomRole(t *testing.T) {
 							Name:      "testProject",
 							Namespace: "testNamespace",
 						},
-						Spec: akov2.AtlasProjectSpec{},
+						Spec: akov2.AtlasProjectSpec{
+							Name: "testProject",
+						},
 						Status: status.AtlasProjectStatus{
 							ID: "testProjectID",
 						},
@@ -884,7 +895,7 @@ func Test_handleCustomRole(t *testing.T) {
 			want: workflow.OK(),
 		},
 		{
-			name: "DO NOT create custom role if external project reference is empty",
+			name: "DO NOT create custom role if external project cannot be found",
 			args: args{
 				ctx: &workflow.Context{
 					Log:   zap.S(),
@@ -894,6 +905,17 @@ func Test_handleCustomRole(t *testing.T) {
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								return cdrAPI
+							}(),
+							ProjectsApi: func() admin.ProjectsApi {
+								notFound := &admin.GenericOpenAPIError{}
+								notFound.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("RESOURCE_NOT_FOUND")})
+
+								projectAPI := mockadmin.NewProjectsApi(t)
+								projectAPI.EXPECT().GetProjectByName(mock.Anything, "testProject").
+									Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
+								projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+									Return(nil, nil, notFound)
+								return projectAPI
 							}(),
 						}
 					}(),
@@ -930,7 +952,7 @@ func Test_handleCustomRole(t *testing.T) {
 					},
 				},
 			},
-			want: workflow.Terminate(workflow.ProjectCustomRolesReady, errors.New("the referenced AtlasProject resource 'testProject' doesn't have ID (status.ID is empty)")),
+			solveError: translation.ErrNotFound,
 		},
 		{
 			name: "DO NOT create custom role if external project reference doesn't exist",
@@ -999,5 +1021,5 @@ func solveProjectID(t *testing.T, r *AtlasCustomRoleReconciler, args args) (*pro
 	if args.akoCustomRole.Spec.ProjectDualReference.ExternalProjectRef != nil {
 		return &project.Project{ID: args.akoCustomRole.Spec.ExternalProjectRef.ID}, nil
 	}
-	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClient, args.akoCustomRole, args.ctx.OrgID)
+	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClient, args.akoCustomRole)
 }
