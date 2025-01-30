@@ -171,7 +171,6 @@ const (
 // Atlas Network Container reasons
 const (
 	NetworkContainerNotConfigured ConditionReason = "NetworkContainerNotConfigured"
-	NetworkContainerProvisioning  ConditionReason = "NetworkContainerProvisioning"
-	NetworkContainerProvisioned   ConditionReason = "NetworkContainerProvisioned"
+	NetworkContainerCreated   ConditionReason = "NetworkContainerCreated"
 	NetworkContainerNotDeleted    ConditionReason = "NetworkContainerNotDeleted"
 )

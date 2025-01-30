@@ -10,8 +10,8 @@ type AtlasNetworkContainerStatus struct {
 	// ID record the identifier of the container in Atlas
 	ID string `json:"id,omitempty"`
 
-	// Provisioned is true when the container has been provisioned in Atlas
-	Provisioned bool `json:"containerProvisioned,omitempty"`
+	// Provisioned is true when clusters have been deployed to the container
+	Provisioned bool `json:"provisioned,omitempty"`
 }
 
 // +kubebuilder:object:generate=false

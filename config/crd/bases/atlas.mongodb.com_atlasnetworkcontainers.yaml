@@ -166,10 +166,6 @@ spec:
                   - type
                   type: object
                 type: array
-              containerProvisioned:
-                description: Provisioned is true when the container has been provisioned
-                  in Atlas
-                type: boolean
               id:
                 description: ID record the identifier of the container in Atlas
                 type: string
@@ -179,6 +175,10 @@ spec:
                   The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
                 format: int64
                 type: integer
+              provisioned:
+                description: Provisioned is true when the container has been provisioned
+                  in Atlas
+                type: boolean
             required:
             - conditions
             type: object
