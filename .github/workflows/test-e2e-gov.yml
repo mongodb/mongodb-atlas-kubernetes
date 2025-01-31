@@ -18,7 +18,7 @@ jobs:
         if: ${{ !env.ACT }}
         uses: helm/kind-action@v1.12.0
         with:
-          version: v0.20.0
+          version: v0.26.0
           config: test/helper/e2e/config/kind.yaml
           cluster_name: "atlas-gov-e2e-test"
           wait: 180s
