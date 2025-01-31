@@ -1,4 +1,4 @@
-name: Release Openshift
+name: Release Openshift Bundles
 on:
   workflow_dispatch:
     inputs:
@@ -8,22 +8,33 @@ on:
 jobs:
   release-openshift:
     name: "Create Pull request for openshift release"
-    environment: openshift-test
+    environment: release
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{ github.token }}
       REPO_PATH: "operators/mongodb-atlas-kubernetes"
     strategy:
+      fail-fast: false
       matrix:
         repository: ["mongodb-forks/community-operators", "mongodb-forks/community-operators-prod", "mongodb-forks/certified-operators"]
         include:
           - repository: "mongodb-forks/certified-operators"
             certified: true
     steps:
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
+          private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            mongodb-atlas-kubernetes
+            mongodb-forks/community-operators
+            mongodb-forks/community-operators-prod
+            mongodb-forks/certified-operators
       - name: Clone/Checkout Atlas Operator
         uses: actions/checkout@v4
         with:
-          ref: main
           path: "mongodb-atlas-kubernetes"
           fetch-depth: 0
       - name: Clone/Checkout releases repositories
@@ -32,15 +43,12 @@ jobs:
           repository: ${{ matrix.repository }}
           ref: main
           path: ${{ matrix.repository }}
-          token: ${{ github.token }}
+          token: ${{ steps.generate_token.outputs.token }}
       - name: Prepare version
         env:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: ${{ matrix.repository }}
         run: |
-          curl -L https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz -o ghcli.tar.gz
-          tar --strip-components=1 -xf ghcli.tar.gz -C /usr/local
-          
           cd $REPOSITORY
           
           # Sync fork
@@ -64,8 +72,16 @@ jobs:
           sed -i.bak 's/COPY bundle\/metadata/COPY metadata/' "${VERSION}/bundle.Dockerfile"
           sed -i.bak 's/COPY bundle\/tests\/scorecard/COPY tests\/scorecard/' "${VERSION}/bundle.Dockerfile"
           rm "${VERSION}/bundle.Dockerfile.bak"
+          
+          yq e -i '.metadata.annotations.containerImage = "quay.io/" + .metadata.annotations.containerImage' \
+            "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+
+          yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = "quay.io/" + .spec.install.spec.deployments[0].spec.template.spec.containers[0].image' \
+            "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+
       - name: Certify Openshift images
-        uses: ./.github/actions/certify-openshift-images
+        if: ${{ matrix.certified }}
+        uses: ./mongodb-atlas-kubernetes/.github/actions/certify-openshift-images
         with:
           registry: quay.io
           registry_password: ${{ secrets.QUAY_PASSWORD }}
@@ -73,7 +89,7 @@ jobs:
           version: ${{ github.event.inputs.version }}
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
-          submit: true
+          submit: false
       - name: Configure certified release
         if: ${{ matrix.certified }}
         env:
@@ -81,23 +97,42 @@ jobs:
           REPOSITORY: ${{ matrix.repository }}
           IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
         run: |
-          curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
-    
-          # Reference to image
-          docker pull "${IMAGE}":"${VERSION}"
-          export REPO_DIGEST=$(docker inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
+          echo -n "Determining SHA for arm64 ... "
+          IMG_SHA_ARM64=$(docker manifest inspect quay.io/mongodb/mongodb-atlas-kubernetes-operator:${VERSION}-certified | \
+          jq --raw-output '.manifests[] | select(.platform.architecture == "arm64") | .digest')
+          echo ${IMG_SHA_ARM64}
           
-          cd "$REPOSITORY/$REPO_PATH"
-          yq e -i '.metadata.annotations.containerImage = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-          yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-
-          # Add skip range
-          value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+          echo -n "Determining SHA for amd64 ... "
+          IMG_SHA_AMD64=$(docker manifest inspect quay.io/mongodb/mongodb-atlas-kubernetes-operator:${VERSION}-certified | \
+          jq --raw-output '.manifests[] | select(.platform.architecture == "amd64") | .digest')
+          echo ${IMG_SHA_AMD64}
+          
+          # Replace deployment image version with SHA256
+          value="${IMG_SHA_AMD64}" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = "quay.io/mongodb/mongodb-atlas-kubernetes-operator@" + env(value)' \
+          "${REPOSITORY}/$REPO_PATH/${VERSION}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+        
+          # set related images
+          yq e -i '.spec = { "relatedImages": [ { "name": "mongodb-atlas-kubernetes-operator-arm64" }, { "name": "mongodb-atlas-kubernetes-operator-amd64" } ] } + .spec' \
+          "${REPOSITORY}/$REPO_PATH/${VERSION}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+          
+          value="${IMG_SHA_ARM64}" yq e -i '.spec.relatedImages[0].image = "quay.io/mongodb/mongodb-atlas-kubernetes-operator@" + env(value)' \
+          "${REPOSITORY}/$REPO_PATH/${VERSION}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+          
+          value="${IMG_SHA_AMD64}" yq e -i '.spec.relatedImages[1].image = "quay.io/mongodb/mongodb-atlas-kubernetes-operator@" + env(value)' \
+          "${REPOSITORY}/$REPO_PATH/${VERSION}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+          
+          # set containerImage annotation
+          value="${IMG_SHA_AMD64}" yq e -i '.metadata.annotations.containerImage = "quay.io/mongodb/mongodb-atlas-kubernetes-operator@" + env(value)' \
+          "${REPOSITORY}/$REPO_PATH/${VERSION}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+        
+          # set openshift versions
+          yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8" }' "${REPOSITORY}/$REPO_PATH/${VERSION}/metadata/annotations.yaml"
       - name: Push Changes & Open PR
         env:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: ${{ matrix.repository }}
-          ASSIGNEES: igor-karpukhin,helderjs,josvazg,roothorp
+          ASSIGNEES: igor-karpukhin,helderjs,josvazg,roothorp,s-urbaniak
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           cd "$REPOSITORY/$REPO_PATH"
           
