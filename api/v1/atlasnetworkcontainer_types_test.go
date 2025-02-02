@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel"
 )
 
@@ -21,7 +23,7 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 			title: "GCP fails with a region",
 			obj: &AtlasNetworkContainer{
 				Spec: AtlasNetworkContainerSpec{
-					Provider: "GCP",
+					Provider: string(provider.ProviderGCP),
 					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
 						Region: "some-region",
 					},
@@ -33,7 +35,7 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 			title: "GCP succeeds without a region",
 			obj: &AtlasNetworkContainer{
 				Spec: AtlasNetworkContainerSpec{
-					Provider: "GCP",
+					Provider: string(provider.ProviderGCP),
 				},
 			},
 		},
@@ -41,7 +43,7 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 			title: "AWS succeeds with a region",
 			obj: &AtlasNetworkContainer{
 				Spec: AtlasNetworkContainerSpec{
-					Provider: "AWS",
+					Provider: string(provider.ProviderAWS),
 					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
 						Region: "some-region",
 					},
@@ -52,7 +54,7 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 			title: "Azure succeeds with a region",
 			obj: &AtlasNetworkContainer{
 				Spec: AtlasNetworkContainerSpec{
-					Provider: "Azure",
+					Provider: string(provider.ProviderAzure),
 					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
 						Region: "some-region",
 					},
@@ -63,7 +65,7 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 			title: "AWS fails without a region",
 			obj: &AtlasNetworkContainer{
 				Spec: AtlasNetworkContainerSpec{
-					Provider: "AWS",
+					Provider: string(provider.ProviderAWS),
 				},
 			},
 			expectedErrors: []string{"spec: Invalid value: \"object\": must set region for AWS and Azure containers"},
@@ -72,7 +74,7 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 			title: "Azure fails without a region",
 			obj: &AtlasNetworkContainer{
 				Spec: AtlasNetworkContainerSpec{
-					Provider: "Azure",
+					Provider: string(provider.ProviderAzure),
 				},
 			},
 			expectedErrors: []string{"spec: Invalid value: \"object\": must set region for AWS and Azure containers"},
@@ -89,7 +91,7 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 			assert.NoError(t, err)
 			errs := validator(unstructuredObject, nil)
 
-			require.Equal(t, len(tc.expectedErrors), len(errs))
+			require.Equal(t, len(tc.expectedErrors), len(errs), fmt.Sprintf("errs: %v", errs))
 
 			for i, err := range errs {
 				assert.Equal(t, tc.expectedErrors[i], err.Error())
