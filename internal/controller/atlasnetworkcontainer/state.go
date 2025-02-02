@@ -80,6 +80,14 @@ func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, 
 }
 
 func discover(ctx context.Context, req *reconcileRequest) (*networkcontainer.NetworkContainer, error) {
+	id := req.networkContainer.Status.ID
+	if id != "" {
+		container, err := req.service.Get(ctx, req.projectID, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get container %s from project %s: %w", id, req.projectID, err)
+		}
+		return container, nil
+	}
 	cfg := networkcontainer.NewNetworkContainerConfig(
 		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
 	container, err := req.service.Find(ctx, req.projectID, cfg)
@@ -106,6 +114,11 @@ func (r *AtlasNetworkContainerReconciler) sync(workflowCtx *workflow.Context, re
 	cfg := networkcontainer.NewNetworkContainerConfig(
 		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
 	if !reflect.DeepEqual(cfg, &container.NetworkContainerConfig) {
+		if cfg.Region != container.Region {
+			err := fmt.Errorf("an Atlas Network Container cannot move to another region: From %s to %s",
+				container.Region, cfg.Region)
+			return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, err), nil
+		}
 		return r.update(workflowCtx, req, container)
 	}
 	return r.ready(workflowCtx, req.networkContainer, container)

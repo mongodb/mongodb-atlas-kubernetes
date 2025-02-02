@@ -129,7 +129,7 @@ spec:
               rule: (self.provider == 'GCP' && !has(self.region)) || (self.provider
                 != 'GCP')
             - message: must set region for AWS and Azure containers
-              rule: ((self.provider == 'AWS' || self.provider == 'Azure') && has(self.region))
+              rule: ((self.provider == 'AWS' || self.provider == 'AZURE') && has(self.region))
                 || (self.provider == 'GCP')
           status:
             description: |-
@@ -176,8 +176,8 @@ spec:
                 format: int64
                 type: integer
               provisioned:
-                description: Provisioned is true when the container has been provisioned
-                  in Atlas
+                description: Provisioned is true when clusters have been deployed
+                  to the container
                 type: boolean
             required:
             - conditions
