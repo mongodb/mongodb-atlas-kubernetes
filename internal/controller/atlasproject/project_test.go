@@ -291,7 +291,6 @@ func TestHandleProject(t *testing.T) {
 				}
 			},
 			atlasSDKMocker: func() *admin.APIClient { //nolint:dupl
-
 				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
 				ipAccessList.EXPECT().ListProjectIpAccessLists(context.Background(), "projectID").
 					Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ipAccessList})
@@ -375,8 +374,8 @@ func TestHandleProject(t *testing.T) {
 			},
 			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry, Requeue: false},
 			conditions: []api.Condition{
-				api.FalseCondition(api.ProjectReadyType).
-					WithReason(string(workflow.Internal)).
+				api.TrueCondition(api.ProjectReadyType),
+				api.FalseCondition(api.X509AuthReadyType).
 					WithMessageRegexp("secrets \"invalid-ref\" not found"),
 			},
 			finalizers: []string{customresource.FinalizerLabel},
@@ -750,6 +749,8 @@ func TestHandleProject(t *testing.T) {
 			result, err := reconciler.handleProject(ctx, "my-org-id", tt.project, services)
 			require.NoError(t, err)
 			assert.Equal(t, tt.result, result)
+			fmt.Println("DEBUG CONDITIONS FROM TEST OUTPUT ", ctx.Conditions())
+			fmt.Println("DEBUG CONDITIONS FROM EXPECTATIONS", tt.conditions)
 			fmt.Println("DEBUG", cmp.Diff(
 				tt.conditions,
 				ctx.Conditions(),

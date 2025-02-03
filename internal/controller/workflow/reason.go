@@ -44,6 +44,7 @@ const (
 	ProjectAlertConfigurationIsNotReadyInAtlas ConditionReason = "ProjectAlertConfigurationIsNotReadyInAtlas"
 	ProjectCustomRolesReady                    ConditionReason = "ProjectCustomRolesReady"
 	ProjectTeamUnavailable                     ConditionReason = "ProjectTeamUnavailable"
+	ProjectX509NotConfigured                   ConditionReason = "ProjectX509NotConfigured"
 )
 
 // Atlas Backup Compliance Policy reasons
