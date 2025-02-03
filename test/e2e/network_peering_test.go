@@ -1,11 +1,9 @@
 package e2e_test
 
 import (
-	"fmt"
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
@@ -19,20 +17,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
-
-const (
-	statusPendingAcceptance = "PENDING_ACCEPTANCE"
-	statusWaitingUser       = "WAITING_FOR_USER"
-	SubscriptionID          = "AZURE_SUBSCRIPTION_ID"
-	DirectoryID             = "AZURE_TENANT_ID"
-	GCPVPCName              = "network-peering-gcp-1-vpc"
-	AzureVPCName            = "test-vnet"
-)
-
-func newRandomName(base string) string {
-	randomSuffix := uuid.New().String()[0:6]
-	return fmt.Sprintf("%s-%s", base, randomSuffix)
-}
 
 var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	var testData *model.TestDataProvider
@@ -224,7 +208,7 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []akov2.NetworkPeer
 
 	By("Establish network peers connection", func() {
 		Eventually(func(g Gomega) bool {
-			return EnsurePeersReadyToConnect(g, userData, len(peers))
+			return EnsureProjectPeersReadyToConnect(g, userData, len(peers))
 		}).WithTimeout(15*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Network Peering should be ready to establish connection")
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 
@@ -245,7 +229,7 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []akov2.NetworkPeer
 	})
 }
 
-func EnsurePeersReadyToConnect(g Gomega, userData *model.TestDataProvider, lenOfSpec int) bool {
+func EnsureProjectPeersReadyToConnect(g Gomega, userData *model.TestDataProvider, lenOfSpec int) bool {
 	g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 	if len(userData.Project.Status.NetworkPeers) != lenOfSpec {
 		return false

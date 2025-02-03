@@ -22,6 +22,61 @@ func (_m *DeploymentMock) EXPECT() *DeploymentMock_Expecter {
 	return &DeploymentMock_Expecter{mock: &_m.Mock}
 }
 
+// Deprecated provides a mock function with no fields
+func (_m *DeploymentMock) Deprecated() (bool, string) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Deprecated")
+	}
+
+	var r0 bool
+	var r1 string
+	if rf, ok := ret.Get(0).(func() (bool, string)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func() string); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	return r0, r1
+}
+
+// DeploymentMock_Deprecated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Deprecated'
+type DeploymentMock_Deprecated_Call struct {
+	*mock.Call
+}
+
+// Deprecated is a helper method to define mock.On call
+func (_e *DeploymentMock_Expecter) Deprecated() *DeploymentMock_Deprecated_Call {
+	return &DeploymentMock_Deprecated_Call{Call: _e.mock.On("Deprecated")}
+}
+
+func (_c *DeploymentMock_Deprecated_Call) Run(run func()) *DeploymentMock_Deprecated_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DeploymentMock_Deprecated_Call) Return(_a0 bool, _a1 string) *DeploymentMock_Deprecated_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *DeploymentMock_Deprecated_Call) RunAndReturn(run func() (bool, string)) *DeploymentMock_Deprecated_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetConnection provides a mock function with no fields
 func (_m *DeploymentMock) GetConnection() *status.ConnectionStrings {
 	ret := _m.Called()
