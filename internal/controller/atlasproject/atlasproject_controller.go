@@ -247,10 +247,14 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	return results
 }
 
+func (r *AtlasProjectReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasProject").
-		For(&akov2.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(newProjectsMapFunc[corev1.Secret](indexer.AtlasProjectBySecretsIndex, r.Client, r.Log)),

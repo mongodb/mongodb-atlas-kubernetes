@@ -136,10 +136,14 @@ func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *
 	return config.Provider != dataProcessRegion.GetCloudProvider() || config.Region != dataProcessRegion.GetRegion()
 }
 
+func (r *AtlasStreamsInstanceReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasStreamInstance{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasStreamInstance").
-		For(&akov2.AtlasStreamInstance{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasStreamConnection{},
 			handler.EnqueueRequestsFromMapFunc(r.findStreamInstancesForStreamConnection),

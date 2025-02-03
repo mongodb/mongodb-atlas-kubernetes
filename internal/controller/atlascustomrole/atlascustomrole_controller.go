@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -128,12 +129,12 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return r.fail(req, err), nil
 	}
-	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, workflowCtx.Log)
+	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, workflowCtx.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
 	}
 	service := customroles.NewCustomRoles(atlasSdkClient.CustomDatabaseRolesApi)
-	project, err := r.ResolveProject(ctx, atlasSdkClient, atlasCustomRole, orgID)
+	project, err := r.ResolveProject(ctx, atlasSdkClient, atlasCustomRole)
 	if err != nil {
 		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
 	}
@@ -188,10 +189,14 @@ func (r *AtlasCustomRoleReconciler) notFound(req ctrl.Request) ctrl.Result {
 	return workflow.TerminateSilently(err).WithoutRetry().ReconcileResult()
 }
 
+func (r *AtlasCustomRoleReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasCustomRole{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasCustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasCustomRole").
-		For(&akov2.AtlasCustomRole{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.customRolesCredentials()),

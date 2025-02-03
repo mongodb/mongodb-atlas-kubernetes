@@ -136,7 +136,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	sdkClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, r.Log)
+	sdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
@@ -152,7 +152,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 	projectService := project.NewProjectAPIService(sdkClient.ProjectsApi)
 	deploymentService := deployment.NewAtlasDeployments(sdkClient.ClustersApi, sdkClient.ServerlessInstancesApi, sdkClient.GlobalClustersApi, sdkClientSet.SdkClient20241113001.FlexClustersApi, r.AtlasProvider.IsCloudGov())
-	atlasProject, err := r.ResolveProject(workflowCtx.Context, sdkClient, atlasDeployment, orgID)
+	atlasProject, err := r.ResolveProject(workflowCtx.Context, sdkClient, atlasDeployment)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
@@ -381,10 +381,14 @@ func (r *AtlasDeploymentReconciler) unmanage(ctx *workflow.Context, atlasDeploym
 	return workflow.OK().ReconcileResult(), nil
 }
 
+func (r *AtlasDeploymentReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasDeployment{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDeployment").
-		For(&akov2.AtlasDeployment{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasBackupSchedule{},
 			handler.EnqueueRequestsFromMapFunc(r.findDeploymentsForBackupSchedule),

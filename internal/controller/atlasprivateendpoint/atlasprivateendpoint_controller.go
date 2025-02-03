@@ -102,11 +102,11 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	sdkClient, orgID, err := r.AtlasProvider.SdkClient(ctx, credentials, r.Log)
+	sdkClient, _, err := r.AtlasProvider.SdkClient(ctx, credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	atlasProject, err := r.ResolveProject(ctx, sdkClient, akoPrivateEndpoint, orgID)
+	atlasProject, err := r.ResolveProject(ctx, sdkClient, akoPrivateEndpoint)
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
@@ -223,10 +223,14 @@ func (r *AtlasPrivateEndpointReconciler) unmanage(ctx *workflow.Context, akoPriv
 	return workflow.Deleted().ReconcileResult(), nil
 }
 
+func (r *AtlasPrivateEndpointReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasPrivateEndpoint{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasPrivateEndpointReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasPrivateEndpoint").
-		For(&akov2.AtlasPrivateEndpoint{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(r.privateEndpointForProjectMapFunc()),

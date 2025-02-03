@@ -14,13 +14,14 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 // handleProject creates the project if it doesn't exist yet. Returns the project ID
 func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject, services *AtlasProjectServices) (ctrl.Result, error) {
 	projectInAtlas, err := services.projectService.GetProjectByName(ctx.Context, atlasProject.Spec.Name)
-	if err != nil {
+	if err != nil && !errors.Is(err, translation.ErrNotFound) {
 		return r.terminate(ctx, workflow.ProjectNotCreatedInAtlas, err)
 	}
 
@@ -34,9 +35,12 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 		return r.delete(ctx, services, orgID, atlasProject)
 	case !existInAtlas && wasDeleted:
 		return r.release(ctx, atlasProject)
-	case existInAtlas && !wasDeleted && atlasProject.Status.ID == "":
-		return r.manage(ctx, atlasProject, projectInAtlas.ID)
 	}
+
+	// short circuit the "manage" state,
+	// there is no need to wait another reconcile cycle to continue.
+	_, _ = r.manage(ctx, atlasProject, projectInAtlas.ID)
+	atlasProject.Status.ID = projectInAtlas.ID
 
 	if err = r.ensureX509(ctx, atlasProject); err != nil {
 		return r.terminate(ctx, workflow.Internal, err)
