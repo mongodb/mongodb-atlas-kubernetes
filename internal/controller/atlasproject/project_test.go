@@ -3,7 +3,6 @@ package atlasproject
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -749,13 +748,6 @@ func TestHandleProject(t *testing.T) {
 			result, err := reconciler.handleProject(ctx, "my-org-id", tt.project, services)
 			require.NoError(t, err)
 			assert.Equal(t, tt.result, result)
-			fmt.Println("DEBUG CONDITIONS FROM TEST OUTPUT ", ctx.Conditions())
-			fmt.Println("DEBUG CONDITIONS FROM EXPECTATIONS", tt.conditions)
-			fmt.Println("DEBUG", cmp.Diff(
-				tt.conditions,
-				ctx.Conditions(),
-				cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
-			))
 			assert.True(
 				t,
 				cmp.Equal(
