@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -271,10 +272,75 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should fail to configure authentication modes": {
 			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
+				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
+					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
+						return &mongodbatlas.ThirdPartyIntegrations{}, nil, nil
+					},
+				}
+				encryptionAtRest := &atlasmocks.EncryptionAtRestClientMock{
+					GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
+						return &mongodbatlas.EncryptionAtRest{}, nil, nil
+					},
+				}
+				projectAPI := &atlasmocks.ProjectsClientMock{}
+
+				return &mongodbatlas.Client{
+					Integrations:      integrations,
+					EncryptionsAtRest: encryptionAtRest,
+					Projects:          projectAPI,
+				}
 			},
-			atlasSDKMocker: func() *admin.APIClient {
-				return nil
+			atlasSDKMocker: func() *admin.APIClient { //nolint:dupl
+
+				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
+				ipAccessList.EXPECT().ListProjectIpAccessLists(context.Background(), "projectID").
+					Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ipAccessList})
+				ipAccessList.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
+					Return(nil, nil, nil)
+				privateEndpoints := mockadmin.NewPrivateEndpointServicesApi(t)
+				privateEndpoints.EXPECT().ListPrivateEndpointServices(context.Background(), "projectID", mock.Anything).
+					Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpoints})
+				privateEndpoints.EXPECT().ListPrivateEndpointServicesExecute(mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).
+					Return(nil, nil, nil)
+				networkPeering := mockadmin.NewNetworkPeeringApi(t)
+				networkPeering.EXPECT().ListPeeringConnectionsWithParams(context.Background(), mock.AnythingOfType("*admin.ListPeeringConnectionsApiParams")).
+					Return(admin.ListPeeringConnectionsApiRequest{ApiService: networkPeering})
+				networkPeering.EXPECT().ListPeeringConnectionsExecute(mock.AnythingOfType("admin.ListPeeringConnectionsApiRequest")).
+					Return(nil, nil, nil)
+				networkPeering.EXPECT().ListPeeringContainers(context.Background(), "projectID").
+					Return(admin.ListPeeringContainersApiRequest{ApiService: networkPeering})
+				networkPeering.EXPECT().ListPeeringContainersExecute(mock.AnythingOfType("admin.ListPeeringContainersApiRequest")).
+					Return(nil, nil, nil)
+				audit := mockadmin.NewAuditingApi(t)
+				audit.EXPECT().GetAuditingConfiguration(context.Background(), "projectID").
+					Return(admin.GetAuditingConfigurationApiRequest{ApiService: audit})
+				audit.EXPECT().GetAuditingConfigurationExecute(mock.AnythingOfType("admin.GetAuditingConfigurationApiRequest")).
+					Return(nil, nil, nil)
+				customRoles := mockadmin.NewCustomDatabaseRolesApi(t)
+				customRoles.EXPECT().ListCustomDatabaseRoles(context.Background(), "projectID").
+					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: customRoles})
+				customRoles.EXPECT().ListCustomDatabaseRolesExecute(mock.AnythingOfType("admin.ListCustomDatabaseRolesApiRequest")).
+					Return(nil, nil, nil)
+				projectAPI := mockadmin.NewProjectsApi(t)
+				projectAPI.EXPECT().GetProjectSettings(context.Background(), "projectID").
+					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
+				projectAPI.EXPECT().GetProjectSettingsExecute(mock.AnythingOfType("admin.GetProjectSettingsApiRequest")).
+					Return(admin.NewGroupSettings(), nil, nil)
+				backup := mockadmin.NewCloudBackupsApi(t)
+				backup.EXPECT().GetDataProtectionSettings(context.Background(), "projectID").
+					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
+				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
+					Return(nil, nil, nil)
+
+				return &admin.APIClient{
+					ProjectIPAccessListApi:     ipAccessList,
+					PrivateEndpointServicesApi: privateEndpoints,
+					NetworkPeeringApi:          networkPeering,
+					AuditingApi:                audit,
+					CustomDatabaseRolesApi:     customRoles,
+					ProjectsApi:                projectAPI,
+					CloudBackupsApi:            backup,
+				}
 			},
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
@@ -284,10 +350,14 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			teamServiceMocker: func() teams.TeamsService {
-				return nil
+				service := translation.NewTeamsServiceMock(t)
+				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
+				return service
 			},
 			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
-				return nil
+				service := translation.NewEncryptionAtRestServiceMock(t)
+				service.EXPECT().Get(context.Background(), mock.Anything).Return(nil, nil)
+				return service
 			},
 			project: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -303,7 +373,7 @@ func TestHandleProject(t *testing.T) {
 					ID: "projectID",
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
+			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry, Requeue: false},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.Internal)).
@@ -680,6 +750,11 @@ func TestHandleProject(t *testing.T) {
 			result, err := reconciler.handleProject(ctx, "my-org-id", tt.project, services)
 			require.NoError(t, err)
 			assert.Equal(t, tt.result, result)
+			fmt.Println("DEBUG", cmp.Diff(
+				tt.conditions,
+				ctx.Conditions(),
+				cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+			))
 			assert.True(
 				t,
 				cmp.Equal(

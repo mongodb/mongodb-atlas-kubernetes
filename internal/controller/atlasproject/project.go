@@ -46,6 +46,7 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 		if !results[i].IsOk() {
 			logIfWarning(ctx, results[i])
 
+			ctx.SetConditionFromResult(api.ProjectReadyType, results[i])
 			return results[i].ReconcileResult(), nil
 		}
 	}
