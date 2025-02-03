@@ -184,6 +184,7 @@ jobs:
             "backup-compliance",
             "flex",
             "ip-access-list",
+            "dry-run",
           ]
     steps:
       - name: Get repo files from cache

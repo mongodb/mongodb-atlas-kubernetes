@@ -1,45 +1,33 @@
 package dryrun
 
 import (
+	"errors"
 	"fmt"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+const dryRunErrorPrefix = "DryRun event: "
+
 type DryRunError struct {
-	GVK                    string
-	Namespace, Name        string
-	EventType, Reason, Msg string
+	Msg string
 }
 
-func NewDryRunError(kind schema.ObjectKind, meta metav1.ObjectMetaAccessor, eventtype, reason, messageFmt string, args ...interface{}) error {
-	gvk := "unknown"
-	if kind != nil {
-		gvk = kind.GroupVersionKind().String()
-	}
-
-	namespace, name := "unknown", "unknown"
-	if meta != nil {
-		namespace = meta.GetObjectMeta().GetNamespace()
-		name = meta.GetObjectMeta().GetName()
-	}
-
+func NewDryRunError(messageFmt string, args ...interface{}) error {
 	msg := fmt.Sprintf(messageFmt, args...)
 
 	return &DryRunError{
-		GVK:       gvk,
-		Namespace: namespace,
-		Name:      name,
-		EventType: eventtype,
-		Reason:    reason,
-		Msg:       msg,
+		Msg: msg,
 	}
 }
 
 func (e *DryRunError) Error() string {
-	return fmt.Sprintf(
-		"DryRun event GVK=%v, Namespace=%v, Name=%v, EventType=%v, Reason=%v, Message=%v",
-		e.GVK, e.Namespace, e.Name, e.EventType, e.Reason, e.Msg,
-	)
+	return dryRunErrorPrefix + e.Msg
+}
+
+// containsDryRunErrors returns true if the given error contains at least one DryRunError.
+//
+// Note: we DO NOT want to export this as we do not want "special dry-run" cases in reconcilers.
+// Reconcilers should behave exactly the same during dry-run as during regular reconciles.
+func containsDryRunErrors(err error) bool {
+	dErr := &DryRunError{}
+	return errors.As(err, &dErr)
 }

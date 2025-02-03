@@ -15,6 +15,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -27,8 +28,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 const (
@@ -70,6 +73,7 @@ type Builder struct {
 	featureFlags       *featureflags.FeatureFlags
 	deletionProtection bool
 	skipNameValidation bool
+	dryRun             bool
 }
 
 func (b *Builder) WithConfig(config *rest.Config) *Builder {
@@ -151,6 +155,11 @@ func (b *Builder) WithSkipNameValidation(skip bool) *Builder {
 	return b
 }
 
+func (b *Builder) WithDryRun(dryRun bool) *Builder {
+	b.dryRun = dryRun
+	return b
+}
+
 // Build builds the cluster object and configures operator controllers
 func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 	mergeDefaults(b)
@@ -180,46 +189,80 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 
 	controllerRegistry := controller.NewRegistry(b.predicates, b.deletionProtection, b.logger, b.independentSyncPeriod, b.featureFlags)
 
-	mgr, err := b.managerProvider.New(
-		b.config,
-		ctrl.Options{
-			Scheme:  b.scheme,
-			Metrics: metricsserver.Options{BindAddress: b.metricAddress},
-			WebhookServer: webhook.NewServer(webhook.Options{
-				Port: 9443,
-			}),
-			Cache:                  cacheOpts,
-			HealthProbeBindAddress: b.probeAddress,
-			LeaderElection:         b.leaderElection,
-			LeaderElectionID:       b.leaderElectionID,
-		},
-	)
+	var akoCluster cluster.Cluster
+	if b.dryRun {
+		cfg, err := config.GetConfig()
+		if err != nil {
+			return nil, fmt.Errorf("error building dry-run manager config: %w", err)
+		}
 
-	if err != nil {
-		return nil, err
+		c, err := cluster.New(cfg, func(opts *cluster.Options) {
+			opts.Cache = cacheOpts
+			opts.Scheme = b.scheme
+			opts.Client = client.Options{
+				DryRun: pointer.MakePtr(true),
+			}
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create cluster client: %w", err)
+		}
+
+		if b.atlasProvider == nil {
+			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, c.GetClient(), true)
+		}
+
+		mgr, err := dryrun.NewManager(c, b.logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create dry-run manager: %w", err)
+		}
+
+		if err := controllerRegistry.RegisterWithDryRunManager(mgr, b.atlasProvider); err != nil {
+			return nil, err
+		}
+		akoCluster = mgr
+	} else {
+		mgr, err := b.managerProvider.New(
+			b.config,
+			ctrl.Options{
+				Scheme:  b.scheme,
+				Metrics: metricsserver.Options{BindAddress: b.metricAddress},
+				WebhookServer: webhook.NewServer(webhook.Options{
+					Port: 9443,
+				}),
+				Cache:                  cacheOpts,
+				HealthProbeBindAddress: b.probeAddress,
+				LeaderElection:         b.leaderElection,
+				LeaderElectionID:       b.leaderElectionID,
+			},
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if err = mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
+			return nil, err
+		}
+
+		if err = mgr.AddReadyzCheck("check", healthz.Ping); err != nil {
+			return nil, err
+		}
+
+		if b.atlasProvider == nil {
+			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, mgr.GetClient(), false)
+		}
+
+		if err := controllerRegistry.RegisterWithManager(mgr, b.skipNameValidation, b.atlasProvider); err != nil {
+			return nil, err
+		}
+		akoCluster = mgr
 	}
 
-	if err = mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
-		return nil, err
-	}
-
-	if err = mgr.AddReadyzCheck("check", healthz.Ping); err != nil {
-		return nil, err
-	}
-
-	if b.atlasProvider == nil {
-		b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, mgr.GetClient(), false)
-	}
-
-	if err := controllerRegistry.RegisterWithManager(mgr, b.skipNameValidation, b.atlasProvider); err != nil {
-		return nil, err
-	}
-
-	if err := indexer.RegisterAll(ctx, mgr, b.logger); err != nil {
+	if err := indexer.RegisterAll(ctx, akoCluster, b.logger); err != nil {
 		return nil, fmt.Errorf("unable to create indexers: %w", err)
 	}
 
-	return mgr, nil
+	return akoCluster, nil
 }
 
 // NewBuilder return a new Builder to construct operator controllers
