@@ -43,7 +43,7 @@ func TestProvider_Client(t *testing.T) {
 		Build()
 
 	t.Run("should return Atlas API client and organization id using global secret", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{Name: "api-secret", Namespace: "default"}, k8sClient, nil)
+		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{Name: "api-secret", Namespace: "default"}, k8sClient, false)
 
 		c, id, err := p.Client(context.Background(), nil, zaptest.NewLogger(t).Sugar())
 		assert.NoError(t, err)
@@ -52,7 +52,7 @@ func TestProvider_Client(t *testing.T) {
 	})
 
 	t.Run("should return Atlas API client and organization id using connection secret", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{Name: "global-secret", Namespace: "default"}, k8sClient, nil)
+		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{Name: "global-secret", Namespace: "default"}, k8sClient, false)
 
 		c, id, err := p.Client(context.Background(), &client.ObjectKey{Name: "api-secret", Namespace: "default"}, zaptest.NewLogger(t).Sugar())
 		assert.NoError(t, err)
@@ -63,17 +63,17 @@ func TestProvider_Client(t *testing.T) {
 
 func TestProvider_IsCloudGov(t *testing.T) {
 	t.Run("should return false for invalid domain", func(t *testing.T) {
-		p := NewProductionProvider("http://x:namedport", client.ObjectKey{}, nil, nil)
+		p := NewProductionProvider("http://x:namedport", client.ObjectKey{}, nil, false)
 		assert.False(t, p.IsCloudGov())
 	})
 
 	t.Run("should return false for commercial Atlas domain", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{}, nil, nil)
+		p := NewProductionProvider("https://cloud.mongodb.com/", client.ObjectKey{}, nil, false)
 		assert.False(t, p.IsCloudGov())
 	})
 
 	t.Run("should return true for Atlas for government domain", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodbgov.com/", client.ObjectKey{}, nil, nil)
+		p := NewProductionProvider("https://cloud.mongodbgov.com/", client.ObjectKey{}, nil, false)
 		assert.True(t, p.IsCloudGov())
 	})
 }
@@ -173,7 +173,7 @@ func TestProvider_IsResourceSupported(t *testing.T) {
 
 	for desc, data := range dataProvider {
 		t.Run(desc, func(t *testing.T) {
-			p := NewProductionProvider(data.domain, client.ObjectKey{}, nil, nil)
+			p := NewProductionProvider(data.domain, client.ObjectKey{}, nil, false)
 			assert.Equal(t, data.expectation, p.IsResourceSupported(data.resource))
 		})
 	}

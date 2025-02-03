@@ -208,7 +208,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 	}
 
 	if b.atlasProvider == nil {
-		b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, mgr.GetClient(), nil)
+		b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, mgr.GetClient(), false)
 	}
 
 	if err := controllerRegistry.RegisterWithManager(mgr, b.skipNameValidation, b.atlasProvider); err != nil {

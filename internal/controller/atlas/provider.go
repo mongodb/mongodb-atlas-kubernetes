@@ -14,7 +14,6 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -48,7 +47,7 @@ type ProductionProvider struct {
 	k8sClient       client.Client
 	domain          string
 	globalSecretRef client.ObjectKey
-	dryRunRecorder  record.EventRecorder
+	dryRun          bool
 }
 
 type credentialsSecret struct {
@@ -57,12 +56,12 @@ type credentialsSecret struct {
 	PrivateKey string
 }
 
-func NewProductionProvider(atlasDomain string, globalSecretRef client.ObjectKey, k8sClient client.Client, dryRunRecorder record.EventRecorder) *ProductionProvider {
+func NewProductionProvider(atlasDomain string, globalSecretRef client.ObjectKey, k8sClient client.Client, dryRun bool) *ProductionProvider {
 	return &ProductionProvider{
 		k8sClient:       k8sClient,
 		domain:          atlasDomain,
 		globalSecretRef: globalSecretRef,
-		dryRunRecorder:  dryRunRecorder,
+		dryRun:          dryRun,
 	}
 }
 
@@ -171,11 +170,11 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, secretRef *client
 }
 
 func (p *ProductionProvider) newDryRunTransport(delegate http.RoundTripper) http.RoundTripper {
-	if p.dryRunRecorder == nil {
-		return delegate
+	if p.dryRun {
+		return dryrun.NewDryRunTransport(delegate)
 	}
 
-	return dryrun.NewDryRunTransport(p.dryRunRecorder, delegate)
+	return delegate
 }
 
 func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (*credentialsSecret, error) {
