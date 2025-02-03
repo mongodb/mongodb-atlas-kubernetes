@@ -75,7 +75,7 @@ func main() {
 	setupLog := logger.Named("setup").Sugar()
 	setupLog.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))
 
-	mgr, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme, time.Duration(minimumIndependentSyncPeriod)*time.Minute).
+	runnable, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme, time.Duration(minimumIndependentSyncPeriod)*time.Minute).
 		WithConfig(ctrl.GetConfigOrDie()).
 		WithNamespaces(collection.Keys(config.WatchedNamespaces)...).
 		WithLogger(logger).
@@ -86,6 +86,7 @@ func main() {
 		WithAPISecret(config.GlobalAPISecret).
 		WithDeletionProtection(config.ObjectDeletionProtection).
 		WithIndependentSyncPeriod(time.Duration(config.IndependentSyncPeriod) * time.Minute).
+		WithDryRun(config.DryRun).
 		Build(ctx)
 	if err != nil {
 		setupLog.Error(err, "unable to start operator")
@@ -94,8 +95,8 @@ func main() {
 
 	setupLog.Info(subobjectDeletionProtectionMessage)
 	setupLog.Info("starting manager")
-	if err = mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running manager")
+	if err = runnable.Start(ctx); err != nil {
+		setupLog.Errorf("error running manager: %v", err)
 		os.Exit(1)
 	}
 }
@@ -113,6 +114,7 @@ type Config struct {
 	SubObjectDeletionProtection bool
 	IndependentSyncPeriod       int
 	FeatureFlags                *featureflags.FeatureFlags
+	DryRun                      bool
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -139,6 +141,8 @@ func parseConfiguration() Config {
 		independentSyncPeriod,
 		fmt.Sprintf("The default time, in minutes,  between reconciliations for independent custom resources. (default %d, minimum %d)", independentSyncPeriod, minimumIndependentSyncPeriod),
 	)
+	flag.BoolVar(&config.DryRun, "dry-run", false, "If set, the operator will not perform any changes to the Atlas resources, run all reconcilers only Once and emit events for all planned changes")
+
 	appVersion := flag.Bool("v", false, "prints application version")
 	flag.Parse()
 
