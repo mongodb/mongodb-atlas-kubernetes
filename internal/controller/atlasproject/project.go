@@ -102,8 +102,14 @@ func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, services *AtlasPr
 			if result := DeleteAllPrivateEndpoints(ctx, atlasProject); !result.IsOk() {
 				return r.terminate(ctx, workflow.ServerlessPrivateEndpointReady, errors.New(result.GetMessage()))
 			}
-			if result := DeleteAllNetworkPeers(ctx.Context, atlasProject.ID(), ctx.SdkClient.NetworkPeeringApi, ctx.Log); !result.IsOk() {
-				return r.terminate(ctx, workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New(result.GetMessage()))
+			hasLastApplied, err := hasLastAppliedNetworkPeerings(atlasProject)
+			if err != nil {
+				return r.terminate(ctx, workflow.Internal, err)
+			}
+			if hasLastApplied {
+				if result := DeleteAllNetworkPeers(ctx.Context, atlasProject.ID(), ctx.SdkClient.NetworkPeeringApi, ctx.Log); !result.IsOk() {
+					return r.terminate(ctx, workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New(result.GetMessage()))
+				}
 			}
 
 			err = r.syncAssignedTeams(ctx, services.teamsService, atlasProject.ID(), atlasProject, nil)

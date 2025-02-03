@@ -2,7 +2,9 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -185,6 +187,15 @@ func TestHandleProject(t *testing.T) {
 					Namespace:         "default",
 					DeletionTimestamp: &deletionTime,
 					Finalizers:        []string{customresource.FinalizerLabel},
+					// no skipped config, but some fake applied condig on network peerings
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: func() string {
+							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+								NetworkPeers: []akov2.NetworkPeer{{}},
+							})
+							return string(d)
+						}(),
+					},
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -404,6 +415,15 @@ func TestHandleProject(t *testing.T) {
 					Name:       "my-project",
 					Namespace:  "default",
 					Finalizers: []string{customresource.FinalizerLabel},
+					Annotations: map[string]string{
+						// no skipped config, but some fake applied condig on network peerings
+						customresource.AnnotationLastAppliedConfiguration: func() string {
+							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+								NetworkPeers: []akov2.NetworkPeer{{}},
+							})
+							return string(d)
+						}(),
+					},
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -510,6 +530,15 @@ func TestHandleProject(t *testing.T) {
 					Name:       "my-project",
 					Namespace:  "default",
 					Finalizers: []string{customresource.FinalizerLabel},
+					// no skipped config, but some fake applied condig on network peerings
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: func() string {
+							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+								NetworkPeers: []akov2.NetworkPeer{{}},
+							})
+							return string(d)
+						}(),
+					},
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -618,6 +647,15 @@ func TestHandleProject(t *testing.T) {
 					Name:       "my-project",
 					Namespace:  "default",
 					Finalizers: []string{customresource.FinalizerLabel},
+					// no skipped config, but some fake applied condig on network peerings
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: func() string {
+							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+								NetworkPeers: []akov2.NetworkPeer{{}},
+							})
+							return string(d)
+						}(),
+					},
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -643,6 +681,7 @@ func TestHandleProject(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
+			log.Printf("TEST: %s", name)
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
 			require.NoError(t, corev1.AddToScheme(testScheme))
@@ -1054,6 +1093,15 @@ func TestDelete(t *testing.T) {
 						Namespace:         "default",
 						DeletionTimestamp: &deletionTime,
 						Finalizers:        []string{customresource.FinalizerLabel},
+						// no skipped config, but some fake applied condig on network peerings
+						Annotations: map[string]string{
+							customresource.AnnotationLastAppliedConfiguration: func() string {
+								d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+									NetworkPeers: []akov2.NetworkPeer{{}},
+								})
+								return string(d)
+							}(),
+						},
 					},
 					Spec: akov2.AtlasProjectSpec{
 						Teams: []akov2.Team{
