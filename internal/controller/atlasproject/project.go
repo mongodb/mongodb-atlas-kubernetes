@@ -38,10 +38,6 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 		return r.manage(ctx, atlasProject, projectInAtlas.ID)
 	}
 
-	if err = r.ensureX509(ctx, atlasProject); err != nil {
-		return r.terminate(ctx, workflow.Internal, err)
-	}
-
 	ctx.SetConditionTrue(api.ProjectReadyType)
 	r.EventRecorder.Event(atlasProject, "Normal", string(api.ProjectReadyType), "")
 

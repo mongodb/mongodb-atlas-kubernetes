@@ -244,6 +244,12 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
+	if err := r.ensureX509(workflowCtx, project); err != nil {
+		r.EventRecorder.Event(project, "Normal", string(api.X509AuthReadyType), "")
+		results = append(results, workflow.Terminate(workflow.Internal, err))
+	}
+	results = append(results, result)
+
 	return results
 }
 
