@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
@@ -33,11 +35,53 @@ type networkPeerDiff struct {
 	PeersToUpdate []admin.BaseNetworkPeeringConnectionSettings
 }
 
+func hasSkippedNetworkPeerings(atlasProject *akov2.AtlasProject) (bool, error) {
+	lastSkippedSpec := akov2.AtlasProjectSpec{}
+	lastSkippedSpecString, ok := atlasProject.Annotations[customresource.AnnotationLastSkippedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(lastSkippedSpecString), &lastSkippedSpec); err != nil {
+			return false, fmt.Errorf("failed to parse last skipped configuration: %w", err)
+		}
+
+		return len(lastSkippedSpec.NetworkPeers) > 0, nil
+	}
+
+	return false, nil
+}
+
+func hasLastAppliedNetworkPeerings(atlasProject *akov2.AtlasProject) (bool, error) {
+	lastAppliedSpec := akov2.AtlasProjectSpec{}
+	lastAppliedSpecStr, ok := atlasProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if !ok {
+		return false, nil
+	}
+
+	if err := json.Unmarshal([]byte(lastAppliedSpecStr), &lastAppliedSpec); err != nil {
+		return false, fmt.Errorf("failed to parse last applied configuration: %w", err)
+	}
+
+	return len(lastAppliedSpec.NetworkPeers) > 0, nil
+}
+
 func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.Result {
+	skipped, err := hasSkippedNetworkPeerings(akoProject)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err)
+	}
+	if skipped {
+		workflowCtx.UnsetCondition(api.NetworkPeerReadyType)
+		return workflow.OK()
+	}
+
+	hadLastApplied, err := hasLastAppliedNetworkPeerings(akoProject)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err)
+	}
+
 	networkPeerStatus := akoProject.Status.DeepCopy().NetworkPeers
 	networkPeerSpec := akoProject.Spec.DeepCopy().NetworkPeers
 
-	result, condition := SyncNetworkPeer(workflowCtx, akoProject.ID(), networkPeerStatus, networkPeerSpec)
+	result, condition := SyncNetworkPeer(workflowCtx, akoProject.ID(), networkPeerStatus, networkPeerSpec, hadLastApplied)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(condition, result)
 		return result
@@ -68,7 +112,7 @@ func failedPeerStatus(errMessage string, peer akov2.NetworkPeer) status.AtlasNet
 	}
 }
 
-func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer) (workflow.Result, api.ConditionType) {
+func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer, hadLastApplied bool) (workflow.Result, api.ConditionType) {
 	defer workflowCtx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
 	logger := workflowCtx.Log
 	mongoClient := workflowCtx.SdkClient
@@ -100,11 +144,13 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
 			errors.New("failed to update network peer statuses")), api.NetworkPeerReadyType
 	}
-	err = deleteUnusedContainers(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, getPeerIDs(peerStatuses))
-	if err != nil {
-		logger.Errorf("failed to delete unused containers: %v", err)
-		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
-			fmt.Errorf("failed to delete unused containers: %w", err)), api.NetworkPeerReadyType
+	if hadLastApplied {
+		err = deleteUnusedContainers(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, getPeerIDs(peerStatuses))
+		if err != nil {
+			logger.Errorf("failed to delete unused containers: %v", err)
+			return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
+				fmt.Errorf("failed to delete unused containers: %w", err)), api.NetworkPeerReadyType
+		}
 	}
 	return ensurePeerStatus(peerStatuses, len(peerSpecs), logger), api.NetworkPeerReadyType
 }
