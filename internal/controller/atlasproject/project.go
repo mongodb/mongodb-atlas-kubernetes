@@ -35,9 +35,12 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 		return r.delete(ctx, services, orgID, atlasProject)
 	case !existInAtlas && wasDeleted:
 		return r.release(ctx, atlasProject)
-	case existInAtlas && !wasDeleted && atlasProject.Status.ID == "":
-		return r.manage(ctx, atlasProject, projectInAtlas.ID)
 	}
+
+	// short circuit the "manage" state,
+	// there is no need to wait another reconcile cycle to continue.
+	_, _ = r.manage(ctx, atlasProject, projectInAtlas.ID)
+	atlasProject.Status.ID = projectInAtlas.ID
 
 	if err = r.ensureX509(ctx, atlasProject); err != nil {
 		return r.terminate(ctx, workflow.Internal, err)

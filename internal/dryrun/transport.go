@@ -36,7 +36,7 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 		msg := "Would %v %v"
 
-		return nil, NewDryRunError(nil, nil, "", "", msg, verb, req.URL.Path)
+		return nil, NewDryRunError(msg, verb, req.URL.Path)
 	}
 
 	return t.Delegate.RoundTrip(req)
