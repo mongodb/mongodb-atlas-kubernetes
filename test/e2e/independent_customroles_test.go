@@ -136,7 +136,7 @@ var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole re
 		By("Enabled reconciliation for AtlasProject", func() {
 			_, err := akoretry.RetryUpdateOnConflict(testData.Context, testData.K8SClient,
 				client.ObjectKeyFromObject(testData.Project), func(p *akov2.AtlasProject) {
-					p.Annotations = map[string]string{}
+					delete(p.Annotations, customresource.ReconciliationPolicyAnnotation)
 				})
 			Expect(err).To(BeNil())
 
