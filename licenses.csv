@@ -18,7 +18,7 @@ github.com/Azure/go-autorest/autorest/adal,https://github.com/Azure/go-autorest/
 github.com/Azure/go-autorest/autorest/azure/auth,https://github.com/Azure/go-autorest/blob/autorest/azure/auth/v0.5.13/autorest/azure/auth/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/autorest/azure/cli,https://github.com/Azure/go-autorest/blob/autorest/azure/cli/v0.4.6/autorest/azure/cli/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/autorest/date,https://github.com/Azure/go-autorest/blob/autorest/date/v0.3.0/autorest/date/LICENSE,Apache-2.0
-github.com/Azure/go-autorest/autorest/to,https://github.com/Azure/go-autorest/blob/autorest/to/v0.4.0/autorest/to/LICENSE,Apache-2.0
+github.com/Azure/go-autorest/autorest/to,https://github.com/Azure/go-autorest/blob/autorest/to/v0.4.1/autorest/to/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/autorest/validation,https://github.com/Azure/go-autorest/blob/autorest/validation/v0.3.1/autorest/validation/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/logger,https://github.com/Azure/go-autorest/blob/logger/v0.2.1/logger/LICENSE,Apache-2.0
 github.com/Azure/go-autorest/tracing,https://github.com/Azure/go-autorest/blob/tracing/v0.6.0/tracing/LICENSE,Apache-2.0
