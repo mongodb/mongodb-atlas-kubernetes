@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -17,6 +19,57 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
+
+func TestShouldCustomRolesSkipReconciling(t *testing.T) {
+	tests := []struct {
+		name        string
+		annotations map[string]string
+		expected    bool
+		shouldFail  bool
+	}{
+		{
+			name:        "No annotations present",
+			annotations: map[string]string{},
+			expected:    false,
+			shouldFail:  false,
+		},
+		{
+			name:        "Annotation present but invalid JSON",
+			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "invalid"},
+			expected:    false,
+			shouldFail:  true,
+		},
+		{
+			name:        "Annotation present with empty CustomRoles",
+			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{\"CustomRoles\": []}"},
+			expected:    true,
+			shouldFail:  false,
+		},
+		{
+			name:        "Annotation present with non-empty CustomRoles",
+			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{\"CustomRoles\": [{\"Name\": \"role1\"}]}"},
+			expected:    false,
+			shouldFail:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			atlasProject := &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: tt.annotations,
+				},
+			}
+			result, err := shouldCustomRolesSkipReconciling(atlasProject)
+			if tt.shouldFail {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
 
 func TestEnsureCustomRoles(t *testing.T) {
 	testRole := []akov2.CustomRole{

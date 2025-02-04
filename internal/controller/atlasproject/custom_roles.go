@@ -22,7 +22,7 @@ type roleController struct {
 	service customroles.CustomRoleService
 }
 
-func hasSkippedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
+func shouldCustomRolesSkipReconciling(atlasProject *akov2.AtlasProject) (bool, error) {
 	lastSkippedSpec := akov2.AtlasProjectSpec{}
 	lastSkippedSpecString, ok := atlasProject.Annotations[customresource.AnnotationLastSkippedConfiguration]
 	if ok {
@@ -30,7 +30,7 @@ func hasSkippedCustomRoles(atlasProject *akov2.AtlasProject) (bool, error) {
 			return false, fmt.Errorf("failed to parse last skipped configuration: %w", err)
 		}
 
-		return len(lastSkippedSpec.CustomRoles) != 0, nil
+		return len(lastSkippedSpec.CustomRoles) == 0, nil
 	}
 
 	return false, nil
@@ -76,14 +76,13 @@ func convertToInternalRoles(roles []akov2.CustomRole) []customroles.CustomRole {
 }
 
 func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
-	skipped, err := hasSkippedCustomRoles(project)
+	skipped, err := shouldCustomRolesSkipReconciling(project)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	if skipped {
 		workflowCtx.UnsetCondition(api.ProjectCustomRolesReadyType)
-
 		return workflow.OK()
 	}
 
