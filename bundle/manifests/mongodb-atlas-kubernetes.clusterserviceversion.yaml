@@ -134,6 +134,30 @@ metadata:
         },
         {
           "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasIPAccessList",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/name": "mongodb-atlas-kubernetes"
+            },
+            "name": "atlasipaccesslist-sample"
+          },
+          "spec": {
+            "entries": [
+              {
+                "cidrBlock": "192.168.1.0/24"
+              },
+              {
+                "deleteAfterDate": "2025-01-20T23:59:59+02:00",
+                "ipAddress": "10.0.0.1"
+              }
+            ],
+            "projectRef": {
+              "name": "my-project"
+            }
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
           "kind": "AtlasProject",
           "metadata": {
             "name": "my-project"
@@ -168,7 +192,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Database
-    createdAt: "2025-01-09T15:09:23Z"
+    createdAt: "2025-02-05T16:58:54Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -179,12 +203,12 @@ metadata:
     features.operators.openshift.io/token-auth-gcp: "false"
     operators.operatorframework.io/builder: operator-sdk-v1.34.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.6.1
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.7.0
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.6.1
+  name: mongodb-atlas-kubernetes.v2.7.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -227,6 +251,11 @@ spec:
         displayName: Atlas Federated Auth
         kind: AtlasFederatedAuth
         name: atlasfederatedauths.atlas.mongodb.com
+        version: v1
+      - description: AtlasIPAccessList is the Schema for the atlasipaccesslists API.
+        displayName: Atlas IPAccess List
+        kind: AtlasIPAccessList
+        name: atlasipaccesslists.atlas.mongodb.com
         version: v1
       - description: "The AtlasPrivateEndpoint custom resource definition (CRD) defines a desired [Private Endpoint](https://www.mongodb.com/docs/atlas/security-private-endpoint/#std-label-private-endpoint-overview) configuration for an Atlas project. It allows a private connection between your cloud provider and Atlas that doesn't send information through a public network. \n You can use private endpoints to create a unidirectional connection to Atlas clusters from your virtual network."
         displayName: Atlas Private Endpoint
@@ -321,6 +350,7 @@ spec:
                 - atlasdatafederations
                 - atlasdeployments
                 - atlasfederatedauths
+                - atlasipaccesslists
                 - atlasprivateendpoints
                 - atlasprojects
                 - atlassearchindexconfigs
@@ -346,6 +376,7 @@ spec:
                 - atlasdatafederations/status
                 - atlasdeployments/status
                 - atlasfederatedauths/status
+                - atlasipaccesslists/status
                 - atlasprivateendpoints/status
                 - atlasprojects/status
                 - atlassearchindexconfigs/status
@@ -355,6 +386,12 @@ spec:
               verbs:
                 - get
                 - patch
+                - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasipaccesslists/finalizers
+              verbs:
                 - update
           serviceAccountName: mongodb-atlas-operator
       deployments:
@@ -401,7 +438,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.6.1
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.7.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -485,5 +522,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.6.1
-  replaces: mongodb-atlas-kubernetes.v2.6.0
+  version: 2.7.0
+  replaces: mongodb-atlas-kubernetes.v2.6.1

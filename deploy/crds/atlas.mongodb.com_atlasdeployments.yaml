@@ -618,14 +618,82 @@ spec:
                 - name
                 type: object
               externalProjectRef:
-                description: ExternalProjectRef holds the Atlas project ID the user
-                  belongs to
+                description: |-
+                  "externalProjectRef" holds the parent Atlas project ID.
+                  Mutually exclusive with the "projectRef" field
                 properties:
                   id:
                     description: ID is the Atlas project ID
                     type: string
                 required:
                 - id
+                type: object
+              flexSpec:
+                description: Configuration for the Flex cluster API. https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Flex-Clusters
+                properties:
+                  name:
+                    description: Human-readable label that identifies the instance.
+                    type: string
+                  providerSettings:
+                    description: Group of cloud provider settings that configure the
+                      provisioned MongoDB flex cluster.
+                    properties:
+                      backingProviderName:
+                        description: Cloud service provider on which MongoDB Atlas
+                          provisions the flex cluster.
+                        enum:
+                        - AWS
+                        - GCP
+                        - AZURE
+                        type: string
+                        x-kubernetes-validations:
+                        - message: Backing Provider cannot be modified after cluster
+                            creation
+                          rule: self == oldSelf
+                      regionName:
+                        description: |-
+                          Human-readable label that identifies the geographic location of your MongoDB flex cluster.
+                          The region you choose can affect network latency for clients accessing your databases.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: Region Name cannot be modified after cluster creation
+                          rule: self == oldSelf
+                    required:
+                    - backingProviderName
+                    - regionName
+                    type: object
+                  tags:
+                    description: List that contains key-value pairs between 1 to 255
+                      characters in length for tagging and categorizing the instance.
+                    items:
+                      description: TagSpec holds a key-value pair for resource tagging
+                        on this deployment.
+                      properties:
+                        key:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+                          type: string
+                        value:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    maxItems: 50
+                    type: array
+                  terminationProtectionEnabled:
+                    default: false
+                    description: |-
+                      Flag that indicates whether termination protection is enabled on the cluster.
+                      If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
+                    type: boolean
+                required:
+                - name
+                - providerSettings
                 type: object
               processArgs:
                 description: ProcessArgs allows to modify Advanced Configuration Options
@@ -655,8 +723,9 @@ spec:
                     type: integer
                 type: object
               projectRef:
-                description: Project is a reference to AtlasProject resource the deployment
-                  belongs to
+                description: |-
+                  "projectRef" is a reference to the parent AtlasProject resource.
+                  Mutually exclusive with the "externalProjectRef" field
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource
@@ -668,7 +737,9 @@ spec:
                 - name
                 type: object
               serverlessSpec:
-                description: Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
+                description: |-
+                  Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
+                  DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
                 properties:
                   backupOptions:
                     description: Serverless Backup Options
