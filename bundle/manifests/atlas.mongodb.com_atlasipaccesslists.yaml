@@ -8,31 +8,28 @@ metadata:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
     app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
-  name: atlascustomroles.atlas.mongodb.com
+  name: atlasipaccesslists.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
   names:
     categories:
     - atlas
-    kind: AtlasCustomRole
-    listKind: AtlasCustomRoleList
-    plural: atlascustomroles
+    kind: AtlasIPAccessList
+    listKind: AtlasIPAccessListList
+    plural: atlasipaccesslists
     shortNames:
-    - acr
-    singular: atlascustomrole
+    - aip
+    singular: atlasipaccesslist
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
       type: string
-    - jsonPath: .spec.role.name
-      name: Name
-      type: string
     name: v1
     schema:
       openAPIV3Schema:
-        description: AtlasCustomRole is the Schema for the AtlasCustomRole API
+        description: AtlasIPAccessList is the Schema for the atlasipaccesslists API.
         properties:
           apiVersion:
             description: |-
@@ -52,8 +49,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtlasCustomRoleSpec defines the desired state of CustomRole
-              in Atlas
+            description: AtlasIPAccessListSpec defines the desired state of AtlasIPAccessList.
             properties:
               connectionSecret:
                 description: Name of the secret containing Atlas API private and public
@@ -67,6 +63,37 @@ spec:
                 required:
                 - name
                 type: object
+              entries:
+                description: Entries is the list of IP Access to be managed
+                items:
+                  properties:
+                    awsSecurityGroup:
+                      description: Unique identifier of AWS security group in this
+                        access list entry.
+                      type: string
+                    cidrBlock:
+                      description: Range of IP addresses in CIDR notation in this
+                        access list entry.
+                      type: string
+                    comment:
+                      description: Comment associated with this access list entry.
+                      type: string
+                    deleteAfterDate:
+                      description: Date and time after which Atlas deletes the temporary
+                        access list entry.
+                      format: date-time
+                      type: string
+                    ipAddress:
+                      description: Entry using an IP address in this access list entry.
+                      type: string
+                  type: object
+                  x-kubernetes-validations:
+                  - message: Only one of ipAddress, cidrBlock, or awsSecurityGroup
+                      may be set.
+                    rule: '!(has(self.ipAddress) && (has(self.cidrBlock) || has(self.awsSecurityGroup)))
+                      && !(has(self.cidrBlock) && has(self.awsSecurityGroup))'
+                minItems: 1
+                type: array
               externalProjectRef:
                 description: |-
                   "externalProjectRef" holds the parent Atlas project ID.
@@ -92,70 +119,8 @@ spec:
                 required:
                 - name
                 type: object
-              role:
-                properties:
-                  actions:
-                    description: List of the individual privilege actions that the
-                      role grants.
-                    items:
-                      properties:
-                        name:
-                          description: Human-readable label that identifies the privilege
-                            action.
-                          type: string
-                        resources:
-                          description: List of resources on which you grant the action.
-                          items:
-                            properties:
-                              cluster:
-                                description: Flag that indicates whether to grant
-                                  the action on the cluster resource. If true, MongoDB
-                                  Cloud ignores Database and Collection parameters.
-                                type: boolean
-                              collection:
-                                description: Human-readable label that identifies
-                                  the collection on which you grant the action to
-                                  one MongoDB user.
-                                type: string
-                              database:
-                                description: Human-readable label that identifies
-                                  the database on which you grant the action to one
-                                  MongoDB user.
-                                type: string
-                            type: object
-                          type: array
-                      required:
-                      - name
-                      - resources
-                      type: object
-                    type: array
-                  inheritedRoles:
-                    description: List of the built-in roles that this custom role
-                      inherits.
-                    items:
-                      properties:
-                        database:
-                          description: Human-readable label that identifies the database
-                            on which someone grants the action to one MongoDB user.
-                          type: string
-                        name:
-                          description: Human-readable label that identifies the role
-                            inherited.
-                          type: string
-                      required:
-                      - database
-                      - name
-                      type: object
-                    type: array
-                  name:
-                    description: Human-readable label that identifies the role. This
-                      name must be unique for this custom role in this project.
-                    type: string
-                required:
-                - name
-                type: object
             required:
-            - role
+            - entries
             type: object
             x-kubernetes-validations:
             - message: must define only one project reference through externalProjectRef
@@ -167,9 +132,8 @@ spec:
               rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
                 !has(self.externalProjectRef)
           status:
-            description: |-
-              AtlasCustomRoleStatus is a status for the AtlasCustomRole Custom resource.
-              Not the one included in the AtlasProject
+            description: AtlasIPAccessListStatus is the most recent observed status
+              of the AtlasIPAccessList cluster. Read-only.
             properties:
               conditions:
                 description: Conditions is the list of statuses showing the current
@@ -199,6 +163,21 @@ spec:
                   required:
                   - status
                   - type
+                  type: object
+                type: array
+              entries:
+                description: Status is the state of the ip access list
+                items:
+                  properties:
+                    entry:
+                      description: Entry is the ip access Atlas is managing
+                      type: string
+                    status:
+                      description: Status is the correspondent state of the entry
+                      type: string
+                  required:
+                  - entry
+                  - status
                   type: object
                 type: array
               observedGeneration:
