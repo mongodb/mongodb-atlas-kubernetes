@@ -185,6 +185,7 @@ jobs:
             "backup-compliance",
             "flex",
             "ip-access-list",
+            "networkcontainer-controller",
           ]
     steps:
       - name: Get repo files from cache
