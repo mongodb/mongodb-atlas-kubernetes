@@ -462,6 +462,54 @@ func TestHandle(t *testing.T) {
 		},
 
 		{
+			title: "existent container in sync",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:       "test-container",
+						Finalizers: []string{customresource.FinalizerLabel},
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							ID:        testContainerID,
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.11.0.0/21",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Get(mock.Anything, testProjectID, testContainerID).Return(
+						&networkcontainer.NetworkContainer{
+							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
+								Provider: "AWS",
+								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+									Region:    "US_EAST_1",
+									CIDRBlock: "10.11.0.0/21",
+								},
+							},
+							ID:          testContainerID,
+							Provisioned: true,
+							AWSStatus: &networkcontainer.AWSContainerStatus{
+								VpcID: testVpcID,
+							},
+						}, nil,
+					)
+					return ncs
+				}(),
+			},
+			wantResult:     ctrl.Result{},
+			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantConditions: []api.Condition{
+				api.TrueCondition(api.NetworkContainerReady).
+					WithMessageRegexp(fmt.Sprintf("Network Container %s is ready", testContainerID)),
+				api.TrueCondition(api.ReadyType),
+			},
+		},
+
+		{
 			title: "update succeeds",
 			req: &reconcileRequest{
 				projectID: testProjectID,
@@ -656,6 +704,71 @@ func TestHandle(t *testing.T) {
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotDeleted)).
 					WithMessageRegexp(fmt.Sprintf("failed to delete container: %v", ErrTestFail)),
+			},
+		},
+
+		{
+			title: "discover find fails abnormally",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:       "test-container",
+						Finalizers: []string{customresource.FinalizerLabel},
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.11.0.0/21",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(nil, ErrTestFail)
+					return ncs
+				}(),
+			},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
+					WithMessageRegexp(fmt.Sprintf("failed to find container from project %s: %v",
+						testProjectID, ErrTestFail)),
+			},
+		},
+
+		{
+			title: "discover get fails abnormally",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:       "test-container",
+						Finalizers: []string{customresource.FinalizerLabel},
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							ID:        testContainerID,
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.11.0.0/21",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Get(mock.Anything, testProjectID, testContainerID).Return(nil, ErrTestFail)
+					return ncs
+				}(),
+			},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
+					WithMessageRegexp(fmt.Sprintf("failed to get container %s from project %s: %v",
+						testContainerID, testProjectID, ErrTestFail)),
 			},
 		},
 	} {
