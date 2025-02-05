@@ -33,6 +33,7 @@ func FuzzConvertContainer(f *testing.F) {
 }
 
 func cleanupContainer(container *NetworkContainer) {
+	container.AtlasNetworkContainerConfig.ID = ""
 	// status fields are only populated from Atlas they do not complete a roundtrip
 	container.AWSStatus = nil
 	container.AzureStatus = nil
