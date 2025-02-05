@@ -19,6 +19,10 @@ var (
 
 	// ErrContainerInUse is a failure to remove a containe still in use
 	ErrContainerInUse = errors.New("container still in use")
+
+	// ErrAmbigousFind fails when a find result is ambiguous,
+	// usually more than one result was found when either one or noe was expected
+	ErrAmbigousFind = errors.New("ambigous find results")
 )
 
 type NetworkContainerService interface {
@@ -67,20 +71,27 @@ func (np *networkContainerService) Find(ctx context.Context, projectID string, c
 	if err != nil {
 		return nil, fmt.Errorf("failed to list containers at project %s: %w", projectID, err)
 	}
+	containers := []*NetworkContainer{}
 	for _, atlasContainer := range atlasContainers {
 		container := fromAtlas(&atlasContainer)
 		switch provider.ProviderName(cfg.Provider) {
 		case provider.ProviderGCP:
 			if container.CIDRBlock == cfg.CIDRBlock {
-				return container, nil
+				containers = append(containers, container)
 			}
 		default:
 			if container.CIDRBlock == cfg.CIDRBlock && container.Region == cfg.Region {
-				return container, nil
+				containers = append(containers, container)
 			}
 		}
 	}
-	return nil, ErrNotFound
+	if len(containers) < 1 {
+		return nil, ErrNotFound
+	}
+	if len(containers) > 1 {
+		return nil, ErrAmbigousFind
+	}
+	return containers[0], nil
 }
 
 func (np *networkContainerService) Update(ctx context.Context, projectID, containerID string, cfg *NetworkContainerConfig) (*NetworkContainer, error) {
