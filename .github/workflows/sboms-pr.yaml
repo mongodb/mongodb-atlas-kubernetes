@@ -25,11 +25,8 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "${{ github.workspace }}/tools/makejwt/go.mod"
-          cache: false
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
 
       - name: Configure Git
         run: |
@@ -43,7 +40,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           OS=linux ARCH=amd64 DOCKER_SBOM_PLUGIN_VERSION=0.6.1 ./scripts/get-docker-sbom-plugin.sh
-          make generate-sboms VERSION=${{ env.VERSION }}
+          devbox run -- make generate-sboms VERSION=${{ env.VERSION }}
           git checkout -b $BRANCH
           git add docs/releases
           git commit -m "Add SBOMs for version ${{ env.VERSION }}"
