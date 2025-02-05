@@ -85,6 +85,12 @@ spec:
                 required:
                 - id
                 type: object
+              id:
+                description: |-
+                  ID is the container identified for an already existent network container to be managed by the operator.
+                  This field can be used in conjunction with cidrBlock to update the cidrBlock of an existing container.
+                  This field is immutable.
+                type: string
               projectRef:
                 description: |-
                   "projectRef" is a reference to the parent AtlasProject resource.
@@ -110,10 +116,10 @@ spec:
               region:
                 description: |-
                   ContainerRegion is the provider region name of Atlas network peer container in Atlas region format
-                  This is required by AWS and Azure, but not used by GCP
+                  This is required by AWS and Azure, but not used by GCP.
+                  This field is immutable, Atlas does not admit network container changes.
                 type: string
             required:
-            - cidrBlock
             - provider
             type: object
             x-kubernetes-validations:
@@ -131,6 +137,10 @@ spec:
             - message: must set region for AWS and Azure containers
               rule: ((self.provider == 'AWS' || self.provider == 'AZURE') && has(self.region))
                 || (self.provider == 'GCP')
+            - message: id is immutable
+              rule: (self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id))
+            - message: region is immutable
+              rule: (self.region == oldSelf.region) || (!has(self.region) && !has(oldSelf.region))
           status:
             description: |-
               AtlasNetworkContainerStatus is a status for the AtlasNetworkContainer Custom resource.
