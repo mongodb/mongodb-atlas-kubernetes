@@ -28,6 +28,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/events"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/maintenance"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 )
 
 const (
@@ -348,15 +349,18 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			// Updating (the existing project is expected to be read from Atlas)
 			By("Updating the project")
 
-			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{CIDRBlock: "0.0.0.0/0"}}
-			createdProject.Spec.MaintenanceWindow = project.MaintenanceWindow{
-				DayOfWeek: 4,
-				HourOfDay: 11,
-				AutoDefer: true,
-				StartASAP: false,
-				Defer:     false,
-			}
-			Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+			var err error
+			createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+				p.Spec.ProjectIPAccessList = []project.IPAccessList{{CIDRBlock: "0.0.0.0/0"}}
+				p.Spec.MaintenanceWindow = project.MaintenanceWindow{
+					DayOfWeek: 4,
+					HourOfDay: 11,
+					AutoDefer: true,
+					StartASAP: false,
+					Defer:     false,
+				}
+			})
+			Expect(err).To(BeNil())
 
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType))
@@ -392,16 +396,20 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			})
 			By("Breaking the Connection Secret", func() {
 				connectionSecret = buildConnectionSecret("my-atlas-key")
-				connectionSecret.StringData["publicApiKey"] = "non-existing"
-				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
+				_, err := akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(&connectionSecret), func(s *corev1.Secret) {
+					s.StringData["publicApiKey"] = "non-existing"
+				})
+				Expect(err).To(BeNil())
 
-				Eventually(updateK8sObject[*akov2.AtlasProject](createdProject, func(createdProject *akov2.AtlasProject) {
-					createdProject.Spec.AlertConfigurationSyncEnabled = true
-				})).WithPolling(interval).WithTimeout(20 * time.Second).Should(BeTrue())
+				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+					p.Spec.AlertConfigurationSyncEnabled = true
+				})
+				Expect(err).To(BeNil())
 
-				Eventually(updateK8sObject[*akov2.AtlasProject](secondProject, func(secondProject *akov2.AtlasProject) {
-					secondProject.Spec.AlertConfigurationSyncEnabled = true
-				})).WithPolling(interval).WithTimeout(20 * time.Second).Should(BeTrue())
+				secondProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(secondProject), func(p *akov2.AtlasProject) {
+					p.Spec.AlertConfigurationSyncEnabled = true
+				})
+				Expect(err).To(BeNil())
 
 				// Both projects are expected to get to Failed state right away
 				expectedCondition := api.FalseCondition(api.ProjectReadyType).WithReason(string(workflow.ProjectNotCreatedInAtlas))
@@ -414,7 +422,10 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			})
 			By("Fixing the Connection Secret", func() {
 				connectionSecret = buildConnectionSecret("my-atlas-key")
-				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
+				_, err := akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(&connectionSecret), func(s *corev1.Secret) {
+					s.StringData = buildConnectionSecret("my-atlas-key").StringData
+				})
+				Expect(err).To(BeNil())
 
 				// Both projects are expected to recover
 				Eventually(func() bool {
@@ -529,9 +540,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			})
 			By("Updating the IP Access List comment and delete date", func() {
 				// Just a note: Atlas doesn't allow to make the "permanent" entity "temporary". But it works the other way
-				createdProject.Spec.ProjectIPAccessList[0].Comment = "new comment"
-				createdProject.Spec.ProjectIPAccessList[0].DeleteAfterDate = ""
-				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+				var err error
+				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+					p.Spec.ProjectIPAccessList[0].Comment = "new comment"
+					p.Spec.ProjectIPAccessList[0].DeleteAfterDate = ""
+				})
+				Expect(err).To(BeNil())
 
 				Eventually(func(g Gomega) bool {
 					return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType), validateNoErrorsIPAccessListDuringUpdate(g))
@@ -558,11 +572,14 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			})
 			By("Updating the IP Access List IPAddress", func() {
 				twoDaysLater := time.Now().Add(time.Hour * 48).Format("2006-01-02T15:04:05Z")
-				createdProject.Spec.ProjectIPAccessList[0].DeleteAfterDate = twoDaysLater
-				// Update of the IP address will result in delete for the old IP address first and then the new
-				// IP address will be created
-				createdProject.Spec.ProjectIPAccessList[1].IPAddress = "168.32.54.0"
-				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+				var err error
+				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+					p.Spec.ProjectIPAccessList[0].DeleteAfterDate = twoDaysLater
+					// Update of the IP address will result in delete for the old IP address first and then the new
+					// IP address will be created
+					p.Spec.ProjectIPAccessList[1].IPAddress = "168.32.54.0"
+				})
+				Expect(err).To(BeNil())
 
 				Eventually(func(g Gomega) bool {
 					return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType), validateNoErrorsIPAccessListDuringUpdate(g))
@@ -594,9 +611,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 			})
 			By("Updating the project maintenance window hour and enabling auto-defer", func() {
-				createdProject.Spec.MaintenanceWindow.HourOfDay = 3
-				createdProject.Spec.MaintenanceWindow.AutoDefer = true
-				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+				var err error
+				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+					p.Spec.MaintenanceWindow.HourOfDay = 3
+					p.Spec.MaintenanceWindow.AutoDefer = true
+				})
+				Expect(err).To(BeNil())
 
 				Eventually(func(g Gomega) bool {
 					return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate(g))
@@ -608,8 +628,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				checkMaintenanceWindowInAtlas()
 			})
 			By("Toggling auto-defer to false", func() {
-				createdProject.Spec.MaintenanceWindow.AutoDefer = false
-				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+				var err error
+				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+					p.Spec.MaintenanceWindow.AutoDefer = false
+				})
+				Expect(err).To(BeNil())
 
 				Eventually(func(g Gomega) bool {
 					return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate(g))
@@ -759,24 +782,6 @@ func deleteK8sObject(obj client.Object) func() bool {
 			return false
 		}
 		GinkgoWriter.Printf("Deleted %s/%s\n", nn.Namespace, nn.Name)
-		return true
-	}
-}
-
-func updateK8sObject[T client.Object](obj T, updateFn func(T)) func() bool {
-	return func() bool {
-		nn := kube.ObjectKeyFromObject(obj)
-		GinkgoWriter.Printf("Updating %s/%s\n", nn.Namespace, nn.Name)
-		err := k8sClient.Get(context.Background(), nn, obj)
-		if err == nil {
-			updateFn(obj)
-			err = k8sClient.Update(context.Background(), obj)
-		}
-		if err != nil {
-			GinkgoWriter.Printf("Failed to update %s/%s: %v\n", nn.Namespace, nn.Name, err)
-			return false
-		}
-		GinkgoWriter.Printf("Updated %s/%s\n", nn.Namespace, nn.Name)
 		return true
 	}
 }
