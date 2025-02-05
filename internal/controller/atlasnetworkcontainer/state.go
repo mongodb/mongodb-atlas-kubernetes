@@ -63,7 +63,7 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, req *reconcileRequest) (ctrl.Result, error) {
 	atlasContainer, err := discover(workflowCtx.Context, req)
 	if err != nil && !errors.Is(err, networkcontainer.ErrNotFound) {
-		return r.terminate(workflowCtx, req.networkContainer, workflow.AtlasAPIAccessNotConfigured, err), nil
+		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, err), nil
 	}
 	inAtlas := atlasContainer != nil
 	deleted := req.networkContainer.DeletionTimestamp != nil
@@ -80,7 +80,10 @@ func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, 
 }
 
 func discover(ctx context.Context, req *reconcileRequest) (*networkcontainer.NetworkContainer, error) {
-	id := req.networkContainer.Status.ID
+	id := req.networkContainer.Spec.ID
+	if id == "" {
+		id = req.networkContainer.Status.ID
+	}
 	if id != "" {
 		container, err := req.service.Get(ctx, req.projectID, id)
 		if err != nil {
@@ -113,12 +116,8 @@ func (r *AtlasNetworkContainerReconciler) create(workflowCtx *workflow.Context, 
 func (r *AtlasNetworkContainerReconciler) sync(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
 	cfg := networkcontainer.NewNetworkContainerConfig(
 		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
-	if !reflect.DeepEqual(cfg, &container.NetworkContainerConfig) {
-		if cfg.Region != container.Region {
-			err := fmt.Errorf("an Atlas Network Container cannot move to another region: From %s to %s",
-				container.Region, cfg.Region)
-			return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, err), nil
-		}
+	// only the CIDR block can be updated in a container
+	if cfg.CIDRBlock != container.NetworkContainerConfig.CIDRBlock {
 		return r.update(workflowCtx, req, container)
 	}
 	return r.ready(workflowCtx, req.networkContainer, container)
