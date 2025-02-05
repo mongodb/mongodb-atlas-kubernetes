@@ -58,6 +58,8 @@ type AtlasNetworkContainerList struct {
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 // +kubebuilder:validation:XValidation:rule="(self.provider == 'GCP' && !has(self.region)) || (self.provider != 'GCP')",message="must not set region for GCP containers"
 // +kubebuilder:validation:XValidation:rule="((self.provider == 'AWS' || self.provider == 'AZURE') && has(self.region)) || (self.provider == 'GCP')",message="must set region for AWS and Azure containers"
+// +kubebuilder:validation:XValidation:rule="(self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id))",message="id is immutable"
+// +kubebuilder:validation:XValidation:rule="(self.region == oldSelf.region) || (!has(self.region) && !has(oldSelf.region))",message="region is immutable"
 
 // AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer
 type AtlasNetworkContainerSpec struct {
@@ -73,13 +75,20 @@ type AtlasNetworkContainerSpec struct {
 
 // AtlasNetworkContainerConfig defines the Atlas specifics of the desired state of a Network Container
 type AtlasNetworkContainerConfig struct {
+	// ID is the container identified for an already existent network container to be managed by the operator.
+	// This field can be used in conjunction with cidrBlock to update the cidrBlock of an existing container.
+	// This field is immutable.
+	// +optional
+	ID string `json:"id,omitempty"`
+
 	// ContainerRegion is the provider region name of Atlas network peer container in Atlas region format
-	// This is required by AWS and Azure, but not used by GCP
+	// This is required by AWS and Azure, but not used by GCP.
+	// This field is immutable, Atlas does not admit network container changes.
 	// +optional
 	Region string `json:"region,omitempty"`
 
 	// Atlas CIDR. It needs to be set if ContainerID is not set.
-	// +required
+	// +optional
 	CIDRBlock string `json:"cidrBlock"`
 }
 

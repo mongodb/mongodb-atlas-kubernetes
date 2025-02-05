@@ -13,10 +13,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel"
 )
 
-func TestGCPRegionCELCcheck(t *testing.T) {
+func TestCELChecks(t *testing.T) {
 	for _, tc := range []struct {
 		title          string
-		obj            *AtlasNetworkContainer
+		old, obj       *AtlasNetworkContainer
 		expectedErrors []string
 	}{
 		{
@@ -79,17 +79,107 @@ func TestGCPRegionCELCcheck(t *testing.T) {
 			},
 			expectedErrors: []string{"spec: Invalid value: \"object\": must set region for AWS and Azure containers"},
 		},
+		{
+			title: "ID cannot be changed",
+			old: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderGCP),
+					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
+						ID: "old-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderGCP),
+					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
+						ID: "new-id",
+					},
+				},
+			},
+			expectedErrors: []string{"spec: Invalid value: \"object\": id is immutable"},
+		},
+		{
+			title: "ID can be unset",
+			old: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderGCP),
+				},
+			},
+			obj: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderGCP),
+				},
+			},
+		},
+		{
+			title: "ID can be set",
+			obj: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderGCP),
+					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
+						ID: "new-id",
+					},
+				},
+			},
+		},
+		{
+			title: "Region cannot be changed",
+			old: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderAWS),
+					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
+						Region: "old-region",
+					},
+				},
+			},
+			obj: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderAWS),
+					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
+						Region: "new-region",
+					},
+				},
+			},
+			expectedErrors: []string{"spec: Invalid value: \"object\": region is immutable"},
+		},
+		{
+			title: "Region can be unset (for GCP)",
+			old: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderGCP),
+				},
+			},
+			obj: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderGCP),
+				},
+			},
+		},
+		{
+			title: "Region can be set",
+			obj: &AtlasNetworkContainer{
+				Spec: AtlasNetworkContainerSpec{
+					Provider: string(provider.ProviderAWS),
+					AtlasNetworkContainerConfig: AtlasNetworkContainerConfig{
+						Region: "new-region",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// inject a project to avoid other CEL validations being hit
 			tc.obj.Spec.ProjectRef = &common.ResourceRefNamespaced{Name: "some-project"}
+			unstructuredOldObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.old)
+			require.NoError(t, err)
 			unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.obj)
 			require.NoError(t, err)
 
 			crdPath := "../../config/crd/bases/atlas.mongodb.com_atlasnetworkcontainers.yaml"
 			validator, err := cel.VersionValidatorFromFile(t, crdPath, "v1")
 			assert.NoError(t, err)
-			errs := validator(unstructuredObject, nil)
+			errs := validator(unstructuredObject, unstructuredOldObject)
 
 			require.Equal(t, len(tc.expectedErrors), len(errs), fmt.Sprintf("errs: %v", errs))
 
