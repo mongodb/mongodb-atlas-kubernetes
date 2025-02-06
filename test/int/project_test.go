@@ -397,6 +397,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			By("Breaking the Connection Secret", func() {
 				connectionSecret = buildConnectionSecret("my-atlas-key")
 				_, err := akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(&connectionSecret), func(s *corev1.Secret) {
+					s.StringData = buildConnectionSecret("my-atlas-key").StringData
 					s.StringData["publicApiKey"] = "non-existing"
 				})
 				Expect(err).To(BeNil())
