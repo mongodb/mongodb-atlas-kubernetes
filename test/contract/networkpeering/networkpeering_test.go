@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkpeering"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cloud/aws"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cloud/azure"
@@ -24,222 +26,152 @@ const (
 	testVPCName = "ako-test-network-peering-vpc"
 )
 
-func TestPeerContainerServiceCRUD(t *testing.T) {
+func TestPeerServiceCRUD(t *testing.T) {
 	ctx := context.Background()
-	contract.RunGoContractTest(ctx, t, "test container CRUD", func(ch contract.ContractHelper) {
-		projectName := utils.RandomName("peer-container-crud-project")
+	contract.RunGoContractTest(ctx, t, "test peer CRUD", func(ch contract.ContractHelper) {
+		projectName := utils.RandomName("peer-connection-crud-project")
 		require.NoError(t, ch.AddResources(ctx, 5*time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
 		require.NoError(t, err)
+		ncs := networkcontainer.NewNetworkContainerService(ch.AtlasClient().NetworkPeeringApi)
 		nps := networkpeering.NewNetworkPeeringService(ch.AtlasClient().NetworkPeeringApi)
-		cs := nps.(networkpeering.PeeringContainerService)
-		for _, tc := range []struct {
-			provider  string
-			container *networkpeering.ProviderContainer
-		}{
-			{
-				provider:  "AWS",
-				container: testAWSPeeringContainer("10.1.0.0/21"),
-			},
-			{
-				provider:  "Azure",
-				container: testAzurePeeringContainer("10.2.0.0/21"),
-			},
-			{
-				provider:  "Google",
-				container: testGooglePeeringContainer("10.3.0.0/18"), // .../21 is not allowed in GCP
-			},
-		} {
-			createdContainer := &networkpeering.ProviderContainer{}
-			t.Run(fmt.Sprintf("create %s container", tc.provider), func(t *testing.T) {
-				newContainer, err := cs.CreateContainer(ctx, testProjectID, tc.container)
-				require.NoError(t, err)
-				assert.NotEmpty(t, newContainer.ID)
-				createdContainer = newContainer
-			})
-
-			t.Run(fmt.Sprintf("list %s containers", tc.provider), func(t *testing.T) {
-				containers, err := cs.ListContainers(ctx, testProjectID, tc.container.Provider)
-				require.NoError(t, err)
-				assert.NotEmpty(t, containers)
-				assert.GreaterOrEqual(t, len(containers), 1)
-			})
-
-			t.Run(fmt.Sprintf("get %s container", tc.provider), func(t *testing.T) {
-				container, err := cs.GetContainer(ctx, testProjectID, createdContainer.ID)
-				require.NoError(t, err)
-				assert.NotEmpty(t, container)
-				assert.Equal(t, createdContainer.ID, container.ID)
-				assert.Equal(t, tc.container.ContainerRegion, container.ContainerRegion)
-				assert.Equal(t, tc.container.AtlasCIDRBlock, container.AtlasCIDRBlock)
-			})
-
-			t.Run(fmt.Sprintf("delete %s container", tc.provider), func(t *testing.T) {
-				time.Sleep(time.Second) // Atlas may reject removal if it happened within a second of creation
-				assert.NoErrorf(t, cs.DeleteContainer(ctx, testProjectID, createdContainer.ID),
-					"failed cleanup for provider %s Atlas project ID %s and container id %s",
-					tc.provider, testProjectID, createdContainer.ID)
-			})
-		}
-	})
-}
-
-func TestPeerServiceCRUD(t *testing.T) {
-	ctx := context.Background()
-	contract.RunGoContractTest(ctx, t, "test container CRUD", func(ch contract.ContractHelper) {
-		projectName := utils.RandomName("peer-connection-crud-project")
-		require.NoError(t, ch.AddResources(ctx, time.Minute, contract.DefaultAtlasProject(projectName)))
-		testProjectID, err := ch.ProjectID(ctx, projectName)
-		require.NoError(t, err)
-		nps := networkpeering.NewNetworkPeeringService(ch.AtlasClient().NetworkPeeringApi)
-		ps := nps.(networkpeering.PeerConnectionsService)
 		createdPeer := &networkpeering.NetworkPeer{}
 
 		for _, tc := range []struct {
 			provider          string
-			preparedCloudTest func(func(peerRequest *networkpeering.NetworkPeer))
+			preparedCloudTest func(func(containerID string, cfg *akov2.AtlasNetworkPeeringConfig))
 		}{
 			{
-				provider: "AWS",
-				preparedCloudTest: func(performTest func(*networkpeering.NetworkPeer)) {
+				provider: string(provider.ProviderAWS),
+				preparedCloudTest: func(performTest func(string, *akov2.AtlasNetworkPeeringConfig)) {
 					testContainer := testAWSPeeringContainer("10.10.0.0/21")
-					awsRegionName := aws.RegionCode(testContainer.ContainerRegion)
+					awsRegionName := aws.RegionCode(testContainer.Region)
 					vpcCIDR := "10.11.0.0/21"
 					awsVPCid, err := aws.CreateVPC(utils.RandomName(testVPCName), vpcCIDR, awsRegionName)
 					require.NoError(t, err)
-					newContainer, err := nps.CreateContainer(ctx, testProjectID, testContainer)
+					newContainer, err := ncs.Create(ctx, testProjectID, testContainer)
 					require.NoError(t, err)
 					assert.NotEmpty(t, newContainer.ID)
 					defer func() {
 						require.NoError(t, aws.DeleteVPC(awsVPCid, awsRegionName))
 					}()
-					performTest(testAWSPeerConnection(t, newContainer.ID, vpcCIDR, awsVPCid))
+					performTest(newContainer.ID, testAWSPeerConnection(t, vpcCIDR, awsVPCid))
 				},
 			},
 			{
-				provider: "AZURE",
-				preparedCloudTest: func(performTest func(*networkpeering.NetworkPeer)) {
+				provider: string(provider.ProviderAzure),
+				preparedCloudTest: func(performTest func(string, *akov2.AtlasNetworkPeeringConfig)) {
 					testContainer := testAzurePeeringContainer("10.20.0.0/21")
-					azureRegionName := azure.RegionCode(testContainer.ContainerRegion)
+					azureRegionName := azure.RegionCode(testContainer.Region)
 					vpcCIDR := "10.21.0.0/21"
 					azureVPC, err := azure.CreateVPC(ctx, utils.RandomName(testVPCName), vpcCIDR, azureRegionName)
 					require.NoError(t, err)
-					newContainer, err := nps.CreateContainer(ctx, testProjectID, testContainer)
+					newContainer, err := ncs.Create(ctx, testProjectID, testContainer)
 					require.NoError(t, err)
 					assert.NotEmpty(t, newContainer.ID)
 					defer func() {
 						require.NoError(t, azure.DeleteVPC(ctx, azureVPC))
 					}()
-					performTest(testAzurePeerConnection(t, newContainer.ID, azureVPC))
+					performTest(newContainer.ID, testAzurePeerConnection(t, azureVPC))
 				},
 			},
 			{
-				provider: "GOOGLE",
-				preparedCloudTest: func(performTest func(*networkpeering.NetworkPeer)) {
+				provider: string(provider.ProviderGCP),
+				preparedCloudTest: func(performTest func(string, *akov2.AtlasNetworkPeeringConfig)) {
 					testContainer := testGooglePeeringContainer("10.30.0.0/18")
 					vpcName := utils.RandomName(testVPCName)
 					require.NoError(t, google.CreateVPC(ctx, vpcName))
-					newContainer, err := nps.CreateContainer(ctx, testProjectID, testContainer)
+					newContainer, err := ncs.Create(ctx, testProjectID, testContainer)
 					require.NoError(t, err)
 					assert.NotEmpty(t, newContainer.ID)
 					defer func() {
 						require.NoError(t, google.DeleteVPC(ctx, vpcName))
 					}()
-					performTest(testGooglePeerConnection(t, newContainer.ID, vpcName))
+					performTest(newContainer.ID, testGooglePeerConnection(t, vpcName))
 				},
 			},
 		} {
-			tc.preparedCloudTest(func(peerRequest *networkpeering.NetworkPeer) {
+			tc.preparedCloudTest(func(containerID string, cfg *akov2.AtlasNetworkPeeringConfig) {
 				t.Run(fmt.Sprintf("create %s peer connection", tc.provider), func(t *testing.T) {
-					newPeer, err := ps.CreatePeer(ctx, testProjectID, peerRequest)
+					newPeer, err := nps.Create(ctx, testProjectID, containerID, cfg)
 					require.NoError(t, err)
 					assert.NotEmpty(t, newPeer)
 					createdPeer = newPeer
 				})
 
-				t.Run(fmt.Sprintf("list %s peer connections", tc.provider), func(t *testing.T) {
-					containers, err := ps.ListPeers(ctx, testProjectID)
+				t.Run(fmt.Sprintf("get %s peer connection", tc.provider), func(t *testing.T) {
+					peer, err := nps.Get(ctx, testProjectID, createdPeer.ID)
 					require.NoError(t, err)
-					assert.NotEmpty(t, containers)
-					assert.GreaterOrEqual(t, len(containers), 1)
+					assert.Equal(t, createdPeer, peer)
 				})
 
 				t.Run(fmt.Sprintf("delete %s peer connection", tc.provider), func(t *testing.T) {
-					assert.NoError(t, ps.DeletePeer(ctx, testProjectID, createdPeer.ID))
+					assert.NoError(t, nps.Delete(ctx, testProjectID, createdPeer.ID))
 				})
 			})
 		}
 	})
 }
 
-func testAWSPeeringContainer(cidr string) *networkpeering.ProviderContainer {
-	return &networkpeering.ProviderContainer{
-		Provider: "AWS",
-		AtlasProviderContainerConfig: akov2.AtlasProviderContainerConfig{
-			ContainerRegion: "US_EAST_1",
-			AtlasCIDRBlock:  cidr,
+func testAWSPeeringContainer(cidr string) *networkcontainer.NetworkContainerConfig {
+	return &networkcontainer.NetworkContainerConfig{
+		Provider: string(provider.ProviderAWS),
+		AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+			Region:    "US_EAST_1",
+			CIDRBlock: cidr,
 		},
 	}
 }
 
-func testAzurePeeringContainer(cidr string) *networkpeering.ProviderContainer {
-	return &networkpeering.ProviderContainer{
-		Provider: "AZURE",
-		AtlasProviderContainerConfig: akov2.AtlasProviderContainerConfig{
-			ContainerRegion: "US_EAST_2",
-			AtlasCIDRBlock:  cidr,
+func testAzurePeeringContainer(cidr string) *networkcontainer.NetworkContainerConfig {
+	return &networkcontainer.NetworkContainerConfig{
+		Provider: string(provider.ProviderAzure),
+		AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+			Region:    "US_EAST_2",
+			CIDRBlock: cidr,
 		},
 	}
 }
 
-func testGooglePeeringContainer(cidr string) *networkpeering.ProviderContainer {
-	return &networkpeering.ProviderContainer{
-		Provider: "GCP",
-		AtlasProviderContainerConfig: akov2.AtlasProviderContainerConfig{
-			AtlasCIDRBlock: cidr,
+func testGooglePeeringContainer(cidr string) *networkcontainer.NetworkContainerConfig {
+	return &networkcontainer.NetworkContainerConfig{
+		Provider: string(provider.ProviderGCP),
+		AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+			CIDRBlock: cidr,
 		},
 	}
 }
 
-func testAWSPeerConnection(t *testing.T, containerID string, vpcCIDR, vpcID string) *networkpeering.NetworkPeer {
-	return &networkpeering.NetworkPeer{
-		AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-			Provider:    "AWS",
-			ContainerID: containerID,
-			AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-				AWSAccountID:        mustHaveEnvVar(t, "AWS_ACCOUNT_ID"),
-				AccepterRegionName:  "us-east-1",
-				RouteTableCIDRBlock: vpcCIDR,
-				VpcID:               vpcID,
-			},
+func testAWSPeerConnection(t *testing.T, vpcCIDR, vpcID string) *akov2.AtlasNetworkPeeringConfig {
+	return &akov2.AtlasNetworkPeeringConfig{
+		Provider: string(provider.ProviderAWS),
+		AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+			AWSAccountID:        mustHaveEnvVar(t, "AWS_ACCOUNT_ID"),
+			AccepterRegionName:  "us-east-1",
+			RouteTableCIDRBlock: vpcCIDR,
+			VpcID:               vpcID,
 		},
 	}
 }
 
-func testAzurePeerConnection(t *testing.T, containerID string, vpcName string) *networkpeering.NetworkPeer {
-	return &networkpeering.NetworkPeer{
-		AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-			Provider:    "AZURE",
-			ContainerID: containerID,
-			AzureConfiguration: &akov2.AzureNetworkPeeringConfiguration{
-				AzureDirectoryID:    mustHaveEnvVar(t, "AZURE_TENANT_ID"),
-				AzureSubscriptionID: mustHaveEnvVar(t, "AZURE_SUBSCRIPTION_ID"),
-				ResourceGroupName:   azure.TestResourceGroupName(),
-				VNetName:            vpcName,
-			},
+func testAzurePeerConnection(t *testing.T, vpcName string) *akov2.AtlasNetworkPeeringConfig {
+	return &akov2.AtlasNetworkPeeringConfig{
+		Provider: string(provider.ProviderAzure),
+		AzureConfiguration: &akov2.AzureNetworkPeeringConfiguration{
+			AzureDirectoryID:    mustHaveEnvVar(t, "AZURE_TENANT_ID"),
+			AzureSubscriptionID: mustHaveEnvVar(t, "AZURE_SUBSCRIPTION_ID"),
+			ResourceGroupName:   azure.TestResourceGroupName(),
+			VNetName:            vpcName,
 		},
 	}
 }
 
-func testGooglePeerConnection(t *testing.T, containerID string, vpcName string) *networkpeering.NetworkPeer {
-	return &networkpeering.NetworkPeer{
-		AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-			Provider:    "GCP",
-			ContainerID: containerID,
-			GCPConfiguration: &akov2.GCPNetworkPeeringConfiguration{
-				GCPProjectID: mustHaveEnvVar(t, "GOOGLE_PROJECT_ID"),
-				NetworkName:  vpcName,
-			},
+func testGooglePeerConnection(t *testing.T, vpcName string) *akov2.AtlasNetworkPeeringConfig {
+	return &akov2.AtlasNetworkPeeringConfig{
+		Provider: string(provider.ProviderGCP),
+		GCPConfiguration: &akov2.GCPNetworkPeeringConfiguration{
+			GCPProjectID: mustHaveEnvVar(t, "GOOGLE_PROJECT_ID"),
+			NetworkName:  vpcName,
 		},
 	}
 }
