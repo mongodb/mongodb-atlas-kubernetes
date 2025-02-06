@@ -298,10 +298,6 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListPeeringConnectionsApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListPeeringConnectionsExecute(mock.AnythingOfType("admin.ListPeeringConnectionsApiRequest")).
 					Return(nil, nil, nil)
-				networkPeering.EXPECT().ListPeeringContainers(context.Background(), "projectID").
-					Return(admin.ListPeeringContainersApiRequest{ApiService: networkPeering})
-				networkPeering.EXPECT().ListPeeringContainersExecute(mock.AnythingOfType("admin.ListPeeringContainersApiRequest")).
-					Return(nil, nil, nil)
 				audit := mockadmin.NewAuditingApi(t)
 				audit.EXPECT().GetAuditingConfiguration(context.Background(), "projectID").
 					Return(admin.GetAuditingConfigurationApiRequest{ApiService: audit})
