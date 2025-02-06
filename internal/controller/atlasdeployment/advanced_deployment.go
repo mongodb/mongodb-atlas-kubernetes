@@ -69,18 +69,15 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
+		var results []workflow.Result
 		if !r.AtlasProvider.IsCloudGov() {
 			searchNodeResult := handleSearchNodes(ctx, akoCluster.GetCustomResource(), akoCluster.GetProjectID())
-			if transition = r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), searchNodeResult); transition != nil {
-				return transition(workflow.Internal)
-			}
+			results = append(results, searchNodeResult)
 		}
 
 		searchService := searchindex.NewSearchIndexes(ctx.SdkClientSet.SdkClient20241113001.AtlasSearchApi)
 		result := handleSearchIndexes(ctx, r.Client, searchService, akoCluster.GetCustomResource(), akoCluster.GetProjectID())
-		if transition = r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), result); transition != nil {
-			return transition(workflow.Internal)
-		}
+		results = append(results, result)
 
 		result = r.ensureCustomZoneMapping(
 			ctx,
@@ -89,9 +86,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			akoCluster.GetCustomResource().Spec.DeploymentSpec.CustomZoneMapping,
 			akoCluster.GetName(),
 		)
-		if transition = r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), result); transition != nil {
-			return transition(workflow.Internal)
-		}
+		results = append(results, result)
 
 		result = r.ensureManagedNamespaces(
 			ctx,
@@ -101,10 +96,13 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			akoCluster.GetCustomResource().Spec.DeploymentSpec.ManagedNamespaces,
 			akoCluster.GetName(),
 		)
-		if transition = r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), result); transition != nil {
-			return transition(workflow.Internal)
-		}
+		results = append(results, result)
 
+		for i := range results {
+			if !results[i].IsOk() {
+				return r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), results[i])(workflow.Internal)
+			}
+		}
 		err = customresource.ApplyLastConfigApplied(ctx.Context, akoCluster.GetCustomResource(), r.Client)
 		if err != nil {
 			return r.terminate(ctx, workflow.Internal, err)
