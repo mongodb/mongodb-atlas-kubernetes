@@ -50,6 +50,7 @@ const (
 	ProjectTeamsReadyType             ConditionType = "ProjectTeamsReady"
 	SearchIndexesReadyType            ConditionType = "AtlasSearchIndexesReady"
 	BackupComplianceReadyType         ConditionType = "BackupCompliancePolicyReady"
+	X509AuthReadyType                 ConditionType = "X509AuthReady"
 )
 
 // AtlasDeployment condition types
