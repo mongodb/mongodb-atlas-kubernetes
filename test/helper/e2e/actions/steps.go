@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -512,6 +513,24 @@ func DeleteAtlasGlobalKeyIfExist(data model.TestDataProvider) {
 			}
 		})
 	}
+}
+
+func DeleteTestDataNetworkContainers(data *model.TestDataProvider) {
+	By("Delete network containers", func() {
+		containers := &akov2.AtlasNetworkContainerList{}
+		Expect(data.K8SClient.List(data.Context, containers, &client.ListOptions{Namespace: data.Resources.Namespace})).Should(Succeed())
+		for _, container := range containers.Items {
+			key := client.ObjectKey{Name: container.Name, Namespace: container.Namespace}
+			Expect(data.K8SClient.Delete(data.Context, &container)).Should(Succeed())
+			Eventually(
+				func() bool {
+					foundContainer := &akov2.AtlasNetworkContainer{}
+					err := data.K8SClient.Get(data.Context, key, foundContainer)
+					return err != nil && errors.IsNotFound(err)
+				},
+			).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Network container should be deleted from Atlas")
+		}
+	})
 }
 
 func AfterEachFinalCleanup(datas []model.TestDataProvider) {
