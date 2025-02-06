@@ -26,12 +26,10 @@ func FuzzConvertConnection(f *testing.F) {
 	}
 	f.Fuzz(func(t *testing.T, data []byte, index uint) {
 		peerData := NetworkPeer{}
-		gofuzz.NewFromGoFuzz(data).Fuzz(&peerData)
-		peerData.Provider = providerNames[index%3]
-		cleanupPeer(&peerData)
-		atlasConn, err := toAtlasConnection(&peerData)
+		fuzzPeer(gofuzz.NewFromGoFuzz(data), index, &peerData)
+		atlasConn, err := toAtlas(&peerData)
 		require.NoError(t, err)
-		result, err := fromAtlasConnection(atlasConn)
+		result, err := fromAtlas(atlasConn)
 		require.NoError(t, err)
 		assert.Equal(t, &peerData, result, "failed for index=%d", index)
 	})
@@ -46,15 +44,13 @@ func FuzzConvertListOfConnections(f *testing.F) {
 		expected := []NetworkPeer{}
 		for i := uint(0); i < size; i++ {
 			peerData := NetworkPeer{}
-			gofuzz.NewFromGoFuzz(data).Fuzz(&peerData)
-			peerData.Provider = providerNames[index%3]
-			cleanupPeer(&peerData)
-			atlasConn, err := toAtlasConnection(&peerData)
+			fuzzPeer(gofuzz.NewFromGoFuzz(data), index, &peerData)
+			atlasConn, err := toAtlas(&peerData)
 			require.NoError(t, err)
-			expectedConn, err := fromAtlasConnection(atlasConn)
+			expectedConn, err := fromAtlas(atlasConn)
 			require.NoError(t, err)
 			expected = append(expected, *expectedConn)
-			atlasConnItem, err := toAtlasConnection(&peerData)
+			atlasConnItem, err := toAtlas(&peerData)
 			require.NoError(t, err)
 			conns = append(conns, *atlasConnItem)
 		}
@@ -64,48 +60,23 @@ func FuzzConvertListOfConnections(f *testing.F) {
 	})
 }
 
-func FuzzConvertContainer(f *testing.F) {
-	for i := uint(0); i < fuzzIterations; i++ {
-		f.Add(([]byte)(fmt.Sprintf("seed sample %x", i)), i)
-	}
-	f.Fuzz(func(t *testing.T, data []byte, index uint) {
-		containerData := ProviderContainer{}
-		gofuzz.NewFromGoFuzz(data).Fuzz(&containerData)
-		containerData.Provider = providerNames[index%3]
-		result := fromAtlasContainer(toAtlasContainer(&containerData))
-		assert.Equal(t, &containerData, result, "failed for index=%d", index)
-	})
-}
-
-func FuzzConvertListOfContainers(f *testing.F) {
-	for i := uint(0); i < fuzzIterations; i++ {
-		f.Add(([]byte)(fmt.Sprintf("seed sample %x", i)), i, (i % 5))
-	}
-	f.Fuzz(func(t *testing.T, data []byte, index uint, size uint) {
-		containers := []admin.CloudProviderContainer{}
-		expected := []ProviderContainer{}
-		for i := uint(0); i < size; i++ {
-			containerData := ProviderContainer{}
-			gofuzz.NewFromGoFuzz(data).Fuzz(&containerData)
-			containerData.Provider = providerNames[index%3]
-			expectedContainer := fromAtlasContainer(toAtlasContainer(&containerData))
-			expected = append(expected, *expectedContainer)
-			containers = append(containers, *toAtlasContainer(&containerData))
-		}
-		result := fromAtlasContainerList(containers)
-		assert.Equal(t, expected, result)
-	})
-}
-
-func cleanupPeer(peer *NetworkPeer) {
-	peer.ID = ""
-	if peer.Provider != string(provider.ProviderAWS) {
-		peer.AWSConfiguration = nil
-	}
-	if peer.Provider != string(provider.ProviderGCP) {
+func fuzzPeer(fuzzer *gofuzz.Fuzzer, index uint, peer *NetworkPeer) {
+	fuzzer.NilChance(0).Fuzz(peer)
+	peer.ID = ""                           // ID is provided by Atlas, cannoy complete a roundtrip
+	peer.Provider = providerNames[index%3] // provider can only be one of 3 AWS, AZURE or GCP
+	switch peer.Provider {                 // only the selected provider config is expected
+	case string(provider.ProviderAWS):
+		peer.AzureConfiguration = nil
 		peer.GCPConfiguration = nil
-	}
-	if peer.Provider != string(provider.ProviderAzure) {
+	case string(provider.ProviderAzure):
+		peer.AWSConfiguration = nil
+		peer.GCPConfiguration = nil
+	case string(provider.ProviderGCP):
+		peer.AWSConfiguration = nil
 		peer.AzureConfiguration = nil
 	}
+	// status fields are only populated from Atlas they do not complete a roundtrip
+	peer.Status = ""
+	peer.ErrorMessage = ""
+	peer.AWSStatus = nil
 }
