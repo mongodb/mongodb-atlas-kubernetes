@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -150,16 +151,8 @@ func TestHandleProject(t *testing.T) {
 					ListPrivateEndpointServicesExecute(admin.ListPrivateEndpointServicesApiRequest{ApiService: mockPrivateEndpointAPI}).
 					Return([]admin.EndpointService{}, nil, nil)
 
-				mockPeeringEndpointAPI := mockadmin.NewNetworkPeeringApi(t)
-				mockPeeringEndpointAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
-					Return(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI})
-				mockPeeringEndpointAPI.EXPECT().
-					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}.PageNum(1)).
-					Return(&admin.PaginatedContainerPeer{}, nil, nil)
-
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
-					NetworkPeeringApi:          mockPeeringEndpointAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -472,6 +465,15 @@ func TestHandleProject(t *testing.T) {
 					Name:       "my-project",
 					Namespace:  "default",
 					Finalizers: []string{customresource.FinalizerLabel},
+					Annotations: map[string]string{
+						// no skipped config, but some fake applied condig on network peerings
+						customresource.AnnotationLastAppliedConfiguration: func() string {
+							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+								NetworkPeers: []akov2.NetworkPeer{{}},
+							})
+							return string(d)
+						}(),
+					},
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -578,6 +580,15 @@ func TestHandleProject(t *testing.T) {
 					Name:       "my-project",
 					Namespace:  "default",
 					Finalizers: []string{customresource.FinalizerLabel},
+					// no skipped config, but some fake applied condig on network peerings
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: func() string {
+							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+								NetworkPeers: []akov2.NetworkPeer{{}},
+							})
+							return string(d)
+						}(),
+					},
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -686,6 +697,15 @@ func TestHandleProject(t *testing.T) {
 					Name:       "my-project",
 					Namespace:  "default",
 					Finalizers: []string{customresource.FinalizerLabel},
+					// no skipped config, but some fake applied condig on network peerings
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: func() string {
+							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+								NetworkPeers: []akov2.NetworkPeer{{}},
+							})
+							return string(d)
+						}(),
+					},
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -1093,15 +1113,8 @@ func TestDelete(t *testing.T) {
 					ListPrivateEndpointServicesExecute(admin.ListPrivateEndpointServicesApiRequest{ApiService: mockPrivateEndpointAPI}).
 					Return([]admin.EndpointService{}, nil, nil)
 
-				mockPeeringEndpointAPI := mockadmin.NewNetworkPeeringApi(t)
-				mockPeeringEndpointAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
-					Return(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}.PageNum(1))
-				mockPeeringEndpointAPI.EXPECT().
-					ListPeeringConnectionsExecute(admin.ListPeeringConnectionsApiRequest{ApiService: mockPeeringEndpointAPI}.PageNum(1)).
-					Return(&admin.PaginatedContainerPeer{}, nil, nil)
 				return &admin.APIClient{
 					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
-					NetworkPeeringApi:          mockPeeringEndpointAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {

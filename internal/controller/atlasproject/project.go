@@ -97,7 +97,7 @@ func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, services *AtlasPr
 			if result := DeleteAllPrivateEndpoints(ctx, atlasProject); !result.IsOk() {
 				return r.terminate(ctx, workflow.ServerlessPrivateEndpointReady, errors.New(result.GetMessage()))
 			}
-			if result := DeleteAllNetworkPeers(ctx.Context, atlasProject.ID(), ctx.SdkClient.NetworkPeeringApi, ctx.Log); !result.IsOk() {
+			if result := DeleteOwnedNetworkPeers(ctx.Context, atlasProject, ctx.SdkClient.NetworkPeeringApi, ctx.Log); !result.IsOk() {
 				return r.terminate(ctx, workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New(result.GetMessage()))
 			}
 
