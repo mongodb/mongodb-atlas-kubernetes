@@ -11,7 +11,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 )
 
 // Context is a container for some information that is needed on all levels of function calls during reconciliation.
@@ -50,7 +49,7 @@ func NewContext(log *zap.SugaredLogger, conditions []api.Condition, context cont
 	return &Context{
 		status:  NewStatus(conditions),
 		Log:     log,
-		Context: dryrun.WithRuntimeObject(context, obj),
+		Context: context,
 	}
 }
 
