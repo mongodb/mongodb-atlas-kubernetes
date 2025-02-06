@@ -185,6 +185,7 @@ jobs:
             "flex",
             "ip-access-list",
             "dry-run",
+            "networkcontainer-controller",
           ]
     steps:
       - name: Get repo files from cache
