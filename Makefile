@@ -22,6 +22,7 @@ NEXT_VERSION = 99.99.99-next
 
 MAJOR_VERSION = $(shell cat major-version)
 
+GOTOOLCHAIN ?= go1.23.6
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -155,9 +156,10 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "========================================"
 	export GOOS=linux
 	export GOARCH=amd64
+	export GOTOOLCHAIN=$(GO_TOOLCHAIN)
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
-
+	
 .PHONY: recompute-licenses
 recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was changed)
 	@[ "$(GOMOD_SHA)" == "$(GOMOD_LICENSES_SHA)" ] || $(MAKE) build-licenses.csv
@@ -174,6 +176,7 @@ check-licenses: licenses-up-to-date ## Check licenses are compliant with our res
 	@echo "============================================"
 	export GOOS=linux
 	export GOARCH=amd64
+	export GOTOOLCHAIN=$(GO_TOOLCHAIN)
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
