@@ -223,10 +223,14 @@ func (r *AtlasPrivateEndpointReconciler) unmanage(ctx *workflow.Context, akoPriv
 	return workflow.Deleted().ReconcileResult(), nil
 }
 
+func (r *AtlasPrivateEndpointReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasPrivateEndpoint{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasPrivateEndpointReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasPrivateEndpoint").
-		For(&akov2.AtlasPrivateEndpoint{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(r.privateEndpointForProjectMapFunc()),

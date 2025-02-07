@@ -67,10 +67,14 @@ func (r *AtlasIPAccessListReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.handleCustomResource(ctx, &ipAccessList), nil
 }
 
+func (r *AtlasIPAccessListReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasIPAccessList{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasIPAccessListReconciler) SetupWithManager(mgr manager.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasIPAccessList").
-		For(&akov2.AtlasIPAccessList{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(r.ipAccessListForProjectMapFunc()),

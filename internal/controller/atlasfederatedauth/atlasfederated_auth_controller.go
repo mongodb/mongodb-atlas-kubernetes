@@ -114,10 +114,14 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	return result.ReconcileResult(), nil
 }
 
+func (r *AtlasFederatedAuthReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasFederatedAuth{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 func (r *AtlasFederatedAuthReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasFederatedAuth").
-		For(&akov2.AtlasFederatedAuth{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(r.For()).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.findAtlasFederatedAuthForSecret),
