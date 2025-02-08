@@ -62,6 +62,14 @@ func syncServerlessPrivateEndpoints(service *workflow.Context, projectID string,
 	service.Log.Debugf("Syncing serverless private endpoints for deployment %s", deployment.Name)
 
 	atlasPrivateEndpoints, err := listServerlessPrivateEndpoints(service, projectID, deployment.Name)
+	// This is a shimmed flex cluster, if there are private serverless endpoints configured, we have to return an error.
+	if admin.IsErrorCode(err, "NOT_SERVERLESS_TENANT_CLUSTER") {
+		if len(deployment.PrivateEndpoints) > 0 {
+			return false, fmt.Errorf("serverless private endpoints are not supported: %w", err)
+		}
+		return true, nil
+	}
+
 	if err != nil {
 		return false, fmt.Errorf("unable to retrieve list of serverless private endpoints from Atlas: %w", err)
 	}

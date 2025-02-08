@@ -556,6 +556,95 @@ func TestHandleServerlessInstance(t *testing.T) {
 					WithMessageRegexp("unable to retrieve list of serverless private endpoints from Atlas: failed to list private endpoints"),
 			},
 		},
+		"serverless flex instance fails when private endpoints are set": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance0",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ProjectRef: &common.ResourceRefNamespaced{
+							Name: "my-project",
+						},
+					},
+					ServerlessSpec: &akov2.ServerlessSpec{
+						Name: "instance0",
+						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
+							ProviderName:        provider.ProviderServerless,
+							BackingProviderName: "AWS",
+							RegionName:          "us-east-1",
+						},
+						Tags: []*akov2.TagSpec{
+							{
+								Key:   "test",
+								Value: "e2e",
+							},
+						},
+						BackupOptions: akov2.ServerlessBackupOptions{
+							ServerlessContinuousBackupEnabled: false,
+						},
+						TerminationProtectionEnabled: true,
+						PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+							{
+								Name:                    "spe1",
+								CloudProviderEndpointID: "arn-12345",
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Serverless{
+				ProjectID: "project-id",
+				State:     "IDLE",
+				ServerlessSpec: &akov2.ServerlessSpec{
+					Name: "instance0",
+					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
+						ProviderName:        provider.ProviderServerless,
+						BackingProviderName: "AWS",
+						RegionName:          "us-east-1",
+					},
+					Tags: []*akov2.TagSpec{
+						{
+							Key:   "test",
+							Value: "e2e",
+						},
+					},
+					BackupOptions: akov2.ServerlessBackupOptions{
+						ServerlessContinuousBackupEnabled: false,
+					},
+					TerminationProtectionEnabled: true,
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				return service
+			},
+			sdkMock: func() *admin.APIClient {
+				mockError := &admin.GenericOpenAPIError{}
+				model := *admin.NewApiError()
+				model.SetErrorCode("NOT_SERVERLESS_TENANT_CLUSTER")
+				mockError.SetModel(model)
+
+				speClient := mockadmin.NewServerlessPrivateEndpointsApi(t)
+				speClient.EXPECT().ListServerlessPrivateEndpoints(context.Background(), "project-id", "instance0").
+					Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speClient})
+				speClient.EXPECT().ListServerlessPrivateEndpointsExecute(mock.AnythingOfType("admin.ListServerlessPrivateEndpointsApiRequest")).
+					Return(nil, &http.Response{}, mockError)
+
+				return &admin.APIClient{ServerlessPrivateEndpointsApi: speClient}
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.ServerlessPrivateEndpointReadyType).
+					WithReason(string(workflow.ServerlessPrivateEndpointFailed)).
+					WithMessageRegexp("serverless private endpoints are not supported: "),
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.ServerlessPrivateEndpointFailed)).
+					WithMessageRegexp("serverless private endpoints are not supported: "),
+			},
+		},
 		"serverless instance is updating when private endpoints are in progress": {
 			atlasDeployment: &akov2.AtlasDeployment{
 				ObjectMeta: metav1.ObjectMeta{
