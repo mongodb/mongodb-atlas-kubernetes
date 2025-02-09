@@ -10,7 +10,7 @@ spec:
     name: advanced-deployment
     replicationSpecs:
       - numShards: 1
-        zoneName: Zone1
+        zoneName: Zone 1
         regionConfigs:
           - electableSpecs:
               instanceSize: M10
@@ -21,7 +21,7 @@ spec:
             priority: 7
 
       - numShards: 1
-        zoneName: Zone2
+        zoneName: Zone 2
         regionConfigs:
           - electableSpecs:
               instanceSize: M10
@@ -32,7 +32,7 @@ spec:
             priority: 7
 
       - numShards: 1
-        zoneName: Zone3
+        zoneName: Zone 3
         regionConfigs:
           - electableSpecs:
               instanceSize: M10
