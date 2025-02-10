@@ -3,9 +3,13 @@ name: Helm update
 on:
   workflow_call:
   workflow_dispatch:
+  pull_request:
+    types:
+      - closed
 
 jobs:
   verify-helm-changes:
+    if: github.event.pull_request.merged == true
     name: Verify if AKO helm charts needs updates
     runs-on: ubuntu-latest
     environment: release
