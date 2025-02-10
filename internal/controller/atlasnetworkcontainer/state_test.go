@@ -771,6 +771,42 @@ func TestHandle(t *testing.T) {
 						testContainerID, testProjectID, ErrTestFail)),
 			},
 		},
+
+		{
+			title: "discover get fails with not found",
+			req: &reconcileRequest{
+				projectID: testProjectID,
+				networkContainer: &akov2.AtlasNetworkContainer{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:       "test-container",
+						Finalizers: []string{customresource.FinalizerLabel},
+					},
+					Spec: akov2.AtlasNetworkContainerSpec{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							ID:        testContainerID,
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.11.0.0/21",
+						},
+					},
+				},
+				service: func() networkcontainer.NetworkContainerService {
+					ncs := akomock.NewNetworkContainerServiceMock(t)
+					ncs.EXPECT().Get(mock.Anything, testProjectID, testContainerID).Return(
+						nil,
+						networkcontainer.ErrNotFound,
+					)
+					return ncs
+				}(),
+			},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
+					WithMessageRegexp(fmt.Sprintf("failed to get container %s from project %s: %v",
+						testContainerID, testProjectID, networkcontainer.ErrNotFound)),
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			workflowCtx := &workflow.Context{

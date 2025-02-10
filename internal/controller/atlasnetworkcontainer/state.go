@@ -62,7 +62,7 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 
 func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, req *reconcileRequest) (ctrl.Result, error) {
 	atlasContainer, err := discover(workflowCtx.Context, req)
-	if err != nil && !errors.Is(err, networkcontainer.ErrNotFound) {
+	if err != nil {
 		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, err), nil
 	}
 	inAtlas := atlasContainer != nil
@@ -94,7 +94,7 @@ func discover(ctx context.Context, req *reconcileRequest) (*networkcontainer.Net
 	cfg := networkcontainer.NewNetworkContainerConfig(
 		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
 	container, err := req.service.Find(ctx, req.projectID, cfg)
-	if err != nil {
+	if err != nil && !errors.Is(err, networkcontainer.ErrNotFound) {
 		return nil, fmt.Errorf("failed to find container from project %s: %w", req.projectID, err)
 	}
 	return container, nil
