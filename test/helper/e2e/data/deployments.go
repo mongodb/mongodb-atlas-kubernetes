@@ -114,25 +114,11 @@ func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
 					Name: ProjectName,
 				},
 			},
-			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-				ClusterType: "REPLICASET",
-				Name:        "cluster-basics",
-				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
-					{
-						ZoneName: "test zone 1",
-						RegionConfigs: []*akov2.AdvancedRegionConfig{
-							{
-								ElectableSpecs: &akov2.Specs{
-									InstanceSize: "M2",
-									NodeCount:    pointer.MakePtr(1),
-								},
-								BackingProviderName: "AWS",
-								Priority:            pointer.MakePtr(7),
-								ProviderName:        "TENANT",
-								RegionName:          "US_EAST_1",
-							},
-						},
-					},
+			FlexSpec: &akov2.FlexSpec{
+				Name: "cluster-basics",
+				ProviderSettings: &akov2.FlexProviderSettings{
+					BackingProviderName: "AWS",
+					RegionName:          "US_EAST_1",
 				},
 			},
 		},

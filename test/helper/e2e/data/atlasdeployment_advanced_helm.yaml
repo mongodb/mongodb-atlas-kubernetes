@@ -9,7 +9,7 @@ spec:
     clusterType: REPLICASET
     name: advanced-deployment
     replicationSpecs:
-      - zoneName: Zone1
+      - zoneName: Zone 1
         numShards: 1
         regionConfigs:
           - electableSpecs:
