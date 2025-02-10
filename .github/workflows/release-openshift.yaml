@@ -148,6 +148,6 @@ jobs:
           git push origin "mongodb-atlas-operator-community-${VERSION}"
           
           # open PR
-          gh pr create \
-              --title "operator mongodb-atlas-kubernetes (${VERSION})" \
-              --assignee "${ASSIGNEES}"
+          #gh pr create \
+          #    --title "operator mongodb-atlas-kubernetes (${VERSION})" \
+          #    --assignee "${ASSIGNEES}"
