@@ -111,13 +111,19 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 		return clusterConns, nil
 	}
 
+	flex, _, flexErr := ds.flexAPI.ListFlexClusters(ctx, projectID).Execute()
+	if flexErr != nil {
+		return nil, fmt.Errorf("failed to list flex clusters for project %s: %w", projectID, err)
+	}
+	flexConns := flexToConnections(flex.GetResults())
+
 	serverless, _, serverlessErr := ds.serverlessAPI.ListServerlessInstances(ctx, projectID).Execute()
 	if serverlessErr != nil {
 		return nil, fmt.Errorf("failed to list serverless deployments for project %s: %w", projectID, err)
 	}
 	serverlessConns := serverlessToConnections(serverless.GetResults())
 
-	return connectionSet(clusterConns, serverlessConns), nil
+	return connectionSet(clusterConns, serverlessConns, flexConns), nil
 }
 
 func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, name string) (bool, error) {
