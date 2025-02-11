@@ -1,6 +1,7 @@
 package atlasnetworkcontainer
 
 import (
+	"errors"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -9,6 +10,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
@@ -74,6 +76,15 @@ func (r *AtlasNetworkContainerReconciler) unmanage(workflowCtx *workflow.Context
 		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotRemoved, err), nil
 	}
 	return workflow.Deleted().ReconcileResult(), nil
+}
+
+func (r *AtlasNetworkContainerReconciler) release(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, err error) ctrl.Result {
+	if errors.Is(err, reconciler.ErrMissingKubeProject) {
+		if finalizerErr := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.UnsetFinalizer); finalizerErr != nil {
+			err = errors.Join(err, finalizerErr)
+		}
+	}
+	return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err)
 }
 
 func (r *AtlasNetworkContainerReconciler) terminate(

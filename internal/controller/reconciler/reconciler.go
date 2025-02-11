@@ -2,10 +2,12 @@ package reconciler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -14,6 +16,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+)
+
+var (
+	// ErrMissingProject marks a project is gone from Kubernetes
+	ErrMissingKubeProject = errors.New("missing Kubernetes Atlas Project")
 )
 
 type AtlasReconciler struct {
@@ -119,6 +126,9 @@ func (r *AtlasReconciler) fetchProject(ctx context.Context, pro project.ProjectR
 	key := client.ObjectKey{Name: pdr.ProjectRef.Name, Namespace: ns}
 	err := r.Client.Get(ctx, key, &project)
 	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, errors.Join(ErrMissingKubeProject, err)
+		}
 		return nil, fmt.Errorf("can not fetch AtlasProject: %w", err)
 	}
 	return &project, nil

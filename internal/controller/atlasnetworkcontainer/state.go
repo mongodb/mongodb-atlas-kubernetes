@@ -43,7 +43,7 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 
 	credentials, err := r.ResolveCredentials(ctx, networkContainer)
 	if err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err), nil
+		return r.release(workflowCtx, networkContainer, err), nil
 	}
 	sdkClientSet, orgID, err := r.AtlasProvider.SdkClientSet(ctx, credentials, r.Log)
 	if err != nil {
@@ -51,7 +51,7 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 	}
 	project, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20231115008, networkContainer, orgID)
 	if err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err), nil
+		return r.release(workflowCtx, networkContainer, err), nil
 	}
 	return r.handle(workflowCtx, &reconcileRequest{
 		projectID:        project.ID,

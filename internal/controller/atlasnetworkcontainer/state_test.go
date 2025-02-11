@@ -131,11 +131,12 @@ func TestHandleCustomResource(t *testing.T) {
 			},
 		},
 		{
-			title: "should fail to resolve credentials",
+			title: "should fail to resolve credentials and remove finalizer",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-container",
-					Namespace: "default",
+					Name:       "network-container",
+					Namespace:  "default",
+					Finalizers: []string{customresource.FinalizerLabel},
 				},
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -155,12 +156,12 @@ func TestHandleCustomResource(t *testing.T) {
 					return true
 				},
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkContainerNotConfigured)).
-					WithMessageRegexp("can not fetch AtlasProject: " +
-						"atlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+					WithMessageRegexp("missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
@@ -201,11 +202,12 @@ func TestHandleCustomResource(t *testing.T) {
 			},
 		},
 		{
-			title: "should fail to resolve project",
+			title: "should fail to resolve project and remove finalizers",
 			networkContainer: &akov2.AtlasNetworkContainer{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-container",
-					Namespace: "default",
+					Name:       "network-container",
+					Namespace:  "default",
+					Finalizers: []string{customresource.FinalizerLabel},
 				},
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -231,11 +233,12 @@ func TestHandleCustomResource(t *testing.T) {
 					return &atlas.ClientSet{}, "", nil
 				},
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkContainerNotConfigured)).
-					WithMessageRegexp("failed to query Kubernetes: failed to get Project from Kubernetes: can not fetch AtlasProject: atlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+					WithMessageRegexp("failed to query Kubernetes: failed to get Project from Kubernetes: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
