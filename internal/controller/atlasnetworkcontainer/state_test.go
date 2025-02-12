@@ -24,6 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
@@ -363,7 +364,7 @@ func TestHandle(t *testing.T) {
 							},
 							ID:          testContainerID,
 							Provisioned: false,
-							AWSStatus: &networkcontainer.AWSContainerStatus{
+							AWSStatus: &status.AWSContainerStatus{
 								VpcID: testVpcID,
 							},
 						},
@@ -447,7 +448,7 @@ func TestHandle(t *testing.T) {
 							},
 							ID:          testContainerID,
 							Provisioned: true,
-							AWSStatus: &networkcontainer.AWSContainerStatus{
+							AWSStatus: &status.AWSContainerStatus{
 								VpcID: testVpcID,
 							},
 						}, nil,
@@ -495,7 +496,7 @@ func TestHandle(t *testing.T) {
 							},
 							ID:          testContainerID,
 							Provisioned: true,
-							AWSStatus: &networkcontainer.AWSContainerStatus{
+							AWSStatus: &status.AWSContainerStatus{
 								VpcID: testVpcID,
 							},
 						}, nil,
@@ -541,7 +542,7 @@ func TestHandle(t *testing.T) {
 							},
 							ID:          testContainerID,
 							Provisioned: true,
-							AWSStatus: &networkcontainer.AWSContainerStatus{
+							AWSStatus: &status.AWSContainerStatus{
 								VpcID: testVpcID,
 							},
 						}, nil,
@@ -601,7 +602,7 @@ func TestHandle(t *testing.T) {
 							},
 							ID:          testContainerID,
 							Provisioned: true,
-							AWSStatus: &networkcontainer.AWSContainerStatus{
+							AWSStatus: &status.AWSContainerStatus{
 								VpcID: testVpcID,
 							},
 						}, nil,
@@ -652,7 +653,7 @@ func TestHandle(t *testing.T) {
 							},
 							ID:          testContainerID,
 							Provisioned: true,
-							AWSStatus: &networkcontainer.AWSContainerStatus{
+							AWSStatus: &status.AWSContainerStatus{
 								VpcID: testVpcID,
 							},
 						}, nil,
