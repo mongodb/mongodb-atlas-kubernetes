@@ -73,8 +73,15 @@ func TestAtlasUsersGet(t *testing.T) {
 				mockUsersAPI.EXPECT().GetDatabaseUserExecute(admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI}).Return(
 					expectedUser, &http.Response{StatusCode: http.StatusOK}, nil)
 			},
-			expectedUser: &User{AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{DatabaseName: db, Username: username}, ProjectID: projectID},
-			expectedErr:  nil,
+			expectedUser: &User{
+				ProjectID: projectID,
+				AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
+					DatabaseName: db,
+					Username:     username,
+					Scopes:       []akov2.ScopeSpec{},
+				},
+			},
+			expectedErr: nil,
 		},
 		{
 			name: "User not found",
