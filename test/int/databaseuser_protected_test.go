@@ -54,7 +54,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 		})
 
 		By("Creating a deployment", func() {
-			testDeployment = akov2.DefaultAWSDeployment(testNamespace.Name, projectName).Lightweight()
+			testDeployment = akov2.NewDefaultAWSFlexInstance(testNamespace.Name, projectName)
 			customresource.SetAnnotation( // this test deployment must be deleted
 				testDeployment,
 				customresource.ResourcePolicyAnnotation,
@@ -305,8 +305,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.ClustersApi.
-					GetCluster(context.Background(), testProject.ID(), deploymentName).
+				_, r, err := atlasClientv20241113001.FlexClustersApi.
+					GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 					Execute()
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
