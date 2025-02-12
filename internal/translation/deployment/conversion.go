@@ -1044,6 +1044,19 @@ func fillServerlessPrivateEndpoints(cpeList []admin.ServerlessConnectionStringsP
 	return pes
 }
 
+func flexToConnections(flex []adminv20241113001.FlexClusterDescription20241113) []Connection {
+	conns := []Connection{}
+	for _, f := range flex {
+		conns = append(conns, Connection{
+			Name:       f.GetName(),
+			ConnURL:    f.ConnectionStrings.GetStandard(),
+			SrvConnURL: f.ConnectionStrings.GetStandardSrv(),
+			Serverless: false,
+		})
+	}
+	return conns
+}
+
 func connectionSet(conns ...[]Connection) []Connection {
 	return set(func(conn Connection) string { return conn.Name }, conns...)
 }

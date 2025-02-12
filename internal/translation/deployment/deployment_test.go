@@ -25,7 +25,7 @@ import (
 )
 
 func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
-	t.Run("Shouldn't call the serverless api if running in Gov", func(t *testing.T) {
+	t.Run("Shouldn't call the serverless or flex api if running in Gov", func(t *testing.T) {
 		mockClustersAPI := mockadmin.NewClustersApi(t)
 		mockClustersAPI.EXPECT().ListClusters(context.Background(), mock.Anything).Return(
 			admin.ListClustersApiRequest{ApiService: mockClustersAPI})
@@ -34,9 +34,12 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 
 		mockServerlessAPI := mockadmin.NewServerlessInstancesApi(t)
 		mockServerlessAPI.EXPECT().ListServerlessInstancesExecute(mock.Anything).Unset()
+		mockFlexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+		mockFlexAPI.EXPECT().ListFlexClustersExecute(mock.Anything).Unset()
 		ds := &ProductionAtlasDeployments{
 			clustersAPI:   mockClustersAPI,
 			serverlessAPI: mockServerlessAPI,
+			flexAPI:       mockFlexAPI,
 			isGov:         true,
 		}
 		projectID := "testProjectID"
@@ -44,7 +47,7 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("Should call the serverless api if not running in Gov", func(t *testing.T) {
+	t.Run("Should call the serverless and flex apis if not running in Gov", func(t *testing.T) {
 		mockClustersAPI := mockadmin.NewClustersApi(t)
 		mockClustersAPI.EXPECT().ListClusters(context.Background(), mock.Anything).Return(
 			admin.ListClustersApiRequest{ApiService: mockClustersAPI})
@@ -57,14 +60,77 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 		mockServerlessAPI.EXPECT().ListServerlessInstancesExecute(
 			admin.ListServerlessInstancesApiRequest{ApiService: mockServerlessAPI}).Return(
 			nil, &http.Response{StatusCode: http.StatusOK}, nil)
+
+		mockFlexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+		mockFlexAPI.EXPECT().ListFlexClusters(context.Background(), mock.Anything).Return(
+			adminv20241113001.ListFlexClustersApiRequest{ApiService: mockFlexAPI})
+		mockFlexAPI.EXPECT().ListFlexClustersExecute(
+			adminv20241113001.ListFlexClustersApiRequest{ApiService: mockFlexAPI}).Return(
+			nil, &http.Response{StatusCode: http.StatusOK}, nil)
+
 		ds := &ProductionAtlasDeployments{
 			clustersAPI:   mockClustersAPI,
 			serverlessAPI: mockServerlessAPI,
+			flexAPI:       mockFlexAPI,
 			isGov:         false,
 		}
 		projectID := "testProjectID"
 		_, err := ds.ListDeploymentConnections(context.Background(), projectID)
 		assert.Nil(t, err)
+	})
+
+	t.Run("Should create connection for each cluster type", func(t *testing.T) {
+		mockClustersAPI := mockadmin.NewClustersApi(t)
+		mockClustersAPI.EXPECT().ListClusters(context.Background(), mock.Anything).Return(
+			admin.ListClustersApiRequest{ApiService: mockClustersAPI})
+		mockClustersAPI.EXPECT().ListClustersExecute(admin.ListClustersApiRequest{ApiService: mockClustersAPI}).Return(
+			&admin.PaginatedAdvancedClusterDescription{
+				Results: &[]admin.AdvancedClusterDescription{
+					{
+						Name:              pointer.MakePtr("testCluster"),
+						ConnectionStrings: &admin.ClusterConnectionStrings{StandardSrv: pointer.MakePtr("clusterSRV")},
+					},
+				},
+			}, &http.Response{StatusCode: http.StatusOK}, nil)
+
+		mockServerlessAPI := mockadmin.NewServerlessInstancesApi(t)
+		mockServerlessAPI.EXPECT().ListServerlessInstances(context.Background(), mock.Anything).Return(
+			admin.ListServerlessInstancesApiRequest{ApiService: mockServerlessAPI})
+		mockServerlessAPI.EXPECT().ListServerlessInstancesExecute(
+			admin.ListServerlessInstancesApiRequest{ApiService: mockServerlessAPI}).Return(
+			&admin.PaginatedServerlessInstanceDescription{
+				Results: &[]admin.ServerlessInstanceDescription{
+					{
+						Name:              pointer.MakePtr("testServerless"),
+						ConnectionStrings: &admin.ServerlessInstanceDescriptionConnectionStrings{StandardSrv: pointer.MakePtr("serverlessSRV")},
+					},
+				},
+			}, &http.Response{StatusCode: http.StatusOK}, nil)
+
+		mockFlexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+		mockFlexAPI.EXPECT().ListFlexClusters(context.Background(), mock.Anything).Return(
+			adminv20241113001.ListFlexClustersApiRequest{ApiService: mockFlexAPI})
+		mockFlexAPI.EXPECT().ListFlexClustersExecute(
+			adminv20241113001.ListFlexClustersApiRequest{ApiService: mockFlexAPI}).Return(
+			&adminv20241113001.PaginatedFlexClusters20241113{
+				Results: &[]adminv20241113001.FlexClusterDescription20241113{
+					{
+						Name:              pointer.MakePtr("testFlex"),
+						ConnectionStrings: &adminv20241113001.FlexConnectionStrings20241113{StandardSrv: pointer.MakePtr("flexSRV")},
+					},
+				},
+			}, &http.Response{StatusCode: http.StatusOK}, nil)
+
+		ds := &ProductionAtlasDeployments{
+			clustersAPI:   mockClustersAPI,
+			serverlessAPI: mockServerlessAPI,
+			flexAPI:       mockFlexAPI,
+			isGov:         false,
+		}
+		projectID := "testProjectID"
+		conns, err := ds.ListDeploymentConnections(context.Background(), projectID)
+		assert.Nil(t, err)
+		assert.Equal(t, len(conns), 3)
 	})
 }
 
