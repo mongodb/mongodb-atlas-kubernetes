@@ -116,6 +116,7 @@ func defaultTestUser() *User {
 		AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
 			DatabaseName: testDB,
 			Username:     testUsername,
+			Scopes:       []akov2.ScopeSpec{},
 		},
 		Password:  testPassword,
 		ProjectID: testProjectID,

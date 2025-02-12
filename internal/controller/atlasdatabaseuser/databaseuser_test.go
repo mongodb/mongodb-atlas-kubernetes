@@ -651,6 +651,7 @@ func TestDbuLifeCycle(t *testing.T) {
 									Name: "user-pass",
 								},
 								DatabaseName: "admin",
+								Scopes:       []akov2.ScopeSpec{},
 							},
 						},
 						nil,
@@ -1160,6 +1161,7 @@ func TestUpdate(t *testing.T) {
 						Name: "user-pass",
 					},
 					DatabaseName: "admin",
+					Scopes:       []akov2.ScopeSpec{},
 				},
 			},
 			dbUserService: func() dbuser.AtlasUsersService {
