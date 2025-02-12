@@ -279,12 +279,13 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 		It("Adds connection secret when new deployment is created", Label("user-add-secret"), func() {
 			secondDeployment := &akov2.AtlasDeployment{}
 
-			By("Creating a database user", func() {
+			By("Creating a database user for existing deployment only", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 				testDBUser1 = akov2.NewDBUser(testNamespace.Name, dbUserName1, dbUserName1, projectName).
 					WithPasswordSecret(UserPasswordSecret).
+					WithScope(akov2.DeploymentScopeType, testDeployment.GetDeploymentName()).
 					WithRole("readWriteAnyDatabase", "admin", "")
 				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
@@ -306,7 +307,25 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				}).WithTimeout(20 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
-			By("Validating connection secrets were created", func() {
+			By("Validating connection secrets for second deployment were not created", func() {
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
+
+				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser1)).Should(Succeed())
+				Expect(tryConnect(testProject.ID(), *secondDeployment, *testDBUser1)).ShouldNot(Succeed())
+			})
+
+			By("Removing database user scope for first deployment", func() {
+				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser1), testDBUser1)).Should(Succeed())
+				testDBUser1.Spec.Scopes = nil
+
+				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
+
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
+				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
+			By("Validating connection secrets for both deployments were created", func() {
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
 				validateSecret(k8sClient, *testProject, *secondDeployment, *testDBUser1)
 
