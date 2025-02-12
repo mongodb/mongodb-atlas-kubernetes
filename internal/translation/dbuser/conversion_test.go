@@ -46,7 +46,7 @@ func TestNewUser(t *testing.T) {
 		{
 			title:        "Empty spec returns empty user",
 			spec:         &akov2.AtlasDatabaseUserSpec{},
-			expectedUser: &dbuser.User{AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{}},
+			expectedUser: &dbuser.User{AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{Scopes: []akov2.ScopeSpec{}}},
 		},
 
 		{
@@ -490,5 +490,6 @@ func defaultTestSpec() *akov2.AtlasDatabaseUserSpec {
 	return &akov2.AtlasDatabaseUserSpec{
 		DatabaseName: testDB,
 		Username:     testUsername,
+		Scopes:       []akov2.ScopeSpec{},
 	}
 }
