@@ -85,6 +85,9 @@ func normalize(spec *akov2.AtlasDatabaseUserSpec) error {
 			a.Name+string(a.Type),
 			b.Name+string(b.Type))
 	})
+	if spec.Scopes == nil {
+		spec.Scopes = []akov2.ScopeSpec{}
+	}
 	if spec.DeleteAfterDate != "" { // enforce date format
 		operatorDeleteDate, err := timeutil.ParseISO8601(spec.DeleteAfterDate)
 		if err != nil {
