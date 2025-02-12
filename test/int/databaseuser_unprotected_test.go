@@ -31,6 +31,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/events"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 )
 
 const (
@@ -459,9 +460,15 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 2)
 				secret := validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
-				Expect(secret.Name).To(Equal(fmt.Sprintf("%s-test-deployment-aws-new-user", kube.NormalizeIdentifier(testProject.Spec.Name))))
+				Expect(secret.Name).To(Equal(fmt.Sprintf("%s-%s-new-user",
+					kube.NormalizeIdentifier(testProject.Spec.Name),
+					kube.NormalizeIdentifier(testDeployment.GetDeploymentName()),
+				)))
 				secret = validateSecret(k8sClient, *testProject, *secondTestDeployment, *testDBUser1)
-				Expect(secret.Name).To(Equal(fmt.Sprintf("%s-test-deployment-azure-new-user", kube.NormalizeIdentifier(testProject.Spec.Name))))
+				Expect(secret.Name).To(Equal(fmt.Sprintf("%s-%s-new-user",
+					kube.NormalizeIdentifier(testProject.Spec.Name),
+					kube.NormalizeIdentifier(secondTestDeployment.GetDeploymentName()),
+				)))
 
 				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser1)).Should(Succeed())
 				Expect(tryConnect(testProject.ID(), *secondTestDeployment, *testDBUser1)).Should(Succeed())
@@ -528,9 +535,11 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 			By("Fixing the user date expiration", func() {
 				after := time.Now().UTC().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
-				testDBUser1 = testDBUser1.WithDeleteAfterDate(after)
 
 				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
+				retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+					user.Spec.DeleteAfterDate = after
+				})
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
@@ -541,9 +550,11 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 			By("Expiring the User", func() {
 				before := time.Now().UTC().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
-				testDBUser1 = testDBUser1.WithDeleteAfterDate(before)
 
 				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
+				retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+					user.Spec.DeleteAfterDate = before
+				})
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.FalseCondition(api.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired)))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
