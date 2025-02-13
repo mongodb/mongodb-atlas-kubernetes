@@ -56,7 +56,7 @@ type AtlasNetworkPeeringList struct {
 
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
-// +kubebuilder:validation:XValidation:rule="(self.containerRef.name != '' && self.containerRef.id == '') || (self.containerRef.name == '' && self.containerRef.id != '')",message="must either have a container Atlas id or Kubernetes name, but not both (or neither)"
+// +kubebuilder:validation:XValidation:rule="(has(self.containerRef.name) && !has(self.containerRef.id)) || (!has(self.containerRef.name) && has(self.containerRef.id))",message="must either have a container Atlas id or Kubernetes name, but not both (or neither)"
 
 // AtlasNetworkPeeringSpec defines the desired state of AtlasNetworkPeering
 type AtlasNetworkPeeringSpec struct {
@@ -72,12 +72,12 @@ type ContainerDualReference struct {
 	// Name of the container Kubernetes resource, must be present in the same namespace
 	// Use either name or ID, not both.
 	// +optional
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 
 	// ID is the Atlas identifier of the Network Container Atlas resource this Peering Connection relies on
 	// Use either name or ID, not both.
 	// +optional
-	ID string `json:"id"`
+	ID string `json:"id,omitempty"`
 }
 
 // AtlasNetworkPeeringConfig defines the Atlas specifics of the desired state of Peering Connections
