@@ -693,6 +693,8 @@ func (c *AtlasDeployment) WithAtlasName(name string) *AtlasDeployment {
 		c.Spec.DeploymentSpec.Name = name
 	} else if c.Spec.ServerlessSpec != nil {
 		c.Spec.ServerlessSpec.Name = name
+	} else if c.Spec.FlexSpec != nil {
+		c.Spec.FlexSpec.Name = name
 	}
 	return c
 }
@@ -835,10 +837,20 @@ func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasDeploy
 func NewDefaultAWSFlexInstance(namespace, projectName string) *AtlasDeployment {
 	return newFlexInstance(
 		namespace,
-		"test-flex-instance-k8s",
-		"test-flex-instance",
+		"test-flex-instance-aws-k8s",
+		"test-flex-instance-aws",
 		"AWS",
 		"US_EAST_1",
+	).WithProjectName(projectName)
+}
+
+func NewDefaultAzureFlexInstance(namespace, projectName string) *AtlasDeployment {
+	return newFlexInstance(
+		namespace,
+		"test-flex-instance-az-k8s",
+		"test-flex-instance-az",
+		"AZURE",
+		"US_EAST_2",
 	).WithProjectName(projectName)
 }
 

@@ -1167,6 +1167,7 @@ func flexFromAtlas(instance *adminv20241113001.FlexClusterDescription20241113) *
 		State:          instance.GetStateName(),
 		MongoDBVersion: instance.GetMongoDBVersion(),
 		Connection: &status.ConnectionStrings{
+			Standard:    connectionStrings.GetStandard(),
 			StandardSrv: connectionStrings.GetStandardSrv(),
 		},
 	}
