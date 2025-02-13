@@ -1,4 +1,4 @@
-name: PR Labels
+name: E2E with labels
 
 on:
   workflow_call:
@@ -34,22 +34,17 @@ jobs:
         with:
           script: |
             const labels = context.payload.pull_request.labels.map(label => label.name).filter(label => label.startsWith('test/'));
+            const runAllTests = labels.includes('test/all');
+            const runAllE2ETests = labels.includes('test/e2e-all');
+            const runAllIntTests = labels.includes('test/int-all');
             core.setOutput('labels', labels.join(','));
-
-      - name: Determine if all tests should run
-        id: check-all
-        run: |
-          if [[ "${{ steps.get-labels.outputs.labels }}" == *"test/all"* ]]; then
-            echo "Run all tests: true"
-            echo "run-all=true" >> $GITHUB_ENV
-          else
-            echo "Run all tests: false"
-            echo "run-all=false" >> $GITHUB_ENV
-          fi
+            core.setOutput('runAllTests', runAllTests);
+            core.setOutput('runAllIntTests', runAllIntTests);
+            core.setOutput('runAllE2ETests', runAllE2ETests);
 
       - name: List all ginkgo tests labels
         id: list-ginkgo-labels
-        if: ${{ steps.check-all.outputs.run-all == 'false' }}
+        if: ${{ steps.check-all.outputs.runAllTests == 'false' }}
         run: |
           sudo apt-get install -y jq
           go install github.com/onsi/ginkgo/v2/ginkgo@latest
@@ -67,18 +62,3 @@ jobs:
           
           echo "${{ steps.get-labels.outputs.labels }}" | jq -R 'split(",")' > pr_labels.json
           jq -s '.[0] as $all | .[1] | map(select($all[] == .))' all_labels.json pr_labels.json > merged_labels.json
-
-      - name: Run all e2e tests
-        if: ${{ steps.check-all.outputs.run-all == 'true' }}
-
-      - name: Run selected e2e tests
-        if: ${{ steps.get-labels.outputs.labels != '' }}
-        run: | 
-          echo "Labels from PR: ${{ steps.get-labels.outputs.labels }}"
-#          if [ "${{ env.run_all }}" == "true" ]; then
-#            echo "Running all tests..."
-#            ginkgo -r
-#          else
-#            echo "Running filtered tests..."
-#            cd ./test/e2e && ginkgo -r --label-filter "${{ steps.get-labels.outputs.labels}}"
-#          fi
