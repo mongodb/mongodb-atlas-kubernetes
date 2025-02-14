@@ -33,7 +33,6 @@ func init() {
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Provider",type=string,JSONPath=`.spec.provider`
 // +kubebuilder:printcolumn:name="Id",type=string,JSONPath=`.status.id`
-// +kubebuilder:printcolumn:name="Provisioned",type=string,JSONPath=`.status.provisioned`
 // +kubebuilder:subresource:status
 // +groupName:=atlas.mongodb.com
 // +kubebuilder:resource:categories=atlas,shortName=anc

@@ -28,9 +28,6 @@ spec:
     - jsonPath: .status.id
       name: Id
       type: string
-    - jsonPath: .status.provisioned
-      name: Provisioned
-      type: string
     name: v1
     schema:
       openAPIV3Schema:
@@ -146,24 +143,6 @@ spec:
               AtlasNetworkContainerStatus is a status for the AtlasNetworkContainer Custom resource.
               Not the one included in the AtlasProject
             properties:
-              awsStatus:
-                description: AWSStatus contains AWS only related status information
-                properties:
-                  vpcId:
-                    description: VpcID is AWS VPC id on the Atlas side
-                    type: string
-                type: object
-              azureStatus:
-                description: AzureStatus contains Azure only related status information
-                properties:
-                  azureSubscriptionIDpcId:
-                    description: AzureSubscriptionID is Azure Subscription id on the
-                      Atlas side
-                    type: string
-                  vNetName:
-                    description: VnetName is Azure network on the Atlas side
-                    type: string
-                type: object
               conditions:
                 description: Conditions is the list of statuses showing the current
                   state of the Atlas Custom Resource
@@ -194,16 +173,6 @@ spec:
                   - type
                   type: object
                 type: array
-              gcpStatus:
-                description: GCPStatus contains GCP only related status information
-                properties:
-                  gcpProjectID:
-                    description: GCPProjectID is GCP project on the Atlas side
-                    type: string
-                  networkName:
-                    description: NetworkName is GCP network on the Atlas side
-                    type: string
-                type: object
               id:
                 description: ID record the identifier of the container in Atlas
                 type: string
@@ -214,8 +183,9 @@ spec:
                 format: int64
                 type: integer
               provisioned:
-                description: Provisioned is true when clusters have been deployed
-                  to the container
+                description: |-
+                  Provisioned is true when clusters have been deployed to the container before
+                  the last reconciliation
                 type: boolean
             required:
             - conditions

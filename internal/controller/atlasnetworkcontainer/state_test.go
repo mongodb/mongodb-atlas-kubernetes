@@ -40,8 +40,6 @@ var (
 
 const (
 	testContainerID = "container-id"
-
-	testVpcID = "vpc-id"
 )
 
 func TestHandleCustomResource(t *testing.T) {
