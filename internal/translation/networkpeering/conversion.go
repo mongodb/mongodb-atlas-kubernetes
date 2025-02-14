@@ -287,7 +287,7 @@ func ApplyPeeringStatus(peeringStatus *status.AtlasNetworkPeeringStatus, peer *N
 func ClearPeeringStatus(peeringStatus *status.AtlasNetworkPeeringStatus) {
 	peeringStatus.ID = ""
 	peeringStatus.Status = ""
-	peeringStatus.AWSStatus  = nil
+	peeringStatus.AWSStatus = nil
 	peeringStatus.AzureStatus = nil
 	peeringStatus.GCPStatus = nil
 }
