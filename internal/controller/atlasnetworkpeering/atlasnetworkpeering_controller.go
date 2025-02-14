@@ -102,10 +102,15 @@ func (r *AtlasNetworkPeeringReconciler) Reconcile(ctx context.Context, req ctrl.
 	return r.handleCustomResource(ctx, &akoNetworkPeering)
 }
 
+// For prepares the controller for its target Custom Resource; Network Containers
+func (r *AtlasNetworkPeeringReconciler) For() (client.Object, builder.Predicates) {
+	return &akov2.AtlasNetworkPeering{}, builder.WithPredicates(r.GlobalPredicates...)
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *AtlasNetworkPeeringReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&akov2.AtlasNetworkPeering{}).
+		For(r.For()).
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(r.networkPeeringForProjectMapFunc()),
