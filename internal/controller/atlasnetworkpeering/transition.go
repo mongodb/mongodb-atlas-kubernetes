@@ -8,7 +8,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
@@ -139,54 +138,12 @@ func (r *AtlasNetworkPeeringReconciler) terminate(
 
 func updatePeeringStatusOption(peer *networkpeering.NetworkPeer, container *networkcontainer.NetworkContainer) status.AtlasNetworkPeeringStatusOption {
 	return func(peeringStatus *status.AtlasNetworkPeeringStatus) {
-		applyPeeringStatus(peeringStatus, peer, container)
+		networkpeering.ApplyPeeringStatus(peeringStatus, peer, container)
 	}
-}
-
-func applyPeeringStatus(peeringStatus *status.AtlasNetworkPeeringStatus, peer *networkpeering.NetworkPeer, container *networkcontainer.NetworkContainer) {
-	switch provider.ProviderName(peer.Provider) {
-	case provider.ProviderAWS:
-		if peer.AWSStatus != nil {
-			if peeringStatus.AWSStatus == nil {
-				peeringStatus.AWSStatus = &status.AWSPeeringStatus{}
-			}
-			peeringStatus.AWSStatus.ConnectionID = peer.AWSStatus.ConnectionID
-			peeringStatus.AWSStatus.VpcID = container.AWSStatus.VpcID
-		}
-	case provider.ProviderAzure:
-		if container.AzureStatus != nil {
-			if peeringStatus.AzureStatus == nil {
-				peeringStatus.AzureStatus = &status.AzurePeeringStatus{}
-			}
-			peeringStatus.AzureStatus.AzureSubscriptionID = container.AzureStatus.AzureSubscriptionID
-			peeringStatus.AzureStatus.VnetName = container.AzureStatus.VnetName
-		}
-	case provider.ProviderGCP:
-		if container.GCPStatus != nil {
-			if peeringStatus.GCPStatus == nil {
-				peeringStatus.GCPStatus = &status.GCPPeeringStatus{}
-			}
-			peeringStatus.GCPStatus.GCPProjectID = container.GCPStatus.GCPProjectID
-			peeringStatus.GCPStatus.NetworkName = container.GCPStatus.NetworkName
-		}
-	default:
-		peeringStatus.Status = fmt.Sprintf("unsupported provider: %q", peer.Provider)
-		return
-	}
-	peeringStatus.ID = peer.ID
-	peeringStatus.Status = peer.Status
 }
 
 func clearPeeringStatusOption() status.AtlasNetworkPeeringStatusOption {
 	return func(peeringStatus *status.AtlasNetworkPeeringStatus) {
-		clearPeeringStatus(peeringStatus)
-	}
-}
-
-func clearPeeringStatus(peeringStatus *status.AtlasNetworkPeeringStatus) {
-	peeringStatus.ID = ""
-	peeringStatus.Status = ""
-	if peeringStatus.AWSStatus != nil {
-		peeringStatus.AWSStatus.ConnectionID = ""
+		networkpeering.ClearPeeringStatus(peeringStatus)
 	}
 }

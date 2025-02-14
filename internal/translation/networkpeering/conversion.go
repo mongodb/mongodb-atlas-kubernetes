@@ -11,6 +11,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
 
 var (
@@ -247,4 +248,46 @@ func CompareConfigs(a, b *NetworkPeer) bool {
 		bCopy.AWSConfiguration.AccepterRegionName = ""
 	}
 	return reflect.DeepEqual(aCopy, bCopy)
+}
+
+func ApplyPeeringStatus(peeringStatus *status.AtlasNetworkPeeringStatus, peer *NetworkPeer, container *networkcontainer.NetworkContainer) {
+	peeringStatus.ID = peer.ID
+	peeringStatus.Status = peer.Status
+	switch provider.ProviderName(peer.Provider) {
+	case provider.ProviderAWS:
+		if container.AWSStatus != nil {
+			if peeringStatus.AWSStatus == nil {
+				peeringStatus.AWSStatus = &status.AWSPeeringStatus{}
+			}
+			peeringStatus.AWSStatus.ConnectionID = peer.AWSStatus.ConnectionID
+			peeringStatus.AWSStatus.VpcID = container.AWSStatus.VpcID
+		}
+	case provider.ProviderAzure:
+		if container.AzureStatus != nil {
+			if peeringStatus.AzureStatus == nil {
+				peeringStatus.AzureStatus = &status.AzurePeeringStatus{}
+			}
+			peeringStatus.AzureStatus.AzureSubscriptionID = container.AzureStatus.AzureSubscriptionID
+			peeringStatus.AzureStatus.VnetName = container.AzureStatus.VnetName
+		}
+	case provider.ProviderGCP:
+		if container.GCPStatus != nil {
+			if peeringStatus.GCPStatus == nil {
+				peeringStatus.GCPStatus = &status.GCPPeeringStatus{}
+			}
+			peeringStatus.GCPStatus.GCPProjectID = container.GCPStatus.GCPProjectID
+			peeringStatus.GCPStatus.NetworkName = container.GCPStatus.NetworkName
+		}
+	default:
+		peeringStatus.Status = fmt.Sprintf("unsupported provider: %q", peer.Provider)
+		return
+	}
+}
+
+func ClearPeeringStatus(peeringStatus *status.AtlasNetworkPeeringStatus) {
+	peeringStatus.ID = ""
+	peeringStatus.Status = ""
+	peeringStatus.AWSStatus  = nil
+	peeringStatus.AzureStatus = nil
+	peeringStatus.GCPStatus = nil
 }

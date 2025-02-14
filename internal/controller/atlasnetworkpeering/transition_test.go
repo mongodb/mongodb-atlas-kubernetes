@@ -161,7 +161,7 @@ func TestApplyPeeringStatus(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			status := status.AtlasNetworkPeeringStatus{}
-			applyPeeringStatus(&status, &tc.peer, &tc.container)
+			networkpeering.ApplyPeeringStatus(&status, &tc.peer, &tc.container)
 			assert.Equal(t, tc.wantStatus, status)
 		})
 	}
