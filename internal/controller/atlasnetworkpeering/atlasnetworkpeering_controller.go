@@ -20,6 +20,7 @@ limitations under the License.
 import (
 	"context"
 	"errors"
+	"reflect"
 	"time"
 
 	"go.uber.org/zap"
@@ -33,11 +34,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
@@ -104,7 +107,24 @@ func (r *AtlasNetworkPeeringReconciler) Reconcile(ctx context.Context, req ctrl.
 
 // For prepares the controller for its target Custom Resource; Network Containers
 func (r *AtlasNetworkPeeringReconciler) For() (client.Object, builder.Predicates) {
-	return &akov2.AtlasNetworkPeering{}, builder.WithPredicates(r.GlobalPredicates...)
+	predicates := append([]predicate.Predicate{tracePredicate(r.Log)}, r.GlobalPredicates...)
+	return &akov2.AtlasNetworkPeering{}, builder.WithPredicates(predicates...)
+}
+
+// tracePredicate avoids the first update, coming from the cache without an status.
+// That way an error loop is avoided as the status empty may try to create the peering again,
+// and fail if it was already created.
+func tracePredicate(logger *zap.SugaredLogger) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			newObj, ok := e.ObjectNew.(*akov2.AtlasNetworkPeering)
+			if !ok || reflect.DeepEqual(newObj.Status, status.AtlasNetworkPeeringStatus{}) {
+				logger.Warnf("SKIP UPDATE with empty status: event %#+v", e)
+				return false
+			}
+			return true
+		},
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
