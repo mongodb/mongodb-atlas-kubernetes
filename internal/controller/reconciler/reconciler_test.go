@@ -2,7 +2,6 @@ package reconciler_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -131,7 +130,7 @@ func TestResolveCredentials(t *testing.T) {
 					ProjectRef: &common.ResourceRefNamespaced{Name: "project", Namespace: "project-ns"},
 				},
 			},
-			expectedError: fmt.Errorf("can not fetch AtlasProject"),
+			expectedError: reconciler.ErrMissingKubeProject,
 		},
 		{
 			title: "should select CustomRoleCredentials from CustomRole when externalProjectID is set",
@@ -273,7 +272,7 @@ func TestResolveCredentials(t *testing.T) {
 					},
 				},
 			},
-			expectedError: fmt.Errorf("can not fetch AtlasProject"),
+			expectedError: reconciler.ErrMissingKubeProject,
 		},
 		{
 			title:   "should NOT select credentials when both projectRef and externalProjectId are empty",

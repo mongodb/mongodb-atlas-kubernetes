@@ -293,7 +293,7 @@ func TestEnsureCustomResource(t *testing.T) {
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
-				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: can not fetch AtlasProject: atlasprojects.atlas.mongodb.com \"my-project\" not found",
+				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-project\" not found",
 				"Status update",
 			},
 		},

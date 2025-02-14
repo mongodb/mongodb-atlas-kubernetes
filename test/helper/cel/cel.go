@@ -144,3 +144,14 @@ func findCEL(t *testing.T, s *schema.Structural, root bool, pth *field.Path) (ma
 
 	return ret, nil
 }
+
+func ErrorListAsStrings(errs field.ErrorList) []string {
+	if len(errs) == 0 {
+		return nil
+	}
+	errMsgs := make([]string, 0, len(errs))
+	for _, err := range errs {
+		errMsgs = append(errMsgs, err.Error())
+	}
+	return errMsgs
+}

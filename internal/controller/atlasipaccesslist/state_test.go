@@ -152,7 +152,7 @@ func TestHandleCustomResource(t *testing.T) {
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasAPIAccessNotConfigured)).
-					WithMessageRegexp("can not fetch AtlasProject: atlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+					WithMessageRegexp("missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
@@ -225,7 +225,7 @@ func TestHandleCustomResource(t *testing.T) {
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasAPIAccessNotConfigured)).
-					WithMessageRegexp("failed to query Kubernetes: failed to get Project from Kubernetes: can not fetch AtlasProject: atlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+					WithMessageRegexp("failed to query Kubernetes: failed to get Project from Kubernetes: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
