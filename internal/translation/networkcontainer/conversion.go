@@ -18,9 +18,6 @@ type NetworkContainer struct {
 	NetworkContainerConfig
 	ID          string
 	Provisioned bool
-	AWSStatus   *status.AWSContainerStatus
-	AzureStatus *status.AzureContainerStatus
-	GCPStatus   *status.GCPContainerStatus
 }
 
 func NewNetworkContainerConfig(provider string, config *akov2.AtlasNetworkContainerConfig) *NetworkContainerConfig {
@@ -33,9 +30,6 @@ func NewNetworkContainerConfig(provider string, config *akov2.AtlasNetworkContai
 func ApplyNetworkContainerStatus(containerStatus *status.AtlasNetworkContainerStatus, container *NetworkContainer) {
 	containerStatus.ID = container.ID
 	containerStatus.Provisioned = container.Provisioned
-	containerStatus.AWSStatus = container.AWSStatus
-	containerStatus.AzureStatus = container.AzureStatus
-	containerStatus.GCPStatus = container.GCPStatus
 }
 
 func toAtlas(container *NetworkContainer) *admin.CloudProviderContainer {
@@ -60,14 +54,6 @@ func toAtlasConfig(cfg *NetworkContainerConfig) *admin.CloudProviderContainer {
 func fromAtlas(container *admin.CloudProviderContainer) *NetworkContainer {
 	pc := fromAtlasNoStatus(container)
 	pc.Provisioned = container.GetProvisioned()
-	switch provider.ProviderName(pc.Provider) {
-	case provider.ProviderAWS:
-		pc.AWSStatus = fromAtlasAWSStatus(container)
-	case provider.ProviderAzure:
-		pc.AzureStatus = fromAtlasAzureStatus(container)
-	case provider.ProviderGCP:
-		pc.GCPStatus = fromAtlasGCPStatus(container)
-	}
 	return pc
 }
 
@@ -85,34 +71,5 @@ func fromAtlasNoStatus(container *admin.CloudProviderContainer) *NetworkContaine
 			},
 		},
 		ID: container.GetId(),
-	}
-}
-
-func fromAtlasAWSStatus(container *admin.CloudProviderContainer) *status.AWSContainerStatus {
-	if container.VpcId == nil {
-		return nil
-	}
-	return &status.AWSContainerStatus{
-		VpcID: container.GetVpcId(),
-	}
-}
-
-func fromAtlasAzureStatus(container *admin.CloudProviderContainer) *status.AzureContainerStatus {
-	if container.AzureSubscriptionId == nil && container.VnetName == nil {
-		return nil
-	}
-	return &status.AzureContainerStatus{
-		AzureSubscriptionID: container.GetAzureSubscriptionId(),
-		VnetName:            container.GetVnetName(),
-	}
-}
-
-func fromAtlasGCPStatus(container *admin.CloudProviderContainer) *status.GCPContainerStatus {
-	if container.GcpProjectId == nil && container.NetworkName == nil {
-		return nil
-	}
-	return &status.GCPContainerStatus{
-		GCPProjectID: container.GetGcpProjectId(),
-		NetworkName:  container.GetNetworkName(),
 	}
 }

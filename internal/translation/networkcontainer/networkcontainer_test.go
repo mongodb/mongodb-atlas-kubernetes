@@ -13,7 +13,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
@@ -68,8 +67,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 					Provider:                    string(provider.ProviderAWS),
 					AtlasNetworkContainerConfig: testContainerConfig(),
 				},
-				ID:        testContainerID,
-				AWSStatus: &status.AWSContainerStatus{VpcID: testVpcID},
+				ID: testContainerID,
 			},
 			expectedError: nil,
 		},
@@ -123,10 +121,6 @@ func TestNetworkContainerCreate(t *testing.T) {
 					AtlasNetworkContainerConfig: testContainerConfig(),
 				},
 				ID: testContainerID,
-				AzureStatus: &status.AzureContainerStatus{
-					AzureSubscriptionID: testAzureSubcriptionID,
-					VnetName:            testVnet,
-				},
 			},
 			expectedError: nil,
 		},
@@ -178,10 +172,6 @@ func TestNetworkContainerCreate(t *testing.T) {
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{CIDRBlock: "1.1.1.1/2"},
 				},
 				ID: testContainerID,
-				GCPStatus: &status.GCPContainerStatus{
-					GCPProjectID: testGCPProjectID,
-					NetworkName:  testNetworkName,
-				},
 			},
 			expectedError: nil,
 		},
@@ -256,8 +246,7 @@ func TestNetworkContainerGet(t *testing.T) {
 					Provider:                    string(provider.ProviderAWS),
 					AtlasNetworkContainerConfig: testContainerConfig(),
 				},
-				ID:        testContainerID,
-				AWSStatus: &status.AWSContainerStatus{VpcID: testVpcID},
+				ID: testContainerID,
 			},
 			expectedError: nil,
 		},
@@ -318,8 +307,7 @@ func TestNetworkContainerFind(t *testing.T) {
 					Provider:                    string(provider.ProviderAWS),
 					AtlasNetworkContainerConfig: testContainerConfig(),
 				},
-				ID:        testContainerID,
-				AWSStatus: &status.AWSContainerStatus{VpcID: testVpcID},
+				ID: testContainerID,
 			},
 			expectedError: nil,
 		},
@@ -381,10 +369,6 @@ func TestNetworkContainerFind(t *testing.T) {
 					},
 				},
 				ID: testContainerID,
-				GCPStatus: &status.GCPContainerStatus{
-					GCPProjectID: testGCPProjectID,
-					NetworkName:  testNetworkName,
-				},
 			},
 			expectedError: nil,
 		},
@@ -488,8 +472,7 @@ func TestNetworkContainerUpdate(t *testing.T) {
 					Provider:                    string(provider.ProviderAWS),
 					AtlasNetworkContainerConfig: testContainerConfig(),
 				},
-				ID:        testContainerID,
-				AWSStatus: &status.AWSContainerStatus{VpcID: testVpcID},
+				ID: testContainerID,
 			},
 			expectedError: nil,
 		},
