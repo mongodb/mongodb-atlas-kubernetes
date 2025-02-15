@@ -14,10 +14,28 @@ type NetworkContainerConfig struct {
 	akov2.AtlasNetworkContainerConfig
 }
 
+type AWSContainerStatus struct {
+	VpcID       string
+	ContainerID string
+}
+
+type AzureContainerStatus struct {
+	AzureSubscriptionID string
+	VnetName            string
+}
+
+type GCPContainerStatus struct {
+	GCPProjectID string
+	NetworkName  string
+}
+
 type NetworkContainer struct {
 	NetworkContainerConfig
 	ID          string
 	Provisioned bool
+	AWSStatus   *AWSContainerStatus
+	AzureStatus *AzureContainerStatus
+	GCPStatus   *GCPContainerStatus
 }
 
 func NewNetworkContainerConfig(provider string, config *akov2.AtlasNetworkContainerConfig) *NetworkContainerConfig {
@@ -54,6 +72,14 @@ func toAtlasConfig(cfg *NetworkContainerConfig) *admin.CloudProviderContainer {
 func fromAtlas(container *admin.CloudProviderContainer) *NetworkContainer {
 	pc := fromAtlasNoStatus(container)
 	pc.Provisioned = container.GetProvisioned()
+	switch provider.ProviderName(pc.Provider) {
+	case provider.ProviderAWS:
+		pc.AWSStatus = fromAtlasAWSStatus(container)
+	case provider.ProviderAzure:
+		pc.AzureStatus = fromAtlasAzureStatus(container)
+	case provider.ProviderGCP:
+		pc.GCPStatus = fromAtlasGCPStatus(container)
+	}
 	return pc
 }
 
@@ -71,5 +97,34 @@ func fromAtlasNoStatus(container *admin.CloudProviderContainer) *NetworkContaine
 			},
 		},
 		ID: container.GetId(),
+	}
+}
+
+func fromAtlasAWSStatus(container *admin.CloudProviderContainer) *AWSContainerStatus {
+	if container.VpcId == nil {
+		return nil
+	}
+	return &AWSContainerStatus{
+		VpcID: container.GetVpcId(),
+	}
+}
+
+func fromAtlasAzureStatus(container *admin.CloudProviderContainer) *AzureContainerStatus {
+	if container.AzureSubscriptionId == nil && container.VnetName == nil {
+		return nil
+	}
+	return &AzureContainerStatus{
+		AzureSubscriptionID: container.GetAzureSubscriptionId(),
+		VnetName:            container.GetVnetName(),
+	}
+}
+
+func fromAtlasGCPStatus(container *admin.CloudProviderContainer) *GCPContainerStatus {
+	if container.GcpProjectId == nil && container.NetworkName == nil {
+		return nil
+	}
+	return &GCPContainerStatus{
+		GCPProjectID: container.GetGcpProjectId(),
+		NetworkName:  container.GetNetworkName(),
 	}
 }

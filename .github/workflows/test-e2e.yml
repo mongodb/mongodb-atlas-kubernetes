@@ -185,6 +185,7 @@ jobs:
             "flex",
             "ip-access-list",
             "networkcontainer-controller",
+            "networkpeering-controller",
           ]
     steps:
       - name: Get repo files from cache
