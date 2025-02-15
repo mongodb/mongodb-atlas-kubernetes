@@ -156,7 +156,7 @@ var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"),
 							Provider: string(provider.ProviderAWS),
 							AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
 								Region:    "US_EAST_1",
-								CIDRBlock: "10.8.0.0/22",
+								CIDRBlock: "10.64.0.0/22",
 							},
 						},
 					},
@@ -178,7 +178,8 @@ var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"),
 						Spec: akov2.AtlasNetworkContainerSpec{
 							Provider: string(provider.ProviderAWS),
 							AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-								CIDRBlock: "10.8.0.0/22",
+								CIDRBlock: "10.128.0.0/22",
+								Region:    "US_WEST_1",
 							},
 						},
 					},
