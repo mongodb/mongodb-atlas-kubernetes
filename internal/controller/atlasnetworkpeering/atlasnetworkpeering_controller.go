@@ -19,7 +19,6 @@ limitations under the License.
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go.uber.org/zap"
@@ -97,7 +96,7 @@ func (r *AtlasNetworkPeeringReconciler) Reconcile(ctx context.Context, req ctrl.
 	akoNetworkPeering := akov2.AtlasNetworkPeering{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &akoNetworkPeering, r.Log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), errors.New(result.GetMessage())
+		return result.ReconcileResult(), nil
 	}
 	return r.handleCustomResource(ctx, &akoNetworkPeering)
 }
