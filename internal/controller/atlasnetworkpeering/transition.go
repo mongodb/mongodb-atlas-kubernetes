@@ -58,6 +58,9 @@ func (r *AtlasNetworkPeeringReconciler) update(workflowCtx *workflow.Context, re
 }
 
 func (r *AtlasNetworkPeeringReconciler) delete(workflowCtx *workflow.Context, req *reconcileRequest, atlasPeer *networkpeering.NetworkPeer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
+	if customresource.IsResourcePolicyKeepOrDefault(req.networkPeering, r.ObjectDeletionProtection) {
+		return r.unmanage(workflowCtx, req)
+	}
 	id := req.networkPeering.Status.ID
 	peer := atlasPeer
 	if id != "" && !atlasPeer.Closing() {
