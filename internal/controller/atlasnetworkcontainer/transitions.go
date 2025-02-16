@@ -48,6 +48,9 @@ func (r *AtlasNetworkContainerReconciler) update(workflowCtx *workflow.Context, 
 }
 
 func (r *AtlasNetworkContainerReconciler) delete(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
+	if customresource.IsResourcePolicyKeepOrDefault(req.networkContainer, r.ObjectDeletionProtection) {
+		return r.unmanage(workflowCtx, req.networkContainer)
+	}
 	err := req.service.Delete(workflowCtx.Context, req.projectID, container.ID)
 	if err != nil {
 		wrappedErr := fmt.Errorf("failed to delete container: %w", err)
