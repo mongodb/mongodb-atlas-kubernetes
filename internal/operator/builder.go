@@ -266,7 +266,6 @@ func mergeDefaults(b *Builder) {
 
 	if len(b.predicates) == 0 {
 		b.predicates = []predicate.Predicate{
-			watch.CommonPredicates(),
 			watch.SelectNamespacesPredicate(b.namespaces),
 		}
 	}

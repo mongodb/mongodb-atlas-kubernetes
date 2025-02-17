@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -68,28 +69,28 @@ func (r *Registry) RegisterWithManager(mgr ctrl.Manager, skipNameValidation bool
 
 func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	var reconcilers []AkoReconciler
-	reconcilers = append(reconcilers, atlasproject.NewAtlasProjectReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasdeployment.NewAtlasDeploymentReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
-	reconcilers = append(reconcilers, atlasdatabaseuser.NewAtlasDatabaseUserReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.featureFlags, r.logger))
-	reconcilers = append(reconcilers, atlasdatafederation.NewAtlasDataFederationReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasfederatedauth.NewAtlasFederatedAuthReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsInstanceReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsConnectionReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlascustomrole.NewAtlasCustomRoleReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
+	reconcilers = append(reconcilers, atlasproject.NewAtlasProjectReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasdeployment.NewAtlasDeploymentReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
+	reconcilers = append(reconcilers, atlasdatabaseuser.NewAtlasDatabaseUserReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.featureFlags, r.logger))
+	reconcilers = append(reconcilers, atlasdatafederation.NewAtlasDataFederationReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasfederatedauth.NewAtlasFederatedAuthReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsInstanceReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsConnectionReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlascustomrole.NewAtlasCustomRoleReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
 	reconcilers = append(reconcilers, atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
 	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
 	r.reconcilers = reconcilers
 }
 
-// legacyPredicates are to be phased out in favor of defaultPredicates
-func (r *Registry) legacyPredicates() []predicate.Predicate {
-	return append(r.sharedPredicates, watch.CommonPredicates())
+// deprecatedPredicates are to be phased out in favor of defaultPredicates
+func (r *Registry) deprecatedPredicates() []predicate.Predicate {
+	return append(r.sharedPredicates, watch.DeprecatedCommonPredicates())
 }
 
 // defaultPredicates minimize the reconciliations controllers actually do, avoiding
 // spurious after delete handling and acting on finalizers setting or unsetting
 func (r *Registry) defaultPredicates() []predicate.Predicate {
-	return append(r.sharedPredicates, watch.DefaultPredicates())
+	return append(r.sharedPredicates, watch.DefaultPredicates[client.Object]())
 }

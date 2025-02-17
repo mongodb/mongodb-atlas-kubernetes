@@ -3,15 +3,16 @@ package watch
 import (
 	"reflect"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
-// CommonPredicates returns the predicate which filter out the changes done to any field except for spec (e.g. status)
+// DeprecatedCommonPredicates returns the predicate which filter out the changes done to any field except for spec (e.g. status)
 // Also we should reconcile if finalizers have changed (see https://blog.openshift.com/kubernetes-operators-best-practices/)
 // This will be phased out gradually to be replaced by DefaultPredicates
-func CommonPredicates() predicate.Funcs {
+func DeprecatedCommonPredicates() predicate.Funcs {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			if e.ObjectOld.GetResourceVersion() == e.ObjectNew.GetResourceVersion() {
@@ -45,27 +46,27 @@ func SelectNamespacesPredicate(namespaces []string) predicate.Funcs {
 
 // GlobalResyncAwareGenerationChangePredicate reconcile on unfrequent global
 // resyncs or on spec generation changes, but ignore finalizer changes
-func GlobalResyncAwareGenerationChangePredicate() predicate.Predicate {
-	return predicate.Or[client.Object](
-		predicate.Not[client.Object](predicate.ResourceVersionChangedPredicate{}), // for the global resync
-		predicate.GenerationChangedPredicate{},
+func GlobalResyncAwareGenerationChangePredicate[T metav1.Object]() predicate.TypedPredicate[T] {
+	return predicate.Or[T](
+		predicate.Not[T](predicate.TypedResourceVersionChangedPredicate[T]{}), // for the global resync
+		predicate.TypedGenerationChangedPredicate[T]{},
 	)
 }
 
 // IgnoreDeletedPredicate ignore after deletion handling, use unless some after
 // deletion cleanup is needed
-func IgnoreDeletedPredicate() predicate.Predicate {
-	return predicate.Funcs{
-		DeleteFunc: func(e event.DeleteEvent) bool {
+func IgnoreDeletedPredicate[T metav1.Object]() predicate.TypedPredicate[T] {
+	return predicate.TypedFuncs[T]{
+		DeleteFunc: func(e event.TypedDeleteEvent[T]) bool {
 			return false
 		},
 	}
 }
 
 // DefaultPredicates avoid spurious after deletion or finalizer changes handling
-func DefaultPredicates() predicate.Predicate {
-	return predicate.And(
-		GlobalResyncAwareGenerationChangePredicate(),
-		IgnoreDeletedPredicate(),
+func DefaultPredicates[T metav1.Object]() predicate.TypedPredicate[T] {
+	return predicate.And[T](
+		GlobalResyncAwareGenerationChangePredicate[T](),
+		IgnoreDeletedPredicate[T](),
 	)
 }
