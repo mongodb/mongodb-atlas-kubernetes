@@ -22,6 +22,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlassearchindexconfig"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasstream"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 )
 
@@ -35,7 +36,7 @@ type AkoReconciler interface {
 }
 
 type Registry struct {
-	predicates            []predicate.Predicate
+	sharedPredicates      []predicate.Predicate
 	deletionProtection    bool
 	independentSyncPeriod time.Duration
 	featureFlags          *featureflags.FeatureFlags
@@ -46,7 +47,7 @@ type Registry struct {
 
 func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags) *Registry {
 	return &Registry{
-		predicates:            predicates,
+		sharedPredicates:      predicates,
 		deletionProtection:    deletionProtection,
 		logger:                logger,
 		independentSyncPeriod: independentSyncPeriod,
@@ -67,17 +68,28 @@ func (r *Registry) RegisterWithManager(mgr ctrl.Manager, skipNameValidation bool
 
 func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	var reconcilers []AkoReconciler
-	reconcilers = append(reconcilers, atlasproject.NewAtlasProjectReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasdeployment.NewAtlasDeploymentReconciler(c, r.predicates, ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
-	reconcilers = append(reconcilers, atlasdatabaseuser.NewAtlasDatabaseUserReconciler(c, r.predicates, ap, r.deletionProtection, r.independentSyncPeriod, r.featureFlags, r.logger))
-	reconcilers = append(reconcilers, atlasdatafederation.NewAtlasDataFederationReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasfederatedauth.NewAtlasFederatedAuthReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsInstanceReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsConnectionReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(c, r.predicates, ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlascustomrole.NewAtlasCustomRoleReconciler(c, r.predicates, ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
-	reconcilers = append(reconcilers, atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(c, r.predicates, ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
-	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.predicates, ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
+	reconcilers = append(reconcilers, atlasproject.NewAtlasProjectReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasdeployment.NewAtlasDeploymentReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
+	reconcilers = append(reconcilers, atlasdatabaseuser.NewAtlasDatabaseUserReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.featureFlags, r.logger))
+	reconcilers = append(reconcilers, atlasdatafederation.NewAtlasDataFederationReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasfederatedauth.NewAtlasFederatedAuthReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsInstanceReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsConnectionReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.logger))
+	reconcilers = append(reconcilers, atlascustomrole.NewAtlasCustomRoleReconciler(c, r.legacyPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
+	reconcilers = append(reconcilers, atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
+	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
 	r.reconcilers = reconcilers
+}
+
+// legacyPredicates are to be phased out in favor of defaultPredicates
+func (r *Registry) legacyPredicates() []predicate.Predicate {
+	return append(r.sharedPredicates, watch.CommonPredicates())
+}
+
+// defaultPredicates minimize the reconciliations controllers actually do, avoiding
+// spurious after delete handling and acting on finalizers setting or unsetting
+func (r *Registry) defaultPredicates() []predicate.Predicate {
+	return append(r.sharedPredicates, watch.DefaultPredicates())
 }

@@ -10,6 +10,7 @@ import (
 
 // CommonPredicates returns the predicate which filter out the changes done to any field except for spec (e.g. status)
 // Also we should reconcile if finalizers have changed (see https://blog.openshift.com/kubernetes-operators-best-practices/)
+// This will be phased out gradually to be replaced by DefaultPredicates
 func CommonPredicates() predicate.Funcs {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
@@ -40,4 +41,31 @@ func SelectNamespacesPredicate(namespaces []string) predicate.Funcs {
 
 		return false
 	})
+}
+
+// GlobalResyncAwareGenerationChangePredicate reconcile on unfrequent global
+// resyncs or on spec generation changes, but ignore finalizer changes
+func GlobalResyncAwareGenerationChangePredicate() predicate.Predicate {
+	return predicate.Or[client.Object](
+		predicate.Not[client.Object](predicate.ResourceVersionChangedPredicate{}), // for the global resync
+		predicate.GenerationChangedPredicate{},
+	)
+}
+
+// IgnoreDeletedPredicate ignore after deletion handling, use unless some after
+// deletion cleanup is needed
+func IgnoreDeletedPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return false
+		},
+	}
+}
+
+// DefaultPredicates avoid spurious after deletion or finalizer changes handling
+func DefaultPredicates() predicate.Predicate {
+	return predicate.And(
+		GlobalResyncAwareGenerationChangePredicate(),
+		IgnoreDeletedPredicate(),
+	)
 }
