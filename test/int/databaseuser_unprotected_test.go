@@ -243,9 +243,10 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 			By("Giving user readWrite permissions", func() {
 				// Adding the role allowing read/write
-				testDBUser1 = testDBUser1.WithRole("readWriteAnyDatabase", "admin", "")
-
-				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+					user.WithRole("readWriteAnyDatabase", "admin", "")
+				})
+				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
@@ -317,10 +318,10 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Removing database user scope for first deployment", func() {
-				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser1), testDBUser1)).Should(Succeed())
-				testDBUser1.Spec.Scopes = nil
-
-				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+					user.Spec.Scopes = nil
+				})
+				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
@@ -400,8 +401,12 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Breaking the password secret", func() {
-				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, "")
-				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKey{Namespace: testNamespace.Name, Name: UserPasswordSecret}, func(secret *corev1.Secret) {
+					empty := buildPasswordSecret(secret.GetNamespace(), secret.GetName(), "")
+					secret.Labels = empty.Labels
+					secret.StringData = empty.StringData
+				})
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedCondition := api.FalseCondition(api.DatabaseUserReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp("the 'password' field is empty")
 				Eventually(func() bool {
@@ -412,8 +417,12 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Fixing the password secret", func() {
-				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, "someNewPassw00rd")
-				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKey{Namespace: testNamespace.Name, Name: UserPasswordSecret}, func(secret *corev1.Secret) {
+					somePassword := buildPasswordSecret(secret.GetNamespace(), secret.GetName(), "someNewPassw00rd")
+					secret.Labels = somePassword.Labels
+					secret.StringData = somePassword.StringData
+				})
+				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
@@ -466,14 +475,17 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			By("Renaming username, new user is added and stale secrets are removed", func() {
 				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser1), testDBUser1)).To(Succeed())
 				oldName := testDBUser1.Spec.Username
-				testDBUser1 = testDBUser1.WithAtlasUserName("new-user")
-				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
+
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+					user.WithAtlasUserName("new-user")
+				})
+				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
-				_, _, err := atlasClient.DatabaseUsersApi.
+				_, _, err = atlasClient.DatabaseUsersApi.
 					GetDatabaseUser(context.Background(), testProject.ID(), testDBUser1.Spec.DatabaseName, oldName).
 					Execute()
 				Expect(err).To(HaveOccurred())
@@ -495,8 +507,10 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Scoping user to one cluster, a stale secret is removed", func() {
-				testDBUser1 = testDBUser1.ClearScopes().WithScope(akov2.DeploymentScopeType, testDeployment.GetDeploymentName())
-				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+					user.ClearScopes().WithScope(akov2.DeploymentScopeType, testDeployment.GetDeploymentName())
+				})
+				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
@@ -611,15 +625,15 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Skipping reconciliation", func() {
-				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser1), testDBUser1)).To(Succeed())
-				testDBUser1.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
-				testDBUser1.Spec.Roles = append(testDBUser1.Spec.Roles, akov2.RoleSpec{
-					RoleName:       "new-role",
-					DatabaseName:   "new-database",
-					CollectionName: "new-collection",
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+					user.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
+					user.Spec.Roles = append(testDBUser1.Spec.Roles, akov2.RoleSpec{
+						RoleName:       "new-role",
+						DatabaseName:   "new-database",
+						CollectionName: "new-collection",
+					})
 				})
-
-				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
+				Expect(err).NotTo(HaveOccurred())
 
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 				defer cancel()
