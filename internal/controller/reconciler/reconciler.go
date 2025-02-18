@@ -8,9 +8,8 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
-
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 type AtlasReconciler struct {
@@ -18,16 +17,16 @@ type AtlasReconciler struct {
 	Log    *zap.SugaredLogger
 }
 
-func (r *AtlasReconciler) ResolveProject(ctx context.Context, sdkClient *admin.APIClient, pro project.ProjectReferrerObject, orgID string) (*project.Project, error) {
+func (r *AtlasReconciler) ResolveProject(ctx context.Context, sdkClient *admin.APIClient, pro project.ProjectReferrerObject) (*project.Project, error) {
+	projectsService := project.NewProjectAPIService(sdkClient.ProjectsApi)
 	pdr := pro.ProjectDualRef()
 	if pdr.ProjectRef != nil {
-		project, err := r.projectFromKube(ctx, pro, orgID)
+		project, err := r.projectFromKube(ctx, pro, projectsService)
 		if err != nil {
 			return nil, fmt.Errorf("failed to query Kubernetes: %w", err)
 		}
 		return project, nil
 	}
-	projectsService := project.NewProjectAPIService(sdkClient.ProjectsApi)
 	prj, err := r.projectFromAtlas(ctx, projectsService, pdr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Project from Atlas by ID: %w", err)
@@ -35,12 +34,12 @@ func (r *AtlasReconciler) ResolveProject(ctx context.Context, sdkClient *admin.A
 	return prj, nil
 }
 
-func (r *AtlasReconciler) projectFromKube(ctx context.Context, pro project.ProjectReferrerObject, orgID string) (*project.Project, error) {
+func (r *AtlasReconciler) projectFromKube(ctx context.Context, pro project.ProjectReferrerObject, service project.ProjectService) (*project.Project, error) {
 	kubeProject, err := r.fetchProject(ctx, pro)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Project from Kubernetes: %w", err)
 	}
-	return project.NewProject(kubeProject, orgID), nil
+	return service.GetProjectByName(ctx, kubeProject.Spec.Name)
 }
 
 func (r *AtlasReconciler) projectFromAtlas(ctx context.Context, projectsService project.ProjectService, pdr *akov2.ProjectDualReference) (*project.Project, error) {
