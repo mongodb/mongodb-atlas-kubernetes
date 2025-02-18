@@ -42,7 +42,7 @@ const (
 	DBUserPassword2     = "H@lla#!"
 )
 
-var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "protection-disabled"), func() {
+var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "protection-disabled"), Ordered, func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
 	var projectName string
@@ -464,6 +464,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Renaming username, new user is added and stale secrets are removed", func() {
+				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser1), testDBUser1)).To(Succeed())
 				oldName := testDBUser1.Spec.Username
 				testDBUser1 = testDBUser1.WithAtlasUserName("new-user")
 				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
@@ -610,6 +611,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Skipping reconciliation", func() {
+				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser1), testDBUser1)).To(Succeed())
 				testDBUser1.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
 				testDBUser1.Spec.Roles = append(testDBUser1.Spec.Roles, akov2.RoleSpec{
 					RoleName:       "new-role",
