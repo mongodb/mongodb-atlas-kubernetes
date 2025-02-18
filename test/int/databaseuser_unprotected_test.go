@@ -556,9 +556,10 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			By("Fixing the user date expiration", func() {
 				after := time.Now().UTC().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
 
-				retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.Spec.DeleteAfterDate = after
 				})
+				Expect(err).NotTo(HaveOccurred())
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
@@ -570,9 +571,10 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			By("Expiring the User", func() {
 				before := time.Now().UTC().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
 
-				retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.Spec.DeleteAfterDate = before
 				})
+				Expect(err).NotTo(HaveOccurred())
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, api.FalseCondition(api.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired)))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
