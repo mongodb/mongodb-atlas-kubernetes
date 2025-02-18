@@ -243,7 +243,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 			By("Giving user readWrite permissions", func() {
 				// Adding the role allowing read/write
-				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				var err error
+				testDBUser1, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.WithRole("readWriteAnyDatabase", "admin", "")
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -318,7 +319,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Removing database user scope for first deployment", func() {
-				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				var err error
+				testDBUser1, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.Spec.Scopes = nil
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -476,7 +478,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser1), testDBUser1)).To(Succeed())
 				oldName := testDBUser1.Spec.Username
 
-				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				var err error
+				testDBUser1, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.WithAtlasUserName("new-user")
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -507,7 +510,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Scoping user to one cluster, a stale secret is removed", func() {
-				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				var err error
+				testDBUser1, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.ClearScopes().WithScope(akov2.DeploymentScopeType, testDeployment.GetDeploymentName())
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -570,7 +574,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			By("Fixing the user date expiration", func() {
 				after := time.Now().UTC().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
 
-				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				var err error
+				testDBUser1, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.Spec.DeleteAfterDate = after
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -585,7 +590,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			By("Expiring the User", func() {
 				before := time.Now().UTC().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
 
-				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				var err error
+				testDBUser1, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.Spec.DeleteAfterDate = before
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -625,9 +631,10 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 
 			By("Skipping reconciliation", func() {
-				_, err := retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
+				var err error
+				testDBUser1, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
-					user.Spec.Roles = append(testDBUser1.Spec.Roles, akov2.RoleSpec{
+					user.Spec.Roles = append(user.Spec.Roles, akov2.RoleSpec{
 						RoleName:       "new-role",
 						DatabaseName:   "new-database",
 						CollectionName: "new-collection",
