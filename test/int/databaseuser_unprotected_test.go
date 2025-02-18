@@ -556,7 +556,6 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			By("Fixing the user date expiration", func() {
 				after := time.Now().UTC().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
 
-				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
 				retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.Spec.DeleteAfterDate = after
 				})
@@ -571,7 +570,6 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			By("Expiring the User", func() {
 				before := time.Now().UTC().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
 
-				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
 				retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(user *akov2.AtlasDatabaseUser) {
 					user.Spec.DeleteAfterDate = before
 				})
