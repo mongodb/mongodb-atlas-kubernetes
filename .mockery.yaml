@@ -16,3 +16,4 @@ packages:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/maintenancewindow:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest:
+  github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer:

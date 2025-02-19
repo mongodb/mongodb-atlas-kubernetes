@@ -20,6 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasfederatedauth"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasipaccesslist"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasnetworkcontainer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasprivateendpoint"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlassearchindexconfig"
@@ -94,6 +95,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	reconcilers = append(reconcilers, atlascustomrole.NewAtlasCustomRoleReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
 	reconcilers = append(reconcilers, atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
 	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger))
+	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod))
 	r.reconcilers = reconcilers
 }
 
