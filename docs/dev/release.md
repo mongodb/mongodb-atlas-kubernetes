@@ -108,15 +108,15 @@ $ git pull
 ```
 
 ```shell
-$ make upload-sbom-to-silk SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_amd64.sbom.json"
-$ make upload-sbom-to-silk SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
+$ make upload-sbom-to-kondukto SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_amd64.sbom.json"
+$ make upload-sbom-to-kondukto SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
 ```
 
 ### Download SBOMs from Silk
 
 ```shell
-$ make download-from-silk TARGET_ARCH=arm64
-$ make download-from-silk TARGET_ARCH=amd64
+$ make augment-sbom TARGET_ARCH=arm64
+$ make augment-sbom TARGET_ARCH=amd64
 ```
 
 ### Register SBOMs internally
@@ -125,8 +125,8 @@ To be able to store SBOMs in S3, you need special credentials.
 Please advise the Wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual".
 
 ```shell
-$ make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=amd64
-$ make store-silk-sboms VERSION=${VERSION} TARGET_ARCH=arm64
+$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=amd64
+$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=arm64
 ```
 
 ## Edit the Release Notes and publish the release

@@ -130,7 +130,8 @@ RUN_LOG_LEVEL ?= debug
 LOCAL_IMAGE=mongodb-atlas-kubernetes-operator:compiled
 CONTAINER_SPEC=.spec.template.spec.containers[0]
 
-SILK_ASSET_GROUP="atlas-kubernetes-operator"
+KONDUKTO_REPO="mongodb/mongodb-atlas-kubernetes"
+KONDUKTO_BRANCH_PREFIX="atlas-kubernetes-operator"
 
 HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
@@ -554,21 +555,21 @@ test-all-in-one: prepare-all-in-one install-credentials ## Test the deploy/all-i
 	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).args[0]="--atlas-domain=$(ATLAS_DOMAIN)"' \
 	| kubectl apply -f -
 
-.PHONY: upload-sbom-to-silk
-upload-sbom-to-silk: ## Upload a given SBOM (lite) file to Silk
+.PHONY: upload-sbom-to-kondukto
+upload-sbom-to-kondukto: ## Upload a given SBOM (lite) file to Kondukto
 	@ARTIFACTORY_USERNAME=$(ARTIFACTORY_USERNAME) ARTIFACTORY_PASSWORD=$(ARTIFACTORY_PASSWORD) \
-	SILK_CLIENT_ID=$(SILK_CLIENT_ID) SILK_CLIENT_SECRET=$(SILK_CLIENT_SECRET) \
-	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/upload-to-silk.sh $(SBOM_JSON_FILE)
+	KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
+	./scripts/upload-to-kondukto.sh $(SBOM_JSON_FILE)
 
-.PHONY: download-from-silk
-download-from-silk: ## Download the latest augmented SBOM for a given architecture on a given directory
+.PHONY: augment-sbom
+augment-sbom: ## augment the latest SBOM for a given architecture on a given directory
 	@ARTIFACTORY_USERNAME=$(ARTIFACTORY_USERNAME) ARTIFACTORY_PASSWORD=$(ARTIFACTORY_PASSWORD) \
-	SILK_CLIENT_ID=$(SILK_CLIENT_ID) SILK_CLIENT_SECRET=$(SILK_CLIENT_SECRET) \
-	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/download-from-silk.sh $(TARGET_ARCH) tmp
+	KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
+	./scripts/augment-sbom.sh $(TARGET_ARCH) tmp
 
-.PHONY: store-silk-sboms
-store-silk-sboms: download-from-silk ## Download & Store the latest augmented SBOM for a given version & architecture
-	SILK_ASSET_GROUP=$(SILK_ASSET_GROUP) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH)
+.PHONY: store-augmented-sboms
+store-augmented-sboms: augment-sbom ## Augment & Store the latest SBOM for a given version & architecture
+	KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH)
 
 .PHONY: install-ako-helm
 install-ako-helm:

@@ -29,7 +29,7 @@ arch=$2
 [ -z "${arch}" ] && echo "Missing arch parameter #2" && exit 1
 
 # Environment inputs
-asset_group_prefix="${SILK_ASSET_GROUP}"
+kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX}"
 
 # Computed values
 sbom_lite_json="docs/releases/v${version}/linux_${arch}.sbom.json"
@@ -47,9 +47,9 @@ if [[ "${name}" != mongodb/mongodb-atlas-kubernetes-operator:${version}@sha256:*
     exit 1
 fi
 
-aws s3 cp "${sbom_lite_json}" "s3://${base_s3_dir}/lite/${asset_group_prefix}-linux-${arch}/${version}/linux-${arch}.json"
-aws s3 cp "${sbom_json}" "s3://${base_s3_dir}/augmented/${asset_group_prefix}-linux-${arch}/${version}/linux-${arch}.json"
+aws s3 cp "${sbom_lite_json}" "s3://${base_s3_dir}/lite/${kondukto_branch_prefix}-linux-${arch}/${version}/linux-${arch}.json"
+aws s3 cp "${sbom_json}" "s3://${base_s3_dir}/augmented/${kondukto_branch_prefix}-linux-${arch}/${version}/linux-${arch}.json"
 
 echo "Uploaded to S3:"
-aws s3 ls "s3://${base_s3_dir}/lite/${asset_group_prefix}-linux-${arch}/${version}/"
-aws s3 ls "s3://${base_s3_dir}/augmented/${asset_group_prefix}-linux-${arch}/${version}/"
+aws s3 ls "s3://${base_s3_dir}/lite/${kondukto_branch_prefix}-linux-${arch}/${version}/"
+aws s3 ls "s3://${base_s3_dir}/augmented/${kondukto_branch_prefix}-linux-${arch}/${version}/"
