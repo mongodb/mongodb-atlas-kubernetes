@@ -32,7 +32,7 @@ func TestDryRunTransport(t *testing.T) {
 				Method: "UNKNOWN",
 				URL:    &url.URL{Path: "/test"},
 			},
-			wantErr: "DryRun event GVK=unknown, Namespace=unknown, Name=unknown, EventType=, Reason=, Message=Would execute UNKNOWN /test",
+			wantErr: "DryRun event: Would execute UNKNOWN /test",
 		},
 		{
 			name: "POST request",
@@ -40,7 +40,7 @@ func TestDryRunTransport(t *testing.T) {
 				Method: http.MethodPost,
 				URL:    &url.URL{Path: "/test"},
 			},
-			wantErr: "DryRun event GVK=unknown, Namespace=unknown, Name=unknown, EventType=, Reason=, Message=Would create (POST) /test",
+			wantErr: "DryRun event: Would create (POST) /test",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -36,7 +36,10 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 	case !existInAtlas && wasDeleted:
 		return r.release(ctx, atlasProject)
 	case existInAtlas && !wasDeleted && atlasProject.Status.ID == "":
-		return r.manage(ctx, atlasProject, projectInAtlas.ID)
+		// short circuit the "manage" state,
+		// there is no need to wait another reconcile cycle to continue.
+		_, _ = r.manage(ctx, atlasProject, projectInAtlas.ID)
+		atlasProject.Status.ID = projectInAtlas.ID
 	}
 
 	ctx.SetConditionTrue(api.ProjectReadyType)
