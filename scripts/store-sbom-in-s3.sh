@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ###
-# This script is responsible for uploading both the augmented SBOM from Silk and SBOM lites in S3
+# This script is responsible for uploading both the augmented SBOM and SBOM lites in S3
 #
 # AWS account:              mongodb-mms-testing
 # S3 bucket:                kubernetes-operators-sboms
@@ -11,12 +11,12 @@ set -euo pipefail
 # s3://kubernetes-operators-sboms/sboms/{lite|augmented}]/atlas-kubernetes-operator-linux-${arch}/${version}/linux-${arch}.json
 #
 # Usage:
-#  AWS_... SILK_ASSET_GROUP=... store_ ${VERSION} ${TARGET_ARCH}
+#  AWS_... KONDUKTO_BRANCH_PREFIX=... store_ ${VERSION} ${TARGET_ARCH}
 # Where:
 #   AWS_... means the AWS credentials for the mongodb-mms-testing account need to be present for S3 access to work
-#   SILK_ASSET_GROUP is the environment variable with the silk assert group common prefix
-#   VERSION is the version of the SBOM lites to store and expected from Silk
-#   TARGET_ARCH is the architecture to download from Silk
+#   KONDUKTO_BRANCH_PREFIX is the environment variable with the Kondukto branch common prefix
+#   VERSION is the version of the SBOM lites to store and augment
+#   TARGET_ARCH is the architecture to store the SBOM for
 ###
 
 # Constants

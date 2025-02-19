@@ -78,24 +78,24 @@ The SSDLC process requirements are as follows:
 
 1. Sign our images with a MongoDB owned signature.
 1. Produce SBOM (Software Bill Of Materials) for each platform we support (`linux-amd64` and `linux-arm64`).
-1. Upload the plain SBOMs to a MongoDB internal Silk service instance.
-1. Download the augmented SBOMS, including vulnerability metadata, from Silk.
+1. Upload the plain SBOMs to a MongoDB internal Kondukto service instance.
+1. Produce the augmented SBOMS, including vulnerability metadata, from using Silkbomb 2.0.
 1. Store both sets of SBOM files for internal reference.
 
 The first two steps are semi-automated as documented here. The rest is fully manual.
 
-Right now we are only using **one Silk asset group per platform**:
+Right now we are only using **one Kondukto branch per platform**:
 - `atlas-kubernetes-operator-linux-amd64`
 - `atlas-kubernetes-operator-linux-arm64`
 
-This means only the latest version is tracked by Silk. Note each upload will replace the SBOM document tracked on each asset group.
+This means only the latest version is tracked by Kondukto. Note each upload will replace the SBOM document tracked on each asset group.
 
 For more details about credentials required, to to `MongoDB Confluence` and look for page:
 `Kubernetes Atlas Operator SSDLC Compliance Manual`
 
 What follows is a quick reference of the make rules involved, assuming the credential setup is already completed and the process is already familiar.
 
-### Upload SBOMs to Silk
+### Upload SBOMs to Kondukto
 
 Make sure that you have the credentials configured to handle SBOM artifacts.
 Read through the wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual" on how to retrieve them.
@@ -112,7 +112,7 @@ $ make upload-sbom-to-kondukto SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_a
 $ make upload-sbom-to-kondukto SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
 ```
 
-### Download SBOMs from Silk
+### Augment SBOMs with Kondukto Scan results
 
 ```shell
 $ make augment-sbom TARGET_ARCH=arm64

@@ -3,15 +3,15 @@
 set -euo pipefail
 
 ###
-# This script is responsible for uploading SBOM lite to Silk
+# This script is responsible for uploading SBOM lite to Kondukto
 #
 # See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/commands/UPLOAD
 #
 # Usage:
-#  SILK_ASSET_GROUP=... store_ ${SBOM_JSON_LITE_PATH}
+#  KONDUKTO_BRANCH_PREFIX=... store_ ${SBOM_JSON_LITE_PATH}
 # Where:
-#   SILK_ASSET_GROUP is the environment variable with the silk assert group common prefix
-#   SBOM_JSON_LITE_PATH is the path to the SBOM lite json file to upload to Silk
+#   KONDUKTO_BRANCH_PREFIX is the environment variable with the Kondukto branch common prefix
+#   SBOM_JSON_LITE_PATH is the path to the SBOM lite json file to upload to Kondukto
 ###
 
 # Constants

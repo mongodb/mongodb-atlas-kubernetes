@@ -3,16 +3,16 @@
 set -euo pipefail
 
 ###
-# This script is responsible for downloading augmented SBOM assets from Silk
+# This script is responsible for uploading an SBOM and augmenting it using the SBOM scan results from Kondukto
 #
-# See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/commands/DOWNLOAD
+# See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/commands/AUGMENT
 #
 # Usage:
-#  SILK_ASSET_GROUP=... augment-sbom ${TARGET_ARCH} ${TARGET_DIR}
+#  KONDUKTO_BRANCH_PREFIX=... augment-sbom ${TARGET_ARCH} ${TARGET_DIR}
 # Where:
-#   SILK_ASSET_GROUP is the environment variable with the silk assert group common prefix
-#   TARGET_ARCH is the architecture to download from Silk
-#   TARGET_DIR is the local directory in where to place the Silk downloaded SBOMs
+#   KONDUKTO_BRANCH_PREFIX is the environment variable with the Kondukto branch common prefix
+#   TARGET_ARCH is the architecture to upload to Kondukto
+#   TARGET_DIR is the local directory in where to place the augmented SBOMs
 ###
 
 # Constants
