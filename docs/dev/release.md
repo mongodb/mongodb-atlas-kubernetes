@@ -85,8 +85,8 @@ The SSDLC process requirements are as follows:
 The first two steps are semi-automated as documented here. The rest is fully manual.
 
 Right now we are only using **one Kondukto branch per platform**:
-- `atlas-kubernetes-operator-linux-amd64`
-- `atlas-kubernetes-operator-linux-arm64`
+- `main-linux-amd64`
+- `main-linux-arm64`
 
 This means only the latest version is tracked by Kondukto. Note each upload will replace the SBOM document tracked on each asset group.
 
