@@ -8,10 +8,10 @@ set -euo pipefail
 # See: https://docs.devprod.prod.corp.mongodb.com/mms/python/src/sbom/silkbomb/docs/commands/AUGMENT
 #
 # Usage:
-#  KONDUKTO_BRANCH_PREFIX=... augment-sbom ${TARGET_ARCH} ${TARGET_DIR}
+#  KONDUKTO_BRANCH_PREFIX=... augment-sbom ${SBOM_JSON_LITE_PATH} ${TARGET_DIR}
 # Where:
 #   KONDUKTO_BRANCH_PREFIX is the environment variable with the Kondukto branch common prefix
-#   TARGET_ARCH is the architecture to upload to Kondukto
+#   SBOM_JSON_LITE_PATH is the path to the SBOM lite json file to upload to Kondukto
 #   TARGET_DIR is the local directory in where to place the augmented SBOMs
 ###
 
@@ -21,8 +21,8 @@ silkbomb_img="${registry}/silkbomb:2.0"
 docker_platform="linux/amd64"
 
 # Arguments
-arch=$1
-[ -z "${arch}" ] && echo "Missing arch parameter #1" && exit 1
+sbom_lite_json=$1
+[ -z "${sbom_lite_json}" ] && echo "Missing SBOM lite JSON path parameter" && exit 1
 target_dir=$2
 [ -z "${target_dir}" ] && echo "Missing target directory parameter #2" && exit 1
 
@@ -34,6 +34,7 @@ kondukto_repo="${KONDUKTO_REPO}"
 kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX}"
 
 # Computed values
+arch=$(jq -r < "${sbom_lite_json}" '.components[0].properties[] | select( .name == "syft:metadata:architecture" ) | .value')
 kondukto_branch="${kondukto_branch_prefix}-linux-${arch}"
 target="${target_dir}/linux-${arch}.sbom.json"
 

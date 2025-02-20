@@ -95,7 +95,7 @@ For more details about credentials required, to to `MongoDB Confluence` and look
 
 What follows is a quick reference of the make rules involved, assuming the credential setup is already completed and the process is already familiar.
 
-### Upload SBOMs to Kondukto
+### Upload SBOMs to Kondukto and Augment SBOMs with Kondukto Scan results
 
 Make sure that you have the credentials configured to handle SBOM artifacts.
 Read through the wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual" on how to retrieve them.
@@ -108,15 +108,8 @@ $ git pull
 ```
 
 ```shell
-$ make upload-sbom-to-kondukto SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_amd64.sbom.json"
-$ make upload-sbom-to-kondukto SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
-```
-
-### Augment SBOMs with Kondukto Scan results
-
-```shell
-$ make augment-sbom TARGET_ARCH=arm64
-$ make augment-sbom TARGET_ARCH=amd64
+$ make augment-sbom SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_amd64.sbom.json"
+$ make augment-sbom SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
 ```
 
 ### Register SBOMs internally
