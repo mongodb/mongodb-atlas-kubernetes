@@ -442,7 +442,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Remove stale secrets", Label("user-gc-secrets"), func() {
+		It("Correctly removes stale secrets", Label("user-gc-secrets"), func() {
 			secondTestDeployment := &akov2.AtlasDeployment{}
 
 			By("Creating a second deployment", func() {
@@ -474,6 +474,26 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(tryConnect(testProject.ID(), *secondTestDeployment, *testDBUser1)).Should(Succeed())
 			})
 
+			By("Creating a second database user", func() {
+				passwordSecret := buildPasswordSecret(testNamespace.Name, "user-password-secret-2", DBUserPassword)
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
+
+				testDBUser2 = akov2.NewDBUser(testNamespace.Name, dbUserName2, dbUserName2, projectName).
+					WithPasswordSecret("user-password-secret-2").
+					WithRole("readWriteAnyDatabase", "admin", "")
+				Expect(k8sClient.Create(context.Background(), testDBUser2)).To(Succeed())
+
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, testDBUser2, api.TrueCondition(api.ReadyType))
+				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
+				validateSecret(k8sClient, *testProject, *secondTestDeployment, *testDBUser2)
+
+				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser2)).Should(Succeed())
+				Expect(tryConnect(testProject.ID(), *secondTestDeployment, *testDBUser2)).Should(Succeed())
+			})
+
 			By("Renaming username, new user is added and stale secrets are removed", func() {
 				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser1), testDBUser1)).To(Succeed())
 				oldName := testDBUser1.Spec.Username
@@ -493,7 +513,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 					Execute()
 				Expect(err).To(HaveOccurred())
 
-				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 2)
+				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 4)
 				secret := validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
 				Expect(secret.Name).To(Equal(fmt.Sprintf("%s-%s-new-user",
 					kube.NormalizeIdentifier(testProject.Spec.Name),
@@ -504,9 +524,21 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 					kube.NormalizeIdentifier(testProject.Spec.Name),
 					kube.NormalizeIdentifier(secondTestDeployment.GetDeploymentName()),
 				)))
+				secret = validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
+				Expect(secret.Name).To(Equal(fmt.Sprintf("%s-%s-db-user2",
+					kube.NormalizeIdentifier(testProject.Spec.Name),
+					kube.NormalizeIdentifier(testDeployment.GetDeploymentName()),
+				)))
+				secret = validateSecret(k8sClient, *testProject, *secondTestDeployment, *testDBUser2)
+				Expect(secret.Name).To(Equal(fmt.Sprintf("%s-%s-db-user2",
+					kube.NormalizeIdentifier(testProject.Spec.Name),
+					kube.NormalizeIdentifier(secondTestDeployment.GetDeploymentName()),
+				)))
 
 				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser1)).Should(Succeed())
 				Expect(tryConnect(testProject.ID(), *secondTestDeployment, *testDBUser1)).Should(Succeed())
+				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser2)).Should(Succeed())
+				Expect(tryConnect(testProject.ID(), *secondTestDeployment, *testDBUser2)).Should(Succeed())
 			})
 
 			By("Scoping user to one cluster, a stale secret is removed", func() {
@@ -520,11 +552,21 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
-				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 1)
+				testDBUser2 = testDBUser2.ClearScopes().WithScope(akov2.DeploymentScopeType, testDeployment.GetDeploymentName())
+				Expect(k8sClient.Update(context.Background(), testDBUser2)).To(Succeed())
+
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, testDBUser2, api.TrueCondition(api.ReadyType))
+				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 2)
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
 
 				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser1)).Should(Succeed())
 				Expect(tryConnect(testProject.ID(), *secondTestDeployment, *testDBUser1)).ShouldNot(Succeed())
+				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser2)).Should(Succeed())
+				Expect(tryConnect(testProject.ID(), *secondTestDeployment, *testDBUser2)).ShouldNot(Succeed())
 			})
 
 			By("Deleting second deployment", func() {
