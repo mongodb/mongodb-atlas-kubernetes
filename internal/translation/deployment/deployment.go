@@ -87,6 +87,17 @@ func (ds *ProductionAtlasDeployments) ListDeploymentNames(ctx context.Context, p
 		return deploymentNames, nil
 	}
 
+	flex, _, err := ds.flexAPI.ListFlexClusters(ctx, projectID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list flex clusters for project %s: %w", projectID, err)
+	}
+	for _, d := range flex.GetResults() {
+		name := pointer.GetOrDefault(d.Name, "")
+		if name != "" {
+			deploymentNames = append(deploymentNames, name)
+		}
+	}
+
 	serverless, _, err := ds.serverlessAPI.ListServerlessInstances(ctx, projectID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list serverless deployments for project %s: %w", projectID, err)
