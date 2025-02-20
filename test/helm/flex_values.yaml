@@ -1,0 +1,6 @@
+deployments:
+  - flexSpec:
+     name: flex-instance
+     providerSettings:
+       backingProviderName: AWS
+       regionName: US_EAST_1
