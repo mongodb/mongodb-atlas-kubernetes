@@ -16,7 +16,7 @@ set -euo pipefail
 ###
 
 # Constants
-registry=artifactory.corp.mongodb.com/release-tools-container-registry-local
+registry=artifactory.corp.mongodb.com/release-tools-container-registry-public-local
 silkbomb_img="${registry}/silkbomb:2.0"
 docker_platform="linux/amd64"
 
@@ -27,8 +27,6 @@ target_dir=$2
 [ -z "${target_dir}" ] && echo "Missing target directory parameter #2" && exit 1
 
 # Environment inputs
-artifactory_usr="${ARTIFACTORY_USERNAME}"
-artifactory_pwd="${ARTIFACTORY_PASSWORD}"
 kondukto_token="${KONDUKTO_TOKEN}"
 kondukto_repo="${KONDUKTO_REPO}"
 kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX}"
@@ -39,9 +37,6 @@ kondukto_branch="${kondukto_branch_prefix}-linux-${arch}"
 target="${target_dir}/linux-${arch}.sbom.json"
 
 echo "Computed Kondukto branch: ${kondukto_branch}"
-
-# Login to docker registry
-echo "${artifactory_pwd}" |docker login "${registry}" -u "${artifactory_usr}" --password-stdin
 
 # Download
 mkdir -p "${target_dir}"

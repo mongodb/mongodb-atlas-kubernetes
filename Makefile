@@ -131,7 +131,8 @@ LOCAL_IMAGE=mongodb-atlas-kubernetes-operator:compiled
 CONTAINER_SPEC=.spec.template.spec.containers[0]
 
 KONDUKTO_REPO="mongodb/mongodb-atlas-kubernetes"
-KONDUKTO_BRANCH_PREFIX="$(git rev-parse --abbrev-ref HEAD)"
+# branch prefix 'main' is always used currently
+KONDUKTO_BRANCH_PREFIX=$(shell git rev-parse --abbrev-ref HEAD)
 
 HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
@@ -557,14 +558,12 @@ test-all-in-one: prepare-all-in-one install-credentials ## Test the deploy/all-i
 
 .PHONY: upload-sbom-to-kondukto
 upload-sbom-to-kondukto: ## Upload a given SBOM (lite) file to Kondukto
-	@ARTIFACTORY_USERNAME=$(ARTIFACTORY_USERNAME) ARTIFACTORY_PASSWORD=$(ARTIFACTORY_PASSWORD) \
-	KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
+	@KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
 	./scripts/upload-to-kondukto.sh $(SBOM_JSON_FILE)
 
 .PHONY: augment-sbom
 augment-sbom: ## augment the latest SBOM for a given architecture on a given directory
-	@ARTIFACTORY_USERNAME=$(ARTIFACTORY_USERNAME) ARTIFACTORY_PASSWORD=$(ARTIFACTORY_PASSWORD) \
-	KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
+	@KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
 	./scripts/augment-sbom.sh $(TARGET_ARCH) tmp
 
 .PHONY: store-augmented-sboms
