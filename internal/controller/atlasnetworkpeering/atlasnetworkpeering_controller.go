@@ -120,40 +120,23 @@ func (r *AtlasNetworkPeeringReconciler) SetupWithManager(mgr ctrl.Manager, skipN
 			handler.EnqueueRequestsFromMapFunc(r.networkPeeringForCredentialMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
+		Watches(
+			&akov2.AtlasNetworkContainer{},
+			handler.EnqueueRequestsFromMapFunc(r.networkPeeringForContainerByIDMapFunc()),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 
 func (r *AtlasNetworkPeeringReconciler) networkPeeringForProjectMapFunc() handler.MapFunc {
-	return func(ctx context.Context, obj client.Object) []reconcile.Request {
-		atlasProject, ok := obj.(*akov2.AtlasProject)
-		if !ok {
-			r.Log.Warnf("watching Project but got %T", obj)
-
-			return nil
-		}
-
-		npList := &akov2.AtlasNetworkPeeringList{}
-		listOpts := &client.ListOptions{
-			FieldSelector: fields.OneTermEqualSelector(
-				indexer.AtlasNetworkPeeringByProjectIndex,
-				client.ObjectKeyFromObject(atlasProject).String(),
-			),
-		}
-		err := r.Client.List(ctx, npList, listOpts)
-		if err != nil {
-			r.Log.Errorf("failed to list AtlasPrivateEndpoint: %s", err)
-
-			return []reconcile.Request{}
-		}
-
-		requests := make([]reconcile.Request, 0, len(npList.Items))
-		for _, item := range npList.Items {
-			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{Name: item.Name, Namespace: item.Namespace}})
-		}
-
-		return requests
-	}
+	return indexer.ProjectsIndexMapperFunc(
+		indexer.AtlasNetworkPeeringByProjectIndex,
+		func() *akov2.AtlasNetworkPeeringList { return &akov2.AtlasNetworkPeeringList{} },
+		indexer.NetworkPeeringRequests,
+		r.Client,
+		r.Log,
+	)
 }
 
 func (r *AtlasNetworkPeeringReconciler) networkPeeringForCredentialMapFunc() handler.MapFunc {
@@ -164,4 +147,37 @@ func (r *AtlasNetworkPeeringReconciler) networkPeeringForCredentialMapFunc() han
 		r.Client,
 		r.Log,
 	)
+}
+
+func (r *AtlasNetworkPeeringReconciler) networkPeeringForContainerByIDMapFunc() handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		container, ok := obj.(*akov2.AtlasNetworkContainer)
+		if !ok {
+			r.Log.Warnf("watching AtlasNetworkContainer but got %T", obj)
+			return nil
+		}
+		indexerName := indexer.AtlasNetworkPeeringByContainerIndex
+		listOpts := &client.ListOptions{
+			FieldSelector: fields.OneTermEqualSelector(
+				indexer.AtlasNetworkPeeringByContainerIndex,
+				client.ObjectKeyFromObject(container).String(),
+			),
+		}
+		list := &akov2.AtlasNetworkPeeringList{}
+		err := r.Client.List(ctx, list, listOpts)
+		if err != nil {
+			r.Log.Errorf("failed to list from indexer %s: %v", indexerName, err)
+			return nil
+		}
+		requests := make([]reconcile.Request, 0, len(list.Items))
+		for _, peering := range list.Items {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      peering.Name,
+					Namespace: peering.Namespace,
+				},
+			})
+		}
+		return requests
+	}
 }
