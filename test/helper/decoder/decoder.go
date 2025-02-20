@@ -2,6 +2,7 @@ package decoder
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"testing"
 
@@ -29,7 +30,7 @@ func DecodeAll(t *testing.T, from io.Reader) []runtime.Object {
 	var result []runtime.Object
 	for {
 		buf, err := reader.Read()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)

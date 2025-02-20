@@ -18,6 +18,10 @@ func RunCommand(t *testing.T, name string, args ...string) io.Reader {
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = &result
 	cmd.Stderr = &result
-	require.NoError(t, cmd.Run())
+	err := cmd.Run()
+	if err != nil {
+		t.Log(result.String())
+	}
+	require.NoError(t, err)
 	return &result
 }
