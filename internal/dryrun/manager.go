@@ -60,15 +60,22 @@ type Manager struct {
 	logger       *zap.Logger
 	instanceUID  string
 	eventsClient corev1client.EventsGetter
+	namespaces   []string
 }
 
-func NewManager(c cluster.Cluster, eventsClient corev1client.EventsGetter, logger *zap.Logger) (*Manager, error) {
+func NewManager(c cluster.Cluster, eventsClient corev1client.EventsGetter, logger *zap.Logger, namespaces []string) (*Manager, error) {
 	mgr := &Manager{
 		Cluster:      c,
 		logger:       logger.Named("dry-run-manager"),
 		instanceUID:  uuid.New().String(),
 		eventsClient: eventsClient,
+		namespaces:   []string{metav1.NamespaceAll},
 	}
+
+	if len(namespaces) > 0 {
+		mgr.namespaces = namespaces
+	}
+
 	return mgr, nil
 }
 
@@ -154,24 +161,26 @@ func (m *Manager) dryRunReconcilers(ctx context.Context) error {
 		list := &unstructured.UnstructuredList{}
 		list.SetGroupVersionKind(schema.GroupVersionKind{Group: gvk.Group, Version: gvk.Version, Kind: gvk.Kind + "List"})
 
-		if err := m.Cluster.GetClient().List(ctx, list); err != nil {
-			return fmt.Errorf("unable to list resources: %w", err)
-		}
-
-		for _, item := range list.Items {
-			req := reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)}
-			if err := m.Cluster.GetScheme().Convert(&item, resource, nil); err != nil {
-				return fmt.Errorf("unable to convert item %T: %w", item, err)
+		for _, namespace := range m.namespaces {
+			if err := m.Cluster.GetClient().List(ctx, list, client.InNamespace(namespace)); err != nil {
+				return fmt.Errorf("unable to list resources: %w", err)
 			}
 
-			_, err := reconciler.Reconcile(ctx, req)
-			if err != nil {
-				if err := m.reportError(ctx, resource, err); err != nil {
+			for _, item := range list.Items {
+				req := reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)}
+				if err := m.Cluster.GetScheme().Convert(&item, resource, nil); err != nil {
+					return fmt.Errorf("unable to convert item %T: %w", item, err)
+				}
+
+				_, err := reconciler.Reconcile(ctx, req)
+				if err != nil {
+					if err := m.reportError(ctx, resource, err); err != nil {
+						return err
+					}
+				}
+				if err := m.eventf(ctx, resource, corev1.EventTypeNormal, DryRunReason, "done"); err != nil {
 					return err
 				}
-			}
-			if err := m.eventf(ctx, resource, corev1.EventTypeNormal, DryRunReason, "done"); err != nil {
-				return err
 			}
 		}
 	}
