@@ -226,7 +226,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 			return nil, fmt.Errorf("failed to initialize event client: %w", err)
 		}
 
-		mgr, err := dryrun.NewManager(c, corev1Client, b.logger)
+		mgr, err := dryrun.NewManager(c, corev1Client, b.logger, b.namespaces)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create dry-run manager: %w", err)
 		}

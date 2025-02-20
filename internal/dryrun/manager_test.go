@@ -8,20 +8,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	client_go_testing "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	crFake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -113,7 +114,7 @@ func TestManagerStart(t *testing.T) {
 				waitForCacheSyncResult: tc.waitForCacheSyncResult,
 			}
 			eventsGetter := fake.NewClientset().CoreV1()
-			m, err := NewManager(&mckCluster, eventsGetter, zaptest.NewLogger(t))
+			m, err := NewManager(&mckCluster, eventsGetter, zaptest.NewLogger(t), nil)
 			require.NoError(t, err)
 
 			gotErr := ""
@@ -225,7 +226,7 @@ func TestDryRunReportError(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			eventsGetter := fake.NewClientset().CoreV1()
-			m, err := NewManager(&mockCluster{}, eventsGetter, zaptest.NewLogger(t))
+			m, err := NewManager(&mockCluster{}, eventsGetter, zaptest.NewLogger(t), nil)
 			require.NoError(t, err)
 			m.reportError(context.Background(), obj, tc.err)
 
@@ -246,8 +247,8 @@ func TestDryRunReportError(t *testing.T) {
 
 type mockReconciler struct {
 	reconcile.Reconciler
+	Resource client.Object
 	ErrFail  error
-	Resource akov2.AtlasCustomResource
 }
 
 func (m *mockReconciler) Reconcile(_ context.Context, _ ctrl.Request) (ctrl.Result, error) {
@@ -255,17 +256,16 @@ func (m *mockReconciler) Reconcile(_ context.Context, _ ctrl.Request) (ctrl.Resu
 }
 
 func (m *mockReconciler) For() (client.Object, builder.Predicates) {
-	return m.Resource.(client.Object), builder.Predicates{}
+	return m.Resource, builder.Predicates{}
 }
 
 func TestManager_dryRunReconcilers(t *testing.T) {
 	tests := []struct {
 		name        string
 		reconcilers []reconciler
-		logger      *zap.Logger
-		instanceUID string
-		ctx         context.Context
-		wantErr     bool
+		objects     []client.Object
+		wantEvents  []*corev1.Event
+		namespaces  []string
 	}{
 		{
 			name: "Should run dry run without errors for AtlasProject resource",
@@ -275,56 +275,150 @@ func TestManager_dryRunReconcilers(t *testing.T) {
 					ErrFail:  nil,
 				},
 			},
-			wantErr: false,
-			ctx:     context.Background(),
-			logger:  zap.L(),
+			objects: []client.Object{
+				&akov2.AtlasProject{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "AtlasProject",
+						APIVersion: "atlas.mongodb.com/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test",
+					},
+					Spec:   akov2.AtlasProjectSpec{},
+					Status: status.AtlasProjectStatus{},
+				},
+			},
+			wantEvents: []*corev1.Event{
+				{
+					InvolvedObject: corev1.ObjectReference{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com/v1", Namespace: "test", Name: "test"},
+					Message:        "done",
+				},
+			},
 		},
 		{
-			name: "Should not fail when a reconciler fails",
+			name: "Should emit an error when a reconciler fails",
 			reconcilers: []reconciler{
 				&mockReconciler{
 					Resource: &akov2.AtlasProject{},
 					ErrFail:  fmt.Errorf("failed to reconcile"),
 				},
 			},
-			wantErr: false,
-			ctx:     context.Background(),
-			logger:  zap.L(),
+			objects: []client.Object{
+				&akov2.AtlasProject{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "AtlasProject",
+						APIVersion: "atlas.mongodb.com/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test",
+					},
+					Spec:   akov2.AtlasProjectSpec{},
+					Status: status.AtlasProjectStatus{},
+				},
+			},
+			wantEvents: []*corev1.Event{
+				{
+					InvolvedObject: corev1.ObjectReference{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com/v1", Namespace: "test", Name: "test"},
+					Message:        "failed to reconcile",
+				},
+				{
+					InvolvedObject: corev1.ObjectReference{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com/v1", Namespace: "test", Name: "test"},
+					Message:        "done",
+				},
+			},
+		},
+		{
+			name: "Should ignore objects from a different namespace",
+			reconcilers: []reconciler{
+				&mockReconciler{
+					Resource: &akov2.AtlasProject{},
+				},
+			},
+			objects: []client.Object{
+				&akov2.AtlasProject{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "AtlasProject",
+						APIVersion: "atlas.mongodb.com/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test",
+					},
+					Spec:   akov2.AtlasProjectSpec{},
+					Status: status.AtlasProjectStatus{},
+				},
+				&akov2.AtlasProject{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "AtlasProject",
+						APIVersion: "atlas.mongodb.com/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test2",
+						Namespace: "ignored",
+					},
+					Spec:   akov2.AtlasProjectSpec{},
+					Status: status.AtlasProjectStatus{},
+				},
+			},
+			namespaces: []string{"test"},
+			wantEvents: []*corev1.Event{
+				{
+					InvolvedObject: corev1.ObjectReference{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com/v1", Namespace: "test", Name: "test"},
+					Message:        "done",
+				},
+			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			eventsGetter := fake.NewClientset().CoreV1()
 			schm := scheme.Scheme
 			require.NoError(t, akov2.AddToScheme(schm))
 
 			clstr := &mockCluster{
 				startErr:               nil,
 				waitForCacheSyncResult: true,
-				client: crFake.NewClientBuilder().WithScheme(schm).WithObjects(
-					&akov2.AtlasProject{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       "AtlasProject",
-							APIVersion: "atlas.mongodb.com/v1",
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test",
-							Namespace: "test",
-						},
-						Spec:   akov2.AtlasProjectSpec{},
-						Status: status.AtlasProjectStatus{},
-					}).Build(),
+				client:                 client_fake.NewClientBuilder().WithScheme(schm).WithObjects(tt.objects...).Build(),
 			}
-			m := &Manager{
-				Cluster:      clstr,
-				reconcilers:  tt.reconcilers,
-				logger:       tt.logger,
-				instanceUID:  tt.instanceUID,
-				eventsClient: eventsGetter,
+
+			eventsClient := fake.NewClientset()
+			logger := zaptest.NewLogger(t)
+			m, err := NewManager(clstr, eventsClient.CoreV1(), logger, tt.namespaces)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if err := m.dryRunReconcilers(tt.ctx); (err != nil) != tt.wantErr {
-				t.Errorf("dryRunReconcilers() error = %v, wantErr %v", err, tt.wantErr)
+
+			for _, r := range tt.reconcilers {
+				m.SetupReconciler(r)
 			}
+
+			if err := m.dryRunReconcilers(context.Background()); err != nil {
+				t.Error(err)
+				return
+			}
+
+			gotEvents := []*corev1.Event{}
+			for _, action := range eventsClient.Actions() {
+				createAction, ok := action.(client_go_testing.CreateAction)
+				if !ok {
+					t.Errorf("Unexpected action: %v", action)
+					continue
+				}
+				event, ok := createAction.GetObject().(*corev1.Event)
+				if !ok {
+					t.Errorf("Unexpected event: %v", event)
+					continue
+				}
+				prunedEvent := &corev1.Event{
+					InvolvedObject: event.InvolvedObject,
+					Message:        event.Message,
+				}
+				prunedEvent.InvolvedObject.ResourceVersion = ""
+				gotEvents = append(gotEvents, prunedEvent)
+			}
+			require.Equal(t, tt.wantEvents, gotEvents)
 		})
 	}
 }
