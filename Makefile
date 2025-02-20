@@ -131,7 +131,7 @@ LOCAL_IMAGE=mongodb-atlas-kubernetes-operator:compiled
 CONTAINER_SPEC=.spec.template.spec.containers[0]
 
 KONDUKTO_REPO="mongodb/mongodb-atlas-kubernetes"
-KONDUKTO_BRANCH_PREFIX="atlas-kubernetes-operator"
+KONDUKTO_BRANCH_PREFIX="$(git rev-parse --abbrev-ref HEAD)"
 
 HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
