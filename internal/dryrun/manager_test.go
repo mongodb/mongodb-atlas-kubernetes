@@ -330,6 +330,44 @@ func TestManager_dryRunReconcilers(t *testing.T) {
 			},
 		},
 		{
+			name: "Should be able to dry-run nested struct fields with unexported fields",
+			reconcilers: []reconciler{
+				&mockReconciler{
+					Resource: &akov2.AtlasProject{},
+					ErrFail:  fmt.Errorf("failed to reconcile"),
+				},
+			},
+			objects: []client.Object{
+				&akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test",
+					},
+					Spec: akov2.AtlasProjectSpec{
+						AlertConfigurations: []akov2.AlertConfiguration{
+							{
+								Notifications: []akov2.Notification{
+									{
+										ChannelName: "foo",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantEvents: []*corev1.Event{
+				{
+					InvolvedObject: corev1.ObjectReference{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com/v1", Namespace: "test", Name: "test"},
+					Message:        "failed to reconcile",
+				},
+				{
+					InvolvedObject: corev1.ObjectReference{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com/v1", Namespace: "test", Name: "test"},
+					Message:        "done",
+				},
+			},
+		},
+		{
 			name: "Should ignore objects from a different namespace",
 			reconcilers: []reconciler{
 				&mockReconciler{

@@ -168,17 +168,13 @@ func (m *Manager) dryRunReconcilers(ctx context.Context) error {
 
 			for _, item := range list.Items {
 				req := reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)}
-				if err := m.Cluster.GetScheme().Convert(&item, resource, nil); err != nil {
-					return fmt.Errorf("unable to convert item %T: %w", item, err)
-				}
-
 				_, err := reconciler.Reconcile(ctx, req)
 				if err != nil {
-					if err := m.reportError(ctx, resource, err); err != nil {
+					if err := m.reportError(ctx, &item, err); err != nil {
 						return err
 					}
 				}
-				if err := m.eventf(ctx, resource, corev1.EventTypeNormal, DryRunReason, "done"); err != nil {
+				if err := m.eventf(ctx, &item, corev1.EventTypeNormal, DryRunReason, "done"); err != nil {
 					return err
 				}
 			}
