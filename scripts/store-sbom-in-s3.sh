@@ -29,7 +29,7 @@ arch=$2
 [ -z "${arch}" ] && echo "Missing arch parameter #2" && exit 1
 
 # Environment inputs
-kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX}"
+kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX:?KONDUKTO_BRANCH_PREFIX must be set}"
 
 # Computed values
 sbom_lite_json="docs/releases/v${version}/linux_${arch}.sbom.json"

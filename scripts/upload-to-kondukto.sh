@@ -24,9 +24,9 @@ sbom_lite_json=$1
 [ -z "${sbom_lite_json}" ] && echo "Missing SBOM lite JSON path parameter" && exit 1
 
 # Environment inputs
-kondukto_token="${KONDUKTO_TOKEN}"
-kondukto_repo="${KONDUKTO_REPO}"
-kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX}"
+kondukto_token="${KONDUKTO_TOKEN:?KONDUKTO_TOKEN must be set}"
+kondukto_repo="${KONDUKTO_REPO:?KONDUKTO_REPO must be set}"
+kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX:?KONDUKTO_BRANCH_PREFIX must be set}"
 
 # Computed values
 arch=$(jq -r < "${sbom_lite_json}" '.components[0].properties[] | select( .name == "syft:metadata:architecture" ) | .value')
