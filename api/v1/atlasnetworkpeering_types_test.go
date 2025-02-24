@@ -14,6 +14,7 @@ import (
 func TestPeeringCELChecks(t *testing.T) {
 	for _, tc := range []struct {
 		title          string
+		old            *AtlasNetworkPeering
 		obj            *AtlasNetworkPeering
 		expectedErrors []string
 	}{
@@ -59,6 +60,113 @@ func TestPeeringCELChecks(t *testing.T) {
 			},
 			expectedErrors: []string{"spec: Invalid value: \"object\": must either have a container Atlas id or Kubernetes name, but not both (or neither)"},
 		},
+
+		{
+			title: "ID set works",
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+		},
+
+		{
+			title: "ID added in fails",
+			old: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			expectedErrors: []string{"spec: Invalid value: \"object\": no such key: id evaluating rule: id is immutable"},
+		},
+
+		{
+			title: "ID remove fails",
+			old: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+				},
+			},
+			expectedErrors: []string{"spec: Invalid value: \"object\": no such key: id evaluating rule: id is immutable"},
+		},
+
+		{
+			title: "ID changed fails",
+			old: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "another-peering-id",
+					},
+				},
+			},
+			expectedErrors: []string{"spec: Invalid value: \"object\": id is immutable"},
+		},
+
+		{
+			title: "ID unchanged works",
+			old: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// inject a project to avoid other CEL validations being hit
@@ -66,10 +174,18 @@ func TestPeeringCELChecks(t *testing.T) {
 			unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.obj)
 			require.NoError(t, err)
 
+			unstructuredOld := map[string]interface{}{}
+			if tc.old != nil {
+				var err error
+				tc.old.Spec.ProjectRef = &common.ResourceRefNamespaced{Name: "some-project"}
+				unstructuredOld, err = runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.old)
+				require.NoError(t, err)
+			}
+
 			crdPath := "../../config/crd/bases/atlas.mongodb.com_atlasnetworkpeerings.yaml"
 			validator, err := cel.VersionValidatorFromFile(t, crdPath, "v1")
 			assert.NoError(t, err)
-			errs := validator(unstructuredObject, nil)
+			errs := validator(unstructuredObject, unstructuredOld)
 
 			require.Equal(t, tc.expectedErrors, cel.ErrorListAsStrings(errs))
 		})

@@ -158,6 +158,11 @@ spec:
                 - gcpProjectId
                 - networkName
                 type: object
+              id:
+                description: |-
+                  ID is the peering identifier for an already existent network peering to be managed by the operator.
+                  This field is immutable.
+                type: string
               projectRef:
                 description: |-
                   "projectRef" is a reference to the parent AtlasProject resource.
@@ -197,6 +202,8 @@ spec:
                 not both (or neither)
               rule: (has(self.containerRef.name) && !has(self.containerRef.id)) ||
                 (!has(self.containerRef.name) && has(self.containerRef.id))
+            - message: id is immutable
+              rule: (self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id))
           status:
             description: |-
               AtlasNetworkPeeringStatus is a status for the AtlasNetworkPeering Custom resource.

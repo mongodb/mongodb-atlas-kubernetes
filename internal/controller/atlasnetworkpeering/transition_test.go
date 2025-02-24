@@ -35,6 +35,7 @@ func TestApplyPeeringStatus(t *testing.T) {
 			title: "Sample AWS works",
 			peer: networkpeering.NetworkPeer{
 				AtlasNetworkPeeringConfig: v1.AtlasNetworkPeeringConfig{
+					ID:       "peer-id",
 					Provider: string(provider.ProviderAWS),
 					AWSConfiguration: &v1.AWSNetworkPeeringConfiguration{
 						AccepterRegionName:  "us-east-1",
@@ -43,7 +44,6 @@ func TestApplyPeeringStatus(t *testing.T) {
 						VpcID:               "vpc-id-app-fake",
 					},
 				},
-				ID:           "peer-id",
 				ContainerID:  "container-id",
 				Status:       "some status",
 				ErrorMessage: "some error",
@@ -80,6 +80,7 @@ func TestApplyPeeringStatus(t *testing.T) {
 			title: "Sample Azure works",
 			peer: networkpeering.NetworkPeer{
 				AtlasNetworkPeeringConfig: v1.AtlasNetworkPeeringConfig{
+					ID:       "peer-id",
 					Provider: string(provider.ProviderAzure),
 					AzureConfiguration: &v1.AzureNetworkPeeringConfiguration{
 						AzureDirectoryID:    "azure-app-dir-id",
@@ -88,7 +89,6 @@ func TestApplyPeeringStatus(t *testing.T) {
 						VNetName:            "some-net",
 					},
 				},
-				ID:           "peer-id",
 				ContainerID:  "container-id",
 				Status:       "some status",
 				ErrorMessage: "some error",
@@ -123,13 +123,13 @@ func TestApplyPeeringStatus(t *testing.T) {
 			title: "Sample GCP works",
 			peer: networkpeering.NetworkPeer{
 				AtlasNetworkPeeringConfig: v1.AtlasNetworkPeeringConfig{
+					ID:       "peer-id",
 					Provider: string(provider.ProviderGCP),
 					GCPConfiguration: &v1.GCPNetworkPeeringConfiguration{
 						GCPProjectID: "gcp-app-project",
 						NetworkName:  "gcp-app-network",
 					},
 				},
-				ID:           "peer-id",
 				ContainerID:  "container-id",
 				Status:       "some status",
 				ErrorMessage: "some error",

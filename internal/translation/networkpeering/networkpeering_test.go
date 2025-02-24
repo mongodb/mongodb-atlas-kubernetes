@@ -77,6 +77,7 @@ func TestNetworkPeeringCreate(t *testing.T) {
 			),
 			expectedPeer: &networkpeering.NetworkPeer{
 				AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+					ID:       testPeerID,
 					Provider: string(provider.ProviderAWS),
 					AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 						AccepterRegionName:  "US_EAST_1",
@@ -85,7 +86,6 @@ func TestNetworkPeeringCreate(t *testing.T) {
 						VpcID:               testVpcID,
 					},
 				},
-				ID:          testPeerID,
 				ContainerID: testContainerID,
 			},
 			expectedError: nil,
@@ -185,6 +185,7 @@ func TestNetworkPeeringGet(t *testing.T) {
 			),
 			expectedPeer: &networkpeering.NetworkPeer{
 				AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+					ID:       testPeerID,
 					Provider: string(provider.ProviderAzure),
 					AzureConfiguration: &akov2.AzureNetworkPeeringConfiguration{
 						AzureDirectoryID:    testAzureDirectoryID,
@@ -193,7 +194,6 @@ func TestNetworkPeeringGet(t *testing.T) {
 						VNetName:            testVnet,
 					},
 				},
-				ID:          testPeerID,
 				ContainerID: testContainerID,
 			},
 			expectedError: nil,
@@ -276,13 +276,13 @@ func TestNetworkPeeringUpdate(t *testing.T) {
 			),
 			expectedPeer: &networkpeering.NetworkPeer{
 				AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+					ID:       testPeerID,
 					Provider: string(provider.ProviderGCP),
 					GCPConfiguration: &akov2.GCPNetworkPeeringConfiguration{
 						GCPProjectID: testGCPProjectID,
 						NetworkName:  testNetworkName,
 					},
 				},
-				ID:          testPeerID,
 				ContainerID: testContainerID,
 			},
 			expectedError: nil,

@@ -21,7 +21,6 @@ var (
 
 type NetworkPeer struct {
 	akov2.AtlasNetworkPeeringConfig
-	ID           string
 	ContainerID  string
 	Status       string
 	ErrorMessage string
@@ -96,10 +95,11 @@ func (np *NetworkPeer) UpdateStatus(atlas *NetworkPeer) {
 
 // NewNetworkPeer creates a network peering from the given config
 func NewNetworkPeer(id string, cfg *akov2.AtlasNetworkPeeringConfig) *NetworkPeer {
-	return &NetworkPeer{
+	peer := &NetworkPeer{
 		AtlasNetworkPeeringConfig: *cfg,
-		ID:                        id,
 	}
+	peer.ID = id
+	return peer
 }
 
 func toAtlas(peer *NetworkPeer) (*admin.BaseNetworkPeeringConnectionSettings, error) {
@@ -178,9 +178,9 @@ func fromAtlasConnectionNoStatus(conn *admin.BaseNetworkPeeringConnectionSetting
 	switch provider.ProviderName(conn.GetProviderName()) {
 	case provider.ProviderAWS:
 		return &NetworkPeer{
-			ID:          conn.GetId(),
 			ContainerID: conn.GetContainerId(),
 			AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+				ID:       conn.GetId(),
 				Provider: conn.GetProviderName(),
 				AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 					AccepterRegionName:  conn.GetAccepterRegionName(),
@@ -192,9 +192,9 @@ func fromAtlasConnectionNoStatus(conn *admin.BaseNetworkPeeringConnectionSetting
 		}, nil
 	case provider.ProviderGCP:
 		return &NetworkPeer{
-			ID:          conn.GetId(),
 			ContainerID: conn.GetContainerId(),
 			AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+				ID:       conn.GetId(),
 				Provider: conn.GetProviderName(),
 				GCPConfiguration: &akov2.GCPNetworkPeeringConfiguration{
 					GCPProjectID: conn.GetGcpProjectId(),
@@ -204,9 +204,9 @@ func fromAtlasConnectionNoStatus(conn *admin.BaseNetworkPeeringConnectionSetting
 		}, nil
 	case provider.ProviderAzure:
 		return &NetworkPeer{
-			ID:          conn.GetId(),
 			ContainerID: conn.GetContainerId(),
 			AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+				ID:       conn.GetId(),
 				Provider: conn.GetProviderName(),
 				AzureConfiguration: &akov2.AzureNetworkPeeringConfiguration{
 					AzureDirectoryID:    conn.GetAzureDirectoryId(),
@@ -239,7 +239,7 @@ func fromAtlasConnectionList(list []admin.BaseNetworkPeeringConnectionSettings) 
 func CompareConfigs(a, b *NetworkPeer) bool {
 	aCopy := a.DeepCopy()
 	bCopy := b.DeepCopy()
-	// accpter region cannot be updated and it might be empty when it matches the container region
+	// accepter region cannot be updated and it might be empty when it matches the container region
 	// so we clear it here to avoid finding bogus differences
 	if aCopy.AWSConfiguration != nil {
 		aCopy.AWSConfiguration.AccepterRegionName = ""

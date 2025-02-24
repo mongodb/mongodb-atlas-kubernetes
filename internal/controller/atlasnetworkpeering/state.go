@@ -2,7 +2,6 @@ package atlasnetworkpeering
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -79,9 +78,13 @@ func (r *AtlasNetworkPeeringReconciler) handle(workflowCtx *workflow.Context, re
 		return r.terminate(workflowCtx, req.networkPeering, workflow.NetworkPeeringMissingContainer, err)
 	}
 	var atlasPeer *networkpeering.NetworkPeer
-	if req.networkPeering.Status.ID != "" {
-		peer, err := req.service.Get(workflowCtx.Context, req.projectID, req.networkPeering.Status.ID)
-		if err != nil && !errors.Is(err, networkpeering.ErrNotFound) {
+	id := req.networkPeering.Spec.ID
+	if id == "" {
+		id = req.networkPeering.Status.ID
+	}
+	if id != "" {
+		peer, err := req.service.Get(workflowCtx.Context, req.projectID, id)
+		if err != nil {
 			return r.terminate(workflowCtx, req.networkPeering, workflow.Internal, err)
 		}
 		atlasPeer = peer

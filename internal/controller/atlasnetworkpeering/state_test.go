@@ -322,6 +322,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Create(mock.Anything, testProjectID, testContainerID, mock.Anything).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -330,7 +331,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "CREATING",
 						},
@@ -395,6 +395,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -403,7 +404,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
 						},
@@ -441,6 +441,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -449,7 +450,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "NOT YET AVAILABLE",
 						},
@@ -489,6 +489,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -497,7 +498,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:           testPeeringID,
 							ContainerID:  testContainerID,
 							Status:       "OOPs!",
 							ErrorMessage: ErrTestFail.Error(),
@@ -539,6 +539,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -547,7 +548,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
 						},
@@ -556,6 +556,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Update(mock.Anything, testProjectID, testPeeringID, testContainerID, mock.Anything).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -564,7 +565,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "UPDATING",
 						},
@@ -604,6 +604,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -612,7 +613,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
 						},
@@ -656,6 +656,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -664,7 +665,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
 						},
@@ -674,6 +674,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -682,7 +683,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "DELETING",
 						},
@@ -725,6 +725,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -733,7 +734,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
 						},
@@ -776,6 +776,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -784,7 +785,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
 						},
@@ -828,6 +828,7 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
 							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
+								ID:       testPeeringID,
 								Provider: "AWS",
 								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
 									AccepterRegionName:  "us-east-1",
@@ -836,7 +837,6 @@ func TestHandle(t *testing.T) {
 									VpcID:               "vpc-id-test",
 								},
 							},
-							ID:          testPeeringID,
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
 						},
