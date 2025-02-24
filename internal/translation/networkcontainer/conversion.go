@@ -101,12 +101,12 @@ func fromAtlasNoStatus(container *admin.CloudProviderContainer) *NetworkContaine
 }
 
 func fromAtlasAWSStatus(container *admin.CloudProviderContainer) *AWSContainerStatus {
-	if container.VpcId == nil {
-		return nil
+	if vpcID, ok := container.GetVpcIdOk(); ok {
+		return &AWSContainerStatus{
+			VpcID: *vpcID,
+		}
 	}
-	return &AWSContainerStatus{
-		VpcID: container.GetVpcId(),
-	}
+	return nil
 }
 
 func fromAtlasAzureStatus(container *admin.CloudProviderContainer) *AzureContainerStatus {
