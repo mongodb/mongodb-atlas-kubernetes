@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -29,6 +30,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	atlas_controllers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
@@ -142,8 +144,11 @@ func TestRenconcile(t *testing.T) {
 					ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 						return tt.atlasClientMocker(), "", nil
 					},
-					SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-						return tt.atlasSDKMocker(), "", nil
+					SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, string, error) {
+						return &atlas_controllers.ClientSet{
+							SdkClient20231115008: tt.atlasSDKMocker(),
+							SdkClient20241113001: &adminv20241113001.APIClient{},
+						}, "", nil
 					},
 				},
 			}

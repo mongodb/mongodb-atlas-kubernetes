@@ -157,13 +157,13 @@ func TestReconcile(t *testing.T) {
 			)
 		atlasProvider := atlasmock.TestProvider{
 			SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-				return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{
-					FederatedAuthenticationApi: fedAuthAPI,
-				}}, orgID, nil
-			},
-			SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-				return &admin.APIClient{
-					ProjectsApi: groupAPI,
+				return &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						ProjectsApi: groupAPI,
+					},
+					SdkClient20241113001: &adminv20241113001.APIClient{
+						FederatedAuthenticationApi: fedAuthAPI,
+					},
 				}, orgID, nil
 			},
 			IsCloudGovFunc: func() bool {

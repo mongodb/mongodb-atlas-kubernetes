@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -250,7 +251,7 @@ func TestEnsureCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return nil, "", errors.New("failed to create sdk client")
 				},
 			},
@@ -327,7 +328,7 @@ func TestEnsureCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
 					projectAPI.EXPECT().GetProject(mock.Anything, projectID).Return(admin.GetProjectApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
@@ -348,7 +349,10 @@ func TestEnsureCustomResource(t *testing.T) {
 							nil,
 						)
 
-					return &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI}, "", nil
+					return &atlas.ClientSet{
+						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI},
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
 				},
 			},
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},

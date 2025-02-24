@@ -58,14 +58,14 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
-		atlasClient, orgID, err := r.AtlasProvider.SdkClient(teamCtx.Context, connectionSecretKey, log)
+		atlasClient, orgID, err := r.AtlasProvider.SdkClientSet(teamCtx.Context, connectionSecretKey, log)
 		if err != nil {
 			result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 			setCondition(teamCtx, api.ReadyType, result)
 			return result.ReconcileResult(), nil
 		}
 		teamCtx.OrgID = orgID
-		teamCtx.SdkClient = atlasClient
+		teamCtx.SdkClient = atlasClient.SdkClient20231115008
 
 		teamID, result := r.ensureTeamState(teamCtx, teamsService, team)
 		if !result.IsOk() {

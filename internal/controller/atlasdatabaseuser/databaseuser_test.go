@@ -171,7 +171,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 				IsCloudGovFunc: func() bool {
 					return false
 				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
 					projectAPI.EXPECT().GetProject(context.Background(), "project-id").
 						Return(admin.GetProjectApiRequest{ApiService: projectAPI})
@@ -190,10 +190,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 
 					clusterAPI := mockadmin.NewClustersApi(t)
 
-					return &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI}, "", nil
-				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
+					return &atlas.ClientSet{
+						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -2235,7 +2235,7 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 		IsCloudGovFunc: func() bool {
 			return false
 		},
-		SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 			userAPI := mockadmin.NewDatabaseUsersApi(t)
 			userAPI.EXPECT().GetDatabaseUser(context.Background(), "my-project", "admin", "user1").
 				Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
@@ -2254,14 +2254,14 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 			projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
 				Return(&admin.Group{Id: pointer.MakePtr("my-project")}, nil, nil)
 
-			return &admin.APIClient{
-				ClustersApi:      clusterAPI,
-				DatabaseUsersApi: userAPI,
-				ProjectsApi:      projectAPI,
+			return &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ProjectsApi:      projectAPI,
+					ClustersApi:      clusterAPI,
+					DatabaseUsersApi: userAPI,
+				},
+				SdkClient20241113001: &adminv20241113001.APIClient{},
 			}, "", nil
-		},
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-			return &atlas.ClientSet{SdkClient20241113001: &adminv20241113001.APIClient{}}, "", nil
 		},
 	}
 }

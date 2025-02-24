@@ -146,18 +146,18 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
+	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	workflowCtx.SdkClient = atlasSdkClient
+	workflowCtx.SdkClient = atlasSdkClient.SdkClient20231115008
 	services := AtlasProjectServices{}
-	services.projectService = project.NewProjectAPIService(atlasSdkClient.ProjectsApi)
-	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.TeamsApi, atlasSdkClient.MongoDBCloudUsersApi)
-	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.MaintenanceWindowsApi)
-	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.EncryptionAtRestUsingCustomerKeyManagementApi)
+	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20231115008.ProjectsApi)
+	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.SdkClient20231115008.TeamsApi, atlasSdkClient.SdkClient20231115008.MongoDBCloudUsersApi)
+	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20231115008.MaintenanceWindowsApi)
+	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20231115008.EncryptionAtRestUsingCustomerKeyManagementApi)
 
 	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
 	if err != nil {

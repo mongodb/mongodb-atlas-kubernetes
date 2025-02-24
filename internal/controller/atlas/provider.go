@@ -32,7 +32,6 @@ const (
 
 type Provider interface {
 	Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
-	SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*adminv20231115008.APIClient, string, error)
 	SdkClientSet(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*ClientSet, string, error)
 	IsCloudGov() bool
 	IsResourceSupported(resource api.AtlasCustomResource) bool
@@ -123,16 +122,6 @@ func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.Objec
 	c, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(p.domain), mongodbatlas.SetUserAgent(operatorUserAgent()))
 
 	return c, secretData.OrgID, err
-}
-
-func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*adminv20231115008.APIClient, string, error) {
-	clientSet, orgID, err := p.SdkClientSet(ctx, secretRef, log)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// Special case: SdkClient only returns the v20231115008 client.
-	return clientSet.SdkClient20231115008, orgID, nil
 }
 
 func (p *ProductionProvider) SdkClientSet(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*ClientSet, string, error) {
