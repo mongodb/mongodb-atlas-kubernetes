@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/types"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -25,15 +25,18 @@ func TestNewDatafederationService(t *testing.T) {
 		{
 			name: "success",
 			provider: &atlasmocks.TestProvider{
-				SdkClientFunc: func(_ *client.ObjectKey, _ *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					return &admin.APIClient{}, "", nil
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					return &atlas.ClientSet{
+						SdkClient20231115008: &admin.APIClient{},
+						SdkClient20241113001: &adminv20241113001.APIClient{},
+					}, "", nil
 				},
 			},
 		},
 		{
 			name: "failure",
 			provider: &atlasmocks.TestProvider{
-				SdkClientFunc: func(_ *client.ObjectKey, _ *zap.SugaredLogger) (*admin.APIClient, string, error) {
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return nil, "", errors.New("fake error")
 				},
 			},

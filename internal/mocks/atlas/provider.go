@@ -3,7 +3,6 @@ package atlas
 import (
 	"context"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,7 +13,6 @@ import (
 
 type TestProvider struct {
 	ClientFunc       func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
-	SdkClientFunc    func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
 	SdkSetClientFunc func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error)
 	IsCloudGovFunc   func() bool
 	IsSupportedFunc  func() bool
@@ -22,10 +20,6 @@ type TestProvider struct {
 
 func (f *TestProvider) Client(_ context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 	return f.ClientFunc(secretRef, log)
-}
-
-func (f *TestProvider) SdkClient(_ context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-	return f.SdkClientFunc(secretRef, log)
 }
 
 func (f *TestProvider) IsCloudGov() bool {

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +47,7 @@ func TestReconcile(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
 					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "123").
 						Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ialAPI})
@@ -77,9 +78,12 @@ func TestReconcile(t *testing.T) {
 					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
 						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
 
-					return &admin.APIClient{
-						ProjectIPAccessListApi: ialAPI,
-						ProjectsApi:            projectAPI,
+					return &atlas.ClientSet{
+						SdkClient20231115008: &admin.APIClient{
+							ProjectIPAccessListApi: ialAPI,
+							ProjectsApi:            projectAPI,
+						},
+						SdkClient20241113001: &adminv20241113001.APIClient{},
 					}, "", nil
 				},
 			},

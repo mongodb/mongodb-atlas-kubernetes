@@ -24,6 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
@@ -345,7 +346,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				Scheme:        testScheme,
 				EventRecorder: record.NewFakeRecorder(10),
 				AtlasProvider: &atlasmocks.TestProvider{
-					SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+					SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 						if tt.sdkShouldError {
 							return nil, "", fmt.Errorf("failed to create sdk")
 						}
@@ -371,10 +372,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							pAPI.EXPECT().GetProjectExecute(admin.GetProjectApiRequest{ApiService: pAPI}).
 								Return(grp, nil, nil)
 						}
-						return &admin.APIClient{
+						return &atlas.ClientSet{SdkClient20231115008: &admin.APIClient{
 							CustomDatabaseRolesApi: cdrAPI,
 							ProjectsApi:            pAPI,
-						}, "", nil
+						}}, "", nil
 					},
 					IsCloudGovFunc: func() bool {
 						return false
