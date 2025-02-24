@@ -73,6 +73,7 @@ func (r *AtlasNetworkPeeringReconciler) handle(workflowCtx *workflow.Context, re
 	if err != nil {
 		return r.terminate(workflowCtx, req.networkPeering, workflow.Internal, err)
 	}
+	// The Network Container must exist before we can make a Peering Connection against it
 	if container == nil {
 		err := fmt.Errorf("container not found for reference %v", req.networkPeering.Spec.ContainerRef)
 		return r.terminate(workflowCtx, req.networkPeering, workflow.NetworkPeeringMissingContainer, err)
