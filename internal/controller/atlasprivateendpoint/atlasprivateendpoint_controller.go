@@ -102,15 +102,15 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	sdkClient, _, err := r.AtlasProvider.SdkClient(ctx, credentials, r.Log)
+	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx, credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	atlasProject, err := r.ResolveProject(ctx, sdkClient, akoPrivateEndpoint)
+	atlasProject, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20231115008, akoPrivateEndpoint)
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	privateEndpointService := privateendpoint.NewPrivateEndpointAPI(sdkClient.PrivateEndpointServicesApi)
+	privateEndpointService := privateendpoint.NewPrivateEndpointAPI(sdkClientSet.SdkClient20231115008.PrivateEndpointServicesApi)
 
 	return r.handlePrivateEndpointService(workflowCtx, privateEndpointService, atlasProject.ID, akoPrivateEndpoint)
 }

@@ -129,12 +129,12 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return r.fail(req, err), nil
 	}
-	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context, credentials, workflowCtx.Log)
+	atlasSdkClientSet, _, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, credentials, workflowCtx.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
 	}
-	service := customroles.NewCustomRoles(atlasSdkClient.CustomDatabaseRolesApi)
-	project, err := r.ResolveProject(ctx, atlasSdkClient, atlasCustomRole)
+	service := customroles.NewCustomRoles(atlasSdkClientSet.SdkClient20231115008.CustomDatabaseRolesApi)
+	project, err := r.ResolveProject(ctx, atlasSdkClientSet.SdkClient20231115008, atlasCustomRole)
 	if err != nil {
 		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
 	}
