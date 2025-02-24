@@ -1328,7 +1328,6 @@ func TestChangeDeploymentType(t *testing.T) {
 					return &mongodbatlas.Client{}, "org-id", nil
 				},
 				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-
 					serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
 					serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, "abc123", "cluster0").
 						Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
