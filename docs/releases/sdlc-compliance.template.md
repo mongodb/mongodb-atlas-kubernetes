@@ -14,7 +14,7 @@ Overview:
   - http://go/how-we-develop-software-doc
 
 - **Tool used to track third party vulnerabilities**
-  - [Silk](https://www.silk.security/)
+  - [Kondukto](https://arcticglow.kondukto.io/)
 
 - **Dependency Information**
   - See SBOMS Lite manifests (CycloneDX in JSON format) for `Intel` and `ARM` are to be found [here](.)
