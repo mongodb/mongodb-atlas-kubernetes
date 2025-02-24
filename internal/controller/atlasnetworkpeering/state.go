@@ -2,6 +2,7 @@ package atlasnetworkpeering
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -82,16 +83,15 @@ func (r *AtlasNetworkPeeringReconciler) handle(workflowCtx *workflow.Context, re
 	if id == "" {
 		id = req.networkPeering.Status.ID
 	}
+	deleted := req.networkPeering.DeletionTimestamp != nil
 	if id != "" {
 		peer, err := req.service.Get(workflowCtx.Context, req.projectID, id)
-		if err != nil {
+		if err != nil && !alreadyRemoved(deleted, err) {
 			return r.terminate(workflowCtx, req.networkPeering, workflow.Internal, err)
 		}
 		atlasPeer = peer
 	}
 	inAtlas := atlasPeer != nil
-	deleted := req.networkPeering.DeletionTimestamp != nil
-
 	switch {
 	case !deleted && !inAtlas:
 		return r.create(workflowCtx, req, container)
@@ -139,4 +139,8 @@ func getContainerIDFromKubernetes(ctx context.Context, k8sClient client.Client, 
 		id = k8sContainer.Status.ID
 	}
 	return id, nil
+}
+
+func alreadyRemoved(deleted bool, err error) bool {
+	return deleted && errors.Is(err, networkpeering.ErrNotFound)
 }
