@@ -16,7 +16,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.1
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
