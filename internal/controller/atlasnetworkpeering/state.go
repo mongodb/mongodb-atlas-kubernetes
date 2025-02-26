@@ -113,7 +113,7 @@ func (r *AtlasNetworkPeeringReconciler) getContainer(ctx context.Context, req *r
 			return nil, fmt.Errorf("failed to solve Network Container id from Kubernetes: %w", err)
 		}
 		if id == "" {
-			return nil, fmt.Errorf("container %s has no id, is it still to be created?",
+			return nil, fmt.Errorf("container %s has no id, waiting for it to be created",
 				req.networkPeering.Spec.ContainerRef.Name)
 		}
 	}
