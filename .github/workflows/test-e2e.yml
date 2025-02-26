@@ -20,9 +20,9 @@ jobs:
         name: Compute Test Matrix
         run: |
           # Note the use of external single quotes to allow for double quotes at inline YAML array
-          matrix='["v1.29.12-kind"]'
+          matrix='["v1.30.10-kind"]'
           if [ "${{ github.ref }}" == "refs/heads/main" ];then
-            matrix='["v1.29.12-kind", "v1.31.4-kind"]'
+            matrix='["v1.30.10-kind", "v1.32.2-kind"]'
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"

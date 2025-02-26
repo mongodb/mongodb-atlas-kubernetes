@@ -71,6 +71,8 @@ Note **Gov e2e tests** are never run on PRs.
 
 The [test-e2e.yml](../../.github/workflows/test-e2e.yml) workflow builds a test image and a bundle before running the tests. It also has to *compute* the version(s) of Kubernetes to test against. The Kubernetes version in PRs is set purposefully to the oldest kubernetes version. On scheduled nightly runs we test on both the latest and oldest supported versions.
 
+##### Kubernetes Version Matrix
+
 The version list selection is done by parameterising the kind image tag within the **strategy** **matrix** at the [test-e2e](../../.github/workflows/test-e2e.yml) workflow. Eg:
 
 ```yaml
@@ -101,6 +103,12 @@ The version list selection is done by parameterising the kind image tag within t
         k8s: ${{fromJson(needs.compute.outputs.test_matrix)}}
         ...
 ```
+
+Adjust the `matrix` variable in the above workflow to match the desired Kubernetes versions. It migh also be necessary to bump the `kind` version and the `kind-action` version in various workflows, see https://github.com/mongodb/mongodb-atlas-kubernetes/pull/2082 as an example.
+
+Additionally, adjust the `ENVTEST_K8S_VERSION` variable in the `Makefile` as well.
+
+Finally, adjust the minimum Kubernetes version ("1.27.1" in the above example) in the [Atlas Kubernetes CLI repository](https://github.com/mongodb/atlas-cli-plugin-kubernetes] plugin) as well. Here, a Kubernetes cluster is being created for e2e tests programmatically. Bump and adjust the Kubernetes version in its `go.mod` file: https://github.com/mongodb/atlas-cli-plugin-kubernetes/blob/d34c4b18930b0cd77dc6013d52669161edb224d5/go.mod#L32 for the kind version and https://github.com/mongodb/atlas-cli-plugin-kubernetes/blob/d5b2610dd50e312e315b63d1bfd0d7dde244b262/test/e2e/operator_helper_test.go#L91-L98 for the actual Kubernetes version.
 
 ### Test Variants
 
