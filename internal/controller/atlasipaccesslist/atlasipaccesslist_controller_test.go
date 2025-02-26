@@ -12,12 +12,12 @@ import (
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -47,7 +47,7 @@ func TestReconcile(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
 					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "123").
 						Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ialAPI})
@@ -124,9 +124,20 @@ func TestReconcile(t *testing.T) {
 			}
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
+			require.NoError(t, corev1.AddToScheme(testScheme))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(project, ipAccessList).
+				WithObjects(project, ipAccessList, &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte("orgId"),
+						"publicApiKey":  []byte("publicApiKey"),
+						"privateApiKey": []byte("privateApiKey"),
+					},
+				}).
 				WithStatusSubresource(ipAccessList).
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
