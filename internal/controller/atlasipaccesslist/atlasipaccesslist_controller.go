@@ -138,11 +138,13 @@ func NewAtlasIPAccessListReconciler(
 	deletionProtection bool,
 	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
 ) *AtlasIPAccessListReconciler {
 	return &AtlasIPAccessListReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: c.GetClient(),
-			Log:    logger.Named("controllers").Named("AtlasIPAccessList").Sugar(),
+			Client:          c.GetClient(),
+			Log:             logger.Named("controllers").Named("AtlasIPAccessList").Sugar(),
+			GlobalSecretRef: globalSecretRef,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasIPAccessList"),

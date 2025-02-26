@@ -6,11 +6,7 @@ import (
 	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
@@ -24,12 +20,8 @@ type DatafederationPrivateEndpoints struct {
 	api admin.DataFederationApi
 }
 
-func NewDatafederationPrivateEndpointService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*DatafederationPrivateEndpoints, error) {
-	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create versioned client: %w", err)
-	}
-	return &DatafederationPrivateEndpoints{client.DataFederationApi}, nil
+func NewDatafederationPrivateEndpoint(api admin.DataFederationApi) *DatafederationPrivateEndpoints {
+	return &DatafederationPrivateEndpoints{api: api}
 }
 
 func (d *DatafederationPrivateEndpoints) List(ctx context.Context, projectID string) ([]*DatafederationPrivateEndpointEntry, error) {

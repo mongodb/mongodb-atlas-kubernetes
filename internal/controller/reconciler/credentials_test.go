@@ -172,7 +172,7 @@ func TestResolveCredentials(t *testing.T) {
 				},
 			},
 			// we expect an ErrAtlasProjectProjectNotFound error
-			expectedError: ErrAtlasProjectProjectNotFound,
+			expectedError: ErrMissingKubeProject,
 		},
 		{
 			title: "local connection secret reference if external project reference is set",

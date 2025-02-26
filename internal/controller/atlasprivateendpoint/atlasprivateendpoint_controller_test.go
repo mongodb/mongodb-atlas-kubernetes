@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -118,6 +119,7 @@ func TestEnsureCustomResource(t *testing.T) {
 
 	testScheme := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(testScheme))
+	require.NoError(t, corev1.AddToScheme(testScheme))
 
 	tests := map[string]struct {
 		atlasPrivateEndpoint *akov2.AtlasPrivateEndpoint
@@ -251,7 +253,7 @@ func TestEnsureCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return nil, "", errors.New("failed to create sdk client")
 				},
 			},
@@ -294,7 +296,7 @@ func TestEnsureCustomResource(t *testing.T) {
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
-				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-project\" not found",
+				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-project\" not found",
 				"Status update",
 			},
 		},
@@ -328,7 +330,7 @@ func TestEnsureCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
 					projectAPI.EXPECT().GetProject(mock.Anything, projectID).Return(admin.GetProjectApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
@@ -367,7 +369,17 @@ func TestEnsureCustomResource(t *testing.T) {
 			core, logs := observer.New(zap.DebugLevel)
 			fakeClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(tt.atlasPrivateEndpoint).
+				WithObjects(tt.atlasPrivateEndpoint, &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte("orgId"),
+						"publicApiKey":  []byte("publicApiKey"),
+						"privateApiKey": []byte("privateApiKey"),
+					},
+				}).
 				WithStatusSubresource(tt.atlasPrivateEndpoint).
 				Build()
 			r := &AtlasPrivateEndpointReconciler{

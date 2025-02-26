@@ -8,13 +8,10 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 )
 
 type AtlasDeploymentsService interface {
@@ -52,18 +49,6 @@ type ProductionAtlasDeployments struct {
 	flexAPI          adminv20241113001.FlexClustersApi
 	globalClusterAPI admin.GlobalClustersApi
 	isGov            bool
-}
-
-func NewAtlasDeploymentsService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger, isGov bool) (*ProductionAtlasDeployments, error) {
-	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create versioned client: %w", err)
-	}
-	clientSet, _, err := provider.SdkClientSet(ctx, secretRef, log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate Versioned Atlas client: %w", err)
-	}
-	return NewAtlasDeployments(client.ClustersApi, client.ServerlessInstancesApi, client.GlobalClustersApi, clientSet.SdkClient20241113001.FlexClustersApi, isGov), nil
 }
 
 func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, globalClusterAPI admin.GlobalClustersApi, flexAPI adminv20241113001.FlexClustersApi, isGov bool) *ProductionAtlasDeployments {

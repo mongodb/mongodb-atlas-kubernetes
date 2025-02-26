@@ -50,11 +50,13 @@ func NewAtlasCustomRoleReconciler(
 	deletionProtection bool,
 	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
 ) *AtlasCustomRoleReconciler {
 	return &AtlasCustomRoleReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: c.GetClient(),
-			Log:    logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
+			Client:          c.GetClient(),
+			Log:             logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
+			GlobalSecretRef: globalSecretRef,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasCustomRoles"),

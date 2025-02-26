@@ -397,7 +397,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 
 	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
 			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), mock.Anything).
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -486,7 +486,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				},
 			}, orgID, nil
 		},
-		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 			return &mongodbatlas.Client{
 				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
 					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
@@ -632,7 +632,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 
 	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 			err := &admin.GenericOpenAPIError{}
 			err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
 			clusterAPI := mockadmin.NewClustersApi(t)
@@ -684,7 +684,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
 			}, orgID, nil
 		},
-		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 			return &mongodbatlas.Client{}, orgID, nil
 		},
 		IsCloudGovFunc: func() bool {
@@ -770,7 +770,7 @@ func TestFlexClusterReconciliation(t *testing.T) {
 
 	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 
 			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), mock.Anything).
@@ -810,7 +810,7 @@ func TestFlexClusterReconciliation(t *testing.T) {
 				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
 			}, orgID, nil
 		},
-		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 			return &mongodbatlas.Client{}, orgID, nil
 		},
 		IsCloudGovFunc: func() bool {
@@ -937,7 +937,7 @@ func TestDeletionReconciliation(t *testing.T) {
 	orgID := "0987654321"
 	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 			err := &adminv20241113001.GenericOpenAPIError{}
 			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
@@ -995,7 +995,7 @@ func TestDeletionReconciliation(t *testing.T) {
 				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
 			}, orgID, nil
 		},
-		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 			return &mongodbatlas.Client{}, orgID, nil
 		},
 		IsCloudGovFunc: func() bool {
@@ -1324,10 +1324,10 @@ func TestChangeDeploymentType(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+				ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 					return &mongodbatlas.Client{}, "org-id", nil
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
 					serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, "abc123", "cluster0").
 						Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
@@ -1382,10 +1382,10 @@ func TestChangeDeploymentType(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+				ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 					return &mongodbatlas.Client{}, "org-id", nil
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					clusterAPI := mockadmin.NewClustersApi(t)
 					clusterAPI.EXPECT().GetCluster(mock.Anything, "abc123", "cluster0").
 						Return(admin.GetClusterApiRequest{ApiService: clusterAPI})

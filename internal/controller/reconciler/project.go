@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	ErrAtlasProjectProjectNotFound = errors.New("AtlasProject not found")
+	ErrMissingKubeProject = errors.New("missing Kubernetes Atlas Project")
 )
 
 func (r *AtlasReconciler) ResolveProject(ctx context.Context, sdkClient *admin.APIClient, pro project.ProjectReferrerObject) (*project.Project, error) {
@@ -65,7 +65,7 @@ func (r *AtlasReconciler) fetchProject(ctx context.Context, pro project.ProjectR
 	err := r.Client.Get(ctx, key, &project)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, fmt.Errorf("%w: %w", ErrAtlasProjectProjectNotFound, err)
+			return nil, errors.Join(ErrMissingKubeProject, err)
 		}
 		return nil, fmt.Errorf("error getting AtlasProject: %w", err)
 	}

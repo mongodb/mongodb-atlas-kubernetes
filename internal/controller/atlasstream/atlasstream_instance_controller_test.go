@@ -207,6 +207,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(streamInstance).
@@ -363,9 +364,20 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(project, streamInstance).
+			WithObjects(project, streamInstance, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"orgId":         []byte("orgId"),
+					"publicApiKey":  []byte("publicApiKey"),
+					"privateApiKey": []byte("privateApiKey"),
+				},
+			}).
 			WithStatusSubresource(streamInstance).
 			Build()
 
@@ -377,9 +389,13 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return nil, "", errors.New("failed to configure sdk client")
 				},
+			},
+			GlobalSecretRef: client.ObjectKey{
+				Namespace: "default",
+				Name:      "secret",
 			},
 		}
 
@@ -453,9 +469,20 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(project, streamInstance).
+			WithObjects(project, streamInstance, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"orgId":         []byte("orgId"),
+					"publicApiKey":  []byte("publicApiKey"),
+					"privateApiKey": []byte("privateApiKey"),
+				},
+			}).
 			WithStatusSubresource(streamInstance).
 			Build()
 
@@ -473,12 +500,16 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
 					}, "", nil
 				},
+			},
+			GlobalSecretRef: client.ObjectKey{
+				Namespace: "default",
+				Name:      "secret",
 			},
 		}
 
@@ -552,9 +583,20 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(project, streamInstance).
+			WithObjects(project, streamInstance, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"orgId":         []byte("orgId"),
+					"publicApiKey":  []byte("publicApiKey"),
+					"privateApiKey": []byte("privateApiKey"),
+				},
+			}).
 			WithStatusSubresource(streamInstance).
 			Build()
 
@@ -599,12 +641,16 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
 					}, "", nil
 				},
+			},
+			GlobalSecretRef: client.ObjectKey{
+				Namespace: "default",
+				Name:      "secret",
 			},
 		}
 
@@ -666,9 +712,20 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(project, streamInstance).
+			WithObjects(project, streamInstance, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"orgId":         []byte("orgId"),
+					"publicApiKey":  []byte("publicApiKey"),
+					"privateApiKey": []byte("privateApiKey"),
+				},
+			}).
 			WithStatusSubresource(streamInstance).
 			Build()
 
@@ -715,12 +772,16 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
 					}, "", nil
 				},
+			},
+			GlobalSecretRef: client.ObjectKey{
+				Namespace: "default",
+				Name:      "secret",
 			},
 		}
 
@@ -790,9 +851,20 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(project, streamInstance).
+			WithObjects(project, streamInstance, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"orgId":         []byte("orgId"),
+					"publicApiKey":  []byte("publicApiKey"),
+					"privateApiKey": []byte("privateApiKey"),
+				},
+			}).
 			WithStatusSubresource(streamInstance).
 			Build()
 
@@ -834,12 +906,16 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
 					}, "org-id", nil
 				},
+			},
+			GlobalSecretRef: client.ObjectKey{
+				Namespace: "default",
+				Name:      "secret",
 			},
 		}
 
@@ -895,9 +971,20 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
+		assert.NoError(t, corev1.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(project, streamInstance).
+			WithObjects(project, streamInstance, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"orgId":         []byte("orgId"),
+					"publicApiKey":  []byte("publicApiKey"),
+					"privateApiKey": []byte("privateApiKey"),
+				},
+			}).
 			WithStatusSubresource(streamInstance).
 			Build()
 
@@ -951,12 +1038,16 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
 					}, "org-id", nil
 				},
+			},
+			GlobalSecretRef: client.ObjectKey{
+				Namespace: "default",
+				Name:      "secret",
 			},
 		}
 

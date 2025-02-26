@@ -41,6 +41,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
@@ -62,6 +63,7 @@ type AtlasProjectReconciler struct {
 	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	GlobalSecretRef             client.ObjectKey
 }
 
 type AtlasProjectServices struct {
@@ -146,12 +148,20 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
+	credentials, err := reconciler.GetAtlasCredentials(ctx, r.Client, atlasProject.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+
+	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClientSet(ctx, credentials, log)
+	if err != nil {
+		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
+		setCondition(workflowCtx, api.ProjectReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
 	workflowCtx.SdkClient = atlasSdkClient.SdkClient20231115008
 	services := AtlasProjectServices{}
 	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20231115008.ProjectsApi)
@@ -159,7 +169,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20231115008.MaintenanceWindowsApi)
 	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20231115008.EncryptionAtRestUsingCustomerKeyManagementApi)
 
-	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, atlasProject.ConnectionSecretObjectKey(), log)
+	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, credentials, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
@@ -285,6 +295,7 @@ func NewAtlasProjectReconciler(
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
 	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
 ) *AtlasProjectReconciler {
 	return &AtlasProjectReconciler{
 		Scheme:                   c.GetScheme(),
@@ -294,6 +305,7 @@ func NewAtlasProjectReconciler(
 		Log:                      logger.Named("controllers").Named("AtlasProject").Sugar(),
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		GlobalSecretRef:          globalSecretRef,
 	}
 }
 

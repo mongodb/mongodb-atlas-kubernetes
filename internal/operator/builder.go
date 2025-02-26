@@ -188,7 +188,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		}
 	}
 
-	controllerRegistry := controller.NewRegistry(b.predicates, b.deletionProtection, b.logger, b.independentSyncPeriod, b.featureFlags)
+	controllerRegistry := controller.NewRegistry(b.predicates, b.deletionProtection, b.logger, b.independentSyncPeriod, b.featureFlags, b.apiSecret)
 
 	var akoCluster cluster.Cluster
 	if b.dryRun {
@@ -209,7 +209,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		}
 
 		if b.atlasProvider == nil {
-			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, c.GetClient(), true)
+			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, true)
 		}
 
 		// We cannot use cluster.Cluster's event recorder. This event recorder has no guarantees about the delivery of events to API server.
@@ -264,7 +264,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		}
 
 		if b.atlasProvider == nil {
-			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, b.apiSecret, mgr.GetClient(), false)
+			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, false)
 		}
 
 		if err := controllerRegistry.RegisterWithManager(mgr, b.skipNameValidation, b.atlasProvider); err != nil {
