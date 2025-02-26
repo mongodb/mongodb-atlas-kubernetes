@@ -14,9 +14,6 @@ import (
 var (
 	// ErrNotFound means an resource is missing
 	ErrNotFound = errors.New("not found")
-
-	// ErrContainerInUse is a failure to remove a containe still in use
-	ErrContainerInUse = errors.New("container still in use")
 )
 
 type NetworkPeeringService interface {
