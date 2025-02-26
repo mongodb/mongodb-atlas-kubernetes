@@ -186,6 +186,7 @@ jobs:
             "ip-access-list",
             "dry-run",
             "networkcontainer-controller",
+            "networkpeering-controller",
           ]
     steps:
       - name: Get repo files from cache

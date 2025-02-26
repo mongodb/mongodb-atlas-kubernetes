@@ -74,7 +74,7 @@ func (r *AtlasPrivateEndpointReconciler) Reconcile(ctx context.Context, req ctrl
 	akoPrivateEndpoint := akov2.AtlasPrivateEndpoint{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &akoPrivateEndpoint, r.Log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), errors.New(result.GetMessage())
+		return result.ReconcileResult(), nil
 	}
 
 	return r.ensureCustomResource(ctx, &akoPrivateEndpoint)

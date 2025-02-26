@@ -74,7 +74,7 @@ type AtlasNetworkContainerSpec struct {
 
 // AtlasNetworkContainerConfig defines the Atlas specifics of the desired state of a Network Container
 type AtlasNetworkContainerConfig struct {
-	// ID is the container identified for an already existent network container to be managed by the operator.
+	// ID is the container identifier for an already existent network container to be managed by the operator.
 	// This field can be used in conjunction with cidrBlock to update the cidrBlock of an existing container.
 	// This field is immutable.
 	// +optional
