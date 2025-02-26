@@ -9,7 +9,7 @@ spec:
   provider: AWS
   containerId: "623412394512350"
   awsConfiguration:
-    accepterRegionName: US_EAST_1 # TODO: double check sample values
+    accepterRegionName: US_EAST_1
     awsAccountId: "23214235145"
     routeTableCidrBlock: "10.11.0.0/16"
     vpcId: "vpcid-7123782134"
