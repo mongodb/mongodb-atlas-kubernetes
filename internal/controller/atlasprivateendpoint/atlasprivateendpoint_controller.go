@@ -294,11 +294,13 @@ func NewAtlasPrivateEndpointReconciler(
 	deletionProtection bool,
 	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
 ) *AtlasPrivateEndpointReconciler {
 	return &AtlasPrivateEndpointReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: c.GetClient(),
-			Log:    logger.Named("controllers").Named("AtlasPrivateEndpoint").Sugar(),
+			Client:          c.GetClient(),
+			Log:             logger.Named("controllers").Named("AtlasPrivateEndpoint").Sugar(),
+			GlobalSecretRef: globalSecretRef,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasPrivateEndpoint"),

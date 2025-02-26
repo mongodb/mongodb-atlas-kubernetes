@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -333,9 +334,20 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			testScheme := runtime.NewScheme()
 			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(tt.akoCustomRole).
+				WithObjects(tt.akoCustomRole, &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte("orgId"),
+						"publicApiKey":  []byte("publicApiKey"),
+						"privateApiKey": []byte("privateApiKey"),
+					},
+				}).
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
 			r := &AtlasCustomRoleReconciler{
@@ -346,7 +358,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				Scheme:        testScheme,
 				EventRecorder: record.NewFakeRecorder(10),
 				AtlasProvider: &atlasmocks.TestProvider{
-					SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
 						if tt.sdkShouldError {
 							return nil, "", fmt.Errorf("failed to create sdk")
 						}
