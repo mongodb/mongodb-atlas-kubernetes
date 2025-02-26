@@ -108,7 +108,7 @@ Adjust the `matrix` variable in the above workflow to match the desired Kubernet
 
 Additionally, adjust the `ENVTEST_K8S_VERSION` variable in the `Makefile` as well.
 
-Finally, adjust the minimum Kubernetes version ("1.27.1" in the above example) in the [Atlas Kubernetes CLI repository](https://github.com/mongodb/atlas-cli-plugin-kubernetes] plugin) as well. Here, a Kubernetes cluster is being created for e2e tests programmatically. Bump and adjust the Kubernetes version in its `go.mod` file: https://github.com/mongodb/atlas-cli-plugin-kubernetes/blob/d34c4b18930b0cd77dc6013d52669161edb224d5/go.mod#L32.
+Finally, adjust the minimum Kubernetes version ("1.27.1" in the above example) in the [Atlas Kubernetes CLI repository](https://github.com/mongodb/atlas-cli-plugin-kubernetes] plugin) as well. Here, a Kubernetes cluster is being created for e2e tests programmatically. Bump and adjust the Kubernetes version in its `go.mod` file: https://github.com/mongodb/atlas-cli-plugin-kubernetes/blob/d34c4b18930b0cd77dc6013d52669161edb224d5/go.mod#L32 for the kind version and https://github.com/mongodb/atlas-cli-plugin-kubernetes/blob/d5b2610dd50e312e315b63d1bfd0d7dde244b262/test/e2e/operator_helper_test.go#L91-L98 for the actual Kubernetes version.
 
 ### Test Variants
 
