@@ -283,11 +283,13 @@ func NewAtlasDatabaseUserReconciler(
 	independentSyncPeriod time.Duration,
 	featureFlags *featureflags.FeatureFlags,
 	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
 ) *AtlasDatabaseUserReconciler {
 	return &AtlasDatabaseUserReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: c.GetClient(),
-			Log:    logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+			Client:          c.GetClient(),
+			Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+			GlobalSecretRef: globalSecretRef,
 		},
 		AtlasProvider:            atlasProvider,
 		Scheme:                   c.GetScheme(),

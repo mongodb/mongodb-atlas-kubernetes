@@ -110,11 +110,13 @@ func NewAtlasNetworkContainerReconciler(
 	deletionProtection bool,
 	logger *zap.Logger,
 	independentSyncPeriod time.Duration,
+	globalSecretRef client.ObjectKey,
 ) *AtlasNetworkContainerReconciler {
 	return &AtlasNetworkContainerReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: c.GetClient(),
-			Log:    logger.Named("controllers").Named("AtlasNetworkContainer").Sugar(),
+			Client:          c.GetClient(),
+			Log:             logger.Named("controllers").Named("AtlasNetworkContainer").Sugar(),
+			GlobalSecretRef: globalSecretRef,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasNetworkContainer"),

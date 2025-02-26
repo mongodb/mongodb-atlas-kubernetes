@@ -25,6 +25,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
@@ -43,6 +44,7 @@ type AtlasDataFederationReconciler struct {
 	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	GlobalSecretRef             client.ObjectKey
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatafederations,verbs=get;list;watch;create;update;patch;delete
@@ -97,19 +99,20 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
-	endpointService, err := datafederation.NewDatafederationPrivateEndpointService(ctx.Context, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	credentials, err := reconciler.GetAtlasCredentials(ctx.Context, r.Client, project.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-
-	dataFederationService, err := datafederation.NewAtlasDataFederationService(ctx.Context, r.AtlasProvider, project.ConnectionSecretObjectKey(), log)
+	clientSet, _, err := r.AtlasProvider.SdkClientSet(ctx.Context, credentials, log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+	endpointService := datafederation.NewDatafederationPrivateEndpoint(clientSet.SdkClient20231115008.DataFederationApi)
+	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20231115008.DataFederationApi)
 
 	if result = r.ensureDataFederation(ctx, project, dataFederation, dataFederationService); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
@@ -262,6 +265,7 @@ func NewAtlasDataFederationReconciler(
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
 	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
 ) *AtlasDataFederationReconciler {
 	return &AtlasDataFederationReconciler{
 		Scheme:                   c.GetScheme(),
@@ -271,6 +275,7 @@ func NewAtlasDataFederationReconciler(
 		Log:                      logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		GlobalSecretRef:          globalSecretRef,
 	}
 }
 

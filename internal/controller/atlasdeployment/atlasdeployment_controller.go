@@ -416,13 +416,15 @@ func NewAtlasDeploymentReconciler(
 	deletionProtection bool,
 	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
+	globalSecretref client.ObjectKey,
 ) *AtlasDeploymentReconciler {
 	suggaredLogger := logger.Named("controllers").Named("AtlasDeployment").Sugar()
 
 	return &AtlasDeploymentReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: c.GetClient(),
-			Log:    suggaredLogger,
+			Client:          c.GetClient(),
+			Log:             suggaredLogger,
+			GlobalSecretRef: globalSecretref,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasDeployment"),

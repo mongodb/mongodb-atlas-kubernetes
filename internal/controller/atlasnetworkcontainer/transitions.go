@@ -82,7 +82,7 @@ func (r *AtlasNetworkContainerReconciler) unmanage(workflowCtx *workflow.Context
 }
 
 func (r *AtlasNetworkContainerReconciler) release(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, err error) ctrl.Result {
-	if errors.Is(err, reconciler.ErrMissingKubeProject) {
+	if errors.Is(err, reconciler.ErrAtlasProjectProjectNotFound) {
 		if finalizerErr := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.UnsetFinalizer); finalizerErr != nil {
 			err = errors.Join(err, finalizerErr)
 		}

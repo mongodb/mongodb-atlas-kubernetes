@@ -11,48 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	atlas_controller "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-func TestNewAtlasDatabaseUsersService(t *testing.T) {
-	ctx := context.Background()
-	provider := &atlas.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas_controller.ClientSet, string, error) {
-			return &atlas_controller.ClientSet{
-				SdkClient20231115008: &admin.APIClient{},
-				SdkClient20241113001: &adminv20241113001.APIClient{},
-			}, "", nil
-		},
-	}
-	secretRef := &types.NamespacedName{}
-	log := zap.S()
-	users, err := NewAtlasDatabaseUsersService(ctx, provider, secretRef, log)
-	require.NoError(t, err)
-	assert.Equal(t, &AtlasUsers{}, users)
-}
-
-func TestFailedNewAtlasDatabaseUsersService(t *testing.T) {
-	expectedErr := errors.New("fake error")
-	ctx := context.Background()
-	provider := &atlas.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas_controller.ClientSet, string, error) {
-			return nil, "", expectedErr
-		},
-	}
-	secretRef := &types.NamespacedName{}
-	log := zap.S()
-	users, err := NewAtlasDatabaseUsersService(ctx, provider, secretRef, log)
-	require.Nil(t, users)
-	require.ErrorIs(t, err, expectedErr)
-}
 func TestAtlasUsersGet(t *testing.T) {
 	ctx := context.Background()
 	projectID := "project-id"
