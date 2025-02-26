@@ -117,8 +117,8 @@ func NewBCPFromAtlas(in *admin.DataProtectionSettings20231001) *AtlasBackupCompl
 		PITEnabled:              admin.GetOrDefault(in.PitEnabled, false),
 		RestoreWindowDays:       admin.GetOrDefault(in.RestoreWindowDays, 0),
 		OnDemandPolicy: AtlasOnDemandPolicy{
-			RetentionUnit:  in.OnDemandPolicyItem.RetentionUnit,
-			RetentionValue: in.OnDemandPolicyItem.RetentionValue,
+			RetentionUnit:  in.GetOnDemandPolicyItem().RetentionUnit,
+			RetentionValue: in.GetOnDemandPolicyItem().RetentionValue,
 		},
 	}
 
