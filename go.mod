@@ -28,7 +28,7 @@ require (
 	go.mongodb.org/atlas-sdk/v20231115004 v20231115004.1.0
 	go.mongodb.org/atlas-sdk/v20231115008 v20231115008.5.0
 	go.mongodb.org/atlas-sdk/v20241113001 v20241113001.0.0
-	go.mongodb.org/mongo-driver v1.17.2
+	go.mongodb.org/mongo-driver v1.17.3
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.11.0
 	google.golang.org/api v0.222.0
