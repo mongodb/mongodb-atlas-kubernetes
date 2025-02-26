@@ -99,7 +99,7 @@ go.mongodb.org/atlas-sdk/v20231115004,https://github.com/mongodb/atlas-sdk-go/bl
 go.mongodb.org/atlas-sdk/v20231115008,https://github.com/mongodb/atlas-sdk-go/blob/v20231115008.5.0/LICENSE,Apache-2.0
 go.mongodb.org/atlas-sdk/v20241113001,https://github.com/mongodb/atlas-sdk-go/blob/v20241113001.0.0/LICENSE,Apache-2.0
 go.mongodb.org/atlas/mongodbatlas,https://github.com/mongodb/go-client-mongodb-atlas/blob/v0.37.0/LICENSE,Apache-2.0
-go.mongodb.org/mongo-driver,https://github.com/mongodb/mongo-go-driver/blob/v1.17.2/LICENSE,Apache-2.0
+go.mongodb.org/mongo-driver,https://github.com/mongodb/mongo-go-driver/blob/v1.17.3/LICENSE,Apache-2.0
 go.opentelemetry.io/auto/sdk,https://github.com/open-telemetry/opentelemetry-go-instrumentation/blob/sdk/v1.1.0/sdk/LICENSE,Apache-2.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/google.golang.org/grpc/otelgrpc/v0.58.0/instrumentation/google.golang.org/grpc/otelgrpc/LICENSE,Apache-2.0
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.58.0/instrumentation/net/http/otelhttp/LICENSE,Apache-2.0
