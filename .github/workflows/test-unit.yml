@@ -19,7 +19,7 @@ jobs:
           enable-cache: 'true'
 
       - name: Run testing
-        run: devbox run -- 'CGO_ENABLED=0 go test -v $(go list ./... | grep -v "test/int\|test/e2e") -coverprofile=coverage.out'
+        run: devbox run -- 'go test -race -v ./... -coverprofile=coverage.out'
 
       - name: Test tools
         run: devbox run -- 'make test-tools'
