@@ -52,5 +52,3 @@ resources:
 - atlasdeployment_viewer_role.yaml
 - atlasnetworkpeering_editor_role.yaml
 - atlasnetworkpeering_viewer_role.yaml
-
-
