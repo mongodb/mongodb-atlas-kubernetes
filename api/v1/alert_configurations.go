@@ -360,9 +360,16 @@ func (in *MetricThreshold) IsEqual(threshold *admin.ServerlessMetricThreshold) b
 	if threshold == nil {
 		return false
 	}
+	thresholdFloat, err := strconv.ParseFloat(in.Threshold, 64)
+	if err != nil {
+		// A parsing error means we're not equal, because the other object has a valid
+		// value. The actual error will be returned when calling ToAtlas.
+		return false
+	}
+
 	return in.MetricName == threshold.GetMetricName() &&
 		in.Operator == threshold.GetOperator() &&
-		in.Threshold == strconv.FormatInt(int64(threshold.GetThreshold()), 10) &&
+		thresholdFloat == threshold.GetThreshold() &&
 		in.Units == threshold.GetUnits() &&
 		in.Mode == threshold.GetMode()
 }
