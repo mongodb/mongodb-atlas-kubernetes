@@ -9,7 +9,7 @@ on:
 
 jobs:
   verify-helm-changes:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'dependabot')
+    if: github.event.pull_request.merged == true && !startsWith(github.event.pull_request.title, 'dependabot')
     name: Verify if AKO helm charts needs updates
     runs-on: ubuntu-latest
     environment: release
