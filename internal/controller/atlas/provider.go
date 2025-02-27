@@ -114,6 +114,7 @@ func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.Objec
 	}
 
 	transport := p.newDryRunTransport(http.DefaultTransport)
+	transport = httputil.NewDiffClient(transport)
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: transport}, clientCfg...)
 	if err != nil {
 		return nil, "", err
@@ -132,6 +133,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, secretRef *client
 
 	var transport http.RoundTripper = digest.NewTransport(secretData.PublicKey, secretData.PrivateKey)
 	transport = p.newDryRunTransport(transport)
+	transport = httputil.NewDiffClient(transport)
 	transport = httputil.NewLoggingTransport(log, false, transport)
 
 	httpClient := &http.Client{Transport: transport}
