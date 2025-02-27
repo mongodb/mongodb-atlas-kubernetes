@@ -202,6 +202,12 @@ spec:
                 not both (or neither)
               rule: (has(self.containerRef.name) && !has(self.containerRef.id)) ||
                 (!has(self.containerRef.name) && has(self.containerRef.id))
+            - message: container ref name is immutable
+              rule: (self.containerRef.name == oldSelf.containerRef.name) || (!has(self.containerRef.name)
+                && !has(oldSelf.containerRef.name))
+            - message: container ref id is immutable
+              rule: (self.containerRef.id == oldSelf.containerRef.id) || (!has(self.containerRef.id)
+                && !has(oldSelf.containerRef.id))
             - message: id is immutable
               rule: (self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id))
           status:

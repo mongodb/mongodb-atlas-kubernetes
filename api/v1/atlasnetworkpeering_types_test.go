@@ -124,7 +124,7 @@ func TestPeeringCELChecks(t *testing.T) {
 			old: &AtlasNetworkPeering{
 				Spec: AtlasNetworkPeeringSpec{
 					ContainerRef: ContainerDualReference{
-						ID: "some-id",
+						Name: "some-name",
 					},
 					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
 						ID: "some-peering-id",
@@ -134,7 +134,7 @@ func TestPeeringCELChecks(t *testing.T) {
 			obj: &AtlasNetworkPeering{
 				Spec: AtlasNetworkPeeringSpec{
 					ContainerRef: ContainerDualReference{
-						ID: "some-id",
+						Name: "some-name",
 					},
 					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
 						ID: "another-peering-id",
@@ -165,6 +165,112 @@ func TestPeeringCELChecks(t *testing.T) {
 						ID: "some-peering-id",
 					},
 				},
+			},
+		},
+
+		{
+			title: "container ID changed fails",
+			old: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-other-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			expectedErrors: []string{"spec: Invalid value: \"object\": container ref id is immutable"},
+		},
+
+		{
+			title: "container name changed fails",
+			old: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						Name: "some-name",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						Name: "some-other-name",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			expectedErrors: []string{"spec: Invalid value: \"object\": container ref name is immutable"},
+		},
+
+		{
+			title: "change container name to id fails",
+			old: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						Name: "some-name",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			expectedErrors: []string{
+				"spec: Invalid value: \"object\": no such key: name evaluating rule: container ref name is immutable",
+				"spec: Invalid value: \"object\": no such key: id evaluating rule: container ref id is immutable",
+			},
+		},
+
+		{
+			title: "change container id to name fails",
+			old: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						ID: "some-id",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			obj: &AtlasNetworkPeering{
+				Spec: AtlasNetworkPeeringSpec{
+					ContainerRef: ContainerDualReference{
+						Name: "some-name",
+					},
+					AtlasNetworkPeeringConfig: AtlasNetworkPeeringConfig{
+						ID: "some-peering-id",
+					},
+				},
+			},
+			expectedErrors: []string{
+				"spec: Invalid value: \"object\": no such key: name evaluating rule: container ref name is immutable",
+				"spec: Invalid value: \"object\": no such key: id evaluating rule: container ref id is immutable",
 			},
 		},
 	} {
