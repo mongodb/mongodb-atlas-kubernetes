@@ -73,7 +73,7 @@ jobs:
           if [[ -n $(git status --porcelain) ]]; then
             jobname=${{ github.run_id }}
             if [[ -n "${{ github.event.pull_request.title }}" ]]; then
-              jobname="${{ github.event.pull_request.title }}"
+              jobname=$(echo "${{ github.event.pull_request.title }}" | tr -cd '[:alnum:]-_')
             fi
 
             BRANCH_NAME=CRD-RBAC-changes-"${jobname}"
