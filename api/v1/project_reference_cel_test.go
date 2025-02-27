@@ -174,7 +174,7 @@ func TestProjectDualReferenceCELValidations(t *testing.T) {
 				errs := validator(unstructuredObject, unstructuredOldObject)
 
 				for i, err := range errs {
-					fmt.Printf("%s error %d: %v\n", title, i, err)
+					t.Logf("%s error %d: %v\n", title, i, err)
 				}
 
 				require.Equal(t, len(tc.expectedErrors), len(errs))
