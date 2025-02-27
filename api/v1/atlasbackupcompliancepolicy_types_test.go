@@ -130,8 +130,8 @@ func TestBackupCompliancePolicyFromAtlas(t *testing.T) {
 	})
 }
 
-func TestBackupCompliancePolicyFromAtlasDoesNotCrash(t *testing.T) {
-	t.Run("Can convert Compliance Policy from Atlas", func(t *testing.T) {
+func TestBackupCompliancePolicyNilOndemandPolicy(t *testing.T) {
+	t.Run("Can convert when OndemandPolicyItem is nil", func(t *testing.T) {
 		in := &admin.DataProtectionSettings20231001{
 			AuthorizedEmail:         "example@test.com",
 			AuthorizedUserFirstName: "James",
