@@ -414,8 +414,6 @@ func EnsurePeersReadyToConnect(g Gomega, userData *model.TestDataProvider, pairs
 
 func networkPeeringReady(peer *akov2.AtlasNetworkPeering) bool {
 	for _, condition := range peer.Status.Conditions {
-		GinkgoWriter.Printf("TODO: REMOVE LOG peer %s condition type=%s status=%s",
-			peer.Status.ID, condition.Type, condition.Status)
 		if condition.Type == api.ReadyType && condition.Status == v1.ConditionTrue {
 			return true
 		}
