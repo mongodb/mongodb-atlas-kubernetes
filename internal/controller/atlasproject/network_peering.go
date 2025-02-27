@@ -130,12 +130,17 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 	logger.Debugf("peers to create %d, peers to update %d, peers to delete %d",
 		len(diff.PeersToCreate), len(diff.PeersToUpdate), len(diff.PeersToDelete))
 
-	for _, peerToDelete := range diff.PeersToDelete {
-		errDelete := deletePeerByID(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, peerToDelete, logger)
-		if errDelete != nil {
-			logger.Errorf("failed to delete network peer %s: %v", peerToDelete, errDelete)
-			return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("failed to delete network peer")),
-				api.NetworkPeerReadyType
+	if configuredBefore {
+		for _, peerToDelete := range diff.PeersToDelete {
+			errDelete := deletePeerByID(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, peerToDelete, logger)
+			if errDelete != nil {
+				logger.Errorf("failed to delete network peer %s: %v", peerToDelete, errDelete)
+				return workflow.Terminate(
+						workflow.ProjectNetworkPeerIsNotReadyInAtlas,
+						fmt.Errorf("failed to delete network peer: %w", errDelete),
+					),
+					api.NetworkPeerReadyType
+			}
 		}
 	}
 
@@ -460,7 +465,7 @@ func comparePeersPair(ctx context.Context, existedPeer, expectedPeer akov2.Netwo
 func deletePeerByID(ctx context.Context, peerService admin.NetworkPeeringApi, groupID string, containerID string, logger *zap.SugaredLogger) error {
 	_, response, err := peerService.DeletePeeringConnection(ctx, groupID, containerID).Execute()
 	if err != nil {
-		if response.StatusCode == http.StatusNotFound {
+		if response != nil && response.StatusCode == http.StatusNotFound {
 			return errors.Join(err, errNortFound)
 		}
 		logger.Errorf("failed to delete peering container %s: %v", containerID, err)

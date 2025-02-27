@@ -161,16 +161,19 @@ const (
 	IPAccessListPending          ConditionReason = "IPAccessListPending"
 )
 
-// Atlas Network Peering reasons
-const (
-	NetworkPeeringConnectionCreating ConditionReason = "NetworkPeeringConnectionCreating"
-	NetworkPeeringConnectionPending  ConditionReason = "NetworkPeeringConnectionPending"
-	NetworkPeeringRemovingContainer  ConditionReason = "NetworkPeeringRemovingContainer"
-)
-
 // Atlas Network Container reasons
 const (
 	NetworkContainerNotConfigured ConditionReason = "NetworkContainerNotConfigured"
 	NetworkContainerCreated       ConditionReason = "NetworkContainerCreated"
 	NetworkContainerNotDeleted    ConditionReason = "NetworkContainerNotDeleted"
+)
+
+// Atlas Network Peering reasons
+const (
+	NetworkPeeringNotConfigured      ConditionReason = "NetworkPeeringNotConfigured"
+	NetworkPeeringMissingContainer   ConditionReason = "NetworkPeeringMissingContainer"
+	NetworkPeeringConnectionCreating ConditionReason = "NetworkPeeringConnectionCreating"
+	NetworkPeeringConnectionUpdating ConditionReason = "NetworkPeeringConnectionUpdating"
+	NetworkPeeringConnectionPending  ConditionReason = "NetworkPeeringConnectionPending"
+	NetworkPeeringConnectionClosing  ConditionReason = "NetworkPeeringConnectionClosing"
 )

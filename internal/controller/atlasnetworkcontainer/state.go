@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -16,6 +15,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
 
+const (
+	typeName = "AtlasNetworkContainer"
+)
+
 type reconcileRequest struct {
 	projectID        string
 	networkContainer *akov2.AtlasNetworkContainer
@@ -23,7 +26,6 @@ type reconcileRequest struct {
 }
 
 func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Context, networkContainer *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
-	typeName := reflect.TypeOf(*networkContainer).Name()
 	if customresource.ReconciliationShouldBeSkipped(networkContainer) {
 		return r.Skip(ctx, typeName, networkContainer, networkContainer.Spec)
 	}
