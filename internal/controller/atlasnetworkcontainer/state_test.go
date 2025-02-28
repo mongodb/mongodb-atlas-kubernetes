@@ -548,7 +548,13 @@ func TestHandle(t *testing.T) {
 							Provisioned: true,
 						}, nil,
 					)
-					ncs.EXPECT().Update(mock.Anything, testProjectID, testContainerID, mock.Anything).Return(
+					ncs.EXPECT().Update(mock.Anything, testProjectID, testContainerID, &networkcontainer.NetworkContainerConfig{
+						Provider: "AWS",
+						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
+							Region:    "US_EAST_1",
+							CIDRBlock: "10.12.0.0/21",
+						},
+					}).Return(
 						&networkcontainer.NetworkContainer{
 							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
 								Provider: "AWS",
