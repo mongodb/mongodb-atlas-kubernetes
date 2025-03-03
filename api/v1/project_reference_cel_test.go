@@ -55,6 +55,14 @@ var dualRefCRDs = []struct {
 		},
 		filename: "atlas.mongodb.com_atlasnetworkcontainers.yaml",
 	},
+	{
+		obj: &AtlasNetworkPeering{
+			Spec: AtlasNetworkPeeringSpec{ // Avoid triggering peering specific validations
+				ContainerRef: ContainerDualReference{Name: "fake-ref"},
+			},
+		},
+		filename: "atlas.mongodb.com_atlasnetworkpeerings.yaml",
+	},
 }
 
 var testCases = []struct {
@@ -165,7 +173,14 @@ func TestProjectDualReferenceCELValidations(t *testing.T) {
 				assert.NoError(t, err)
 				errs := validator(unstructuredObject, unstructuredOldObject)
 
-				require.Equal(t, tc.expectedErrors, cel.ErrorListAsStrings(errs))
+				for i, err := range errs {
+					t.Logf("%s error %d: %v\n", title, i, err)
+				}
+
+				require.Equal(t, len(tc.expectedErrors), len(errs))
+				for i, err := range errs {
+					assert.Equal(t, tc.expectedErrors[i], err.Error())
+				}
 			})
 		}
 	}

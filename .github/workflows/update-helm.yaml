@@ -9,7 +9,7 @@ on:
 
 jobs:
   verify-helm-changes:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true && !startsWith(github.event.pull_request.title, 'dependabot')
     name: Verify if AKO helm charts needs updates
     runs-on: ubuntu-latest
     environment: release
@@ -23,7 +23,7 @@ jobs:
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.12.0
         with:
-          enable-cache: 'true'
+          enable-cache: "true"
 
       - name: Generate GitHub App Token
         id: generate_token
@@ -39,10 +39,10 @@ jobs:
       - name: Checkout Helm charts repo
         uses: actions/checkout@v4
         with:
-            repository: mongodb/helm-charts
-            token: ${{ steps.generate_token.outputs.token }}
-            path: helm-charts-cloned
-            persist-credentials: true
+          repository: mongodb/helm-charts
+          token: ${{ steps.generate_token.outputs.token }}
+          path: helm-charts-cloned
+          persist-credentials: true
 
       - name: Generate AKO bundle
         env:
@@ -66,14 +66,14 @@ jobs:
 
       - name: Create PR for helm-charts repo
         env:
-            GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           cd ./helm-charts-cloned
 
           if [[ -n $(git status --porcelain) ]]; then
             jobname=${{ github.run_id }}
             if [[ -n "${{ github.event.pull_request.title }}" ]]; then
-              jobname="${{ github.event.pull_request.title }}"
+              jobname=$(echo "${{ github.event.pull_request.title }}" | tr -cd '[:alnum:]-_')
             fi
 
             BRANCH_NAME=CRD-RBAC-changes-"${jobname}"

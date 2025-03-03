@@ -1,0 +1,17 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasNetworkPeering
+metadata:
+  name: atlasnetworkpeering-sample
+spec:
+  projectRef:
+    name: atlas-project
+    namespace: namespace
+  provider: AWS
+  containerId: "623412394512350"
+  awsConfiguration:
+    accepterRegionName: US_EAST_1
+    awsAccountId: "23214235145"
+    routeTableCidrBlock: "10.11.0.0/16"
+    vpcId: "vpcid-7123782134"
+  containerRegion: US_EAST_1
+  atlasCidrBlock: "10.12.0.0/16"

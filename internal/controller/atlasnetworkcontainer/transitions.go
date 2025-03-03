@@ -28,18 +28,18 @@ func (r *AtlasNetworkContainerReconciler) create(workflowCtx *workflow.Context, 
 	return r.ready(workflowCtx, req.networkContainer, createdContainer)
 }
 
-func (r *AtlasNetworkContainerReconciler) sync(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
-	cfg := networkcontainer.NewNetworkContainerConfig(
+func (r *AtlasNetworkContainerReconciler) sync(workflowCtx *workflow.Context, req *reconcileRequest, atlasContainer *networkcontainer.NetworkContainer) (ctrl.Result, error) {
+	desiredConfig := networkcontainer.NewNetworkContainerConfig(
 		req.networkContainer.Spec.Provider, &req.networkContainer.Spec.AtlasNetworkContainerConfig)
 	// only the CIDR block can be updated in a container
-	if cfg.CIDRBlock != container.NetworkContainerConfig.CIDRBlock {
-		return r.update(workflowCtx, req, container)
+	if desiredConfig.CIDRBlock != atlasContainer.NetworkContainerConfig.CIDRBlock {
+		return r.update(workflowCtx, req, atlasContainer.ID, desiredConfig)
 	}
-	return r.ready(workflowCtx, req.networkContainer, container)
+	return r.ready(workflowCtx, req.networkContainer, atlasContainer)
 }
 
-func (r *AtlasNetworkContainerReconciler) update(workflowCtx *workflow.Context, req *reconcileRequest, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
-	updatedContainer, err := req.service.Update(workflowCtx.Context, req.projectID, container.ID, &container.NetworkContainerConfig)
+func (r *AtlasNetworkContainerReconciler) update(workflowCtx *workflow.Context, req *reconcileRequest, id string, config *networkcontainer.NetworkContainerConfig) (ctrl.Result, error) {
+	updatedContainer, err := req.service.Update(workflowCtx.Context, req.projectID, id, config)
 	if err != nil {
 		wrappedErr := fmt.Errorf("failed to update container: %w", err)
 		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil

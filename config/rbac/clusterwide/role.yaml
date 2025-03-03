@@ -36,6 +36,7 @@ rules:
   - atlasfederatedauths
   - atlasipaccesslists
   - atlasnetworkcontainers
+  - atlasnetworkpeerings
   - atlasprivateendpoints
   - atlasprojects
   - atlassearchindexconfigs
@@ -63,6 +64,7 @@ rules:
   - atlasfederatedauths/status
   - atlasipaccesslists/status
   - atlasnetworkcontainers/status
+  - atlasnetworkpeerings/status
   - atlasprivateendpoints/status
   - atlasprojects/status
   - atlassearchindexconfigs/status
@@ -78,5 +80,6 @@ rules:
   resources:
   - atlasipaccesslists/finalizers
   - atlasnetworkcontainers/finalizers
+  - atlasnetworkpeerings/finalizers
   verbs:
   - update
