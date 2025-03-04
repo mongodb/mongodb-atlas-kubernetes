@@ -1,5 +1,5 @@
 cel.dev/expr,https://github.com/google/cel-spec/blob/v0.19.0/LICENSE,Apache-2.0
-cloud.google.com/go/auth,https://github.com/googleapis/google-cloud-go/blob/auth/v0.14.1/auth/LICENSE,Apache-2.0
+cloud.google.com/go/auth,https://github.com/googleapis/google-cloud-go/blob/auth/v0.15.0/auth/LICENSE,Apache-2.0
 cloud.google.com/go/auth/oauth2adapt,https://github.com/googleapis/google-cloud-go/blob/auth/oauth2adapt/v0.2.7/auth/oauth2adapt/LICENSE,Apache-2.0
 cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/blob/compute/v1.34.0/compute/apiv1/license_codes_client.go,Apache-2.0
 cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.34.0/compute/LICENSE,Apache-2.0
@@ -101,8 +101,8 @@ go.mongodb.org/atlas-sdk/v20241113001,https://github.com/mongodb/atlas-sdk-go/bl
 go.mongodb.org/atlas/mongodbatlas,https://github.com/mongodb/go-client-mongodb-atlas/blob/v0.37.0/LICENSE,Apache-2.0
 go.mongodb.org/mongo-driver,https://github.com/mongodb/mongo-go-driver/blob/v1.17.3/LICENSE,Apache-2.0
 go.opentelemetry.io/auto/sdk,https://github.com/open-telemetry/opentelemetry-go-instrumentation/blob/sdk/v1.1.0/sdk/LICENSE,Apache-2.0
-go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/google.golang.org/grpc/otelgrpc/v0.58.0/instrumentation/google.golang.org/grpc/otelgrpc/LICENSE,Apache-2.0
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.58.0/instrumentation/net/http/otelhttp/LICENSE,Apache-2.0
+go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/google.golang.org/grpc/otelgrpc/v0.59.0/instrumentation/google.golang.org/grpc/otelgrpc/LICENSE,Apache-2.0
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/net/http/otelhttp/v0.59.0/instrumentation/net/http/otelhttp/LICENSE,Apache-2.0
 go.opentelemetry.io/otel,https://github.com/open-telemetry/opentelemetry-go/blob/v1.34.0/LICENSE,Apache-2.0
 go.opentelemetry.io/otel/metric,https://github.com/open-telemetry/opentelemetry-go/blob/metric/v1.34.0/metric/LICENSE,Apache-2.0
 go.opentelemetry.io/otel/trace,https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.34.0/trace/LICENSE,Apache-2.0
@@ -118,11 +118,11 @@ golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.29.0:LICENSE,BSD-3
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.22.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.10.0:LICENSE,BSD-3-Clause
 gomodules.xyz/jsonpatch/v2,https://github.com/gomodules/jsonpatch/blob/v2.4.0/v2/LICENSE,Apache-2.0
-google.golang.org/api,https://github.com/googleapis/google-api-go-client/blob/v0.222.0/LICENSE,BSD-3-Clause
-google.golang.org/api/internal/third_party/uritemplates,https://github.com/googleapis/google-api-go-client/blob/v0.222.0/internal/third_party/uritemplates/LICENSE,BSD-3-Clause
+google.golang.org/api,https://github.com/googleapis/google-api-go-client/blob/v0.223.0/LICENSE,BSD-3-Clause
+google.golang.org/api/internal/third_party/uritemplates,https://github.com/googleapis/google-api-go-client/blob/v0.223.0/internal/third_party/uritemplates/LICENSE,BSD-3-Clause
 google.golang.org/genproto/googleapis,https://github.com/googleapis/go-genproto/blob/138b5a5a4fd4/LICENSE,Apache-2.0
 google.golang.org/genproto/googleapis/api,https://github.com/googleapis/go-genproto/blob/9fdb1cabc7b2/googleapis/api/LICENSE,Apache-2.0
-google.golang.org/genproto/googleapis/rpc,https://github.com/googleapis/go-genproto/blob/5a70512c5d8b/googleapis/rpc/LICENSE,Apache-2.0
+google.golang.org/genproto/googleapis/rpc,https://github.com/googleapis/go-genproto/blob/9fdb1cabc7b2/googleapis/rpc/LICENSE,Apache-2.0
 google.golang.org/grpc,https://github.com/grpc/grpc-go/blob/v1.70.0/LICENSE,Apache-2.0
 google.golang.org/protobuf,https://github.com/protocolbuffers/protobuf-go/blob/v1.36.5/LICENSE,BSD-3-Clause
 gopkg.in/evanphx/json-patch.v4,https://github.com/evanphx/json-patch/blob/v4.12.0/LICENSE,BSD-3-Clause
