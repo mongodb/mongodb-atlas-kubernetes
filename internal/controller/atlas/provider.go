@@ -17,6 +17,7 @@ package atlas
 import (
 	"context"
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/deprecation"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -122,7 +123,7 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 
 func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error) {
 	var transport http.RoundTripper = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
-	transport = p.newDryRunTransport(transport)
+	transport = p.newTransport(transport, log)
 	transport = httputil.NewLoggingTransport(log, false, transport)
 	if p.isLogInDebug {
 		log.Debug("JSON payload diff is enabled for Atlas API requests (PATCH & PUT)")
@@ -144,12 +145,14 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 	}, nil
 }
 
-func (p *ProductionProvider) newDryRunTransport(delegate http.RoundTripper) http.RoundTripper {
+func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.SugaredLogger) http.RoundTripper {
+	var t http.RoundTripper = deprecation.NewLoggingTransport(delegate, log.Desugar())
+
 	if p.dryRun {
-		return dryrun.NewDryRunTransport(delegate)
+		return dryrun.NewDryRunTransport(t)
 	}
 
-	return delegate
+	return t
 }
 
 func operatorUserAgent() string {
