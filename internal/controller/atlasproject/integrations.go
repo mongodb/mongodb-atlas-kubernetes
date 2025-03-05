@@ -109,7 +109,7 @@ func (r *AtlasProjectReconciler) createIntegrationsInAtlas(ctx *workflow.Context
 		}
 
 		_, resp, err := ctx.Client.Integrations.Create(ctx.Context, projectID, integration.Type, integration)
-		if resp.StatusCode != http.StatusOK {
+		if resp != nil && resp.StatusCode != http.StatusOK {
 			ctx.Log.Debugw("Create request failed", "Status", resp.Status, "Integration", integration)
 		}
 		if err != nil {
