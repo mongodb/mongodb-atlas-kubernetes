@@ -52,7 +52,7 @@ func (ct *contractTest) cleanup(ctx context.Context) error {
 	return nil
 }
 
-func RunGoContractTest(ctx context.Context, t *testing.T, name string, contractTest func(ch ContractHelper)) {
+func RunGoContractTest(ctx context.Context, t *testing.T, name string, contractTest func(t *testing.T, ch ContractHelper)) {
 	if err := skipCheck(name, os.Getenv("AKO_CONTRACT_TEST_FOCUS"), control.Enabled("AKO_CONTRACT_TEST")); err != nil {
 		t.Skipf("Skipping contract test: %v", err.Error())
 	}
@@ -61,7 +61,7 @@ func RunGoContractTest(ctx context.Context, t *testing.T, name string, contractT
 		require.NoError(t, ct.cleanup(ctx))
 	}()
 	t.Run(name, func(t *testing.T) {
-		contractTest(ct)
+		contractTest(t, ct)
 	})
 }
 
