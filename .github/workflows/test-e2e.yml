@@ -169,7 +169,6 @@ jobs:
             "privatelink",
             "private-endpoint",
             "project-settings",
-            "serverless",
             "x509auth",
             "custom-roles",
             "teams",
