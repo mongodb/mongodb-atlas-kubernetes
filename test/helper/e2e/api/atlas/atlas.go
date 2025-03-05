@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -17,10 +18,11 @@ import (
 var globalAtlas *Atlas
 
 type Atlas struct {
-	OrgID   string
-	Public  string
-	Private string
-	Client  *admin.APIClient
+	OrgID              string
+	Public             string
+	Private            string
+	Client             *admin.APIClient
+	ClientV20241113001 *adminv20241113001.APIClient
 }
 
 func AClient() (Atlas, error) {
@@ -31,9 +33,21 @@ func AClient() (Atlas, error) {
 	}
 
 	c, err := atlas.NewClient(os.Getenv("MCLI_OPS_MANAGER_URL"), a.Public, a.Private)
+	if err != nil {
+		return Atlas{}, err
+	}
 	a.Client = c
 
-	return a, err
+	clientV20241113001, err := adminv20241113001.NewClient(
+		adminv20241113001.UseBaseURL(os.Getenv("MCLI_OPS_MANAGER_URL")),
+		adminv20241113001.UseDigestAuth(a.Public, a.Private),
+	)
+	if err != nil {
+		return Atlas{}, err
+	}
+	a.ClientV20241113001 = clientV20241113001
+
+	return a, nil
 }
 
 func GetClientOrFail() *Atlas {
@@ -79,10 +93,10 @@ func (a *Atlas) GetDeploymentNames(projectID string) []string {
 	for _, cluster := range clusters.GetResults() {
 		names = append(names, cluster.GetName())
 	}
-	serverless, _, err := a.Client.ServerlessInstancesApi.ListServerlessInstances(ctx, projectID).Execute()
+	flex, _, err := a.ClientV20241113001.FlexClustersApi.ListFlexClusters(ctx, projectID).Execute()
 	Expect(err).NotTo(HaveOccurred())
-	ginkgoPrettyPrintf(serverless.GetResults(), "listing serverless deployments in project %s", projectID)
-	for _, cluster := range serverless.GetResults() {
+	ginkgoPrettyPrintf(flex.GetResults(), "listing flex deployments in project %s", projectID)
+	for _, cluster := range flex.GetResults() {
 		names = append(names, cluster.GetName())
 	}
 	return names
@@ -98,14 +112,14 @@ func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.Advanced
 	return advancedDeployment, err
 }
 
-func (a *Atlas) GetServerlessInstance(projectId, deploymentName string) (*admin.ServerlessInstanceDescription, error) {
-	serverlessInstance, _, err := a.Client.ServerlessInstancesApi.
-		GetServerlessInstance(context.Background(), projectId, deploymentName).
+func (a *Atlas) GetFlexInstance(projectId, deploymentName string) (*adminv20241113001.FlexClusterDescription20241113, error) {
+	flexInstance, _, err := a.ClientV20241113001.FlexClustersApi.
+		GetFlexCluster(context.Background(), projectId, deploymentName).
 		Execute()
 
-	ginkgoPrettyPrintf(serverlessInstance, "getting serverless instance %s in project %s", deploymentName, projectId)
+	ginkgoPrettyPrintf(flexInstance, "getting flex instance %s in project %s", deploymentName, projectId)
 
-	return serverlessInstance, err
+	return flexInstance, err
 }
 
 func (a *Atlas) GetDBUser(database, userName, projectID string) (*admin.CloudDatabaseUser, error) {

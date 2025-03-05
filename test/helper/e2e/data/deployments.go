@@ -11,14 +11,10 @@ import (
 )
 
 const (
-	InstanceSizeM2  = "M2"
 	InstanceSizeM10 = "M10"
 	InstanceSizeM20 = "M20"
-	InstanceSizeM30 = "M30"
 	InstanceSizeM0  = "M0"
 	AWSRegion       = "US_EAST_1"
-
-	ServerlessProviderName = "SERVERLESS"
 )
 
 func CreateDeploymentWithKeepPolicy(name string) *akov2.AtlasDeployment {
@@ -74,29 +70,6 @@ func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 							},
 						},
 					},
-				},
-			},
-		},
-	}
-}
-
-func CreateServerlessDeployment(name string, providerName string, regionName string) *akov2.AtlasDeployment {
-	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: akov2.AtlasDeploymentSpec{
-			ProjectDualReference: akov2.ProjectDualReference{
-				ProjectRef: &common.ResourceRefNamespaced{
-					Name: ProjectName,
-				},
-			},
-			ServerlessSpec: &akov2.ServerlessSpec{
-				Name: name,
-				ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
-					ProviderName:        ServerlessProviderName,
-					BackingProviderName: providerName,
-					RegionName:          regionName,
 				},
 			},
 		},

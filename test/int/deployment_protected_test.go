@@ -77,15 +77,15 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 		It("removing advanced cluster from Kubernetes when protection is ON leaves it in Atlas",
 			Label("preserving-advanced-cluster"),
 			func() {
-				testDeployment := akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name).Lightweight()
+				testDeployment := akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
 				preserveDeploymentFlow(testNamespace.Name, testProject, testDeployment)
 			},
 		)
 
-		It("removing serverless instance from Kubernetes when protection is ON leaves it in Atlas",
-			Label("preserving-serverless-instance"),
+		It("removing flex instance from Kubernetes when protection is ON leaves it in Atlas",
+			Label("preserving-flex-instance"),
 			func() {
-				testDeployment := akov2.NewDefaultAWSServerlessInstance(testNamespace.Name, testProject.Name)
+				testDeployment := akov2.NewDefaultAWSFlexInstance(testNamespace.Name, testProject.Name)
 				preserveDeploymentFlow(testNamespace.Name, testProject, testDeployment)
 			},
 		)
@@ -113,16 +113,16 @@ func preserveDeploymentFlow(ns string, testProject *akov2.AtlasProject, testDepl
 	})
 
 	By("Checking the Atlas deployment was NOT removed", func() {
-		if testDeployment.IsServerless() {
-			Expect(checkAtlasServerlessInstanceRemoved(testProject.Status.ID, testDeployment.Spec.ServerlessSpec.Name)()).To(BeFalse())
+		if testDeployment.IsFlex() {
+			Expect(checkAtlasFlexInstanceRemoved(testProject.Status.ID, testDeployment.Spec.FlexSpec.Name)()).To(BeFalse())
 			return
 		}
 		Expect(checkAtlasDeploymentRemoved(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name)()).To(BeFalse())
 	})
 
 	By("Making sure deployment gets removed from Atlas manually", func() {
-		if testDeployment.IsServerless() {
-			Expect(deleteServerlessInstance(testProject.Status.ID, testDeployment.Spec.ServerlessSpec.Name)).ToNot(HaveOccurred())
+		if testDeployment.IsFlex() {
+			Expect(deleteFlexInstance(testProject.Status.ID, testDeployment.Spec.FlexSpec.Name)).ToNot(HaveOccurred())
 			return
 		}
 		Expect(deleteAtlasDeployment(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name)).ToNot(HaveOccurred())

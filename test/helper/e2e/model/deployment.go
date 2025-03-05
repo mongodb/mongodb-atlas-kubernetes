@@ -18,8 +18,8 @@ type AtlasDeployment struct {
 type DeploymentSpec akov2.AtlasDeploymentSpec
 
 func (spec DeploymentSpec) GetDeploymentName() string {
-	if spec.ServerlessSpec != nil {
-		return spec.ServerlessSpec.Name
+	if spec.FlexSpec != nil {
+		return spec.FlexSpec.Name
 	}
 	return spec.DeploymentSpec.Name
 }

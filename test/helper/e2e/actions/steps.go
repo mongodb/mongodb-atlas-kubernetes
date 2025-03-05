@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -79,12 +80,12 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 
 	deployment := data.InitialDeployments[0]
 	switch {
-	case deployment.Spec.ServerlessSpec != nil:
+	case deployment.Spec.FlexSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
-		serverlessInstance, err := atlasClient.GetServerlessInstance(input.ProjectID, deployment.Spec.ServerlessSpec.Name)
+		flexInstance, err := atlasClient.GetFlexInstance(input.ProjectID, deployment.Spec.FlexSpec.Name)
 		Expect(err).To(BeNil())
-		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
+		Expect(flexInstance.StateName).To(Equal("IDLE"))
 	default:
 		aClient := atlas.GetClientOrFail()
 		deployment, err := aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName())
@@ -194,11 +195,11 @@ func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admi
 	}
 }
 
-func CompareServerlessSpec(requested model.DeploymentSpec, created admin.ServerlessInstanceDescription) {
-	serverlessSpec := requested.ServerlessSpec
+func CompareFlexSpec(requested model.DeploymentSpec, created adminv20241113001.FlexClusterDescription20241113) {
+	flexSpec := requested.FlexSpec
 	Expect(created.GetMongoDBVersion()).ToNot(BeEmpty())
 	Expect(created.ConnectionStrings.GetStandardSrv()).ToNot(BeEmpty())
-	Expect(created.GetName()).To(Equal(serverlessSpec.Name))
+	Expect(created.GetName()).To(Equal(flexSpec.Name))
 	Expect(created.GetGroupId()).To(Not(BeEmpty()))
 }
 
@@ -464,16 +465,6 @@ func DeleteTestDataProject(data *model.TestDataProvider) {
 	})
 }
 
-func DeleteTestDataTeams(data *model.TestDataProvider) {
-	By("Delete teams", func() {
-		teams := &akov2.AtlasTeamList{}
-		Expect(data.K8SClient.List(data.Context, teams, &client.ListOptions{Namespace: data.Resources.Namespace})).Should(Succeed())
-		for i := range teams.Items {
-			Expect(data.K8SClient.Delete(data.Context, &teams.Items[i])).Should(Succeed())
-		}
-	})
-}
-
 func DeleteTestDataDeployments(data *model.TestDataProvider) {
 	By("Delete deployment", func() {
 		for _, deployment := range data.InitialDeployments {
@@ -505,10 +496,10 @@ func DeleteTestDataUsers(data *model.TestDataProvider) {
 func DeleteAtlasGlobalKeyIfExist(data model.TestDataProvider) {
 	if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
 		By("Delete Global API key for test", func() {
-			client, err := atlas.AClient()
+			atlasClient, err := atlas.AClient()
 			Expect(err).ShouldNot(HaveOccurred())
 			if data.Resources.AtlasKeyAccessType.GlobalKeyAttached != nil {
-				err = client.DeleteGlobalKey(*data.Resources.AtlasKeyAccessType.GlobalKeyAttached)
+				err = atlasClient.DeleteGlobalKey(*data.Resources.AtlasKeyAccessType.GlobalKeyAttached)
 				Expect(err).ShouldNot(HaveOccurred())
 			}
 		})
