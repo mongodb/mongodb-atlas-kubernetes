@@ -17,7 +17,7 @@ import (
 
 func TestDefaultAuditingGet(t *testing.T) {
 	ctx := context.Background()
-	contract.RunGoContractTest(ctx, t, "get default auditing", func(ch contract.ContractHelper) {
+	contract.RunGoContractTest(ctx, t, "get default auditing", func(t *testing.T, ch contract.ContractHelper) {
 		projectName := utils.RandomName("default-auditing-project")
 		require.NoError(t, ch.AddResources(ctx, 5*time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)
@@ -88,7 +88,7 @@ func TestSyncs(t *testing.T) {
 			),
 		},
 	}
-	contract.RunGoContractTest(ctx, t, "test syncs", func(ch contract.ContractHelper) {
+	contract.RunGoContractTest(ctx, t, "test syncs", func(t *testing.T, ch contract.ContractHelper) {
 		projectName := utils.RandomName("audit-syncs-project")
 		require.NoError(t, ch.AddResources(ctx, 5*time.Minute, contract.DefaultAtlasProject(projectName)))
 		testProjectID, err := ch.ProjectID(ctx, projectName)

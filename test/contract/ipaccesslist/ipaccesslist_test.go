@@ -19,7 +19,7 @@ import (
 
 func TestList(t *testing.T) {
 	ctx := context.Background()
-	contract.RunGoContractTest(ctx, t, "get default auditing", func(ch contract.ContractHelper) {
+	contract.RunGoContractTest(ctx, t, "get default auditing", func(t *testing.T, ch contract.ContractHelper) {
 		projectName := utils.RandomName("default-auditing-project")
 
 		prj := contract.DefaultAtlasProject(projectName).(*akov2.AtlasProject)
