@@ -125,28 +125,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	}
 
-	doServerlessDeploymentStatusChecks := func() {
-		By("Checking observed Serverless state", func() {
-			atlasDeployment, _, err := atlasClient.ServerlessInstancesApi.
-				GetServerlessInstance(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
-				Execute()
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
-			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.GetStandardSrv()))
-			Expect(createdDeployment.Status.MongoDBVersion).To(Not(BeEmpty()))
-			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
-			Expect(createdDeployment.Status.Conditions).To(ConsistOf(conditions.MatchConditions(
-				api.TrueCondition(api.DeploymentReadyType),
-				api.TrueCondition(api.ReadyType),
-				api.TrueCondition(api.ValidationSucceeded),
-				api.TrueCondition(api.ResourceVersionStatus),
-			)))
-			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
-		})
-	}
-
 	checkAtlasState := func(additionalChecks ...func(c *admin.AdvancedClusterDescription)) {
 		By("Verifying Deployment state in Atlas", func() {
 			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersApi.
@@ -1242,52 +1220,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 		})
 	})
-
-	Describe("Create serverless instance", func() {
-		It("Should Succeed", func(ctx context.Context) {
-			createdDeployment = akov2.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
-			createdDeployment.Spec.ServerlessSpec.Tags = []*akov2.TagSpec{}
-			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				performCreate(createdDeployment, 30*time.Minute)
-				doServerlessDeploymentStatusChecks()
-			})
-
-			//nolint:dupl
-			By("Updating the Instance tags", func() {
-				createdDeployment = performUpdate(ctx, 20*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.ServerlessSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
-				})
-
-				doServerlessDeploymentStatusChecks()
-				atlasDeployment, _, _ := atlasClient.ServerlessInstancesApi.
-					GetServerlessInstance(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name).
-					Execute()
-				if createdDeployment != nil {
-					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
-						Expect(atlasDeployment.GetTags()[i].GetKey() == tag.Key).To(BeTrue())
-						Expect(atlasDeployment.GetTags()[i].GetValue() == tag.Value).To(BeTrue())
-					}
-				}
-			})
-
-			//nolint:dupl
-			By("Updating the Instance tags with a duplicate key and removing all tags", func() {
-				var err error
-				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.ServerlessSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-1", Value: "value-2"}}
-				})
-				Expect(err).To(BeNil())
-
-				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, createdDeployment, api.FalseCondition(api.ValidationSucceeded))
-				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
-				createdDeployment = performUpdate(ctx, 20*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					// Removing tags
-					deployment.Spec.ServerlessSpec.Tags = []*akov2.TagSpec{}
-				})
-			})
-		})
-	})
 })
 
 var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "deployment-backups"), func() {
@@ -1641,10 +1573,10 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 	}
 }
 
-func checkAtlasServerlessInstanceRemoved(projectID string, deploymentName string) func() bool {
+func checkAtlasFlexInstanceRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ServerlessInstancesApi.
-			GetServerlessInstance(context.Background(), projectID, deploymentName).
+		_, r, err := atlasClientv20241113001.FlexClustersApi.
+			GetFlexCluster(context.Background(), projectID, deploymentName).
 			Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
@@ -1661,9 +1593,9 @@ func deleteAtlasDeployment(projectID string, deploymentName string) error {
 	return err
 }
 
-func deleteServerlessInstance(projectID string, deploymentName string) error {
-	_, _, err := atlasClient.ServerlessInstancesApi.
-		DeleteServerlessInstance(context.Background(), projectID, deploymentName).
+func deleteFlexInstance(projectID string, deploymentName string) error {
+	_, _, err := atlasClientv20241113001.FlexClustersApi.
+		DeleteFlexCluster(context.Background(), projectID, deploymentName).
 		Execute()
 	return err
 }

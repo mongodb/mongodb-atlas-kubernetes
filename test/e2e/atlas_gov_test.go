@@ -628,7 +628,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
-		By("Creating a Serverless Cluster", func() {
+		By("Creating a Flex Cluster", func() {
 			akoDeployment := &akov2.AtlasDeployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      clusterName,
@@ -641,11 +641,10 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 							Namespace: testData.Resources.Namespace,
 						},
 					},
-					ServerlessSpec: &akov2.ServerlessSpec{
+					FlexSpec: &akov2.FlexSpec{
 						Name: clusterName,
-						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
+						ProviderSettings: &akov2.FlexProviderSettings{
 							BackingProviderName: "AWS",
-							ProviderName:        "SERVERLESS",
 							RegionName:          "US_GOV_WEST_1",
 						},
 						TerminationProtectionEnabled: false,
@@ -655,7 +654,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(testData.K8SClient.Create(ctx, akoDeployment))
 		})
 
-		By("Serverless is not supported in Atlas for government", func() {
+		By("Flex is not supported in Atlas for government", func() {
 			expectedConditions := conditions.MatchConditions(
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.AtlasGovUnsupported)).
