@@ -158,6 +158,51 @@ metadata:
         },
         {
           "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasNetworkContainer",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/managed-by": "kustomize",
+              "app.kubernetes.io/name": "mongodb-atlas-kubernetes"
+            },
+            "name": "atlasnetworkcontainer-sample"
+          },
+          "spec": {
+            "cidrBlock": "10.11.0.0/16",
+            "connectionSecret": {
+              "name": "atlas-connection-secret"
+            },
+            "externalProjectRef": {
+              "projectId": "66e2f2b621571b7e69a89b66"
+            },
+            "provider": "AWS",
+            "region": "US_EAST_1"
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasNetworkPeering",
+          "metadata": {
+            "name": "atlasnetworkpeering-sample"
+          },
+          "spec": {
+            "atlasCidrBlock": "10.12.0.0/16",
+            "awsConfiguration": {
+              "accepterRegionName": "US_EAST_1",
+              "awsAccountId": "23214235145",
+              "routeTableCidrBlock": "10.11.0.0/16",
+              "vpcId": "vpcid-7123782134"
+            },
+            "containerId": "623412394512350",
+            "containerRegion": "US_EAST_1",
+            "projectRef": {
+              "name": "atlas-project",
+              "namespace": "namespace"
+            },
+            "provider": "AWS"
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
           "kind": "AtlasProject",
           "metadata": {
             "name": "my-project"
@@ -192,7 +237,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Database
-    createdAt: "2025-02-17T10:59:45Z"
+    createdAt: "2025-03-06T14:09:19Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -203,12 +248,12 @@ metadata:
     features.operators.openshift.io/token-auth-gcp: "false"
     operators.operatorframework.io/builder: operator-sdk-v1.34.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.7.1
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.8.0
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.7.1
+  name: mongodb-atlas-kubernetes.v2.8.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -256,6 +301,16 @@ spec:
         displayName: Atlas IPAccess List
         kind: AtlasIPAccessList
         name: atlasipaccesslists.atlas.mongodb.com
+        version: v1
+      - description: AtlasNetworkContainer is the Schema for the AtlasNetworkContainer API
+        displayName: Atlas Network Container
+        kind: AtlasNetworkContainer
+        name: atlasnetworkcontainers.atlas.mongodb.com
+        version: v1
+      - description: AtlasNetworkPeering is the Schema for the AtlasNetworkPeering API
+        displayName: Atlas Network Peering
+        kind: AtlasNetworkPeering
+        name: atlasnetworkpeerings.atlas.mongodb.com
         version: v1
       - description: "The AtlasPrivateEndpoint custom resource definition (CRD) defines a desired [Private Endpoint](https://www.mongodb.com/docs/atlas/security-private-endpoint/#std-label-private-endpoint-overview) configuration for an Atlas project. It allows a private connection between your cloud provider and Atlas that doesn't send information through a public network. \n You can use private endpoints to create a unidirectional connection to Atlas clusters from your virtual network."
         displayName: Atlas Private Endpoint
@@ -351,6 +406,8 @@ spec:
                 - atlasdeployments
                 - atlasfederatedauths
                 - atlasipaccesslists
+                - atlasnetworkcontainers
+                - atlasnetworkpeerings
                 - atlasprivateendpoints
                 - atlasprojects
                 - atlassearchindexconfigs
@@ -377,6 +434,8 @@ spec:
                 - atlasdeployments/status
                 - atlasfederatedauths/status
                 - atlasipaccesslists/status
+                - atlasnetworkcontainers/status
+                - atlasnetworkpeerings/status
                 - atlasprivateendpoints/status
                 - atlasprojects/status
                 - atlassearchindexconfigs/status
@@ -391,6 +450,8 @@ spec:
                 - atlas.mongodb.com
               resources:
                 - atlasipaccesslists/finalizers
+                - atlasnetworkcontainers/finalizers
+                - atlasnetworkpeerings/finalizers
               verbs:
                 - update
           serviceAccountName: mongodb-atlas-operator
@@ -438,7 +499,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.7.1
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.8.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -522,5 +583,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.7.1
-  replaces: mongodb-atlas-kubernetes.v2.7.0
+  version: 2.8.0
+  replaces: mongodb-atlas-kubernetes.v2.7.1
