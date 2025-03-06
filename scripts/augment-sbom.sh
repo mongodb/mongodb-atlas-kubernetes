@@ -32,7 +32,7 @@ kondukto_repo="${KONDUKTO_REPO:?KONDUKTO_REPO must be set}"
 kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX:?KONDUKTO_BRANCH_PREFIX must be set}"
 
 # Computed values
-arch=$(jq -r < "${sbom_lite_json}" '.components[0].properties[] | select( .name == "syft:metadata:architecture" ) | .value')
+arch=$(jq -r '.components[0].properties[] | select( .name == "syft:metadata:architecture" ) | .value' <"${sbom_lite_json}")
 kondukto_branch="${kondukto_branch_prefix}-linux-${arch}"
 target="${target_dir}/linux-${arch}.sbom.json"
 
@@ -43,6 +43,6 @@ mkdir -p "${target_dir}"
 docker run --platform="${docker_platform}" -it --rm -v "${PWD}":/pwd \
   -e KONDUKTO_TOKEN="${kondukto_token}" \
   "${silkbomb_img}" augment --sbom-in "/pwd/${sbom_lite_json}" \
-  --repo "${kondukto_repo}" --branch "${kondukto_branch}" -sbom-out "/pwd/${target}" 
+  --repo "${kondukto_repo}" --branch "${kondukto_branch}" --sbom-out "/pwd/${target}"
 
 echo "${target} augmented with Kondukto scan results"
