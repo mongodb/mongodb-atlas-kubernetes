@@ -564,10 +564,10 @@ upload-sbom-to-kondukto: ## Upload a given SBOM (lite) file to Kondukto
 .PHONY: augment-sbom
 augment-sbom: ## augment the latest SBOM for a given architecture on a given directory
 	@KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
-	./scripts/augment-sbom.sh $(TARGET_ARCH) tmp
+	./scripts/augment-sbom.sh $(SBOM_JSON_FILE) tmp
 
 .PHONY: store-augmented-sboms
-store-augmented-sboms: augment-sbom ## Augment & Store the latest SBOM for a given version & architecture
+store-augmented-sboms: ## Augment & Store the latest SBOM for a given version & architecture
 	KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH)
 
 .PHONY: install-ako-helm
