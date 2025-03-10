@@ -10,7 +10,7 @@ const (
 	DefaultNamespacedOperatorConfig  = "../../deploy/namespaced/namespaced-config.yaml"
 
 	// Default names/path for tests coordinates
-	DataGenFolder            = "data/gen" // for generated configs
+	DataGenFolder            = "output" // for generated configs
 	DefaultOperatorNS        = "mongodb-atlas-system"
 	DefaultOperatorName      = "mongodb-atlas-operator"
 	DefaultOperatorGlobalKey = "mongodb-atlas-operator-api-key"

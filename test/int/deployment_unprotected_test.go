@@ -70,15 +70,15 @@ var _ = Describe("AtlasDeployment Deletion Unprotected",
 		It("removing advanced cluster from Kubernetes when protection is OFF wipes it from Atlas",
 			Label("wiping-advanced-cluster"),
 			func() {
-				testDeployment := akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name).Lightweight()
+				testDeployment := akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
 				wipeDeploymentFlow(testNamespace.Name, testProject, testDeployment)
 			},
 		)
 
-		It("removing serverless instance from Kubernetes when protection is OFF wipes it from Atlas",
-			Label("wiping-serverless-instance"),
+		It("removing flex instance from Kubernetes when protection is OFF wipes it from Atlas",
+			Label("wiping-flex-instance"),
 			func() {
-				testDeployment := akov2.NewDefaultAWSServerlessInstance(testNamespace.Name, testProject.Name)
+				testDeployment := akov2.NewDefaultAWSFlexInstance(testNamespace.Name, testProject.Name)
 				wipeDeploymentFlow(testNamespace.Name, testProject, testDeployment)
 			},
 		)
@@ -107,9 +107,9 @@ func wipeDeploymentFlow(ns string, testProject *akov2.AtlasProject, testDeployme
 	})
 
 	By("Checking whether the Atlas deployment got also removed", func() {
-		if testDeployment.IsServerless() {
+		if testDeployment.IsFlex() {
 			Eventually(
-				checkAtlasServerlessInstanceRemoved(testProject.Status.ID, testDeployment.Spec.ServerlessSpec.Name),
+				checkAtlasFlexInstanceRemoved(testProject.Status.ID, testDeployment.Spec.FlexSpec.Name),
 			).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			return
 		}

@@ -90,8 +90,8 @@ var _ = Describe("HELM charts", Ordered, func() {
 			data = test
 			GinkgoWriter.Println(data.Resources.KeyName)
 			switch deploymentType {
-			case "serverless":
-				data.Resources.Deployments[0].Spec.ServerlessSpec.Name = data.Resources.KeyName
+			case "flex":
+				data.Resources.Deployments[0].Spec.FlexSpec.Name = data.Resources.KeyName
 			default:
 				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = data.Resources.KeyName
 			}
@@ -119,7 +119,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				"helm-ns",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"../helper/e2e/data/atlasdeployment_basic_helm.yaml"},
+				[]string{"../helper/e2e/data/atlasdeployment_flex.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader").
@@ -134,25 +134,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 					actions.HelmUpgradeDeleteFirstUser,
 				},
 			),
-			"default",
-		),
-		Entry("Deployment by helm chart", Label("helm-advanced"),
-			model.DataProviderWithResources(
-				"helm-advanced",
-				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"../helper/e2e/data/atlasdeployment_advanced_helm.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("reader2").
-						WithSecretRef("dbuser-secret-u2").
-						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-						WithAuthDatabase("admin"),
-				},
-				30014,
-				[]func(*model.TestDataProvider){},
-			),
-			"advanced",
+			"flex",
 		),
 		Entry("Deployment multiregion by helm chart", Label("helm-advanced-multiregion"),
 			model.DataProviderWithResources(
@@ -172,12 +154,12 @@ var _ = Describe("HELM charts", Ordered, func() {
 			),
 			"advanced",
 		),
-		Entry("Serverless deployment by helm chart", Label("helm-serverless"),
+		Entry("Flex deployment by helm chart", Label("helm-flex"),
 			model.DataProviderWithResources(
-				"helm-serverless",
+				"helm-flex",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"../helper/e2e/data/atlasdeployment_serverless.yaml"},
+				[]string{"../helper/e2e/data/atlasdeployment_flex.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
@@ -188,7 +170,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				30016,
 				[]func(*model.TestDataProvider){},
 			),
-			"serverless",
+			"flex",
 		),
 	)
 
@@ -199,7 +181,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 					"helm-wide",
 					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-					[]string{"../helper/e2e/data/atlasdeployment_basic_helm.yaml"},
+					[]string{"../helper/e2e/data/atlasdeployment_flex.yaml"},
 					[]string{},
 					[]model.DBUser{
 						*model.NewDBUser("reader2").
@@ -212,7 +194,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Deployments[0].ObjectMeta.Name = "deployment-from-helm-wide"
-				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = "deployment-from-helm-wide"
+				data.Resources.Deployments[0].Spec.FlexSpec.Name = "deployment-from-helm-wide"
 			})
 			By("User use helm for deploying operator", func() {
 				helm.InstallOperatorWideSubmodule(data.Resources)
@@ -245,7 +227,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 					"helm-upgrade",
 					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-					[]string{"../helper/e2e/data/atlasdeployment_basic_helm.yaml"},
+					[]string{"../helper/e2e/data/atlasdeployment_flex.yaml"},
 					[]string{},
 					[]model.DBUser{
 						*model.NewDBUser("admin").
@@ -258,7 +240,8 @@ var _ = Describe("HELM charts", Ordered, func() {
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Deployments[0].ObjectMeta.Name = "deployment-from-helm-upgrade"
-				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = "deployment-from-helm-upgrade"
+				data.Resources.Deployments[0].Spec.FlexSpec.Name = "deployment-from-helm-upgrade"
+				data.Resources.Deployments[0].Spec.FlexSpec.TerminationProtectionEnabled = true
 			})
 			By("User use helm for last released version of operator and deploy his resources", func() {
 				helm.InstallOperatorNamespacedFromLatestRelease(data.Resources)
@@ -266,8 +249,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				waitDeploymentWithChecks(&data)
 			})
 			By("User update new released operator", func() {
-				backup := true
-				data.Resources.Deployments[0].Spec.DeploymentSpec.BackupEnabled = &backup
+				data.Resources.Deployments[0].Spec.FlexSpec.TerminationProtectionEnabled = false
 				actions.HelmUpgradeChartVersions(&data)
 				actions.CheckUsersCanUseOldApp(&data)
 			})
@@ -290,10 +272,10 @@ func waitDeploymentWithChecks(data *model.TestDataProvider) {
 	By("Check attributes", func() {
 		deployment := data.Resources.Deployments[0]
 		switch {
-		case deployment.Spec.ServerlessSpec != nil:
-			serverlessInstance, err := atlasClient.GetServerlessInstance(data.Resources.ProjectID, deployment.Spec.ServerlessSpec.Name)
+		case deployment.Spec.FlexSpec != nil:
+			flexInstance, err := atlasClient.GetFlexInstance(data.Resources.ProjectID, deployment.Spec.FlexSpec.Name)
 			Expect(err).To(BeNil())
-			actions.CompareServerlessSpec(deployment.Spec, *serverlessInstance)
+			actions.CompareFlexSpec(deployment.Spec, *flexInstance)
 		default:
 			uDeployment, err := atlasClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
 			Expect(err).To(BeNil())
