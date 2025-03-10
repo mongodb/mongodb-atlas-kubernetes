@@ -2,7 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,7 +15,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
@@ -37,20 +35,6 @@ type networkPeerDiff struct {
 	PeersToUpdate []admin.BaseNetworkPeeringConnectionSettings
 }
 
-func isSkippedNetworkPeersEmpty(atlasProject *akov2.AtlasProject) (bool, error) {
-	lastSkippedSpec := akov2.AtlasProjectSpec{}
-	lastSkippedSpecString, ok := atlasProject.Annotations[customresource.AnnotationLastSkippedConfiguration]
-	if !ok {
-		return false, nil
-	}
-
-	if err := json.Unmarshal([]byte(lastSkippedSpecString), &lastSkippedSpec); err != nil {
-		return false, fmt.Errorf("failed to parse last skipped configuration: %w", err)
-	}
-
-	return len(lastSkippedSpec.NetworkPeers) == 0, nil
-}
-
 func lastAppliedNetworkPeerings(atlasProject *akov2.AtlasProject) ([]akov2.NetworkPeer, error) {
 	lastApplied, err := lastAppliedSpecFrom(atlasProject)
 	if err != nil {
@@ -63,15 +47,6 @@ func lastAppliedNetworkPeerings(atlasProject *akov2.AtlasProject) ([]akov2.Netwo
 }
 
 func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.Result {
-	shouldSkip, err := isSkippedNetworkPeersEmpty(akoProject)
-	if err != nil {
-		return workflow.Terminate(workflow.Internal, err)
-	}
-	if shouldSkip {
-		workflowCtx.UnsetCondition(api.NetworkPeerReadyType)
-		return workflow.OK()
-	}
-
 	lastAppliedPeers, err := lastAppliedNetworkPeerings(akoProject)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
@@ -613,15 +588,6 @@ func validateInitNetworkPeer(peer akov2.NetworkPeer) error {
 }
 
 func DeleteOwnedNetworkPeers(ctx context.Context, project *akov2.AtlasProject, service admin.NetworkPeeringApi, logger *zap.SugaredLogger) workflow.Result {
-	shouldSkip, err := isSkippedNetworkPeersEmpty(project)
-	if err != nil {
-		workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
-			fmt.Errorf("failed to delete NetworkPeers: %w", err))
-	}
-	if shouldSkip {
-		logger.Debug("Nothing to do, Network Peers projects subresouedes are disabled")
-		return workflow.OK()
-	}
 	for _, peerStatus := range project.Status.NetworkPeers {
 		errDelete := deletePeerByID(ctx, service, project.ID(), peerStatus.ID, logger)
 		if errDelete != nil && !errors.Is(errDelete, errNortFound) {
