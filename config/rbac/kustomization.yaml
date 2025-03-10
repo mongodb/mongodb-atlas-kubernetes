@@ -22,6 +22,8 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the Project itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
+- atlasintegration_editor_role.yaml
+- atlasintegration_viewer_role.yaml
 - atlasnetworkcontainer_editor_role.yaml
 - atlasnetworkcontainer_viewer_role.yaml
 - atlasipaccesslist_editor_role.yaml
@@ -52,3 +54,5 @@ resources:
 - atlasdeployment_viewer_role.yaml
 - atlasnetworkpeering_editor_role.yaml
 - atlasnetworkpeering_viewer_role.yaml
+
+

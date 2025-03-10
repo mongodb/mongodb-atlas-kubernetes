@@ -1,0 +1,9 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  # TODO(user): Add fields here
