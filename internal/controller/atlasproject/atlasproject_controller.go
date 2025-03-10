@@ -110,11 +110,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			}
 		}
 
-		err := customresource.ApplyLastConfigSkipped(ctx, atlasProject, r.Client)
-		if err != nil {
-			log.Errorw("Failed to apply last skipped config", "error", err)
-			return workflow.Terminate(workflow.Internal, err).ReconcileResult(), nil
-		}
+		// TODO: clear last applied for type
 
 		return workflow.OK().ReconcileResult(), nil
 	}

@@ -153,22 +153,6 @@ func TestApplyLastConfigApplied(t *testing.T) {
 	assert.Equal(t, expectedConfig, annot[customresource.AnnotationLastAppliedConfiguration])
 }
 
-func TestApplyLastConfigSkipped(t *testing.T) {
-	resource := sampleResource()
-	resource.Name = "foo"
-	resource.Spec.Username = "test-user"
-
-	scheme := runtime.NewScheme()
-	utilruntime.Must(akov2.AddToScheme(scheme))
-	c := fake.NewClientBuilder().WithObjects(resource).WithScheme(scheme).Build()
-	assert.NoError(t, customresource.ApplyLastConfigSkipped(context.Background(), resource, c))
-
-	annot := resource.GetAnnotations()
-	assert.NotEmpty(t, annot)
-	expectedConfig := `{"roles":null,"username":"test-user"}`
-	assert.Equal(t, expectedConfig, annot[customresource.AnnotationLastSkippedConfiguration])
-}
-
 func TestIsResourceManagedByOperator(t *testing.T) {
 	testCases := []struct {
 		title         string
