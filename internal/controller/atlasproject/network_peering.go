@@ -37,20 +37,6 @@ type networkPeerDiff struct {
 	PeersToUpdate []admin.BaseNetworkPeeringConnectionSettings
 }
 
-func isSkippedNetworkPeersEmpty(atlasProject *akov2.AtlasProject) (bool, error) {
-	lastSkippedSpec := akov2.AtlasProjectSpec{}
-	lastSkippedSpecString, ok := atlasProject.Annotations[customresource.AnnotationLastSkippedConfiguration]
-	if !ok {
-		return false, nil
-	}
-
-	if err := json.Unmarshal([]byte(lastSkippedSpecString), &lastSkippedSpec); err != nil {
-		return false, fmt.Errorf("failed to parse last skipped configuration: %w", err)
-	}
-
-	return len(lastSkippedSpec.NetworkPeers) == 0, nil
-}
-
 func hasLastAppliedNetworkPeers(atlasProject *akov2.AtlasProject) (bool, error) {
 	lastAppliedSpec := akov2.AtlasProjectSpec{}
 	lastAppliedSpecStr, ok := atlasProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
@@ -66,15 +52,6 @@ func hasLastAppliedNetworkPeers(atlasProject *akov2.AtlasProject) (bool, error) 
 }
 
 func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.Result {
-	shouldSkip, err := isSkippedNetworkPeersEmpty(akoProject)
-	if err != nil {
-		return workflow.Terminate(workflow.Internal, err)
-	}
-	if shouldSkip {
-		workflowCtx.UnsetCondition(api.NetworkPeerReadyType)
-		return workflow.OK()
-	}
-
 	configuredBefore, err := hasLastAppliedNetworkPeers(akoProject)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
@@ -605,15 +582,6 @@ func validateInitNetworkPeer(peer akov2.NetworkPeer) error {
 }
 
 func DeleteOwnedNetworkPeers(ctx context.Context, project *akov2.AtlasProject, service admin.NetworkPeeringApi, logger *zap.SugaredLogger) workflow.Result {
-	shouldSkip, err := isSkippedNetworkPeersEmpty(project)
-	if err != nil {
-		workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
-			fmt.Errorf("failed to delete NetworkPeers: %w", err))
-	}
-	if shouldSkip {
-		logger.Debug("Nothing to do, Network Peers projects subresouedes are disabled")
-		return workflow.OK()
-	}
 	for _, peerStatus := range project.Status.NetworkPeers {
 		errDelete := deletePeerByID(ctx, service, project.ID(), peerStatus.ID, logger)
 		if errDelete != nil && !errors.Is(errDelete, errNortFound) {

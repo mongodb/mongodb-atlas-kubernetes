@@ -12,7 +12,6 @@ import (
 
 const (
 	AnnotationLastAppliedConfiguration = "mongodb.com/last-applied-configuration"
-	AnnotationLastSkippedConfiguration = "mongodb.com/last-skipped-configuration"
 )
 
 type OperatorChecker func(resource api.AtlasCustomResource) (bool, error)
@@ -42,10 +41,6 @@ func IsOwner(resource api.AtlasCustomResource, protectionFlag bool, operatorChec
 
 func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client) error {
 	return applyLastSpec(ctx, resource, k8sClient, AnnotationLastAppliedConfiguration)
-}
-
-func ApplyLastConfigSkipped(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client) error {
-	return applyLastSpec(ctx, resource, k8sClient, AnnotationLastSkippedConfiguration)
 }
 
 func applyLastSpec(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client, annotationKey string) error {
