@@ -77,6 +77,14 @@ var dualRefCRDs = []struct {
 		},
 		filename: "atlas.mongodb.com_atlasnetworkpeerings.yaml",
 	},
+	{
+		obj: &AtlasIntegration{
+			Spec: AtlasIntegrationSpec{ // Avoid triggering integration specific validations
+				Type: "DATADOG",
+			},
+		},
+		filename: "atlas.mongodb.com_atlasintegrations.yaml",
+	},
 }
 
 var testCases = []struct {
