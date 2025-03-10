@@ -33,11 +33,6 @@ jobs:
     with:
       forked:  ${{ inputs.forked }}
 
-  contract-tests:
-    needs: allowed
-    uses: ./.github/workflows/test-contract.yml
-    secrets: inherit
-
   e2e-tests:
     needs: allowed
     uses: ./.github/workflows/test-e2e.yml

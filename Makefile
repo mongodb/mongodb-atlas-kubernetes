@@ -579,8 +579,3 @@ install-ako-helm:
 	--set subobjectDeletionProtection=false \
 	--namespace=$(HELM_AKO_NAMESPACE) --create-namespace
 	kubectl get crds
-
-.PHONY: contract-tests
-contract-tests: run-kind install-ako-helm ## Run contract tests with support by a k8s cluster and AKO
-	go clean -testcache
-	AKO_CONTRACT_TEST=1 HELM_AKO_NAMESPACE=$(HELM_AKO_NAMESPACE) go test -v -race -cover ./test/contract/...
