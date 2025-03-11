@@ -110,7 +110,11 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			}
 		}
 
-		// TODO: clear last applied for type
+		if err := r.clearLastAppliedMigratedResources(ctx, atlasProject); err != nil {
+			result = workflow.Terminate(workflow.Internal, err)
+			log.Errorw("Failed to clear migrated independent resources", "error", err)
+			return result.ReconcileResult(), nil
+		}
 
 		return workflow.OK().ReconcileResult(), nil
 	}
@@ -371,4 +375,21 @@ func lastAppliedSpecFrom(atlasProject *akov2.AtlasProject) (*akov2.AtlasProjectS
 	}
 
 	return &lastApplied.Spec, nil
+}
+
+func (r *AtlasProjectReconciler) clearLastAppliedMigratedResources(ctx context.Context, atlasProject *akov2.AtlasProject) error {
+	lastCfg, err := customresource.ParseLastConfigApplied(&akov2.AtlasProjectSpec{}, atlasProject)
+	if err != nil {
+		return fmt.Errorf("failed to parse last applied config annotation: %w", err)
+	}
+	// clear all resources migrated as independent CRDs to avoid eager
+	// reconciliation that might conflict with independent CRs and apply
+	lastCfg.CustomRoles = nil
+	lastCfg.PrivateEndpoints = nil
+	lastCfg.ProjectIPAccessList = nil
+	lastCfg.NetworkPeers = nil
+	if err := customresource.ApplyLastConfigApplied(ctx, &akov2.AtlasProject{Spec: *lastCfg}, r.Client); err != nil {
+		return fmt.Errorf("failed to apply last applied config annotation: %w", err)
+	}
+	return nil
 }
