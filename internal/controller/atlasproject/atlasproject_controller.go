@@ -18,7 +18,6 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -342,20 +341,4 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
 	}
-}
-
-func lastSpecFrom(atlasProject *akov2.AtlasProject, annotation string) (*akov2.AtlasProjectSpec, error) {
-	var lastApplied akov2.AtlasProject
-	ann, ok := atlasProject.GetAnnotations()[annotation]
-
-	if !ok {
-		return nil, nil
-	}
-
-	err := json.Unmarshal([]byte(ann), &lastApplied.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("error reading AtlasProject Spec from annotation [%s]: %w", annotation, err)
-	}
-
-	return &lastApplied.Spec, nil
 }

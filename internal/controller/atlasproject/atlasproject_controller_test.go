@@ -404,7 +404,7 @@ func TestLastSpecFrom(t *testing.T) {
 		"should return nil when there is no last spec": {},
 		"should return error when last spec annotation is wrong": {
 			annotations: map[string]string{"mongodb.com/last-applied-configuration": "{wrong}"},
-			expectedError: "error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]:" +
+			expectedError: "error parsing JSON annotation value [{wrong}] into a v1.AtlasProjectSpec:" +
 				" invalid character 'w' looking for beginning of object key string",
 		},
 		"should return last spec": {
@@ -418,7 +418,7 @@ func TestLastSpecFrom(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			p := &akov2.AtlasProject{}
 			p.WithAnnotations(tt.annotations)
-			lastSpec, err := lastSpecFrom(p, "mongodb.com/last-applied-configuration")
+			lastSpec, err := customresource.ParseLastConfigApplied(&akov2.AtlasProjectSpec{}, p)
 			if err != nil {
 				assert.ErrorContains(t, err, tt.expectedError)
 			}

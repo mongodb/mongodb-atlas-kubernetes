@@ -146,7 +146,7 @@ func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) work
 }
 
 func mapLastAppliedIPAccessList(atlasProject *akov2.AtlasProject) (ipaccesslist.IPAccessEntries, error) {
-	lastApplied, err := lastSpecFrom(atlasProject, customresource.AnnotationLastAppliedConfiguration)
+	lastApplied, err := customresource.ParseLastConfigApplied(&akov2.AtlasProjectSpec{}, atlasProject)
 	if err != nil {
 		return nil, err
 	}

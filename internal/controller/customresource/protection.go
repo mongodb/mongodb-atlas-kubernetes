@@ -3,6 +3,7 @@ package customresource
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,10 +41,6 @@ func IsOwner(resource api.AtlasCustomResource, protectionFlag bool, operatorChec
 }
 
 func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client) error {
-	return applyLastSpec(ctx, resource, k8sClient, AnnotationLastAppliedConfiguration)
-}
-
-func applyLastSpec(ctx context.Context, resource api.AtlasCustomResource, k8sClient client.Client, annotationKey string) error {
 	uObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resource)
 	if err != nil {
 		return err
@@ -62,7 +59,7 @@ func applyLastSpec(ctx context.Context, resource api.AtlasCustomResource, k8sCli
 		annotations = map[string]string{}
 	}
 
-	annotations[annotationKey] = string(js)
+	annotations[AnnotationLastAppliedConfiguration] = string(js)
 	resourceCopy.SetAnnotations(annotations)
 	err = k8sClient.Patch(ctx, resourceCopy, client.MergeFrom(resource))
 	if err != nil {
@@ -72,6 +69,19 @@ func applyLastSpec(ctx context.Context, resource api.AtlasCustomResource, k8sCli
 	// retains current behavior
 	resource.SetAnnotations(resourceCopy.GetAnnotations())
 	return nil
+}
+
+func ParseLastConfigApplied[S any](spec *S, resource api.AtlasCustomResource) (*S, error) {
+	lastAppliedJSON, ok := resource.GetAnnotations()[AnnotationLastAppliedConfiguration]
+	if !ok {
+		return nil, nil
+	}
+
+	err := json.Unmarshal([]byte(lastAppliedJSON), &spec)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing JSON annotation value [%s] into a %T: %w", lastAppliedJSON, *spec, err)
+	}
+	return spec, nil
 }
 
 func IsResourceManagedByOperator(resource api.AtlasCustomResource) (bool, error) {

@@ -572,7 +572,7 @@ type intersectionPair struct {
 }
 
 func mapLastAppliedPrivateEndpoint(atlasProject *akov2.AtlasProject) (map[string]akov2.PrivateEndpoint, error) {
-	lastApplied, err := lastSpecFrom(atlasProject, customresource.AnnotationLastAppliedConfiguration)
+	lastApplied, err := customresource.ParseLastConfigApplied(&akov2.AtlasProjectSpec{}, atlasProject)
 	if err != nil {
 		return nil, err
 	}
