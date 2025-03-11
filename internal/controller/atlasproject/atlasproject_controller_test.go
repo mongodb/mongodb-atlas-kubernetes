@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
@@ -31,6 +32,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	atlas_controllers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
@@ -440,6 +442,89 @@ func TestLastSpecFrom(t *testing.T) {
 			assert.Equal(t, tt.expectedLastSpec, lastSpec)
 		})
 	}
+}
+
+func TestSkipClearsMigratedResourcesLastConfig(t *testing.T) {
+	ctx := context.Background()
+	prj := akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "test-project",
+			Namespace:   "test-ns",
+			Annotations: map[string]string{},
+		},
+		Spec: akov2.AtlasProjectSpec{
+			Name:                      "test-project",
+			PrivateEndpoints:          []akov2.PrivateEndpoint{{}},
+			CloudProviderAccessRoles:  []akov2.CloudProviderAccessRole{{}},
+			CloudProviderIntegrations: []akov2.CloudProviderIntegration{{}},
+			AlertConfigurations:       []akov2.AlertConfiguration{{}},
+			NetworkPeers:              []akov2.NetworkPeer{{}},
+			X509CertRef:               &common.ResourceRefNamespaced{},
+			Integrations:              []project.Integration{{}},
+			EncryptionAtRest:          &akov2.EncryptionAtRest{},
+			Auditing:                  &akov2.Auditing{},
+			Settings:                  &akov2.ProjectSettings{},
+			CustomRoles:               []akov2.CustomRole{{}},
+			Teams:                     []akov2.Team{{}},
+			BackupCompliancePolicyRef: &common.ResourceRefNamespaced{},
+			ConnectionSecret:          &common.ResourceRefNamespaced{},
+			ProjectIPAccessList:       []project.IPAccessList{{}},
+			MaintenanceWindow:         project.MaintenanceWindow{},
+		},
+	}
+	prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, prj.Spec)
+	prj.Annotations[customresource.ReconciliationPolicyAnnotation] = customresource.ReconciliationPolicySkip
+	testScheme := runtime.NewScheme()
+	require.NoError(t, akov2.AddToScheme(testScheme))
+	require.NoError(t, corev1.AddToScheme(testScheme))
+	k8sClient := fake.NewClientBuilder().
+		WithScheme(testScheme).
+		WithObjects(&prj).
+		WithStatusSubresource(&prj).
+		Build()
+
+	req := ctrl.Request{NamespacedName: types.NamespacedName{
+		Name:      prj.Name,
+		Namespace: prj.Namespace,
+	}}
+	r := AtlasProjectReconciler{
+		Client:        k8sClient,
+		Log:           zaptest.NewLogger(t).Sugar(),
+		EventRecorder: record.NewFakeRecorder(30),
+		AtlasProvider: &atlas.TestProvider{
+			IsCloudGovFunc: func() bool {
+				return false
+			},
+			IsSupportedFunc: func() bool {
+				return true
+			},
+		},
+	}
+	result, err := r.Reconcile(ctx, req)
+	require.Equal(t, reconcile.Result{}, result)
+	require.NoError(t, err)
+	require.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(&prj), &prj))
+	lastApplied, err := customresource.ParseLastConfigApplied(&akov2.AtlasProjectSpec{}, &prj)
+	require.NoError(t, err)
+	wantLastApplied := &akov2.AtlasProjectSpec{
+		Name:                      "test-project",
+		PrivateEndpoints:          nil,
+		CustomRoles:               nil,
+		NetworkPeers:              nil,
+		ProjectIPAccessList:       nil,
+		CloudProviderAccessRoles:  []akov2.CloudProviderAccessRole{{}},
+		CloudProviderIntegrations: []akov2.CloudProviderIntegration{{}},
+		AlertConfigurations:       []akov2.AlertConfiguration{{}},
+		X509CertRef:               &common.ResourceRefNamespaced{},
+		Integrations:              []project.Integration{{}},
+		EncryptionAtRest:          &akov2.EncryptionAtRest{},
+		Auditing:                  &akov2.Auditing{},
+		Settings:                  &akov2.ProjectSettings{},
+		Teams:                     []akov2.Team{{}},
+		BackupCompliancePolicyRef: &common.ResourceRefNamespaced{},
+		ConnectionSecret:          &common.ResourceRefNamespaced{},
+	}
+	assert.Equal(t, wantLastApplied, lastApplied)
 }
 
 func jsonize(t *testing.T, obj any) string {

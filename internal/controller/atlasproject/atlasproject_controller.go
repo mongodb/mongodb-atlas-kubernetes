@@ -388,7 +388,12 @@ func (r *AtlasProjectReconciler) clearLastAppliedMigratedResources(ctx context.C
 	lastCfg.PrivateEndpoints = nil
 	lastCfg.ProjectIPAccessList = nil
 	lastCfg.NetworkPeers = nil
-	if err := customresource.ApplyLastConfigApplied(ctx, &akov2.AtlasProject{Spec: *lastCfg}, r.Client); err != nil {
+	shallowCopy := akov2.AtlasProject{
+		TypeMeta:   atlasProject.TypeMeta,
+		ObjectMeta: atlasProject.ObjectMeta,
+		Spec:       *lastCfg,
+	}
+	if err := customresource.ApplyLastConfigApplied(ctx, &shallowCopy, r.Client); err != nil {
 		return fmt.Errorf("failed to apply last applied config annotation: %w", err)
 	}
 	return nil
