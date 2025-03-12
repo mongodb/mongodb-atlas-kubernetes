@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"reflect"
 	"testing"
@@ -425,4 +426,12 @@ func TestLastSpecFrom(t *testing.T) {
 			assert.Equal(t, tt.expectedLastSpec, lastSpec)
 		})
 	}
+}
+
+func jsonize(t *testing.T, obj any) string {
+	t.Helper()
+
+	js, err := json.Marshal(obj)
+	require.NoError(t, err)
+	return string(js)
 }

@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -10,9 +11,11 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap/zaptest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -568,5 +571,135 @@ func TestHasSkippedIPAccessListConfiguration(t *testing.T) {
 			}
 			assert.Equal(t, tt.expected, result)
 		})
+	}
+}
+
+func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
+	for _, tc := range []struct {
+		title                   string
+		lastAppliedIPAccessList []string
+		specIPAccessList        []string
+		atlasIPAccessList       []string
+		wantRemoved             []string
+	}{
+		{
+			title:                   "no last applied no removal in Atlas",
+			lastAppliedIPAccessList: []string{},
+			specIPAccessList:        []string{},
+			atlasIPAccessList:       []string{"100.90.0.0/24", "101.99.0.0/24"},
+			wantRemoved:             []string{},
+		},
+		{
+			title:                   "removed from last applied removes from Atlas",
+			lastAppliedIPAccessList: []string{"100.90.0.0/24", "101.99.0.0/24"},
+			specIPAccessList:        []string{"100.90.0.0/24"},
+			atlasIPAccessList:       []string{"100.90.0.0/24", "101.99.0.0/24"},
+			wantRemoved:             []string{"101.99.0.0/24"},
+		},
+		{
+			title:                   "removed all from last applied removes all from Atlas",
+			lastAppliedIPAccessList: []string{"100.90.0.0/24", "101.99.0.0/24"},
+			specIPAccessList:        []string{},
+			atlasIPAccessList:       []string{"100.90.0.0/24", "101.99.0.0/24"},
+			wantRemoved:             []string{"100.90.0.0/24", "101.99.0.0/24"},
+		},
+		{
+			// TODO: should be "not in last applied still removed from Atlas"
+			title:                   "not in last applied not removed from Atlas",
+			lastAppliedIPAccessList: []string{"100.90.0.0/24"},
+			specIPAccessList:        []string{"100.90.0.0/24"},
+			atlasIPAccessList:       []string{"100.90.0.0/24", "101.99.0.0/24"},
+			wantRemoved:             []string{},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			prj := newIPAccessListTestProject(tc.specIPAccessList)
+			lastPrj := newIPAccessListTestProject(tc.lastAppliedIPAccessList)
+			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
+
+			ipAccessAPI := mockadmin.NewProjectIPAccessListApi(t)
+			ipAccessAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).
+				Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ipAccessAPI}).Once()
+			ipAccessAPI.EXPECT().ListProjectIpAccessListsExecute(
+				mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).Return(
+				synthesizeAtlasIPAccessList(tc.atlasIPAccessList), nil, nil,
+			).Once()
+			// CreateProjectIpAccessList is a non destrutive operation, it does not remove entries
+			ipAccessAPI.EXPECT().CreateProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).
+				Return(admin.CreateProjectIpAccessListApiRequest{ApiService: ipAccessAPI}).Once()
+			ipAccessAPI.EXPECT().CreateProjectIpAccessListExecute(
+				mock.AnythingOfType("admin.CreateProjectIpAccessListApiRequest")).Return(
+				nil, nil, nil,
+			).Once()
+
+			removals := len(tc.wantRemoved)
+			if removals > 0 {
+				ipAccessAPI.EXPECT().DeleteProjectIpAccessList(
+					mock.Anything, mock.Anything, mock.Anything,
+				).Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: ipAccessAPI}).Times(removals)
+				ipAccessAPI.EXPECT().DeleteProjectIpAccessListExecute(
+					mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).Return(
+					nil, nil, nil,
+				).Times(removals)
+			}
+
+			unset := len(tc.specIPAccessList) == 0
+			if !unset {
+				ipAccessAPI.EXPECT().GetProjectIpAccessListStatus(
+					mock.Anything, mock.Anything, mock.Anything,
+				).Return(admin.GetProjectIpAccessListStatusApiRequest{ApiService: ipAccessAPI}).Times(removals)
+				ipAccessAPI.EXPECT().GetProjectIpAccessListStatusExecute(
+					mock.AnythingOfType("admin.GetProjectIpAccessListStatusApiRequest")).Return(
+					nil, nil, nil,
+				).Times(removals)
+			}
+
+			workflowCtx := workflow.Context{
+				Log:     zaptest.NewLogger(t).Sugar(),
+				Context: context.Background(),
+				SdkClient: &admin.APIClient{
+					ProjectIPAccessListApi: ipAccessAPI,
+				},
+			}
+
+			result := handleIPAccessList(&workflowCtx, prj)
+			require.Equal(t, workflow.OK(), result)
+		})
+	}
+}
+
+func newIPAccessListTestProject(ipAccessList []string) *akov2.AtlasProject {
+	return &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{},
+		},
+		Spec: akov2.AtlasProjectSpec{
+			Name:                "test-project",
+			ProjectIPAccessList: synthesizeIPAccessList(ipAccessList),
+		},
+	}
+}
+
+func synthesizeIPAccessList(ipAccessList []string) []project.IPAccessList {
+	peers := make([]project.IPAccessList, 0, len(ipAccessList))
+	for _, cidr := range ipAccessList {
+		peers = append(peers, project.IPAccessList{
+			CIDRBlock: cidr,
+			Comment:   fmt.Sprintf("fake CIDR block %s", cidr),
+		})
+	}
+	return peers
+}
+
+func synthesizeAtlasIPAccessList(peeringIDs []string) *admin.PaginatedNetworkAccess {
+	atlasIPAccessList := make([]admin.NetworkPermissionEntry, 0, len(peeringIDs))
+	for _, cidr := range peeringIDs {
+		atlasIPAccessList = append(atlasIPAccessList, admin.NetworkPermissionEntry{
+			CidrBlock: pointer.MakePtr(cidr),
+			Comment:   pointer.MakePtr(fmt.Sprintf("fake CIDR block %s", cidr)),
+		})
+	}
+	return &admin.PaginatedNetworkAccess{
+		Results: &atlasIPAccessList,
 	}
 }
