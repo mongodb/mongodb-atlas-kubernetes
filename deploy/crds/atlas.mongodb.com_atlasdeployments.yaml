@@ -453,7 +453,6 @@ spec:
                                       to apply to the synonyms to be searched
                                     enum:
                                     - lucene.standard
-                                    - lucene.standard
                                     - lucene.simple
                                     - lucene.whitespace
                                     - lucene.keyword
