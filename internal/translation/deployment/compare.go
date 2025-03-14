@@ -298,16 +298,21 @@ func diskAutoscalingConfigAreEqual(desired, current *akov2.DiskGB) bool {
 }
 
 func computeAutoscalingConfigAreEqual(desired, current *akov2.ComputeSpec) bool {
-	if desired == nil && current == nil {
-		return true
+	if desired == nil {
+		desired = &akov2.ComputeSpec{}
 	}
 
-	if (desired != nil && current == nil) || (desired == nil && current != nil) {
-		return false
+	if current == nil {
+		current = &akov2.ComputeSpec{}
 	}
 
 	if desired.Enabled != nil && !areEqual(desired.Enabled, current.Enabled) {
 		return false
+	}
+
+	// If autoscaling is disabled rest of fields don't matter.
+	if desired.Enabled == nil || !*desired.Enabled {
+		return true
 	}
 
 	if desired.ScaleDownEnabled != nil && !areEqual(desired.ScaleDownEnabled, current.ScaleDownEnabled) {
