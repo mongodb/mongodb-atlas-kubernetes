@@ -604,12 +604,11 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 			wantRemoved:             []string{"100.90.0.0/24", "101.99.0.0/24"},
 		},
 		{
-			// TODO: should be "not in last applied still removed from Atlas"
-			title:                   "not in last applied not removed from Atlas",
+			title:                   "not in last applied still removed from Atlas",
 			lastAppliedIPAccessList: []string{"100.90.0.0/24"},
 			specIPAccessList:        []string{"100.90.0.0/24"},
 			atlasIPAccessList:       []string{"100.90.0.0/24", "101.99.0.0/24"},
-			wantRemoved:             []string{},
+			wantRemoved:             []string{"101.99.0.0/24"},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
