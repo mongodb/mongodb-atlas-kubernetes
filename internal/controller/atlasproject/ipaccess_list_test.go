@@ -370,27 +370,12 @@ func TestHandleIPAccessList(t *testing.T) {
 		expectedResult     workflow.Result
 		expectedConditions []api.Condition
 	}{
-		"should fail resolving last skipped flag": {
-			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{wrong}"},
-			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				return apiMock
-			},
-			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to parse last skipped configuration: invalid character 'w' looking for beginning of object key string")),
-		},
-		"should skip reconciliation": {
-			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": []}"},
-			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				return apiMock
-			},
-			expectedResult:     workflow.OK(),
-			expectedConditions: []api.Condition{},
-		},
 		"should fail getting last applied configuration": {
 			annotations: map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
 				return apiMock
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to get last applied configuration: error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]: invalid character 'w' looking for beginning of object key string")),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to get last applied configuration: error parsing JSON annotation value [{wrong}] into a v1.AtlasProjectSpec: invalid character 'w' looking for beginning of object key string")),
 		},
 		"should successfully handle ip access list reconciliation": {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
@@ -503,7 +488,7 @@ func TestMapLastAppliedIPAccessList(t *testing.T) {
 	}{
 		"should return error when last spec annotation is wrong": {
 			annotations: map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
-			expectedError: "error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]:" +
+			expectedError: "error parsing JSON annotation value [{wrong}] into a v1.AtlasProjectSpec:" +
 				" invalid character 'w' looking for beginning of object key string",
 		},
 		"should return nil when there is no last spec": {},
@@ -531,42 +516,6 @@ func TestMapLastAppliedIPAccessList(t *testing.T) {
 				assert.ErrorContains(t, err, tt.expectedError)
 			}
 			assert.Equal(t, tt.expectedIPAccessLst, result)
-		})
-	}
-}
-
-func TestHasSkippedIPAccessListConfiguration(t *testing.T) {
-	tests := map[string]struct {
-		annotations   map[string]string
-		expected      bool
-		expectedError string
-	}{
-		"should return error when last spec annotation is wrong": {
-			annotations: map[string]string{customresource.AnnotationLastSkippedConfiguration: "{wrong}"},
-			expectedError: "failed to parse last skipped configuration:" +
-				" invalid character 'w' looking for beginning of object key string",
-		},
-		"should return false when there is no annotation": {},
-		"should return false where there are last ip access list": {
-			annotations: map[string]string{
-				customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": [{\"ipAddress\":\"192.168.0.100\"},{\"awsSecurityGroup\":\"sg-123456\",\"comment\":\"My AWS SG\"}]}"},
-		},
-		"should return true where last ip access list is empty": {
-			annotations: map[string]string{
-				customresource.AnnotationLastSkippedConfiguration: "{\"projectIpAccessList\": []}"},
-			expected: true,
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			p := &akov2.AtlasProject{}
-			p.WithAnnotations(tt.annotations)
-
-			result, err := shouldIPAccessListSkipReconciliation(p)
-			if err != nil {
-				assert.ErrorContains(t, err, tt.expectedError)
-			}
-			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

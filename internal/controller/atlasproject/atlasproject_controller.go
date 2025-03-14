@@ -18,7 +18,6 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -108,10 +107,10 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			}
 		}
 
-		err := customresource.ApplyLastConfigSkipped(ctx, atlasProject, r.Client)
-		if err != nil {
-			log.Errorw("Failed to apply last skipped config", "error", err)
-			return workflow.Terminate(workflow.Internal, err).ReconcileResult(), nil
+		if err := r.clearLastAppliedMigratedResources(ctx, atlasProject); err != nil {
+			result = workflow.Terminate(workflow.Internal, err)
+			log.Errorw("Failed to clear migrated independent resources", "error", err)
+			return result.ReconcileResult(), nil
 		}
 
 		return workflow.OK().ReconcileResult(), nil
@@ -348,18 +347,24 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	}
 }
 
-func lastSpecFrom(atlasProject *akov2.AtlasProject, annotation string) (*akov2.AtlasProjectSpec, error) {
-	var lastApplied akov2.AtlasProject
-	ann, ok := atlasProject.GetAnnotations()[annotation]
-
-	if !ok {
-		return nil, nil
-	}
-
-	err := json.Unmarshal([]byte(ann), &lastApplied.Spec)
+func (r *AtlasProjectReconciler) clearLastAppliedMigratedResources(ctx context.Context, atlasProject *akov2.AtlasProject) error {
+	lastCfg, err := customresource.ParseLastConfigApplied(&akov2.AtlasProjectSpec{}, atlasProject)
 	if err != nil {
-		return nil, fmt.Errorf("error reading AtlasProject Spec from annotation [%s]: %w", annotation, err)
+		return fmt.Errorf("failed to parse last applied config annotation: %w", err)
 	}
-
-	return &lastApplied.Spec, nil
+	// clear all resources migrated as independent CRDs to avoid eager
+	// reconciliation that might conflict with independent CRs and apply
+	lastCfg.CustomRoles = nil
+	lastCfg.PrivateEndpoints = nil
+	lastCfg.ProjectIPAccessList = nil
+	lastCfg.NetworkPeers = nil
+	shallowCopy := akov2.AtlasProject{
+		TypeMeta:   atlasProject.TypeMeta,
+		ObjectMeta: atlasProject.ObjectMeta,
+		Spec:       *lastCfg,
+	}
+	if err := customresource.ApplyLastConfigApplied(ctx, &shallowCopy, r.Client); err != nil {
+		return fmt.Errorf("failed to apply last applied config annotation: %w", err)
+	}
+	return nil
 }
