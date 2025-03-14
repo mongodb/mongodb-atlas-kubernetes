@@ -348,9 +348,9 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	}
 }
 
-func lastSpecFrom(atlasProject *akov2.AtlasProject, annotation string) (*akov2.AtlasProjectSpec, error) {
+func lastAppliedSpecFrom(atlasProject *akov2.AtlasProject) (*akov2.AtlasProjectSpec, error) {
 	var lastApplied akov2.AtlasProject
-	ann, ok := atlasProject.GetAnnotations()[annotation]
+	ann, ok := atlasProject.GetAnnotations()[customresource.AnnotationLastAppliedConfiguration]
 
 	if !ok {
 		return nil, nil
@@ -358,7 +358,8 @@ func lastSpecFrom(atlasProject *akov2.AtlasProject, annotation string) (*akov2.A
 
 	err := json.Unmarshal([]byte(ann), &lastApplied.Spec)
 	if err != nil {
-		return nil, fmt.Errorf("error reading AtlasProject Spec from annotation [%s]: %w", annotation, err)
+		return nil, fmt.Errorf("error reading AtlasProject Spec from annotation [%s]: %w",
+			customresource.AnnotationLastAppliedConfiguration, err)
 	}
 
 	return &lastApplied.Spec, nil

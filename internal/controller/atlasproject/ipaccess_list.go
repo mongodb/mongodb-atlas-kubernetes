@@ -55,15 +55,14 @@ func (i *ipAccessListController) configure(current, desired ipaccesslist.IPAcces
 		return i.terminate(workflow.ProjectIPNotCreatedInAtlas, err)
 	}
 
-	for key, entry := range current {
-		if _, ok := i.lastApplied[key]; !ok {
-			continue
-		}
-
-		if _, ok := desired[key]; !ok {
-			err = i.service.Delete(i.ctx.Context, i.project.ID(), entry)
-			if err != nil {
-				return i.terminate(workflow.ProjectIPNotCreatedInAtlas, err)
+	managedEntries := len(i.lastApplied) > 0
+	if managedEntries {
+		for key, entry := range current {
+			if _, ok := desired[key]; !ok {
+				err = i.service.Delete(i.ctx.Context, i.project.ID(), entry)
+				if err != nil {
+					return i.terminate(workflow.ProjectIPNotCreatedInAtlas, err)
+				}
 			}
 		}
 	}
@@ -173,7 +172,7 @@ func shouldIPAccessListSkipReconciliation(atlasProject *akov2.AtlasProject) (boo
 }
 
 func mapLastAppliedIPAccessList(atlasProject *akov2.AtlasProject) (ipaccesslist.IPAccessEntries, error) {
-	lastApplied, err := lastSpecFrom(atlasProject, customresource.AnnotationLastAppliedConfiguration)
+	lastApplied, err := lastAppliedSpecFrom(atlasProject)
 	if err != nil {
 		return nil, err
 	}

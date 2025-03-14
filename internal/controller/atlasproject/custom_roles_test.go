@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap/zaptest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
@@ -448,4 +448,115 @@ func TestEnsureCustomRoles(t *testing.T) {
 			assert.Equal(t, tc.isOK, result.IsOk())
 		})
 	}
+}
+
+func TestCustomRolesNonGreedyBehaviour(t *testing.T) {
+	for _, tc := range []struct {
+		title                  string
+		lastAppliedCustomRoles []string
+		specCustomRoles        []string
+		atlasCustomRoles       []string
+		wantRemoved            []string
+	}{
+		{
+			title:                  "no last applied no removal in Atlas",
+			lastAppliedCustomRoles: []string{},
+			specCustomRoles:        []string{},
+			atlasCustomRoles:       []string{"cr1", "cr2"},
+			wantRemoved:            []string{},
+		},
+		{
+			title:                  "removed from last applied removes from Atlas",
+			lastAppliedCustomRoles: []string{"cr1", "cr2"},
+			specCustomRoles:        []string{"cr1"},
+			atlasCustomRoles:       []string{"cr1", "cr2"},
+			wantRemoved:            []string{"cr2"},
+		},
+		{
+			title:                  "removed all from last applied removes all from Atlas",
+			lastAppliedCustomRoles: []string{"cr1", "cr2"},
+			specCustomRoles:        []string{},
+			atlasCustomRoles:       []string{"cr1", "cr2"},
+			wantRemoved:            []string{"cr1", "cr2"},
+		},
+		{
+			title:                  "not in last applied not removed from Atlas",
+			lastAppliedCustomRoles: []string{"cr1"},
+			specCustomRoles:        []string{"cr1"},
+			atlasCustomRoles:       []string{"cr1", "cr2"},
+			wantRemoved:            []string{},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			prj := newCustomRolesTestProject(tc.specCustomRoles)
+			lastPrj := newCustomRolesTestProject(tc.lastAppliedCustomRoles)
+			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
+
+			roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+			roleAPI.EXPECT().ListCustomDatabaseRoles(mock.Anything, mock.Anything).
+				Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI}).Once()
+			roleAPI.EXPECT().ListCustomDatabaseRolesExecute(
+				mock.AnythingOfType("admin.ListCustomDatabaseRolesApiRequest")).Return(
+				synthesizeAtlasCustomRoles(tc.atlasCustomRoles), nil, nil,
+			).Once()
+
+			removals := len(tc.wantRemoved)
+			if removals > 0 {
+				roleAPI.EXPECT().DeleteCustomDatabaseRole(
+					mock.Anything, mock.Anything, mock.Anything,
+				).Return(admin.DeleteCustomDatabaseRoleApiRequest{ApiService: roleAPI}).Times(removals)
+				roleAPI.EXPECT().DeleteCustomDatabaseRoleExecute(
+					mock.AnythingOfType("admin.DeleteCustomDatabaseRoleApiRequest")).Return(
+					nil, nil,
+				).Times(removals)
+			}
+
+			workflowCtx := workflow.Context{
+				Log:     zaptest.NewLogger(t).Sugar(),
+				Context: context.Background(),
+				SdkClient: &admin.APIClient{
+					CustomDatabaseRolesApi: roleAPI,
+				},
+			}
+
+			result := ensureCustomRoles(&workflowCtx, prj)
+			require.Equal(t, workflow.OK(), result)
+		})
+	}
+}
+
+func newCustomRolesTestProject(customRoles []string) *akov2.AtlasProject {
+	return &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{},
+		},
+		Spec: akov2.AtlasProjectSpec{
+			Name:        "test-project",
+			CustomRoles: synthesizeCustomRoles(customRoles),
+		},
+	}
+}
+
+func synthesizeCustomRoles(customRoles []string) []akov2.CustomRole {
+	crs := make([]akov2.CustomRole, 0, len(customRoles))
+	for _, name := range customRoles {
+		crs = append(crs, akov2.CustomRole{
+			Name:           name,
+			InheritedRoles: []akov2.Role{},
+			Actions:        []akov2.Action{},
+		})
+	}
+	return crs
+}
+
+func synthesizeAtlasCustomRoles(customRoles []string) []admin.UserCustomDBRole {
+	atlasRoles := make([]admin.UserCustomDBRole, 0, len(customRoles))
+	for _, name := range customRoles {
+		atlasRoles = append(atlasRoles, admin.UserCustomDBRole{
+			RoleName:       name,
+			Actions:        &[]admin.DatabasePrivilegeAction{},
+			InheritedRoles: &[]admin.DatabaseInheritedRole{},
+		})
+	}
+	return atlasRoles
 }

@@ -1,14 +1,23 @@
 package atlasproject
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.uber.org/zap/zaptest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestGetEndpointsNotInAtlas(t *testing.T) {
@@ -196,4 +205,143 @@ func TestMapLastAppliedPrivateEndpoint(t *testing.T) {
 			assert.Equal(t, tt.expectedPEs, result)
 		})
 	}
+}
+
+func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
+	for _, tc := range []struct {
+		title            string
+		lastAppliedPEids []string
+		specPEids        []string
+		atlasPEids       []string
+		wantRemoved      []string
+		wantResult       workflow.Result
+	}{
+		{
+			title:            "no last applied no removal in Atlas",
+			lastAppliedPEids: []string{},
+			specPEids:        []string{},
+			atlasPEids:       []string{"pe1", "pe2"},
+			wantRemoved:      []string{},
+			wantResult:       workflow.OK(),
+		},
+		{
+			title:            "removed from last applied removes from Atlas",
+			lastAppliedPEids: []string{"pe1", "pe2"},
+			specPEids:        []string{"pe1"},
+			atlasPEids:       []string{"pe1", "pe2"},
+			wantRemoved:      []string{"pe2"},
+			wantResult: workflow.InProgress(
+				workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint is deleting"),
+		},
+		{
+			title:            "removed all from last applied removes all from Atlas",
+			lastAppliedPEids: []string{"pe1", "pe2"},
+			specPEids:        []string{},
+			atlasPEids:       []string{"pe1", "pe2"},
+			wantRemoved:      []string{"pe1", "pe2"},
+			wantResult: workflow.InProgress(
+				workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint is deleting"),
+		},
+		{
+			title:            "not in last applied not removed from Atlas",
+			lastAppliedPEids: []string{"pe1"},
+			specPEids:        []string{"pe1"},
+			atlasPEids:       []string{"pe1", "pe2"},
+			wantRemoved:      []string{},
+			wantResult: workflow.InProgress(
+				workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready"),
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			prj := newTestPEProject(tc.specPEids)
+			lastPrj := newTestPEProject(tc.lastAppliedPEids)
+			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
+
+			privateEndpointsAPI := mockadmin.NewPrivateEndpointServicesApi(t)
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "AWS").
+				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+				synthesizeAtlasPEs(tc.atlasPEids), nil, nil,
+			).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "AZURE").
+				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+				nil, nil, nil,
+			).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "GCP").
+				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+				nil, nil, nil,
+			).Once()
+
+			removals := len(tc.wantRemoved)
+			if removals > 0 {
+				privateEndpointsAPI.EXPECT().DeletePrivateEndpointServiceWithParams(
+					mock.Anything, mock.Anything,
+				).Return(admin.DeletePrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Times(removals)
+				privateEndpointsAPI.EXPECT().DeletePrivateEndpointServiceExecute(
+					mock.AnythingOfType("admin.DeletePrivateEndpointServiceApiRequest")).Return(
+					nil, nil, nil,
+				).Times(removals)
+			}
+			privateEndpointsAPI.EXPECT().CreatePrivateEndpointWithParams(
+				mock.Anything, mock.Anything,
+			).Return(admin.CreatePrivateEndpointApiRequest{ApiService: privateEndpointsAPI}).Maybe()
+			privateEndpointsAPI.EXPECT().CreatePrivateEndpointExecute(
+				mock.AnythingOfType("admin.CreatePrivateEndpointApiRequest")).Return(
+				nil, nil, nil,
+			).Maybe()
+
+			workflowCtx := workflow.Context{
+				Log:     zaptest.NewLogger(t).Sugar(),
+				Context: context.Background(),
+				SdkClient: &admin.APIClient{
+					PrivateEndpointServicesApi: privateEndpointsAPI,
+				},
+			}
+
+			result := ensurePrivateEndpoint(&workflowCtx, prj)
+			require.Equal(t, tc.wantResult, result)
+		})
+	}
+}
+
+func newTestPEProject(peIDs []string) *akov2.AtlasProject {
+	return &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{},
+		},
+		Spec: akov2.AtlasProjectSpec{
+			Name:             "test-project",
+			PrivateEndpoints: synthesizePEs(peIDs),
+		},
+	}
+}
+
+func synthesizePEs(peIDs []string) []akov2.PrivateEndpoint {
+	pes := make([]akov2.PrivateEndpoint, 0, len(peIDs))
+	for _, id := range peIDs {
+		pes = append(pes, akov2.PrivateEndpoint{
+			Provider: "AWS",
+			ID:       id,
+			Region:   fmt.Sprintf("fake-region-%s", id),
+		})
+	}
+	return pes
+}
+
+func synthesizeAtlasPEs(peIDs []string) []admin.EndpointService {
+	atlasPEs := make([]admin.EndpointService, 0, len(peIDs))
+	for _, id := range peIDs {
+		atlasPEs = append(atlasPEs, admin.EndpointService{
+			CloudProvider: "AWS",
+			Id:            pointer.MakePtr(id),
+			RegionName:    pointer.MakePtr(fmt.Sprintf("fake-region-%s", id)),
+			Status:        pointer.MakePtr("AVAILABLE"),
+		})
+	}
+	return atlasPEs
 }
