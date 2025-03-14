@@ -419,7 +419,7 @@ func TestLastSpecFrom(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			p := &akov2.AtlasProject{}
 			p.WithAnnotations(tt.annotations)
-			lastSpec, err := lastSpecFrom(p, "mongodb.com/last-applied-configuration")
+			lastSpec, err := lastAppliedSpecFrom(p)
 			if err != nil {
 				assert.ErrorContains(t, err, tt.expectedError)
 			}

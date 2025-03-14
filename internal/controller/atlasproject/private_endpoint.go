@@ -601,7 +601,7 @@ func hasSkippedPrivateEndpointConfiguration(atlasProject *akov2.AtlasProject) (b
 }
 
 func mapLastAppliedPrivateEndpoint(atlasProject *akov2.AtlasProject) (map[string]akov2.PrivateEndpoint, error) {
-	lastApplied, err := lastSpecFrom(atlasProject, customresource.AnnotationLastAppliedConfiguration)
+	lastApplied, err := lastAppliedSpecFrom(atlasProject)
 	if err != nil {
 		return nil, err
 	}

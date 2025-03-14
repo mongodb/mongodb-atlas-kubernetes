@@ -2,7 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -26,7 +25,6 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 		specNetworkPeers        []string
 		atlasNetworkPeers       []string
 		wantRemoved             []string
-		wantResult              workflow.Result
 	}{
 		{
 			title:                   "no last applied no removal in Atlas",
@@ -34,7 +32,6 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 			specNetworkPeers:        []string{},
 			atlasNetworkPeers:       []string{"np1", "np2"},
 			wantRemoved:             []string{},
-			wantResult:              workflow.OK(),
 		},
 		{
 			title:                   "removed from last applied removes from Atlas",
@@ -42,8 +39,6 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 			specNetworkPeers:        []string{"np1"},
 			atlasNetworkPeers:       []string{"np1", "np2"},
 			wantRemoved:             []string{"np2"},
-			wantResult: workflow.Terminate(
-				workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("not all network peers are ready")),
 		},
 		{
 			title:                   "removed all from last applied removes all from Atlas",
@@ -51,17 +46,13 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 			specNetworkPeers:        []string{},
 			atlasNetworkPeers:       []string{"np1", "np2"},
 			wantRemoved:             []string{"np1", "np2"},
-			wantResult:              workflow.OK(),
 		},
 		{
-			// TODO: it should be instead "not in last applied not removed from Atlas"
-			title:                   "not in last applied but still removed from Atlas",
+			title:                   "not in last applied not removed from Atlas",
 			lastAppliedNetworkPeers: []string{"np1"},
 			specNetworkPeers:        []string{"np1"},
 			atlasNetworkPeers:       []string{"np1", "np2"},
-			wantRemoved:             []string{"np2"},
-			wantResult: workflow.Terminate(
-				workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("not all network peers are ready")),
+			wantRemoved:             []string{},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -92,14 +83,14 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 					mock.AnythingOfType("admin.DeletePeeringConnectionApiRequest")).Return(
 					nil, nil, nil,
 				).Times(removals)
-
-				peeringAPI.EXPECT().ListPeeringContainers(mock.Anything, mock.Anything).
-					Return(admin.ListPeeringContainersApiRequest{ApiService: peeringAPI}).Once()
-				peeringAPI.EXPECT().ListPeeringContainersExecute(
-					mock.AnythingOfType("admin.ListPeeringContainersApiRequest")).Return(
-					nil, nil, nil,
-				).Once()
 			}
+
+			peeringAPI.EXPECT().ListPeeringContainers(mock.Anything, mock.Anything).
+				Return(admin.ListPeeringContainersApiRequest{ApiService: peeringAPI}).Maybe()
+			peeringAPI.EXPECT().ListPeeringContainersExecute(
+				mock.AnythingOfType("admin.ListPeeringContainersApiRequest")).Return(
+				nil, nil, nil,
+			).Maybe()
 
 			workflowCtx := workflow.Context{
 				Log:     zaptest.NewLogger(t).Sugar(),
@@ -110,7 +101,7 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 			}
 
 			result := ensureNetworkPeers(&workflowCtx, prj)
-			require.Equal(t, tc.wantResult, result)
+			require.Equal(t, workflow.OK(), result)
 		})
 	}
 }
@@ -147,6 +138,7 @@ func synthesizeAtlasNetworkPeerings(peeringIDs []string) *admin.PaginatedContain
 			Id:           pointer.MakePtr(fmt.Sprintf("np-%s", id)),
 			ProviderName: pointer.MakePtr("AWS"),
 			VpcId:        pointer.MakePtr(id),
+			StatusName:   pointer.MakePtr(StatusReady),
 		})
 	}
 	return &admin.PaginatedContainerPeer{

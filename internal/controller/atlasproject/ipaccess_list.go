@@ -173,7 +173,7 @@ func shouldIPAccessListSkipReconciliation(atlasProject *akov2.AtlasProject) (boo
 }
 
 func mapLastAppliedIPAccessList(atlasProject *akov2.AtlasProject) (ipaccesslist.IPAccessEntries, error) {
-	lastApplied, err := lastSpecFrom(atlasProject, customresource.AnnotationLastAppliedConfiguration)
+	lastApplied, err := lastAppliedSpecFrom(atlasProject)
 	if err != nil {
 		return nil, err
 	}

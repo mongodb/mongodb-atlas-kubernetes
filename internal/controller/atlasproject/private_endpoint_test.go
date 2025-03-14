@@ -287,16 +287,13 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 					nil, nil, nil,
 				).Times(removals)
 			}
-			specHasPEs := len(tc.specPEids) > 0
-			if removals == 0 && specHasPEs {
-				privateEndpointsAPI.EXPECT().CreatePrivateEndpointWithParams(
-					mock.Anything, mock.Anything,
-				).Return(admin.CreatePrivateEndpointApiRequest{ApiService: privateEndpointsAPI}).Once()
-				privateEndpointsAPI.EXPECT().CreatePrivateEndpointExecute(
-					mock.AnythingOfType("admin.CreatePrivateEndpointApiRequest")).Return(
-					nil, nil, nil,
-				).Once()
-			}
+			privateEndpointsAPI.EXPECT().CreatePrivateEndpointWithParams(
+				mock.Anything, mock.Anything,
+			).Return(admin.CreatePrivateEndpointApiRequest{ApiService: privateEndpointsAPI}).Maybe()
+			privateEndpointsAPI.EXPECT().CreatePrivateEndpointExecute(
+				mock.AnythingOfType("admin.CreatePrivateEndpointApiRequest")).Return(
+				nil, nil, nil,
+			).Maybe()
 
 			workflowCtx := workflow.Context{
 				Log:     zaptest.NewLogger(t).Sugar(),
