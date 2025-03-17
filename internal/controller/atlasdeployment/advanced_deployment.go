@@ -1,6 +1,7 @@
 package atlasdeployment
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -41,6 +42,13 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		}
 
 		atlasCluster = newDeployment.(*deployment.Cluster)
+	}
+
+	{
+		d, _ := json.MarshalIndent(akoCluster, "", "  ")
+		c, _ := json.MarshalIndent(atlasCluster, "", "  ")
+		fmt.Println("DEBUG >>> ", "AKO CLUSTER ", string(d))
+		fmt.Println("DEBUG >>> ", "ATLAS CLUSTER", string(c))
 	}
 
 	switch atlasCluster.GetState() {

@@ -33,6 +33,9 @@ func (i *IPAccessList) List(ctx context.Context, projectID string) (IPAccessEntr
 }
 
 func (i *IPAccessList) Add(ctx context.Context, projectID string, entries IPAccessEntries) error {
+	if len(entries) == 0 {
+		return nil
+	}
 	_, _, err := i.ipAccessListAPI.CreateProjectIpAccessList(ctx, projectID, toAtlas(entries)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to create ip access list from Atlas: %w", err)
