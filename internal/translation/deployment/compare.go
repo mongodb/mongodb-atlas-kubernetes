@@ -314,7 +314,8 @@ func computeAutoscalingConfigAreEqual(desired, current *akov2.ComputeSpec) bool 
 		return false
 	}
 
-	if desired.MinInstanceSize != current.MinInstanceSize {
+	scaleDown := current.ScaleDownEnabled != nil && *current.ScaleDownEnabled
+	if scaleDown && (desired.MinInstanceSize != current.MinInstanceSize) {
 		return false
 	}
 
