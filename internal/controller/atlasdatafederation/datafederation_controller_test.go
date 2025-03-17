@@ -48,7 +48,8 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 			wantDataFederation: &akov2.AtlasDataFederation{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"},
 			},
-			wantResult: workflow.OK(),
+			wantSecrets: []corev1.Secret{},
+			wantResult:  workflow.OK(),
 		},
 		{
 			name: "finalizer set and deletion protection is enabled",
@@ -66,7 +67,8 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 					Annotations: map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep},
 				},
 			},
-			wantResult: workflow.OK(),
+			wantSecrets: []corev1.Secret{},
+			wantResult:  workflow.OK(),
 		},
 		{
 			name: "federation object without secrets",
@@ -91,34 +93,8 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 				},
 				Spec: akov2.DataFederationSpec{Project: common.ResourceRefNamespaced{Name: "fooProject"}},
 			},
-			wantResult: workflow.OK(),
-		},
-		{
-			name: "federation object without secrets",
-			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
-				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
-				return serviceMock
-			},
-			atlasProject: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
-			},
-			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo", Namespace: "bar",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
-				Spec: akov2.DataFederationSpec{
-					Project: common.ResourceRefNamespaced{Name: "fooProject"},
-				},
-			},
-			wantDataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo", Namespace: "bar",
-					// Finalizers removed
-				},
-				Spec: akov2.DataFederationSpec{Project: common.ResourceRefNamespaced{Name: "fooProject"}},
-			},
-			wantResult: workflow.OK(),
+			wantSecrets: []corev1.Secret{},
+			wantResult:  workflow.OK(),
 		},
 		{
 			name: "federation object with secrets",
