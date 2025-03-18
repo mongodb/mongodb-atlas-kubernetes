@@ -1,9 +1,13 @@
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.1
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: atlasnetworkcontainers.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -27,9 +31,6 @@ spec:
       type: string
     - jsonPath: .status.id
       name: Id
-      type: string
-    - jsonPath: .status.provisioned
-      name: Provisioned
       type: string
     name: v1
     schema:
@@ -87,7 +88,7 @@ spec:
                 type: object
               id:
                 description: |-
-                  ID is the container identified for an already existent network container to be managed by the operator.
+                  ID is the container identifier for an already existent network container to be managed by the operator.
                   This field can be used in conjunction with cidrBlock to update the cidrBlock of an existing container.
                   This field is immutable.
                 type: string
@@ -146,24 +147,6 @@ spec:
               AtlasNetworkContainerStatus is a status for the AtlasNetworkContainer Custom resource.
               Not the one included in the AtlasProject
             properties:
-              awsStatus:
-                description: AWSStatus contains AWS only related status information
-                properties:
-                  vpcId:
-                    description: VpcID is AWS VPC id on the Atlas side
-                    type: string
-                type: object
-              azureStatus:
-                description: AzureStatus contains Azure only related status information
-                properties:
-                  azureSubscriptionIDpcId:
-                    description: AzureSubscriptionID is Azure Subscription id on the
-                      Atlas side
-                    type: string
-                  vNetName:
-                    description: VnetName is Azure network on the Atlas side
-                    type: string
-                type: object
               conditions:
                 description: Conditions is the list of statuses showing the current
                   state of the Atlas Custom Resource
@@ -194,16 +177,6 @@ spec:
                   - type
                   type: object
                 type: array
-              gcpStatus:
-                description: GCPStatus contains GCP only related status information
-                properties:
-                  gcpProjectID:
-                    description: GCPProjectID is GCP project on the Atlas side
-                    type: string
-                  networkName:
-                    description: NetworkName is GCP network on the Atlas side
-                    type: string
-                type: object
               id:
                 description: ID record the identifier of the container in Atlas
                 type: string
@@ -214,8 +187,9 @@ spec:
                 format: int64
                 type: integer
               provisioned:
-                description: Provisioned is true when clusters have been deployed
-                  to the container
+                description: |-
+                  Provisioned is true when clusters have been deployed to the container before
+                  the last reconciliation
                 type: boolean
             required:
             - conditions
@@ -225,3 +199,9 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
