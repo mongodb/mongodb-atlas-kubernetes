@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -163,6 +164,7 @@ func (b *Builder) WithDryRun(dryRun bool) *Builder {
 
 // Build builds the cluster object and configures operator controllers
 func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
+	klog.Info("Building the controllers...")
 	mergeDefaults(b)
 
 	if b.independentSyncPeriod < b.minimumIndependentSyncPeriod {
