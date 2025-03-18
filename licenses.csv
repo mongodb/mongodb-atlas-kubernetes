@@ -114,7 +114,7 @@ golang.org/x/exp,https://cs.opensource.google/go/x/exp/+/8a7402ab:LICENSE,BSD-3-
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.36.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.27.0:LICENSE,BSD-3-Clause
 golang.org/x/sync,https://cs.opensource.google/go/x/sync/+/v0.12.0:LICENSE,BSD-3-Clause
-golang.org/x/sys/unix,https://cs.opensource.google/go/x/sys/+/v0.30.0:LICENSE,BSD-3-Clause
+golang.org/x/sys,https://cs.opensource.google/go/x/sys/+/v0.30.0:LICENSE,BSD-3-Clause
 golang.org/x/term,https://cs.opensource.google/go/x/term/+/v0.29.0:LICENSE,BSD-3-Clause
 golang.org/x/text,https://cs.opensource.google/go/x/text/+/v0.22.0:LICENSE,BSD-3-Clause
 golang.org/x/time/rate,https://cs.opensource.google/go/x/time/+/v0.10.0:LICENSE,BSD-3-Clause
@@ -130,10 +130,10 @@ gopkg.in/evanphx/json-patch.v4,https://github.com/evanphx/json-patch/blob/v4.12.
 gopkg.in/inf.v0,https://github.com/go-inf/inf/blob/v0.9.1/LICENSE,BSD-3-Clause
 gopkg.in/yaml.v2,https://github.com/go-yaml/yaml/blob/v2.4.0/LICENSE,Apache-2.0
 gopkg.in/yaml.v3,https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE,MIT
-k8s.io/api,https://github.com/kubernetes/api/blob/v0.32.2/LICENSE,Apache-2.0
+k8s.io/api,https://github.com/kubernetes/api/blob/v0.32.3/LICENSE,Apache-2.0
 k8s.io/apiextensions-apiserver/pkg,https://github.com/kubernetes/apiextensions-apiserver/blob/v0.32.2/LICENSE,Apache-2.0
-k8s.io/apimachinery/pkg,https://github.com/kubernetes/apimachinery/blob/v0.32.2/LICENSE,Apache-2.0
-k8s.io/apimachinery/third_party/forked/golang,https://github.com/kubernetes/apimachinery/blob/v0.32.2/third_party/forked/golang/LICENSE,BSD-3-Clause
+k8s.io/apimachinery/pkg,https://github.com/kubernetes/apimachinery/blob/v0.32.3/LICENSE,Apache-2.0
+k8s.io/apimachinery/third_party/forked/golang,https://github.com/kubernetes/apimachinery/blob/v0.32.3/third_party/forked/golang/LICENSE,BSD-3-Clause
 k8s.io/apiserver/pkg,https://github.com/kubernetes/apiserver/blob/v0.32.2/LICENSE,Apache-2.0
 k8s.io/client-go,https://github.com/kubernetes/client-go/blob/v0.32.2/LICENSE,Apache-2.0
 k8s.io/component-base,https://github.com/kubernetes/component-base/blob/v0.32.2/LICENSE,Apache-2.0
