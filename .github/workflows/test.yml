@@ -16,7 +16,6 @@ on:
       - 'docs/**'
   pull_request_target:
     types: [labeled]
-    branches: [main]
   merge_group:
   workflow_dispatch:
 
