@@ -25,7 +25,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  trace:
+    name: Traces
+    runs-on: ubuntu-latest
+    steps:
+    - name: Show
+      id: show
+      env:
+        SAFE_TO_TEST_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}
+        SAFE_TO_TEST_LABEL_TARGET: ${{ contains(github.event.pull_request_target.labels.*.name, 'safe-to-test') }}
+        EVENT: ${{ github.event_name }}
+      run: |
+        echo SAFE_TO_TEST_LABEL="${SAFE_TO_TEST_LABEL}"
+        echo SAFE_TO_TEST_LABEL_TARGET="${SAFE_TO_TEST_LABEL_TARGET}"
+        echo EVENT="${EVENT}"
+
   run-tests:
+    needs:
+      - trace
     name: Run Tests
     runs-on: ubuntu-latest
     # Contributions do NOT run any testing by default, a label is needed to allow testing
