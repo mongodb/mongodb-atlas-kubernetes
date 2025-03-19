@@ -33,10 +33,14 @@ jobs:
         SAFE_TO_TEST_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}
         SAFE_TO_TEST_LABEL_TARGET: ${{ contains(github.event.pull_request_target.labels.*.name, 'safe-to-test') }}
         EVENT: ${{ github.event_name }}
+        ACTION: ${{ github.event.action }}
+        ALLOWED: ${{ (!contains(github.event.pull_request.labels.*.name, 'safe-to-test') && github.event_name == 'pull_request') ||   (contains(github.event.pull_request_target.labels.*.name, 'safe-to-test') && github.event_name == 'pull_request_target')}}
       run: |
         echo SAFE_TO_TEST_LABEL="${SAFE_TO_TEST_LABEL}"
         echo SAFE_TO_TEST_LABEL_TARGET="${SAFE_TO_TEST_LABEL_TARGET}"
         echo EVENT="${EVENT}"
+        echo ACTION="${ACTION}"
+        echo ALLOWED="${ALLOWED}"
     - name: allowed message
       # Contributions do NOT run any testing by default, a label is needed to allow testing
       # Only accept either code owner's PRs from the same repo 
