@@ -4,8 +4,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 )
 
-// AtlasIntegrationStatus holds the status of an integration
-type AtlasIntegrationStatus struct {
+// AtlasThirdPartyIntegrationStatus holds the status of an integration
+type AtlasThirdPartyIntegrationStatus struct {
 	api.Common `json:",inline"`
 
 	// ID of the 3rd party integration resource in Atlas
@@ -14,10 +14,10 @@ type AtlasIntegrationStatus struct {
 
 // +k8s:deepcopy-gen=false
 
-type IntegrationStatusOption func(status *AtlasIntegrationStatus)
+type IntegrationStatusOption func(status *AtlasThirdPartyIntegrationStatus)
 
-func NewAtlasIntegrationStatus(options ...IntegrationStatusOption) AtlasIntegrationStatus {
-	result := &AtlasIntegrationStatus{}
+func NewAtlasThirdPartyIntegrationStatus(options ...IntegrationStatusOption) AtlasThirdPartyIntegrationStatus {
+	result := &AtlasThirdPartyIntegrationStatus{}
 	for i := range options {
 		options[i](result)
 	}
@@ -25,7 +25,7 @@ func NewAtlasIntegrationStatus(options ...IntegrationStatusOption) AtlasIntegrat
 }
 
 func WithIntegrationID(id string) IntegrationStatusOption {
-	return func(i *AtlasIntegrationStatus) {
+	return func(i *AtlasThirdPartyIntegrationStatus) {
 		i.ID = id
 	}
 }

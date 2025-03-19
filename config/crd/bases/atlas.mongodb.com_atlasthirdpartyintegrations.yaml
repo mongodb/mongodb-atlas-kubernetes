@@ -1,0 +1,304 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.1
+  name: atlasthirdpartyintegrations.atlas.mongodb.com
+spec:
+  group: atlas.mongodb.com
+  names:
+    kind: AtlasThirdPartyIntegration
+    listKind: AtlasThirdPartyIntegrationList
+    plural: atlasthirdpartyintegrations
+    singular: atlasthirdpartyintegration
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: AtlasThirdPartyIntegration is the Schema for the atlas 3rd party
+          inegrations API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AtlasThirdPartyIntegrationSpec contains the expected configuration
+              for an integration
+            properties:
+              connectionSecret:
+                description: Name of the secret containing Atlas API private and public
+                  keys
+                properties:
+                  name:
+                    description: |-
+                      Name of the resource being referred to
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                required:
+                - name
+                type: object
+              datadog:
+                properties:
+                  apiKeySecret:
+                    description: APIKeySecret is the name of a secret containing the
+                      datadog api key
+                    type: string
+                  region:
+                    description: Region is the Datadog region
+                    type: string
+                  sendCollectionLatencyMetrics:
+                    description: SendCollectionLatencyMetrics flags whether or not
+                      to send collection latency metrics
+                    type: boolean
+                  sendDatabaseMetrics:
+                    description: SendDatabaseMetrics flags whether or not to send
+                      database metrics
+                    type: boolean
+                required:
+                - apiKeySecret
+                - region
+                - sendCollectionLatencyMetrics
+                - sendDatabaseMetrics
+                type: object
+              externalProjectRef:
+                description: |-
+                  "externalProjectRef" holds the parent Atlas project ID.
+                  Mutually exclusive with the "projectRef" field
+                properties:
+                  id:
+                    description: ID is the Atlas project ID
+                    type: string
+                required:
+                - id
+                type: object
+              id:
+                description: ID of the integration in Atlas. May be omitted to create
+                  a new one.
+                type: string
+              microsoftTeams:
+                properties:
+                  apiKeySecret:
+                    description: URLSecret is the name of a secret containing the
+                      microsoft teams secret URL
+                    type: string
+                required:
+                - apiKeySecret
+                type: object
+              newRelic:
+                properties:
+                  credentialsSecret:
+                    description: |-
+                      CredentialsSecret is the name of a secret containing new relic's credentials:
+                      account id, license key, read and write tokens
+                    type: string
+                required:
+                - credentialsSecret
+                type: object
+              opsGenie:
+                properties:
+                  apiKeySecret:
+                    description: APIKeySecret is the name of a secret containing Ops
+                      Genie's API key
+                    type: string
+                  region:
+                    description: Region is the Ops Genie region
+                    type: string
+                required:
+                - apiKeySecret
+                - region
+                type: object
+              pagerDuty:
+                properties:
+                  region:
+                    description: Region is the Pager Duty region
+                    type: string
+                  serviceKeySecret:
+                    description: ServiceKeySecret is the name of a secret containing
+                      Pager Duty service key
+                    type: string
+                required:
+                - region
+                - serviceKeySecret
+                type: object
+              projectRef:
+                description: |-
+                  "projectRef" is a reference to the parent AtlasProject resource.
+                  Mutually exclusive with the "externalProjectRef" field
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
+              prometheus:
+                properties:
+                  region:
+                    description: ServiceDiscovery to be used by Prometheus
+                    enum:
+                    - file
+                    - http
+                    type: string
+                  sendCollectionLatencyMetrics:
+                    description: Enabled flags whether or not Prometheus integration
+                      is enabled
+                    type: boolean
+                  usernameSecret:
+                    description: UsernameSecret is the name of a secret containing
+                      the Prometehus username
+                    type: string
+                required:
+                - region
+                - sendCollectionLatencyMetrics
+                - usernameSecret
+                type: object
+              slack:
+                properties:
+                  channelName:
+                    description: ChannelName to be used by Prometheus
+                    type: string
+                  teamName:
+                    description: TeamName flags whether or not Prometheus integration
+                      is enabled
+                    type: string
+                  usernameSecret:
+                    description: APITokenSecret is the name of a secret containing
+                      the Slack API token
+                    type: string
+                required:
+                - channelName
+                - teamName
+                - usernameSecret
+                type: object
+              type:
+                description: Type of the integration
+                enum:
+                - DATADOG
+                - MICROSOFT_TEAMS
+                - NEW_RELIC
+                - OPS_GENIE
+                - PAGER_DUTY
+                - PROMETHEUS
+                - SLACK
+                - VICTOR_OPS
+                - WEBHOOK
+                type: string
+              victorOps:
+                properties:
+                  keySecret:
+                    description: KeysSecret is the name of a secret containing Victor
+                      Ops API and routing keys
+                    type: string
+                required:
+                - keySecret
+                type: object
+              webhook:
+                properties:
+                  keySecret:
+                    description: URLSecret is the name of a secret containing Webhook
+                      URL and secret
+                    type: string
+                required:
+                - keySecret
+                type: object
+            required:
+            - type
+            type: object
+            x-kubernetes-validations:
+            - message: must define only one project reference through externalProjectRef
+                or projectRef
+              rule: (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef)
+                && has(self.projectRef))
+            - message: must define a local connection secret when referencing an external
+                project
+              rule: (has(self.externalProjectRef) && has(self.connectionSecret)) ||
+                !has(self.externalProjectRef)
+            - message: must define a type of integration
+              rule: has(self.type) && self.type.size() != 0
+            - message: only DATADOG type may set datadog fields
+              rule: '!has(self.datadog) || (self.type == ''DATADOG'' && has(self.datadog))'
+            - message: only MICROSOFT_TEAMS type may set microsoftTeams fields
+              rule: '!has(self.microsoftTeams) || (self.type == ''MICROSOFT_TEAMS''
+                && has(self.microsoftTeams))'
+            - message: only NEW_RELIC type may set newRelic fields
+              rule: '!has(self.newRelic) || (self.type == ''NEW_RELIC'' && has(self.newRelic))'
+            - message: only OPS_GENIE type may set opsGenie fields
+              rule: '!has(self.opsGenie) || (self.type == ''OPS_GENIE'' && has(self.opsGenie))'
+            - message: only PROMETHEUS type may set prometheus fields
+              rule: '!has(self.prometheus) || (self.type == ''PROMETHEUS'' && has(self.prometheus))'
+            - message: only PAGER_DUTY type may set pagerDuty fields
+              rule: '!has(self.pagerDuty) || (self.type == ''PAGER_DUTY'' && has(self.pagerDuty))'
+            - message: only SLACK type may set slack fields
+              rule: '!has(self.slack) || (self.type == ''SLACK'' && has(self.slack))'
+            - message: only VICTOR_OPS type may set victorOps fields
+              rule: '!has(self.victorOps) || (self.type == ''VICTOR_OPS'' && has(self.victorOps))'
+            - message: only WEBHOOK type may set webhook fields
+              rule: '!has(self.webhook) || (self.type == ''WEBHOOK'' && has(self.webhook))'
+          status:
+            description: AtlasThirdPartyIntegrationStatus holds the status of an integration
+            properties:
+              conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
+                items:
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              id:
+                description: ID of the 3rd party integration resource in Atlas
+                type: string
+              observedGeneration:
+                description: |-
+                  ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
+                  The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
+                format: int64
+                type: integer
+            required:
+            - conditions
+            - id
+            type: object
+        type: object
+    served: true
+    storage: true
