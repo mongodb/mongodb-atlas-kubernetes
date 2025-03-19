@@ -53,10 +53,6 @@ type AtlasThirdPartyIntegration struct {
 type AtlasThirdPartyIntegrationSpec struct {
 	ProjectDualReference `json:",inline"`
 
-	// ID of the integration in Atlas. May be omitted to create a new one.
-	// +kubebuilder:validation:Optional
-	ID *string `json:"id"`
-
 	// Type of the integration
 	// +kubebuilder:validation:Enum:=DATADOG;MICROSOFT_TEAMS;NEW_RELIC;OPS_GENIE;PAGER_DUTY;PROMETHEUS;SLACK;VICTOR_OPS;WEBHOOK
 	// +kubebuilder:validation:Required
