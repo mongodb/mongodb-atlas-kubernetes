@@ -112,7 +112,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "VICTOR_OPS",
 					VictorOps: &VictorOpsIntegration{
-						KeysSecret: "keys-secetname",
+						RoutingKey:   "routing-key",
+						APIKeySecret: "keys-secetname",
 					},
 				},
 			},
