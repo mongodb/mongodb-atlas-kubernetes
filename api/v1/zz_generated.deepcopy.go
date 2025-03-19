@@ -1988,11 +1988,6 @@ func (in *AtlasThirdPartyIntegrationList) DeepCopyObject() runtime.Object {
 func (in *AtlasThirdPartyIntegrationSpec) DeepCopyInto(out *AtlasThirdPartyIntegrationSpec) {
 	*out = *in
 	in.ProjectDualReference.DeepCopyInto(&out.ProjectDualReference)
-	if in.ID != nil {
-		in, out := &in.ID, &out.ID
-		*out = new(string)
-		**out = **in
-	}
 	if in.Datadog != nil {
 		in, out := &in.Datadog, &out.Datadog
 		*out = new(DatadogIntegration)
