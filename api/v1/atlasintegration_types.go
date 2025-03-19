@@ -23,21 +23,21 @@ import (
 )
 
 func init() {
-	SchemeBuilder.Register(&AtlasIntegration{}, &AtlasIntegrationList{})
+	SchemeBuilder.Register(&AtlasThirdPartyIntegration{}, &AtlasThirdPartyIntegrationList{})
 }
 
 // +kubebuilder:object:root=true
 
-// AtlasIntegration is the Schema for the atlas 3rd party inegrations API.
-type AtlasIntegration struct {
+// AtlasThirdPartyIntegration is the Schema for the atlas 3rd party inegrations API.
+type AtlasThirdPartyIntegration struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasIntegrationSpec          `json:"spec,omitempty"`
-	Status status.AtlasIntegrationStatus `json:"status,omitempty"`
+	Spec   AtlasThirdPartyIntegrationSpec          `json:"spec,omitempty"`
+	Status status.AtlasThirdPartyIntegrationStatus `json:"status,omitempty"`
 }
 
-// AtlasIntegrationSpec contains the expected configuration for an integration
+// AtlasThirdPartyIntegrationSpec contains the expected configuration for an integration
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 // +kubebuilder:validation:XValidation:rule="has(self.type) && self.type.size() != 0",message="must define a type of integration"
@@ -50,7 +50,7 @@ type AtlasIntegration struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.slack) || (self.type == 'SLACK' && has(self.slack))",message="only SLACK type may set slack fields"
 // +kubebuilder:validation:XValidation:rule="!has(self.victorOps) || (self.type == 'VICTOR_OPS' && has(self.victorOps))",message="only VICTOR_OPS type may set victorOps fields"
 // +kubebuilder:validation:XValidation:rule="!has(self.webhook) || (self.type == 'WEBHOOK' && has(self.webhook))",message="only WEBHOOK type may set webhook fields"
-type AtlasIntegrationSpec struct {
+type AtlasThirdPartyIntegrationSpec struct {
 	ProjectDualReference `json:",inline"`
 
 	// ID of the integration in Atlas. May be omitted to create a new one.
@@ -175,13 +175,13 @@ type WebhookIntegration struct {
 
 // +kubebuilder:object:root=true
 
-// AtlasIntegrationList contains a list of Atlas Integrations.
-type AtlasIntegrationList struct {
+// AtlasThirdPartyIntegrationList contains a list of Atlas Integrations.
+type AtlasThirdPartyIntegrationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []AtlasIntegration `json:"items"`
+	Items           []AtlasThirdPartyIntegration `json:"items"`
 }
 
-func (i *AtlasIntegration) ProjectDualRef() *ProjectDualReference {
+func (i *AtlasThirdPartyIntegration) ProjectDualRef() *ProjectDualReference {
 	return &i.Spec.ProjectDualReference
 }
