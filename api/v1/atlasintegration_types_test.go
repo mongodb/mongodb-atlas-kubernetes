@@ -86,9 +86,9 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "PROMETHEUS",
 					Prometheus: &PrometheusIntegration{
-						UsernameSecret:   "username-secretname",
-						ServiceDiscovery: "http",
-						Enabled:          false,
+						PrometheusCredentials: "prometheus-credentials",
+						ServiceDiscovery:      "http",
+						Enabled:               false,
 					},
 				},
 			},
@@ -135,9 +135,9 @@ func TestIntegrationCELChecks(t *testing.T) {
 					Type:      "PAGER_DUTY",
 					PagerDuty: &PagerDutyIntegration{},
 					Prometheus: &PrometheusIntegration{
-						UsernameSecret:   "username-secretname",
-						ServiceDiscovery: "http",
-						Enabled:          false,
+						PrometheusCredentials: "prometheus-credentials",
+						ServiceDiscovery:      "http",
+						Enabled:               false,
 					},
 				},
 			},

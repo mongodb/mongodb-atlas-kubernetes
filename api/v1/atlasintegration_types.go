@@ -152,9 +152,10 @@ type PagerDutyIntegration struct {
 }
 
 type PrometheusIntegration struct {
-	// UsernameSecret is the name of a secret containing the Prometehus username
+	// PrometheusCredentials is the name of a secret containing the Prometheus
+	// username & password
 	// +kubebuilder:validation:Required
-	UsernameSecret string `json:"usernameSecret"`
+	PrometheusCredentials string `json:"prometheusCredentials"`
 
 	// ServiceDiscovery to be used by Prometheus
 	// +kubebuilder:validation:Enum:=file;http
