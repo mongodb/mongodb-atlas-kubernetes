@@ -58,22 +58,40 @@ type AtlasThirdPartyIntegrationSpec struct {
 	// +kubebuilder:validation:Required
 	Type string `json:"type"`
 
+	// Datadog contains the config fields for Datadog's Integration
+	// +kubebuilder:validation:Optional
 	Datadog *DatadogIntegration `json:"datadog,omitempty"`
 
+	// MicrosoftTeams contains the config fields for Microsoft Teams's Integration
+	// +kubebuilder:validation:Optional
 	MicrosoftTeams *MicrosoftTeamsIntegration `json:"microsoftTeams,omitempty"`
 
+	// NewRelic contains the config fields for New Relic's Integration
+	// +kubebuilder:validation:Optional
 	NewRelic *NewRelicIntegration `json:"newRelic,omitempty"`
 
+	// OpsGenie contains the config fields for Ops Genie's Integration
+	// +kubebuilder:validation:Optional
 	OpsGenie *OpsGenieIntegration `json:"opsGenie,omitempty"`
 
+	// PagerDuty contains the config fields for PagerDuty's Integration
+	// +kubebuilder:validation:Optional
 	PagerDuty *PagerDutyIntegration `json:"pagerDuty,omitempty"`
 
+	// Prometheus contains the config fields for Prometheus's Integration
+	// +kubebuilder:validation:Optional
 	Prometheus *PrometheusIntegration `json:"prometheus,omitempty"`
 
+	// Slack contains the config fields for Slack's Integration
+	// +kubebuilder:validation:Optional
 	Slack *SlackIntegration `json:"slack,omitempty"`
 
+	// VictorOps contains the config fields for VictorOps's Integration
+	// +kubebuilder:validation:Optional
 	VictorOps *VictorOpsIntegration `json:"victorOps,omitempty"`
 
+	// Webhook contains the config fields for Webhook's Integration
+	// +kubebuilder:validation:Optional
 	Webhook *WebhookIntegration `json:"webhook,omitempty"`
 }
 

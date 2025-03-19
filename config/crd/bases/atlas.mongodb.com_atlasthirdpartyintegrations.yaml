@@ -54,6 +54,7 @@ spec:
                 - name
                 type: object
               datadog:
+                description: Datadog contains the config fields for Datadog's Integration
                 properties:
                   apiKeySecret:
                     description: APIKeySecret is the name of a secret containing the
@@ -88,6 +89,8 @@ spec:
                 - id
                 type: object
               microsoftTeams:
+                description: MicrosoftTeams contains the config fields for Microsoft
+                  Teams's Integration
                 properties:
                   apiKeySecret:
                     description: URLSecret is the name of a secret containing the
@@ -97,6 +100,7 @@ spec:
                 - apiKeySecret
                 type: object
               newRelic:
+                description: NewRelic contains the config fields for New Relic's Integration
                 properties:
                   credentialsSecret:
                     description: |-
@@ -107,6 +111,7 @@ spec:
                 - credentialsSecret
                 type: object
               opsGenie:
+                description: OpsGenie contains the config fields for Ops Genie's Integration
                 properties:
                   apiKeySecret:
                     description: APIKeySecret is the name of a secret containing Ops
@@ -120,6 +125,8 @@ spec:
                 - region
                 type: object
               pagerDuty:
+                description: PagerDuty contains the config fields for PagerDuty's
+                  Integration
                 properties:
                   region:
                     description: Region is the Pager Duty region
@@ -147,6 +154,8 @@ spec:
                 - name
                 type: object
               prometheus:
+                description: Prometheus contains the config fields for Prometheus's
+                  Integration
                 properties:
                   region:
                     description: ServiceDiscovery to be used by Prometheus
@@ -168,6 +177,7 @@ spec:
                 - usernameSecret
                 type: object
               slack:
+                description: Slack contains the config fields for Slack's Integration
                 properties:
                   channelName:
                     description: ChannelName to be used by Prometheus
@@ -199,6 +209,8 @@ spec:
                 - WEBHOOK
                 type: string
               victorOps:
+                description: VictorOps contains the config fields for VictorOps's
+                  Integration
                 properties:
                   keySecret:
                     description: KeysSecret is the name of a secret containing Victor
@@ -208,6 +220,7 @@ spec:
                 - keySecret
                 type: object
               webhook:
+                description: Webhook contains the config fields for Webhook's Integration
                 properties:
                   keySecret:
                     description: URLSecret is the name of a secret containing Webhook
