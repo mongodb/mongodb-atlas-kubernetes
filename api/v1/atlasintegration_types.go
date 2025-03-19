@@ -182,9 +182,13 @@ type SlackIntegration struct {
 }
 
 type VictorOpsIntegration struct {
-	// KeysSecret is the name of a secret containing Victor Ops API and routing keys
+	// RoutingKey is VictorOps routing key
 	// +kubebuilder:validation:Required
-	KeysSecret string `json:"keySecret"`
+	RoutingKey string `json:"routingKey"`
+
+	// APIKeySecret is the name of a secret containing Victor Ops API key
+	// +kubebuilder:validation:Required
+	APIKeySecret string `json:"apiKeySecret"`
 }
 
 type WebhookIntegration struct {
