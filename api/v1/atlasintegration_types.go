@@ -104,13 +104,18 @@ type DatadogIntegration struct {
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
 
-	// SendCollectionLatencyMetrics flags whether or not to send collection latency metrics
-	// +kubebuilder:validation:Required
-	SendCollectionLatencyMetrics bool `json:"sendCollectionLatencyMetrics"`
+	// SendCollectionLatencyMetrics toggles sending collection latency metrics
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=enabled;disabled
+	// +kubebuilder:default:=disabled
+	SendCollectionLatencyMetrics *string `json:"sendCollectionLatencyMetrics"`
 
-	// SendDatabaseMetrics flags whether or not to send database metrics
-	// +kubebuilder:validation:Required
-	SendDatabaseMetrics bool `json:"sendDatabaseMetrics"`
+	// SendDatabaseMetrics toggles sending database metrics,
+	// including database and collection names
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=enabled;disabled
+	// +kubebuilder:default:=disabled
+	SendDatabaseMetrics *string `json:"sendDatabaseMetrics"`
 }
 
 type MicrosoftTeamsIntegration struct {

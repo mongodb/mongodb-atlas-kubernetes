@@ -28,10 +28,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
 					Datadog: &DatadogIntegration{
-						APIKeySecret:                 "api-key-secretname",
-						Region:                       "US",
-						SendCollectionLatencyMetrics: false,
-						SendDatabaseMetrics:          false,
+						APIKeySecret: "api-key-secretname",
+						Region:       "US",
 					},
 				},
 			},
@@ -151,10 +149,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "WEBHOOK",
 					Datadog: &DatadogIntegration{
-						APIKeySecret:                 "api-key-secretname",
-						Region:                       "US",
-						SendCollectionLatencyMetrics: false,
-						SendDatabaseMetrics:          false,
+						APIKeySecret: "api-key-secretname",
+						Region:       "US",
 					},
 					Webhook: &WebhookIntegration{
 						URLSecret: "url-secretname",
