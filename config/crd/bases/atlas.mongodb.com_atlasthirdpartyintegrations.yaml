@@ -99,12 +99,12 @@ spec:
                 description: MicrosoftTeams contains the config fields for Microsoft
                   Teams's Integration
                 properties:
-                  apiKeySecret:
+                  urlSecret:
                     description: URLSecret is the name of a secret containing the
                       microsoft teams secret URL
                     type: string
                 required:
-                - apiKeySecret
+                - urlSecret
                 type: object
               newRelic:
                 description: NewRelic contains the config fields for New Relic's Integration
@@ -164,28 +164,33 @@ spec:
                 description: Prometheus contains the config fields for Prometheus's
                   Integration
                 properties:
-                  region:
+                  enabled:
+                    description: Enabled flags whether or not Prometheus integration
+                      is enabled
+                    type: boolean
+                  prometheusCredentials:
+                    description: |-
+                      PrometheusCredentials is the name of a secret containing the Prometheus
+                      username & password
+                    type: string
+                  serviceDiscovery:
                     description: ServiceDiscovery to be used by Prometheus
                     enum:
                     - file
                     - http
                     type: string
-                  sendCollectionLatencyMetrics:
-                    description: Enabled flags whether or not Prometheus integration
-                      is enabled
-                    type: boolean
-                  usernameSecret:
-                    description: UsernameSecret is the name of a secret containing
-                      the Prometehus username
-                    type: string
                 required:
-                - region
-                - sendCollectionLatencyMetrics
-                - usernameSecret
+                - enabled
+                - prometheusCredentials
+                - serviceDiscovery
                 type: object
               slack:
                 description: Slack contains the config fields for Slack's Integration
                 properties:
+                  apiTokenSecret:
+                    description: APITokenSecret is the name of a secret containing
+                      the Slack API token
+                    type: string
                   channelName:
                     description: ChannelName to be used by Prometheus
                     type: string
@@ -193,14 +198,10 @@ spec:
                     description: TeamName flags whether or not Prometheus integration
                       is enabled
                     type: string
-                  usernameSecret:
-                    description: APITokenSecret is the name of a secret containing
-                      the Slack API token
-                    type: string
                 required:
+                - apiTokenSecret
                 - channelName
                 - teamName
-                - usernameSecret
                 type: object
               type:
                 description: Type of the integration
@@ -219,22 +220,26 @@ spec:
                 description: VictorOps contains the config fields for VictorOps's
                   Integration
                 properties:
-                  keySecret:
-                    description: KeysSecret is the name of a secret containing Victor
-                      Ops API and routing keys
+                  apiKeySecret:
+                    description: APIKeySecret is the name of a secret containing Victor
+                      Ops API key
+                    type: string
+                  routingKey:
+                    description: RoutingKey is VictorOps routing key
                     type: string
                 required:
-                - keySecret
+                - apiKeySecret
+                - routingKey
                 type: object
               webhook:
                 description: Webhook contains the config fields for Webhook's Integration
                 properties:
-                  keySecret:
+                  urlSecret:
                     description: URLSecret is the name of a secret containing Webhook
                       URL and secret
                     type: string
                 required:
-                - keySecret
+                - urlSecret
                 type: object
             required:
             - type
