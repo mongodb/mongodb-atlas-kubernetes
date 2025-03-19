@@ -8,7 +8,7 @@ import (
 type AtlasThirdPartyIntegrationStatus struct {
 	api.Common `json:",inline"`
 
-	// ID of the 3rd party integration resource in Atlas
+	// ID of the third party integration resource in Atlas
 	ID string `json:"id"`
 }
 
