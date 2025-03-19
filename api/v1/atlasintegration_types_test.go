@@ -14,18 +14,18 @@ import (
 func TestIntegrationCELChecks(t *testing.T) {
 	for _, tc := range []struct {
 		title          string
-		obj            *AtlasIntegration
+		obj            *AtlasThirdPartyIntegration
 		expectedErrors []string
 	}{
 		{
 			title:          "fails with no type",
-			obj:            &AtlasIntegration{},
+			obj:            &AtlasThirdPartyIntegration{},
 			expectedErrors: []string{"spec: Invalid value: \"object\": must define a type of integration"},
 		},
 		{
 			title: "Datadog works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
 					Datadog: &DatadogIntegration{
 						APIKeySecret:                 "api-key-secretname",
@@ -38,8 +38,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Microsoft Teams works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "MICROSOFT_TEAMS",
 					MicrosoftTeams: &MicrosoftTeamsIntegration{
 						URLSecret: "url-secretname",
@@ -49,8 +49,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "New Relic works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "NEW_RELIC",
 					NewRelic: &NewRelicIntegration{
 						CredentialsSecret: "credentials-secretname",
@@ -60,8 +60,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Ops Genie works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "OPS_GENIE",
 					OpsGenie: &OpsGenieIntegration{
 						APIKeySecret: "api-key-secretname",
@@ -72,8 +72,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Pager Duty works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "PAGER_DUTY",
 					PagerDuty: &PagerDutyIntegration{
 						ServiceKeySecret: "service-key-secretname",
@@ -84,8 +84,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Prometheus duty works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "PROMETHEUS",
 					Prometheus: &PrometheusIntegration{
 						UsernameSecret:   "username-secretname",
@@ -97,8 +97,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Slack works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "SLACK",
 					Slack: &SlackIntegration{
 						APITokenSecret: "api-tooken-secretname",
@@ -110,8 +110,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Victor ops works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "VICTOR_OPS",
 					VictorOps: &VictorOpsIntegration{
 						KeysSecret: "keys-secetname",
@@ -121,8 +121,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Webhook works",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "WEBHOOK",
 					Webhook: &WebhookIntegration{
 						URLSecret: "url-secretname",
@@ -132,8 +132,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Prometheus on Pager Duty type fails",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type:      "PAGER_DUTY",
 					PagerDuty: &PagerDutyIntegration{},
 					Prometheus: &PrometheusIntegration{
@@ -147,8 +147,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 		},
 		{
 			title: "Datadog on Webhook type fails",
-			obj: &AtlasIntegration{
-				Spec: AtlasIntegrationSpec{
+			obj: &AtlasThirdPartyIntegration{
+				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "WEBHOOK",
 					Datadog: &DatadogIntegration{
 						APIKeySecret:                 "api-key-secretname",
