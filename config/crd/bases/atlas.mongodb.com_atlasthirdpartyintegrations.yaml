@@ -64,18 +64,25 @@ spec:
                     description: Region is the Datadog region
                     type: string
                   sendCollectionLatencyMetrics:
-                    description: SendCollectionLatencyMetrics flags whether or not
-                      to send collection latency metrics
-                    type: boolean
+                    default: disabled
+                    description: SendCollectionLatencyMetrics toggles sending collection
+                      latency metrics
+                    enum:
+                    - enabled
+                    - disabled
+                    type: string
                   sendDatabaseMetrics:
-                    description: SendDatabaseMetrics flags whether or not to send
-                      database metrics
-                    type: boolean
+                    default: disabled
+                    description: |-
+                      SendDatabaseMetrics toggles sending database metrics,
+                      including database and collection names
+                    enum:
+                    - enabled
+                    - disabled
+                    type: string
                 required:
                 - apiKeySecret
                 - region
-                - sendCollectionLatencyMetrics
-                - sendDatabaseMetrics
                 type: object
               externalProjectRef:
                 description: |-
