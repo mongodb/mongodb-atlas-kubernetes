@@ -121,7 +121,7 @@ type DatadogIntegration struct {
 type MicrosoftTeamsIntegration struct {
 	// URLSecret is the name of a secret containing the microsoft teams secret URL
 	// +kubebuilder:validation:Required
-	URLSecret string `json:"apiKeySecret"`
+	URLSecret string `json:"urlSecret"`
 }
 
 type NewRelicIntegration struct {
@@ -160,17 +160,17 @@ type PrometheusIntegration struct {
 	// ServiceDiscovery to be used by Prometheus
 	// +kubebuilder:validation:Enum:=file;http
 	// +kubebuilder:validation:Required
-	ServiceDiscovery string `json:"region"`
+	ServiceDiscovery string `json:"serviceDiscovery"`
 
 	// Enabled flags whether or not Prometheus integration is enabled
 	// +kubebuilder:validation:Required
-	Enabled bool `json:"sendCollectionLatencyMetrics"`
+	Enabled bool `json:"enabled"`
 }
 
 type SlackIntegration struct {
 	// APITokenSecret is the name of a secret containing the Slack API token
 	// +kubebuilder:validation:Required
-	APITokenSecret string `json:"usernameSecret"`
+	APITokenSecret string `json:"apiTokenSecret"`
 
 	// ChannelName to be used by Prometheus
 	// +kubebuilder:validation:Required
@@ -194,7 +194,7 @@ type VictorOpsIntegration struct {
 type WebhookIntegration struct {
 	// URLSecret is the name of a secret containing Webhook URL and secret
 	// +kubebuilder:validation:Required
-	URLSecret string `json:"keySecret"`
+	URLSecret string `json:"urlSecret"`
 }
 
 // +kubebuilder:object:root=true
