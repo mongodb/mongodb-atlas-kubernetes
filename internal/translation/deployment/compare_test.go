@@ -1779,13 +1779,26 @@ func TestComputeAutoscalingConfigAreEqual(t *testing.T) {
 				ScaleDownEnabled: pointer.MakePtr(false),
 			},
 		},
-		"should return false when min instance has changed": {
+		"should return false when min instance has changed and scale down is enabled": {
 			akoAutoscaling: &akov2.ComputeSpec{
-				MinInstanceSize: "M20",
+				ScaleDownEnabled: pointer.MakePtr(true),
+				MinInstanceSize:  "M20",
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				MinInstanceSize: "M10",
+				ScaleDownEnabled: pointer.MakePtr(true),
+				MinInstanceSize:  "M10",
 			},
+		},
+		"should return true when min instance has changed and scale down is disabled": {
+			akoAutoscaling: &akov2.ComputeSpec{
+				ScaleDownEnabled: pointer.MakePtr(false),
+				MinInstanceSize:  "M20",
+			},
+			atlasAutoscaling: &akov2.ComputeSpec{
+				ScaleDownEnabled: pointer.MakePtr(false),
+				MinInstanceSize:  "M10",
+			},
+			expected: true,
 		},
 		"should return false when max instance has changed": {
 			akoAutoscaling: &akov2.ComputeSpec{
