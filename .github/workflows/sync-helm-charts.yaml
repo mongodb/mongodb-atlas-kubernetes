@@ -1,17 +1,16 @@
-name: Helm update
+name: Sync helm-charts
 
 on:
   workflow_call:
   workflow_dispatch:
-# TODO: remove after the job "Sync helm-charts" is applied to the main branch
-#  pull_request:
-#    types:
-#      - closed
+  pull_request:
+    types:
+      - closed
 
 jobs:
   verify-helm-changes:
     if: github.event.pull_request.merged == true && !startsWith(github.event.pull_request.title, 'dependabot')
-    name: Verify if AKO helm charts needs updates
+    name: Verify if AKO helm charts need updates
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -45,6 +44,10 @@ jobs:
           path: helm-charts-cloned
           persist-credentials: true
 
+      - name: Patch original AKO chart dependencies
+        run: |
+          sed -i 's|repository: "file://../../helm-charts/atlas-operator-crds"|repository: "https://mongodb.github.io/helm-charts"|' helm-charts/atlas-operator/Chart.yaml
+
       - name: Generate AKO bundle
         env:
           VERSION: "1.0.0"
@@ -64,6 +67,17 @@ jobs:
           HELM_RBAC_FILE: "./helm-charts-cloned/charts/atlas-operator/rbac.yaml"
         run: |
           devbox run -- "make helm-upd-rbac"
+
+      - name: Verify if helm-charts need to be synced
+        run: |
+          for $dir in $(ls ./helm-charts); do
+            if [[ -d "./helm-charts-cloned/charts/$dir" ]]; then
+              if [[ -n $(diff -r ./helm-charts/$dir ./helm-charts-cloned/charts/$dir) ]]; then
+                echo "Changes detected for the Chart: $dir"
+                cp -r ./helm-charts/$dir ./helm-charts-cloned/charts/$dir
+              fi
+            fi
+          done    
 
       - name: Create PR for helm-charts repo
         env:
