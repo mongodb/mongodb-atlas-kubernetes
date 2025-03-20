@@ -11,5 +11,5 @@ resources:
   - atlas_v1_atlasipaccesslist.yaml
   - atlas_v1_atlasnetworkcontainer.yaml
   - atlas_v1_atlasnetworkpeering.yaml
-  - atlas_v1_atlasintegration.yaml
+  - atlas_v1_atlasthirdpartyintegration.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

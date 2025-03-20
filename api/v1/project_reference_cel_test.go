@@ -69,7 +69,7 @@ var dualRefCRDs = []struct {
 				Type: "DATADOG",
 			},
 		},
-		filename: "atlas.mongodb.com_atlasintegrations.yaml",
+		filename: "atlas.mongodb.com_atlasthirdpartyintegrations.yaml",
 	},
 }
 
