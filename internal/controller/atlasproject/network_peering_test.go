@@ -1,0 +1,147 @@
+package atlasproject
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.uber.org/zap/zaptest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+)
+
+func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
+	for _, tc := range []struct {
+		title                   string
+		lastAppliedNetworkPeers []string
+		specNetworkPeers        []string
+		atlasNetworkPeers       []string
+		wantRemoved             []string
+	}{
+		{
+			title:                   "no last applied no removal in Atlas",
+			lastAppliedNetworkPeers: []string{},
+			specNetworkPeers:        []string{},
+			atlasNetworkPeers:       []string{"np1", "np2"},
+			wantRemoved:             []string{},
+		},
+		{
+			title:                   "removed from last applied removes from Atlas",
+			lastAppliedNetworkPeers: []string{"np1", "np2"},
+			specNetworkPeers:        []string{"np1"},
+			atlasNetworkPeers:       []string{"np1", "np2"},
+			wantRemoved:             []string{"np2"},
+		},
+		{
+			title:                   "removed all from last applied removes all from Atlas",
+			lastAppliedNetworkPeers: []string{"np1", "np2"},
+			specNetworkPeers:        []string{},
+			atlasNetworkPeers:       []string{"np1", "np2"},
+			wantRemoved:             []string{"np1", "np2"},
+		},
+		{
+			title:                   "not in last applied not removed from Atlas",
+			lastAppliedNetworkPeers: []string{"np1"},
+			specNetworkPeers:        []string{"np1"},
+			atlasNetworkPeers:       []string{"np1", "np2"},
+			wantRemoved:             []string{},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			prj := newNetworkPeeringTestProject(tc.specNetworkPeers)
+			lastPrj := newNetworkPeeringTestProject(tc.lastAppliedNetworkPeers)
+			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
+
+			peeringAPI := mockadmin.NewNetworkPeeringApi(t)
+			peeringAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
+				Return(admin.ListPeeringConnectionsApiRequest{ApiService: peeringAPI}).Once()
+			peeringAPI.EXPECT().ListPeeringConnectionsExecute(
+				mock.AnythingOfType("admin.ListPeeringConnectionsApiRequest")).Return(
+				synthesizeAtlasNetworkPeerings(tc.atlasNetworkPeers), nil, nil,
+			).Once()
+			peeringAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
+				Return(admin.ListPeeringConnectionsApiRequest{ApiService: peeringAPI}).Twice()
+			peeringAPI.EXPECT().ListPeeringConnectionsExecute(
+				mock.AnythingOfType("admin.ListPeeringConnectionsApiRequest")).Return(
+				nil, nil, nil,
+			).Twice()
+
+			removals := len(tc.wantRemoved)
+			if removals > 0 {
+				peeringAPI.EXPECT().DeletePeeringConnection(
+					mock.Anything, mock.Anything, mock.Anything,
+				).Return(admin.DeletePeeringConnectionApiRequest{ApiService: peeringAPI}).Times(removals)
+				peeringAPI.EXPECT().DeletePeeringConnectionExecute(
+					mock.AnythingOfType("admin.DeletePeeringConnectionApiRequest")).Return(
+					nil, nil, nil,
+				).Times(removals)
+			}
+
+			peeringAPI.EXPECT().ListPeeringContainers(mock.Anything, mock.Anything).
+				Return(admin.ListPeeringContainersApiRequest{ApiService: peeringAPI}).Maybe()
+			peeringAPI.EXPECT().ListPeeringContainersExecute(
+				mock.AnythingOfType("admin.ListPeeringContainersApiRequest")).Return(
+				nil, nil, nil,
+			).Maybe()
+
+			workflowCtx := workflow.Context{
+				Log:     zaptest.NewLogger(t).Sugar(),
+				Context: context.Background(),
+				SdkClient: &admin.APIClient{
+					NetworkPeeringApi: peeringAPI,
+				},
+			}
+
+			result := ensureNetworkPeers(&workflowCtx, prj)
+			require.Equal(t, workflow.OK(), result)
+		})
+	}
+}
+
+func newNetworkPeeringTestProject(networkPeers []string) *akov2.AtlasProject {
+	return &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{},
+		},
+		Spec: akov2.AtlasProjectSpec{
+			Name:         "test-project",
+			NetworkPeers: synthesizeNetworkPeerings(networkPeers),
+		},
+	}
+}
+
+func synthesizeNetworkPeerings(peeringIDs []string) []akov2.NetworkPeer {
+	peers := make([]akov2.NetworkPeer, 0, len(peeringIDs))
+	for _, id := range peeringIDs {
+		peers = append(peers, akov2.NetworkPeer{
+			ProviderName: "AWS",
+			VpcID:        id,
+			ContainerID:  fmt.Sprintf("container-%s", id),
+		})
+	}
+	return peers
+}
+
+func synthesizeAtlasNetworkPeerings(peeringIDs []string) *admin.PaginatedContainerPeer {
+	atlasPeers := make([]admin.BaseNetworkPeeringConnectionSettings, 0, len(peeringIDs))
+	for _, id := range peeringIDs {
+		atlasPeers = append(atlasPeers, admin.BaseNetworkPeeringConnectionSettings{
+			ContainerId:  fmt.Sprintf("container-%s", id),
+			Id:           pointer.MakePtr(fmt.Sprintf("np-%s", id)),
+			ProviderName: pointer.MakePtr("AWS"),
+			VpcId:        pointer.MakePtr(id),
+			StatusName:   pointer.MakePtr(StatusReady),
+		})
+	}
+	return &admin.PaginatedContainerPeer{
+		Results: &atlasPeers,
+	}
+}

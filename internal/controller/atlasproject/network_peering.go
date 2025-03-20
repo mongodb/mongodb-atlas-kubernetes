@@ -51,18 +51,15 @@ func isSkippedNetworkPeersEmpty(atlasProject *akov2.AtlasProject) (bool, error) 
 	return len(lastSkippedSpec.NetworkPeers) == 0, nil
 }
 
-func hasLastAppliedNetworkPeers(atlasProject *akov2.AtlasProject) (bool, error) {
-	lastAppliedSpec := akov2.AtlasProjectSpec{}
-	lastAppliedSpecStr, ok := atlasProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if !ok {
-		return false, nil
+func lastAppliedNetworkPeerings(atlasProject *akov2.AtlasProject) ([]akov2.NetworkPeer, error) {
+	lastApplied, err := lastAppliedSpecFrom(atlasProject)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read project last applied configuration: %w", err)
 	}
-
-	if err := json.Unmarshal([]byte(lastAppliedSpecStr), &lastAppliedSpec); err != nil {
-		return false, fmt.Errorf("failed to parse last applied configuration: %w", err)
+	if lastApplied == nil {
+		return nil, nil
 	}
-
-	return len(lastAppliedSpec.NetworkPeers) > 0, nil
+	return lastApplied.NetworkPeers, nil
 }
 
 func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.Result {
@@ -75,7 +72,7 @@ func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasPr
 		return workflow.OK()
 	}
 
-	configuredBefore, err := hasLastAppliedNetworkPeers(akoProject)
+	lastAppliedPeers, err := lastAppliedNetworkPeerings(akoProject)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
 	}
@@ -83,7 +80,7 @@ func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasPr
 	networkPeerStatus := akoProject.Status.DeepCopy().NetworkPeers
 	networkPeerSpec := akoProject.Spec.DeepCopy().NetworkPeers
 
-	result, condition := SyncNetworkPeer(workflowCtx, akoProject.ID(), networkPeerStatus, networkPeerSpec, configuredBefore)
+	result, condition := SyncNetworkPeer(workflowCtx, akoProject.ID(), networkPeerStatus, networkPeerSpec, lastAppliedPeers)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(condition, result)
 		return result
@@ -114,7 +111,7 @@ func failedPeerStatus(errMessage string, peer akov2.NetworkPeer) status.AtlasNet
 	}
 }
 
-func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer, configuredBefore bool) (workflow.Result, api.ConditionType) {
+func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer, lastAppliedPeers []akov2.NetworkPeer) (workflow.Result, api.ConditionType) {
 	defer workflowCtx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
 	logger := workflowCtx.Log
 	mongoClient := workflowCtx.SdkClient
@@ -126,21 +123,19 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 			api.NetworkPeerReadyType
 	}
 
-	diff := sortPeers(workflowCtx.Context, list, peerSpecs, logger, mongoClient.NetworkPeeringApi, groupID)
+	diff := sortPeers(workflowCtx.Context, list, lastAppliedPeers, peerSpecs, logger, mongoClient.NetworkPeeringApi, groupID)
 	logger.Debugf("peers to create %d, peers to update %d, peers to delete %d",
 		len(diff.PeersToCreate), len(diff.PeersToUpdate), len(diff.PeersToDelete))
 
-	if configuredBefore {
-		for _, peerToDelete := range diff.PeersToDelete {
-			errDelete := deletePeerByID(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, peerToDelete, logger)
-			if errDelete != nil {
-				logger.Errorf("failed to delete network peer %s: %v", peerToDelete, errDelete)
-				return workflow.Terminate(
-						workflow.ProjectNetworkPeerIsNotReadyInAtlas,
-						fmt.Errorf("failed to delete network peer: %w", errDelete),
-					),
-					api.NetworkPeerReadyType
-			}
+	for _, peerToDelete := range diff.PeersToDelete {
+		errDelete := deletePeerByID(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, peerToDelete, logger)
+		if errDelete != nil {
+			logger.Errorf("failed to delete network peer %s: %v", peerToDelete, errDelete)
+			return workflow.Terminate(
+					workflow.ProjectNetworkPeerIsNotReadyInAtlas,
+					fmt.Errorf("failed to delete network peer: %w", errDelete),
+				),
+				api.NetworkPeerReadyType
 		}
 	}
 
@@ -151,7 +146,7 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
 			errors.New("failed to update network peer statuses")), api.NetworkPeerReadyType
 	}
-	if configuredBefore {
+	if len(lastAppliedPeers) > 0 {
 		err = deleteUnusedContainers(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, getPeerIDs(peerStatuses))
 		if err != nil {
 			logger.Errorf("failed to delete unused containers: %v", err)
@@ -196,6 +191,9 @@ func deleteUnusedContainers(context context.Context, containerService admin.Netw
 		return err
 	}
 	for _, container := range containers.GetResults() {
+		if container.GetProvisioned() { // a provisioned container is in use, should not be removed
+			continue
+		}
 		if !compare.Contains(doNotDelete, container.GetId()) {
 			_, response, errDelete := containerService.DeletePeeringContainer(context, groupID, container.GetId()).Execute()
 			if errDelete != nil && response.StatusCode != http.StatusConflict { // AWS peer does not contain container id
@@ -360,7 +358,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 	return peersList, nil
 }
 
-func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConnectionSettings, expectedPeers []akov2.NetworkPeer, logger *zap.SugaredLogger, containerService admin.NetworkPeeringApi, groupID string) *networkPeerDiff {
+func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConnectionSettings, lastApplied, expectedPeers []akov2.NetworkPeer, logger *zap.SugaredLogger, containerService admin.NetworkPeeringApi, groupID string) *networkPeerDiff {
 	var diff networkPeerDiff
 	var peersToUpdate []akov2.NetworkPeer
 	for _, existedPeer := range existedPeers {
@@ -373,13 +371,14 @@ func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConne
 				needToDelete = false
 			}
 		}
+		if !needToDelete || !isAtlasPeerManaged(ctx, lastApplied, existedPeer, containerService, groupID) {
+			continue
+		}
 
-		if needToDelete {
+		logger.Debugf("peer %v will be deleted", existedPeer)
+		if !isPeerDeleting(existedPeer) {
 			logger.Debugf("peer %v will be deleted", existedPeer)
-			if !isPeerDeleting(existedPeer) {
-				logger.Debugf("peer %v will be deleted", existedPeer)
-				diff.PeersToDelete = append(diff.PeersToDelete, existedPeer.GetId())
-			}
+			diff.PeersToDelete = append(diff.PeersToDelete, existedPeer.GetId())
 		}
 	}
 
@@ -395,6 +394,15 @@ func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConne
 		}
 	}
 	return &diff
+}
+
+func isAtlasPeerManaged(ctx context.Context, lastApplied []akov2.NetworkPeer, atlasPeer admin.BaseNetworkPeeringConnectionSettings, containerService admin.NetworkPeeringApi, groupID string) bool {
+	for _, lastAppliedPeer := range lastApplied {
+		if comparePeersPair(ctx, *akov2.NewNetworkPeerFromAtlas(atlasPeer), lastAppliedPeer, containerService, groupID) {
+			return true
+		}
+	}
+	return false
 }
 
 func isPeerDeleting(peer admin.BaseNetworkPeeringConnectionSettings) bool {

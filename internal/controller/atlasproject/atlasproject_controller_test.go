@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"reflect"
 	"testing"
@@ -418,11 +419,19 @@ func TestLastSpecFrom(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			p := &akov2.AtlasProject{}
 			p.WithAnnotations(tt.annotations)
-			lastSpec, err := lastSpecFrom(p, "mongodb.com/last-applied-configuration")
+			lastSpec, err := lastAppliedSpecFrom(p)
 			if err != nil {
 				assert.ErrorContains(t, err, tt.expectedError)
 			}
 			assert.Equal(t, tt.expectedLastSpec, lastSpec)
 		})
 	}
+}
+
+func jsonize(t *testing.T, obj any) string {
+	t.Helper()
+
+	js, err := json.Marshal(obj)
+	require.NoError(t, err)
+	return string(js)
 }
