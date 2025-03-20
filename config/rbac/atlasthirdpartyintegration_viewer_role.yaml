@@ -1,16 +1,16 @@
-# permissions for end users to view atlasintegrations.
+# permissions for end users to view atlasthirdpartyintegrations.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: mongodb-atlas-kubernetes
     app.kubernetes.io/managed-by: kustomize
-  name: atlasintegration-viewer-role
+  name: atlasthirdpartyintegration-viewer-role
 rules:
 - apiGroups:
   - atlas.mongodb.com
   resources:
-  - atlasintegrations
+  - atlasthirdpartyintegrations
   verbs:
   - get
   - list
@@ -18,6 +18,6 @@ rules:
 - apiGroups:
   - atlas.mongodb.com
   resources:
-  - atlasintegrations/status
+  - atlasthirdpartyintegrations/status
   verbs:
   - get

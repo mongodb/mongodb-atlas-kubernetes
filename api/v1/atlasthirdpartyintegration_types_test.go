@@ -167,7 +167,7 @@ func TestIntegrationCELChecks(t *testing.T) {
 			unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.obj)
 			require.NoError(t, err)
 
-			crdPath := "../../config/crd/bases/atlas.mongodb.com_atlasintegrations.yaml"
+			crdPath := "../../config/crd/bases/atlas.mongodb.com_atlasthirdpartyintegrations.yaml"
 			validator, err := cel.VersionValidatorFromFile(t, crdPath, "v1")
 			assert.NoError(t, err)
 			errs := validator(unstructuredObject, nil)
