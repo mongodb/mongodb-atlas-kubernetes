@@ -4,7 +4,7 @@ set -euo pipefail
 
 helm version
 go version
-cd test/e2e
+cd test/kind/inprocess
 
 # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
 if [[ $TEST_NAME == "long-run" ]]; then

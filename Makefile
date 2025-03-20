@@ -39,7 +39,7 @@ ifndef TARGET_OS
 TARGET_OS := $(shell go env GOOS)
 endif
 
-GO_UNIT_TEST_FOLDERS=$(shell go list ./... |grep -v 'test/int\|test/e2e')
+GO_UNIT_TEST_FOLDERS=$(shell go list ./... |grep -v 'test/int\|test/kind')
 
 # DEFAULT_CHANNEL defines the default channel used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g DEFAULT_CHANNEL = "stable")

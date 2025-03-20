@@ -90,7 +90,7 @@ issues:
       linters:
         - gochecknoglobals
         - wrapcheck
-    - path: test/e2e
+    - path: test/kind
       linters:
         - stylecheck
         - noctx

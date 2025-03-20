@@ -280,6 +280,6 @@ jobs:
         if: ${{ success() }}
         uses: codecov/codecov-action@v5
         with:
-          files: test/e2e/coverprofile.out
+          files: test/kind/inprocess/coverprofile.out
           name: ${{ matrix.test }}
           verbose: true

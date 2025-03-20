@@ -149,14 +149,14 @@ Test code can be further decomposed into:
 
 - **Unit tests**, which can be run by simply doing `go test ./...` and should always succeed without any preparations.
 	- Still you should normally use `make unit-test` so that default flags such as race detection and coverage are also included.
-	- Includes all `*_test.go` files, tests on `test/int/` and `test/e2e/` folders will be skipped by default.
+	- Includes all `*_test.go` files, tests on `test/int/` and `test/kind/` folders will be skipped by default.
 - **Non-unit tests requiring a setup**, such as **integration** and **e2e** tests, live under the `test/` folder and need to be invoked with a explicit *environment variable*, such as `AKO_INT_TEST=1` for integration tests or `AKO_E2E_TEST=1` for e2e tests. In short: 
 	- Run **integration tests** with `make int-test label=...`, using a label to limit the tests to be run.
 	- Run **e2e tests** with `make e2e label=...`.
 	- Note you will need to load extra environment variables, including credentials, to be able to run most of these tests.
-	- Includes files under `test/int/` and `test/e2e/` folders.
+	- Includes files under `test/int/` and `test/kind/` folders.
 - **Helper test code** is code used by unit and non-unit tests code which is not part of the production code. For example, mocks and helpers used to make tests easier to write, more succinct and reliable.
 	- Such test code might include its own unit tests that will run as any other unit test via `go test ./...` or `make unit-test`.
 	- Note this code requires no build tags, as it is only imported by `*_test.go` code it will not become part of the imported production code.
-	- Includes basically any **non** `*_test.go` under `test/` excluding `test/int/` and `test/e2e/` folders, such as `test/atlas/` mocks.
-	- For historical reasons, many helpers are today under the `test/e2e` folder. The plan it to move them to `test/helper` or some other folder under `test/`, so that their unit tests, if any,  will always be run by default.
+	- Includes basically any **non** `*_test.go` under `test/` excluding `test/int/` and `test/kind/` folders, such as `test/atlas/` mocks.
+	- For historical reasons, many helpers are today under the `test/kind` folder. The plan it to move them to `test/helper` or some other folder under `test/`, so that their unit tests, if any,  will always be run by default.
