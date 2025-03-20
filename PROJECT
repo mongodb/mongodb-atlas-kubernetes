@@ -156,7 +156,7 @@ resources:
     namespaced: true
   domain: mongodb.com
   group: atlas
-  kind: AtlasIntegration
+  kind: AtlasThirdPartyIntegration
   path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
 version: "3"
