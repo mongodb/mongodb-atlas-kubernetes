@@ -1,0 +1,134 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: DATADOG
+  datadog:
+    apiKeySecret: "secret-ref"
+    region: "string"
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  externalProjectRef:
+    id: "project-id"
+  connectionSecret: "conn-secret-ref"
+  type: MICROSOFT_TEAMS
+  microsoftTeams:
+    urlSecret: "secret-ref"
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: NEW_RELIC
+  newRelic:
+    credentialsSecret: "secret-ref"
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: OPS_GENIE
+  opsGenie:
+    apiKeySecret: "secret-ref"
+    region: "string"
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: PAGER_DUTY
+  pagerDuty:
+    serviceKeySecret: "secret-ref"
+    region: "string"
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: PROMETHEUS
+  prometheus:
+    prometheusCredentials: "secret-ref"
+    serviceDiscovery: "string"
+    enabled: true
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: SLACK
+  slack:
+    apiTokenSecret: "secret-ref"
+    channelName: "channel-name"
+    teamName: "team-name"
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: VICTOR_OPS
+  victorOps:
+    routingKey: "string"
+    apiKeySecret: "secret-ref"
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: WEBHOOK
+  webhook:
+    urlSecret: "secret-ref"
