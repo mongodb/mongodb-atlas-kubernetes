@@ -70,14 +70,19 @@ jobs:
 
       - name: Verify if helm-charts need to be synced
         run: |
-          for $dir in $(ls ./helm-charts); do
+          for dir in ./helm-charts/*; do
+            dir=$(basename "$dir")
             if [[ -d "./helm-charts-cloned/charts/$dir" ]]; then
-              if [[ -n $(diff -r ./helm-charts/$dir ./helm-charts-cloned/charts/$dir) ]]; then
-                echo "Changes detected for the Chart: $dir"
-                cp -r ./helm-charts/$dir ./helm-charts-cloned/charts/$dir
+                echo "Checking for changes in the Chart: $dir"
+              if [[ -n $(diff -r "./helm-charts/$dir" "./helm-charts-cloned/charts/$dir") ]]; then
+                echo "> Changes detected for the Chart: $dir"
+                diff -r "./helm-charts/$dir" "./helm-charts-cloned/charts/$dir"
+                cp -r "./helm-charts/$dir" "./helm-charts-cloned/charts/$dir"
+              else
+                echo "> No changes detected for the Chart: $dir"
               fi
             fi
-          done    
+          done
 
       - name: Create PR for helm-charts repo
         env:
