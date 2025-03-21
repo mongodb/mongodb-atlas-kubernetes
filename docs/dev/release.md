@@ -26,6 +26,7 @@ Please refer to the [CI documentation](ci.md#kubernetes-version-matrix) and subm
 ## Release Notes
 
 - Create a draft of the release notes in a Google Document and share with Product and the Docs team.
+  - In confluence, look for the `AKO Release Internal details` page for more details.
 - Ensure as well that supporting documents for new features are in review.
 - Wait for approval of the release notes and availability of the associated documents.
 
