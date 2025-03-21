@@ -71,7 +71,8 @@ func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResourc
 	return nil
 }
 
-func ParseLastConfigApplied[S any](spec *S, resource api.AtlasCustomResource) (*S, error) {
+func ParseLastConfigApplied[S any](resource api.AtlasCustomResource) (*S, error) {
+	var spec S
 	lastAppliedJSON, ok := resource.GetAnnotations()[AnnotationLastAppliedConfiguration]
 	if !ok {
 		return nil, nil
@@ -79,9 +80,9 @@ func ParseLastConfigApplied[S any](spec *S, resource api.AtlasCustomResource) (*
 
 	err := json.Unmarshal([]byte(lastAppliedJSON), &spec)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing JSON annotation value [%s] into a %T: %w", lastAppliedJSON, *spec, err)
+		return nil, fmt.Errorf("error parsing JSON annotation value [%s] into a %T: %w", lastAppliedJSON, spec, err)
 	}
-	return spec, nil
+	return &spec, nil
 }
 
 func IsResourceManagedByOperator(resource api.AtlasCustomResource) (bool, error) {
