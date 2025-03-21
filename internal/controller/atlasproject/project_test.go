@@ -733,10 +733,12 @@ func TestHandleProject(t *testing.T) {
 			require.NoError(t, corev1.AddToScheme(testScheme))
 			logger := zaptest.NewLogger(t).Sugar()
 			ctx := &workflow.Context{
-				Context:   context.Background(),
-				Log:       logger,
-				Client:    tt.atlasClientMocker(),
-				SdkClient: tt.atlasSDKMocker(),
+				Context: context.Background(),
+				Log:     logger,
+				Client:  tt.atlasClientMocker(),
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: tt.atlasSDKMocker(),
+				},
 			}
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
 			customRoleIndexer := indexer.NewAtlasCustomRoleByProjectIndexer(logger.Desugar())
@@ -1190,10 +1192,12 @@ func TestDelete(t *testing.T) {
 			require.NoError(t, corev1.AddToScheme(testScheme))
 			logger := zaptest.NewLogger(t).Sugar()
 			ctx := &workflow.Context{
-				Context:   context.Background(),
-				Client:    tt.atlasClientMocker(),
-				SdkClient: tt.atlasSDKMocker(),
-				Log:       logger,
+				Context: context.Background(),
+				Client:  tt.atlasClientMocker(),
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: tt.atlasSDKMocker(),
+				},
+				Log: logger,
 			}
 
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))

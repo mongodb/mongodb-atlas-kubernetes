@@ -140,7 +140,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	workflowCtx.SdkClient = sdkClientSet.SdkClient20231115008
 	workflowCtx.SdkClientSet = sdkClientSet
 	workflowCtx.Client, err = r.AtlasProvider.Client(workflowCtx.Context, connectionConfig.Credentials, r.Log)
 	if err != nil {

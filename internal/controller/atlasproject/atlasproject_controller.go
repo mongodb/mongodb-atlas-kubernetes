@@ -162,7 +162,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	workflowCtx.SdkClient = atlasSdkClient.SdkClient20231115008
+	workflowCtx.SdkClientSet = atlasSdkClient
 	services := AtlasProjectServices{}
 	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20231115008.ProjectsApi)
 	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.SdkClient20231115008.TeamsApi, atlasSdkClient.SdkClient20231115008.MongoDBCloudUsersApi)

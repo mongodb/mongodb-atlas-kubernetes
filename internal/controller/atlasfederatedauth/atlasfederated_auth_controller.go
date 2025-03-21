@@ -105,7 +105,6 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return result.ReconcileResult(), nil
 	}
 
-	workflowCtx.SdkClient = atlasClientSet.SdkClient20231115008
 	workflowCtx.SdkClientSet = atlasClientSet
 	workflowCtx.OrgID = connectionConfig.OrgID
 

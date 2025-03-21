@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -432,8 +433,10 @@ func TestEnsureCustomRoles(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
-				SdkClient: &admin.APIClient{
-					CustomDatabaseRolesApi: tc.roleAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						CustomDatabaseRolesApi: tc.roleAPI,
+					},
 				},
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
@@ -514,8 +517,10 @@ func TestCustomRolesNonGreedyBehaviour(t *testing.T) {
 			workflowCtx := workflow.Context{
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
-				SdkClient: &admin.APIClient{
-					CustomDatabaseRolesApi: roleAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						CustomDatabaseRolesApi: roleAPI,
+					},
 				},
 			}
 

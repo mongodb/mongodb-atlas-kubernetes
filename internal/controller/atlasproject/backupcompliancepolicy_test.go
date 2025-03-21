@@ -393,8 +393,10 @@ func TestEnsureBackupCompliance(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
-				SdkClient: &admin.APIClient{
-					CloudBackupsApi: tc.backupAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						CloudBackupsApi: tc.backupAPI,
+					},
 				},
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
