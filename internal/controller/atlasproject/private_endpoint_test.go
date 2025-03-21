@@ -174,9 +174,8 @@ func TestMapLastAppliedPrivateEndpoint(t *testing.T) {
 		expectedError string
 	}{
 		"should return error when last spec annotation is wrong": {
-			annotations: map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
-			expectedError: "error parsing JSON annotation value [{wrong}] into a v1.AtlasProjectSpec:" +
-				" invalid character 'w' looking for beginning of object key string",
+			annotations:   map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
+			expectedError: "invalid character 'w' looking for beginning of object key string",
 		},
 		"should return nil when there is no last spec": {},
 		"should return map of last private endpoints": {

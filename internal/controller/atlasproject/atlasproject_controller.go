@@ -378,23 +378,19 @@ func lastAppliedSpecFrom(atlasProject *akov2.AtlasProject) (*akov2.AtlasProjectS
 }
 
 func (r *AtlasProjectReconciler) clearLastAppliedMigratedResources(ctx context.Context, atlasProject *akov2.AtlasProject) error {
-	lastCfg, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](atlasProject)
+	clearedCfg, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](atlasProject)
 	if err != nil {
 		return fmt.Errorf("failed to parse last applied config annotation: %w", err)
 	}
 	// clear all resources migrated as independent CRDs to avoid eager
 	// reconciliation that might conflict with independent CRs and apply
-	lastCfg.CustomRoles = nil
-	lastCfg.PrivateEndpoints = nil
-	lastCfg.ProjectIPAccessList = nil
-	lastCfg.NetworkPeers = nil
-	shallowCopy := akov2.AtlasProject{
-		TypeMeta:   atlasProject.TypeMeta,
-		ObjectMeta: atlasProject.ObjectMeta,
-		Spec:       *lastCfg,
-	}
-	if err := customresource.ApplyLastConfigApplied(ctx, &shallowCopy, r.Client); err != nil {
-		return fmt.Errorf("failed to apply last applied config annotation: %w", err)
+	clearedCfg.CustomRoles = nil
+	clearedCfg.PrivateEndpoints = nil
+	clearedCfg.ProjectIPAccessList = nil
+	clearedCfg.NetworkPeers = nil
+
+	if err := customresource.PatchLastConfigApplied(ctx, r.Client, atlasProject, clearedCfg); err != nil {
+		return fmt.Errorf("failed to clear migrated resources in last applied config annotation: %w", err)
 	}
 	return nil
 }

@@ -379,7 +379,7 @@ func TestHandleIPAccessList(t *testing.T) {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
 				return apiMock
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to get last applied configuration: error parsing JSON annotation value [{wrong}] into a v1.AtlasProjectSpec: invalid character 'w' looking for beginning of object key string")),
+			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to get last applied configuration: error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]: invalid character 'w' looking for beginning of object key string")),
 		},
 		"should successfully handle ip access list reconciliation": {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
@@ -495,9 +495,8 @@ func TestMapLastAppliedIPAccessList(t *testing.T) {
 		expectedError       string
 	}{
 		"should return error when last spec annotation is wrong": {
-			annotations: map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
-			expectedError: "error parsing JSON annotation value [{wrong}] into a v1.AtlasProjectSpec:" +
-				" invalid character 'w' looking for beginning of object key string",
+			annotations:   map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
+			expectedError: "invalid character 'w' looking for beginning of object key string",
 		},
 		"should return nil when there is no last spec": {},
 		"should return map of last ip access list": {
