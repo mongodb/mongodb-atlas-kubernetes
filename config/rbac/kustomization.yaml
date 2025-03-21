@@ -24,8 +24,6 @@ resources:
 # if you do not want those helpers be installed with your Project.
 - atlasthirdpartyintegration_editor_role.yaml
 - atlasthirdpartyintegration_viewer_role.yaml
-- atlasintegration_editor_role.yaml
-- atlasintegration_viewer_role.yaml
 - atlasnetworkcontainer_editor_role.yaml
 - atlasnetworkcontainer_viewer_role.yaml
 - atlasipaccesslist_editor_role.yaml
