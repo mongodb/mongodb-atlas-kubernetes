@@ -161,10 +161,6 @@ type PrometheusIntegration struct {
 	// +kubebuilder:validation:Enum:=file;http
 	// +kubebuilder:validation:Required
 	ServiceDiscovery string `json:"serviceDiscovery"`
-
-	// Enabled flags whether or not Prometheus integration is enabled
-	// +kubebuilder:validation:Required
-	Enabled bool `json:"enabled"`
 }
 
 type SlackIntegration struct {
