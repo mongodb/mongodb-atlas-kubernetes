@@ -150,7 +150,7 @@ Test code can be further decomposed into:
 - **Unit tests**, which can be run by simply doing `go test ./...` and should always succeed without any preparations.
 	- Still you should normally use `make unit-test` so that default flags such as race detection and coverage are also included.
 	- Includes all `*_test.go` files, tests on `test/int/` and `test/kind/` folders will be skipped by default.
-- **Non-unit tests requiring a setup**, such as **integration** and **e2e** tests, live under the `test/` folder and need to be invoked with a explicit *environment variable*, such as `AKO_INT_TEST=1` for integration tests or `AKO_E2E_TEST=1` for e2e tests. In short: 
+- **Non-unit tests requiring a setup**, such as **integration** and **e2e** tests, live under the `test/` folder and need to be invoked with a explicit *environment variable*, such as `AKO_INT_TEST=1` for integration tests or `AKO_KIND_TEST=1` for e2e tests. In short: 
 	- Run **integration tests** with `make int-test label=...`, using a label to limit the tests to be run.
 	- Run **e2e tests** with `make e2e label=...`.
 	- Note you will need to load extra environment variables, including credentials, to be able to run most of these tests.

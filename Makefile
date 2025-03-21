@@ -198,9 +198,16 @@ envtest: envtest-assets
 envtest-assets:
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 
-.PHONY: e2e
-e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
+.PHONY: kind-tests
+kind-tests: run-kind ## Run kind-tests test. Command `make kind-helm label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
+
+.PHONY: e2e
+e2e: kind-tests ## kind-tests alias
+
+.PHONY: kind-helm
+kind-helm: run-kind ## Run kind-helm tests. Command `make kind-helm label=helm-ns` run `helm-ns` test
+	AKO_KIND_HELM_TEST=1 ginkgo --race --label-filter="${label}" --timeout 120m -vv test/kind/helm
 
 .PHONY: e2e-openshift-upgrade
 e2e-openshift-upgrade:

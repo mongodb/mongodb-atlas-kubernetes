@@ -26,15 +26,15 @@ var (
 )
 
 func TestE2e(t *testing.T) {
-	control.SkipTestUnless(t, "AKO_E2E_TEST")
+	control.SkipTestUnless(t, "AKO_KIND_TEST")
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Atlas Operator E2E Test Suite")
 }
 
 var _ = BeforeSuite(func() {
-	if !control.Enabled("AKO_E2E_TEST") {
-		fmt.Println("Skipping e2e BeforeSuite, AKO_E2E_TEST is not set")
+	if !control.Enabled("AKO_KIND_TEST") {
+		fmt.Println("Skipping e2e BeforeSuite, AKO_KIND_TEST is not set")
 
 		return
 	}
