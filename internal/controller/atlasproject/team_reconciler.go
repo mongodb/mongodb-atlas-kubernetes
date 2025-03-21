@@ -54,7 +54,7 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 		}
 
 		teamCtx.OrgID = workflowCtx.OrgID
-		teamCtx.SdkClient = workflowCtx.SdkClientSet.SdkClient20231115008
+		teamCtx.SdkClient = workflowCtx.SdkClient
 
 		teamID, result := r.ensureTeamState(teamCtx, teamsService, team)
 		if !result.IsOk() {
