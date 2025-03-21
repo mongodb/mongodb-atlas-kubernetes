@@ -88,7 +88,6 @@ func TestIntegrationCELChecks(t *testing.T) {
 					Prometheus: &PrometheusIntegration{
 						PrometheusCredentials: "prometheus-credentials",
 						ServiceDiscovery:      "http",
-						Enabled:               false,
 					},
 				},
 			},
@@ -138,7 +137,6 @@ func TestIntegrationCELChecks(t *testing.T) {
 					Prometheus: &PrometheusIntegration{
 						PrometheusCredentials: "prometheus-credentials",
 						ServiceDiscovery:      "http",
-						Enabled:               false,
 					},
 				},
 			},
