@@ -164,10 +164,6 @@ spec:
                 description: Prometheus contains the config fields for Prometheus's
                   Integration
                 properties:
-                  enabled:
-                    description: Enabled flags whether or not Prometheus integration
-                      is enabled
-                    type: boolean
                   prometheusCredentials:
                     description: |-
                       PrometheusCredentials is the name of a secret containing the Prometheus
@@ -180,7 +176,6 @@ spec:
                     - http
                     type: string
                 required:
-                - enabled
                 - prometheusCredentials
                 - serviceDiscovery
                 type: object
