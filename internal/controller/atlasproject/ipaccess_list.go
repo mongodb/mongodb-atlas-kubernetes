@@ -1,7 +1,6 @@
 package atlasproject
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -9,7 +8,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist"
 )
@@ -130,18 +128,6 @@ func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) work
 	ctx.Log.Debug("starting ip access list processing")
 	defer ctx.Log.Debug("finished ip access list processing")
 
-	skipped, err := shouldIPAccessListSkipReconciliation(project)
-	if err != nil {
-		return workflow.Terminate(workflow.Internal, err)
-	}
-
-	if skipped {
-		ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(nil))
-		ctx.UnsetCondition(api.IPAccessListReadyType)
-
-		return workflow.OK()
-	}
-
 	lastApplied, err := mapLastAppliedIPAccessList(project)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Errorf("failed to get last applied configuration: %w", err))
@@ -155,20 +141,6 @@ func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) work
 	}
 
 	return c.reconcile()
-}
-
-func shouldIPAccessListSkipReconciliation(atlasProject *akov2.AtlasProject) (bool, error) {
-	lastSkippedSpec := akov2.AtlasProjectSpec{}
-	lastSkippedSpecString, ok := atlasProject.Annotations[customresource.AnnotationLastSkippedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(lastSkippedSpecString), &lastSkippedSpec); err != nil {
-			return false, fmt.Errorf("failed to parse last skipped configuration: %w", err)
-		}
-
-		return len(lastSkippedSpec.ProjectIPAccessList) == 0, nil
-	}
-
-	return false, nil
 }
 
 func mapLastAppliedIPAccessList(atlasProject *akov2.AtlasProject) (ipaccesslist.IPAccessEntries, error) {
