@@ -1,0 +1,24 @@
+name: Trigger
+
+on:
+  pull_request_target:
+    types: [labeled]
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
+    branches:
+      - '**'
+    paths-ignore:
+      - 'docs/**'
+
+jobs:
+  run-tests:
+    name: Run Tests
+    # Contributions do NOT run any testing by default, a label is needed to allow testing
+    # Only accept either code owner's PRs from the same repo
+    # or pull_request_target events with the safe-to-test allow flag
+    if: |
+      (!contains(github.event.pull_request.labels.*.name, 'safe-to-test') && github.event_name == 'pull_request') || 
+      (contains(github.event.pull_request_target.labels.*.name, 'safe-to-test') && github.event_name == 'pull_request_target')
+    uses: ./.github/workflows/test.yml
