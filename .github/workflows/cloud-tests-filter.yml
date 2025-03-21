@@ -31,7 +31,7 @@ jobs:
                 - 'pkg/**/!(*_test.go)'
                 - 'internal/**/!(*_test.go)'
                 - 'Dockerfile'
-                - 'test/e2e/**'
+                - 'test/kind/**'
                 - 'test/int/**'
         # run only if 'production-code' files were changed
         - name: Production code changed
