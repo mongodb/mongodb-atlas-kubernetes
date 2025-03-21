@@ -378,7 +378,7 @@ func lastAppliedSpecFrom(atlasProject *akov2.AtlasProject) (*akov2.AtlasProjectS
 }
 
 func (r *AtlasProjectReconciler) clearLastAppliedMigratedResources(ctx context.Context, atlasProject *akov2.AtlasProject) error {
-	lastCfg, err := customresource.ParseLastConfigApplied(&akov2.AtlasProjectSpec{}, atlasProject)
+	lastCfg, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](atlasProject)
 	if err != nil {
 		return fmt.Errorf("failed to parse last applied config annotation: %w", err)
 	}

@@ -504,7 +504,7 @@ func TestSkipClearsMigratedResourcesLastConfig(t *testing.T) {
 	require.Equal(t, reconcile.Result{}, result)
 	require.NoError(t, err)
 	require.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(&prj), &prj))
-	lastApplied, err := customresource.ParseLastConfigApplied(&akov2.AtlasProjectSpec{}, &prj)
+	lastApplied, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](&prj)
 	require.NoError(t, err)
 	wantLastApplied := &akov2.AtlasProjectSpec{
 		Name:                      "test-project",
