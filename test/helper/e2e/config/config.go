@@ -21,10 +21,10 @@ const (
 
 	// HELM relative path
 	TestAppHelmChartPath          = "../app/helm/"
-	AtlasOperatorHelmChartPath    = "../../helm-charts/charts/atlas-operator"
-	AtlasOperatorCRDHelmChartPath = "../../helm-charts/charts/atlas-operator-crds"
-	AtlasDeploymentHelmChartPath  = "../../helm-charts/charts/atlas-deployment"
-	HelmChartDirectory            = "../../helm-charts/charts"
+	AtlasOperatorHelmChartPath    = "../../helm-charts/atlas-operator"
+	AtlasOperatorCRDHelmChartPath = "../../helm-charts/atlas-operator-crds"
+	AtlasDeploymentHelmChartPath  = "../../helm-charts/atlas-deployment"
+	HelmChartDirectory            = "../../helm-charts"
 	MajorVersionFile              = "../../major-version"
 
 	// Tags for test

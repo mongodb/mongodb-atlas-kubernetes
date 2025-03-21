@@ -287,6 +287,23 @@ endif
 validate-manifests: generate manifests
 	$(MAKE) check-missing-files
 
+.PHONE: sync-crds-chart
+sync-crds-chart:
+	@cp -r bundle/manifests/atlas.mongodb.com_* helm-charts/atlas-operator-crds/templates/
+
+.PHONY: validate-crds-chart
+validate-crds-chart: ## Validate the CRDs in the Helm chart
+	@echo "Validating CRDs in the Helm chart"
+	@for file in bundle/manifests/atlas.mongodb.com_*.yaml; do \
+		helm_file=helm-charts/atlas-operator-crds/templates/$$(basename $$file); \
+		if ! cmp -s $$file $$helm_file; then \
+			echo "CRD files do not match: $$file and $$helm_file"; \
+			exit 1; \
+		fi; \
+	done
+	@echo "All CRD files match"
+	@cd helm-charts/atlas-operator-crds && helm template . > /dev/null
+
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"

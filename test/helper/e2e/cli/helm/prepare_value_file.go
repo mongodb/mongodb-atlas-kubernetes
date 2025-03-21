@@ -7,7 +7,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
-// PrepareHelmChartValuesFile Prepare chart values file for project, deployments, users https://github.com/mongodb/helm-charts/blob/main/charts/atlas-deployment/values.yaml
+// PrepareHelmChartValuesFile Prepare chart values file for project, deployments, users ./helm-charts/atlas-deployment/values.yaml
 func PrepareHelmChartValuesFile(input model.UserInputs) {
 	type usersType struct {
 		model.UserSpec
