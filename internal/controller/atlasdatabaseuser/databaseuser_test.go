@@ -141,9 +141,6 @@ func TestHandleDatabaseUser(t *testing.T) {
 						ExternalProjectRef: &akov2.ExternalProjectReference{
 							ID: "project-id",
 						},
-						ConnectionSecret: &api.LocalObjectReference{
-							Name: "project-creds",
-						},
 					},
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -171,7 +168,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 				IsCloudGovFunc: func() bool {
 					return false
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
 					projectAPI.EXPECT().GetProject(context.Background(), "project-id").
 						Return(admin.GetProjectApiRequest{ApiService: projectAPI})
@@ -193,7 +190,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -278,12 +275,27 @@ func TestHandleDatabaseUser(t *testing.T) {
 			if tt.dbUserSecret != nil {
 				k8sClient.WithObjects(tt.dbUserSecret)
 			}
+			k8sClient.WithObjects(&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"orgId":         []byte("orgId"),
+					"publicApiKey":  []byte("publicApiKey"),
+					"privateApiKey": []byte("privateApiKey"),
+				},
+			})
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{
 					Client: k8sClient.Build(),
 					Log:    logger,
+					GlobalSecretRef: client.ObjectKey{
+						Namespace: "default",
+						Name:      "secret",
+					},
 				},
 				AtlasProvider: tt.atlasProvider,
 			}
@@ -296,14 +308,15 @@ func TestHandleDatabaseUser(t *testing.T) {
 			result := r.handleDatabaseUser(ctx, tt.dbUserInAKO)
 			assert.Equal(t, tt.expectedResult, result)
 			logger.Infof("conditions", ctx.Conditions())
-			assert.True(
-				t,
-				cmp.Equal(
-					tt.expectedConditions,
-					ctx.Conditions(),
-					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
-				),
+
+			diff := cmp.Diff(
+				tt.expectedConditions,
+				ctx.Conditions(),
+				cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
 			)
+			if diff != "" {
+				t.Errorf("status conditions differ: %v", diff)
+			}
 		})
 	}
 }
@@ -2235,7 +2248,7 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 		IsCloudGovFunc: func() bool {
 			return false
 		},
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			userAPI := mockadmin.NewDatabaseUsersApi(t)
 			userAPI.EXPECT().GetDatabaseUser(context.Background(), "my-project", "admin", "user1").
 				Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
@@ -2261,7 +2274,7 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 					DatabaseUsersApi: userAPI,
 				},
 				SdkClient20241113001: &adminv20241113001.APIClient{},
-			}, "", nil
+			}, nil
 		},
 	}
 }

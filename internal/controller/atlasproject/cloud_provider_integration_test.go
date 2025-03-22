@@ -15,6 +15,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
@@ -33,8 +34,10 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			CloudProviderAccessApi: cpa,
 		}
 		workflowCtx := &workflow.Context{
-			SdkClient: &atlasClient,
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &atlasClient,
+			},
+			Context: context.Background(),
 		}
 		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", []akov2.CloudProviderIntegration{})
 		assert.EqualError(t, err, "unable to fetch cloud provider access from Atlas: service unavailable")
@@ -132,8 +135,12 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			DeauthorizeCloudProviderAccessRoleExecute(mock.Anything).
 			Return(&http.Response{}, nil)
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Context: context.Background(),
 		}
 
 		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", cpas)
@@ -199,8 +206,12 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				},
 			)
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Context: context.Background(),
 		}
 
 		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", cpas)
@@ -252,9 +263,13 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			AuthorizeCloudProviderAccessRoleExecute(mock.Anything).
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Log:       zaptest.NewLogger(t).Sugar(),
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Log:     zaptest.NewLogger(t).Sugar(),
+			Context: context.Background(),
 		}
 
 		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", cpas)
@@ -834,8 +849,12 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 				nil,
 			)
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Context: context.Background(),
 		}
 
 		assert.Equal(t, expected, createCloudProviderAccess(workflowCtx, "projectID", cpaStatus))
@@ -861,9 +880,13 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			CreateCloudProviderAccessRoleExecute(mock.Anything).
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Log:       zaptest.NewLogger(t).Sugar(),
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Log:     zaptest.NewLogger(t).Sugar(),
+			Context: context.Background(),
 		}
 
 		assert.Equal(t, expected, createCloudProviderAccess(workflowCtx, "projectID", cpaStatus))
@@ -913,8 +936,12 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 				nil,
 			)
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Context: context.Background(),
 		}
 
 		assert.Equal(t, expected, authorizeCloudProviderAccess(workflowCtx, "projectID", cpaStatus))
@@ -948,9 +975,13 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			AuthorizeCloudProviderAccessRoleExecute(mock.Anything).
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Log:       zaptest.NewLogger(t).Sugar(),
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Log:     zaptest.NewLogger(t).Sugar(),
+			Context: context.Background(),
 		}
 
 		assert.Equal(t, expected, authorizeCloudProviderAccess(workflowCtx, "projectID", cpaStatus))
@@ -978,8 +1009,12 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			DeauthorizeCloudProviderAccessRoleExecute(mock.Anything).
 			Return(&http.Response{}, nil)
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Context: context.Background(),
 		}
 
 		deleteCloudProviderAccess(workflowCtx, "projectID", cpaStatus)
@@ -1004,9 +1039,13 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			DeauthorizeCloudProviderAccessRoleExecute(mock.Anything).
 			Return(&http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
-			SdkClient: &admin.APIClient{CloudProviderAccessApi: cpa},
-			Log:       zaptest.NewLogger(t).Sugar(),
-			Context:   context.Background(),
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					CloudProviderAccessApi: cpa,
+				},
+			},
+			Log:     zaptest.NewLogger(t).Sugar(),
+			Context: context.Background(),
 		}
 
 		deleteCloudProviderAccess(workflowCtx, "projectID", cpaStatus)

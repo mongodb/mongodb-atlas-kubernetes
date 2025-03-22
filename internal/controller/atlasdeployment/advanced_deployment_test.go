@@ -19,6 +19,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -733,9 +734,11 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				},
 			}
 			ctx := &workflow.Context{
-				Context:   context.Background(),
-				Log:       logger,
-				SdkClient: tt.sdkMock(),
+				Context: context.Background(),
+				Log:     logger,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: tt.sdkMock(),
+				},
 			}
 
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Cluster)

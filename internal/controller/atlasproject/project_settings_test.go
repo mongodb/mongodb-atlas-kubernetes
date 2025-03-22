@@ -14,6 +14,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -216,8 +217,10 @@ func TestEnsureProjectSettings(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := &workflow.Context{
-				SdkClient: &admin.APIClient{
-					ProjectsApi: tc.projectAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						ProjectsApi: tc.projectAPI,
+					},
 				},
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),

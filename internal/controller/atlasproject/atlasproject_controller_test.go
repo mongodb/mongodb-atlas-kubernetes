@@ -121,7 +121,17 @@ func TestRenconcile(t *testing.T) {
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(tt.project).
+				WithObjects(tt.project, &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte("orgId"),
+						"publicApiKey":  []byte("publicApiKey"),
+						"privateApiKey": []byte("privateApiKey"),
+					},
+				}).
 				WithStatusSubresource(tt.project).
 				WithIndex(
 					instancesIndexer.Object(),
@@ -142,15 +152,19 @@ func TestRenconcile(t *testing.T) {
 					IsSupportedFunc: func() bool {
 						return true
 					},
-					ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-						return tt.atlasClientMocker(), "", nil
+					ClientFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
+						return tt.atlasClientMocker(), nil
 					},
-					SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, string, error) {
+					SdkClientSetFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, error) {
 						return &atlas_controllers.ClientSet{
 							SdkClient20231115008: tt.atlasSDKMocker(),
 							SdkClient20241113001: &adminv20241113001.APIClient{},
-						}, "", nil
+						}, nil
 					},
+				},
+				GlobalSecretRef: client.ObjectKey{
+					Namespace: "default",
+					Name:      "secret",
 				},
 			}
 

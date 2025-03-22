@@ -13,8 +13,6 @@ import (
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -25,14 +23,11 @@ import (
 
 const (
 	govAtlasDomain = "mongodbgov.com"
-	orgIDKey       = "orgId"
-	publicAPIKey   = "publicApiKey"
-	privateAPIKey  = "privateApiKey"
 )
 
 type Provider interface {
-	Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
-	SdkClientSet(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*ClientSet, string, error)
+	Client(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error)
+	SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error)
 	IsCloudGov() bool
 	IsResourceSupported(resource api.AtlasCustomResource) bool
 }
@@ -43,24 +38,33 @@ type ClientSet struct {
 }
 
 type ProductionProvider struct {
-	k8sClient       client.Client
-	domain          string
-	globalSecretRef client.ObjectKey
-	dryRun          bool
+	domain string
+	dryRun bool
 }
 
-type credentialsSecret struct {
-	OrgID      string
+// ConnectionConfig is the type that contains connection configuration to Atlas, including credentials.
+type ConnectionConfig struct {
+	OrgID       string
+	Credentials *Credentials
+}
+
+// Credentials is the type that holds credentials to authenticate against the Atlas API.
+// Currently, only API keys are support but more credential types could be added,
+// see https://www.mongodb.com/docs/atlas/configure-api-access/.
+type Credentials struct {
+	APIKeys *APIKeys
+}
+
+// APIKeys is the type that holds Public/Private API keys to authenticate against the Atlas API.
+type APIKeys struct {
 	PublicKey  string
 	PrivateKey string
 }
 
-func NewProductionProvider(atlasDomain string, globalSecretRef client.ObjectKey, k8sClient client.Client, dryRun bool) *ProductionProvider {
+func NewProductionProvider(atlasDomain string, dryRun bool) *ProductionProvider {
 	return &ProductionProvider{
-		k8sClient:       k8sClient,
-		domain:          atlasDomain,
-		globalSecretRef: globalSecretRef,
-		dryRun:          dryRun,
+		domain: atlasDomain,
+		dryRun: dryRun,
 	}
 }
 
@@ -102,35 +106,25 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 	return false
 }
 
-func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-	secretData, err := getSecrets(ctx, p.k8sClient, secretRef, &p.globalSecretRef)
-	if err != nil {
-		return nil, "", err
-	}
-
+func (p *ProductionProvider) Client(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
 	clientCfg := []httputil.ClientOpt{
-		httputil.Digest(secretData.PublicKey, secretData.PrivateKey),
+		httputil.Digest(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey),
 		httputil.LoggingTransport(log),
 	}
 
 	transport := p.newDryRunTransport(http.DefaultTransport)
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: transport}, clientCfg...)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	c, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(p.domain), mongodbatlas.SetUserAgent(operatorUserAgent()))
 
-	return c, secretData.OrgID, err
+	return c, err
 }
 
-func (p *ProductionProvider) SdkClientSet(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*ClientSet, string, error) {
-	secretData, err := getSecrets(ctx, p.k8sClient, secretRef, &p.globalSecretRef)
-	if err != nil {
-		return nil, "", err
-	}
-
-	var transport http.RoundTripper = digest.NewTransport(secretData.PublicKey, secretData.PrivateKey)
+func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error) {
+	var transport http.RoundTripper = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
 	transport = p.newDryRunTransport(transport)
 	transport = httputil.NewLoggingTransport(log, false, transport)
 
@@ -141,7 +135,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, secretRef *client
 		adminv20231115008.UseHTTPClient(httpClient),
 		adminv20231115008.UseUserAgent(operatorUserAgent()))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	clientv20241113001, err := adminv20241113001.NewClient(
@@ -149,13 +143,13 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, secretRef *client
 		adminv20241113001.UseHTTPClient(httpClient),
 		adminv20241113001.UseUserAgent(operatorUserAgent()))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	return &ClientSet{
 		SdkClient20231115008: clientv20231115008,
 		SdkClient20241113001: clientv20241113001,
-	}, secretData.OrgID, nil
+	}, nil
 }
 
 func (p *ProductionProvider) newDryRunTransport(delegate http.RoundTripper) http.RoundTripper {
@@ -164,51 +158,6 @@ func (p *ProductionProvider) newDryRunTransport(delegate http.RoundTripper) http
 	}
 
 	return delegate
-}
-
-func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (*credentialsSecret, error) {
-	if secretRef == nil {
-		secretRef = fallbackRef
-	}
-
-	secret := &corev1.Secret{}
-	if err := k8sClient.Get(ctx, *secretRef, secret); err != nil {
-		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
-	}
-
-	secretData := credentialsSecret{
-		OrgID:      string(secret.Data[orgIDKey]),
-		PublicKey:  string(secret.Data[publicAPIKey]),
-		PrivateKey: string(secret.Data[privateAPIKey]),
-	}
-
-	if missingFields, valid := validateSecretData(&secretData); !valid {
-		return nil, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
-	}
-
-	return &secretData, nil
-}
-
-func validateSecretData(secretData *credentialsSecret) ([]string, bool) {
-	missingFields := make([]string, 0, 3)
-
-	if secretData.OrgID == "" {
-		missingFields = append(missingFields, orgIDKey)
-	}
-
-	if secretData.PublicKey == "" {
-		missingFields = append(missingFields, publicAPIKey)
-	}
-
-	if secretData.PrivateKey == "" {
-		missingFields = append(missingFields, privateAPIKey)
-	}
-
-	if len(missingFields) > 0 {
-		return missingFields, false
-	}
-
-	return nil, true
 }
 
 func operatorUserAgent() string {

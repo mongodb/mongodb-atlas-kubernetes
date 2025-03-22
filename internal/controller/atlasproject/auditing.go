@@ -82,7 +82,7 @@ func handleAudit(ctx *workflow.Context, project *akov2.AtlasProject) workflow.Re
 	a := auditController{
 		ctx:     ctx,
 		project: project,
-		service: audit.NewAuditLog(ctx.SdkClient.AuditingApi),
+		service: audit.NewAuditLog(ctx.SdkClientSet.SdkClient20231115008.AuditingApi),
 	}
 
 	return a.reconcile()

@@ -15,6 +15,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -298,8 +299,10 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 			workflowCtx := workflow.Context{
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
-				SdkClient: &admin.APIClient{
-					PrivateEndpointServicesApi: privateEndpointsAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						PrivateEndpointServicesApi: privateEndpointsAPI,
+					},
 				},
 			}
 

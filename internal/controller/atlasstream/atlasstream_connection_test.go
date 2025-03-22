@@ -22,6 +22,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -170,8 +171,10 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
@@ -253,8 +256,10 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
@@ -338,8 +343,10 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("failed to create connection"))
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
@@ -434,8 +441,10 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("failed to update connection"))
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
@@ -513,8 +522,10 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("failed to delete connection"))
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{

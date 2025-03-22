@@ -30,6 +30,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -52,8 +53,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -106,8 +109,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -142,8 +147,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -187,8 +194,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -236,8 +245,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -276,8 +287,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -319,8 +332,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -362,8 +377,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -394,8 +411,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -430,8 +449,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -467,8 +488,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -504,8 +527,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -537,8 +562,10 @@ func TestHandleSearchNodes(t *testing.T) {
 			)
 
 		ctx := &workflow.Context{
-			SdkClient: &admin.APIClient{
-				AtlasSearchApi: searchAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				},
 			},
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),

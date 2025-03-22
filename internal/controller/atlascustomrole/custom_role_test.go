@@ -23,6 +23,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
@@ -741,8 +742,8 @@ func Test_handleCustomRole(t *testing.T) {
 				ctx: &workflow.Context{ //nolint:dupl
 					Log:   zap.S(),
 					OrgID: "",
-					SdkClient: func() *admin.APIClient {
-						return &admin.APIClient{
+					SdkClientSet: &atlas.ClientSet{
+						SdkClient20231115008: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								cdrAPI.EXPECT().GetCustomDatabaseRole(context.Background(), "testProjectID", "testRole").
@@ -756,8 +757,8 @@ func Test_handleCustomRole(t *testing.T) {
 									Return(nil, nil, nil)
 								return cdrAPI
 							}(),
-						}
-					}(),
+						},
+					},
 					Context: context.Background(),
 				},
 				akoCustomRole: &akov2.AtlasCustomRole{
@@ -810,8 +811,8 @@ func Test_handleCustomRole(t *testing.T) {
 				ctx: &workflow.Context{ //nolint:dupl
 					Log:   zap.S(),
 					OrgID: "",
-					SdkClient: func() *admin.APIClient {
-						return &admin.APIClient{
+					SdkClientSet: &atlas.ClientSet{
+						SdkClient20231115008: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								cdrAPI.EXPECT().GetCustomDatabaseRole(context.Background(), "testProjectID", "testRole").
@@ -833,8 +834,8 @@ func Test_handleCustomRole(t *testing.T) {
 									Return(&admin.Group{Id: pointer.MakePtr("testProjectID")}, nil, nil)
 								return projectAPI
 							}(),
-						}
-					}(),
+						},
+					},
 					Context: context.Background(),
 				},
 				akoCustomRole: &akov2.AtlasCustomRole{
@@ -900,8 +901,8 @@ func Test_handleCustomRole(t *testing.T) {
 				ctx: &workflow.Context{
 					Log:   zap.S(),
 					OrgID: "",
-					SdkClient: func() *admin.APIClient {
-						return &admin.APIClient{
+					SdkClientSet: &atlas.ClientSet{
+						SdkClient20231115008: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								return cdrAPI
@@ -917,8 +918,8 @@ func Test_handleCustomRole(t *testing.T) {
 									Return(nil, nil, notFound)
 								return projectAPI
 							}(),
-						}
-					}(),
+						},
+					},
 					Context: context.Background(),
 				},
 				akoCustomRole: &akov2.AtlasCustomRole{
@@ -960,14 +961,14 @@ func Test_handleCustomRole(t *testing.T) {
 				ctx: &workflow.Context{
 					Log:   zap.S(),
 					OrgID: "",
-					SdkClient: func() *admin.APIClient {
-						return &admin.APIClient{
+					SdkClientSet: &atlas.ClientSet{
+						SdkClient20231115008: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								return cdrAPI
 							}(),
-						}
-					}(),
+						},
+					},
 					Context: context.Background(),
 				},
 				akoCustomRole: &akov2.AtlasCustomRole{
@@ -999,7 +1000,7 @@ func Test_handleCustomRole(t *testing.T) {
 				WithScheme(testScheme).
 				WithObjects(tt.args.k8sObjects...).
 				Build()
-			service := customroles.NewCustomRoles(tt.args.ctx.SdkClient.CustomDatabaseRolesApi)
+			service := customroles.NewCustomRoles(tt.args.ctx.SdkClientSet.SdkClient20231115008.CustomDatabaseRolesApi)
 			r := AtlasCustomRoleReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient},
 			}
@@ -1021,5 +1022,5 @@ func solveProjectID(t *testing.T, r *AtlasCustomRoleReconciler, args args) (*pro
 	if args.akoCustomRole.Spec.ProjectDualReference.ExternalProjectRef != nil {
 		return &project.Project{ID: args.akoCustomRole.Spec.ExternalProjectRef.ID}, nil
 	}
-	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClient, args.akoCustomRole)
+	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClientSet.SdkClient20231115008, args.akoCustomRole)
 }

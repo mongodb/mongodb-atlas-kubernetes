@@ -21,6 +21,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -116,8 +117,10 @@ func TestCreate(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 
@@ -202,8 +205,10 @@ func TestCreate(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 
@@ -296,8 +301,10 @@ func TestDelete(t *testing.T) {
 				)
 			ctx := &workflow.Context{
 				Context: context.Background(),
-				SdkClient: &admin.APIClient{
-					StreamsApi: streamsAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						StreamsApi: streamsAPI,
+					},
 				},
 			}
 
@@ -459,8 +466,10 @@ func TestDelete(t *testing.T) {
 				)
 			ctx := &workflow.Context{
 				Context: context.Background(),
-				SdkClient: &admin.APIClient{
-					StreamsApi: streamsAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						StreamsApi: streamsAPI,
+					},
 				},
 			}
 
@@ -559,8 +568,10 @@ func TestDelete(t *testing.T) {
 				)
 			ctx := &workflow.Context{
 				Context: context.Background(),
-				SdkClient: &admin.APIClient{
-					StreamsApi: streamsAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						StreamsApi: streamsAPI,
+					},
 				},
 			}
 
@@ -825,8 +836,10 @@ func TestUpdate(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 
@@ -914,8 +927,10 @@ func TestUpdate(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 
@@ -948,8 +963,10 @@ func TestCreateConnections(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		project := &akov2.AtlasProject{
@@ -1024,8 +1041,10 @@ func TestCreateConnections(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("failed to create connection"))
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		project := &akov2.AtlasProject{
@@ -1170,8 +1189,10 @@ func TestUpdateConnections(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		project := &akov2.AtlasProject{
@@ -1246,8 +1267,10 @@ func TestUpdateConnections(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("failed to update connection"))
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		project := &akov2.AtlasProject{
@@ -1389,8 +1412,10 @@ func TestDeleteConnections(t *testing.T) {
 			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		project := &akov2.AtlasProject{
@@ -1454,8 +1479,10 @@ func TestDeleteConnections(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("failed to delete connection"))
 		ctx := &workflow.Context{
 			Context: context.Background(),
-			SdkClient: &admin.APIClient{
-				StreamsApi: streamsAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					StreamsApi: streamsAPI,
+				},
 			},
 		}
 		project := &akov2.AtlasProject{

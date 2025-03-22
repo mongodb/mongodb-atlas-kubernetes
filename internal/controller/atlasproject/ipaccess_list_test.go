@@ -21,6 +21,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -477,9 +478,13 @@ func TestHandleIPAccessList(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			ctx := &workflow.Context{
-				Context:   context.Background(),
-				Log:       zaptest.NewLogger(t).Sugar(),
-				SdkClient: &admin.APIClient{ProjectIPAccessListApi: tt.expectedCalls(mockadmin.NewProjectIPAccessListApi(t))},
+				Context: context.Background(),
+				Log:     zaptest.NewLogger(t).Sugar(),
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						ProjectIPAccessListApi: tt.expectedCalls(mockadmin.NewProjectIPAccessListApi(t)),
+					},
+				},
 			}
 			p := &akov2.AtlasProject{
 				Spec: akov2.AtlasProjectSpec{
@@ -656,8 +661,10 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 			workflowCtx := workflow.Context{
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
-				SdkClient: &admin.APIClient{
-					ProjectIPAccessListApi: ipAccessAPI,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						ProjectIPAccessListApi: ipAccessAPI,
+					},
 				},
 			}
 

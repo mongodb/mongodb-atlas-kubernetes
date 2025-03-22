@@ -18,6 +18,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
@@ -153,9 +154,11 @@ func TestSyncAssignedTeams(t *testing.T) {
 			atlasClient := &admin.APIClient{}
 			logger := zaptest.NewLogger(t).Sugar()
 			ctx := &workflow.Context{
-				Log:       logger,
-				SdkClient: atlasClient,
-				Context:   context.Background(),
+				Log: logger,
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: atlasClient,
+				},
+				Context: context.Background(),
 			}
 			teamService := func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)

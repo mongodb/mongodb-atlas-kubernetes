@@ -24,6 +24,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
@@ -40,6 +41,7 @@ type AtlasFederatedAuthReconciler struct {
 	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	GlobalSecretRef             client.ObjectKey
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasfederatedauths,verbs=get;list;watch;create;update;patch;delete
@@ -89,16 +91,22 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClientSet, orgID, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, fedauth.ConnectionSecretObjectKey(), log)
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, fedauth.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	workflowCtx.SdkClient = atlasClientSet.SdkClient20231115008
+	atlasClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
+	if err != nil {
+		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
+		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
 	workflowCtx.SdkClientSet = atlasClientSet
-	workflowCtx.OrgID = orgID
+	workflowCtx.OrgID = connectionConfig.OrgID
 
 	result = r.ensureFederatedAuth(workflowCtx, fedauth)
 	workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)
@@ -166,6 +174,7 @@ func NewAtlasFederatedAuthReconciler(
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
 	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
 ) *AtlasFederatedAuthReconciler {
 	return &AtlasFederatedAuthReconciler{
 		Scheme:                   c.GetScheme(),
@@ -175,6 +184,7 @@ func NewAtlasFederatedAuthReconciler(
 		Log:                      logger.Named("controllers").Named("AtlasFederatedAuth").Sugar(),
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		GlobalSecretRef:          globalSecretRef,
 	}
 }
 

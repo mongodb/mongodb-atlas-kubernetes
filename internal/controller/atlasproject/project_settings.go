@@ -47,12 +47,12 @@ func areSettingsInSync(atlas, spec *akov2.ProjectSettings) bool {
 func patchSettings(ctx *workflow.Context, projectID string, spec *akov2.ProjectSettings) error {
 	specAsAtlas := spec.ToAtlas()
 
-	_, _, err := ctx.SdkClient.ProjectsApi.UpdateProjectSettings(ctx.Context, projectID, specAsAtlas).Execute()
+	_, _, err := ctx.SdkClientSet.SdkClient20231115008.ProjectsApi.UpdateProjectSettings(ctx.Context, projectID, specAsAtlas).Execute()
 	return err
 }
 
 func fetchSettings(ctx *workflow.Context, projectID string) (*akov2.ProjectSettings, error) {
-	data, _, err := ctx.SdkClient.ProjectsApi.GetProjectSettings(ctx.Context, projectID).Execute()
+	data, _, err := ctx.SdkClientSet.SdkClient20231115008.ProjectsApi.GetProjectSettings(ctx.Context, projectID).Execute()
 	if err != nil {
 		return nil, err
 	}

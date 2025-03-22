@@ -21,9 +21,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 	var r AtlasProjectReconciler
 	t.Run("should return error when passing wrong resource", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			OrgID:     "orgID",
-			SdkClient: &admin.APIClient{},
-			Context:   context.Background(),
+			OrgID: "orgID",
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{},
+			},
+			Context: context.Background(),
 		}
 		checker := r.teamsManagedByAtlas(workflowCtx, translation.NewTeamsServiceMock(t))
 		result, err := checker(&akov2.AtlasProject{})
@@ -33,9 +35,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false when resource has no Atlas Team ID", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			OrgID:     "orgID",
-			SdkClient: &admin.APIClient{},
-			Context:   context.Background(),
+			OrgID: "orgID",
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{},
+			},
+			Context: context.Background(),
 		}
 		checker := r.teamsManagedByAtlas(workflowCtx, translation.NewTeamsServiceMock(t))
 		result, err := checker(&akov2.AtlasTeam{})
@@ -51,9 +55,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			OrgID:     "orgID",
-			SdkClient: &atlasClient,
-			Context:   context.Background(),
+			OrgID: "orgID",
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &atlasClient,
+			},
+			Context: context.Background(),
 		}
 		teamService := func() teams.TeamsService {
 			service := translation.NewTeamsServiceMock(t)
@@ -76,9 +82,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			OrgID:     "orgID",
-			SdkClient: &atlasClient,
-			Context:   context.Background(),
+			OrgID: "orgID",
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &atlasClient,
+			},
+			Context: context.Background(),
 		}
 		teamService := func() teams.TeamsService {
 			service := translation.NewTeamsServiceMock(t)
@@ -105,9 +113,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			OrgID:     "orgID-1",
-			SdkClient: &atlasClient,
-			Context:   context.Background(),
+			OrgID: "orgID-1",
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &atlasClient,
+			},
+			Context: context.Background(),
 		}
 		teamService := func() teams.TeamsService {
 			service := translation.NewTeamsServiceMock(t)
@@ -147,9 +157,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			OrgID:     "orgID-1",
-			SdkClient: &atlasClient,
-			Context:   context.Background(),
+			OrgID: "orgID-1",
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &atlasClient,
+			},
+			Context: context.Background(),
 		}
 		teamService := func() teams.TeamsService {
 			service := translation.NewTeamsServiceMock(t)

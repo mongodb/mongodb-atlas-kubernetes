@@ -23,6 +23,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
@@ -897,9 +898,11 @@ func TestHandleServerlessInstance(t *testing.T) {
 				},
 			}
 			workflowCtx := &workflow.Context{
-				Context:   ctx,
-				Log:       logger.Sugar(),
-				SdkClient: tt.sdkMock(),
+				Context: ctx,
+				Log:     logger.Sugar(),
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: tt.sdkMock(),
+				},
 			}
 
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Serverless)

@@ -55,7 +55,7 @@ func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 	atlasStreamInstance *admin.StreamsTenant,
 ) (ctrl.Result, error) {
 	streamConnections, err := paging.ListAll(ctx.Context, func(c context.Context, pageNum int) (paging.Response[admin.StreamsConnection], *http.Response, error) {
-		return ctx.SdkClient.StreamsApi.
+		return ctx.SdkClientSet.SdkClient20231115008.StreamsApi.
 			ListStreamConnections(c, project.ID(), akoStreamInstance.Spec.Name).
 			PageNum(pageNum).
 			Execute()

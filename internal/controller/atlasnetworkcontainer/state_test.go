@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -160,7 +161,7 @@ func TestHandleCustomResource(t *testing.T) {
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkContainerNotConfigured)).
-					WithMessageRegexp("missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+					WithMessageRegexp("error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
@@ -188,8 +189,8 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return nil, "", errors.New("failed to create sdk")
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return nil, errors.New("failed to create sdk")
 				},
 			},
 			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -228,11 +229,11 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					pAPI := mockadmin.NewProjectsApi(t)
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{ProjectsApi: pAPI},
-					}, "", nil
+					}, nil
 				},
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -240,7 +241,7 @@ func TestHandleCustomResource(t *testing.T) {
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkContainerNotConfigured)).
-					WithMessageRegexp("failed to query Kubernetes: failed to get Project from Kubernetes: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+					WithMessageRegexp("failed to get project via Kubernetes reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
@@ -273,7 +274,7 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ncAPI := mockadmin.NewNetworkPeeringApi(t)
 					ncAPI.EXPECT().ListPeeringContainerByCloudProvider(mock.Anything, mock.Anything).Return(
 						admin.ListPeeringContainerByCloudProviderApiRequest{ApiService: ncAPI},
@@ -297,7 +298,7 @@ func TestHandleCustomResource(t *testing.T) {
 							NetworkPeeringApi: ncAPI,
 							ProjectsApi:       pAPI,
 						},
-					}, "", nil
+					}, nil
 				},
 			},
 			wantResult:     ctrl.Result{},
@@ -315,9 +316,20 @@ func TestHandleCustomResource(t *testing.T) {
 			}
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
+			require.NoError(t, corev1.AddToScheme(testScheme))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(project, tc.networkContainer).
+				WithObjects(project, tc.networkContainer, &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte("orgId"),
+						"publicApiKey":  []byte("publicApiKey"),
+						"privateApiKey": []byte("privateApiKey"),
+					},
+				}).
 				WithStatusSubresource(tc.networkContainer).
 				Build()
 			logger := zaptest.NewLogger(t)

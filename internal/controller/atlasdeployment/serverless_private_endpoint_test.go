@@ -17,6 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -105,8 +106,10 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 		service := workflow.Context{
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
-			SdkClient: &admin.APIClient{
-				ServerlessPrivateEndpointsApi: speAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ServerlessPrivateEndpointsApi: speAPI,
+				},
 			},
 		}
 		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
@@ -139,8 +142,10 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 		service := workflow.Context{
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
-			SdkClient: &admin.APIClient{
-				ServerlessPrivateEndpointsApi: speAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ServerlessPrivateEndpointsApi: speAPI,
+				},
 			},
 		}
 		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
@@ -189,8 +194,10 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 		service := workflow.Context{
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
-			SdkClient: &admin.APIClient{
-				ServerlessPrivateEndpointsApi: speAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ServerlessPrivateEndpointsApi: speAPI,
+				},
 			},
 		}
 		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
@@ -254,8 +261,10 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 		service := workflow.Context{
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
-			SdkClient: &admin.APIClient{
-				ServerlessPrivateEndpointsApi: speAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ServerlessPrivateEndpointsApi: speAPI,
+				},
 			},
 		}
 		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
@@ -354,8 +363,10 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 		service := workflow.Context{
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
-			SdkClient: &admin.APIClient{
-				ServerlessPrivateEndpointsApi: speAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ServerlessPrivateEndpointsApi: speAPI,
+				},
 			},
 		}
 
@@ -393,8 +404,10 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 		service := workflow.Context{
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
-			SdkClient: &admin.APIClient{
-				ServerlessPrivateEndpointsApi: speAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ServerlessPrivateEndpointsApi: speAPI,
+				},
 			},
 		}
 
@@ -444,8 +457,10 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 		service := workflow.Context{
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
-			SdkClient: &admin.APIClient{
-				ServerlessPrivateEndpointsApi: speAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ServerlessPrivateEndpointsApi: speAPI,
+				},
 			},
 		}
 
@@ -489,8 +504,10 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 		service := workflow.Context{
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
-			SdkClient: &admin.APIClient{
-				ServerlessPrivateEndpointsApi: speAPI,
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20231115008: &admin.APIClient{
+					ServerlessPrivateEndpointsApi: speAPI,
+				},
 			},
 		}
 

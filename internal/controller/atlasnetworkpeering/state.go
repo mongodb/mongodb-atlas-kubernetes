@@ -46,11 +46,11 @@ func (r *AtlasNetworkPeeringReconciler) handleCustomResource(ctx context.Context
 		return r.Unsupport(workflowCtx, typeName)
 	}
 
-	credentials, err := r.ResolveCredentials(ctx, networkPeering)
+	connectionConfig, err := r.ResolveConnectionConfig(ctx, networkPeering)
 	if err != nil {
 		return r.release(workflowCtx, networkPeering, err)
 	}
-	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx, credentials, r.Log)
+	sdkClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, networkPeering, workflow.NetworkPeeringNotConfigured, err)
 	}

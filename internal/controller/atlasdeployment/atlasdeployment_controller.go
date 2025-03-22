@@ -132,17 +132,16 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return result.ReconcileResult(), nil
 	}
 
-	credentials, err := r.ResolveCredentials(workflowCtx.Context, atlasDeployment)
+	connectionConfig, err := r.ResolveConnectionConfig(workflowCtx.Context, atlasDeployment)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, credentials, r.Log)
+	sdkClientSet, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, connectionConfig.Credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	workflowCtx.SdkClient = sdkClientSet.SdkClient20231115008
 	workflowCtx.SdkClientSet = sdkClientSet
-	workflowCtx.Client, _, err = r.AtlasProvider.Client(workflowCtx.Context, credentials, r.Log)
+	workflowCtx.Client, err = r.AtlasProvider.Client(workflowCtx.Context, connectionConfig.Credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
@@ -416,13 +415,15 @@ func NewAtlasDeploymentReconciler(
 	deletionProtection bool,
 	independentSyncPeriod time.Duration,
 	logger *zap.Logger,
+	globalSecretref client.ObjectKey,
 ) *AtlasDeploymentReconciler {
 	suggaredLogger := logger.Named("controllers").Named("AtlasDeployment").Sugar()
 
 	return &AtlasDeploymentReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: c.GetClient(),
-			Log:    suggaredLogger,
+			Client:          c.GetClient(),
+			Log:             suggaredLogger,
+			GlobalSecretRef: globalSecretref,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasDeployment"),

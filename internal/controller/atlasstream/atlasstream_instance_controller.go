@@ -23,6 +23,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
@@ -40,6 +41,7 @@ type AtlasStreamsInstanceReconciler struct {
 	Log                         *zap.SugaredLogger
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	GlobalSecretRef             client.ObjectKey
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasstreaminstances,verbs=get;list;watch;create;update;patch;delete
@@ -93,14 +95,19 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
 
-	atlasClient, orgID, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, project.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
+	if err != nil {
+		return r.terminate(workflowCtx, workflow.Internal, err)
+	}
+
+	atlasClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	workflowCtx.SdkClient = atlasClient.SdkClient20231115008
-	workflowCtx.OrgID = orgID
+	workflowCtx.SdkClientSet = atlasClientSet
+	workflowCtx.OrgID = connectionConfig.OrgID
 
-	atlasStreamInstance, _, err := workflowCtx.SdkClient.StreamsApi.
+	atlasStreamInstance, _, err := workflowCtx.SdkClientSet.SdkClient20231115008.StreamsApi.
 		GetStreamInstance(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).
 		Execute()
 
@@ -164,6 +171,7 @@ func NewAtlasStreamsInstanceReconciler(
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
 	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
 ) *AtlasStreamsInstanceReconciler {
 	return &AtlasStreamsInstanceReconciler{
 		Scheme:                   c.GetScheme(),
@@ -173,6 +181,7 @@ func NewAtlasStreamsInstanceReconciler(
 		Log:                      logger.Named("controllers").Named("AtlasStreamsInstance").Sugar(),
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		GlobalSecretRef:          globalSecretRef,
 	}
 }
 

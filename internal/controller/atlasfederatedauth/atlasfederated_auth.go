@@ -42,7 +42,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.Terminate(workflow.FederatedAuthOrgNotConnected, err)
 	}
 
-	projectList, err := prepareProjectList(service.Context, service.SdkClient)
+	projectList, err := prepareProjectList(service.Context, service.SdkClientSet.SdkClient20231115008)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Errorf("cannot list projects for org ID %s: %w", service.OrgID, err))
 	}

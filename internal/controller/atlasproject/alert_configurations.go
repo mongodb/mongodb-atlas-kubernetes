@@ -133,7 +133,7 @@ func readNotificationSecret(ctx context.Context, kubeClient client.Client, res c
 func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.Result {
 	logger := service.Log
 	existedAlertConfigs, err := paging.ListAll(service.Context, func(ctx context.Context, pageNum int) (paging.Response[admin.GroupAlertsConfig], *http.Response, error) {
-		return service.SdkClient.AlertConfigurationsApi.
+		return service.SdkClientSet.SdkClient20231115008.AlertConfigurationsApi.
 			ListAlertConfigurations(ctx, groupID).
 			PageNum(pageNum).
 			Execute()
@@ -175,7 +175,7 @@ func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workf
 func deleteAlertConfigs(workflowCtx *workflow.Context, groupID string, alertConfigIDs []string) error {
 	logger := workflowCtx.Log
 	for _, alertConfigID := range alertConfigIDs {
-		_, err := workflowCtx.SdkClient.AlertConfigurationsApi.
+		_, err := workflowCtx.SdkClientSet.SdkClient20231115008.AlertConfigurationsApi.
 			DeleteAlertConfiguration(workflowCtx.Context, groupID, alertConfigID).
 			Execute()
 		if err != nil {
@@ -204,7 +204,7 @@ func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec
 			continue
 		}
 
-		alertConfiguration, _, err := workflowCtx.SdkClient.AlertConfigurationsApi.
+		alertConfiguration, _, err := workflowCtx.SdkClientSet.SdkClient20231115008.AlertConfigurationsApi.
 			CreateAlertConfiguration(workflowCtx.Context, groupID, atlasAlert).
 			Execute()
 		if err != nil {
