@@ -181,8 +181,8 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return nil, "", errors.New("failed to create sdk")
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return nil, errors.New("failed to create sdk")
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -219,10 +219,10 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -260,7 +260,7 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
 					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "123").
 						Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ialAPI})
@@ -297,7 +297,7 @@ func TestHandleCustomResource(t *testing.T) {
 							ProjectsApi:            projectAPI,
 						},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			expectedResult:     ctrl.Result{},

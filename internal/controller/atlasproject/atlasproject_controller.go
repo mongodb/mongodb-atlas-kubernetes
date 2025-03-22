@@ -148,14 +148,14 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	credentials, err := reconciler.GetAtlasCredentials(ctx, r.Client, atlasProject.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, atlasProject.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClientSet(ctx, credentials, log)
+	atlasSdkClient, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
@@ -169,16 +169,16 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20231115008.MaintenanceWindowsApi)
 	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20231115008.EncryptionAtRestUsingCustomerKeyManagementApi)
 
-	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, credentials, log)
+	atlasClient, err := r.AtlasProvider.Client(workflowCtx.Context, connectionConfig.Credentials, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	workflowCtx.OrgID = orgID
+	workflowCtx.OrgID = connectionConfig.OrgID
 	workflowCtx.Client = atlasClient
 
-	return r.handleProject(workflowCtx, orgID, atlasProject, &services)
+	return r.handleProject(workflowCtx, connectionConfig.OrgID, atlasProject, &services)
 }
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest

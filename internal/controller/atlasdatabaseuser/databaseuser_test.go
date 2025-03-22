@@ -168,7 +168,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 				IsCloudGovFunc: func() bool {
 					return false
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
 					projectAPI.EXPECT().GetProject(context.Background(), "project-id").
 						Return(admin.GetProjectApiRequest{ApiService: projectAPI})
@@ -190,7 +190,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -2248,7 +2248,7 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 		IsCloudGovFunc: func() bool {
 			return false
 		},
-		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			userAPI := mockadmin.NewDatabaseUsersApi(t)
 			userAPI.EXPECT().GetDatabaseUser(context.Background(), "my-project", "admin", "user1").
 				Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
@@ -2274,7 +2274,7 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 					DatabaseUsersApi: userAPI,
 				},
 				SdkClient20241113001: &adminv20241113001.APIClient{},
-			}, "", nil
+			}, nil
 		},
 	}
 }

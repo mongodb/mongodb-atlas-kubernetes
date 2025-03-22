@@ -98,11 +98,11 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 		return r.unsupport(workflowCtx), nil
 	}
 
-	credentials, err := r.ResolveCredentials(ctx, akoPrivateEndpoint)
+	connectionConfig, err := r.ResolveConnectionConfig(ctx, akoPrivateEndpoint)
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx, credentials, r.Log)
+	sdkClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}

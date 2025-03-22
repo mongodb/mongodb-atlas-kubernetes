@@ -91,14 +91,14 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return result.ReconcileResult(), nil
 	}
 
-	credentials, err := reconciler.GetAtlasCredentials(ctx, r.Client, fedauth.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, fedauth.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClientSet, orgID, err := r.AtlasProvider.SdkClientSet(ctx, credentials, log)
+	atlasClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
@@ -107,7 +107,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	workflowCtx.SdkClient = atlasClientSet.SdkClient20231115008
 	workflowCtx.SdkClientSet = atlasClientSet
-	workflowCtx.OrgID = orgID
+	workflowCtx.OrgID = connectionConfig.OrgID
 
 	result = r.ensureFederatedAuth(workflowCtx, fedauth)
 	workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)

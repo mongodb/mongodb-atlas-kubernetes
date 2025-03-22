@@ -95,17 +95,17 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
 
-	credentials, err := reconciler.GetAtlasCredentials(ctx, r.Client, project.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, project.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
 
-	atlasClient, orgID, err := r.AtlasProvider.SdkClientSet(ctx, credentials, log)
+	atlasClient, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
 	workflowCtx.SdkClient = atlasClient.SdkClient20231115008
-	workflowCtx.OrgID = orgID
+	workflowCtx.OrgID = connectionConfig.OrgID
 
 	atlasStreamInstance, _, err := workflowCtx.SdkClient.StreamsApi.
 		GetStreamInstance(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).

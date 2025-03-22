@@ -152,14 +152,14 @@ func TestRenconcile(t *testing.T) {
 					IsSupportedFunc: func() bool {
 						return true
 					},
-					ClientFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-						return tt.atlasClientMocker(), "", nil
+					ClientFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
+						return tt.atlasClientMocker(), nil
 					},
-					SdkClientSetFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, string, error) {
+					SdkClientSetFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, error) {
 						return &atlas_controllers.ClientSet{
 							SdkClient20231115008: tt.atlasSDKMocker(),
 							SdkClient20241113001: &adminv20241113001.APIClient{},
-						}, "", nil
+						}, nil
 					},
 				},
 				GlobalSecretRef: client.ObjectKey{

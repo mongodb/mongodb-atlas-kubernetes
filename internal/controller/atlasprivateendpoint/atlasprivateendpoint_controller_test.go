@@ -253,8 +253,8 @@ func TestEnsureCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return nil, "", errors.New("failed to create sdk client")
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return nil, errors.New("failed to create sdk client")
 				},
 			},
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
@@ -330,7 +330,7 @@ func TestEnsureCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
 					projectAPI.EXPECT().GetProject(mock.Anything, projectID).Return(admin.GetProjectApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
@@ -354,7 +354,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},

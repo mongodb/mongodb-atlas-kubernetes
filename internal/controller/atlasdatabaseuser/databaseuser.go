@@ -44,11 +44,11 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasGovUnsupported, false, fmt.Errorf("the %T is not supported by Atlas for government", atlasDatabaseUser))
 	}
 
-	credentials, err := r.ResolveCredentials(ctx.Context, atlasDatabaseUser)
+	connectionConfig, err := r.ResolveConnectionConfig(ctx.Context, atlasDatabaseUser)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
-	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx.Context, credentials, r.Log)
+	sdkClientSet, err := r.AtlasProvider.SdkClientSet(ctx.Context, connectionConfig.Credentials, r.Log)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}

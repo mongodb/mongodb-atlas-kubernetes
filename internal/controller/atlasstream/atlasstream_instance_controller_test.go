@@ -389,8 +389,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return nil, "", errors.New("failed to configure sdk client")
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return nil, errors.New("failed to configure sdk client")
 				},
 			},
 			GlobalSecretRef: client.ObjectKey{
@@ -500,11 +500,11 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			GlobalSecretRef: client.ObjectKey{
@@ -641,11 +641,11 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			GlobalSecretRef: client.ObjectKey{
@@ -772,11 +772,11 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			GlobalSecretRef: client.ObjectKey{
@@ -906,11 +906,11 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "org-id", nil
+					}, nil
 				},
 			},
 			GlobalSecretRef: client.ObjectKey{
@@ -1038,11 +1038,11 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "org-id", nil
+					}, nil
 				},
 			},
 			GlobalSecretRef: client.ObjectKey{

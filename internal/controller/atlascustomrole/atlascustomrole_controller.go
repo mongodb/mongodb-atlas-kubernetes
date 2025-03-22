@@ -127,11 +127,11 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			fmt.Errorf("the %T is not supported by Atlas for government", atlasCustomRole)), nil
 	}
 
-	credentials, err := r.ResolveCredentials(ctx, atlasCustomRole)
+	connectionConfig, err := r.ResolveConnectionConfig(ctx, atlasCustomRole)
 	if err != nil {
 		return r.fail(req, err), nil
 	}
-	atlasSdkClientSet, _, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, credentials, workflowCtx.Log)
+	atlasSdkClientSet, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, connectionConfig.Credentials, workflowCtx.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
 	}

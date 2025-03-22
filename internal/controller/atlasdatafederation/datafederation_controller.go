@@ -99,13 +99,13 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
-	credentials, err := reconciler.GetAtlasCredentials(ctx.Context, r.Client, project.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx.Context, r.Client, project.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	clientSet, _, err := r.AtlasProvider.SdkClientSet(ctx.Context, credentials, log)
+	clientSet, err := r.AtlasProvider.SdkClientSet(ctx.Context, connectionConfig.Credentials, log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)

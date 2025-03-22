@@ -26,8 +26,8 @@ const (
 )
 
 type Provider interface {
-	Client(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
-	SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, string, error)
+	Client(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error)
+	SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error)
 	IsCloudGov() bool
 	IsResourceSupported(resource api.AtlasCustomResource) bool
 }
@@ -42,6 +42,12 @@ type ProductionProvider struct {
 	dryRun bool
 }
 
+// ConnectionConfig is the type that contains connection configuration to Atlas, including credentials.
+type ConnectionConfig struct {
+	OrgID       string
+	Credentials *Credentials
+}
+
 // Credentials is the type that holds credentials to authenticate against the Atlas API.
 // Currently, only API keys are support but more credential types could be added,
 // see https://www.mongodb.com/docs/atlas/configure-api-access/.
@@ -51,7 +57,6 @@ type Credentials struct {
 
 // APIKeys is the type that holds Public/Private API keys to authenticate against the Atlas API.
 type APIKeys struct {
-	OrgID      string
 	PublicKey  string
 	PrivateKey string
 }
@@ -101,7 +106,7 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 	return false
 }
 
-func (p *ProductionProvider) Client(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+func (p *ProductionProvider) Client(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
 	clientCfg := []httputil.ClientOpt{
 		httputil.Digest(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey),
 		httputil.LoggingTransport(log),
@@ -110,15 +115,15 @@ func (p *ProductionProvider) Client(ctx context.Context, creds *Credentials, log
 	transport := p.newDryRunTransport(http.DefaultTransport)
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: transport}, clientCfg...)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	c, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(p.domain), mongodbatlas.SetUserAgent(operatorUserAgent()))
 
-	return c, creds.APIKeys.OrgID, err
+	return c, err
 }
 
-func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, string, error) {
+func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error) {
 	var transport http.RoundTripper = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
 	transport = p.newDryRunTransport(transport)
 	transport = httputil.NewLoggingTransport(log, false, transport)
@@ -130,7 +135,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 		adminv20231115008.UseHTTPClient(httpClient),
 		adminv20231115008.UseUserAgent(operatorUserAgent()))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	clientv20241113001, err := adminv20241113001.NewClient(
@@ -138,13 +143,13 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 		adminv20241113001.UseHTTPClient(httpClient),
 		adminv20241113001.UseUserAgent(operatorUserAgent()))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	return &ClientSet{
 		SdkClient20231115008: clientv20231115008,
 		SdkClient20241113001: clientv20241113001,
-	}, creds.APIKeys.OrgID, nil
+	}, nil
 }
 
 func (p *ProductionProvider) newDryRunTransport(delegate http.RoundTripper) http.RoundTripper {

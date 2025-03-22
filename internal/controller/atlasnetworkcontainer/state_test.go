@@ -189,8 +189,8 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return nil, "", errors.New("failed to create sdk")
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return nil, errors.New("failed to create sdk")
 				},
 			},
 			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -229,11 +229,11 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					pAPI := mockadmin.NewProjectsApi(t)
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{ProjectsApi: pAPI},
-					}, "", nil
+					}, nil
 				},
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -274,7 +274,7 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ncAPI := mockadmin.NewNetworkPeeringApi(t)
 					ncAPI.EXPECT().ListPeeringContainerByCloudProvider(mock.Anything, mock.Anything).Return(
 						admin.ListPeeringContainerByCloudProviderApiRequest{ApiService: ncAPI},
@@ -298,7 +298,7 @@ func TestHandleCustomResource(t *testing.T) {
 							NetworkPeeringApi: ncAPI,
 							ProjectsApi:       pAPI,
 						},
-					}, "", nil
+					}, nil
 				},
 			},
 			wantResult:     ctrl.Result{},

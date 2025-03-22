@@ -358,9 +358,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				Scheme:        testScheme,
 				EventRecorder: record.NewFakeRecorder(10),
 				AtlasProvider: &atlasmocks.TestProvider{
-					SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+					SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 						if tt.sdkShouldError {
-							return nil, "", fmt.Errorf("failed to create sdk")
+							return nil, fmt.Errorf("failed to create sdk")
 						}
 						cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 						cdrAPI.EXPECT().GetCustomDatabaseRole(mock.Anything, "testProjectID", "TestRoleName").
@@ -387,7 +387,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 						return &atlas.ClientSet{SdkClient20231115008: &admin.APIClient{
 							CustomDatabaseRolesApi: cdrAPI,
 							ProjectsApi:            pAPI,
-						}}, "", nil
+						}}, nil
 					},
 					IsCloudGovFunc: func() bool {
 						return false

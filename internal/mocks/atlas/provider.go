@@ -11,13 +11,13 @@ import (
 )
 
 type TestProvider struct {
-	ClientFunc       func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
-	SdkClientSetFunc func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error)
+	ClientFunc       func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error)
+	SdkClientSetFunc func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error)
 	IsCloudGovFunc   func() bool
 	IsSupportedFunc  func() bool
 }
 
-func (f *TestProvider) Client(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+func (f *TestProvider) Client(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
 	return f.ClientFunc(ctx, creds, log)
 }
 
@@ -25,7 +25,7 @@ func (f *TestProvider) IsCloudGov() bool {
 	return f.IsCloudGovFunc()
 }
 
-func (f *TestProvider) SdkClientSet(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+func (f *TestProvider) SdkClientSet(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 	return f.SdkClientSetFunc(ctx, creds, log)
 }
 

@@ -17,14 +17,14 @@ const (
 	privateAPIKey = "privateApiKey"
 )
 
-func (r *AtlasReconciler) ResolveCredentials(ctx context.Context, referrer project.ProjectReferrerObject) (*atlas.Credentials, error) {
+func (r *AtlasReconciler) ResolveConnectionConfig(ctx context.Context, referrer project.ProjectReferrerObject) (*atlas.ConnectionConfig, error) {
 	connectionSecret := r.connectionSecretRef(referrer)
 	if connectionSecret != nil && connectionSecret.Name != "" {
-		creds, err := GetAtlasCredentials(ctx, r.Client, connectionSecret, &r.GlobalSecretRef)
+		cfg, err := GetConnectionConfig(ctx, r.Client, connectionSecret, &r.GlobalSecretRef)
 		if err != nil {
 			return nil, fmt.Errorf("error getting credentials from connection secret: %w", err)
 		}
-		return creds, nil
+		return cfg, nil
 	}
 
 	prj, err := r.fetchProject(ctx, referrer)
@@ -37,11 +37,11 @@ func (r *AtlasReconciler) ResolveCredentials(ctx context.Context, referrer proje
 		projectSecret = prj.ConnectionSecretObjectKey()
 	}
 
-	creds, err := GetAtlasCredentials(ctx, r.Client, projectSecret, &r.GlobalSecretRef)
+	cfg, err := GetConnectionConfig(ctx, r.Client, projectSecret, &r.GlobalSecretRef)
 	if err != nil {
 		return nil, fmt.Errorf("error getting credentials from project reference: %w", err)
 	}
-	return creds, nil
+	return cfg, nil
 }
 
 func (r *AtlasReconciler) connectionSecretRef(pro project.ProjectReferrerObject) *client.ObjectKey {
@@ -54,7 +54,7 @@ func (r *AtlasReconciler) connectionSecretRef(pro project.ProjectReferrerObject)
 	return &key
 }
 
-func GetAtlasCredentials(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (*atlas.Credentials, error) {
+func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (*atlas.ConnectionConfig, error) {
 	if secretRef == nil {
 		secretRef = fallbackRef
 	}
@@ -64,31 +64,43 @@ func GetAtlasCredentials(ctx context.Context, k8sClient client.Client, secretRef
 		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
 	}
 
-	apiKeys := atlas.APIKeys{
-		OrgID:      string(secret.Data[orgIDKey]),
-		PublicKey:  string(secret.Data[publicAPIKey]),
-		PrivateKey: string(secret.Data[privateAPIKey]),
+	cfg := &atlas.ConnectionConfig{
+		OrgID: string(secret.Data[orgIDKey]),
+		Credentials: &atlas.Credentials{
+			APIKeys: &atlas.APIKeys{
+				PublicKey:  string(secret.Data[publicAPIKey]),
+				PrivateKey: string(secret.Data[privateAPIKey]),
+			},
+		},
 	}
 
-	if missingFields, valid := validate(&apiKeys); !valid {
+	if missingFields, valid := validate(cfg); !valid {
 		return nil, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
 	}
 
-	return &atlas.Credentials{APIKeys: &apiKeys}, nil
+	return cfg, nil
 }
 
-func validate(apiKeys *atlas.APIKeys) ([]string, bool) {
+func validate(cfg *atlas.ConnectionConfig) ([]string, bool) {
 	missingFields := make([]string, 0, 3)
 
-	if apiKeys.OrgID == "" {
+	if cfg == nil {
+		return []string{orgIDKey, publicAPIKey, privateAPIKey}, false
+	}
+
+	if cfg.OrgID == "" {
 		missingFields = append(missingFields, orgIDKey)
 	}
 
-	if apiKeys.PublicKey == "" {
+	if cfg.Credentials == nil || cfg.Credentials.APIKeys == nil {
+		return append(missingFields, []string{publicAPIKey, privateAPIKey}...), false
+	}
+
+	if cfg.Credentials.APIKeys.PublicKey == "" {
 		missingFields = append(missingFields, publicAPIKey)
 	}
 
-	if apiKeys.PrivateKey == "" {
+	if cfg.Credentials.APIKeys.PrivateKey == "" {
 		missingFields = append(missingFields, privateAPIKey)
 	}
 

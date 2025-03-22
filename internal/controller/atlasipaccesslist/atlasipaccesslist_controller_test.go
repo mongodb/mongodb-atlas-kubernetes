@@ -47,7 +47,7 @@ func TestReconcile(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
 					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "123").
 						Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ialAPI})
@@ -84,7 +84,7 @@ func TestReconcile(t *testing.T) {
 							ProjectsApi:            projectAPI,
 						},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			expectedResult: ctrl.Result{},

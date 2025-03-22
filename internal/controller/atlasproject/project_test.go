@@ -1214,8 +1214,8 @@ func TestDelete(t *testing.T) {
 				ObjectDeletionProtection: tt.deletionProtection,
 				Log:                      logger,
 				AtlasProvider: &atlasmocks.TestProvider{
-					ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-						return tt.atlasClientMocker(), "", nil
+					ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
+						return tt.atlasClientMocker(), nil
 					},
 				},
 				EventRecorder: record.NewFakeRecorder(1),

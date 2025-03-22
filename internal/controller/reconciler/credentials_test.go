@@ -19,13 +19,13 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
-func TestResolveCredentials(t *testing.T) {
+func TestResolveConnectionConfig(t *testing.T) {
 	ctx := context.Background()
 	for _, tc := range []struct {
 		title         string
 		objects       []client.Object
 		input         project.ProjectReferrerObject
-		expected      *atlas.Credentials
+		expected      *atlas.ConnectionConfig
 		expectedError error
 	}{
 		{
@@ -33,7 +33,7 @@ func TestResolveCredentials(t *testing.T) {
 			// given an empty project reference
 			input: &akov2.AtlasIPAccessList{},
 			// we expect the credentials to match the global fallback secret
-			expected: &atlas.Credentials{APIKeys: &atlas.APIKeys{OrgID: "global", PublicKey: "global", PrivateKey: "global"}},
+			expected: &atlas.ConnectionConfig{OrgID: "global", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "global", PrivateKey: "global"}}},
 		},
 		{
 			title: "local connection secret reference",
@@ -60,7 +60,7 @@ func TestResolveCredentials(t *testing.T) {
 				},
 			}},
 			// we expect the credentials to match the local secret
-			expected: &atlas.Credentials{APIKeys: &atlas.APIKeys{OrgID: "some", PublicKey: "local", PrivateKey: "secret"}},
+			expected: &atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}},
 		},
 		{
 			title: "project reference",
@@ -107,7 +107,7 @@ func TestResolveCredentials(t *testing.T) {
 				},
 			},
 			// we expect the credentials to match the local secret
-			expected: &atlas.Credentials{APIKeys: &atlas.APIKeys{OrgID: "some", PublicKey: "local", PrivateKey: "secret"}},
+			expected: &atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}},
 		},
 		{
 			title: "project reference without namespace",
@@ -153,7 +153,7 @@ func TestResolveCredentials(t *testing.T) {
 				},
 			},
 			// we expect the credentials to match the local secret
-			expected: &atlas.Credentials{APIKeys: &atlas.APIKeys{OrgID: "some", PublicKey: "local", PrivateKey: "secret"}},
+			expected: &atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}},
 		},
 		{
 			title: "project reference to non-existing project",
@@ -202,7 +202,7 @@ func TestResolveCredentials(t *testing.T) {
 					},
 				},
 			},
-			expected: &atlas.Credentials{APIKeys: &atlas.APIKeys{OrgID: "some", PublicKey: "local", PrivateKey: "secret"}},
+			expected: &atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}},
 		},
 		{
 			title: "favor local connection secret over project reference",
@@ -236,7 +236,7 @@ func TestResolveCredentials(t *testing.T) {
 				},
 			},
 			// we expect the local secret to be used
-			expected: &atlas.Credentials{APIKeys: &atlas.APIKeys{OrgID: "some", PublicKey: "local", PrivateKey: "secret"}},
+			expected: &atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -259,40 +259,40 @@ func TestResolveCredentials(t *testing.T) {
 					Name:      "secret",
 				},
 			}
-			credential, err := r.ResolveCredentials(ctx, tc.input)
+			cfg, err := r.ResolveConnectionConfig(ctx, tc.input)
 			require.ErrorIs(t, err, tc.expectedError)
-			assert.Equal(t, tc.expected, credential)
+			assert.Equal(t, tc.expected, cfg)
 		})
 	}
 }
 
-func TestValidateSecretData(t *testing.T) {
+func TestValidateConnectionConfig(t *testing.T) {
 	t.Run("should be invalid and all missing data", func(t *testing.T) {
-		missing, ok := validate(&atlas.APIKeys{})
+		missing, ok := validate(nil)
 		assert.False(t, ok)
 		assert.Equal(t, missing, []string{"orgId", "publicApiKey", "privateApiKey"})
 	})
 
 	t.Run("should be invalid and organization id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.APIKeys{PublicKey: "abcdef", PrivateKey: "123456"})
+		missing, ok := validate(&atlas.ConnectionConfig{Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}})
 		assert.False(t, ok)
 		assert.Equal(t, missing, []string{"orgId"})
 	})
 
 	t.Run("should be invalid and public key id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.APIKeys{OrgID: "abcdef", PrivateKey: "123456"})
+		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PrivateKey: "secret"}}})
 		assert.False(t, ok)
 		assert.Equal(t, missing, []string{"publicApiKey"})
 	})
 
 	t.Run("should be invalid and private key id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.APIKeys{PublicKey: "abcdef", OrgID: "123456"})
+		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local"}}})
 		assert.False(t, ok)
 		assert.Equal(t, missing, []string{"privateApiKey"})
 	})
 
 	t.Run("should be valid", func(t *testing.T) {
-		missing, ok := validate(&atlas.APIKeys{OrgID: "my-org", PublicKey: "abcdef", PrivateKey: "123456"})
+		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}})
 		assert.True(t, ok)
 		assert.Empty(t, missing)
 	})
