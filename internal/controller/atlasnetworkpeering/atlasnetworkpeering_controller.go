@@ -62,11 +62,13 @@ func NewAtlasNetworkPeeringsReconciler(
 	deletionProtection bool,
 	logger *zap.Logger,
 	independentSyncPeriod time.Duration,
+	globalSecretRef client.ObjectKey,
 ) *AtlasNetworkPeeringReconciler {
 	return &AtlasNetworkPeeringReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: c.GetClient(),
-			Log:    logger.Named("controllers").Named("AtlasNetworkPeering").Sugar(),
+			Client:          c.GetClient(),
+			Log:             logger.Named("controllers").Named("AtlasNetworkPeering").Sugar(),
+			GlobalSecretRef: globalSecretRef,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasPrivateEndpoint"),
