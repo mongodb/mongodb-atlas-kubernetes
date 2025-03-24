@@ -44,9 +44,7 @@ jobs:
           path: helm-charts-cloned
           persist-credentials: true
 
-      - name: Patch original AKO chart dependencies
-        run: |
-          sed -i 's|repository: "file://../../helm-charts/atlas-operator-crds"|repository: "https://mongodb.github.io/helm-charts"|' helm-charts/atlas-operator/Chart.yaml
+            #awk '{gsub(/repository: "file:\/\/..\/..\/helm-charts\/atlas-operator-crds"/, "repository: \"https://mongodb.github.io/helm-charts\"")}1' helm-charts/atlas-operator/Chart.yaml > temp.yaml && mv temp.yaml helm-charts/atlas-operator/Chart.yaml
 
       - name: Generate AKO bundle
         env:
@@ -67,6 +65,10 @@ jobs:
           HELM_RBAC_FILE: "./helm-charts-cloned/charts/atlas-operator/rbac.yaml"
         run: |
           devbox run -- "make helm-upd-rbac"
+
+      - name: Patch original AKO chart dependencies
+        run: |
+          awk '{gsub(/repository: *"file:\/\/..\/..\/helm-charts\/atlas-operator-crds"/, "repository: \"https://mongodb.github.io/helm-charts\"")}1' helm-charts/atlas-operator/Chart.yaml > temp.yaml && mv temp.yaml helm-charts/atlas-operator/Chart.yaml
 
       - name: Verify if helm-charts need to be synced
         run: |
