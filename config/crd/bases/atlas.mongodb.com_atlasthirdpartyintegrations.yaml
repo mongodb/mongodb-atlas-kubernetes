@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasthirdpartyintegrations.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -57,9 +57,17 @@ spec:
                 description: Datadog contains the config fields for Datadog's Integration
                 properties:
                   apiKeySecret:
-                    description: APIKeySecret is the name of a secret containing the
-                      datadog api key
-                    type: string
+                    description: APIKeySecret holds the name of a secret containing
+                      the datadog api key
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                   region:
                     description: Region is the Datadog region
                     type: string
@@ -100,9 +108,17 @@ spec:
                   Teams's Integration
                 properties:
                   urlSecret:
-                    description: URLSecret is the name of a secret containing the
+                    description: URLSecret holds the name of a secret containing the
                       microsoft teams secret URL
-                    type: string
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                 required:
                 - urlSecret
                 type: object
@@ -111,9 +127,17 @@ spec:
                 properties:
                   credentialsSecret:
                     description: |-
-                      CredentialsSecret is the name of a secret containing new relic's credentials:
+                      CredentialsSecret holds the name of a secret containing new relic's credentials:
                       account id, license key, read and write tokens
-                    type: string
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                 required:
                 - credentialsSecret
                 type: object
@@ -121,9 +145,17 @@ spec:
                 description: OpsGenie contains the config fields for Ops Genie's Integration
                 properties:
                   apiKeySecret:
-                    description: APIKeySecret is the name of a secret containing Ops
-                      Genie's API key
-                    type: string
+                    description: APIKeySecret holds the name of a secret containing
+                      Ops Genie's API key
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                   region:
                     description: Region is the Ops Genie region
                     type: string
@@ -139,9 +171,17 @@ spec:
                     description: Region is the Pager Duty region
                     type: string
                   serviceKeySecret:
-                    description: ServiceKeySecret is the name of a secret containing
+                    description: ServiceKeySecret holds the name of a secret containing
                       Pager Duty service key
-                    type: string
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                 required:
                 - region
                 - serviceKeySecret
@@ -166,9 +206,17 @@ spec:
                 properties:
                   prometheusCredentials:
                     description: |-
-                      PrometheusCredentials is the name of a secret containing the Prometheus
+                      PrometheusCredentials holds the name of a secret containing the Prometheus
                       username & password
-                    type: string
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                   serviceDiscovery:
                     description: ServiceDiscovery to be used by Prometheus
                     enum:
@@ -183,9 +231,17 @@ spec:
                 description: Slack contains the config fields for Slack's Integration
                 properties:
                   apiTokenSecret:
-                    description: APITokenSecret is the name of a secret containing
+                    description: APITokenSecret holds the name of a secret containing
                       the Slack API token
-                    type: string
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                   channelName:
                     description: ChannelName to be used by Prometheus
                     type: string
@@ -220,8 +276,16 @@ spec:
                       Ops API key
                     type: string
                   routingKey:
-                    description: RoutingKey is VictorOps routing key
-                    type: string
+                    description: RoutingKey holds VictorOps routing key
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                 required:
                 - apiKeySecret
                 - routingKey
@@ -230,9 +294,17 @@ spec:
                 description: Webhook contains the config fields for Webhook's Integration
                 properties:
                   urlSecret:
-                    description: URLSecret is the name of a secret containing Webhook
+                    description: URLSecret holds the name of a secret containing Webhook
                       URL and secret
-                    type: string
+                    properties:
+                      name:
+                        description: |-
+                          Name of the resource being referred to
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    required:
+                    - name
+                    type: object
                 required:
                 - urlSecret
                 type: object

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel"
 )
@@ -28,8 +29,10 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
 					Datadog: &DatadogIntegration{
-						APIKeySecret: "api-key-secretname",
-						Region:       "US",
+						APIKeySecret: api.LocalObjectReference{
+							Name: "api-key-secretname",
+						},
+						Region: "US",
 					},
 				},
 			},
@@ -40,7 +43,9 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "MICROSOFT_TEAMS",
 					MicrosoftTeams: &MicrosoftTeamsIntegration{
-						URLSecret: "url-secretname",
+						URLSecret: api.LocalObjectReference{
+							Name: "url-secretname",
+						},
 					},
 				},
 			},
@@ -51,7 +56,9 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "NEW_RELIC",
 					NewRelic: &NewRelicIntegration{
-						CredentialsSecret: "credentials-secretname",
+						CredentialsSecret: api.LocalObjectReference{
+							Name: "credentials-secretname",
+						},
 					},
 				},
 			},
@@ -62,8 +69,10 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "OPS_GENIE",
 					OpsGenie: &OpsGenieIntegration{
-						APIKeySecret: "api-key-secretname",
-						Region:       "US",
+						APIKeySecret: api.LocalObjectReference{
+							Name: "api-key-secretname",
+						},
+						Region: "US",
 					},
 				},
 			},
@@ -74,8 +83,10 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "PAGER_DUTY",
 					PagerDuty: &PagerDutyIntegration{
-						ServiceKeySecret: "service-key-secretname",
-						Region:           "US",
+						ServiceKeySecret: api.LocalObjectReference{
+							Name: "service-key-secretname",
+						},
+						Region: "US",
 					},
 				},
 			},
@@ -86,8 +97,10 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "PROMETHEUS",
 					Prometheus: &PrometheusIntegration{
-						PrometheusCredentials: "prometheus-credentials",
-						ServiceDiscovery:      "http",
+						PrometheusCredentials: api.LocalObjectReference{
+							Name: "prometheus-credentials",
+						},
+						ServiceDiscovery: "http",
 					},
 				},
 			},
@@ -98,9 +111,11 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "SLACK",
 					Slack: &SlackIntegration{
-						APITokenSecret: "api-tooken-secretname",
-						ChannelName:    "channel",
-						TeamName:       "team",
+						APITokenSecret: api.LocalObjectReference{
+							Name: "api-tooken-secretname",
+						},
+						ChannelName: "channel",
+						TeamName:    "team",
 					},
 				},
 			},
@@ -111,7 +126,9 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "VICTOR_OPS",
 					VictorOps: &VictorOpsIntegration{
-						RoutingKey:   "routing-key",
+						RoutingKey: api.LocalObjectReference{
+							Name: "routing-key",
+						},
 						APIKeySecret: "keys-secetname",
 					},
 				},
@@ -123,7 +140,9 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "WEBHOOK",
 					Webhook: &WebhookIntegration{
-						URLSecret: "url-secretname",
+						URLSecret: api.LocalObjectReference{
+							Name: "url-secretname",
+						},
 					},
 				},
 			},
@@ -135,8 +154,10 @@ func TestIntegrationCELChecks(t *testing.T) {
 					Type:      "PAGER_DUTY",
 					PagerDuty: &PagerDutyIntegration{},
 					Prometheus: &PrometheusIntegration{
-						PrometheusCredentials: "prometheus-credentials",
-						ServiceDiscovery:      "http",
+						PrometheusCredentials: api.LocalObjectReference{
+							Name: "prometheus-credentials",
+						},
+						ServiceDiscovery: "http",
 					},
 				},
 			},
@@ -148,11 +169,15 @@ func TestIntegrationCELChecks(t *testing.T) {
 				Spec: AtlasThirdPartyIntegrationSpec{
 					Type: "WEBHOOK",
 					Datadog: &DatadogIntegration{
-						APIKeySecret: "api-key-secretname",
-						Region:       "US",
+						APIKeySecret: api.LocalObjectReference{
+							Name: "api-key-secretname",
+						},
+						Region: "US",
 					},
 					Webhook: &WebhookIntegration{
-						URLSecret: "url-secretname",
+						URLSecret: api.LocalObjectReference{
+							Name: "url-secretname",
+						},
 					},
 				},
 			},
