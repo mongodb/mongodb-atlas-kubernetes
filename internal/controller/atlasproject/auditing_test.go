@@ -17,6 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -256,9 +257,13 @@ func TestHandleAudit(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			ctx := &workflow.Context{
-				Context:   context.Background(),
-				Log:       zaptest.NewLogger(t).Sugar(),
-				SdkClient: &admin.APIClient{AuditingApi: tt.expectedCalls(mockadmin.NewAuditingApi(t))},
+				Context: context.Background(),
+				Log:     zaptest.NewLogger(t).Sugar(),
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20231115008: &admin.APIClient{
+						AuditingApi: tt.expectedCalls(mockadmin.NewAuditingApi(t)),
+					},
+				},
 			}
 			project := &akov2.AtlasProject{
 				Spec: akov2.AtlasProjectSpec{

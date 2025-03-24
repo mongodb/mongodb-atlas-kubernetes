@@ -395,9 +395,8 @@ func TestRegularClusterReconciliation(t *testing.T) {
 		WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
 		Build()
 
-	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			clusterAPI := mockadmin.NewClustersApi(t)
 			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), mock.Anything).
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -484,9 +483,9 @@ func TestRegularClusterReconciliation(t *testing.T) {
 					GlobalClustersApi:      globalAPI,
 					ProjectsApi:            projectAPI,
 				},
-			}, orgID, nil
+			}, nil
 		},
-		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
 			return &mongodbatlas.Client{
 				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
 					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
@@ -547,7 +546,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 						}, nil, nil
 					},
 				},
-			}, orgID, nil
+			}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
@@ -630,9 +629,8 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 		WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
 		Build()
 
-	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			err := &admin.GenericOpenAPIError{}
 			err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
 			clusterAPI := mockadmin.NewClustersApi(t)
@@ -682,10 +680,10 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 					ProjectsApi:                   projectAPI,
 				},
 				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
-			}, orgID, nil
+			}, nil
 		},
-		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-			return &mongodbatlas.Client{}, orgID, nil
+		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
+			return &mongodbatlas.Client{}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
@@ -768,9 +766,8 @@ func TestFlexClusterReconciliation(t *testing.T) {
 		WithIndex(dbUserProjectIndexer.Object(), dbUserProjectIndexer.Name(), dbUserProjectIndexer.Keys).
 		Build()
 
-	orgID := "0987654321"
 	atlasProvider := &atlasmock.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
 
 			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), mock.Anything).
@@ -808,10 +805,10 @@ func TestFlexClusterReconciliation(t *testing.T) {
 					ProjectsApi:            projectAPI,
 				},
 				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
-			}, orgID, nil
+			}, nil
 		},
-		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-			return &mongodbatlas.Client{}, orgID, nil
+		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
+			return &mongodbatlas.Client{}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
@@ -934,10 +931,9 @@ func TestDeletionReconciliation(t *testing.T) {
 		WithStatusSubresource(bPolicy, bSchedule, d).
 		Build()
 
-	orgID := "0987654321"
 	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
-		SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			err := &adminv20241113001.GenericOpenAPIError{}
 			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
@@ -993,10 +989,10 @@ func TestDeletionReconciliation(t *testing.T) {
 					ProjectsApi:            projectAPI,
 				},
 				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
-			}, orgID, nil
+			}, nil
 		},
-		ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-			return &mongodbatlas.Client{}, orgID, nil
+		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
+			return &mongodbatlas.Client{}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
@@ -1324,10 +1320,10 @@ func TestChangeDeploymentType(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-					return &mongodbatlas.Client{}, "org-id", nil
+				ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
+					return &mongodbatlas.Client{}, nil
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
 					serverlessAPI.EXPECT().GetServerlessInstance(mock.Anything, "abc123", "cluster0").
 						Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
@@ -1349,7 +1345,7 @@ func TestChangeDeploymentType(t *testing.T) {
 							ProjectsApi:            projectAPI,
 						},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "org-id", nil
+					}, nil
 				},
 			},
 		},
@@ -1382,10 +1378,10 @@ func TestChangeDeploymentType(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-					return &mongodbatlas.Client{}, "org-id", nil
+				ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
+					return &mongodbatlas.Client{}, nil
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					clusterAPI := mockadmin.NewClustersApi(t)
 					clusterAPI.EXPECT().GetCluster(mock.Anything, "abc123", "cluster0").
 						Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -1407,7 +1403,7 @@ func TestChangeDeploymentType(t *testing.T) {
 							ProjectsApi: projectAPI,
 						},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "org-id", nil
+					}, nil
 				},
 			},
 		},

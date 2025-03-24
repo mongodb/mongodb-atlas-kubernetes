@@ -6,11 +6,8 @@ import (
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 )
 
 var (
@@ -27,14 +24,6 @@ type AtlasUsersService interface {
 
 type AtlasUsers struct {
 	usersAPI admin.DatabaseUsersApi
-}
-
-func NewAtlasDatabaseUsersService(ctx context.Context, provider atlas.Provider, secretRef *types.NamespacedName, log *zap.SugaredLogger) (*AtlasUsers, error) {
-	client, err := translation.NewVersionedClient(ctx, provider, secretRef, log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create versioned client: %w", err)
-	}
-	return NewAtlasUsers(client.DatabaseUsersApi), nil
 }
 
 func NewAtlasUsers(api admin.DatabaseUsersApi) *AtlasUsers {

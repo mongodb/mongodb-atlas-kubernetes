@@ -41,11 +41,11 @@ func (r *AtlasIPAccessListReconciler) handleCustomResource(ctx context.Context, 
 		return r.unsupport(workflowCtx)
 	}
 
-	credentials, err := r.ResolveCredentials(ctx, ipAccessList)
+	connectionConfig, err := r.ResolveConnectionConfig(ctx, ipAccessList)
 	if err != nil {
 		return r.terminate(workflowCtx, ipAccessList, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx, credentials, r.Log)
+	sdkClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, ipAccessList, api.ReadyType, workflow.AtlasAPIAccessNotConfigured, err)
 	}

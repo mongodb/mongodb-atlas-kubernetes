@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -22,11 +21,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 )
 
-func (r *AtlasProjectReconciler) teamReconcile(
-	team *akov2.AtlasTeam,
-	connectionSecretKey *client.ObjectKey,
-	teamsService teams.TeamsService,
-) reconcile.Func {
+func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCtx *workflow.Context, teamsService teams.TeamsService) reconcile.Func {
 	return func(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 		log := r.Log.With("atlasteam", req.NamespacedName)
 
@@ -58,14 +53,8 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
-		atlasClient, orgID, err := r.AtlasProvider.SdkClientSet(teamCtx.Context, connectionSecretKey, log)
-		if err != nil {
-			result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
-			setCondition(teamCtx, api.ReadyType, result)
-			return result.ReconcileResult(), nil
-		}
-		teamCtx.OrgID = orgID
-		teamCtx.SdkClient = atlasClient.SdkClient20231115008
+		teamCtx.OrgID = workflowCtx.OrgID
+		teamCtx.SdkClientSet = workflowCtx.SdkClientSet
 
 		teamID, result := r.ensureTeamState(teamCtx, teamsService, team)
 		if !result.IsOk() {
@@ -94,7 +83,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 				customresource.UnsetFinalizer(team, customresource.FinalizerLabel)
 			}
 
-			if err = r.Client.Update(teamCtx.Context, team); err != nil {
+			if err := r.Client.Update(teamCtx.Context, team); err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("Failed to update finalizer", "error", err)
 				return result.ReconcileResult(), nil
@@ -109,7 +98,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 				return workflow.OK().ReconcileResult(), nil
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-				_, _, err := teamCtx.SdkClient.TeamsApi.DeleteTeam(teamCtx.Context, orgID, team.Status.ID).Execute()
+				_, _, err := teamCtx.SdkClientSet.SdkClient20231115008.TeamsApi.DeleteTeam(teamCtx.Context, teamCtx.OrgID, team.Status.ID).Execute()
 				var apiError *mongodbatlas.ErrorResponse
 				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
@@ -118,7 +107,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			}
 		}
 
-		err = customresource.ApplyLastConfigApplied(teamCtx.Context, team, r.Client)
+		err := customresource.ApplyLastConfigApplied(teamCtx.Context, team, r.Client)
 		if err != nil {
 			result = workflow.Terminate(workflow.Internal, err)
 			teamCtx.SetConditionFromResult(api.ReadyType, result)
@@ -207,7 +196,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 		username := team.Spec.Usernames[i]
 		if _, ok := atlasUsernamesMap[string(username)]; !ok {
 			g.Go(func() error {
-				user, _, err := workflowCtx.SdkClient.MongoDBCloudUsersApi.GetUserByUsername(taskContext, string(username)).Execute()
+				user, _, err := workflowCtx.SdkClientSet.SdkClient20231115008.MongoDBCloudUsersApi.GetUserByUsername(taskContext, string(username)).Execute()
 
 				if err != nil {
 					return err

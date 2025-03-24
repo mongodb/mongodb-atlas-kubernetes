@@ -43,11 +43,11 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 		return r.Unsupport(workflowCtx, typeName)
 	}
 
-	credentials, err := r.ResolveCredentials(ctx, networkContainer)
+	connectionConfig, err := r.ResolveConnectionConfig(ctx, networkContainer)
 	if err != nil {
 		return r.release(workflowCtx, networkContainer, err), nil
 	}
-	sdkClientSet, _, err := r.AtlasProvider.SdkClientSet(ctx, credentials, r.Log)
+	sdkClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, r.Log)
 	if err != nil {
 		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err), nil
 	}

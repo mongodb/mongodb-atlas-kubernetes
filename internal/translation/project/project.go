@@ -11,15 +11,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 )
 
-// ProjectReferrer is anything that holds a ProjectDualReference
-type ProjectReferrer interface {
-	ProjectDualRef() *akov2.ProjectDualReference
-}
-
-// ProjectReferrerObject is an project referrer that is also an Kubernetes Object
+// ProjectReferrerObject is a Kube client object that includes references to Atlas projects.
 type ProjectReferrerObject interface {
 	client.Object
-	ProjectReferrer
+	ProjectDualRef() *akov2.ProjectDualReference
 }
 
 type ProjectService interface {

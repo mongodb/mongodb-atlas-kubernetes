@@ -24,6 +24,7 @@ import (
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -153,7 +154,7 @@ func TestHandleCustomResource(t *testing.T) {
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasAPIAccessNotConfigured)).
-					WithMessageRegexp("missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+					WithMessageRegexp("error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
@@ -180,8 +181,8 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
-					return nil, "", errors.New("failed to create sdk")
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return nil, errors.New("failed to create sdk")
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -218,17 +219,17 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasAPIAccessNotConfigured)).
-					WithMessageRegexp("failed to query Kubernetes: failed to get Project from Kubernetes: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+					WithMessageRegexp("failed to get project via Kubernetes reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 				api.TrueCondition(api.ResourceVersionStatus),
 			},
 		},
@@ -259,7 +260,7 @@ func TestHandleCustomResource(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				SdkSetClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*atlas.ClientSet, string, error) {
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
 					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "123").
 						Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ialAPI})
@@ -296,7 +297,7 @@ func TestHandleCustomResource(t *testing.T) {
 							ProjectsApi:            projectAPI,
 						},
 						SdkClient20241113001: &adminv20241113001.APIClient{},
-					}, "", nil
+					}, nil
 				},
 			},
 			expectedResult:     ctrl.Result{},
@@ -321,9 +322,20 @@ func TestHandleCustomResource(t *testing.T) {
 			}
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
+			require.NoError(t, corev1.AddToScheme(testScheme))
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(project, &tt.ipAccessList).
+				WithObjects(project, &tt.ipAccessList, &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte("orgId"),
+						"publicApiKey":  []byte("publicApiKey"),
+						"privateApiKey": []byte("privateApiKey"),
+					},
+				}).
 				WithStatusSubresource(&tt.ipAccessList).
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
@@ -345,7 +357,10 @@ func TestHandleCustomResource(t *testing.T) {
 			require.NoError(t, k8sClient.Get(ctx.Context, client.ObjectKeyFromObject(&tt.ipAccessList), ipAccessList))
 			assert.Equal(t, tt.expectedResult, result)
 			assert.Equal(t, tt.expectedFinalizers, ipAccessList.GetFinalizers())
-			assert.True(t, cmp.Equal(tt.expectedConditions, ipAccessList.Status.GetConditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
+			diff := cmp.Diff(tt.expectedConditions, ipAccessList.Status.GetConditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"))
+			if diff != "" {
+				t.Errorf("status conditions differ: %v", diff)
+			}
 		})
 	}
 }
@@ -661,191 +676,3 @@ func TestHandleIPAccessList(t *testing.T) {
 		})
 	}
 }
-
-/*
-func TestManageIPAccessList(t *testing.T) {
-	tests := map[string]struct {
-		akoIPAccessList     ipaccesslist.IPAccessEntries
-		atlasIPAccessList   ipaccesslist.IPAccessEntries
-		ipAccessListService func() ipaccesslist.IPAccessListService
-		expectedResult      ctrl.Result
-		expectedConditions  []api.Condition
-	}{
-		"should be no op task": {
-			akoIPAccessList:   ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
-			atlasIPAccessList: ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
-			ipAccessListService: func() ipaccesslist.IPAccessListService {
-				s := translation.NewIPAccessListServiceMock(t)
-				s.EXPECT().Status(context.Background(), "", &ipaccesslist.IPAccessEntry{CIDR: "192.168.0.0/24"}).
-					Return("ACTIVE", nil)
-
-				return s
-			},
-			expectedResult: ctrl.Result{},
-			expectedConditions: []api.Condition{
-				api.TrueCondition(api.ReadyType),
-				api.TrueCondition(api.IPAccessListReady),
-			},
-		},
-		"should add ip access list": {
-			akoIPAccessList:   ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
-			atlasIPAccessList: ipaccesslist.IPAccessEntries{},
-			ipAccessListService: func() ipaccesslist.IPAccessListService {
-				s := translation.NewIPAccessListServiceMock(t)
-				s.EXPECT().Add(context.Background(), "", ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}}).
-					Return(nil)
-				s.EXPECT().Status(context.Background(), "", &ipaccesslist.IPAccessEntry{CIDR: "192.168.0.0/24"}).
-					Return("PENDING", nil)
-
-				return s
-			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.ReadyType),
-				api.FalseCondition(api.IPAccessListReady).
-					WithReason(string(workflow.IPAccessListPending)).
-					WithMessageRegexp("Atlas has started to add access list entries"),
-			},
-		},
-		"should remove ip access list": {
-			akoIPAccessList:   ipaccesslist.IPAccessEntries{},
-			atlasIPAccessList: ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
-			ipAccessListService: func() ipaccesslist.IPAccessListService {
-				s := translation.NewIPAccessListServiceMock(t)
-				s.EXPECT().Delete(context.Background(), "", &ipaccesslist.IPAccessEntry{CIDR: "192.168.0.0/24"}).
-					Return(nil)
-
-				return s
-			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.ReadyType),
-				api.FalseCondition(api.IPAccessListReady).
-					WithReason(string(workflow.IPAccessListPending)).
-					WithMessageRegexp("Atlas has started to delete access list entries"),
-			},
-		},
-	}
-	//nolint:dupl
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			ipAccessList := &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
-			}
-			testScheme := runtime.NewScheme()
-			require.NoError(t, akov2.AddToScheme(testScheme))
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(ipAccessList).
-				Build()
-			logger := zaptest.NewLogger(t).Sugar()
-			ctx := &workflow.Context{
-				Context: context.Background(),
-				Log:     logger,
-			}
-			r := &AtlasIPAccessListReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
-			}
-			result := r.manageIPAccessList(ctx, tt.ipAccessListService(), ipAccessList, "", tt.akoIPAccessList, tt.atlasIPAccessList)
-			assert.Equal(t, tt.expectedResult, result)
-			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
-		})
-	}
-}
-
-func TestWatchState(t *testing.T) {
-	tests := map[string]struct {
-		ipAccessList        ipaccesslist.IPAccessEntries
-		ipAccessListService func() ipaccesslist.IPAccessListService
-		expectedResult      ctrl.Result
-		expectedConditions  []api.Condition
-	}{
-		"should fail to get status": {
-			ipAccessList: ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
-			ipAccessListService: func() ipaccesslist.IPAccessListService {
-				s := translation.NewIPAccessListServiceMock(t)
-				s.EXPECT().Status(context.Background(), "", &ipaccesslist.IPAccessEntry{CIDR: "192.168.0.0/24"}).
-					Return("", errors.New("failed to get status"))
-
-				return s
-			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.ReadyType),
-				api.FalseCondition(api.IPAccessListReady).
-					WithReason(string(workflow.IPAccessListFailedToGetState)).
-					WithMessageRegexp("failed to get status"),
-			},
-		},
-		"should be in progress when entries are pending": {
-			ipAccessList: ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
-			ipAccessListService: func() ipaccesslist.IPAccessListService {
-				s := translation.NewIPAccessListServiceMock(t)
-				s.EXPECT().Status(context.Background(), "", &ipaccesslist.IPAccessEntry{CIDR: "192.168.0.0/24"}).
-					Return("PENDING", nil)
-
-				return s
-			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.ReadyType),
-				api.FalseCondition(api.IPAccessListReady).
-					WithReason(string(workflow.IPAccessListPending)).
-					WithMessageRegexp("Atlas has started to add access list entries"),
-			},
-		},
-		"should be ready when entries are active": {
-			ipAccessList: ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
-			ipAccessListService: func() ipaccesslist.IPAccessListService {
-				s := translation.NewIPAccessListServiceMock(t)
-				s.EXPECT().Status(context.Background(), "", &ipaccesslist.IPAccessEntry{CIDR: "192.168.0.0/24"}).
-					Return("ACTIVE", nil)
-
-				return s
-			},
-			expectedResult: ctrl.Result{},
-			expectedConditions: []api.Condition{
-				api.TrueCondition(api.ReadyType),
-				api.TrueCondition(api.IPAccessListReady),
-			},
-		},
-	}
-	//nolint:dupl
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			ipAccessList := &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
-			}
-			testScheme := runtime.NewScheme()
-			require.NoError(t, akov2.AddToScheme(testScheme))
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(ipAccessList).
-				Build()
-			logger := zaptest.NewLogger(t).Sugar()
-			ctx := &workflow.Context{
-				Context: context.Background(),
-				Log:     logger,
-			}
-			r := &AtlasIPAccessListReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
-			}
-			result := r.watchState(ctx, tt.ipAccessListService(), ipAccessList, "", tt.ipAccessList)
-			assert.Equal(t, tt.expectedResult, result)
-			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
-		})
-	}
-}
-*/
