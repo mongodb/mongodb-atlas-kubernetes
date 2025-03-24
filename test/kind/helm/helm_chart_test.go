@@ -12,7 +12,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/cli/helm"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
@@ -23,14 +22,6 @@ import (
 var _ = Describe("HELM charts", Ordered, func() {
 	var data model.TestDataProvider
 	skipped := false
-
-	_ = BeforeAll(func() {
-		cli.Execute("kubectl", "delete", "--ignore-not-found=true", "-f", "../../deploy/crds").Wait().Out.Contents()
-	})
-
-	_ = AfterAll(func() {
-		cli.Execute("kubectl", "apply", "-f", "../../deploy/crds").Wait().Out.Contents()
-	})
 
 	_ = BeforeEach(func() {
 		imageURL := os.Getenv("IMAGE_URL")
