@@ -10,7 +10,8 @@ spec:
     name: my-atlas-project
   type: DATADOG
   datadog:
-    apiKeySecret: "secret-ref"
+    apiKeySecret:
+      name: "secret-ref"
     region: "string"
 ---
 apiVersion: atlas.mongodb.com/v1
@@ -26,7 +27,8 @@ spec:
   connectionSecret: "conn-secret-ref"
   type: MICROSOFT_TEAMS
   microsoftTeams:
-    urlSecret: "secret-ref"
+    urlSecret:
+      name: "secret-ref"
 ---
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasIntegration
@@ -40,7 +42,8 @@ spec:
     name: my-atlas-project
   type: NEW_RELIC
   newRelic:
-    credentialsSecret: "secret-ref"
+    credentialsSecret:
+      name: "secret-ref"
 ---
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasIntegration
@@ -54,7 +57,8 @@ spec:
     name: my-atlas-project
   type: OPS_GENIE
   opsGenie:
-    apiKeySecret: "secret-ref"
+    apiKeySecret:
+      name: "secret-ref"
     region: "string"
 ---
 apiVersion: atlas.mongodb.com/v1
@@ -69,7 +73,8 @@ spec:
     name: my-atlas-project
   type: PAGER_DUTY
   pagerDuty:
-    serviceKeySecret: "secret-ref"
+    serviceKeySecret:
+      name: "secret-ref"
     region: "string"
 ---
 apiVersion: atlas.mongodb.com/v1
@@ -84,7 +89,8 @@ spec:
     name: my-atlas-project
   type: PROMETHEUS
   prometheus:
-    prometheusCredentials: "secret-ref"
+    prometheusCredentials:
+      name: "secret-ref"
     serviceDiscovery: "string"
     enabled: true
 ---
@@ -100,7 +106,8 @@ spec:
     name: my-atlas-project
   type: SLACK
   slack:
-    apiTokenSecret: "secret-ref"
+    apiTokenSecret:
+      name: "secret-ref"
     channelName: "channel-name"
     teamName: "team-name"
 ---
@@ -116,7 +123,8 @@ spec:
     name: my-atlas-project
   type: VICTOR_OPS
   victorOps:
-    routingKey: "string"
+    routingKey:
+      name: "string"
     apiKeySecret: "secret-ref"
 ---
 apiVersion: atlas.mongodb.com/v1
@@ -131,4 +139,5 @@ spec:
     name: my-atlas-project
   type: WEBHOOK
   webhook:
-    urlSecret: "secret-ref"
+    urlSecret:
+      name: "secret-ref"

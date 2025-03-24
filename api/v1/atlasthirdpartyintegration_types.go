@@ -19,6 +19,7 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
 
@@ -96,9 +97,9 @@ type AtlasThirdPartyIntegrationSpec struct {
 }
 
 type DatadogIntegration struct {
-	// APIKeySecret is the name of a secret containing the datadog api key
+	// APIKeySecret holds the name of a secret containing the datadog api key
 	// +kubebuilder:validation:Required
-	APIKeySecret string `json:"apiKeySecret"`
+	APIKeySecret api.LocalObjectReference `json:"apiKeySecret"`
 
 	// Region is the Datadog region
 	// +kubebuilder:validation:Required
@@ -119,22 +120,22 @@ type DatadogIntegration struct {
 }
 
 type MicrosoftTeamsIntegration struct {
-	// URLSecret is the name of a secret containing the microsoft teams secret URL
+	// URLSecret holds the name of a secret containing the microsoft teams secret URL
 	// +kubebuilder:validation:Required
-	URLSecret string `json:"urlSecret"`
+	URLSecret api.LocalObjectReference `json:"urlSecret"`
 }
 
 type NewRelicIntegration struct {
-	// CredentialsSecret is the name of a secret containing new relic's credentials:
+	// CredentialsSecret holds the name of a secret containing new relic's credentials:
 	// account id, license key, read and write tokens
 	// +kubebuilder:validation:Required
-	CredentialsSecret string `json:"credentialsSecret"`
+	CredentialsSecret api.LocalObjectReference `json:"credentialsSecret"`
 }
 
 type OpsGenieIntegration struct {
-	// APIKeySecret is the name of a secret containing Ops Genie's API key
+	// APIKeySecret holds the name of a secret containing Ops Genie's API key
 	// +kubebuilder:validation:Required
-	APIKeySecret string `json:"apiKeySecret"`
+	APIKeySecret api.LocalObjectReference `json:"apiKeySecret"`
 
 	// Region is the Ops Genie region
 	// +kubebuilder:validation:Required
@@ -142,9 +143,9 @@ type OpsGenieIntegration struct {
 }
 
 type PagerDutyIntegration struct {
-	// ServiceKeySecret is the name of a secret containing Pager Duty service key
+	// ServiceKeySecret holds the name of a secret containing Pager Duty service key
 	// +kubebuilder:validation:Required
-	ServiceKeySecret string `json:"serviceKeySecret"`
+	ServiceKeySecret api.LocalObjectReference `json:"serviceKeySecret"`
 
 	// Region is the Pager Duty region
 	// +kubebuilder:validation:Required
@@ -152,10 +153,10 @@ type PagerDutyIntegration struct {
 }
 
 type PrometheusIntegration struct {
-	// PrometheusCredentials is the name of a secret containing the Prometheus
+	// PrometheusCredentials holds the name of a secret containing the Prometheus
 	// username & password
 	// +kubebuilder:validation:Required
-	PrometheusCredentials string `json:"prometheusCredentials"`
+	PrometheusCredentials api.LocalObjectReference `json:"prometheusCredentials"`
 
 	// ServiceDiscovery to be used by Prometheus
 	// +kubebuilder:validation:Enum:=file;http
@@ -164,9 +165,9 @@ type PrometheusIntegration struct {
 }
 
 type SlackIntegration struct {
-	// APITokenSecret is the name of a secret containing the Slack API token
+	// APITokenSecret holds the name of a secret containing the Slack API token
 	// +kubebuilder:validation:Required
-	APITokenSecret string `json:"apiTokenSecret"`
+	APITokenSecret api.LocalObjectReference `json:"apiTokenSecret"`
 
 	// ChannelName to be used by Prometheus
 	// +kubebuilder:validation:Required
@@ -178,9 +179,9 @@ type SlackIntegration struct {
 }
 
 type VictorOpsIntegration struct {
-	// RoutingKey is VictorOps routing key
+	// RoutingKey holds VictorOps routing key
 	// +kubebuilder:validation:Required
-	RoutingKey string `json:"routingKey"`
+	RoutingKey api.LocalObjectReference `json:"routingKey"`
 
 	// APIKeySecret is the name of a secret containing Victor Ops API key
 	// +kubebuilder:validation:Required
@@ -188,9 +189,9 @@ type VictorOpsIntegration struct {
 }
 
 type WebhookIntegration struct {
-	// URLSecret is the name of a secret containing Webhook URL and secret
+	// URLSecret holds the name of a secret containing Webhook URL and secret
 	// +kubebuilder:validation:Required
-	URLSecret string `json:"urlSecret"`
+	URLSecret api.LocalObjectReference `json:"urlSecret"`
 }
 
 // +kubebuilder:object:root=true
