@@ -280,6 +280,7 @@ jobs:
         if: ${{ success() }}
         uses: codecov/codecov-action@v5
         with:
-          files: test/e2e/coverprofile.out
           name: ${{ matrix.test }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: test/e2e/coverprofile.out
           verbose: true

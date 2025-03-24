@@ -57,6 +57,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           name: ${{ matrix.test }}
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ matrix.path }}/coverprofile.out
           verbose: true
 
