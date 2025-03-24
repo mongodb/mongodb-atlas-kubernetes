@@ -76,7 +76,6 @@ jobs:
                 echo "Checking for changes in the Chart: $dir"
               if [[ -n $(diff -r "./helm-charts/$dir" "./helm-charts-cloned/charts/$dir") ]]; then
                 echo "> Changes detected for the Chart: $dir"
-                diff -r "./helm-charts/$dir" "./helm-charts-cloned/charts/$dir"
                 cp -r "./helm-charts/$dir" "./helm-charts-cloned/charts/$dir"
               else
                 echo "> No changes detected for the Chart: $dir"
