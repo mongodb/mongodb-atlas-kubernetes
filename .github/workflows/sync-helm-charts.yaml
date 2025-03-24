@@ -44,8 +44,6 @@ jobs:
           path: helm-charts-cloned
           persist-credentials: true
 
-            #awk '{gsub(/repository: "file:\/\/..\/..\/helm-charts\/atlas-operator-crds"/, "repository: \"https://mongodb.github.io/helm-charts\"")}1' helm-charts/atlas-operator/Chart.yaml > temp.yaml && mv temp.yaml helm-charts/atlas-operator/Chart.yaml
-
       - name: Generate AKO bundle
         env:
           VERSION: "1.0.0"
