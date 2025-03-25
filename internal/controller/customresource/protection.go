@@ -112,7 +112,7 @@ func ParseLastConfigApplied[S any](resource api.AtlasCustomResource) (*S, error)
 
 	err := json.Unmarshal([]byte(lastAppliedJSON), &spec)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing JSON annotation value [%s] into a %T: %w", lastAppliedJSON, spec, err)
+		return nil, fmt.Errorf("error parsing JSON annotation value into a %T: %w", spec, err)
 	}
 	return &spec, nil
 }
