@@ -97,7 +97,7 @@ KUBEBUILDER_ASSETS ?= $(ENVTEST_ASSETS_DIR)/k8s/$(ENVTEST_K8S_VERSION)-$(TARGET_
 # Ginkgo configuration
 GINKGO_NODES ?= 12
 GINKGO_EDITOR_INTEGRATION ?= true
-GINKGO_OPTS = -vv --randomize-all --output-interceptor-mode=none --trace --timeout 90m --flake-attempts=1 --race --nodes=$(GINKGO_NODES) --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/...
+GINKGO_OPTS = -vv --randomize-all --output-interceptor-mode=none --trace --timeout 90m --flake-attempts=1 --race --nodes=$(GINKGO_NODES) --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/... --coverprofile=.coverprofile.out
 GINKGO_FILTER_LABEL ?=
 ifneq ($(GINKGO_FILTER_LABEL),)
 GINKGO_FILTER_LABEL_OPT := --label-filter="$(GINKGO_FILTER_LABEL)"

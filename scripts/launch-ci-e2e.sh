@@ -14,4 +14,5 @@ else
 fi
 
 AKO_E2E_TEST=1 ginkgo --output-interceptor-mode=none --label-filter="${filter}" --timeout 120m --nodes=10 \
-  --flake-attempts=1 --race --cover --v --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
+  --flake-attempts=1 --race --cover --v --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/... \
+  --coverprofile=.coverprofile.out
