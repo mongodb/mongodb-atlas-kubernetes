@@ -28,6 +28,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           name: unit-tests
+          flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.out
           verbose: true

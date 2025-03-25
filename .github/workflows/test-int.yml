@@ -56,8 +56,9 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          name: ${{ matrix.test }}
+          name: int-${{ matrix.test }}
+          flags: integration,${{ matrix.test }}
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{ matrix.path }}/coverprofile.out
+          files: coverprofile.out
           verbose: true
 

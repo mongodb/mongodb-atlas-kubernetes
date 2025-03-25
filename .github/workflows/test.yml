@@ -49,6 +49,7 @@ jobs:
     needs:
       - run-tests
     uses: ./.github/workflows/test-unit.yml
+    secrets: inherit
 
   check-licenses:
     needs:
