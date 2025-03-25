@@ -499,7 +499,9 @@ func TestSkipClearsMigratedResourcesLastConfig(t *testing.T) {
 			},
 		},
 	}
+
 	result, err := r.Reconcile(ctx, req)
+
 	require.Equal(t, reconcile.Result{}, result)
 	require.NoError(t, err)
 	require.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(&prj), &prj))

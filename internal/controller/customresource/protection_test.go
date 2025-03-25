@@ -286,10 +286,10 @@ func TestPatchLastConfigAppliedErrors(t *testing.T) {
 		wantErrorMsg string
 	}{
 		{
-			title:        "nil spec cannot get unstructured",
+			title:        "nil spec fails",
 			object:       &akov2.AtlasProject{},
 			spec:         nil,
-			wantErrorMsg: "ToUnstructured requires a non-nil pointer to an object",
+			wantErrorMsg: "spec is nil",
 		},
 		{
 			title:        "empty struct cannot be patched",
@@ -327,7 +327,7 @@ func TestParseLastConfigApplied(t *testing.T) {
 					},
 				},
 			},
-			wantErrorMsg: "error parsing JSON annotation value [bad-json]",
+			wantErrorMsg: "error parsing JSON annotation value into a v1.AtlasProjectSpec",
 		},
 		{
 			title: "proper but empty JSON renders empty spec",

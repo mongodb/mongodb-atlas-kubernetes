@@ -72,35 +72,28 @@ func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResourc
 }
 
 func PatchLastConfigApplied[S any](ctx context.Context, k8sClient client.Client, resource api.AtlasCustomResource, spec *S) error {
-	copy, err := setLastAppliedConfigAnnotation(resource, spec)
-	if err != nil {
-		return fmt.Errorf("failed to set the last applied config annotation: %w", err)
+	if spec == nil {
+		return fmt.Errorf("spec is nil")
 	}
 
-	err = k8sClient.Patch(ctx, copy, client.MergeFrom(resource))
+	js, err := json.Marshal(spec)
 	if err != nil {
-		return fmt.Errorf("failed to patch resource: %w", err)
+		return fmt.Errorf("failed to marshal %v: %w", spec, err)
 	}
-	return nil
-}
 
-func setLastAppliedConfigAnnotation[S any](resource api.AtlasCustomResource, spec *S) (api.AtlasCustomResource, error) {
-	uObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(spec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get unstructured object from spec %v: %w", spec, err)
-	}
-	js, err := json.Marshal(uObj)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal %v: %w", uObj, err)
-	}
-	copy := resource.DeepCopyObject().(api.AtlasCustomResource)
-	annotations := copy.GetAnnotations()
+	resourceCopy := resource.DeepCopyObject().(api.AtlasCustomResource)
+	annotations := resourceCopy.GetAnnotations()
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
 	annotations[AnnotationLastAppliedConfiguration] = string(js)
-	copy.SetAnnotations(annotations)
-	return copy, nil
+	resourceCopy.SetAnnotations(annotations)
+
+	err = k8sClient.Patch(ctx, resourceCopy, client.MergeFrom(resource))
+	if err != nil {
+		return fmt.Errorf("failed to patch resource: %w", err)
+	}
+	return nil
 }
 
 func ParseLastConfigApplied[S any](resource api.AtlasCustomResource) (*S, error) {
