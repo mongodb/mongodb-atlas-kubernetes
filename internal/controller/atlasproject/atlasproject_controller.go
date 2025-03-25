@@ -382,6 +382,9 @@ func (r *AtlasProjectReconciler) clearLastAppliedMigratedResources(ctx context.C
 	if err != nil {
 		return fmt.Errorf("failed to parse last applied config annotation: %w", err)
 	}
+	if clearedCfg == nil { // nothing to patch
+		return nil
+	}
 	// clear all resources migrated as independent CRDs to avoid eager
 	// reconciliation that might conflict with independent CRs and apply
 	clearedCfg.CustomRoles = nil
