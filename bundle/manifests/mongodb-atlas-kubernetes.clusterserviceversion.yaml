@@ -237,7 +237,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Database
-    createdAt: "2025-03-06T14:09:19Z"
+    createdAt: "2025-03-26T10:13:22Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -248,12 +248,12 @@ metadata:
     features.operators.openshift.io/token-auth-gcp: "false"
     operators.operatorframework.io/builder: operator-sdk-v1.34.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.8.0
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.8.1
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.8.0
+  name: mongodb-atlas-kubernetes.v2.8.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -499,7 +499,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.8.0
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.8.1
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -583,5 +583,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.8.0
-  replaces: mongodb-atlas-kubernetes.v2.7.1
+  version: 2.8.1
+  replaces: mongodb-atlas-kubernetes.v2.8.0
