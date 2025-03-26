@@ -176,6 +176,8 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 		}
 	}
 
+	// add observedGeneration to status
+
 	var params apiextensions.JSONSchemaProps
 	params.Type = "object"
 	params.Properties = make(map[string]apiextensions.JSONSchemaProps)
@@ -198,6 +200,11 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 	// StoredVersions is set to empty array instead of nil to bypass the following issue:
 	// https://github.com/fybrik/openapi2crd/issues/1
 	crd.Status.StoredVersions = []string{}
+
+	// enable status subresource
+	crd.Spec.Subresources = &apiextensions.CustomResourceSubresources{
+		Status: &apiextensions.CustomResourceSubresourceStatus{},
+	}
 
 	crd.Spec.Names.Categories = g.Categories
 

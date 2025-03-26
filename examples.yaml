@@ -4,29 +4,29 @@ metadata:
   name: foo
 ---
 ## AKO Project
-#apiVersion: atlas.mongodb.com/v1
-#kind: AtlasProject
-#metadata:
-#  name: foo
-#  namespace: foo
-#spec:
-#  name: project-curated
-#  regionUsageRestrictions: NONE
-#  withDefaultAlertsSettings: true
-#  customRoles:
-#    - inheritedRoles:
-#        - database: admin
-#          name: backup
-#      name: BackupAdmin
-#    - inheritedRoles:
-#        - database: admin
-#          name: enableSharding
-#      name: NewAdmin
-#  projectIpAccessList:
-#    - cidrBlock: 0.0.0.0/1
-#      comment: Everyone has access. For the test purpose only.
-#    - cidrBlock: 128.0.0.0/1
-#      comment: Everyone has access. For the test purpose only.
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: foo
+  namespace: foo
+spec:
+  name: project-curated
+  regionUsageRestrictions: NONE
+  withDefaultAlertsSettings: true
+  customRoles:
+    - inheritedRoles:
+        - database: admin
+          name: backup
+      name: BackupAdmin
+    - inheritedRoles:
+        - database: admin
+          name: enableSharding
+      name: NewAdmin
+  projectIpAccessList:
+    - cidrBlock: 0.0.0.0/1
+      comment: Everyone has access. For the test purpose only.
+    - cidrBlock: 128.0.0.0/1
+      comment: Everyone has access. For the test purpose only.
 ---
 apiVersion: atlas.generated.mongodb.com/v1
 kind: Group
