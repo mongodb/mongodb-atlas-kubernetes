@@ -2,9 +2,7 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -14,26 +12,12 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 )
 
 func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
-	skipped, err := hasSkippedPrivateEndpointConfiguration(project)
-	if err != nil {
-		return workflow.Terminate(workflow.Internal, err)
-	}
-
-	if skipped {
-		workflowCtx.EnsureStatusOption(status.AtlasProjectAddPrivateEndpointsOption(nil))
-		workflowCtx.UnsetCondition(api.PrivateEndpointServiceReadyType)
-		workflowCtx.UnsetCondition(api.PrivateEndpointReadyType)
-
-		return workflow.OK()
-	}
-
 	specPEs := project.Spec.DeepCopy().PrivateEndpoints
 
 	lastAppliedPEs, err := mapLastAppliedPrivateEndpoint(project)
@@ -584,20 +568,6 @@ func getEndpointsIntersection(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasP
 type intersectionPair struct {
 	spec  akov2.PrivateEndpoint
 	atlas atlasPE
-}
-
-func hasSkippedPrivateEndpointConfiguration(atlasProject *akov2.AtlasProject) (bool, error) {
-	lastSkippedSpec := akov2.AtlasProjectSpec{}
-	lastSkippedSpecString, ok := atlasProject.Annotations[customresource.AnnotationLastSkippedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(lastSkippedSpecString), &lastSkippedSpec); err != nil {
-			return false, fmt.Errorf("failed to parse last skipped configuration: %w", err)
-		}
-
-		return len(lastSkippedSpec.PrivateEndpoints) == 0, nil
-	}
-
-	return false, nil
 }
 
 func mapLastAppliedPrivateEndpoint(atlasProject *akov2.AtlasProject) (map[string]akov2.PrivateEndpoint, error) {

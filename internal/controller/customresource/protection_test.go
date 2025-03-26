@@ -2,17 +2,23 @@ package customresource_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 )
 
@@ -153,22 +159,6 @@ func TestApplyLastConfigApplied(t *testing.T) {
 	assert.Equal(t, expectedConfig, annot[customresource.AnnotationLastAppliedConfiguration])
 }
 
-func TestApplyLastConfigSkipped(t *testing.T) {
-	resource := sampleResource()
-	resource.Name = "foo"
-	resource.Spec.Username = "test-user"
-
-	scheme := runtime.NewScheme()
-	utilruntime.Must(akov2.AddToScheme(scheme))
-	c := fake.NewClientBuilder().WithObjects(resource).WithScheme(scheme).Build()
-	assert.NoError(t, customresource.ApplyLastConfigSkipped(context.Background(), resource, c))
-
-	annot := resource.GetAnnotations()
-	assert.NotEmpty(t, annot)
-	expectedConfig := `{"roles":null,"username":"test-user"}`
-	assert.Equal(t, expectedConfig, annot[customresource.AnnotationLastSkippedConfiguration])
-}
-
 func TestIsResourceManagedByOperator(t *testing.T) {
 	testCases := []struct {
 		title         string
@@ -198,4 +188,201 @@ func TestIsResourceManagedByOperator(t *testing.T) {
 			assert.Equal(t, tc.expectManaged, managed)
 		})
 	}
+}
+
+func TestPatchLastConfigApplied(t *testing.T) {
+	ctx := context.Background()
+	scheme := runtime.NewScheme()
+	utilruntime.Must(akov2.AddToScheme(scheme))
+	for _, tc := range []struct {
+		title  string
+		object *akov2.AtlasProject
+		spec   *akov2.AtlasProjectSpec
+	}{
+		{
+			title: "spec without changes is a noop",
+			object: &akov2.AtlasProject{
+				TypeMeta:   metav1.TypeMeta{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com"},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns", Annotations: map[string]string{}},
+				Spec: akov2.AtlasProjectSpec{
+					Name:                "atlas-project-name",
+					ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
+					CustomRoles:         []akov2.CustomRole{{}},
+					ProjectIPAccessList: []project.IPAccessList{{}},
+					PrivateEndpoints:    []akov2.PrivateEndpoint{{}},
+					NetworkPeers:        []akov2.NetworkPeer{{}},
+					Teams:               []akov2.Team{{}},
+				},
+				Status: status.AtlasProjectStatus{ID: "some-id"},
+			},
+			spec: &akov2.AtlasProjectSpec{ // same as object's spec, no changes
+				Name:                "atlas-project-name",
+				ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
+				CustomRoles:         []akov2.CustomRole{{}},
+				ProjectIPAccessList: []project.IPAccessList{{}},
+				PrivateEndpoints:    []akov2.PrivateEndpoint{{}},
+				NetworkPeers:        []akov2.NetworkPeer{{}},
+				Teams:               []akov2.Team{{}},
+			},
+		},
+
+		{
+			title: "cleared spec is applied with no other changes",
+			object: &akov2.AtlasProject{
+				TypeMeta:   metav1.TypeMeta{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com"},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns", Annotations: map[string]string{}},
+				Spec: akov2.AtlasProjectSpec{
+					Name:                "atlas-project-name",
+					ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
+					CustomRoles:         []akov2.CustomRole{{}},
+					ProjectIPAccessList: []project.IPAccessList{{}},
+					PrivateEndpoints:    []akov2.PrivateEndpoint{{}},
+					NetworkPeers:        []akov2.NetworkPeer{{}},
+					Teams:               []akov2.Team{{}},
+				},
+				Status: status.AtlasProjectStatus{ID: "some-id"},
+			},
+			spec: &akov2.AtlasProjectSpec{ // clear applied
+				Name:             "atlas-project-name",
+				ConnectionSecret: &common.ResourceRefNamespaced{Name: "secret-name"},
+				Teams:            []akov2.Team{{}},
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			k8sClient := fake.NewClientBuilder().WithObjects(tc.object).WithScheme(scheme).Build()
+
+			require.NoError(t, customresource.PatchLastConfigApplied(ctx, k8sClient, tc.object, tc.spec))
+
+			result := akov2.AtlasProject{}
+			require.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(tc.object), &result))
+
+			resultSpec, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](&result)
+			require.NoError(t, err)
+			assert.Equal(t, tc.spec, resultSpec)
+
+			want := tc.object
+			assert.Equal(t, clearProjectToCompare(want), clearProjectToCompare(&result))
+		})
+	}
+}
+
+func clearProjectToCompare(prj *akov2.AtlasProject) *akov2.AtlasProject {
+	copy := prj.DeepCopy()
+	// ignore the resourceVersion and the last applied config, compared separately
+	delete(copy.Annotations, customresource.AnnotationLastAppliedConfiguration)
+	copy.ResourceVersion = ""
+	return copy
+}
+
+func TestPatchLastConfigAppliedErrors(t *testing.T) {
+	ctx := context.Background()
+	scheme := runtime.NewScheme()
+	utilruntime.Must(akov2.AddToScheme(scheme))
+	for _, tc := range []struct {
+		title        string
+		object       *akov2.AtlasProject
+		spec         *struct{}
+		wantErrorMsg string
+	}{
+		{
+			title:        "nil spec fails",
+			object:       &akov2.AtlasProject{},
+			spec:         nil,
+			wantErrorMsg: "spec is nil",
+		},
+		{
+			title:        "empty struct cannot be patched",
+			object:       &akov2.AtlasProject{},
+			spec:         &struct{}{},
+			wantErrorMsg: "failed to patch resource:  \"\" is invalid: metadata.name: Required value: name is required",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			k8sClient := fake.NewClientBuilder().WithObjects(tc.object).WithScheme(scheme).Build()
+
+			err := customresource.PatchLastConfigApplied(ctx, k8sClient, tc.object, tc.spec)
+			assert.ErrorContains(t, err, tc.wantErrorMsg)
+		})
+	}
+}
+
+func TestParseLastConfigApplied(t *testing.T) {
+	for _, tc := range []struct {
+		title        string
+		object       *akov2.AtlasProject
+		want         *akov2.AtlasProjectSpec
+		wantErrorMsg string
+	}{
+		{
+			title:  "empty project without annotations renders nothing",
+			object: &akov2.AtlasProject{},
+		},
+		{
+			title: "broken JSON in annotation renders error",
+			object: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: "bad-json",
+					},
+				},
+			},
+			wantErrorMsg: "error parsing JSON annotation value into a v1.AtlasProjectSpec",
+		},
+		{
+			title: "proper but empty JSON renders empty spec",
+			object: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: "{}",
+					},
+				},
+			},
+			want: &akov2.AtlasProjectSpec{},
+		},
+		{
+			title: "sample JSON spec renders original",
+			object: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: jsonize(
+							akov2.AtlasProjectSpec{
+								Name:                "atlas-project-name",
+								ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
+								CustomRoles:         []akov2.CustomRole{{}},
+								ProjectIPAccessList: []project.IPAccessList{{}},
+								PrivateEndpoints:    []akov2.PrivateEndpoint{{}},
+								NetworkPeers:        []akov2.NetworkPeer{{}},
+								Teams:               []akov2.Team{{}},
+							}),
+					},
+				},
+			},
+			want: &akov2.AtlasProjectSpec{
+				Name:                "atlas-project-name",
+				ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
+				CustomRoles:         []akov2.CustomRole{{}},
+				ProjectIPAccessList: []project.IPAccessList{{}},
+				PrivateEndpoints:    []akov2.PrivateEndpoint{{}},
+				NetworkPeers:        []akov2.NetworkPeer{{}},
+				Teams:               []akov2.Team{{}},
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			spec, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](tc.object)
+			if tc.wantErrorMsg != "" {
+				assert.ErrorContains(t, err, tc.wantErrorMsg)
+			}
+			assert.Equal(t, tc.want, spec)
+		})
+	}
+}
+
+func jsonize(obj any) string {
+	js, err := json.Marshal(obj)
+	if err != nil {
+		return err.Error()
+	}
+	return string(js)
 }
