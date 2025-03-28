@@ -596,7 +596,6 @@ func hasManagedPrivateEndpoints(specPEs []akov2.PrivateEndpoint, atlasPEs []atla
 		}
 	}
 
-	//b := set.DeprecatedDifference(atlasPEs, specPEs)
 	// if any of the PE in atlas is specified in the spec, return true
 	a := set.DeprecatedIntersection(specPEs, atlasPEs)
 	if len(specPEs) > 0 && len(a) > 0 {
