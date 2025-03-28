@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -13,6 +15,7 @@ import (
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -215,41 +218,81 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 		atlasPEids       []string
 		wantRemoved      []string
 		wantResult       workflow.Result
+		conditions       []api.Condition
 	}{
 		{
-			title:            "no last applied no removal in Atlas",
+			title:            "empty last applied, empty spec, two entries in atlas: shouldn't remove entries",
 			lastAppliedPEids: []string{},
 			specPEids:        []string{},
 			atlasPEids:       []string{"pe1", "pe2"},
 			wantRemoved:      []string{},
 			wantResult:       workflow.OK(),
+			conditions:       []api.Condition{},
 		},
 		{
-			title:            "removed from last applied removes from Atlas",
+			title:            "empty last applied, a entry in spec, two entries in atlas: shouldn't remove missing entry",
+			lastAppliedPEids: []string{},
+			specPEids:        []string{"pe1"},
+			atlasPEids:       []string{"pe1", "pe2"},
+			wantRemoved:      []string{},
+			wantResult:       workflow.OK().WithMessage("Interface Private Endpoint awaits configuration"),
+			conditions: []api.Condition{
+				api.TrueCondition(api.PrivateEndpointServiceReadyType).
+					WithMessageRegexp("Interface Private Endpoint awaits configuration"),
+			},
+		},
+		{
+			title:            "empty last applied, one entry in spec, empty atlas: no remove action",
+			lastAppliedPEids: []string{},
+			specPEids:        []string{"pe1"},
+			atlasPEids:       []string{},
+			wantRemoved:      []string{},
+			wantResult:       notReadyServiceResult,
+			conditions: []api.Condition{
+				api.FalseCondition(api.PrivateEndpointServiceReadyType).
+					WithReason(string(workflow.ProjectPEServiceIsNotReadyInAtlas)).
+					WithMessageRegexp("Private Endpoint Service is not ready"),
+			},
+		},
+		{
+			title:            "two entries in last applied, one entry in spec, two entries in atlas: should remove one entry",
 			lastAppliedPEids: []string{"pe1", "pe2"},
 			specPEids:        []string{"pe1"},
 			atlasPEids:       []string{"pe1", "pe2"},
 			wantRemoved:      []string{"pe2"},
 			wantResult: workflow.InProgress(
 				workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint is deleting"),
+			conditions: []api.Condition{
+				api.FalseCondition(api.PrivateEndpointServiceReadyType).
+					WithReason(string(workflow.ProjectPEServiceIsNotReadyInAtlas)).
+					WithMessageRegexp("Private Endpoint is deleting"),
+			},
 		},
 		{
-			title:            "removed all from last applied removes all from Atlas",
+			title:            "two entries in last applied, empty spec, two entries in atlas: should remove entries",
 			lastAppliedPEids: []string{"pe1", "pe2"},
 			specPEids:        []string{},
 			atlasPEids:       []string{"pe1", "pe2"},
 			wantRemoved:      []string{"pe1", "pe2"},
 			wantResult: workflow.InProgress(
 				workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint is deleting"),
+			conditions: []api.Condition{
+				api.FalseCondition(api.PrivateEndpointServiceReadyType).
+					WithReason(string(workflow.ProjectPEServiceIsNotReadyInAtlas)).
+					WithMessageRegexp("Private Endpoint is deleting"),
+			},
 		},
 		{
-			title:            "not in last applied not removed from Atlas",
+			title:            "an entry in last applied, an entry in spec, two entries in atlas: shouldn't remove an entry",
 			lastAppliedPEids: []string{"pe1"},
 			specPEids:        []string{"pe1"},
 			atlasPEids:       []string{"pe1", "pe2"},
 			wantRemoved:      []string{},
-			wantResult: workflow.InProgress(
-				workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready"),
+			wantResult:       workflow.OK().WithMessage("Interface Private Endpoint awaits configuration"),
+			conditions: []api.Condition{
+				api.TrueCondition(api.PrivateEndpointServiceReadyType).
+					WithMessageRegexp("Interface Private Endpoint awaits configuration"),
+			},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -279,20 +322,18 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 
 			removals := len(tc.wantRemoved)
 			if removals > 0 {
-				privateEndpointsAPI.EXPECT().DeletePrivateEndpointServiceWithParams(
-					mock.Anything, mock.Anything,
-				).Return(admin.DeletePrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Times(removals)
+				privateEndpointsAPI.EXPECT().DeletePrivateEndpointServiceWithParams(mock.Anything, mock.Anything).
+					Return(admin.DeletePrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Times(removals)
 				privateEndpointsAPI.EXPECT().DeletePrivateEndpointServiceExecute(
 					mock.AnythingOfType("admin.DeletePrivateEndpointServiceApiRequest")).Return(
 					nil, nil, nil,
 				).Times(removals)
 			}
-			privateEndpointsAPI.EXPECT().CreatePrivateEndpointWithParams(
-				mock.Anything, mock.Anything,
-			).Return(admin.CreatePrivateEndpointApiRequest{ApiService: privateEndpointsAPI}).Maybe()
-			privateEndpointsAPI.EXPECT().CreatePrivateEndpointExecute(
-				mock.AnythingOfType("admin.CreatePrivateEndpointApiRequest")).Return(
-				nil, nil, nil,
+			privateEndpointsAPI.EXPECT().CreatePrivateEndpointService(mock.Anything, mock.Anything, mock.Anything).
+				Return(admin.CreatePrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Maybe()
+			privateEndpointsAPI.EXPECT().CreatePrivateEndpointServiceExecute(
+				mock.AnythingOfType("admin.CreatePrivateEndpointServiceApiRequest")).Return(
+				&admin.EndpointService{CloudProvider: "AWS", RegionName: pointer.MakePtr("fake-region-pe1")}, nil, nil,
 			).Maybe()
 
 			workflowCtx := workflow.Context{
@@ -307,6 +348,19 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 
 			result := ensurePrivateEndpoint(&workflowCtx, prj)
 			require.Equal(t, tc.wantResult, result)
+			t.Log(cmp.Diff(
+				tc.conditions,
+				workflowCtx.Conditions(),
+				cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+			))
+			assert.True(
+				t,
+				cmp.Equal(
+					tc.conditions,
+					workflowCtx.Conditions(),
+					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+				),
+			)
 		})
 	}
 }
@@ -328,7 +382,6 @@ func synthesizePEs(peIDs []string) []akov2.PrivateEndpoint {
 	for _, id := range peIDs {
 		pes = append(pes, akov2.PrivateEndpoint{
 			Provider: "AWS",
-			ID:       id,
 			Region:   fmt.Sprintf("fake-region-%s", id),
 		})
 	}
@@ -340,7 +393,7 @@ func synthesizeAtlasPEs(peIDs []string) []admin.EndpointService {
 	for _, id := range peIDs {
 		atlasPEs = append(atlasPEs, admin.EndpointService{
 			CloudProvider: "AWS",
-			Id:            pointer.MakePtr(id),
+			Id:            pointer.MakePtr(id + "-id"),
 			RegionName:    pointer.MakePtr(fmt.Sprintf("fake-region-%s", id)),
 			Status:        pointer.MakePtr("AVAILABLE"),
 		})
