@@ -590,10 +590,18 @@ func mapLastAppliedPrivateEndpoint(atlasProject *akov2.AtlasProject) (map[string
 
 func hasManagedPrivateEndpoints(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE, lastAppliedPEs map[string]akov2.PrivateEndpoint) bool {
 	for _, pe := range atlasPEs {
+		// if any of the PE in atlas was previously managed, return true
 		if _, ok := lastAppliedPEs[pe.Identifier().(string)]; ok {
 			return true
 		}
 	}
 
-	return len(set.DeprecatedDifference(specPEs, atlasPEs)) == 0
+	// if any of the PE in atlas is specified in the spec, return true
+	a := set.DeprecatedIntersection(specPEs, atlasPEs)
+	if len(specPEs) > 0 && len(a) > 0 {
+		return true
+	}
+
+	// if there are not managed or previously managed entries, return false
+	return false
 }
