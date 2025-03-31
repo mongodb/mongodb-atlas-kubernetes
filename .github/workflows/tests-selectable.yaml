@@ -83,7 +83,7 @@ jobs:
           E2E_LABELS: ${{ env.e2e_labels }}
           USE_JSON: true
         run: |
-          make build-labels
+          make compute-labels
           ./bin/ginkgo-labels > result.json
           echo "Int tests to execute $(cat result.json | jq -c .int)"
           echo "E2E tests to execute $(cat result.json | jq -c .e2e)"
@@ -373,7 +373,7 @@ jobs:
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
         run: devbox run -- ./scripts/launch-ci-e2e.sh
-        
+
 #        run: |
 #          cd ./test/e2e
 #          ginkgo --label-filter="${{ matrix.test }}" -r --fail-fast
