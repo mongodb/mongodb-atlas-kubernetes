@@ -3,7 +3,7 @@
     "yq-go@latest",
     "kubebuilder@4.1.1",
     "jq@latest",
-    "path:flakes/go",
+    "go@1.24",
     "gotests@latest",
     "act@latest",
     "kubectl@latest",
