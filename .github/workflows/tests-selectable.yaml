@@ -232,10 +232,12 @@ jobs:
 
   run-integration-tests:
     needs: detect-tests
-    if: ${{ fromJSON(needs.detect-tests.outputs.int_matrix) != '[]' }}
+    if: ${{ needs.detect-tests.outputs.int_matrix != '' && fromJSON(needs.detect-tests.outputs.int_matrix) != '[]' }}
     strategy:
+      fail-fast: false
       matrix:
         test: ${{ fromJSON(needs.detect-tests.outputs.int_matrix) }}
+        nodes: [12]
     runs-on: ubuntu-latest
     name: "integration: ${{ matrix.test }}"
     steps:
@@ -265,8 +267,9 @@ jobs:
 
   run-e2e-tests:
     needs: [detect-tests, prepare-e2e, prepare-e2e-bundle]
-    if: ${{ fromJSON(needs.detect-tests.outputs.e2e_matrix) != '[]' }}
+    if: ${{ needs.detect-tests.outputs.e2e_matrix != '' && fromJSON(needs.detect-tests.outputs.e2e_matrix) != '[]' }}
     strategy:
+      fail-fast: false
       matrix:
         test: ${{ fromJSON(needs.detect-tests.outputs.e2e_matrix) }}
         k8s_version: ${{ fromJSON(needs.compute.outputs.test_matrix) }}
