@@ -151,6 +151,12 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
+
+.PHONY: build-labels:
+build-labels:
+	mkdir -p bin
+	go build -o bin/ginkgo-labels tools/ginkgo-labels/main.go
+
 .PHONY: build-licenses.csv
 build-licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
