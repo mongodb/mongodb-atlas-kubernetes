@@ -262,7 +262,9 @@ jobs:
           GO111MODULE: on
           GINKGO_EDITOR_INTEGRATION: "true"
         run: |
-          devbox run -- 'make ${{ matrix.target }}'
+          cd ./test/int
+          ginkgo --label-filter="${{ matrix.test }}" -r --fail-fast
+#          devbox run -- 'make ${{ matrix.target }}'
 
   run-e2e-tests:
     needs: [detect-tests, prepare-e2e, prepare-e2e-bundle]
