@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"k8s.io/utils/ptr"
 	"log"
 	"net/http"
 	"strconv"
@@ -158,6 +159,35 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 		statusSchemaRef = anyEntry(response.Value.Content, nil).Schema
 		break
 	}
+
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["status"] = apiextensions.JSONSchemaProps{
+		Type: "object",
+		Properties: map[string]apiextensions.JSONSchemaProps{
+			"conditions": {
+				Type:        "array",
+				Description: "Represents the latest available observations of a resource's current state.",
+				Items: &apiextensions.JSONSchemaPropsOrArray{
+					Schema: &apiextensions.JSONSchemaProps{
+						Type:     "object",
+						Required: []string{"type", "status"},
+						Properties: map[string]apiextensions.JSONSchemaProps{
+							"type":               {Type: "string", Description: "Type of condition."},
+							"status":             {Type: "string", Description: "Status of the condition, one of True, False, Unknown."},
+							"observedGeneration": {Type: "integer", Description: "observedGeneration represents the .metadata.generation that the condition was set based upon."},
+							"message":            {Type: "string", Description: "A human readable message indicating details about the transition."},
+							"reason":             {Type: "string", Description: "The reason for the condition's last transition."},
+							"lastTransitionTime": {Type: "string", Format: "date-time", Description: "Last time the condition transitioned from one status to another."},
+						},
+					},
+				},
+				XListMapKeys: []string{
+					"type",
+				},
+				XListType: ptr.To("map"),
+			},
+		},
+	}
+
 	if statusSchemaRef != nil {
 		statusSchema := FilterSchemaProps("", true, statusSchemaRef, func(key string, schemaRef *openapi3.SchemaRef) bool {
 			if key == "links" {
@@ -167,16 +197,9 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 		})
 		statusProps := g.schemaPropsToJSONProps(statusSchema)
 		if statusProps != nil {
-			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"] = apiextensions.JSONSchemaProps{
-				Type: "object",
-				Properties: map[string]apiextensions.JSONSchemaProps{
-					g.AtlasVersion: *statusProps,
-				},
-			}
+			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[g.AtlasVersion] = *statusProps
 		}
 	}
-
-	// add observedGeneration to status
 
 	var params apiextensions.JSONSchemaProps
 	params.Type = "object"

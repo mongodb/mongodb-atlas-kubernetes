@@ -1,182 +1,134 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: foo
----
 ## AKO Project
-apiVersion: atlas.mongodb.com/v1
-kind: AtlasProject
-metadata:
-  name: foo
-  namespace: foo
-spec:
-  name: project-curated
-  regionUsageRestrictions: NONE
-  withDefaultAlertsSettings: true
-  customRoles:
-    - inheritedRoles:
-        - database: admin
-          name: backup
-      name: BackupAdmin
-    - inheritedRoles:
-        - database: admin
-          name: enableSharding
-      name: NewAdmin
-  projectIpAccessList:
-    - cidrBlock: 0.0.0.0/1
-      comment: Everyone has access. For the test purpose only.
-    - cidrBlock: 128.0.0.0/1
-      comment: Everyone has access. For the test purpose only.
+# apiVersion: atlas.mongodb.com/v1
+# kind: AtlasProject
+# metadata:
+#   name: foo
+#   namespace: foo
+# spec:
+#   name: project-curated
+#   regionUsageRestrictions: NONE
+#   withDefaultAlertsSettings: true
+#   customRoles:
+#     - inheritedRoles:
+#         - database: admin
+#           name: backup
+#       name: BackupAdmin
+#     - inheritedRoles:
+#         - database: admin
+#           name: enableSharding
+#       name: NewAdmin
+#   projectIpAccessList:
+#     - cidrBlock: 0.0.0.0/1
+#       comment: Everyone has access. For the test purpose only.
+#     - cidrBlock: 128.0.0.0/1
+#       comment: Everyone has access. For the test purpose only.
 ---
 apiVersion: atlas.generated.mongodb.com/v1
 kind: Group
 metadata:
-  name: foo
-  namespace: foo
+  name: project1
+  namespace: default
 spec:
   v20231115:
     entry:
-      name: "project-curated"
+      name: "project1"
       orgId: "655dfe3e401cb80283fef781"
       regionUsageRestrictions: "NONE"
       withDefaultAlertsSettings: true
-status:
-  v20231115:
-    clusterCount: 0
-    created: "2025-03-11T12:42:19Z"
-    id: "67d02fa9a2ae5373a4bb106e"
 ---
-apiVersion: atlas.generated.mongodb.com/v1
-kind: NetworkPermissionEntry
-metadata:
-  name: foo
-  namespace: foo
-spec:
-  v20231115:
-    parameters:
-      groupId: "67d02fa9a2ae5373a4bb106e"
-    entry:
-    - cidrBlock: "0.0.0.0/1"
-      comment: "Everyone has access. For the test purpose only."
-    - cidrBlock: "128.0.0.0/1"
-      comment: "Everyone has access. For the test purpose only."
-status:
-  v20231115:
-    results:
-      - groupId: "67d02fa9a2ae5373a4bb106e"
-      - groupId: "67d02fa9a2ae5373a4bb106e"
----
-apiVersion: atlas.generated.mongodb.com/v1
-kind: UserCustomDBRole
-metadata:
-  name: new-admin
-  namespace: foo
-spec:
-  v20231115:
-    parameters:
-      groupId: "67d02fa9a2ae5373a4bb106e"
-    entry:
-      inheritedRoles:
-        - db: "admin"
-          role: "enableSharding"
-      roleName: "NewAdmin"
----
-apiVersion: atlas.generated.mongodb.com/v1
-kind: UserCustomDBRole
-metadata:
-  name: backup-admin
-  namespace: foo
-spec:
-  v20231115:
-    parameters:
-      groupId: "67d02fa9a2ae5373a4bb106e"
-    entry:
-      inheritedRoles:
-        - db: "admin"
-          role: "backup"
-      roleName: "BackupAdmin"
----
+# apiVersion: atlas.generated.mongodb.com/v1
+# kind: FlexCluster
+# metadata:
+#   name: flex
+#   namespace: foo
+# spec:
+#   v20241113:
+#     parameters:
+#       groupId: "67e7bdb269f4d26772d3d97b"
+#     entry:
+#       name: "flex"
+#       providerSettings:
+#         backingProviderName: "AWS"
+#         regionName: "US_EAST_1"
+#       terminationProtectionEnabled: false
+# ---
+# apiVersion: atlas.generated.mongodb.com/v1
+# kind: NetworkPermissionEntry
+# metadata:
+#   name: foo
+#   namespace: foo
+# spec:
+#   v20231115:
+#     parameters:
+#       groupId: "67e7bdb269f4d26772d3d97b"
+#     entry:
+#     - cidrBlock: "0.0.0.0/1"
+#       comment: "Everyone has access. For the test purpose only."
+#     - cidrBlock: "128.0.0.0/1"
+#       comment: "Everyone has access. For the test purpose only."
+# # ---
+# # apiVersion: atlas.generated.mongodb.com/v1
+# # kind: UserCustomDBRole
+# # metadata:
+# #   name: new-admin
+# #   namespace: foo
+# # spec:
+# #   v20231115:
+# #     parameters:
+# #       groupId: "67d02fa9a2ae5373a4bb106e"
+# #     entry:
+# #       inheritedRoles:
+# #         - db: "admin"
+# #           role: "enableSharding"
+# #       roleName: "NewAdmin"
+# # ---
+# # apiVersion: atlas.generated.mongodb.com/v1
+# # kind: UserCustomDBRole
+# # metadata:
+# #   name: backup-admin
+# #   namespace: foo
+# # spec:
+# #   v20231115:
+# #     parameters:
+# #       groupId: "67d02fa9a2ae5373a4bb106e"
+# #     entry:
+# #       inheritedRoles:
+# #         - db: "admin"
+# #           role: "backup"
+# #       roleName: "BackupAdmin"
+# ---
 apiVersion: atlas.generated.mongodb.com/v1
 kind: Cluster
 metadata:
-  name: new-admin
-  namespace: foo
+ name: new-admin
+ namespace: foo
 spec:
-  v20231115:
-    parameters:
-      groupId: "67d02fa9a2ae5373a4bb106e"
-    entry:
-      backupEnabled: false
-      clusterType: "REPLICASET"
-      encryptionAtRestProvider: "NONE"
-      mongoDBMajorVersion: "7.0"
-      name: "search-test"
-      paused: false
-      pitEnabled: false
-      replicationSpecs:
-        - numShards: 1
-          regionConfigs:
-            - electableSpecs:
-                ebsVolumeType: "STANDARD"
-                instanceSize: "M10"
-                nodeCount: 3
-              priority: 7
-              providerName: "AWS"
-              regionName: "US_EAST_1"
-              autoScaling:
-                compute:
-                  enabled: false
-                diskGB:
-                  enabled: false
-          zoneName: "Zone 1"
-      rootCertType: "ISRGROOTX1"
-      tags: []
-      versionReleaseSystem: "LTS"
-status:
-  v20231115:
-    connectionStrings:
-      standard: "mongodb://search-test-shard-00-00.i01e1.mongodb-qa.net:27017,search-test-shard-00-01.i01e1.mongodb-qa.net:27017,search-test-shard-00-02.i01e1.mongodb-qa.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-6m3rjr-shard-0"
-      standardSrv: "mongodb+srv://search-test.i01e1.mongodb-qa.net"
-    createDate: "2025-03-13T14:16:32Z"
-    groupId: "67d2e87b3bea296a504c0137"
-    id: "67d2e8c03bea296a504ca0d3"
-    mongoDBVersion: "7.0.17"
-    replicationSpecs:
-      - id: "67d2e8c03bea296a504ca0be"
-    stateName: "IDLE"
----
-apiVersion: atlas.generated.mongodb.com/v1
-kind: FlexCluster
-metadata:
-  name: flex
-  namespace: foo
-spec:
-  v20241113:
-    parameters:
-      groupId: "67d2e87b3bea296a504c0137"
-    entry:
-      name: "flex"
-      providerSettings:
-        backingProviderName: "AWS"
-        regionName: "US_EAST_1"
-      terminationProtectionEnabled: false
-status:
-  v20241113:
-    backupSettings:
-      enabled: true
-    clusterType: "REPLICASET"
-    connectionStrings:
-      standard: "mongodb://ac-amazlq0-shard-00-00.iobg3ep.mongodb-qa.net:27017,ac-amazlq0-shard-00-01.iobg3ep.mongodb-qa.net:27017,ac-amazlq0-shard-00-02.iobg3ep.mongodb-qa.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-69irss-shard-0"
-      standardSrv: "mongodb+srv://flex.iobg3ep.mongodb-qa.net"
-    createDate: "2025-03-13T15:13:39Z"
-    groupId: "67d2e87b3bea296a504c0137"
-    id: "67d2f6238badda73b24d4252"
-    mongoDBVersion: "8.0.5"
-    name: "flex"
-    providerSettings:
-      backingProviderName: "AWS"
-      diskSizeGB: 5.0
-      providerName: "FLEX"
-      regionName: "US_EAST_1"
-    stateName: "IDLE"
-    versionReleaseSystem: "LTS"
+ v20231115:
+   parameters:
+     groupId: "67eba33e19737947a3db382b"
+   entry:
+     backupEnabled: false
+     clusterType: "REPLICASET"
+     encryptionAtRestProvider: "NONE"
+     mongoDBMajorVersion: "7.0"
+     name: "search-test"
+     paused: false
+     pitEnabled: false
+     replicationSpecs:
+       - numShards: 1
+         regionConfigs:
+           - electableSpecs:
+               ebsVolumeType: "STANDARD"
+               instanceSize: "M10"
+               nodeCount: 3
+             priority: 7
+             providerName: "AWS"
+             regionName: "US_EAST_1"
+             autoScaling:
+               compute:
+                 enabled: false
+               diskGB:
+                 enabled: false
+         zoneName: "Zone 1"
+     rootCertType: "ISRGROOTX1"
+     versionReleaseSystem: "LTS"
