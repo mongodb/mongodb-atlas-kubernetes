@@ -36,7 +36,7 @@ func MatchWildcards(labels []string, testLabels []string, testType string) []str
 		}
 	}
 
-	var result []string
+	result := make([]string, 0, len(matchedLabels))
 	for key := range matchedLabels {
 		result = append(result, key)
 	}
@@ -48,7 +48,7 @@ func main() {
 	envPRLabels := os.Getenv("PR_LABELS")
 	envIntLabels := os.Getenv("INT_LABELS")
 	envE2ELabels := os.Getenv("E2E_LABELS")
-	envUseJson := os.Getenv("USE_JSON")
+	envUseJSON := os.Getenv("USE_JSON")
 
 	var labels []string
 	var intLabels []string
@@ -73,7 +73,7 @@ func main() {
 	matchedIntTestsJSON, _ := json.Marshal(matchedIntTests)
 	matchedE2ETestsJSON, _ := json.Marshal(matchedE2ETests)
 
-	if envUseJson != "" {
+	if envUseJSON != "" {
 		res := map[string]any{}
 		res["int"] = matchedIntTests
 		res["e2e"] = matchedE2ETests
