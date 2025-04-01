@@ -232,7 +232,7 @@ jobs:
 
   run-integration-tests:
     needs: detect-tests
-    if: ${{ needs.detect-tests.outputs.int_matrix != null && fromJSON(needs.detect-tests.outputs.int_matrix) != '[]' }}
+    if: ${{ needs.detect-tests.outputs.int_matrix != 'null' && fromJSON(needs.detect-tests.outputs.int_matrix) != '[]' }}
     strategy:
       fail-fast: false
       matrix:
