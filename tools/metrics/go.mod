@@ -1,6 +1,6 @@
 module tools/metrics
 
-go 1.23.6
+go 1.24
 
 require (
 	github.com/google/go-github/v57 v57.0.0
