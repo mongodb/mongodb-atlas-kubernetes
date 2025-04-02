@@ -47,8 +47,6 @@ var _ api.AtlasCustomResource = &AtlasBackupPolicy{}
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 //
 // AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
-//
-//nolint:stylecheck
 type AtlasBackupPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -128,8 +128,6 @@ var _ api.AtlasCustomResource = &AtlasFederatedAuth{}
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 //
 // AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
-//
-//nolint:stylecheck
 type AtlasFederatedAuth struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

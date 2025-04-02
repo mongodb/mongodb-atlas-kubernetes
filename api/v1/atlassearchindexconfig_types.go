@@ -19,8 +19,6 @@ func init() {
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 //
 // AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
-//
-//nolint:stylecheck
 type AtlasSearchIndexConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

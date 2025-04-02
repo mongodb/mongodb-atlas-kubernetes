@@ -51,7 +51,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-//nolint:stylecheck
 var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authentication is disabled")
 
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
