@@ -24,6 +24,9 @@ linters:
     - unused
     - whitespace
   settings:
+    staticcheck:
+      checks:
+        - -QF1008 # produces false positives
     depguard:
       rules:
         all:
