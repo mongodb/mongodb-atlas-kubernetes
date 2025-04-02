@@ -276,7 +276,7 @@ jobs:
       fail-fast: false
       matrix:
         test: ${{ fromJSON(needs.detect-tests.outputs.e2e_matrix) }}
-        k8s_version: ${{ fromJSON(needs.compute.outputs.test_matrix) }}
+        k8s: ${{ fromJSON(needs.compute.outputs.test_matrix) }}
     runs-on: ubuntu-latest
     name: "e2e: ${{ matrix.test }}"
     steps:
