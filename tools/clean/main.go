@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
 	"tools/clean/atlas"
 	"tools/clean/provider"
 
@@ -17,21 +18,21 @@ func main() {
 
 	gcpCleaner, err := provider.NewGCPCleaner(ctx)
 	if err != nil {
-		fmt.Println(text.FgRed.Sprintf(err.Error()))
+		fmt.Println(text.FgRed.Sprintf("%v", err.Error()))
 
 		return
 	}
 
 	azureCleaner, err := provider.NewAzureCleaner()
 	if err != nil {
-		fmt.Println(text.FgRed.Sprintf(err.Error()))
+		fmt.Println(text.FgRed.Sprintf("%v", err.Error()))
 
 		return
 	}
 
 	c, err := atlas.NewCleaner(awsCleaner, gcpCleaner, azureCleaner)
 	if err != nil {
-		fmt.Println(text.FgRed.Sprintf(err.Error()))
+		fmt.Println(text.FgRed.Sprintf("%v", err.Error()))
 
 		return
 	}
@@ -39,13 +40,13 @@ func main() {
 	lifetimeHours, err := strconv.Atoi(os.Getenv("PROJECT_LIFETIME"))
 	if err != nil {
 		err = fmt.Errorf("error parsing PROJECT_LIFETIME environment variable: %w", err)
-		fmt.Println(text.FgRed.Sprintf(err.Error()))
+		fmt.Println(text.FgRed.Sprintf("%v", err.Error()))
 
 		return
 	}
 
 	err = c.Clean(ctx, lifetimeHours)
 	if err != nil {
-		fmt.Println(text.FgRed.Sprintf(err.Error()))
+		fmt.Println(text.FgRed.Sprintf("%v", err.Error()))
 	}
 }

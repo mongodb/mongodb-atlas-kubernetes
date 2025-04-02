@@ -1,116 +1,108 @@
+version: "2"
 linters:
-  disable-all: true
+  default: none
   enable:
-    #- bodyclose
+    - copyloopvar
     - depguard
     - dogsled
     - dupl
     - errcheck
     - errorlint
-    - copyloopvar
-    #- gocritic
     - gocyclo
-    - goimports
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
-    - gofmt
+    - importas
     - ineffassign
     - misspell
     - noctx
     - prealloc
     - rowserrcheck
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
-    - importas
-
-linters-settings:
-  misspell:
-    locale: US
-  goimports:
-    local-prefixes: github.com/mongodb/mongodb-atlas-kubernetes/v2
-  depguard:
+  settings:
+    staticcheck:
+      checks:
+        - -QF1008 # produces false positives
+    depguard:
+      rules:
+        all:
+          deny:
+            - pkg: io/ioutil
+              desc: io/ioutil package has been deprecated
+    misspell:
+      locale: US
+  exclusions:
+    generated: lax
     rules:
-      all:
-        deny:
-          - pkg: io/ioutil
-            desc: 'io/ioutil package has been deprecated'
-
+      - linters:
+          - errcheck
+          - gochecknoglobals
+          - gocyclo
+          - nlreturn
+          - wrapcheck
+        path: test
+      - linters:
+          - gochecknoglobals
+          - wrapcheck
+        path: cmd/manager/main.go
+      - linters:
+          - noctx
+          - staticcheck
+        path: test/e2e
+      - linters:
+          - staticcheck
+        path: test/helper
+        text: 'ST1000:|ST1001:|ST1003:'
+      - linters:
+          - noctx
+        path: test/helper/e2e/appclient
+      - linters:
+          - dupl
+          - prealloc
+          - unparam
+        path: pkg/controller
+      - linters:
+          - prealloc
+        path: pkg/controller/atlasdatabaseuser/connectionsecrets
+      - linters:
+          - staticcheck
+        path: pkg/util/testutil/
+      - path: (.+)\.go$
+        text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked
+      - path: (.+)\.go$
+        text: func name will be used as test\.Test.* by other packages, and that stutters; consider calling this
+      - path: (.+)\.go$
+        text: (possible misuse of unsafe.Pointer|should have signature)
+      - path: (.+)\.go$
+        text: Use of unsafe calls should be audited
+      - path: (.+)\.go$
+        text: Subprocess launch(ed with variable|ing should be audited)
+      - path: (.+)\.go$
+        text: (G104|G307)
+      - path: (.+)\.go$
+        text: at least one file in a package should have a package comment
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-use-default: false
-  exclude:
-    # EXC0001 errcheck: Almost all programs ignore errors on these functions and in most cases it's ok
-    - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked
-
-    # EXC0002 golint: Annoying issue about not having a comment. The rare codebase has such comments
-    # - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
-
-    # EXC0003 golint: False positive when tests are defined in package 'test'
-    - func name will be used as test\.Test.* by other packages, and that stutters; consider calling this
-
-    # EXC0004 govet: Common false positives
-    - (possible misuse of unsafe.Pointer|should have signature)
-
-    # EXC0005 staticcheck: Developers tend to write in C-style with an explicit 'break' in a 'switch', so it's ok to ignore
-    # - ineffective break statement. Did you mean to break out of the outer loop
-
-    # EXC0006 gosec: Too many false-positives on 'unsafe' usage
-    - Use of unsafe calls should be audited
-
-    # EXC0007 gosec: Too many false-positives for parametrized shell calls
-    - Subprocess launch(ed with variable|ing should be audited)
-
-    # EXC0008 gosec: Duplicated errcheck checks
-    - (G104|G307)
-
-    # EXC0009 gosec: Too many issues in popular repos
-    # - (Expect directory permissions to be 0750 or less|Expect file permissions to be 0600 or less)
-    # EXC0010 gosec: False positive is triggered by 'src, err := ioutil.ReadFile(filename)'
-    # - Potential file inclusion via variable
-    # EXC0011 stylecheck: Annoying issue about not having a comment. The rare codebase has such comments
-    # - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
-
-    - at least one file in a package should have a package comment
-
-  exclude-rules:
-    - path: test
-      linters:
-        - gocyclo
-        - gochecknoglobals
-        - wrapcheck
-        - nlreturn
-        - errcheck
-    - path: cmd/manager/main.go
-      linters:
-        - gochecknoglobals
-        - wrapcheck
-    - path: test/e2e
-      linters:
-        - stylecheck
-        - noctx
-    - path: test/helper
-      linters:
-        - stylecheck
-      text: "ST1000:|ST1001:|ST1003:"
-    - path: test/helper/e2e/appclient
-      linters:
-        - noctx
-    - path: pkg/controller
-      linters:
-        - prealloc
-        - dupl
-        - unparam
-    - path: pkg/controller/atlasdatabaseuser/connectionsecrets
-      linters:
-        - prealloc
-    - path: pkg/util/testutil/
-      linters:
-        - stylecheck
   max-issues-per-linter: 0
   max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/mongodb/mongodb-atlas-kubernetes/v2
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

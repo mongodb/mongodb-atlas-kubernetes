@@ -11,7 +11,7 @@ type CustomZoneMapping struct {
 
 // ManagedNamespace represents the information about managed namespace configuration.
 type ManagedNamespace struct {
-	Db                     string `json:"db"` //nolint:stylecheck // not changing this as is a breaking change
+	Db                     string `json:"db"` // not changing this as is a breaking change
 	Collection             string `json:"collection"`
 	CustomShardKey         string `json:"customShardKey,omitempty"`
 	NumInitialChunks       int    `json:"numInitialChunks,omitempty"`

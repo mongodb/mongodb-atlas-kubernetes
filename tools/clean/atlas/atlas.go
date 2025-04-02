@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"time"
+
 	"tools/clean/provider"
 
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -126,7 +127,7 @@ func (c *Cleaner) cleanOrphanResources(ctx context.Context, lifetimeHours int) {
 		fmt.Println(text.FgYellow.Sprintf("\t%s", skippedMsg))
 	}
 	for _, err := range errs {
-		fmt.Println(text.FgRed.Sprintf(err.Error()))
+		fmt.Println(text.FgRed.Sprintf("%v", err.Error()))
 	}
 }
 

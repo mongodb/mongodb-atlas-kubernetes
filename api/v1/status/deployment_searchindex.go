@@ -16,8 +16,6 @@ type DeploymentSearchIndexStatus struct {
 }
 
 // +k8s:deepcopy-gen=false
-//
-//nolint:stylecheck
 type IndexStatusOption func(status *DeploymentSearchIndexStatus)
 
 func NewDeploymentSearchIndexStatus(status IndexStatus, options ...IndexStatusOption) DeploymentSearchIndexStatus {
