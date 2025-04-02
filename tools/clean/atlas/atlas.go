@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 	"time"
-	"tools/clean/provider"
 
 	"github.com/jedib0t/go-pretty/v6/text"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"tools/clean/provider"
 )
 
 const (
@@ -126,7 +126,7 @@ func (c *Cleaner) cleanOrphanResources(ctx context.Context, lifetimeHours int) {
 		fmt.Println(text.FgYellow.Sprintf("\t%s", skippedMsg))
 	}
 	for _, err := range errs {
-		fmt.Println(text.FgRed.Sprintf(err.Error()))
+		fmt.Println(text.FgRed.Sprintf("%v", err.Error()))
 	}
 }
 
