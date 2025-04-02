@@ -202,6 +202,7 @@ envtest: envtest-assets
 	KUBEBUILDER_ASSETS=$(shell setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(ENVTEST_ASSETS_DIR) -p path)
 
 envtest-assets:
+	echo "Env: $(env)"
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 
 .PHONY: e2e
