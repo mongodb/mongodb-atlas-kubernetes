@@ -151,6 +151,12 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
+
+.PHONY: compute-labels
+compute-labels:
+	mkdir -p bin
+	go build -o bin/ginkgo-labels tools/compute-test-labels/main.go
+
 .PHONY: build-licenses.csv
 build-licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
@@ -196,6 +202,7 @@ envtest: envtest-assets
 	KUBEBUILDER_ASSETS=$(shell setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(ENVTEST_ASSETS_DIR) -p path)
 
 envtest-assets:
+	echo "Env: $(env)"
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 
 .PHONY: e2e
