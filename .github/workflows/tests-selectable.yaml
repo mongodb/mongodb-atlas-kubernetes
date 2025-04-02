@@ -245,19 +245,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: ${{github.event.pull_request.head.sha}}
+          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Setup GO
-        uses: actions/setup-go@v4
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.12.0
         with:
-          go-version: 1.23
-
-      - name: Install Ginkgo
-        run: go install github.com/onsi/ginkgo/v2/ginkgo@latest
-#      - name: Install devbox
-#        uses: jetify-com/devbox-install-action@v0.12.0
-#        with:
-#          enable-cache: 'true'
+          enable-cache: 'true'
 
       - name: Run integration test
         env:
@@ -269,9 +262,7 @@ jobs:
           GO111MODULE: on
           GINKGO_EDITOR_INTEGRATION: "true"
         run: |
-          cd ./test/int
-          ginkgo --label-filter="${{ matrix.test }}" -r --fail-fast
-#          devbox run -- 'make ${{ matrix.target }}'
+          devbox run -- 'make ${{ matrix.target }}'
 
   run-e2e-tests:
     needs: [detect-tests, prepare-e2e, prepare-e2e-bundle]
