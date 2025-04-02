@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"tools/clean/provider"
+
 	"github.com/jedib0t/go-pretty/v6/text"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"tools/clean/provider"
 )
 
 const (
