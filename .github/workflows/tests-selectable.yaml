@@ -1,6 +1,6 @@
 name: Tests-selectable
 
-# This a prototype for running tests based on PR labels
+# This workflow is for running tests based on PR labels
 
 on:
   pull_request:
@@ -15,11 +15,6 @@ on:
         description: 'The branch name to checkout'
         required: false
         default: 'main'
-      forked:
-        description: 'Is the PR from a forked repository'
-        type: boolean
-        required: false
-        default: false
 
 jobs:
   detect-tests:
@@ -118,21 +113,11 @@ jobs:
     env:
       REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
-      - if: ${{ inputs.forked == false }}
-        name: Check out code
+      - name: Check out code
         uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
-          fetch-depth: 0
-
-      - if: ${{ inputs.forked == true }}
-        name: Check out code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          ref: ${{github.event.pull_request.head.sha}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 0
 
       - name: Prepare tag
@@ -151,7 +136,6 @@ jobs:
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
-          forked: ${{ inputs.forked }}
 
       - name: Do preflight-check on test image
         uses: ./.github/actions/certify-openshift-images
@@ -173,21 +157,11 @@ jobs:
       GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
-      - if: ${{ inputs.forked == false }}
-        name: Check out code
+      - name: Check out code
         uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
-          fetch-depth: 0
-
-      - if: ${{ inputs.forked == true }}
-        name: Check out code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          ref: ${{github.event.pull_request.head.sha}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 0
 
       - name: Prepare tag
@@ -231,7 +205,6 @@ jobs:
           tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
-          forked: ${{ inputs.forked }}
 
   run-integration-tests:
     environment: test
@@ -370,7 +343,3 @@ jobs:
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
         run: devbox run -- ./scripts/launch-ci-e2e.sh
-
-#        run: |
-#          cd ./test/e2e
-#          ginkgo --label-filter="${{ matrix.test }}" -r --fail-fast
