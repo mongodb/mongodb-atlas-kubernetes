@@ -1,3 +1,17 @@
+/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package generator
 
 import (
@@ -70,25 +84,25 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef) *apiex
 		// ID:               schemaProps.ID,
 		// Schema:           apiextensions.JSONSchemaURL(string(schemaRef.Ref.)),
 		// Ref:              ref,
-		Description:      schemaProps.Description,
-		Type:             schemaProps.Type,
-		Format:           schemaProps.Format,
-		Title:            schemaProps.Title,
-		Maximum:          schemaProps.Max,
-		ExclusiveMaximum: schemaProps.ExclusiveMax,
-		Minimum:          schemaProps.Min,
-		ExclusiveMinimum: schemaProps.ExclusiveMin,
-		MaxLength:        castUInt64P(schemaProps.MaxLength),
-		MinLength:        castUInt64(schemaProps.MinLength),
+		Description: schemaProps.Description,
+		Type:        schemaProps.Type,
+		//Format:      schemaProps.Format,
+		Title: schemaProps.Title,
+		//Maximum:          schemaProps.Max,
+		//ExclusiveMaximum: schemaProps.ExclusiveMax,
+		//Minimum:          schemaProps.Min,
+		//ExclusiveMinimum: schemaProps.ExclusiveMin,
+		//MaxLength:        castUInt64P(schemaProps.MaxLength),
+		//MinLength:        castUInt64(schemaProps.MinLength),
 		// patterns seem to be incompatible in Atlas OpenAPI
 		//Pattern:              schemaProps.Pattern,
-		MaxItems:             castUInt64P(schemaProps.MaxItems),
-		MinItems:             castUInt64(schemaProps.MinItems),
-		UniqueItems:          false, // The field uniqueItems cannot be set to true.
-		MultipleOf:           schemaProps.MultipleOf,
-		Enum:                 enumJSON(schemaProps.Enum),
-		MaxProperties:        castUInt64P(schemaProps.MaxProps),
-		MinProperties:        castUInt64(schemaProps.MinProps),
+		//MaxItems:             castUInt64P(schemaProps.MaxItems),
+		//MinItems:             castUInt64(schemaProps.MinItems),
+		UniqueItems: false, // The field uniqueItems cannot be set to true.
+		MultipleOf:  schemaProps.MultipleOf,
+		//Enum:        enumJSON(schemaProps.Enum),
+		//MaxProperties:        castUInt64P(schemaProps.MaxProps),
+		//MinProperties:        castUInt64(schemaProps.MinProps),
 		Required:             schemaProps.Required,
 		Items:                g.schemaToJSONSchemaPropsOrArray(schemaProps.Items),
 		AllOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AllOf),

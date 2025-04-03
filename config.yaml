@@ -1,0 +1,89 @@
+kind: Config
+apiVersion: atlas2crd.mongodb.com/v1alpha1
+
+spec:
+  crd:
+    - gvk:
+        version: v1
+        kind: Group
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      mappings:
+        - majorVersion: v20231115
+          path: '/api/atlas/v2/groups'
+          verb: post
+          openAPIRef:
+            name: v20231115
+
+    - gvk:
+        version: v1
+        kind: NetworkPermissionEntry
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      mappings:
+        - majorVersion: v20231115
+          path: '/api/atlas/v2/groups/{groupId}/accessList'
+          verb: post
+          openAPIRef:
+            name: v20231115
+
+    - gvk:
+        version: v1
+        kind: Cluster
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      mappings:
+        - majorVersion: v20231115
+          path: '/api/atlas/v2/groups/{groupId}/clusters'
+          verb: post
+          openAPIRef:
+            name: v20231115
+
+    - gvk:
+        version: v1
+        kind: SearchIndex
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      mappings:
+        - majorVersion: v20231115
+          path: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/fts/indexes'
+          verb: post
+          openAPIRef:
+            name: v20231115
+
+    - gvk:
+        version: v1
+        kind: UserCustomDBRole
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      mappings:
+        - majorVersion: v20231115
+          path: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
+          verb: post
+          openAPIRef:
+            name: v20231115
+
+    - gvk:
+        version: v1
+        kind: FlexCluster
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      mappings:
+        - majorVersion: v20241113
+          path: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
+          verb: post
+          openAPIRef:
+            name: v20241113
+
+  openapi:
+    - name: v20231115
+      path: atlas-api-transformed-v20231115.yaml
+
+    - name: v20241113
+      path: atlas-api-transformed-v20241113.yaml

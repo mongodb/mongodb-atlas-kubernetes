@@ -1,18 +1,34 @@
+/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package generator
 
 import (
 	"context"
 	"fmt"
-	"k8s.io/utils/ptr"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/atlas2crd/pkg/config"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 )
 
 func anyEntry[T any](source map[string]T, defaultValue T) T {
@@ -23,38 +39,138 @@ func anyEntry[T any](source map[string]T, defaultValue T) T {
 }
 
 type Generator struct {
-	AtlasVersion string
-	AtlasPath    string
-	AtlasVerb    string
-	GVK          string
-	Categories   []string
-	Spec         *openapi3.T
+	config      v1alpha1.CRDConfig
+	definitions map[string]v1alpha1.OpenAPIDefinition
 }
 
-func NewGenerator(version, path, verb, gvk string, categories []string, spec *openapi3.T) *Generator {
+func NewGenerator(crdConfig v1alpha1.CRDConfig, definitions []v1alpha1.OpenAPIDefinition) *Generator {
+	definitionsMap := map[string]v1alpha1.OpenAPIDefinition{}
+	for _, def := range definitions {
+		definitionsMap[def.Name] = def
+	}
 	return &Generator{
-		AtlasVersion: version,
-		AtlasPath:    path,
-		AtlasVerb:    verb,
-		GVK:          gvk,
-		Categories:   categories,
-		Spec:         spec,
+		config:      crdConfig,
+		definitions: definitionsMap,
 	}
 }
 
 func (g *Generator) Generate(ctx context.Context) (*apiextensions.CustomResourceDefinition, error) {
-	var operation *openapi3.Operation
-	switch g.AtlasVerb {
-	case "post":
-		operation = g.Spec.Paths[g.AtlasPath].Post
-	default:
-		return nil, fmt.Errorf("verb %q not supported", g.AtlasVerb)
+	pluralGvk, singularGvk := guessKindToResource(g.config.GVK)
+
+	crd := &apiextensions.CustomResourceDefinition{
+		ObjectMeta: v1.ObjectMeta{
+			Name: fmt.Sprintf("%s.%s", pluralGvk.Resource, pluralGvk.Group),
+		},
+		Spec: apiextensions.CustomResourceDefinitionSpec{
+			Group: pluralGvk.Group,
+			Scope: apiextensions.NamespaceScoped,
+			Names: apiextensions.CustomResourceDefinitionNames{
+				Kind:     g.config.GVK.Kind,
+				ListKind: fmt.Sprintf("%sList", g.config.GVK.Kind),
+				Plural:   pluralGvk.Resource,
+				Singular: singularGvk.Resource,
+			},
+			Versions: []apiextensions.CustomResourceDefinitionVersion{
+				{
+					Name:    g.config.GVK.Version,
+					Served:  true,
+					Storage: true,
+				},
+			},
+			Validation: &apiextensions.CustomResourceValidation{
+				OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+					Type: "object",
+					Properties: map[string]apiextensions.JSONSchemaProps{
+						"spec": {
+							Type:       "object",
+							Properties: map[string]apiextensions.JSONSchemaProps{},
+						},
+						"status": {
+							Type:       "object",
+							Properties: map[string]apiextensions.JSONSchemaProps{},
+						},
+					},
+				},
+			},
+		},
 	}
 
-	crd, err := g.generateCustomResource(operation)
-	if err != nil {
-		return nil, err
+	for _, mapping := range g.config.Mappings {
+		def, ok := g.definitions[mapping.OpenAPIRef.Name]
+		if !ok {
+			return nil, fmt.Errorf("no OpenAPI definition named %q found", mapping.OpenAPIRef.Name)
+		}
+
+		spec, err := config.LoadOpenAPI(def.Path)
+		if err != nil {
+			return nil, fmt.Errorf("error loading spec: %w", err)
+		}
+
+		// Fix known types (ref: https://github.com/kubernetes/kubernetes/issues/62329)
+		spec.Components.Schemas["k8s.io/apimachinery/pkg/util/intstr.IntOrString"] = openapi3.NewSchemaRef("", &openapi3.Schema{
+			AnyOf: openapi3.SchemaRefs{
+				{
+					Value: openapi3.NewStringSchema(),
+				},
+				{
+					Value: openapi3.NewIntegerSchema(),
+				},
+			},
+		})
+
+		var operation *openapi3.Operation
+		switch mapping.Verb {
+		case "post":
+			pathItem, ok := spec.Paths[mapping.Path]
+			if !ok {
+				log.Printf("WARNING: OpenAPI path %q does not exist in %q\n", mapping.Path, def.Path)
+				continue
+			}
+			operation = pathItem.Post
+		default:
+			return nil, fmt.Errorf("verb %q not supported", mapping.Verb)
+		}
+
+		err = g.generateProps(crd, mapping.MajorVersion, operation)
+		if err != nil {
+			return nil, fmt.Errorf("error generating props: %w", err)
+		}
 	}
+
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties["conditions"] = apiextensions.JSONSchemaProps{
+		Type:        "array",
+		Description: "Represents the latest available observations of a resource's current state.",
+		Items: &apiextensions.JSONSchemaPropsOrArray{
+			Schema: &apiextensions.JSONSchemaProps{
+				Type:     "object",
+				Required: []string{"type", "status"},
+				Properties: map[string]apiextensions.JSONSchemaProps{
+					"type":               {Type: "string", Description: "Type of condition."},
+					"status":             {Type: "string", Description: "Status of the condition, one of True, False, Unknown."},
+					"observedGeneration": {Type: "integer", Description: "observedGeneration represents the .metadata.generation that the condition was set based upon."},
+					"message":            {Type: "string", Description: "A human readable message indicating details about the transition."},
+					"reason":             {Type: "string", Description: "The reason for the condition's last transition."},
+					"lastTransitionTime": {Type: "string", Format: "date-time", Description: "Last time the condition transitioned from one status to another."},
+				},
+			},
+		},
+		XListMapKeys: []string{
+			"type",
+		},
+		XListType: ptr.To("map"),
+	}
+
+	// TODO: yaml.Marshal creates an empty status field that we should remove
+	// StoredVersions is set to empty array instead of nil to bypass the following issue:
+	// https://github.com/fybrik/openapi2crd/issues/1
+	crd.Status.StoredVersions = []string{}
+
+	// enable status subresource
+	crd.Spec.Subresources = &apiextensions.CustomResourceSubresources{
+		Status: &apiextensions.CustomResourceSubresourceStatus{},
+	}
+
+	crd.Spec.Names.Categories = g.config.Categories
 
 	for _, version := range crd.Spec.Versions {
 		if version.Storage {
@@ -69,53 +185,32 @@ func (g *Generator) Generate(ctx context.Context) (*apiextensions.CustomResource
 	return crd, nil
 }
 
-func guessKindToResource(kind runtimeschema.GroupVersionKind) ( /*plural*/ runtimeschema.GroupVersionResource /*singular*/, runtimeschema.GroupVersionResource) {
-	kindName := kind.Kind
+func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.GroupVersionResource /*singular*/, runtimeschema.GroupVersionResource) {
+	runtimeGVK := runtimeschema.GroupVersionKind{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind,
+	}
+	kindName := runtimeGVK.Kind
 	if len(kindName) == 0 {
 		return runtimeschema.GroupVersionResource{}, runtimeschema.GroupVersionResource{}
 	}
 	singularName := strings.ToLower(kindName)
-	singular := kind.GroupVersion().WithResource(singularName)
+	singular := runtimeGVK.GroupVersion().WithResource(singularName)
 
 	switch string(singularName[len(singularName)-1]) {
 	case "s":
-		return kind.GroupVersion().WithResource(singularName + "es"), singular
+		return runtimeGVK.GroupVersion().WithResource(singularName + "es"), singular
 	case "x":
-		return kind.GroupVersion().WithResource(singularName + "es"), singular
+		return runtimeGVK.GroupVersion().WithResource(singularName + "es"), singular
 	case "y":
-		return kind.GroupVersion().WithResource(strings.TrimSuffix(singularName, "y") + "ies"), singular
+		return runtimeGVK.GroupVersion().WithResource(strings.TrimSuffix(singularName, "y") + "ies"), singular
 	}
 
-	return kind.GroupVersion().WithResource(singularName + "s"), singular
+	return runtimeGVK.GroupVersion().WithResource(singularName + "s"), singular
 }
 
-func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apiextensions.CustomResourceDefinition, error) {
-	gvk, _ := runtimeschema.ParseKindArg(g.GVK)
-	pluralGvk, singularGvk := guessKindToResource(*gvk)
-
-	crd := &apiextensions.CustomResourceDefinition{
-		ObjectMeta: v1.ObjectMeta{
-			Name: fmt.Sprintf("%s.%s", pluralGvk.Resource, pluralGvk.Group),
-		},
-		Spec: apiextensions.CustomResourceDefinitionSpec{
-			Group: pluralGvk.Group,
-			Scope: apiextensions.NamespaceScoped,
-			Names: apiextensions.CustomResourceDefinitionNames{
-				Kind:     gvk.Kind,
-				ListKind: fmt.Sprintf("%sList", gvk.Kind),
-				Plural:   pluralGvk.Resource,
-				Singular: singularGvk.Resource,
-			},
-			Versions: []apiextensions.CustomResourceDefinitionVersion{
-				{
-					Name:    gvk.Version,
-					Served:  true,
-					Storage: true,
-				},
-			},
-		},
-	}
-
+func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, majorVersion string, operation *openapi3.Operation) error {
 	content := operation.RequestBody.Value.Content
 	mediaType := anyEntry(content, nil)
 	entrySchemaRef := mediaType.Schema
@@ -123,22 +218,10 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 		return !schemaRef.Value.ReadOnly
 	})
 	entryProps := g.schemaPropsToJSONProps(entrySchema)
-	crd.Spec.Validation = &apiextensions.CustomResourceValidation{
-		OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
-			Type: "object",
-			Properties: map[string]apiextensions.JSONSchemaProps{
-				"spec": {
-					Type: "object",
-					Properties: map[string]apiextensions.JSONSchemaProps{
-						g.AtlasVersion: {
-							Type: "object",
-							Properties: map[string]apiextensions.JSONSchemaProps{
-								"entry": *entryProps,
-							},
-						},
-					},
-				},
-			},
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[majorVersion] = apiextensions.JSONSchemaProps{
+		Type: "object",
+		Properties: map[string]apiextensions.JSONSchemaProps{
+			"entry": *entryProps,
 		},
 	}
 
@@ -146,7 +229,7 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 	for httpStatusCode, response := range operation.Responses {
 		code, err := strconv.Atoi(httpStatusCode)
 		if err != nil {
-			return nil, fmt.Errorf("error converting httpStatusCode to int: %w", err)
+			return fmt.Errorf("error converting httpStatusCode to int: %w", err)
 		}
 
 		switch code {
@@ -160,34 +243,6 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 		break
 	}
 
-	crd.Spec.Validation.OpenAPIV3Schema.Properties["status"] = apiextensions.JSONSchemaProps{
-		Type: "object",
-		Properties: map[string]apiextensions.JSONSchemaProps{
-			"conditions": {
-				Type:        "array",
-				Description: "Represents the latest available observations of a resource's current state.",
-				Items: &apiextensions.JSONSchemaPropsOrArray{
-					Schema: &apiextensions.JSONSchemaProps{
-						Type:     "object",
-						Required: []string{"type", "status"},
-						Properties: map[string]apiextensions.JSONSchemaProps{
-							"type":               {Type: "string", Description: "Type of condition."},
-							"status":             {Type: "string", Description: "Status of the condition, one of True, False, Unknown."},
-							"observedGeneration": {Type: "integer", Description: "observedGeneration represents the .metadata.generation that the condition was set based upon."},
-							"message":            {Type: "string", Description: "A human readable message indicating details about the transition."},
-							"reason":             {Type: "string", Description: "The reason for the condition's last transition."},
-							"lastTransitionTime": {Type: "string", Format: "date-time", Description: "Last time the condition transitioned from one status to another."},
-						},
-					},
-				},
-				XListMapKeys: []string{
-					"type",
-				},
-				XListType: ptr.To("map"),
-			},
-		},
-	}
-
 	if statusSchemaRef != nil {
 		statusSchema := FilterSchemaProps("", true, statusSchemaRef, func(key string, schemaRef *openapi3.SchemaRef) bool {
 			if key == "links" {
@@ -197,7 +252,7 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 		})
 		statusProps := g.schemaPropsToJSONProps(statusSchema)
 		if statusProps != nil {
-			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[g.AtlasVersion] = *statusProps
+			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[majorVersion] = *statusProps
 		}
 	}
 
@@ -217,19 +272,8 @@ func (g *Generator) generateCustomResource(operation *openapi3.Operation) (*apie
 			params.Properties[p.Value.Name] = *props
 		}
 	}
-	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[g.AtlasVersion].Properties["parameters"] = params
 
-	// TODO: yaml.Marshal creates an empty status field that we should remove
-	// StoredVersions is set to empty array instead of nil to bypass the following issue:
-	// https://github.com/fybrik/openapi2crd/issues/1
-	crd.Status.StoredVersions = []string{}
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[majorVersion].Properties["parameters"] = params
 
-	// enable status subresource
-	crd.Spec.Subresources = &apiextensions.CustomResourceSubresources{
-		Status: &apiextensions.CustomResourceSubresourceStatus{},
-	}
-
-	crd.Spec.Names.Categories = g.Categories
-
-	return crd, nil
+	return nil
 }

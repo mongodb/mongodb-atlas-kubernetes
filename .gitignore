@@ -14,3 +14,4 @@
 # Generated e.g. by LineCount
 ./out/
 .idea
+./bin/

@@ -4,6 +4,316 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: groups.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: Group
+    listKind: GroupList
+    plural: groups
+    singular: group
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20231115:
+                properties:
+                  entry:
+                    properties:
+                      name:
+                        description: Human-readable label that identifies the project
+                          included in the MongoDB Cloud organization.
+                        type: string
+                      orgId:
+                        description: Unique 24-hexadecimal digit string that identifies
+                          the MongoDB Cloud organization to which the project belongs.
+                        type: string
+                      regionUsageRestrictions:
+                        description: |-
+                          Applies to Atlas for Government only.
+
+                          In Commercial Atlas, this field will be rejected in requests and missing in responses.
+
+                          This field sets restrictions on available regions in the project.
+
+                          | Value                             | Available Regions |
+                          |-----------------------------------|------------|
+                          | `COMMERCIAL_FEDRAMP_REGIONS_ONLY` | Only allows deployments in FedRAMP Moderate regions.|
+                          | `GOV_REGIONS_ONLY`                | Only allows deployments in GovCloud regions.|
+                        type: string
+                      tags:
+                        description: List that contains key-value pairs between 1
+                          to 255 characters in length for tagging and categorizing
+                          the project.
+                        items:
+                          description: 'Key-value pair that tags and categorizes a
+                            MongoDB Cloud organization, project, or cluster. For example,
+                            `environment : production`.'
+                          properties:
+                            key:
+                              description: 'Constant that defines the set of the tag.
+                                For example, `environment` in the `environment : production`
+                                tag.'
+                              type: string
+                            value:
+                              description: 'Variable that belongs to the set of the
+                                tag. For example, `production` in the `environment
+                                : production` tag.'
+                              type: string
+                          required:
+                          - key
+                          - value
+                          title: Resource Tag
+                          type: object
+                        type: array
+                      withDefaultAlertsSettings:
+                        description: Flag that indicates whether to create the project
+                          with default alert settings.
+                        type: boolean
+                    required:
+                    - name
+                    - orgId
+                    type: object
+                  parameters:
+                    properties:
+                      projectOwnerId:
+                        description: Unique 24-hexadecimal digit string that identifies
+                          the MongoDB Cloud user to whom to grant the Project Owner
+                          role on the specified project. If you set this parameter,
+                          it overrides the default value of the oldest Organization
+                          Owner.
+                        type: string
+                    type: object
+                type: object
+            type: object
+          status:
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20231115:
+                properties:
+                  clusterCount:
+                    description: Quantity of MongoDB Cloud clusters deployed in this
+                      project.
+                    type: integer
+                  created:
+                    description: Date and time when MongoDB Cloud created this project.
+                      This parameter expresses its value in the ISO 8601 timestamp
+                      format in UTC.
+                    type: string
+                  id:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the MongoDB Cloud project.
+                    type: string
+                required:
+                - clusterCount
+                - created
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: networkpermissionentries.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: NetworkPermissionEntry
+    listKind: NetworkPermissionEntryList
+    plural: networkpermissionentries
+    singular: networkpermissionentry
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20231115:
+                properties:
+                  entry:
+                    items:
+                      properties:
+                        awsSecurityGroup:
+                          description: Unique string of the Amazon Web Services (AWS)
+                            security group that you want to add to the project's IP
+                            access list. Your IP access list entry can be one **awsSecurityGroup**,
+                            one **cidrBlock**, or one **ipAddress**. You must configure
+                            Virtual Private Connection (VPC) peering for your project
+                            before you can add an AWS security group to an IP access
+                            list. You cannot set AWS security groups as temporary
+                            access list entries. Don't set this parameter if you set
+                            **cidrBlock** or **ipAddress**.
+                          type: string
+                        cidrBlock:
+                          description: Range of IP addresses in Classless Inter-Domain
+                            Routing (CIDR) notation that you want to add to the project's
+                            IP access list. Your IP access list entry can be one **awsSecurityGroup**,
+                            one **cidrBlock**, or one **ipAddress**. Don't set this
+                            parameter if you set **awsSecurityGroup** or **ipAddress**.
+                          type: string
+                        comment:
+                          description: Remark that explains the purpose or scope of
+                            this IP access list entry.
+                          type: string
+                        deleteAfterDate:
+                          description: Date and time after which MongoDB Cloud deletes
+                            the temporary access list entry. This parameter expresses
+                            its value in the ISO 8601 timestamp format in UTC and
+                            can include the time zone designation. The date must be
+                            later than the current date but no later than one week
+                            after you submit this request. The resource returns this
+                            parameter if you specified an expiration date when creating
+                            this IP access list entry.
+                          type: string
+                        ipAddress:
+                          description: IP address that you want to add to the project's
+                            IP access list. Your IP access list entry can be one **awsSecurityGroup**,
+                            one **cidrBlock**, or one **ipAddress**. Don't set this
+                            parameter if you set **awsSecurityGroup** or **cidrBlock**.
+                          type: string
+                      type: object
+                    type: array
+                  parameters:
+                    properties:
+                      groupId:
+                        description: |-
+                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                        type: string
+                    type: object
+                type: object
+            type: object
+          status:
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20231115:
+                properties:
+                  results:
+                    description: List of returned documents that MongoDB Cloud providers
+                      when completing this request.
+                    items:
+                      properties:
+                        groupId:
+                          description: Unique 24-hexadecimal digit string that identifies
+                            the project that contains the IP access list to which
+                            you want to add one or more entries.
+                          type: string
+                      type: object
+                    type: array
+                  totalCount:
+                    description: Total number of documents available. MongoDB Cloud
+                      omits this value if `includeCount` is set to `false`.
+                    type: integer
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: clusters.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -37,7 +347,6 @@ spec:
                           Atlas docs contain more information. To proceed with an
                           operation which carries that risk, set **acceptDataRisksAndForceReplicaSetReconfig**
                           to the current date.
-                        format: date-time
                         type: string
                       backupEnabled:
                         description: Flag that indicates whether the cluster can perform
@@ -81,9 +390,6 @@ spec:
                           value for disk storage cannot exceed 50 times the maximum
                           RAM for the selected cluster. If you require more storage
                           space, consider upgrading your cluster to a higher tier.
-                        format: double
-                        maximum: 4096
-                        minimum: 10
                         type: number
                       diskWarmingMode:
                         description: Disk warming mode selection.
@@ -108,14 +414,10 @@ spec:
                             key:
                               description: Key applied to tag and categorize this
                                 component.
-                              maxLength: 255
-                              minLength: 1
                               type: string
                             value:
                               description: Value set to the Key applied to tag and
                                 categorize this component.
-                              maxLength: 255
-                              minLength: 1
                               type: string
                           title: Component Label
                           type: object
@@ -128,8 +430,6 @@ spec:
                       name:
                         description: Human-readable label that identifies the advanced
                           cluster.
-                        maxLength: 64
-                        minLength: 1
                         type: string
                       paused:
                         description: Flag that indicates whether the cluster is paused.
@@ -153,8 +453,6 @@ spec:
                                 Positive integer that specifies the number of shards to deploy in each specified zone. If you set this value to `1` and **clusterType** is `SHARDED`, MongoDB Cloud deploys a single-shard sharded cluster. Don't create a sharded cluster with a single shard for production environments. Single-shard sharded clusters don't provide the same benefits as multi-shard configurations.
 
                                  If you are upgrading a replica set to a sharded cluster, you cannot increase the number of shards in the same update request.  You should wait until after the cluster has completed upgrading to sharded and you have reconnected all application clients to the MongoDB router before adding additional shards. Otherwise, your data might become inconsistent once MongoDB Cloud begins distributing data across shards.
-                              format: int32
-                              minimum: 1
                               type: integer
                             regionConfigs:
                               description: |-
@@ -239,7 +537,6 @@ spec:
 
                                           - Instance sizes `M10` to `M40` have a ratio of disk capacity to system memory of 60:1.
                                           - Instance sizes greater than `M40` have a ratio of 120:1.
-                                        format: int32
                                         type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
@@ -265,7 +562,6 @@ spec:
                                         description: Number of nodes of the given
                                           type for MongoDB Cloud to deploy to the
                                           region.
-                                        format: int32
                                         type: integer
                                     type: object
                                   autoScaling:
@@ -347,7 +643,6 @@ spec:
 
                                           - Instance sizes `M10` to `M40` have a ratio of disk capacity to system memory of 60:1.
                                           - Instance sizes greater than `M40` have a ratio of 120:1.
-                                        format: int32
                                         type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
@@ -373,7 +668,6 @@ spec:
                                         description: Number of nodes of the given
                                           type for MongoDB Cloud to deploy to the
                                           region.
-                                        format: int32
                                         type: integer
                                     type: object
                                   priority:
@@ -381,9 +675,6 @@ spec:
                                       Precedence is given to this region when a primary election occurs. If your **regionConfigs** has only **readOnlySpecs**, **analyticsSpecs**, or both, set this value to `0`. If you have multiple **regionConfigs** objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
 
                                       **Example:** If you have three regions, their priorities would be `7`, `6`, and `5` respectively. If you added two more regions for supporting electable nodes, the priorities of those regions would be `4` and `3` respectively.
-                                    format: int32
-                                    maximum: 7
-                                    minimum: 0
                                     type: integer
                                   providerName:
                                     description: Cloud service provider on which MongoDB
@@ -411,7 +702,6 @@ spec:
 
                                           - Instance sizes `M10` to `M40` have a ratio of disk capacity to system memory of 60:1.
                                           - Instance sizes greater than `M40` have a ratio of 120:1.
-                                        format: int32
                                         type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
@@ -437,7 +727,6 @@ spec:
                                         description: Number of nodes of the given
                                           type for MongoDB Cloud to deploy to the
                                           region.
-                                        format: int32
                                         type: integer
                                     type: object
                                   regionName:
@@ -491,15 +780,11 @@ spec:
                               description: 'Constant that defines the set of the tag.
                                 For example, `environment` in the `environment : production`
                                 tag.'
-                              maxLength: 255
-                              minLength: 1
                               type: string
                             value:
                               description: 'Variable that belongs to the set of the
                                 tag. For example, `production` in the `environment
                                 : production` tag.'
-                              maxLength: 255
-                              minLength: 1
                               type: string
                           required:
                           - key
@@ -526,8 +811,6 @@ spec:
                           Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
                           **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        maxLength: 24
-                        minLength: 24
                         type: string
                     type: object
                 type: object
@@ -731,13 +1014,10 @@ spec:
                   createDate:
                     description: Date and time when MongoDB Cloud created this cluster.
                       This parameter expresses its value in ISO 8601 format in UTC.
-                    format: date-time
                     type: string
                   groupId:
                     description: Unique 24-hexadecimal character string that identifies
                       the project.
-                    maxLength: 24
-                    minLength: 24
                     type: string
                   id:
                     description: Unique 24-hexadecimal digit string that identifies
@@ -746,8 +1026,6 @@ spec:
                       parameter. If you add a new zone to an existing Global Cluster,
                       you may specify this parameter. The request deletes any existing
                       zones in a Global Cluster that you exclude from the request.
-                    maxLength: 24
-                    minLength: 24
                     type: string
                   mongoDBVersion:
                     description: Version of MongoDB that the cluster runs.
@@ -770,8 +1048,6 @@ spec:
                             Multi-Cloud Cluster, you may specify this parameter. The
                             request deletes any existing zones in the Multi-Cloud
                             Cluster that you exclude from the request.
-                          maxLength: 24
-                          minLength: 24
                           type: string
                       title: Replication Specifications
                       type: object
@@ -799,16 +1075,16 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: groups.atlas.generated.mongodb.com
+  name: searchindexes.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
   names:
     categories:
     - atlas
-    kind: Group
-    listKind: GroupList
-    plural: groups
-    singular: group
+    kind: SearchIndex
+    listKind: SearchIndexList
+    plural: searchindexes
+    singular: searchindex
   scope: Namespaced
   versions:
   - name: v1
@@ -821,234 +1097,199 @@ spec:
                 properties:
                   entry:
                     properties:
-                      name:
-                        description: Human-readable label that identifies the project
-                          included in the MongoDB Cloud organization.
-                        maxLength: 64
-                        minLength: 1
-                        type: string
-                      orgId:
-                        description: Unique 24-hexadecimal digit string that identifies
-                          the MongoDB Cloud organization to which the project belongs.
-                        maxLength: 24
-                        minLength: 24
-                        type: string
-                      regionUsageRestrictions:
+                      analyzer:
                         description: |-
-                          Applies to Atlas for Government only.
+                          Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a **term** or **token**. This process, known as tokenization, involves a variety of changes made to the text in fields:
 
-                          In Commercial Atlas, this field will be rejected in requests and missing in responses.
-
-                          This field sets restrictions on available regions in the project.
-
-                          | Value                             | Available Regions |
-                          |-----------------------------------|------------|
-                          | `COMMERCIAL_FEDRAMP_REGIONS_ONLY` | Only allows deployments in FedRAMP Moderate regions.|
-                          | `GOV_REGIONS_ONLY`                | Only allows deployments in GovCloud regions.|
+                          - extracting words
+                          - removing punctuation
+                          - removing accents
+                          - changing to lowercase
+                          - removing common words
+                          - reducing words to their root form (stemming)
+                          - changing words to their base form (lemmatization)
+                           MongoDB Cloud uses the selected process to build the Atlas Search index.
                         type: string
-                      tags:
-                        description: List that contains key-value pairs between 1
-                          to 255 characters in length for tagging and categorizing
-                          the project.
+                      analyzers:
+                        description: List of user-defined methods to convert database
+                          field text into searchable words.
                         items:
-                          description: 'Key-value pair that tags and categorizes a
-                            MongoDB Cloud organization, project, or cluster. For example,
-                            `environment : production`.'
+                          description: Settings that describe one Atlas Search custom
+                            analyzer.
                           properties:
-                            key:
-                              description: 'Constant that defines the set of the tag.
-                                For example, `environment` in the `environment : production`
-                                tag.'
-                              maxLength: 255
-                              minLength: 1
+                            charFilters:
+                              description: Filters that examine text one character
+                                at a time and perform filtering operations.
+                              items:
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
+                              type: array
+                            name:
+                              description: |-
+                                Human-readable name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
+                                - `lucene.`
+                                - `builtin.`
+                                - `mongodb.`
                               type: string
-                            value:
-                              description: 'Variable that belongs to the set of the
-                                tag. For example, `production` in the `environment
-                                : production` tag.'
-                              maxLength: 255
-                              minLength: 1
-                              type: string
+                            tokenFilters:
+                              description: |-
+                                Filter that performs operations such as:
+
+                                - Stemming, which reduces related words, such as "talking", "talked", and "talks" to their root word "talk".
+
+                                - Redaction, the removal of sensitive information from public documents.
+                              items:
+                                type: object
+                                x-kubernetes-preserve-unknown-fields: true
+                              type: array
+                            tokenizer:
+                              description: Tokenizer that you want to use to create
+                                tokens. Tokens determine how Atlas Search splits up
+                                text into discrete chunks for indexing.
+                              properties:
+                                group:
+                                  description: Index of the character group within
+                                    the matching expression to extract into tokens.
+                                    Use `0` to extract all character groups.
+                                  type: integer
+                                maxGram:
+                                  description: Characters to include in the longest
+                                    token that Atlas Search creates.
+                                  type: integer
+                                maxTokenLength:
+                                  description: Maximum number of characters in a single
+                                    token. Tokens greater than this length are split
+                                    at this length into multiple tokens.
+                                  type: integer
+                                minGram:
+                                  description: Characters to include in the shortest
+                                    token that Atlas Search creates.
+                                  type: integer
+                                pattern:
+                                  description: Regular expression to match against.
+                                  type: string
+                                type:
+                                  description: Human-readable label that identifies
+                                    this tokenizer type.
+                                  type: string
+                              type: object
                           required:
-                          - key
-                          - value
-                          title: Resource Tag
+                          - name
+                          - tokenizer
+                          title: analyzers
                           type: object
                         type: array
-                      withDefaultAlertsSettings:
-                        description: Flag that indicates whether to create the project
-                          with default alert settings.
-                        type: boolean
-                    required:
-                    - name
-                    - orgId
-                    type: object
-                  parameters:
-                    properties:
-                      projectOwnerId:
-                        description: Unique 24-hexadecimal digit string that identifies
-                          the MongoDB Cloud user to whom to grant the Project Owner
-                          role on the specified project. If you set this parameter,
-                          it overrides the default value of the oldest Organization
-                          Owner.
-                        maxLength: 24
-                        minLength: 24
+                      collectionName:
+                        description: Human-readable label that identifies the collection
+                          that contains one or more Atlas Search indexes.
                         type: string
+                      database:
+                        description: Human-readable label that identifies the database
+                          that contains the collection with one or more Atlas Search
+                          indexes.
+                        type: string
+                      fields:
+                        description: Settings that configure the fields, one per object,
+                          to index. You must define at least one "vector" type field.
+                          You can optionally define "filter" type fields also.
+                        items:
+                          additionalProperties:
+                            description: Fields to index for vector search.
+                            title: Field
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                          description: Fields to index for vector search.
+                          title: Field
+                          type: object
+                        type: array
+                      mappings:
+                        description: Index specifications for the collection's fields.
+                        properties:
+                          dynamic:
+                            description: Flag that indicates whether the index uses
+                              dynamic or static mappings. Required if **mappings.fields**
+                              is omitted.
+                            type: boolean
+                          fields:
+                            additionalProperties:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            description: One or more field specifications for the
+                              Atlas Search index. Required if **mappings.dynamic**
+                              is omitted or set to **false**.
+                            type: object
+                        title: mappings
+                        type: object
+                      name:
+                        description: Human-readable label that identifies this index.
+                          Within each namespace, names of all indexes in the namespace
+                          must be unique.
+                        type: string
+                      searchAnalyzer:
+                        description: Method applied to identify words when searching
+                          this index.
+                        type: string
+                      storedSource:
+                        description: Flag that indicates whether to store all fields
+                          (true) on Atlas Search. By default, Atlas doesn't store
+                          (false) the fields on Atlas Search.  Alternatively, you
+                          can specify an object that only contains the list of fields
+                          to store (include) or not store (exclude) on Atlas Search.
+                          To learn more, see documentation.
+                        type: object
+                      synonyms:
+                        description: Rule sets that map words to their synonyms in
+                          this index.
+                        items:
+                          description: Synonyms used for this full text index.
+                          properties:
+                            analyzer:
+                              description: Specific pre-defined method chosen to apply
+                                to the synonyms to be searched.
+                              type: string
+                            name:
+                              description: Human-readable label that identifies the
+                                synonym definition. Each **synonym.name** must be
+                                unique within the same index definition.
+                              type: string
+                            source:
+                              description: Data set that stores the mapping one or
+                                more words map to one or more synonyms of those words.
+                              properties:
+                                collection:
+                                  description: Human-readable label that identifies
+                                    the MongoDB collection that stores words and their
+                                    applicable synonyms.
+                                  type: string
+                              required:
+                              - collection
+                              type: object
+                          required:
+                          - analyzer
+                          - name
+                          - source
+                          title: Synonym Mapping Definition
+                          type: object
+                        type: array
+                      type:
+                        description: Type of the index. Default type is search.
+                        type: string
+                    required:
+                    - collectionName
+                    - database
+                    - name
                     type: object
-                type: object
-            type: object
-          status:
-            properties:
-              conditions:
-                description: Represents the latest available observations of a resource's
-                  current state.
-                items:
-                  properties:
-                    lastTransitionTime:
-                      description: Last time the condition transitioned from one status
-                        to another.
-                      format: date-time
-                      type: string
-                    message:
-                      description: A human readable message indicating details about
-                        the transition.
-                      type: string
-                    observedGeneration:
-                      description: observedGeneration represents the .metadata.generation
-                        that the condition was set based upon.
-                      type: integer
-                    reason:
-                      description: The reason for the condition's last transition.
-                      type: string
-                    status:
-                      description: Status of the condition, one of True, False, Unknown.
-                      type: string
-                    type:
-                      description: Type of condition.
-                      type: string
-                  required:
-                  - type
-                  - status
-                  type: object
-                type: array
-                x-kubernetes-list-map-keys:
-                - type
-                x-kubernetes-list-type: map
-              v20231115:
-                properties:
-                  clusterCount:
-                    description: Quantity of MongoDB Cloud clusters deployed in this
-                      project.
-                    format: int64
-                    type: integer
-                  created:
-                    description: Date and time when MongoDB Cloud created this project.
-                      This parameter expresses its value in the ISO 8601 timestamp
-                      format in UTC.
-                    format: date-time
-                    type: string
-                  id:
-                    description: Unique 24-hexadecimal digit string that identifies
-                      the MongoDB Cloud project.
-                    maxLength: 24
-                    minLength: 24
-                    type: string
-                required:
-                - clusterCount
-                - created
-                type: object
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources:
-      status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: null
-  storedVersions:
-  - v1
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: null
-  name: networkpermissionentries.atlas.generated.mongodb.com
-spec:
-  group: atlas.generated.mongodb.com
-  names:
-    categories:
-    - atlas
-    kind: NetworkPermissionEntry
-    listKind: NetworkPermissionEntryList
-    plural: networkpermissionentries
-    singular: networkpermissionentry
-  scope: Namespaced
-  versions:
-  - name: v1
-    schema:
-      openAPIV3Schema:
-        properties:
-          spec:
-            properties:
-              v20231115:
-                properties:
-                  entry:
-                    items:
-                      properties:
-                        awsSecurityGroup:
-                          description: Unique string of the Amazon Web Services (AWS)
-                            security group that you want to add to the project's IP
-                            access list. Your IP access list entry can be one **awsSecurityGroup**,
-                            one **cidrBlock**, or one **ipAddress**. You must configure
-                            Virtual Private Connection (VPC) peering for your project
-                            before you can add an AWS security group to an IP access
-                            list. You cannot set AWS security groups as temporary
-                            access list entries. Don't set this parameter if you set
-                            **cidrBlock** or **ipAddress**.
-                          type: string
-                        cidrBlock:
-                          description: Range of IP addresses in Classless Inter-Domain
-                            Routing (CIDR) notation that you want to add to the project's
-                            IP access list. Your IP access list entry can be one **awsSecurityGroup**,
-                            one **cidrBlock**, or one **ipAddress**. Don't set this
-                            parameter if you set **awsSecurityGroup** or **ipAddress**.
-                          type: string
-                        comment:
-                          description: Remark that explains the purpose or scope of
-                            this IP access list entry.
-                          maxLength: 80
-                          type: string
-                        deleteAfterDate:
-                          description: Date and time after which MongoDB Cloud deletes
-                            the temporary access list entry. This parameter expresses
-                            its value in the ISO 8601 timestamp format in UTC and
-                            can include the time zone designation. The date must be
-                            later than the current date but no later than one week
-                            after you submit this request. The resource returns this
-                            parameter if you specified an expiration date when creating
-                            this IP access list entry.
-                          format: date-time
-                          type: string
-                        ipAddress:
-                          description: IP address that you want to add to the project's
-                            IP access list. Your IP access list entry can be one **awsSecurityGroup**,
-                            one **cidrBlock**, or one **ipAddress**. Don't set this
-                            parameter if you set **awsSecurityGroup** or **cidrBlock**.
-                          type: string
-                      type: object
-                    type: array
                   parameters:
                     properties:
+                      clusterName:
+                        description: Name of the cluster that contains the collection
+                          on which to create an Atlas Search index.
+                        type: string
                       groupId:
                         description: |-
                           Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
                           **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        maxLength: 24
-                        minLength: 24
                         type: string
                     type: object
                 type: object
@@ -1092,26 +1333,22 @@ spec:
                 x-kubernetes-list-type: map
               v20231115:
                 properties:
-                  results:
-                    description: List of returned documents that MongoDB Cloud providers
-                      when completing this request.
-                    items:
-                      properties:
-                        groupId:
-                          description: Unique 24-hexadecimal digit string that identifies
-                            the project that contains the IP access list to which
-                            you want to add one or more entries.
-                          maxLength: 24
-                          minLength: 24
-                          type: string
-                      type: object
-                    type: array
-                  totalCount:
-                    description: Total number of documents available. MongoDB Cloud
-                      omits this value if `includeCount` is set to `false`.
-                    format: int32
-                    minimum: 0
-                    type: integer
+                  indexID:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      this Atlas Search index.
+                    type: string
+                  status:
+                    description: |
+                      Condition of the search index when you made this request.
+
+                      | Status | Index Condition |
+                       |---|---|
+                       | IN_PROGRESS | Atlas is building or re-building the index after an edit. |
+                       | STEADY | You can use this search index. |
+                       | FAILED | Atlas could not build the index. |
+                       | MIGRATING | Atlas is upgrading the underlying cluster tier and migrating indexes. |
+                       | PAUSED | The cluster is paused. |
+                    type: string
                 type: object
             type: object
         type: object
@@ -1241,8 +1478,175 @@ spec:
                           Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
                           **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        maxLength: 24
-                        minLength: 24
+                        type: string
+                    type: object
+                type: object
+            type: object
+          status:
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: flexclusters.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: FlexCluster
+    listKind: FlexClusterList
+    plural: flexclusters
+    singular: flexcluster
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20241113:
+                properties:
+                  entry:
+                    properties:
+                      actions:
+                        description: List of the individual privilege actions that
+                          the role grants.
+                        items:
+                          description: Privilege action that the role grants.
+                          properties:
+                            action:
+                              description: Human-readable label that identifies the
+                                privilege action.
+                              type: string
+                            resources:
+                              description: List of resources on which you grant the
+                                action.
+                              items:
+                                description: Namespace to which this database user
+                                  has access.
+                                properties:
+                                  cluster:
+                                    description: Flag that indicates whether to grant
+                                      the action on the cluster resource. If `true`,
+                                      MongoDB Cloud ignores the **actions.resources.collection**
+                                      and **actions.resources.db** parameters.
+                                    type: boolean
+                                  collection:
+                                    description: 'Human-readable label that identifies
+                                      the collection on which you grant the action
+                                      to one MongoDB user. If you don''t set this
+                                      parameter, you grant the action to all collections
+                                      in the database specified in the **actions.resources.db**
+                                      parameter. If you set `"actions.resources.cluster"
+                                      : true`, MongoDB Cloud ignores this parameter.'
+                                    type: string
+                                  db:
+                                    description: 'Human-readable label that identifies
+                                      the database on which you grant the action to
+                                      one MongoDB user. If you set `"actions.resources.cluster"
+                                      : true`, MongoDB Cloud ignores this parameter.'
+                                    type: string
+                                required:
+                                - cluster
+                                - collection
+                                - db
+                                title: Permitted Namespace
+                                type: object
+                              type: array
+                          required:
+                          - action
+                          title: Database Privilege Action
+                          type: object
+                        type: array
+                      inheritedRoles:
+                        description: List of the built-in roles that this custom role
+                          inherits.
+                        items:
+                          description: Role inherited from another context for this
+                            database user.
+                          properties:
+                            db:
+                              description: Human-readable label that identifies the
+                                database on which someone grants the action to one
+                                MongoDB user.
+                              type: string
+                            role:
+                              description: Human-readable label that identifies the
+                                role inherited. Set this value to `admin` for every
+                                role except `read` or `readWrite`.
+                              type: string
+                          required:
+                          - db
+                          - role
+                          title: Inherited Role
+                          type: object
+                        type: array
+                      roleName:
+                        description: Human-readable label that identifies the role
+                          for the request. This name must be unique for this custom
+                          role in this project.
+                        type: string
+                    required:
+                    - roleName
+                    type: object
+                  parameters:
+                    properties:
+                      groupId:
+                        description: |-
+                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
                         type: string
                     type: object
                 type: object

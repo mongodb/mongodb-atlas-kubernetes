@@ -100,8 +100,8 @@ spec:
 apiVersion: atlas.generated.mongodb.com/v1
 kind: Cluster
 metadata:
- name: new-admin
- namespace: foo
+ name: test-clusters
+ namespace: default
 spec:
  v20231115:
    parameters:
@@ -111,7 +111,7 @@ spec:
      clusterType: "REPLICASET"
      encryptionAtRestProvider: "NONE"
      mongoDBMajorVersion: "7.0"
-     name: "search-test"
+     name: "test-cluster"
      paused: false
      pitEnabled: false
      replicationSpecs:

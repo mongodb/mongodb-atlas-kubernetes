@@ -12,18 +12,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package generator
-
-import (
-	"context"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/validation"
-)
-
-func ValidateCRD(ctx context.Context, crd *apiextensions.CustomResourceDefinition) error {
-	errorList := validation.ValidateCustomResourceDefinition(ctx, crd)
-	if len(errorList) > 0 {
-		return errorList.ToAggregate()
-	}
-	return nil
-}
+// +k8s:deepcopy-gen=package
+package v1alpha1
