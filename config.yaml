@@ -76,7 +76,7 @@ spec:
         - atlas
       mappings:
         - majorVersion: v20241113
-          path: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
+          path: '/api/atlas/v2/groups/{groupId}/flexClusters'
           verb: post
           openAPIRef:
             name: v20241113
