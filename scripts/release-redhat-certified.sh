@@ -46,7 +46,7 @@ value="${IMG_SHA_AMD64}" yq e -i '.metadata.annotations.containerImage = "quay.i
   "${REPO}/${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
 # set openshift versions
-yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8" }' \
+yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8-v4.17" }' \
   "${REPO}/${VERSION}"/metadata/annotations.yaml
 
 cd "${REPO}"
