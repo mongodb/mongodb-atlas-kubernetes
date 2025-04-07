@@ -18,13 +18,13 @@ set -eou pipefail
 
 echo -n "Determining SHA for arm64 ... "
 IMG_SHA_ARM64=$(docker \
-  manifest inspect quay.io/mongodb/mongodb-atlas-kubernetes-operator:${VERSION}-certified | \
+  manifest inspect quay.io/mongodb/mongodb-atlas-kubernetes-operator:${VERSION}-certified |
   jq --raw-output '.manifests[] | select(.platform.architecture == "arm64") | .digest')
 echo ${IMG_SHA_ARM64}
 
 echo -n "Determining SHA for amd64 ... "
 IMG_SHA_AMD64=$(docker \
-  manifest inspect quay.io/mongodb/mongodb-atlas-kubernetes-operator:${VERSION}-certified | \
+  manifest inspect quay.io/mongodb/mongodb-atlas-kubernetes-operator:${VERSION}-certified |
   jq --raw-output '.manifests[] | select(.platform.architecture == "amd64") | .digest')
 echo ${IMG_SHA_AMD64}
 
@@ -60,7 +60,7 @@ value="${IMG_SHA_AMD64}" yq e -i '.metadata.annotations.containerImage = "quay.i
   "${REPO}/${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
 # set openshift versions
-yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8" }' \
+yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8-v4.18" }' \
   "${REPO}/${VERSION}"/metadata/annotations.yaml
 
 cd "${REPO}"

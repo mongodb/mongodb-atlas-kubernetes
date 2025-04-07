@@ -37,22 +37,22 @@ which kustomize
 kustomize version
 
 # all-in-one
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" >"${target_dir}/all-in-one.yaml"
 echo "Created all-in-one config"
 
 # clusterwide
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/clusterwide" > "${clusterwide_dir}/clusterwide-config.yaml"
-kustomize build "config/crd" > "${clusterwide_dir}/crds.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/clusterwide" >"${clusterwide_dir}/clusterwide-config.yaml"
+kustomize build "config/crd" >"${clusterwide_dir}/crds.yaml"
 echo "Created clusterwide config"
 
 # base-openshift-namespace-scoped
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/openshift" > "${openshift}/openshift.yaml"
-kustomize build "config/crd" > "${openshift}/crds.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/openshift" >"${openshift}/openshift.yaml"
+kustomize build "config/crd" >"${openshift}/crds.yaml"
 echo "Created openshift namespaced config"
 
 # namespaced
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/namespaced" > "${namespaced_dir}/namespaced-config.yaml"
-kustomize build "config/crd" > "${namespaced_dir}/crds.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/namespaced" >"${namespaced_dir}/namespaced-config.yaml"
+kustomize build "config/crd" >"${namespaced_dir}/crds.yaml"
 echo "Created namespaced config"
 
 # crds
@@ -71,12 +71,12 @@ if [[ "${INPUT_ENV}" == "dev" ]]; then
     operator-sdk generate bundle -q --overwrite --default-channel="${channel}" --channels="${channel}"
 else
   echo "build release version"
-  echo  "${INPUT_IMAGE_URL}"
+  echo "${INPUT_IMAGE_URL}"
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests |
     operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
   # add replaces
-  awk '!/replaces:/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-  echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+  awk '!/replaces:/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml >tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+  echo "  replaces: $current_version" >>bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   # Add WATCH_NAMESPACE env parameter
   value="metadata.annotations['olm.targetNamespaces']" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[2] |= {"name": "WATCH_NAMESPACE", "valueFrom": {"fieldRef": {"fieldPath": env(value)}}}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   # Add containerImage to bundle/manifests/ csv. containerImage - The full location (registry, repository, name and tag) of the operator image
@@ -84,7 +84,7 @@ else
 fi
 
 # add additional LABELs to bundle.Docker file
-label="LABEL com.redhat.openshift.versions=\"v4.8\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
-awk -v rep="FROM scratch\n\n$label" '{sub(/FROM scratch/, rep); print}' bundle.Dockerfile > tmp && mv tmp bundle.Dockerfile
+label="LABEL com.redhat.openshift.versions=\"v4.8-v4.18\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
+awk -v rep="FROM scratch\n\n$label" '{sub(/FROM scratch/, rep); print}' bundle.Dockerfile >tmp && mv tmp bundle.Dockerfile
 
 operator-sdk bundle validate ./bundle
