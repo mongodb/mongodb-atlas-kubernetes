@@ -257,7 +257,9 @@ git add helm-charts
 git push
 ```
 
-If the release is a new minor version, then the CLI must be updated with the new version (and any new CRDs) [here](https://github.com/mongodb/mongodb-atlas-cli/blob/master/internal/kubernetes/operator/features/crds.go).
+If the release is a new minor version, then the CLI must be updated with the new version (and any new CRDs) [here](https://github.com/mongodb/atlas-cli-plugin-kubernetes/blob/main/internal/kubernetes/operator/features/crds.go).
+
+If necessary, a CLI plugin release can be created as detailed [here](https://github.com/mongodb/atlas-cli-plugin-kubernetes/blob/main/RELEASING.md).
 
 # Updating the ROSA cluster
 
