@@ -1,31 +1,18 @@
 {
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.0/.schema/devbox.schema.json",
   "packages": [
-    "yq-go@latest",
-    "kubebuilder@4.1.1",
-    "jq@latest",
-    "path:flakes/go",
-    "gotests@latest",
-    "act@latest",
-    "kubectl@latest",
-    "docker@latest",
-    "kustomize@4.3",
-    "git@latest",
-    "gettext@latest",
-    "wget@latest",
-    "cosign@latest",
-    "kubernetes-helm@latest",
-    "govulncheck@latest",
-    "gotools@latest",
-    "ginkgo@latest",
-    "operator-sdk@1.36.1",
-    "shellcheck@latest",
-    "golangci-lint@2.0.0",
-    "kubernetes-controller-tools@0.17.2",
-    "setup-envtest@0.19.0",
-    "awscli2@latest",
-    "go-mockery@2",
-    "docker-sbom@latest",
-    "openshift@latest",
-    "gci@latest"
-  ]
+    "neovim@latest",
+    "go@latest",
+    "vscodium@latest"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to devbox!' > /dev/null"
+    ],
+    "scripts": {
+      "test": [
+        "echo \"Error: no test specified\" && exit 1"
+      ]
+    }
+  }
 }

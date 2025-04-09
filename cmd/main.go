@@ -1,32 +1,35 @@
-// Copyright 2020 The Kubernetes authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/run"
+	"github.com/josvazg/crd2go/internal/crd2go"
 )
 
 func main() {
-	if err := run.Run(ctrl.SetupSignalHandler(), flag.CommandLine, os.Args[1:]); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	var input, output string
+	flag.StringVar(&input, "input", "crds.yaml", "input YAML to process")
+	flag.StringVar(&output, "output", "structs.go", "output Go to produce")
+	flag.Parse()
+	err := generate(output, input)
+	if err != nil {
+		log.Fatalf("Failed to generate go sturcts: %v", err)
 	}
+	log.Printf("Semantics applied to %s", output)
+}
+
+func generate(output, input string) error {
+	o, err := os.Create(output)
+	if err != nil {
+		return fmt.Errorf("failed to create output file %s: %w", output, err)
+	}
+	defer o.Close()
+	i, err := os.Open(input)
+	if err != nil {
+		return fmt.Errorf("failed to open input file %s: %w", input, err)
+	}
+	return crd2go.Generate(o, i)
 }
