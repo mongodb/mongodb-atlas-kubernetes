@@ -15,7 +15,6 @@ limitations under the License.
 package generator
 
 import (
-	"fmt"
 	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 	"strings"
 
@@ -93,26 +92,42 @@ func isSensitiveField(path []string, mapping *v1alpha1.Mapping) bool {
 	return false
 }
 
+func isSkippedField(path []string, mapping *v1alpha1.Mapping) bool {
+	if mapping == nil {
+		return false
+	}
+
+	p := jsonPath(path)
+
+	for _, skippedField := range mapping.Transformations.SkipFields {
+		if skippedField == p {
+			return true
+		}
+	}
+
+	return false
+}
+
 // schemaPropsToJSONProps converts openapi3.Schema to a JSONProps
 func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mapping *v1alpha1.Mapping, path ...string) *apiextensions.JSONSchemaProps {
-	var props *apiextensions.JSONSchemaProps
-
 	if schemaRef == nil {
-		return props
+		return nil
 	}
 
 	if len(path) == 0 {
 		path = []string{"$"}
 	}
 
+	if isSkippedField(path, mapping) {
+		return nil
+	}
+
 	if isSensitiveField(path, mapping) {
-		fmt.Println(jsonPath(path), "is sensitive, skipping ...")
-		return props
+		return nil
 	}
 
 	schemaProps := schemaRef.Value
-
-	props = &apiextensions.JSONSchemaProps{
+	props := &apiextensions.JSONSchemaProps{
 		// ID:               schemaProps.ID,
 		// Schema:           apiextensions.JSONSchemaURL(string(schemaRef.Ref.)),
 		// Ref:              ref,
