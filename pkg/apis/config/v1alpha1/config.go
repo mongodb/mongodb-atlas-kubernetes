@@ -48,6 +48,7 @@ type Mapping struct {
 }
 
 type Transformations struct {
+	SkipFields      []string `json:"skipFields,omitempty"`
 	SensitiveFields []string `json:"sensitiveFields,omitempty"`
 }
 
