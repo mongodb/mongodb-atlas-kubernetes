@@ -224,7 +224,7 @@ func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, m
 	entrySchema := FilterSchemaProps("", false, entrySchemaRef, func(key string, schemaRef *openapi3.SchemaRef) bool {
 		return !schemaRef.Value.ReadOnly
 	})
-	entryProps := g.schemaPropsToJSONProps(entrySchema)
+	entryProps := g.schemaPropsToJSONProps(entrySchema, mapping)
 	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = apiextensions.JSONSchemaProps{
 		Type: "object",
 		Properties: map[string]apiextensions.JSONSchemaProps{
@@ -257,7 +257,7 @@ func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, m
 			}
 			return schemaRef.Value.ReadOnly
 		})
-		statusProps := g.schemaPropsToJSONProps(statusSchema)
+		statusProps := g.schemaPropsToJSONProps(statusSchema, mapping)
 		if statusProps != nil {
 			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mapping.MajorVersion] = *statusProps
 		}
@@ -274,7 +274,7 @@ func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, m
 		case "envelope":
 		case "pretty":
 		default:
-			props := g.schemaPropsToJSONProps(p.Value.Schema)
+			props := g.schemaPropsToJSONProps(p.Value.Schema, mapping)
 			props.Description = p.Value.Description
 			params.Properties[p.Value.Name] = *props
 		}

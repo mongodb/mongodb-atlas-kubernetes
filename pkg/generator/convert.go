@@ -15,6 +15,8 @@ limitations under the License.
 package generator
 
 import (
+	"fmt"
+	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -70,8 +72,29 @@ func FilterSchemaProps(key string, relaxed bool, schema *openapi3.SchemaRef, pre
 	return nil
 }
 
+func jsonPath(path []string) string {
+	result := strings.Join(path, ".")
+	return strings.ReplaceAll(result, ".[*]", "[*]")
+}
+
+func isSensitiveField(path []string, mapping *v1alpha1.Mapping) bool {
+	if mapping == nil {
+		return false
+	}
+
+	p := jsonPath(path)
+
+	for _, sensitiveField := range mapping.Transformations.SensitiveFields {
+		if sensitiveField == p {
+			return true
+		}
+	}
+
+	return false
+}
+
 // schemaPropsToJSONProps converts openapi3.Schema to a JSONProps
-func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mapping *v1alpha1.Mapping, path ...string) *apiextensions.JSONSchemaProps {
 	var props *apiextensions.JSONSchemaProps
 
 	if schemaRef == nil {
@@ -81,6 +104,12 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, path .
 	if len(path) == 0 {
 		path = []string{"$"}
 	}
+
+	if isSensitiveField(path, mapping) {
+		fmt.Println(jsonPath(path), "is sensitive, skipping ...")
+		return props
+	}
+
 	schemaProps := schemaRef.Value
 
 	props = &apiextensions.JSONSchemaProps{
@@ -107,13 +136,13 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, path .
 		//MaxProperties:        castUInt64P(schemaProps.MaxProps),
 		//MinProperties:        castUInt64(schemaProps.MinProps),
 		Required:             schemaProps.Required,
-		Items:                g.schemaToJSONSchemaPropsOrArray(schemaProps.Items, append(path, "[*]")),
-		AllOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AllOf, path),
-		OneOf:                g.schemasToJSONSchemaPropsArray(schemaProps.OneOf, path),
-		AnyOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AnyOf, path),
-		Not:                  g.schemaPropsToJSONProps(schemaProps.Not, path...),
-		Properties:           g.schemasToJSONSchemaPropsMap(schemaProps.Properties, path),
-		AdditionalProperties: g.schemaToJSONSchemaPropsOrBool(schemaProps.AdditionalProperties, path),
+		Items:                g.schemaToJSONSchemaPropsOrArray(schemaProps.Items, mapping, append(path, "[*]")),
+		AllOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AllOf, mapping, path),
+		OneOf:                g.schemasToJSONSchemaPropsArray(schemaProps.OneOf, mapping, path),
+		AnyOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AnyOf, mapping, path),
+		Not:                  g.schemaPropsToJSONProps(schemaProps.Not, mapping, path...),
+		Properties:           g.schemasToJSONSchemaPropsMap(schemaProps.Properties, mapping, path),
+		AdditionalProperties: g.schemaToJSONSchemaPropsOrBool(schemaProps.AdditionalProperties, mapping, path),
 	}
 
 	if props.Type == "" && props.Items == nil && len(props.Properties) == 0 {
@@ -122,16 +151,16 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, path .
 	}
 
 	// Apply custom transformations
-	props = g.transformations(props, schemaRef, path)
+	props = g.transformations(props, schemaRef, mapping, path)
 
 	return props
 }
 
-func (g *Generator) transformations(props *apiextensions.JSONSchemaProps, schemaRef *openapi3.SchemaRef, path []string) *apiextensions.JSONSchemaProps {
+func (g *Generator) transformations(props *apiextensions.JSONSchemaProps, schemaRef *openapi3.SchemaRef, mapping *v1alpha1.Mapping, path []string) *apiextensions.JSONSchemaProps {
 	result := props
 	result = handleAdditionalProperties(result, schemaRef.Value.AdditionalPropertiesAllowed)
 	result = removeUnknownFormats(result)
-	result = g.oneOfRefsTransform(result, schemaRef.Value.OneOf, path)
+	result = g.oneOfRefsTransform(result, schemaRef.Value.OneOf, mapping, path)
 	return result
 }
 
@@ -155,7 +184,7 @@ func removeUnknownFormats(props *apiextensions.JSONSchemaProps) *apiextensions.J
 }
 
 // oneOfRefsTransform transforms oneOf with a list of $ref to a list of nullable properties
-func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, oneOf openapi3.SchemaRefs, path []string) *apiextensions.JSONSchemaProps {
+func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, oneOf openapi3.SchemaRefs, mapping *v1alpha1.Mapping, path []string) *apiextensions.JSONSchemaProps {
 	if props.OneOf != nil && len(props.Properties) == 0 && props.AdditionalProperties == nil {
 		result := props.DeepCopy()
 		result.Type = "object"
@@ -172,7 +201,7 @@ func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, one
 			name = name[strings.LastIndex(name, "/")+1:]
 			name = strcase.LowerCamelCase(name)
 			options = append(options, name)
-			result.Properties[name] = *g.schemaPropsToJSONProps(v, append(path, name)...)
+			result.Properties[name] = *g.schemaPropsToJSONProps(v, mapping, append(path, name)...)
 		}
 
 		result.Properties["type"] = apiextensions.JSONSchemaProps{
@@ -186,10 +215,10 @@ func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, one
 	return props
 }
 
-func (g *Generator) schemasToJSONSchemaPropsArray(schemas openapi3.SchemaRefs, path []string) []apiextensions.JSONSchemaProps {
+func (g *Generator) schemasToJSONSchemaPropsArray(schemas openapi3.SchemaRefs, mapping *v1alpha1.Mapping, path []string) []apiextensions.JSONSchemaProps {
 	var s []apiextensions.JSONSchemaProps
 	for _, schema := range schemas {
-		s = append(s, *g.schemaPropsToJSONProps(schema, path...))
+		s = append(s, *g.schemaPropsToJSONProps(schema, mapping, path...))
 	}
 	return s
 }
@@ -203,30 +232,34 @@ func enumJSON(enum []interface{}) []apiextensions.JSON {
 	return s
 }
 
-func (g *Generator) schemaToJSONSchemaPropsOrArray(schema *openapi3.SchemaRef, path []string) *apiextensions.JSONSchemaPropsOrArray {
+func (g *Generator) schemaToJSONSchemaPropsOrArray(schema *openapi3.SchemaRef, mapping *v1alpha1.Mapping, path []string) *apiextensions.JSONSchemaPropsOrArray {
 	if schema == nil {
 		return nil
 	}
 	return &apiextensions.JSONSchemaPropsOrArray{
-		Schema: g.schemaPropsToJSONProps(schema, path...),
+		Schema: g.schemaPropsToJSONProps(schema, mapping, path...),
 	}
 }
 
-func (g *Generator) schemaToJSONSchemaPropsOrBool(schema *openapi3.SchemaRef, path []string) *apiextensions.JSONSchemaPropsOrBool {
+func (g *Generator) schemaToJSONSchemaPropsOrBool(schema *openapi3.SchemaRef, mapping *v1alpha1.Mapping, path []string) *apiextensions.JSONSchemaPropsOrBool {
 	if schema == nil {
 		return nil
 	}
 
 	return &apiextensions.JSONSchemaPropsOrBool{
-		Schema: g.schemaPropsToJSONProps(schema, path...),
+		Schema: g.schemaPropsToJSONProps(schema, mapping, path...),
 		Allows: true,
 	}
 }
 
-func (g *Generator) schemasToJSONSchemaPropsMap(schemaMap openapi3.Schemas, path []string) map[string]apiextensions.JSONSchemaProps {
+func (g *Generator) schemasToJSONSchemaPropsMap(schemaMap openapi3.Schemas, mapping *v1alpha1.Mapping, path []string) map[string]apiextensions.JSONSchemaProps {
 	m := make(map[string]apiextensions.JSONSchemaProps)
 	for key, schema := range schemaMap {
-		m[key] = *g.schemaPropsToJSONProps(schema, append(path, key)...)
+		result := g.schemaPropsToJSONProps(schema, mapping, append(path, key)...)
+		if result == nil {
+			continue
+		}
+		m[key] = *result
 	}
 	return m
 }
