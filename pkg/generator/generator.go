@@ -127,6 +127,13 @@ func (g *Generator) Generate(ctx context.Context) (*apiextensions.CustomResource
 				continue
 			}
 			operation = pathItem.Post
+		case "put":
+			pathItem, ok := spec.Paths[mapping.Path]
+			if !ok {
+				log.Printf("WARNING: OpenAPI path %q does not exist in %q\n", mapping.Path, def.Path)
+				continue
+			}
+			operation = pathItem.Put
 		default:
 			return nil, fmt.Errorf("verb %q not supported", mapping.Verb)
 		}
