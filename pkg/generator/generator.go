@@ -138,7 +138,7 @@ func (g *Generator) Generate(ctx context.Context) (*apiextensions.CustomResource
 			return nil, fmt.Errorf("verb %q not supported", mapping.Verb)
 		}
 
-		err = g.generateProps(crd, mapping.MajorVersion, operation)
+		err = g.generateProps(crd, &mapping, operation)
 		if err != nil {
 			return nil, fmt.Errorf("error generating props: %w", err)
 		}
@@ -217,7 +217,7 @@ func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.Gro
 	return runtimeGVK.GroupVersion().WithResource(singularName + "s"), singular
 }
 
-func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, majorVersion string, operation *openapi3.Operation) error {
+func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, mapping *v1alpha1.Mapping, operation *openapi3.Operation) error {
 	content := operation.RequestBody.Value.Content
 	mediaType := anyEntry(content, nil)
 	entrySchemaRef := mediaType.Schema
@@ -225,7 +225,7 @@ func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, m
 		return !schemaRef.Value.ReadOnly
 	})
 	entryProps := g.schemaPropsToJSONProps(entrySchema)
-	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[majorVersion] = apiextensions.JSONSchemaProps{
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = apiextensions.JSONSchemaProps{
 		Type: "object",
 		Properties: map[string]apiextensions.JSONSchemaProps{
 			"entry": *entryProps,
@@ -259,7 +259,7 @@ func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, m
 		})
 		statusProps := g.schemaPropsToJSONProps(statusSchema)
 		if statusProps != nil {
-			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[majorVersion] = *statusProps
+			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mapping.MajorVersion] = *statusProps
 		}
 	}
 
@@ -280,7 +280,7 @@ func (g *Generator) generateProps(crd *apiextensions.CustomResourceDefinition, m
 		}
 	}
 
-	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[majorVersion].Properties["parameters"] = params
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion].Properties["parameters"] = params
 
 	return nil
 }

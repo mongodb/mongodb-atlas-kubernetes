@@ -40,10 +40,15 @@ type CRDConfig struct {
 }
 
 type Mapping struct {
-	OpenAPIRef   LocalObjectReference `json:"openAPIRef,omitempty"`
-	MajorVersion string               `json:"majorVersion,omitempty"`
-	Path         string               `json:"path,omitempty"`
-	Verb         string               `json:"verb,omitempty"`
+	OpenAPIRef      LocalObjectReference `json:"openAPIRef,omitempty"`
+	MajorVersion    string               `json:"majorVersion,omitempty"`
+	Path            string               `json:"path,omitempty"`
+	Verb            string               `json:"verb,omitempty"`
+	Transformations Transformations      `json:"transformations,omitempty"`
+}
+
+type Transformations struct {
+	SensitiveFields []string `json:"sensitiveFields,omitempty"`
 }
 
 // LocalObjectReference is a reference to an object in the same namespace as the referent
