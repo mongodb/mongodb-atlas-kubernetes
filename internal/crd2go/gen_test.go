@@ -13,7 +13,7 @@ func TestGenerateCode(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	sf, err := samples.Open("samples/crd.go.sample")
+	sf, err := samples.Open("samples/v1/crd.go")
 	require.NoError(t, err)
 	sample, err := io.ReadAll(sf)
 	require.NoError(t, err)

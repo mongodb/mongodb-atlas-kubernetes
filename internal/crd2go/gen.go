@@ -35,7 +35,7 @@ func GenerateStream(w io.Writer, r io.Reader, version string) error {
 	}
 }
 
-func Generate(crd *CRD, version string) (*jen.Statement, error) {
+func Generate(crd *CRD, version string) (*jen.File, error) {
 	v := selectVersion(&crd.Spec, version)
 	if v == nil {
 		if version == "" {
@@ -45,9 +45,12 @@ func Generate(crd *CRD, version string) (*jen.Statement, error) {
 	}
 	specType := fmt.Sprintf("%sSpec", crd.Spec.Names.Kind)
 	statusType := fmt.Sprintf("%sStatus", crd.Spec.Names.Kind)
-	code := jen.Type().Id(crd.Spec.Names.Kind).Struct(
-		jen.Id("metav1").Dot("TypeMeta").Tag(map[string]string{"json": ",inline"}),
-		jen.Id("metav1").Dot("ObjectMeta").Tag(map[string]string{"json": "metadata,omitempty"}),
+	f := jen.NewFile(v.Name)
+	metav1 := "k8s.io/apimachinery/pkg/apis/meta/v1"
+	f.ImportAlias(metav1, "metav1")
+	code := f.Type().Id(crd.Spec.Names.Kind).Struct(
+		jen.Qual(metav1, "TypeMeta").Tag(map[string]string{"json": ",inline"}),
+		jen.Qual(metav1, "ObjectMeta").Tag(map[string]string{"json": "metadata,omitempty"}),
 		jen.Line(),
 		jen.Id("Spec").Id(specType).Tag(map[string]string{"json": "spec,omitempty"}),
 		jen.Id("Status").Id(statusType).Tag(map[string]string{"json": "status,omitempty"}),
@@ -64,7 +67,7 @@ func Generate(crd *CRD, version string) (*jen.Statement, error) {
 		return nil, fmt.Errorf("failed to generate status code: %w", err)
 	}
 	code.Add(statusCode)
-	return code, nil
+	return f, nil
 }
 
 func generateOpenAPICode(typeName string, schema *OpenAPISchema) (*jen.Statement, error) {
