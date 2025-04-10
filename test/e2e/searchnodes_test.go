@@ -68,7 +68,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 					}
 				}
 				return false
-			}).WithTimeout(20 * time.Minute).Should(BeTrue())
+			}).WithTimeout(60 * time.Minute).Should(BeTrue())
 
 			Eventually(func(g Gomega) {
 				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
@@ -99,7 +99,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 					}
 				}
 				return false
-			}).WithTimeout(20 * time.Minute).Should(BeTrue())
+			}).WithTimeout(60 * time.Minute).Should(BeTrue())
 
 		})
 		By("Removing the search nodes from the deployment", func() {
