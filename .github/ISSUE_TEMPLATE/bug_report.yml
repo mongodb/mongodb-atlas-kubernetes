@@ -1,0 +1,96 @@
+name: Bug report
+description: Something unexpected happen? Report an error, crash, or an incorrect behavior here.
+title: "[Bug]: <your-title>"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for opening an issue. **These GitHub issues** are only for community reporting and assistance; as such, we don't have a guaranteed SLA.
+
+        **If you have an active MongoDB Atlas Support contract**, the best way for us to assist you with the Atlas Kubernetes Operator is through a support ticket.
+
+        **Please note:** In order for us to provide the best experience in supporting our customers, we kindly ask to make sure that all the following sections are correctly filled with all the required information. 
+
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered. If the issue has been reported add a reaction, i.e. +1, to the issue.
+      options:
+        - label: I have searched the existing issues
+          required: true
+
+  - type: input
+    id: operator_version
+    attributes:
+      label: AKO Version
+      description: What version of the Atlas Kubernetes Operator are you running?
+      placeholder: "Example: v2.8.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: download
+    attributes:
+      label: Distribution
+      options:
+        - Kubernetes 
+        - OpenShift
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: k8s_version
+    attributes:
+      label: Kubernetes Version
+      description: What Kubernetes version are you running?
+      placeholder: "Example: v1.32.3"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_behaviour
+    attributes:
+      label: Current Behavior
+      description: A concise description of what you're experiencing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: tf_config
+    attributes:
+      label: Custom Resources to reproduce the issue
+      description: Please copy and paste any relevant Custom Resources. This will be automatically formatted into code, so no need for backticks.
+      render: yaml
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps To Reproduce
+      description: Steps to reproduce the behaviour.
+      placeholder: |
+        1. In this environment...
+        2. With this config...
+        3. Run '...'
+        4. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Additional logs that can help us investigate the issue. This will be automatically formatted into code, so no need for backticks.
+      render: txt
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/mongodb/mongodb-atlas-kubernetes/blob/main/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

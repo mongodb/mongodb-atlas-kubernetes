@@ -3,3 +3,9 @@ contact_links:
     - name: MongoDB Feedback
       url: https://feedback.mongodb.com/forums/924355-ops-tools
       about: Use our Feedback page to make feature requests.
+    - name: MongoDB Atlas Support
+      url: https://support.mongodb.com/
+      about: Support is provided under MongoDB Atlas support plans. Please submit support questions within the Atlas UI.
+    - name: MongoDB Atlas 
+      url: https://www.mongodb.com/cloud/atlas
+      about: Learn more about MongoDB Atlas
