@@ -18,7 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to generate go sturcts: %v", err)
 	}
-	log.Printf("Semantics applied to %s", output)
+	log.Printf("Code generated at %s", output)
 }
 
 func generate(output, input string) error {
