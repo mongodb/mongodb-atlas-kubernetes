@@ -71,11 +71,3 @@ func ParseCRD(r io.Reader) (*CRD, error) {
 	}
 	return &crd, nil
 }
-
-func Generate(w io.Writer, r io.Reader) error {
-	_, err := ParseCRD(r)
-	if err != nil {
-		return fmt.Errorf("generation failed read input: %w", err)
-	}
-	return nil
-}

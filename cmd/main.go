@@ -31,5 +31,5 @@ func generate(output, input string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open input file %s: %w", input, err)
 	}
-	return crd2go.Generate(o, i)
+	return crd2go.GenerateStream(o, i, crd2go.FirstVersion)
 }
