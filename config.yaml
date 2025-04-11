@@ -232,16 +232,6 @@ spec:
             schema: 'GroupAlertsConfig'
             filters:
               skipFields:
-                - $.notifications[*].webhookUrl
-                - $.notifications[*].apiToken
-                - $.notifications[*].webhookSecret
-                - $.notifications[*].victorOpsRoutingKey
-                - $.notifications[*].notificationToken
-                - $.notifications[*].serviceKey
-                - $.notifications[*].victorOpsApiKey
-                - $.notifications[*].datadogApiKey
-                - $.notifications[*].microsoftTeamsWebhookUrl
-                - $.notifications[*].opsGenieApiKey
                 - $.enabled
                 - $.eventTypeName
                 - $.links

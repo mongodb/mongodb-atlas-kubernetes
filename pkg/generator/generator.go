@@ -39,6 +39,9 @@ func anyEntry[T any](source map[string]T, defaultValue T) T {
 type Generator struct {
 	config      v1alpha1.CRDConfig
 	definitions map[string]v1alpha1.OpenAPIDefinition
+
+	// added during schemaPropsToJSONProps
+	sensitiveFieldsDocs []string
 }
 
 func NewGenerator(crdConfig v1alpha1.CRDConfig, definitions []v1alpha1.OpenAPIDefinition) *Generator {
@@ -235,20 +238,18 @@ func (g *Generator) generateProps(openApiSpec *openapi3.T, crd *apiextensions.Cu
 		},
 	}
 
-	if len(mapping.EntryMapping.Filters.SensitiveFields) > 0 {
-		crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion].Properties["sensitiveDataSecret"] = apiextensions.JSONSchemaProps{
-			Type: "object",
-			Description: fmt.Sprintf(`Reference to a secret containing the following fields:
-
-%v
-
-The expected fields above are represented in JSONPath syntax.
-The format of the secret is expected to contain a "data" field containing a YAML or JSON document containing an object containing the above fields.`, strings.Join(mapping.EntryMapping.Filters.SensitiveFields, "\n")),
-			Properties: map[string]apiextensions.JSONSchemaProps{
-				"name": {Type: "string"},
-			},
-		}
-	}
+	//if len(mapping.EntryMapping.Filters.SensitiveFields) > 0 {
+	//	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion].Properties["sensitiveDataSecret"] = apiextensions.JSONSchemaProps{
+	//		Type:        "object",
+	//		Description: fmt.Sprintf(`Reference to a secret containing sensitive data. See docs of the "name" field for more details.`),
+	//		Properties: map[string]apiextensions.JSONSchemaProps{
+	//			"name": {
+	//				Description: fmt.Sprintf("Name of a secret containing one entry named \"data\" containing a YAML or JSON document that includes the following fields:\n\n%v", strings.Join(g.sensitiveFieldsDocs, "\n")),
+	//				Type:        "string",
+	//			},
+	//		},
+	//	}
+	//}
 
 	if mapping.StatusMapping.Schema != "" {
 		statusSchemaRef, ok := openApiSpec.Components.Schemas[mapping.StatusMapping.Schema]

@@ -15,6 +15,7 @@ limitations under the License.
 package generator
 
 import (
+	"fmt"
 	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 	"strings"
 
@@ -122,10 +123,6 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 		return nil
 	}
 
-	if isSensitiveField(path, mapping) {
-		return nil
-	}
-
 	var skipFields []string
 	if mapping != nil {
 		skipFields = mapping.Filters.SkipFields
@@ -133,9 +130,9 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 
 	schemaProps := schemaRef.Value
 	props := &apiextensions.JSONSchemaProps{
-		// ID:               schemaProps.ID,
-		// Schema:           apiextensions.JSONSchemaURL(string(schemaRef.Ref.)),
-		// Ref:              ref,
+		//ID:               schemaProps.ID,
+		//Schema:           apiextensions.JSONSchemaURL(string(schemaRef.Ref.)),
+		//Ref:              ref,
 		Description: schemaProps.Description,
 		Type:        schemaProps.Type,
 		//Format:      schemaProps.Format,
@@ -163,6 +160,17 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 		Not:                  g.schemaPropsToJSONProps(schemaProps.Not, mapping, path...),
 		Properties:           g.schemasToJSONSchemaPropsMap(schemaProps.Properties, mapping, path),
 		AdditionalProperties: g.schemaToJSONSchemaPropsOrBool(schemaProps.AdditionalProperties, mapping, path),
+	}
+
+	if isSensitiveField(path, mapping) {
+		props.Type = "object"
+		props.Description = fmt.Sprintf("SENSITIVE FIELD\n\nReference to a secret containing one entry named %q containing the value:\n\n%v", path[len(path)-1], schemaProps.Description)
+		props.Properties = map[string]apiextensions.JSONSchemaProps{
+			"name": {
+				Type:        "string",
+				Description: fmt.Sprintf(`Name of the secret containing the sensitive field value.`),
+			},
+		}
 	}
 
 	if props.Type == "" && props.Items == nil && len(props.Properties) == 0 {
@@ -297,6 +305,11 @@ func (g *Generator) schemasToJSONSchemaPropsMap(schemaMap openapi3.Schemas, mapp
 		if result == nil {
 			continue
 		}
+
+		if isSensitiveField(append(path, key), mapping) {
+			key = key + "Ref"
+		}
+
 		m[key] = *result
 	}
 	return m
