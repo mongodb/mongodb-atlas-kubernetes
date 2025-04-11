@@ -18,7 +18,7 @@ func TestGenerateCode(t *testing.T) {
 	sample, err := io.ReadAll(sf)
 	require.NoError(t, err)
 	want := string(sample)
-	defer f.Close()
+	defer sf.Close()
 
 	crd, err := crd2go.ParseCRD(f)
 	require.NoError(t, err)
