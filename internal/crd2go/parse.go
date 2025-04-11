@@ -55,7 +55,7 @@ type OpenAPISchema struct {
 	Type        string                   `yaml:"type"`
 	Properties  map[string]OpenAPISchema `yaml:"properties"`
 	Items       *OpenAPISchema           `yaml:"items,omitempty"`
-	Required    []string                 `yaml:"required,omitempty"`
+	Required    *[]string                `yaml:"required,omitempty"`
 	Title       *string                  `yaml:"title,omitempty"`
 	Description *string                  `yaml:"description,omitempty"`
 	MinLength   *int                     `yaml:"minLength,omitempty"`

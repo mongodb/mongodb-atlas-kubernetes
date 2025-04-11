@@ -81,7 +81,7 @@ func genRootObject(f *jen.File, crd *CRD, v *Version) error {
 		return fmt.Errorf("failed to generate spec code: %w", err)
 	}
 	code.Add(specCode)
-	
+
 	statusSchema := v.Schema.OpenAPIV3Schema.Properties["status"]
 	statusCode, err := generateOpenAPICode(statusType, &statusSchema)
 	if err != nil {
@@ -106,13 +106,13 @@ func generateOpenAPIStruct(typeName string, schema *OpenAPISchema) (*jen.Stateme
 	for _, key := range orderedkeys(schema.Properties) {
 		value := schema.Properties[key]
 		id := title(fmt.Sprintf("%s%s", typeName, title(key)))
-		typeSuffix, err := namedType(id, &value)
+		tagValue := key
+		typeSuffix, err := namedType(id, &value, required(tagValue, schema))
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse schema type: %w", err)
 		}
 		entry := jen.Id(title(key)).Add(typeSuffix)
-		tagValue := key
-		if !slices.Contains(schema.Required, key) {
+		if schema.Required == nil || !slices.Contains(*schema.Required, key) {
 			tagValue = strings.Join([]string{tagValue, "omitempty"}, ",")
 		}
 		entry = entry.Tag(map[string]string{"json": tagValue})
@@ -129,21 +129,40 @@ func generateOpenAPIStruct(typeName string, schema *OpenAPISchema) (*jen.Stateme
 	return mainType.Add(subtypes...), nil
 }
 
-func namedType(name string, schema *OpenAPISchema) (*jen.Statement, error) {
+func namedType(name string, schema *OpenAPISchema, required bool) (*jen.Statement, error) {
 	switch schema.Type {
 	case "array":
-		return jen.Index().Id(title(name)), nil
+		return requiredPrefix(required).Index().Id(title(name)), nil
 	case "boolean":
-		return jen.Bool(), nil
+		return requiredPrefix(required).Bool(), nil
 	case "integer":
-		return jen.Int(), nil
+		return requiredPrefix(required).Int(), nil
 	case "object":
-		return jen.Id(title(name)), nil
+		return requiredPrefix(required).Id(title(name)), nil
 	case "string":
-		return jen.String(), nil
+		return requiredPrefix(required).String(), nil
 	default:
 		return nil, fmt.Errorf("unsupported Open API type %q conversion to Go type", schema.Type)
 	}
+}
+
+func requiredPrefix(required bool) *jen.Statement {
+	if required {
+		return jen.Null()
+	}
+	return jen.Op("*")
+}
+
+func required(field string, schema *OpenAPISchema) bool {
+	if schema.Required == nil {
+		return false
+	}
+	for _, required := range *schema.Required {
+		if required == field {
+			return true
+		}
+	}
+	return false
 }
 
 func complexType(schema *OpenAPISchema) *OpenAPISchema {

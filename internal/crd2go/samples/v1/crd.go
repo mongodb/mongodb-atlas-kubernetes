@@ -17,20 +17,20 @@ type Group struct {
 }
 
 type GroupSpec struct {
-	V20231115 GroupSpecV20231115 `json:"v20231115,omitempty"`
+	V20231115 *GroupSpecV20231115 `json:"v20231115,omitempty"`
 }
 
 type GroupSpecV20231115 struct {
-	Entry      GroupSpecV20231115Entry      `json:"entry,omitempty"`
-	Parameters GroupSpecV20231115Parameters `json:"parameters,omitempty"`
+	Entry      *GroupSpecV20231115Entry      `json:"entry,omitempty"`
+	Parameters *GroupSpecV20231115Parameters `json:"parameters,omitempty"`
 }
 
 type GroupSpecV20231115Entry struct {
-	Name                      string                        `json:"name"`
-	OrgId                     string                        `json:"orgId"`
-	RegionUsageRestrictions   string                        `json:"regionUsageRestrictions,omitempty"`
-	Tags                      []GroupSpecV20231115EntryTags `json:"tags,omitempty"`
-	WithDefaultAlertsSettings bool                          `json:"withDefaultAlertsSettings,omitempty"`
+	Name                      string                         `json:"name"`
+	OrgId                     string                         `json:"orgId"`
+	RegionUsageRestrictions   *string                        `json:"regionUsageRestrictions,omitempty"`
+	Tags                      *[]GroupSpecV20231115EntryTags `json:"tags,omitempty"`
+	WithDefaultAlertsSettings *bool                          `json:"withDefaultAlertsSettings,omitempty"`
 }
 
 type GroupSpecV20231115EntryTags struct {
@@ -39,25 +39,25 @@ type GroupSpecV20231115EntryTags struct {
 }
 
 type GroupSpecV20231115Parameters struct {
-	ProjectOwnerId string `json:"projectOwnerId,omitempty"`
+	ProjectOwnerId *string `json:"projectOwnerId,omitempty"`
 }
 
 type GroupStatus struct {
-	Conditions []GroupStatusConditions `json:"conditions,omitempty"`
-	V20231115  GroupStatusV20231115    `json:"v20231115,omitempty"`
+	Conditions *[]GroupStatusConditions `json:"conditions,omitempty"`
+	V20231115  *GroupStatusV20231115    `json:"v20231115,omitempty"`
 }
 
 type GroupStatusConditions struct {
-	LastTransitionTime string `json:"lastTransitionTime,omitempty"`
-	Message            string `json:"message,omitempty"`
-	ObservedGeneration int    `json:"observedGeneration,omitempty"`
-	Reason             string `json:"reason,omitempty"`
-	Status             string `json:"status"`
-	Type               string `json:"type"`
+	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
+	Message            *string `json:"message,omitempty"`
+	ObservedGeneration *int    `json:"observedGeneration,omitempty"`
+	Reason             *string `json:"reason,omitempty"`
+	Status             string  `json:"status"`
+	Type               string  `json:"type"`
 }
 
 type GroupStatusV20231115 struct {
-	ClusterCount int    `json:"clusterCount"`
-	Created      string `json:"created"`
-	Id           string `json:"id,omitempty"`
+	ClusterCount int     `json:"clusterCount"`
+	Created      string  `json:"created"`
+	Id           *string `json:"id,omitempty"`
 }
