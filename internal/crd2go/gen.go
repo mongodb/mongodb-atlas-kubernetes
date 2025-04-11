@@ -10,6 +10,7 @@ import (
 	"github.com/dave/jennifer/jen"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
 const (
@@ -39,7 +40,7 @@ func GenerateStream(w io.Writer, r io.Reader, version string) error {
 	}
 }
 
-func Generate(crd *CRD, version string) (*jen.File, error) {
+func Generate(crd *apiextensions.CustomResourceDefinition, version string) (*jen.File, error) {
 	v := selectVersion(&crd.Spec, version)
 	if v == nil {
 		if version == "" {
@@ -61,7 +62,7 @@ func Generate(crd *CRD, version string) (*jen.File, error) {
 	return f, nil
 }
 
-func genRootObject(f *jen.File, crd *CRD, v *Version) error {
+func genRootObject(f *jen.File, crd *apiextensions.CustomResourceDefinition, v *apiextensions.CustomResourceDefinitionVersion) error {
 	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object").Line()
 
 	specType := fmt.Sprintf("%sSpec", crd.Spec.Names.Kind)
@@ -91,7 +92,7 @@ func genRootObject(f *jen.File, crd *CRD, v *Version) error {
 	return nil
 }
 
-func generateOpenAPICode(typeName string, schema *OpenAPISchema) (*jen.Statement, error) {
+func generateOpenAPICode(typeName string, schema *apiextensions.JSONSchemaProps) (*jen.Statement, error) {
 	switch schema.Type {
 	case "object":
 		return generateOpenAPIStruct(typeName, schema)
@@ -100,7 +101,7 @@ func generateOpenAPICode(typeName string, schema *OpenAPISchema) (*jen.Statement
 	}
 }
 
-func generateOpenAPIStruct(typeName string, schema *OpenAPISchema) (*jen.Statement, error) {
+func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProps) (*jen.Statement, error) {
 	subtypes := []jen.Code{}
 	fields := []jen.Code{}
 	for _, key := range orderedkeys(schema.Properties) {
@@ -112,12 +113,12 @@ func generateOpenAPIStruct(typeName string, schema *OpenAPISchema) (*jen.Stateme
 			return nil, fmt.Errorf("failed to parse schema type: %w", err)
 		}
 		entry := jen.Id(title(key)).Add(typeSuffix)
-		if schema.Required == nil || !slices.Contains(*schema.Required, key) {
+		if !slices.Contains(schema.Required, key) {
 			tagValue = strings.Join([]string{tagValue, "omitempty"}, ",")
 		}
 		entry = entry.Tag(map[string]string{"json": tagValue})
 		fields = append(fields, entry)
-		if complexSubtype := complexType(&value); complexSubtype != nil {
+		for _, complexSubtype := range complexTypes(&value) {
 			subtype, err := generateOpenAPICode(id, complexSubtype)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse schema type: %w", err)
@@ -129,7 +130,7 @@ func generateOpenAPIStruct(typeName string, schema *OpenAPISchema) (*jen.Stateme
 	return mainType.Add(subtypes...), nil
 }
 
-func namedType(name string, schema *OpenAPISchema, required bool) (*jen.Statement, error) {
+func namedType(name string, schema *apiextensions.JSONSchemaProps, required bool) (*jen.Statement, error) {
 	switch schema.Type {
 	case "array":
 		return requiredPrefix(required).Index().Id(title(name)), nil
@@ -153,11 +154,8 @@ func requiredPrefix(required bool) *jen.Statement {
 	return jen.Op("*")
 }
 
-func required(field string, schema *OpenAPISchema) bool {
-	if schema.Required == nil {
-		return false
-	}
-	for _, required := range *schema.Required {
+func required(field string, schema *apiextensions.JSONSchemaProps) bool {
+	for _, required := range schema.Required {
 		if required == field {
 			return true
 		}
@@ -165,18 +163,26 @@ func required(field string, schema *OpenAPISchema) bool {
 	return false
 }
 
-func complexType(schema *OpenAPISchema) *OpenAPISchema {
+func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSchemaProps {
 	switch schema.Type {
 	case "object":
-		return schema
+		return []*apiextensions.JSONSchemaProps{schema}
 	case "array":
-		return complexType(schema.Items)
+		if schema.Items.Schema != nil {
+			return complexTypes(schema.Items.Schema)
+		}
+		schemas := []*apiextensions.JSONSchemaProps{}
+		for _, schema := range schema.Items.JSONSchemas {
+			schemas = append(schemas, complexTypes(&schema)...)
+		}
+		return schemas
 	default:
 		return nil
 	}
 }
 
-func selectVersion(spec *Spec, version string) *Version {
+
+func selectVersion(spec *apiextensions.CustomResourceDefinitionSpec, version string) *apiextensions.CustomResourceDefinitionVersion {
 	if len(spec.Versions) == 0 {
 		return nil
 	}
