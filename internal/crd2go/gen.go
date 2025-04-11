@@ -16,6 +16,10 @@ const (
 	FirstVersion = ""
 )
 
+const (
+	metav1 = "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
 func GenerateStream(w io.Writer, r io.Reader, version string) error {
 	for {
 		crd, err := ParseCRD(r)
@@ -43,11 +47,26 @@ func Generate(crd *CRD, version string) (*jen.File, error) {
 		}
 		return nil, fmt.Errorf("no version %q to generate code from", version)
 	}
+	f := jen.NewFile(v.Name)
+	f.ImportAlias(metav1, "metav1")
+	f.Func().Id("init").Params().Block(
+		jen.Id("SchemeBuilder").Dot("Register").Params(
+			jen.Op("&").Id("Group").Values(),
+		),
+	)
+
+	if err := genRootObject(f, crd, v); err != nil {
+		return nil, fmt.Errorf("failed to generate root object: %w", err)
+	}
+	return f, nil
+}
+
+func genRootObject(f *jen.File, crd *CRD, v *Version) error {
+	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object").Line()
+
 	specType := fmt.Sprintf("%sSpec", crd.Spec.Names.Kind)
 	statusType := fmt.Sprintf("%sStatus", crd.Spec.Names.Kind)
-	f := jen.NewFile(v.Name)
-	metav1 := "k8s.io/apimachinery/pkg/apis/meta/v1"
-	f.ImportAlias(metav1, "metav1")
+
 	code := f.Type().Id(crd.Spec.Names.Kind).Struct(
 		jen.Qual(metav1, "TypeMeta").Tag(map[string]string{"json": ",inline"}),
 		jen.Qual(metav1, "ObjectMeta").Tag(map[string]string{"json": "metadata,omitempty"}),
@@ -55,19 +74,21 @@ func Generate(crd *CRD, version string) (*jen.File, error) {
 		jen.Id("Spec").Id(specType).Tag(map[string]string{"json": "spec,omitempty"}),
 		jen.Id("Status").Id(statusType).Tag(map[string]string{"json": "status,omitempty"}),
 	)
+
 	specSchema := v.Schema.OpenAPIV3Schema.Properties["spec"]
 	specCode, err := generateOpenAPICode(specType, &specSchema)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate spec code: %w", err)
+		return fmt.Errorf("failed to generate spec code: %w", err)
 	}
 	code.Add(specCode)
+	
 	statusSchema := v.Schema.OpenAPIV3Schema.Properties["status"]
 	statusCode, err := generateOpenAPICode(statusType, &statusSchema)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate status code: %w", err)
+		return fmt.Errorf("failed to generate status code: %w", err)
 	}
 	code.Add(statusCode)
-	return f, nil
+	return nil
 }
 
 func generateOpenAPICode(typeName string, schema *OpenAPISchema) (*jen.Statement, error) {
