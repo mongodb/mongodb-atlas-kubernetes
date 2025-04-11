@@ -11,10 +11,30 @@ spec:
         - atlas
       mappings:
         - majorVersion: v20231115
-          path: '/api/atlas/v2/groups'
-          verb: post
           openAPIRef:
             name: v20231115
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups'
+              verb: post
+          entry:
+            schema: "Group"
+            filters:
+              skipFields:
+                - $.clusterCount
+                - $.created
+                - $.id
+                - $.links
+          status:
+            schema: "Group"
+            filters:
+              skipFields:
+                - $.links
+                - $.name
+                - $.orgId
+                - $.regionUsageRestrictions
+                - $.tags
+                - $.withDefaultAlertsSettings
 
     - gvk:
         version: v1
@@ -24,10 +44,22 @@ spec:
         - atlas
       mappings:
         - majorVersion: v20231115
-          path: '/api/atlas/v2/groups/{groupId}/accessList'
-          verb: post
           openAPIRef:
             name: v20231115
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/accessList'
+              verb: post
+          entry:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/accessList'
+              verb: post
+              requestBody:
+                mimeType: 'application/vnd.atlas.2023-01-01+json'
+            filters:
+              skipFields:
+                - $[*].groupId
+                - $[*].links
 
     - gvk:
         version: v1
@@ -37,10 +69,48 @@ spec:
         - atlas
       mappings:
         - majorVersion: v20231115
-          path: '/api/atlas/v2/groups/{groupId}/clusters'
-          verb: post
           openAPIRef:
             name: v20231115
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/clusters'
+              verb: post
+          entry:
+            schema: 'AdvancedClusterDescription'
+            filters:
+              skipFields:
+                - $.connectionStrings
+                - $.createDate
+                - $.groupId
+                - $.id
+                - $.links
+                - $.mongoDBVersion
+                - $.replicationSpecs[*].id
+                - $.stateName
+          status:
+            schema: 'AdvancedClusterDescription'
+            filters:
+              skipFields:
+                - $.acceptDataRisksAndForceReplicaSetReconfig
+                - $.backupEnabled
+                - $.biConnector
+                - $.clusterType
+                - $.diskSizeGB
+                - $.diskWarmingMode
+                - $.encryptionAtRestProvider
+                - $.labels
+                - $.links
+                - $.mongoDBMajorVersion
+                - $.name
+                - $.paused
+                - $.pitEnabled
+                - $.replicationSpecs[*].numShards
+                - $.replicationSpecs[*].regionConfigs
+                - $.replicationSpecs[*].zoneName
+                - $.rootCertType
+                - $.tags
+                - $.terminationProtectionEnabled
+                - $.versionReleaseSystem
 
     - gvk:
         version: v1
@@ -50,10 +120,33 @@ spec:
         - atlas
       mappings:
         - majorVersion: v20231115
-          path: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/fts/indexes'
-          verb: post
           openAPIRef:
             name: v20231115
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/fts/indexes'
+              verb: post
+          entry:
+            schema: 'ClusterSearchIndex'
+            filters:
+              skipFields:
+                - $.indexID
+                - $.status
+          status:
+            schema: 'ClusterSearchIndex'
+            filters:
+              skipFields:
+                - $.analyzer
+                - $.analyzers
+                - $.collectionName
+                - $.database
+                - $.fields
+                - $.mappings
+                - $.name
+                - $.searchAnalyzer
+                - $.storedSource
+                - $.synonyms
+                - $.type
 
     - gvk:
         version: v1
@@ -63,10 +156,14 @@ spec:
         - atlas
       mappings:
         - majorVersion: v20231115
-          path: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
-          verb: post
           openAPIRef:
             name: v20231115
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
+              verb: post
+          entry:
+            schema: 'UserCustomDBRole'
 
     - gvk:
         version: v1
@@ -76,10 +173,136 @@ spec:
         - atlas
       mappings:
         - majorVersion: v20241113
-          path: '/api/atlas/v2/groups/{groupId}/flexClusters'
-          verb: post
           openAPIRef:
             name: v20241113
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/flexClusters'
+              verb: post
+          entry:
+            schema: 'FlexClusterDescriptionCreate20241113'
+            filters:
+              skipFields:
+                - $.links
+                - $.providerSettings.diskSizeGB
+                - $.providerSettings.providerName
+          status:
+            schema: 'FlexClusterDescription20241113'
+            filters:
+              skipFields:
+                - $.links
+                - $.tags
+                - $.terminationProtectionEnabled
+
+    - gvk:
+        version: v1
+        kind: GroupAlertsConfig
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      mappings:
+        - majorVersion: v20241113
+          openAPIRef:
+            name: v20241113
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/alertConfigs'
+              verb: post
+          entry:
+            schema: 'GroupAlertsConfig'
+            filters:
+              skipFields:
+                - $.created
+                - $.groupId
+                - $.id
+                - $.links
+                - $.updated
+              sensitiveFields:
+                - $.notifications[*].webhookUrl
+                - $.notifications[*].apiToken
+                - $.notifications[*].webhookSecret
+                - $.notifications[*].victorOpsRoutingKey
+                - $.notifications[*].notificationToken
+                - $.notifications[*].serviceKey
+                - $.notifications[*].victorOpsApiKey
+                - $.notifications[*].datadogApiKey
+                - $.notifications[*].microsoftTeamsWebhookUrl
+                - $.notifications[*].opsGenieApiKey
+          status:
+            schema: 'GroupAlertsConfig'
+            filters:
+              skipFields:
+                - $.notifications[*].webhookUrl
+                - $.notifications[*].apiToken
+                - $.notifications[*].webhookSecret
+                - $.notifications[*].victorOpsRoutingKey
+                - $.notifications[*].notificationToken
+                - $.notifications[*].serviceKey
+                - $.notifications[*].victorOpsApiKey
+                - $.notifications[*].datadogApiKey
+                - $.notifications[*].microsoftTeamsWebhookUrl
+                - $.notifications[*].opsGenieApiKey
+                - $.enabled
+                - $.eventTypeName
+                - $.links
+                - $.matchers
+                - $.notifications
+                - $.metricThreshold
+                - $.threshold
+
+    - gvk:
+        version: v1
+        kind: ThirdPartyIntegration
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      mappings:
+        - majorVersion: v20241113
+          openAPIRef:
+            name: v20241113
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/integrations/{integrationType}'
+              verb: post
+          entry:
+            schema: "ThirdPartyIntegration"
+            filters:
+              skipFields:
+                - $.id
+              sensitiveFields:
+                - $.apiKey
+                - $.apiToken
+                - $.licenseKey
+                - $.microsoftTeamsWebhookUrl
+                - $.password
+                - $.readToken
+                - $.routingKey
+                - $.secret
+                - $.serviceKey
+                - $.url
+                - $.writeToken
+          status:
+            schema: "ThirdPartyIntegration"
+            filters:
+              skipFields:
+                - $.accountId
+                - $.apiKey
+                - $.apiToken
+                - $.channelName
+                - $.enabled
+                - $.licenseKey
+                - $.microsoftTeamsWebhookUrl
+                - $.password
+                - $.readToken
+                - $.region
+                - $.routingKey
+                - $.secret
+                - $.serviceKey
+                - $.serviceDiscovery
+                - $.teamName
+                - $.url
+                - $.username
+                - $.writeToken
 
   openapi:
     - name: v20231115

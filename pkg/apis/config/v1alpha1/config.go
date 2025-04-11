@@ -36,18 +36,38 @@ type OpenAPIDefinition struct {
 type CRDConfig struct {
 	GVK        v1.GroupVersionKind `json:"gvk,omitempty"`
 	Categories []string            `json:"categories,omitempty"`
-	Mappings   []Mapping           `json:"mappings,omitempty"`
+	Mappings   []CRDMapping        `json:"mappings,omitempty"`
 }
 
-type Mapping struct {
-	OpenAPIRef      LocalObjectReference `json:"openAPIRef,omitempty"`
-	MajorVersion    string               `json:"majorVersion,omitempty"`
-	Path            string               `json:"path,omitempty"`
-	Verb            string               `json:"verb,omitempty"`
-	Transformations Transformations      `json:"transformations,omitempty"`
+type CRDMapping struct {
+	OpenAPIRef        LocalObjectReference `json:"openAPIRef,omitempty"`
+	MajorVersion      string               `json:"majorVersion,omitempty"`
+	ParametersMapping ParametersMapping    `json:"parameters,omitempty"`
+	EntryMapping      FieldMapping         `json:"entry,omitempty"`
+	StatusMapping     FieldMapping         `json:"status,omitempty"`
 }
 
-type Transformations struct {
+type ParametersMapping struct {
+	FieldPath FieldPath `json:"path,omitempty"`
+}
+
+type FieldMapping struct {
+	Schema  string    `json:"schema,omitempty"`
+	Path    FieldPath `json:"path,omitempty"`
+	Filters Filters   `json:"filters,omitempty"`
+}
+
+type FieldPath struct {
+	Name        string      `json:"name,omitempty"`
+	Verb        string      `json:"verb,omitempty"`
+	RequestBody RequestBody `json:"requestBody,omitempty"`
+}
+
+type RequestBody struct {
+	MimeType string `json:"mimeType,omitempty"`
+}
+
+type Filters struct {
 	SkipFields      []string `json:"skipFields,omitempty"`
 	SensitiveFields []string `json:"sensitiveFields,omitempty"`
 }

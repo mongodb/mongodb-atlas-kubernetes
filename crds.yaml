@@ -19,12 +19,22 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
+        description: A group, managed by the MongoDB Kubernetes Atlas Operator.
         properties:
           spec:
+            description: |-
+              Specification of the group supporting the following versions:
+
+              - v20231115
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               v20231115:
+                description: The spec of the group resource for version v20231115.
                 properties:
                   entry:
+                    description: The entry fields of the group resource spec. These
+                      fields can be set for creating and updating groups.
                     properties:
                       name:
                         description: Human-readable label that identifies the project
@@ -81,6 +91,8 @@ spec:
                     - orgId
                     type: object
                   parameters:
+                    description: The parameter fields of the group resource spec.
+                      These fields are used when creating groups only.
                     properties:
                       projectOwnerId:
                         description: Unique 24-hexadecimal digit string that identifies
@@ -93,6 +105,9 @@ spec:
                 type: object
             type: object
           status:
+            description: 'Most recently observed read-only status of the group for
+              the specified resource version. This data may not be up to date and
+              is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
               conditions:
                 description: Represents the latest available observations of a resource's
@@ -130,6 +145,8 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               v20231115:
+                description: The last observed Atlas state of the group resource for
+                  version v20231115.
                 properties:
                   clusterCount:
                     description: Quantity of MongoDB Cloud clusters deployed in this
@@ -181,12 +198,24 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
+        description: A networkpermissionentry, managed by the MongoDB Kubernetes Atlas
+          Operator.
         properties:
           spec:
+            description: |-
+              Specification of the networkpermissionentry supporting the following versions:
+
+              - v20231115
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               v20231115:
+                description: The spec of the networkpermissionentry resource for version
+                  v20231115.
                 properties:
                   entry:
+                    description: The entry fields of the networkpermissionentry resource
+                      spec. These fields can be set for creating and updating networkpermissionentries.
                     items:
                       properties:
                         awsSecurityGroup:
@@ -230,6 +259,9 @@ spec:
                       type: object
                     type: array
                   parameters:
+                    description: The parameter fields of the networkpermissionentry
+                      resource spec. These fields are used when creating networkpermissionentries
+                      only.
                     properties:
                       groupId:
                         description: |-
@@ -241,6 +273,9 @@ spec:
                 type: object
             type: object
           status:
+            description: 'Most recently observed read-only status of the networkpermissionentry
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
               conditions:
                 description: Represents the latest available observations of a resource's
@@ -277,25 +312,6 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              v20231115:
-                properties:
-                  results:
-                    description: List of returned documents that MongoDB Cloud providers
-                      when completing this request.
-                    items:
-                      properties:
-                        groupId:
-                          description: Unique 24-hexadecimal digit string that identifies
-                            the project that contains the IP access list to which
-                            you want to add one or more entries.
-                          type: string
-                      type: object
-                    type: array
-                  totalCount:
-                    description: Total number of documents available. MongoDB Cloud
-                      omits this value if `includeCount` is set to `false`.
-                    type: integer
-                type: object
             type: object
         type: object
     served: true
@@ -329,12 +345,22 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
+        description: A cluster, managed by the MongoDB Kubernetes Atlas Operator.
         properties:
           spec:
+            description: |-
+              Specification of the cluster supporting the following versions:
+
+              - v20231115
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               v20231115:
+                description: The spec of the cluster resource for version v20231115.
                 properties:
                   entry:
+                    description: The entry fields of the cluster resource spec. These
+                      fields can be set for creating and updating clusters.
                     properties:
                       acceptDataRisksAndForceReplicaSetReconfig:
                         description: If reconfiguration is necessary to regain a primary
@@ -805,6 +831,8 @@ spec:
                         type: string
                     type: object
                   parameters:
+                    description: The parameter fields of the cluster resource spec.
+                      These fields are used when creating clusters only.
                     properties:
                       groupId:
                         description: |-
@@ -816,6 +844,9 @@ spec:
                 type: object
             type: object
           status:
+            description: 'Most recently observed read-only status of the cluster for
+              the specified resource version. This data may not be up to date and
+              is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
               conditions:
                 description: Represents the latest available observations of a resource's
@@ -853,6 +884,8 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               v20231115:
+                description: The last observed Atlas state of the cluster resource
+                  for version v20231115.
                 properties:
                   connectionStrings:
                     description: Collection of Uniform Resource Locators that point
@@ -1090,12 +1123,22 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
+        description: A searchindex, managed by the MongoDB Kubernetes Atlas Operator.
         properties:
           spec:
+            description: |-
+              Specification of the searchindex supporting the following versions:
+
+              - v20231115
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               v20231115:
+                description: The spec of the searchindex resource for version v20231115.
                 properties:
                   entry:
+                    description: The entry fields of the searchindex resource spec.
+                      These fields can be set for creating and updating searchindexes.
                     properties:
                       analyzer:
                         description: |-
@@ -1280,6 +1323,8 @@ spec:
                     - name
                     type: object
                   parameters:
+                    description: The parameter fields of the searchindex resource
+                      spec. These fields are used when creating searchindexes only.
                     properties:
                       clusterName:
                         description: Name of the cluster that contains the collection
@@ -1295,6 +1340,9 @@ spec:
                 type: object
             type: object
           status:
+            description: 'Most recently observed read-only status of the searchindex
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
               conditions:
                 description: Represents the latest available observations of a resource's
@@ -1332,6 +1380,8 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               v20231115:
+                description: The last observed Atlas state of the searchindex resource
+                  for version v20231115.
                 properties:
                   indexID:
                     description: Unique 24-hexadecimal digit string that identifies
@@ -1383,12 +1433,23 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
+        description: A usercustomdbrole, managed by the MongoDB Kubernetes Atlas Operator.
         properties:
           spec:
+            description: |-
+              Specification of the usercustomdbrole supporting the following versions:
+
+              - v20231115
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               v20231115:
+                description: The spec of the usercustomdbrole resource for version
+                  v20231115.
                 properties:
                   entry:
+                    description: The entry fields of the usercustomdbrole resource
+                      spec. These fields can be set for creating and updating usercustomdbroles.
                     properties:
                       actions:
                         description: List of the individual privilege actions that
@@ -1472,6 +1533,9 @@ spec:
                     - roleName
                     type: object
                   parameters:
+                    description: The parameter fields of the usercustomdbrole resource
+                      spec. These fields are used when creating usercustomdbroles
+                      only.
                     properties:
                       groupId:
                         description: |-
@@ -1483,6 +1547,9 @@ spec:
                 type: object
             type: object
           status:
+            description: 'Most recently observed read-only status of the usercustomdbrole
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
               conditions:
                 description: Represents the latest available observations of a resource's
@@ -1552,14 +1619,22 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
+        description: A flexcluster, managed by the MongoDB Kubernetes Atlas Operator.
         properties:
           spec:
+            description: |-
+              Specification of the flexcluster supporting the following versions:
+
+              - v20241113
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               v20241113:
+                description: The spec of the flexcluster resource for version v20241113.
                 properties:
                   entry:
-                    description: Settings that you can specify when you create a flex
-                      cluster.
+                    description: The entry fields of the flexcluster resource spec.
+                      These fields can be set for creating and updating flexclusters.
                     properties:
                       name:
                         description: Human-readable label that identifies the instance.
@@ -1623,6 +1698,8 @@ spec:
                     title: Flex Cluster Description Create
                     type: object
                   parameters:
+                    description: The parameter fields of the flexcluster resource
+                      spec. These fields are used when creating flexclusters only.
                     properties:
                       groupId:
                         description: |-
@@ -1634,6 +1711,9 @@ spec:
                 type: object
             type: object
           status:
+            description: 'Most recently observed read-only status of the flexcluster
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
               conditions:
                 description: Represents the latest available observations of a resource's
@@ -1671,7 +1751,8 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               v20241113:
-                description: Group of settings that configure a MongoDB Flex cluster.
+                description: The last observed Atlas state of the flexcluster resource
+                  for version v20241113.
                 properties:
                   backupSettings:
                     description: Flex backup configuration
@@ -1756,6 +1837,556 @@ spec:
                 required:
                 - providerSettings
                 title: Flex Cluster Description
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: groupalertsconfigs.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: GroupAlertsConfig
+    listKind: GroupAlertsConfigList
+    plural: groupalertsconfigs
+    singular: groupalertsconfig
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A groupalertsconfig, managed by the MongoDB Kubernetes Atlas
+          Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the groupalertsconfig supporting the following versions:
+
+              - v20241113
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20241113:
+                description: The spec of the groupalertsconfig resource for version
+                  v20241113.
+                properties:
+                  entry:
+                    description: The entry fields of the groupalertsconfig resource
+                      spec. These fields can be set for creating and updating groupalertsconfigs.
+                    properties:
+                      enabled:
+                        description: Flag that indicates whether someone enabled this
+                          alert configuration for the specified project.
+                        type: boolean
+                      eventTypeName:
+                        description: Event type that triggers an alert.
+                        title: Stream Processor Event Types
+                        type: string
+                      matchers:
+                        description: List of rules that determine whether MongoDB
+                          Cloud checks an object for the alert configuration.
+                        items:
+                          description: Rules to apply when comparing a stream processing
+                            instance or stream processor against this alert configuration.
+                          properties:
+                            fieldName:
+                              description: Name of the parameter in the target object
+                                that MongoDB Cloud checks. The parameter must match
+                                all rules for MongoDB Cloud to check for alert configurations.
+                              title: Streams Matcher Fields
+                              type: string
+                            operator:
+                              description: Comparison operator to apply when checking
+                                the current metric value against **matcher[n].value**.
+                              type: string
+                            value:
+                              description: Value to match or exceed using the specified
+                                **matchers.operator**.
+                              type: string
+                          required:
+                          - fieldName
+                          - operator
+                          - value
+                          title: Matchers
+                          type: object
+                        type: array
+                      metricThreshold:
+                        description: Threshold for the metric that, when exceeded,
+                          triggers an alert. The metric threshold pertains to event
+                          types which reflects changes of measurements and metrics
+                          about the serverless database.
+                        properties:
+                          metricName:
+                            description: Human-readable label that identifies the
+                              metric against which MongoDB Cloud checks the configured
+                              **metricThreshold.threshold**.
+                            type: string
+                          mode:
+                            description: MongoDB Cloud computes the current metric
+                              value as an average.
+                            type: string
+                          operator:
+                            description: Comparison operator to apply when checking
+                              the current metric value.
+                            type: string
+                          threshold:
+                            description: Value of metric that, when exceeded, triggers
+                              an alert.
+                            type: number
+                          units:
+                            description: Element used to express the quantity. This
+                              can be an element of time, storage capacity, and the
+                              like.
+                            title: Serverless Metric Units
+                            type: string
+                        required:
+                        - metricName
+                        title: Serverless Metric Threshold
+                        type: object
+                      notifications:
+                        description: List that contains the targets that MongoDB Cloud
+                          sends notifications.
+                        items:
+                          description: One target that MongoDB Cloud sends notifications
+                            when an alert triggers.
+                          properties:
+                            channelName:
+                              description: 'Name of the Slack channel to which MongoDB
+                                Cloud sends alert notifications. The resource requires
+                                this parameter when `"notifications.[n].typeName"
+                                : "SLACK"`.'
+                              type: string
+                            datadogRegion:
+                              description: |-
+                                Datadog region that indicates which API Uniform Resource Locator (URL) to use. The resource requires this parameter when `"notifications.[n].typeName" : "DATADOG"`.
+
+                                To learn more about Datadog's regions, see <a href="https://docs.datadoghq.com/getting_started/site/" target="_blank" rel="noopener noreferrer">Datadog Sites</a>.
+                              type: string
+                            delayMin:
+                              description: Number of minutes that MongoDB Cloud waits
+                                after detecting an alert condition before it sends
+                                out the first notification.
+                              type: integer
+                            emailAddress:
+                              description: |-
+                                Email address to which MongoDB Cloud sends alert notifications. The resource requires this parameter when `"notifications.[n].typeName" : "EMAIL"`. You don't need to set this value to send emails to individual or groups of MongoDB Cloud users including:
+
+                                - specific MongoDB Cloud users (`"notifications.[n].typeName" : "USER"`)
+                                - MongoDB Cloud users with specific project roles (`"notifications.[n].typeName" : "GROUP"`)
+                                - MongoDB Cloud users with specific organization roles (`"notifications.[n].typeName" : "ORG"`)
+                                - MongoDB Cloud teams (`"notifications.[n].typeName" : "TEAM"`)
+
+                                To send emails to one MongoDB Cloud user or grouping of users, set the `notifications.[n].emailEnabled` parameter.
+                              type: string
+                            emailEnabled:
+                              description: |-
+                                Flag that indicates whether MongoDB Cloud should send email notifications. The resource requires this parameter when one of the following values have been set:
+
+                                - `"notifications.[n].typeName" : "ORG"`
+                                - `"notifications.[n].typeName" : "GROUP"`
+                                - `"notifications.[n].typeName" : "USER"`
+                              type: boolean
+                            integrationId:
+                              description: The id of the associated integration, the
+                                credentials of which to use for requests.
+                              type: string
+                            intervalMin:
+                              description: |-
+                                Number of minutes to wait between successive notifications. MongoDB Cloud sends notifications until someone acknowledges the unacknowledged alert.
+
+                                PagerDuty, VictorOps, and OpsGenie notifications don't return this element. Configure and manage the notification interval within each of those services.
+                              type: integer
+                            mobileNumber:
+                              description: 'Mobile phone number to which MongoDB Cloud
+                                sends alert notifications. The resource requires this
+                                parameter when `"notifications.[n].typeName" : "SMS"`.'
+                              type: string
+                            notifierId:
+                              description: The notifierId is a system-generated unique
+                                identifier assigned to each notification method. This
+                                is needed when updating third-party notifications
+                                without requiring explicit authentication credentials.
+                              type: string
+                            opsGenieRegion:
+                              description: Opsgenie region that indicates which API
+                                Uniform Resource Locator (URL) to use.
+                              type: string
+                            region:
+                              description: PagerDuty region that indicates which API
+                                Uniform Resource Locator (URL) to use.
+                              type: string
+                            roles:
+                              description: 'List that contains the one or more [organization](https://dochub.mongodb.org/core/atlas-org-roles)
+                                or [project roles](https://dochub.mongodb.org/core/atlas-proj-roles)
+                                that receive the configured alert. The resource requires
+                                this parameter when `"notifications.[n].typeName"
+                                : "GROUP"` or `"notifications.[n].typeName" : "ORG"`.
+                                If you include this parameter, MongoDB Cloud sends
+                                alerts only to users assigned the roles you specify
+                                in the array. If you omit this parameter, MongoDB
+                                Cloud sends alerts to users assigned any role.'
+                              items:
+                                description: One organization or project role that
+                                  receive the configured alert.
+                                type: string
+                              type: array
+                            roomName:
+                              description: 'HipChat API room name to which MongoDB
+                                Cloud sends alert notifications. The resource requires
+                                this parameter when `"notifications.[n].typeName"
+                                : "HIP_CHAT"`".'
+                              type: string
+                            smsEnabled:
+                              description: |-
+                                Flag that indicates whether MongoDB Cloud should send text message notifications. The resource requires this parameter when one of the following values have been set:
+
+                                - `"notifications.[n].typeName" : "ORG"`
+                                - `"notifications.[n].typeName" : "GROUP"`
+                                - `"notifications.[n].typeName" : "USER"`
+                              type: boolean
+                            teamId:
+                              description: 'Unique 24-hexadecimal digit string that
+                                identifies one MongoDB Cloud team. The resource requires
+                                this parameter when `"notifications.[n].typeName"
+                                : "TEAM"`.'
+                              type: string
+                            teamName:
+                              description: 'Name of the MongoDB Cloud team that receives
+                                this notification. The resource requires this parameter
+                                when `"notifications.[n].typeName" : "TEAM"`.'
+                              type: string
+                            typeName:
+                              description: Human-readable label that displays the
+                                alert notification type.
+                              type: string
+                            username:
+                              description: 'MongoDB Cloud username of the person to
+                                whom MongoDB Cloud sends notifications. Specify only
+                                MongoDB Cloud users who belong to the project that
+                                owns the alert configuration. The resource requires
+                                this parameter when `"notifications.[n].typeName"
+                                : "USER"`.'
+                              type: string
+                          type: object
+                        type: array
+                      threshold:
+                        description: A Limit that triggers an alert when greater than
+                          a number.
+                        properties:
+                          operator:
+                            description: Comparison operator to apply when checking
+                              the current metric value.
+                            type: string
+                          threshold:
+                            description: Value of metric that, when exceeded, triggers
+                              an alert.
+                            type: integer
+                          units:
+                            description: Element used to express the quantity. This
+                              can be an element of time, storage capacity, and the
+                              like.
+                            title: Raw Metric Units
+                            type: string
+                        title: Greater Than Raw Threshold
+                        type: object
+                    type: object
+                  parameters:
+                    description: The parameter fields of the groupalertsconfig resource
+                      spec. These fields are used when creating groupalertsconfigs
+                      only.
+                    properties:
+                      groupId:
+                        description: |-
+                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                        type: string
+                    type: object
+                  sensitiveDataSecret:
+                    description: |-
+                      Reference to a secret containing the following fields:
+
+                      $.notifications[*].webhookUrl
+                      $.notifications[*].apiToken
+                      $.notifications[*].webhookSecret
+                      $.notifications[*].victorOpsRoutingKey
+                      $.notifications[*].notificationToken
+                      $.notifications[*].serviceKey
+                      $.notifications[*].victorOpsApiKey
+                      $.notifications[*].datadogApiKey
+                      $.notifications[*].microsoftTeamsWebhookUrl
+                      $.notifications[*].opsGenieApiKey
+
+                      The expected fields above are represented in JSONPath syntax.
+                      The format of the secret is expected to contain a "data" field containing a YAML or JSON document containing an object containing the above fields.
+                    properties:
+                      name:
+                        type: string
+                    type: object
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the groupalertsconfig
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20241113:
+                description: The last observed Atlas state of the groupalertsconfig
+                  resource for version v20241113.
+                properties:
+                  created:
+                    description: Date and time when MongoDB Cloud created the alert
+                      configuration. This parameter expresses its value in the <a
+                      href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank"
+                      rel="noopener noreferrer">ISO 8601</a> timestamp format in UTC.
+                    type: string
+                  groupId:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the project that owns this alert configuration.
+                    type: string
+                  id:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      this alert configuration.
+                    type: string
+                  updated:
+                    description: Date and time when someone last updated this alert
+                      configuration. This parameter expresses its value in the <a
+                      href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank"
+                      rel="noopener noreferrer">ISO 8601</a> timestamp format in UTC.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: thirdpartyintegrations.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: ThirdPartyIntegration
+    listKind: ThirdPartyIntegrationList
+    plural: thirdpartyintegrations
+    singular: thirdpartyintegration
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A thirdpartyintegration, managed by the MongoDB Kubernetes Atlas
+          Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the thirdpartyintegration supporting the following versions:
+
+              - v20241113
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20241113:
+                description: The spec of the thirdpartyintegration resource for version
+                  v20241113.
+                properties:
+                  entry:
+                    description: The entry fields of the thirdpartyintegration resource
+                      spec. These fields can be set for creating and updating thirdpartyintegrations.
+                    properties:
+                      accountId:
+                        description: Unique 40-hexadecimal digit string that identifies
+                          your New Relic account.
+                        type: string
+                      channelName:
+                        description: Name of the Slack channel to which MongoDB Cloud
+                          sends alert notifications.
+                        type: string
+                      enabled:
+                        description: Flag that indicates whether someone has activated
+                          the Prometheus integration.
+                        type: boolean
+                      region:
+                        description: PagerDuty region that indicates the API Uniform
+                          Resource Locator (URL) to use.
+                        type: string
+                      serviceDiscovery:
+                        description: Desired method to discover the Prometheus service.
+                        type: string
+                      teamName:
+                        description: Human-readable label that identifies your Slack
+                          team. Set this parameter when you configure a legacy Slack
+                          integration.
+                        type: string
+                      type:
+                        description: Human-readable label that identifies the service
+                          to which you want to integrate with MongoDB Cloud. The value
+                          must match the third-party service integration type.
+                        type: string
+                      username:
+                        description: Human-readable label that identifies your Prometheus
+                          incoming webhook.
+                        type: string
+                    title: Third-Party Integration
+                    type: object
+                  parameters:
+                    description: The parameter fields of the thirdpartyintegration
+                      resource spec. These fields are used when creating thirdpartyintegrations
+                      only.
+                    properties:
+                      groupId:
+                        description: |-
+                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                        type: string
+                      integrationType:
+                        description: Human-readable label that identifies the service
+                          which you want to integrate with MongoDB Cloud.
+                        title: Integration Type
+                        type: string
+                    type: object
+                  sensitiveDataSecret:
+                    description: |-
+                      Reference to a secret containing the following fields:
+
+                      $.apiKey
+                      $.apiToken
+                      $.licenseKey
+                      $.microsoftTeamsWebhookUrl
+                      $.password
+                      $.readToken
+                      $.routingKey
+                      $.secret
+                      $.serviceKey
+                      $.url
+                      $.writeToken
+
+                      The expected fields above are represented in JSONPath syntax.
+                      The format of the secret is expected to contain a "data" field containing a YAML or JSON document containing an object containing the above fields.
+                    properties:
+                      name:
+                        type: string
+                    type: object
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the thirdpartyintegration
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20241113:
+                description: The last observed Atlas state of the thirdpartyintegration
+                  resource for version v20241113.
+                properties:
+                  id:
+                    description: Integration id.
+                    type: string
+                  type:
+                    description: Human-readable label that identifies the service
+                      to which you want to integrate with MongoDB Cloud. The value
+                      must match the third-party service integration type.
+                    type: string
+                title: Third-Party Integration
                 type: object
             type: object
         type: object
