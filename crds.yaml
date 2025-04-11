@@ -1968,10 +1968,10 @@ spec:
                           properties:
                             apiTokenRef:
                               description: "SENSITIVE FIELD\n\nReference to a secret
-                                containing one entry named \"apiToken\" containing
-                                the value:\n\nSlack API token or Bot token that MongoDB
-                                Cloud needs to send alert notifications via Slack.
-                                The resource requires this parameter when `\"notifications.[n].typeName\"
+                                containing data for the \"apiToken\" field:\n\nSlack
+                                API token or Bot token that MongoDB Cloud needs to
+                                send alert notifications via Slack. The resource requires
+                                this parameter when `\"notifications.[n].typeName\"
                                 : \"SLACK\"`. If the token later becomes invalid,
                                 MongoDB Cloud sends an email to the project owners.
                                 If the token remains invalid, MongoDB Cloud removes
@@ -1982,6 +1982,11 @@ spec:
                                 alert for the notification through the Atlas Administration
                                 API."
                               properties:
+                                key:
+                                  default: apiToken
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "apiToken".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -1997,7 +2002,7 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "datadogApiKey" containing the value:
+                                Reference to a secret containing data for the "datadogApiKey" field:
 
                                 Datadog API Key that MongoDB Cloud needs to send alert notifications to Datadog. You can find this API key in the Datadog dashboard. The resource requires this parameter when `"notifications.[n].typeName" : "DATADOG"`.
 
@@ -2007,6 +2012,11 @@ spec:
 
                                 * Query the alert for the notification through the Atlas Administration API.
                               properties:
+                                key:
+                                  default: datadogApiKey
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "datadogApiKey".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2056,12 +2066,17 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "microsoftTeamsWebhookUrl" containing the value:
+                                Reference to a secret containing data for the "microsoftTeamsWebhookUrl" field:
 
                                 Microsoft Teams Webhook Uniform Resource Locator (URL) that MongoDB Cloud needs to send this notification via Microsoft Teams. The resource requires this parameter when `"notifications.[n].typeName" : "MICROSOFT_TEAMS"`. If the URL later becomes invalid, MongoDB Cloud sends an email to the project owners. If the key remains invalid, MongoDB Cloud removes it.
 
                                 **NOTE**: When you view or edit the alert for a Microsoft Teams notification, the URL appears partially redacted.
                               properties:
+                                key:
+                                  default: microsoftTeamsWebhookUrl
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "microsoftTeamsWebhookUrl".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2076,7 +2091,7 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "notificationToken" containing the value:
+                                Reference to a secret containing data for the "notificationToken" field:
 
                                 HipChat API token that MongoDB Cloud needs to send alert notifications to HipChat. The resource requires this parameter when `"notifications.[n].typeName" : "HIP_CHAT"`". If the token later becomes invalid, MongoDB Cloud sends an email to the project owners. If the token remains invalid, MongoDB Cloud removes it.
 
@@ -2086,6 +2101,11 @@ spec:
 
                                 * Query the alert for the notification through the Atlas Administration API.
                               properties:
+                                key:
+                                  default: notificationToken
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "notificationToken".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2101,7 +2121,7 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "opsGenieApiKey" containing the value:
+                                Reference to a secret containing data for the "opsGenieApiKey" field:
 
                                 API Key that MongoDB Cloud needs to send this notification via Opsgenie. The resource requires this parameter when `"notifications.[n].typeName" : "OPS_GENIE"`. If the key later becomes invalid, MongoDB Cloud sends an email to the project owners. If the key remains invalid, MongoDB Cloud removes it.
 
@@ -2111,6 +2131,11 @@ spec:
 
                                 * Query the alert for the notification through the Atlas Administration API.
                               properties:
+                                key:
+                                  default: opsGenieApiKey
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "opsGenieApiKey".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2149,7 +2174,7 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "serviceKey" containing the value:
+                                Reference to a secret containing data for the "serviceKey" field:
 
                                 PagerDuty service key that MongoDB Cloud needs to send notifications via PagerDuty. The resource requires this parameter when `"notifications.[n].typeName" : "PAGER_DUTY"`. If the key later becomes invalid, MongoDB Cloud sends an email to the project owners. If the key remains invalid, MongoDB Cloud removes it.
 
@@ -2159,6 +2184,11 @@ spec:
 
                                 * Query the alert for the notification through the Atlas Administration API.
                               properties:
+                                key:
+                                  default: serviceKey
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "serviceKey".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2199,7 +2229,7 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "victorOpsApiKey" containing the value:
+                                Reference to a secret containing data for the "victorOpsApiKey" field:
 
                                 API key that MongoDB Cloud needs to send alert notifications to Splunk On-Call. The resource requires this parameter when `"notifications.[n].typeName" : "VICTOR_OPS"`. If the key later becomes invalid, MongoDB Cloud sends an email to the project owners. If the key remains invalid, MongoDB Cloud removes it.
 
@@ -2209,6 +2239,11 @@ spec:
 
                                 * Query the alert for the notification through the Atlas Administration API.
                               properties:
+                                key:
+                                  default: victorOpsApiKey
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "victorOpsApiKey".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2218,10 +2253,15 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "victorOpsRoutingKey" containing the value:
+                                Reference to a secret containing data for the "victorOpsRoutingKey" field:
 
                                 Routing key that MongoDB Cloud needs to send alert notifications to Splunk On-Call. The resource requires this parameter when `"notifications.[n].typeName" : "VICTOR_OPS"`. If the key later becomes invalid, MongoDB Cloud sends an email to the project owners. If the key remains invalid, MongoDB Cloud removes it.
                               properties:
+                                key:
+                                  default: victorOpsRoutingKey
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "victorOpsRoutingKey".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2231,7 +2271,7 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "webhookSecret" containing the value:
+                                Reference to a secret containing data for the "webhookSecret" field:
 
                                 Authentication secret for a webhook-based alert.
 
@@ -2241,6 +2281,11 @@ spec:
 
                                 **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
                               properties:
+                                key:
+                                  default: webhookSecret
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "webhookSecret".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2250,7 +2295,7 @@ spec:
                               description: |-
                                 SENSITIVE FIELD
 
-                                Reference to a secret containing one entry named "webhookUrl" containing the value:
+                                Reference to a secret containing data for the "webhookUrl" field:
 
                                 Target URL for a webhook-based alert.
 
@@ -2260,6 +2305,11 @@ spec:
 
                                 **NOTE**: When you view or edit the alert for a Webhook URL notification, the URL appears partially redacted.
                               properties:
+                                key:
+                                  default: webhookUrl
+                                  description: Key of the secret data containing the
+                                    sensitive field value, defaults to "webhookUrl".
+                                  type: string
                                 name:
                                   description: Name of the secret containing the sensitive
                                     field value.
@@ -2427,7 +2477,7 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "apiKey" containing the value:
+                          Reference to a secret containing data for the "apiKey" field:
 
                           Key that allows MongoDB Cloud to access your VictorOps account.
 
@@ -2437,6 +2487,11 @@ spec:
 
                           * Query the alert for the notification through the Atlas Administration API.
                         properties:
+                          key:
+                            default: apiKey
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "apiKey".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2446,7 +2501,7 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "apiToken" containing the value:
+                          Reference to a secret containing data for the "apiToken" field:
 
                           Key that allows MongoDB Cloud to access your Slack account.
 
@@ -2458,6 +2513,11 @@ spec:
 
                           **IMPORTANT**: Slack integrations now use the OAuth2 verification method and must  be initially configured, or updated from a legacy integration, through the Atlas  third-party service integrations page. Legacy tokens will soon no longer be  supported.
                         properties:
+                          key:
+                            default: apiToken
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "apiToken".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2475,13 +2535,18 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "licenseKey" containing the value:
+                          Reference to a secret containing data for the "licenseKey" field:
 
                           Unique 40-hexadecimal digit string that identifies your New Relic license.
 
                           **IMPORTANT**: Effective Wednesday, June 16th, 2021, New Relic no longer supports the plugin-based integration with MongoDB. We do not recommend that you sign up for the plugin-based integration.
                           To learn more, see the <a href="https://discuss.newrelic.com/t/new-relic-plugin-eol-wednesday-june-16th-2021/127267" target="_blank">New Relic Plugin EOL Statement</a> Consider configuring an alternative monitoring integration before June 16th to maintain visibility into your MongoDB deployments.
                         properties:
+                          key:
+                            default: licenseKey
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "licenseKey".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2491,12 +2556,17 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "microsoftTeamsWebhookUrl" containing the value:
+                          Reference to a secret containing data for the "microsoftTeamsWebhookUrl" field:
 
                           Endpoint web address of the Microsoft Teams webhook to which MongoDB Cloud sends notifications.
 
                           **NOTE**: When you view or edit the alert for a Microsoft Teams notification, the URL appears partially redacted.
                         properties:
+                          key:
+                            default: microsoftTeamsWebhookUrl
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "microsoftTeamsWebhookUrl".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2506,10 +2576,15 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "password" containing the value:
+                          Reference to a secret containing data for the "password" field:
 
                           Password needed to allow MongoDB Cloud to access your Prometheus account.
                         properties:
+                          key:
+                            default: password
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "password".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2519,10 +2594,15 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "readToken" containing the value:
+                          Reference to a secret containing data for the "readToken" field:
 
                           Query key used to access your New Relic account.
                         properties:
+                          key:
+                            default: readToken
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "readToken".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2536,10 +2616,15 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "routingKey" containing the value:
+                          Reference to a secret containing data for the "routingKey" field:
 
                           Routing key associated with your Splunk On-Call account.
                         properties:
+                          key:
+                            default: routingKey
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "routingKey".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2549,12 +2634,17 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "secret" containing the value:
+                          Reference to a secret containing data for the "secret" field:
 
                           An optional field returned if your webhook is configured with a secret.
 
                           **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
                         properties:
+                          key:
+                            default: secret
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "secret".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2567,7 +2657,7 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "serviceKey" containing the value:
+                          Reference to a secret containing data for the "serviceKey" field:
 
                           Service key associated with your PagerDuty account.
 
@@ -2577,6 +2667,11 @@ spec:
 
                           * Query the alert for the notification through the Atlas Administration API.
                         properties:
+                          key:
+                            default: serviceKey
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "serviceKey".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2596,12 +2691,17 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "url" containing the value:
+                          Reference to a secret containing data for the "url" field:
 
                           Endpoint web address to which MongoDB Cloud sends notifications.
 
                           **NOTE**: When you view or edit the alert for a webhook notification, the URL appears partially redacted.
                         properties:
+                          key:
+                            default: url
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "url".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
@@ -2615,10 +2715,15 @@ spec:
                         description: |-
                           SENSITIVE FIELD
 
-                          Reference to a secret containing one entry named "writeToken" containing the value:
+                          Reference to a secret containing data for the "writeToken" field:
 
                           Insert key associated with your New Relic account.
                         properties:
+                          key:
+                            default: writeToken
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "writeToken".
+                            type: string
                           name:
                             description: Name of the secret containing the sensitive
                               field value.
