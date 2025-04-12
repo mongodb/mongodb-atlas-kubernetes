@@ -10,7 +10,7 @@ import (
 	"github.com/dave/jennifer/jen"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 const (
@@ -180,7 +180,6 @@ func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSc
 		return nil
 	}
 }
-
 
 func selectVersion(spec *apiextensions.CustomResourceDefinitionSpec, version string) *apiextensions.CustomResourceDefinitionVersion {
 	if len(spec.Versions) == 0 {
