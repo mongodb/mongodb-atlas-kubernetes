@@ -1,12 +1,16 @@
 package crd2go_test
 
 import (
+	"embed"
 	"io"
 	"testing"
 
 	"github.com/josvazg/crd2go/internal/crd2go"
 	"github.com/stretchr/testify/require"
 )
+
+//go:embed samples/*
+var samples embed.FS
 
 func TestGenerateCode(t *testing.T) {
 	f, err := samples.Open("samples/group.crd.yaml")
