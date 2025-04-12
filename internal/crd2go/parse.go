@@ -18,7 +18,7 @@ var (
 	ErrNoCRD = errors.New("not a CRD")
 )
 
-func ParseCRD(r io.Reader) (*apiextensions.CustomResourceDefinition, error) {
+func ParseCRD(r io.Reader) (*apiextensionsv1.CustomResourceDefinition, error) {
 	yml, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read all YAML input: %w", err)
@@ -26,7 +26,7 @@ func ParseCRD(r io.Reader) (*apiextensions.CustomResourceDefinition, error) {
 	return DecodeCRD(yml)
 }
 
-func DecodeCRD(content []byte) (*apiextensions.CustomResourceDefinition, error) {
+func DecodeCRD(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
 	sch := runtime.NewScheme()
 	_ = scheme.AddToScheme(sch)
 	_ = apiextensions.AddToScheme(sch)
@@ -47,7 +47,7 @@ func DecodeCRD(content []byte) (*apiextensions.CustomResourceDefinition, error) 
 		return nil, fmt.Errorf("unexpected kind %q: %w", kind, err)
 	}
 
-	crd := &apiextensions.CustomResourceDefinition{}
+	crd := &apiextensionsv1.CustomResourceDefinition{}
 	err = sch.Convert(obj, crd, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert CRD object: %w", err)
