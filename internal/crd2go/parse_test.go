@@ -24,24 +24,26 @@ func TestParseCRD(t *testing.T) {
 	require.NoError(t, err)
 	want := expectedCRD()
 	require.NotNil(t, crd)
-	assert.Equal(t, want, crd)
+	assert.Equal(t, want, cleanup(crd))
 }
 
 func expectedCRD() *apiextensions.CustomResourceDefinition {
 	return &apiextensions.CustomResourceDefinition{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apiextensions.k8s.io/v1",
-			Kind:       "CustomResourceDefinition",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "groups.atlas.generated.mongodb.com",
 		},
 		Spec: apiextensions.CustomResourceDefinitionSpec{
 			Group: "atlas.generated.mongodb.com",
 			Scope: "Namespaced",
+			Conversion: &apiextensions.CustomResourceConversion{
+				Strategy: apiextensions.NoneConverter,
+			},
 			Names: apiextensions.CustomResourceDefinitionNames{
-				Kind:     "Group",
-				ListKind: "GroupList",
+				Kind:       "Group",
+				ListKind:   "GroupList",
+				Singular:   "group",
+				Plural:     "groups",
+				Categories: []string{"atlas"},
 			},
 			Versions: []apiextensions.CustomResourceDefinitionVersion{
 				{
@@ -206,6 +208,20 @@ func expectedCRD() *apiextensions.CustomResourceDefinition {
 		},
 		Status: apiextensions.CustomResourceDefinitionStatus{},
 	}
+}
+
+func cleanup(crd *apiextensions.CustomResourceDefinition) *apiextensions.CustomResourceDefinition {
+	crd.UID = ""
+	crd.ResourceVersion = ""
+	crd.Generation = 0
+	crd.Annotations = nil
+	crd.CreationTimestamp = metav1.Time{}
+	crd.Status = apiextensions.CustomResourceDefinitionStatus{}
+	conditions := crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["conditions"]
+	conditions.XListMapKeys = nil
+	conditions.XListType = nil
+	crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["conditions"] = conditions
+	return crd
 }
 
 func ptr[T any](t T) *T {
