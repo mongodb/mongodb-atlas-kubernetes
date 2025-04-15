@@ -15,6 +15,8 @@
 package atlasproject
 
 import (
+	"errors"
+
 	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
@@ -94,6 +96,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, teamsS
 	}
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
+	var teamErrors error
 
 	toDelete := make([]*teams.AssignedTeam, 0, len(atlasAssignedTeams))
 
@@ -119,16 +122,18 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, teamsS
 		}
 
 		ctx.Log.Debugf("removing team %s from project for later update", atlasAssignedTeam.TeamID)
-		err := teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
+		err = teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
+			teamErrors = errors.Join(teamErrors, err)
 			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
 	}
 
 	for _, atlasAssignedTeam := range toDelete {
 		ctx.Log.Debugf("removing team %s from project", atlasAssignedTeam.TeamID)
-		err := teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
+		err = teamsService.Unassign(ctx.Context, projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
+			teamErrors = errors.Join(teamErrors, err)
 			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
 
@@ -137,6 +142,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, teamsS
 			ctx.Log.Warnf("unable to find team %s status in the project", atlasAssignedTeam.TeamID)
 		} else {
 			if err = r.updateTeamState(ctx, project, teamRef, true); err != nil {
+				teamErrors = errors.Join(teamErrors, err)
 				ctx.Log.Warnf("failed to update team %s status with removed project: %s", atlasAssignedTeam.TeamID, err.Error())
 			}
 		}
@@ -157,13 +163,14 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, teamsS
 			}
 
 			if err = r.updateTeamState(ctx, project, &teamsToAssign[teamID].TeamRef, false); err != nil {
+				teamErrors = errors.Join(teamErrors, err)
 				ctx.Log.Warnf("failed to update team %s status with added project: %s", teamID, err.Error())
 			}
 		}
 
 		err = teamsService.Assign(ctx.Context, &projectTeams, projectID)
 		if err != nil {
-			return err
+			return errors.Join(teamErrors, err)
 		}
 	}
 
@@ -173,7 +180,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, teamsS
 
 	ctx.EnsureStatusOption(status.AtlasProjectSetTeamsOption(&projectTeamStatus))
 
-	return nil
+	return teamErrors
 }
 
 func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project *akov2.AtlasProject, teamRef *common.ResourceRefNamespaced, isRemoval bool) error {
