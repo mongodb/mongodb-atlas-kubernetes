@@ -16,10 +16,10 @@ package atlasproject
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -39,10 +39,116 @@ import (
 )
 
 func TestSyncAssignedTeams(t *testing.T) {
+	ctx := context.Background()
+
 	tests := map[string]struct {
-		teamsToAssign map[string]*akov2.Team
-		expectedErr   error
+		teamsToAssign   map[string]*akov2.Team
+		teamServiceMock func() teams.TeamsService
+		expectedErr     error
 	}{
+		"should error to list teams": {
+			teamServiceMock: func() teams.TeamsService {
+				s := translation.NewTeamsServiceMock(t)
+				s.EXPECT().
+					ListProjectTeams(ctx, "projectID").
+					Return(nil, errors.New("error to list teams"))
+
+				return s
+			},
+			expectedErr: errors.New("error to list teams"),
+		},
+		"should error to unassign teams": {
+			teamServiceMock: func() teams.TeamsService {
+				s := translation.NewTeamsServiceMock(t)
+				s.EXPECT().ListProjectTeams(ctx, "projectID").Return([]teams.AssignedTeam{
+					{
+						Roles:    []string{"GROUP_OWNER"},
+						TeamID:   "teamID_1",
+						TeamName: "teamName_1",
+					},
+					{
+						Roles:    []string{"GROUP_OWNER"},
+						TeamID:   "teamID_2",
+						TeamName: "teamName_2",
+					},
+					{
+						Roles:    []string{"GROUP_READ_ONLY"},
+						TeamID:   "teamID_3",
+						TeamName: "teamName_3",
+					},
+				}, nil)
+				s.EXPECT().Unassign(ctx, "projectID", "teamID_1").Return(errors.New("error to unassign team 1"))
+				s.EXPECT().Unassign(ctx, "projectID", "teamID_2").Return(errors.New("error to unassign team 2"))
+				s.EXPECT().Unassign(ctx, "projectID", "teamID_3").Return(errors.New("error to unassign team 3"))
+
+				return s
+			},
+			expectedErr: errors.Join(
+				errors.Join(
+					errors.Join(
+						nil,
+						errors.New("error to unassign team 1"),
+					),
+					errors.New("error to unassign team 2"),
+				),
+				errors.New("error to unassign team 3"),
+			),
+		},
+		"should error to assign teams": {
+			teamsToAssign: map[string]*akov2.Team{
+				"teamID_1": {
+					TeamRef: common.ResourceRefNamespaced{
+						Name: "teamName_1",
+					},
+					Roles: []akov2.TeamRole{"GROUP_OWNER"},
+				},
+				"teamID_2": {
+					TeamRef: common.ResourceRefNamespaced{
+						Name: "teamName_2",
+					},
+					Roles: []akov2.TeamRole{"GROUP_READ_ONLY"},
+				},
+			},
+			teamServiceMock: func() teams.TeamsService {
+				s := translation.NewTeamsServiceMock(t)
+				s.EXPECT().ListProjectTeams(ctx, "projectID").Return([]teams.AssignedTeam{
+					{
+						Roles:    []string{"GROUP_OWNER"},
+						TeamID:   "teamID_1",
+						TeamName: "teamName_1",
+					},
+					{
+						Roles:    []string{"GROUP_OWNER"},
+						TeamID:   "teamID_2",
+						TeamName: "teamName_2",
+					},
+					{
+						Roles:    []string{"GROUP_READ_ONLY"},
+						TeamID:   "teamID_3",
+						TeamName: "teamName_3",
+					},
+				}, nil)
+				s.EXPECT().Unassign(ctx, "projectID", "teamID_2").Return(nil)
+				s.EXPECT().Unassign(ctx, "projectID", "teamID_3").Return(nil)
+
+				s.EXPECT().Assign(
+					ctx,
+					&[]teams.AssignedTeam{
+						{
+							Roles:  []string{"GROUP_READ_ONLY"},
+							TeamID: "teamID_2",
+						},
+					},
+					"projectID",
+				).Return(errors.New("error to assign team 2"))
+
+				return s
+			},
+			expectedErr: errors.Join(
+				nil,
+				errors.New("error to assign team 2"),
+			),
+		},
 		"should sync teams assigned": {
 			teamsToAssign: map[string]*akov2.Team{
 				"teamID_1": {
@@ -57,6 +163,41 @@ func TestSyncAssignedTeams(t *testing.T) {
 					},
 					Roles: []akov2.TeamRole{"GROUP_READ_ONLY"},
 				},
+			},
+			teamServiceMock: func() teams.TeamsService {
+				s := translation.NewTeamsServiceMock(t)
+				s.EXPECT().ListProjectTeams(ctx, "projectID").Return([]teams.AssignedTeam{
+					{
+						Roles:    []string{"GROUP_OWNER"},
+						TeamID:   "teamID_1",
+						TeamName: "teamName_1",
+					},
+					{
+						Roles:    []string{"GROUP_OWNER"},
+						TeamID:   "teamID_2",
+						TeamName: "teamName_2",
+					},
+					{
+						Roles:    []string{"GROUP_READ_ONLY"},
+						TeamID:   "teamID_3",
+						TeamName: "teamName_3",
+					},
+				}, nil)
+				s.EXPECT().Unassign(ctx, "projectID", "teamID_2").Return(nil)
+				s.EXPECT().Unassign(ctx, "projectID", "teamID_3").Return(nil)
+				s.EXPECT().Assign(
+					ctx,
+					&[]teams.AssignedTeam{
+						{
+							Roles:  []string{"GROUP_READ_ONLY"},
+							TeamID: "teamID_2",
+						},
+					},
+					"projectID",
+				).
+					Return(nil)
+
+				return s
 			},
 		},
 	}
@@ -174,42 +315,12 @@ func TestSyncAssignedTeams(t *testing.T) {
 				},
 				Context: context.Background(),
 			}
-			teamService := func() teams.TeamsService {
-				service := translation.NewTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(mock.Anything, "projectID").Return([]teams.AssignedTeam{
-					{
-						Roles:    []string{"GROUP_OWNER"},
-						TeamID:   team1.Status.ID,
-						TeamName: "teamName_1",
-					},
-					{
-						Roles:    []string{"GROUP_OWNER"},
-						TeamID:   team2.Status.ID,
-						TeamName: "teamName_2",
-					},
-					{
-						Roles:    []string{"GROUP_READ_ONLY"},
-						TeamID:   team3.Status.ID,
-						TeamName: "teamName_3",
-					},
-				}, nil)
-				service.EXPECT().Unassign(mock.Anything, "projectID", "teamID_2").Return(nil)
-				service.EXPECT().Unassign(mock.Anything, "projectID", "teamID_3").Return(nil)
-				service.EXPECT().Assign(mock.Anything,
-					&[]teams.AssignedTeam{
-						{
-							Roles:  []string{"GROUP_READ_ONLY"},
-							TeamID: "teamID_2",
-						},
-					}, "projectID").Return(nil)
-				return service
-			}
 			r := &AtlasProjectReconciler{
 				Client:        k8sClient,
 				EventRecorder: record.NewFakeRecorder(10),
 				Log:           logger,
 			}
-			err := r.syncAssignedTeams(ctx, teamService(), "projectID", project, tt.teamsToAssign)
+			err := r.syncAssignedTeams(ctx, tt.teamServiceMock(), "projectID", project, tt.teamsToAssign)
 			assert.Equal(t, tt.expectedErr, err)
 		})
 	}
