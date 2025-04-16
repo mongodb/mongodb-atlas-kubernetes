@@ -82,7 +82,7 @@ jobs:
             echo "Changes detected. Creating PR"
 
             git config user.name "ako-releaser"
-            git config user.email "285350+your-app[bot]@users.noreply.github.com"
+            git config user.email "285350+ako-releaser[bot]@users.noreply.github.com"
 
             git checkout -b "${BRANCH_NAME}"
             git add .
