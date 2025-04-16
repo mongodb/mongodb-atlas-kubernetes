@@ -12,12 +12,18 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
-      
+    - name: Generate GitHub App Token
+      id: generate_token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
+        private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
+        owner: ${{ github.repository_owner }}
+        repositories: mongodb-atlas-kubernetes
     - name: Install devbox
       uses: jetify-com/devbox-install-action@v0.12.0
       with:
         enable-cache: 'true'
-    
     - name: Update Devbox
       run: |
         devbox update
@@ -32,7 +38,6 @@ jobs:
           echo "Changes detected."
           echo "CHANGES=true" >> $GITHUB_OUTPUT
         fi
-
     - name: Generate Branch Name
       id: generate_branch
       if: steps.check_changes.outputs.CHANGES == 'true'
@@ -40,12 +45,11 @@ jobs:
         RANDOM_NUM=$((RANDOM % 10000))  # Generate a random number between 0 and 9999
         BRANCH_NAME="devbox-update-$(date +'%Y-%m-%d')-$RANDOM_NUM"
         echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT  # Export branch name
-
     - name: Commit and Push Changes
       if: steps.check_changes.outputs.CHANGES == 'true'
       run: |
-        git config --local user.email "akobot@ako-team-fake.mongodb.com"
-        git config --local user.name "AKOBot"
+        git config user.name "ako-releaser"
+        git config user.email "285350+your-app[bot]@users.noreply.github.com"
         git checkout -b ${{ steps.generate_branch.outputs.BRANCH_NAME }}  # New branch
         git add .
         git commit -m "Weekly devbox dependencies update"
