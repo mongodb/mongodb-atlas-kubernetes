@@ -1,0 +1,26 @@
+name: License Header Check
+
+on:
+  workflow_call:
+
+jobs:
+  license-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        go-version-file: "${{ github.workspace }}/go.mod"
+      - name: Install addlicense
+        run: go install github.com/google/addlicense@latest
+      - name: Check license headers
+        run: |
+          $(go env GOPATH)/bin/addlicense \
+            -check \
+            -l apache \
+            -c "MongoDB Inc" \
+            -ignore "**/*.md" \
+            -ignore "**/*.yaml" \
+            -ignore "**/*.yml" \
+            -ignore "**/*Dockerfile" .
