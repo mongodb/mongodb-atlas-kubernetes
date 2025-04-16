@@ -51,6 +51,11 @@ jobs:
     uses: ./.github/workflows/test-unit.yml
     secrets: inherit
 
+  license-header-check:
+    needs:
+      - run-tests
+    uses: ./.github/workflows/license-header-check.yml
+
   check-licenses:
     needs:
       - run-tests
