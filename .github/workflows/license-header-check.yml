@@ -20,4 +20,7 @@ jobs:
             -check \
             -l apache \
             -c "MongoDB Inc" \
-            -ignore "**/*.md,**/*.yaml,**/*.yml" .
+            -ignore "**/*.md" \
+            -ignore "**/*.yaml" \
+            -ignore "**/*.yml" \
+            -ignore "**/*Dockerfile" .
