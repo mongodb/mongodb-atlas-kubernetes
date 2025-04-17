@@ -143,4 +143,12 @@ resources:
   kind: AtlasNetworkPeering
   path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: mongodb.com
+  group: atlas
+  kind: AtlasBackupCompliancePolicy
+  path: github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1
+  version: v1
 version: "3"

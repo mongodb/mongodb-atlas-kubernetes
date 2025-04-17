@@ -11,4 +11,12 @@ resources:
   - atlas_v1_atlasipaccesslist.yaml
   - atlas_v1_atlasnetworkcontainer.yaml
   - atlas_v1_atlasnetworkpeering.yaml
+  - atlas_v1_atlasstreaminstance.yaml
+  - atlas_v1_atlasstreamconnection.yaml
+  - atlas_v1_atlasdatafederation.yaml
+  - atlas_v1_atlasfederatedauth.yaml
+  - atlas_v1_atlasprivateendpoint.yaml
+  - atlas_v1_atlassearchindexconfigs.yaml
+  - atlas_v1_atlasbackupcompliancepolicy.yaml
+  - atlas_v1_atlascustomrole.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
