@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"sigs.k8s.io/yaml"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
