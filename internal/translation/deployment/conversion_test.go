@@ -747,7 +747,7 @@ func TestRoundtrip_ManagedNamespace(t *testing.T) {
 	f := fuzz.New()
 
 	for range 100 {
-		fuzzed := &admin.GeoSharding{}
+		fuzzed := &admin.GeoSharding20240805{}
 		f.Fuzz(fuzzed)
 		fuzzed.CustomZoneMapping = nil
 		t.Log(fuzzed.ManagedNamespaces)
@@ -775,7 +775,7 @@ func TestRoundtrip_CustomZone(t *testing.T) {
 	f := fuzz.New()
 
 	for range 100 {
-		fuzzed := &admin.GeoSharding{}
+		fuzzed := &admin.GeoSharding20240805{}
 		f.Fuzz(fuzzed)
 		fuzzed.ManagedNamespaces = nil
 

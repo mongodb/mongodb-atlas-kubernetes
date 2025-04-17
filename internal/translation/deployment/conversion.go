@@ -487,7 +487,7 @@ func getAutoscalingOverride(replications []*akov2.AdvancedReplicationSpec) (bool
 	return isTenant, false, ""
 }
 
-func clusterFromAtlas(clusterDesc *admin.AdvancedClusterDescription) *Cluster {
+func clusterFromAtlas(clusterDesc *admin.ClusterDescription20240805) *Cluster {
 	connectionStrings := clusterDesc.GetConnectionStrings()
 	pes := make([]status.PrivateEndpoint, 0, len(connectionStrings.GetPrivateEndpoint()))
 	for _, pe := range connectionStrings.GetPrivateEndpoint() {
@@ -552,8 +552,8 @@ func clusterFromAtlas(clusterDesc *admin.AdvancedClusterDescription) *Cluster {
 	return cluster
 }
 
-func clusterCreateToAtlas(cluster *Cluster) *admin.AdvancedClusterDescription {
-	return &admin.AdvancedClusterDescription{
+func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
+	return &admin.ClusterDescription20240805{
 		Name:                         pointer.MakePtrOrNil(cluster.Name),
 		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
 		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),
@@ -572,8 +572,8 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.AdvancedClusterDescription {
 	}
 }
 
-func clusterUpdateToAtlas(cluster *Cluster) *admin.AdvancedClusterDescription {
-	return &admin.AdvancedClusterDescription{
+func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
+	return &admin.ClusterDescription20240805{
 		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
 		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),
 		VersionReleaseSystem:         pointer.MakePtrOrNil(cluster.VersionReleaseSystem),
@@ -591,7 +591,7 @@ func clusterUpdateToAtlas(cluster *Cluster) *admin.AdvancedClusterDescription {
 	}
 }
 
-func replicaSetFromAtlas(replicationSpecs []admin.ReplicationSpec) []status.ReplicaSet {
+func replicaSetFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) []status.ReplicaSet {
 	replicaSet := make([]status.ReplicaSet, 0, len(replicationSpecs))
 	for _, replicationSpec := range replicationSpecs {
 		replicaSet = append(
@@ -643,8 +643,8 @@ func labelsFromAtlas(cLabels []admin.ComponentLabel) []common.LabelSpec {
 	return labels
 }
 
-func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec) []*akov2.AdvancedReplicationSpec {
-	hSpecOrDefault := func(spec admin.HardwareSpec, providerName string) *akov2.Specs {
+func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) []*akov2.AdvancedReplicationSpec {
+	hSpecOrDefault := func(spec admin.HardwareSpec20240805, providerName string) *akov2.Specs {
 		if spec.GetNodeCount() == 0 && providerName != string(provider.ProviderTenant) {
 			return nil
 		}
@@ -727,7 +727,7 @@ func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec) []*akov2
 	return specs
 }
 
-func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs) *akov2.ProcessArgs {
+func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs20240805) *akov2.ProcessArgs {
 	oplogMinRetentionHours := ""
 	if config.GetOplogMinRetentionHours() > 0 {
 		oplogMinRetentionHours = strconv.FormatFloat(config.GetOplogMinRetentionHours(), 'f', -1, 64)
@@ -790,12 +790,12 @@ func labelsToAtlas(labels []common.LabelSpec) *[]admin.ComponentLabel {
 	return &cLabels
 }
 
-func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *[]admin.ReplicationSpec {
+func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *[]admin.ReplicationSpec20240805 {
 	if len(replicationSpecs) == 0 {
 		return nil
 	}
 
-	hSpecOrDefault := func(spec *akov2.Specs) *admin.HardwareSpec {
+	hSpecOrDefault := func(spec *akov2.Specs) *admin.HardwareSpec20240805 {
 		if spec == nil {
 			return nil
 		}
@@ -805,7 +805,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 			diskIOPs = pointer.MakePtr(int(*spec.DiskIOPS))
 		}
 
-		return &admin.HardwareSpec{
+		return &admin.HardwareSpec20240805{
 			InstanceSize:  &spec.InstanceSize,
 			NodeCount:     spec.NodeCount,
 			EbsVolumeType: pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD"),
@@ -870,13 +870,13 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 		return autoscaling
 	}
 
-	specs := make([]admin.ReplicationSpec, 0, len(replicationSpecs))
+	specs := make([]admin.ReplicationSpec20240805, 0, len(replicationSpecs))
 	for _, spec := range replicationSpecs {
-		regionConfigs := make([]admin.CloudRegionConfig, 0, len(spec.RegionConfigs))
+		regionConfigs := make([]admin.CloudRegionConfig20240805, 0, len(spec.RegionConfigs))
 		for _, regionConfig := range spec.RegionConfigs {
 			regionConfigs = append(
 				regionConfigs,
-				admin.CloudRegionConfig{
+				admin.CloudRegionConfig20240805{
 					ProviderName:        pointer.MakePtrOrNil(regionConfig.ProviderName),
 					BackingProviderName: pointer.MakePtrOrNil(regionConfig.BackingProviderName),
 					RegionName:          pointer.MakePtrOrNil(regionConfig.RegionName),
@@ -891,7 +891,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 
 		specs = append(
 			specs,
-			admin.ReplicationSpec{
+			admin.ReplicationSpec20240805{
 				NumShards:     pointer.NonZeroOrDefault(spec.NumShards, 1),
 				ZoneName:      pointer.MakePtrOrNil(spec.ZoneName),
 				RegionConfigs: &regionConfigs,
@@ -902,7 +902,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 	return &specs
 }
 
-func processArgsToAtlas(config *akov2.ProcessArgs) (*admin.ClusterDescriptionProcessArgs, error) {
+func processArgsToAtlas(config *akov2.ProcessArgs) (*admin.ClusterDescriptionProcessArgs20240805, error) {
 	var oplogMinRetentionHours *float64
 	if config.OplogMinRetentionHours != "" {
 		parsed, err := strconv.ParseFloat(config.OplogMinRetentionHours, 64)
@@ -913,7 +913,7 @@ func processArgsToAtlas(config *akov2.ProcessArgs) (*admin.ClusterDescriptionPro
 		oplogMinRetentionHours = &parsed
 	}
 
-	return &admin.ClusterDescriptionProcessArgs{
+	return &admin.ClusterDescriptionProcessArgs20240805{
 		DefaultReadConcern:               pointer.MakePtrOrNil(config.DefaultReadConcern),
 		DefaultWriteConcern:              pointer.MakePtrOrNil(config.DefaultWriteConcern),
 		MinimumEnabledTlsProtocol:        pointer.MakePtrOrNil(config.MinimumEnabledTLSProtocol),
@@ -1006,7 +1006,7 @@ func serverlessUpdateToAtlas(serverless *Serverless) *admin.ServerlessInstanceDe
 	}
 }
 
-func clustersToConnections(clusters []admin.AdvancedClusterDescription) []Connection {
+func clustersToConnections(clusters []admin.ClusterDescription20240805) []Connection {
 	conns := []Connection{}
 	for _, c := range clusters {
 		conns = append(conns, Connection{
@@ -1090,7 +1090,7 @@ func set[T any](nameFn func(T) string, lists ...[]T) []T {
 	return result
 }
 
-func customZonesFromAtlas(gs *admin.GeoSharding) *[]akov2.CustomZoneMapping {
+func customZonesFromAtlas(gs *admin.GeoSharding20240805) *[]akov2.CustomZoneMapping {
 	if gs == nil {
 		return nil
 	}
@@ -1101,7 +1101,7 @@ func customZonesFromAtlas(gs *admin.GeoSharding) *[]akov2.CustomZoneMapping {
 	return &out
 }
 
-func managedNamespacesFromAtlas(gs *admin.GeoSharding) []akov2.ManagedNamespace {
+func managedNamespacesFromAtlas(gs *admin.GeoSharding20240805) []akov2.ManagedNamespace {
 	if gs == nil {
 		return nil
 	}
