@@ -23,9 +23,8 @@ import (
 	"strings"
 
 	"github.com/mongodb-forks/digest"
-	adminv20231115008 "go.mongodb.org/atlas-sdk/v20231115008/admin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
-	adminv20250312002 "go.mongodb.org/atlas-sdk/v20250312002/admin"
+	adminv20231115008 "go.mongodb.org/atlas-sdk/v20250312002/admin"
+	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
