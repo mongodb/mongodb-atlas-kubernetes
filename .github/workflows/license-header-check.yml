@@ -11,7 +11,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Go
         uses: actions/setup-go@v5
-        go-version-file: "${{ github.workspace }}/go.mod"
+        with:
+          go-version-file: "${{ github.workspace }}/go.mod"
       - name: Install addlicense
         run: go install github.com/google/addlicense@latest
       - name: Check license headers
