@@ -493,7 +493,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 									{
 										ElectableSpecs: &akov2.Specs{
 											DiskIOPS:     pointer.MakePtr(int64(3000)),
-											InstanceSize: "M20",
+											InstanceSize: "M10",
 											NodeCount:    pointer.MakePtr(3),
 										},
 										AutoScaling: &akov2.AdvancedAutoScalingSpec{
@@ -503,7 +503,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 											Compute: &akov2.ComputeSpec{
 												Enabled:          pointer.MakePtr(true),
 												ScaleDownEnabled: pointer.MakePtr(true),
-												MinInstanceSize:  "M20",
+												MinInstanceSize:  "M10",
 												MaxInstanceSize:  "M40",
 											},
 										},
