@@ -139,7 +139,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	}
 
-	checkAtlasState := func(additionalChecks ...func(c *admin.AdvancedClusterDescription)) {
+	checkAtlasState := func(additionalChecks ...func(c *admin.ClusterDescription20240805)) {
 		By("Verifying Deployment state in Atlas", func() {
 			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersApi.
 				GetCluster(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
@@ -317,7 +317,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				WithInstanceSize("M30")
 
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
-			replicationSpecsCheck := func(deployment *admin.AdvancedClusterDescription) {
+			replicationSpecsCheck := func(deployment *admin.ClusterDescription20240805) {
 				Expect(deployment.GetReplicationSpecs()).To(HaveLen(1))
 				Expect(deployment.GetReplicationSpecs()[0].GetId()).NotTo(BeEmpty())
 				Expect(deployment.GetReplicationSpecs()[0].GetZoneName()).To(Equal("Zone 1"))
@@ -330,7 +330,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 				doDeploymentStatusChecks()
 
-				singleNumShard := func(deployment *admin.AdvancedClusterDescription) {
+				singleNumShard := func(deployment *admin.ClusterDescription20240805) {
 					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(1))
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
@@ -342,7 +342,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				})
 				doDeploymentStatusChecks()
 
-				singleNumShard := func(deployment *admin.AdvancedClusterDescription) {
+				singleNumShard := func(deployment *admin.ClusterDescription20240805) {
 					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(1))
 				}
 				// ReplicationSpecs has the same defaults but the number of shards has changed
@@ -356,7 +356,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				})
 				doDeploymentStatusChecks()
 
-				twoNumShard := func(deployment *admin.AdvancedClusterDescription) {
+				twoNumShard := func(deployment *admin.ClusterDescription20240805) {
 					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(numShards))
 				}
 				// ReplicationSpecs has the same defaults but the number of shards has changed
@@ -525,7 +525,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr(10)
 
-			replicationSpecsCheckFunc := func(c *admin.AdvancedClusterDescription) {
+			replicationSpecsCheckFunc := func(c *admin.ClusterDescription20240805) {
 				mergedDeployment, _, err := mergedAdvancedDeployment(*c, *createdDeployment.Spec.DeploymentSpec)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -538,7 +538,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				Expect(c.GetReplicationSpecs()[0].GetNumShards()).To(Equal(expectedReplicationSpecs[0].NumShards))
 				Expect(c.GetReplicationSpecs()[0].GetZoneName()).To(Equal(expectedReplicationSpecs[0].ZoneName))
 
-				less := func(a, b *admin.CloudRegionConfig) bool { return a.GetRegionName() < b.GetRegionName() }
+				less := func(a, b *admin.CloudRegionConfig20240805) bool { return a.GetRegionName() < b.GetRegionName() }
 				Expect(cmp.Diff(c.GetReplicationSpecs()[0].RegionConfigs, expectedReplicationSpecs[0].RegionConfigs, cmpopts.SortSlices(less)))
 			}
 
@@ -633,7 +633,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 				doDeploymentStatusChecks()
 
-				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
+				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					deployment, err := createdDeployment.Spec.Deployment()
 					Expect(err).NotTo(HaveOccurred())
 
@@ -690,7 +690,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				})
 
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
+				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					// Expect(*c.DiskSizeGB).To(BeEquivalentTo(prevDiskSize)) // todo: find out if this should still work for advanced clusters
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
@@ -724,7 +724,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment.Spec.DeploymentSpec.Tags = []*akov2.TagSpec{{Key: "test 1", Value: "value 1"}, {Key: "test-2", Value: "value-2"}}
 				})
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
+				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
 						Expect(c.GetTags()[i].GetKey() == tag.Key).To(BeTrue())
 						Expect(c.GetTags()[i].GetValue() == tag.Value).To(BeTrue())
@@ -752,7 +752,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
 				})
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
+				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					Expect(c.BackupEnabled).To(Equal(createdDeployment.Spec.DeploymentSpec.BackupEnabled))
 				})
 			})
@@ -762,7 +762,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr(15)
 				})
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
+				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
@@ -775,7 +775,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment.Spec.DeploymentSpec.Paused = pointer.MakePtr(true)
 				})
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
+				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					Expect(c.Paused).To(Equal(createdDeployment.Spec.DeploymentSpec.Paused))
 				})
 			})
@@ -805,14 +805,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment.Spec.DeploymentSpec.Paused = pointer.MakePtr(false)
 				})
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
+				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					Expect(c.Paused).To(Equal(createdDeployment.Spec.DeploymentSpec.Paused))
 				})
 			})
 
 			By("Checking that modifications were applied after unpausing", func() {
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
+				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					Expect(c.BackupEnabled).To(Equal(createdDeployment.Spec.DeploymentSpec.BackupEnabled))
 				})
 			})
@@ -983,7 +983,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				})
 				Expect(err).To(BeNil())
 
-				containsLabel := func(ac *admin.AdvancedClusterDescription) bool {
+				containsLabel := func(ac *admin.ClusterDescription20240805) bool {
 					for _, label := range ac.GetLabels() {
 						if label.GetKey() == "some-key" && label.GetValue() == "some-value" {
 							return true
@@ -1448,7 +1448,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						g,
 						createdProject.ID(),
 						createdDeployment.GetDeploymentName(),
-						[]admin.DiskBackupCopySetting{
+						[]admin.DiskBackupCopySetting20240805{
 							{
 								CloudProvider:    pointer.MakePtr("AWS"),
 								RegionName:       pointer.MakePtr("US_WEST_1"),
@@ -1488,7 +1488,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						g,
 						createdProject.ID(),
 						secondDeployment.GetDeploymentName(),
-						[]admin.DiskBackupCopySetting{
+						[]admin.DiskBackupCopySetting20240805{
 							{
 								CloudProvider:    pointer.MakePtr("AWS"),
 								RegionName:       pointer.MakePtr("US_WEST_1"),
@@ -1550,7 +1550,7 @@ func validateDeploymentUpdatingFunc(g Gomega) func(a api.AtlasCustomResource) {
 	}
 }
 
-func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentName string, copySettings []admin.DiskBackupCopySetting) {
+func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentName string, copySettings []admin.DiskBackupCopySetting20240805) {
 	atlasCluster, _, err := atlasClient.ClustersApi.GetCluster(context.Background(), projectID, deploymentName).Execute()
 	g.Expect(err).Should(BeNil())
 	g.Expect(atlasCluster.GetStateName()).Should(Equal("IDLE"))
@@ -1685,7 +1685,7 @@ func deleteProjectFromKubernetes(project *akov2.AtlasProject) {
 
 // mergedAdvancedDeployment is clone of atlasdeployment.MergedAdvancedDeployment
 func mergedAdvancedDeployment(
-	atlasDeploymentAsAtlas admin.AdvancedClusterDescription,
+	atlasDeploymentAsAtlas admin.ClusterDescription20240805,
 	specDeployment akov2.AdvancedDeploymentSpec,
 ) (mergedDeployment akov2.AdvancedDeploymentSpec, atlasDeployment akov2.AdvancedDeploymentSpec, err error) {
 	if atlasDeploymentAsAtlas.ReplicationSpecs != nil {
