@@ -1,0 +1,21 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasBackupCompliancePolicy
+metadata:
+  name: my-backup-compliance-policy
+spec:
+  authorizedEmail: john.doe@example.com
+  authorizedUserFirstName: John
+  authorizedUserLastName: Doe
+  copyProtectionEnabled: false
+  encryptionAtRestEnabled: false
+  onDemandPolicy:
+    retentionUnit: weeks
+    retentionValue: 3
+  overwriteBackupPolicies: false
+  pointInTimeEnabled: true
+  restoreWindowDays: 42
+  scheduledPolicyItems:
+    - frequencyInterval: 2
+      frequencyType: daily
+      retentionUnit: days
+      retentionValue: 7

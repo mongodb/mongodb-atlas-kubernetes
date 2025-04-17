@@ -1,0 +1,25 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasCustomRole
+metadata:
+  name: shard-operator-role
+spec:
+  projectRef:
+    name: my-project
+  role:
+    name: my-role
+    actions:
+      - name: getShardMap
+        resources:
+          - cluster: true
+      - name: shardingState
+        resources:
+           - cluster: true
+      - name: connPoolStats
+        resources:
+           - cluster: true
+      - name: getLog
+        resources:
+           - cluster: true
+    inheritedRoles:
+      - name: operator-role-1
+        database: admin

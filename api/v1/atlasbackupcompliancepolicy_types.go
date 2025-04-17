@@ -36,6 +36,8 @@ func init() {
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=atlas,shortName=abcp
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+
+// The AtlasBackupCompliancePolicy is a configuration that enforces specific backup and retention requirements
 type AtlasBackupCompliancePolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -44,6 +46,7 @@ type AtlasBackupCompliancePolicy struct {
 	Status status.BackupCompliancePolicyStatus `json:"status,omitempty"`
 }
 
+// AtlasBackupCompliancePolicySpec is the specification of the desired configuration of backup compliance policy
 type AtlasBackupCompliancePolicySpec struct {
 	// Email address of the user who authorized to update the Backup Compliance Policy settings.
 	// +kubebuilder:validation:Required
