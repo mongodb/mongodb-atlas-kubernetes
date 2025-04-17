@@ -314,7 +314,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	Describe("Create deployment & change ReplicationSpecs", Label("AtlasDeploymentSharding"), func() {
 		It("Should Succeed", func(ctx context.Context) {
-			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).
+				WithInstanceSize("M30")
 
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
 			replicationSpecsCheck := func(deployment *admin.AdvancedClusterDescription) {
