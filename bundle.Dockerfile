@@ -1,6 +1,6 @@
 FROM scratch
 
-LABEL com.redhat.openshift.versions="v4.8"
+LABEL com.redhat.openshift.versions="v4.8-4.18"
 LABEL com.redhat.delivery.backport=true
 LABEL com.redhat.delivery.operator.bundle=true
 
