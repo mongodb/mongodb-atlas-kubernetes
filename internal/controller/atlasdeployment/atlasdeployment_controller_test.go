@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -400,22 +400,22 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
-					&admin.AdvancedClusterDescription{
+					&admin.ClusterDescription20240805{
 						GroupId:       pointer.MakePtr(project.ID()),
 						Name:          pointer.MakePtr(d.GetDeploymentName()),
 						ClusterType:   pointer.MakePtr(d.Spec.DeploymentSpec.ClusterType),
 						BackupEnabled: pointer.MakePtr(true),
 						StateName:     pointer.MakePtr("IDLE"),
-						ReplicationSpecs: &[]admin.ReplicationSpec{
+						ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 							{
 								ZoneName:  pointer.MakePtr("Zone 1"),
 								NumShards: pointer.MakePtr(1),
-								RegionConfigs: &[]admin.CloudRegionConfig{
+								RegionConfigs: &[]admin.CloudRegionConfig20240805{
 									{
 										ProviderName: pointer.MakePtr("AWS"),
 										RegionName:   pointer.MakePtr("US_EAST_1"),
 										Priority:     pointer.MakePtr(7),
-										ElectableSpecs: &admin.HardwareSpec{
+										ElectableSpecs: &admin.HardwareSpec20240805{
 											InstanceSize: pointer.MakePtr("M10"),
 											NodeCount:    pointer.MakePtr(3),
 										},
@@ -431,7 +431,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
 				Return(
-					&admin.ClusterDescriptionProcessArgs{},
+					&admin.ClusterDescriptionProcessArgs20240805{},
 					&http.Response{},
 					nil,
 				)
@@ -465,7 +465,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			globalAPI.EXPECT().GetManagedNamespace(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
 				Return(admin.GetManagedNamespaceApiRequest{ApiService: globalAPI})
 			globalAPI.EXPECT().GetManagedNamespaceExecute(mock.Anything).
-				Return(&admin.GeoSharding{}, nil, nil)
+				Return(&admin.GeoSharding20240805{}, nil, nil)
 
 			err := &adminv20241113001.GenericOpenAPIError{}
 			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
@@ -630,7 +630,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			err := &admin.GenericOpenAPIError{}
-			err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
+			err.SetModel(admin.ApiError{ErrorCode: atlas.ServerlessInstanceFromClusterAPI})
 			clusterAPI := mockadmin.NewClustersApi(t)
 
 			serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -942,22 +942,22 @@ func TestDeletionReconciliation(t *testing.T) {
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
-					&admin.AdvancedClusterDescription{
+					&admin.ClusterDescription20240805{
 						GroupId:       pointer.MakePtr(project.ID()),
 						Name:          pointer.MakePtr(d.GetDeploymentName()),
 						ClusterType:   pointer.MakePtr(d.Spec.DeploymentSpec.ClusterType),
 						BackupEnabled: pointer.MakePtr(true),
 						StateName:     pointer.MakePtr("IDLE"),
-						ReplicationSpecs: &[]admin.ReplicationSpec{
+						ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 							{
 								ZoneName:  pointer.MakePtr("Zone 1"),
 								NumShards: pointer.MakePtr(1),
-								RegionConfigs: &[]admin.CloudRegionConfig{
+								RegionConfigs: &[]admin.CloudRegionConfig20240805{
 									{
 										ProviderName: pointer.MakePtr("AWS"),
 										RegionName:   pointer.MakePtr("US_EAST_1"),
 										Priority:     pointer.MakePtr(7),
-										ElectableSpecs: &admin.HardwareSpec{
+										ElectableSpecs: &admin.HardwareSpec20240805{
 											InstanceSize: pointer.MakePtr("M10"),
 											NodeCount:    pointer.MakePtr(3),
 										},
@@ -1327,7 +1327,7 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
 
 					err := &admin.GenericOpenAPIError{}
-					err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ClusterInstanceFromServerlessAPI)})
+					err.SetModel(admin.ApiError{ErrorCode: atlas.ClusterInstanceFromServerlessAPI})
 					err.SetError("wrong API")
 					serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.Anything).Return(nil, nil, err)
 
@@ -1385,7 +1385,7 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 
 					err := &admin.GenericOpenAPIError{}
-					err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
+					err.SetModel(admin.ApiError{ErrorCode: atlas.ServerlessInstanceFromClusterAPI})
 					err.SetError("wrong API")
 					clusterAPI.EXPECT().GetClusterExecute(mock.Anything).Return(nil, nil, err)
 

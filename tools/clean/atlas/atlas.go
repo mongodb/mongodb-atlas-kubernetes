@@ -51,7 +51,7 @@ type ProjectDependencies struct {
 	AWSPrivateEndpoints         []admin.EndpointService
 	GCPPrivateEndpoints         []admin.EndpointService
 	AzurePrivateEndpoints       []admin.EndpointService
-	Clusters                    []admin.AdvancedClusterDescription
+	Clusters                    []admin.ClusterDescription20240805
 	ServerlessClusters          []admin.ServerlessInstanceDescription
 	FederatedDatabases          []admin.DataLakeTenant
 	FederatedDBPrivateEndpoints []admin.PrivateNetworkEndpointIdEntry
