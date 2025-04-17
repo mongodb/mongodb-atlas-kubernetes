@@ -26,18 +26,20 @@ jobs:
       JWT_APP_ID: ${{ secrets.AKO_RELEASER_APP_ID }}
       JWT_RSA_PEM_KEY_BASE64: ${{ secrets.AKO_RELEASER_RSA_KEY_BASE64 }}
     steps:
-      - name: Checkout AKO repo
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.BRANCH }}
       - name: Generate GitHub App Token
         id: generate_token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
           private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: mongodb-atlas-kubernetes
+      - name: Checkout AKO repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+          token: ${{ steps.generate_token.outputs.token }}
+          persist-credentials: true
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.12.0
         with:
