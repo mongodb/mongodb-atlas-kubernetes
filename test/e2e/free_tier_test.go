@@ -82,19 +82,19 @@ func freeTierDeploymentFlow(userData *model.TestDataProvider) {
 			CreateCluster(
 				userData.Context,
 				userData.Project.ID(),
-				&admin.AdvancedClusterDescription{
+				&admin.ClusterDescription20240805{
 					Name:        &name,
 					ClusterType: pointer.MakePtr("REPLICASET"),
-					ReplicationSpecs: &[]admin.ReplicationSpec{
+					ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 						{
 							ZoneName: pointer.MakePtr("Zone 1"),
-							RegionConfigs: &[]admin.CloudRegionConfig{
+							RegionConfigs: &[]admin.CloudRegionConfig20240805{
 								{
 									ProviderName:        pointer.MakePtr("TENANT"),
 									BackingProviderName: pointer.MakePtr("AWS"),
 									Priority:            pointer.MakePtr(7),
 									RegionName:          pointer.MakePtr("US_EAST_1"),
-									ElectableSpecs: &admin.HardwareSpec{
+									ElectableSpecs: &admin.HardwareSpec20240805{
 										InstanceSize: pointer.MakePtr(data.InstanceSizeM0),
 										NodeCount:    pointer.MakePtr(3),
 									},

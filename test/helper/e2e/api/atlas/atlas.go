@@ -116,7 +116,7 @@ func (a *Atlas) GetDeploymentNames(projectID string) []string {
 	return names
 }
 
-func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.AdvancedClusterDescription, error) {
+func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.ClusterDescription20240805, error) {
 	advancedDeployment, _, err := a.Client.ClustersApi.
 		GetCluster(context.Background(), projectId, deploymentName).
 		Execute()

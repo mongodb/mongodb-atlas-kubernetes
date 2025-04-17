@@ -187,7 +187,7 @@ func CheckUserExistInAtlas(data *model.TestDataProvider) func() bool {
 	}
 }
 
-func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admin.AdvancedClusterDescription) {
+func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admin.ClusterDescription20240805) {
 	advancedSpec := requested.DeploymentSpec
 
 	Expect(created.GetMongoDBVersion()).ToNot(BeEmpty())
