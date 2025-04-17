@@ -561,7 +561,7 @@ func TestComputeChanges(t *testing.T) {
 func TestSpecAreEqual(t *testing.T) {
 	tests := map[string]struct {
 		ako      *akov2.AtlasDeployment
-		atlas    *admin.AdvancedClusterDescription
+		atlas    *admin.ClusterDescription20240805
 		expected bool
 	}{
 		"should return false when cluster type are different": {
@@ -572,7 +572,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				ClusterType: pointer.MakePtr("REPLICASET"),
 			},
 		},
@@ -584,7 +584,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				BackupEnabled: pointer.MakePtr(false),
 			},
 		},
@@ -599,7 +599,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				BiConnector: &admin.BiConnector{
 					Enabled:        pointer.MakePtr(false),
 					ReadPreference: pointer.MakePtr("secondary"),
@@ -614,7 +614,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				DiskSizeGB: pointer.MakePtr(10.0),
 			},
 		},
@@ -626,7 +626,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				EncryptionAtRestProvider: pointer.MakePtr("NONE"),
 			},
 		},
@@ -638,7 +638,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				MongoDBMajorVersion: pointer.MakePtr("7.0"),
 			},
 		},
@@ -650,7 +650,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				VersionReleaseSystem: pointer.MakePtr("LTS"),
 			},
 		},
@@ -662,7 +662,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				RootCertType: pointer.MakePtr("NONE"),
 			},
 		},
@@ -674,7 +674,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				Paused: pointer.MakePtr(false),
 			},
 		},
@@ -686,7 +686,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				PitEnabled: pointer.MakePtr(false),
 			},
 		},
@@ -698,7 +698,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				TerminationProtectionEnabled: pointer.MakePtr(false),
 			},
 		},
@@ -714,8 +714,8 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
-				ReplicationSpecs: &[]admin.ReplicationSpec{
+			atlas: &admin.ClusterDescription20240805{
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						NumShards: pointer.MakePtr(1),
 					},
@@ -740,11 +740,11 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
-				ReplicationSpecs: &[]admin.ReplicationSpec{
+			atlas: &admin.ClusterDescription20240805{
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						NumShards: pointer.MakePtr(1),
-						RegionConfigs: &[]admin.CloudRegionConfig{
+						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
 								ProviderName: pointer.MakePtr("AWS"),
 								RegionName:   pointer.MakePtr("US_EAST_1"),
@@ -780,11 +780,11 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
-				ReplicationSpecs: &[]admin.ReplicationSpec{
+			atlas: &admin.ClusterDescription20240805{
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						NumShards: pointer.MakePtr(1),
-						RegionConfigs: &[]admin.CloudRegionConfig{
+						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
 								ProviderName: pointer.MakePtr("AWS"),
 								RegionName:   pointer.MakePtr("US_EAST_1"),
@@ -812,7 +812,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				Labels: &[]admin.ComponentLabel{
 					{
 						Key:   pointer.MakePtr("label2"),
@@ -834,7 +834,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				Tags: &[]admin.ResourceTag{
 					{
 						Key:   "tag2",
@@ -866,18 +866,18 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				Name:        pointer.MakePtr("cluster0"),
 				ClusterType: pointer.MakePtr("REPLICASET"),
-				ReplicationSpecs: &[]admin.ReplicationSpec{
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						NumShards: pointer.MakePtr(1),
-						RegionConfigs: &[]admin.CloudRegionConfig{
+						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
 								ProviderName:        pointer.MakePtr("TENANT"),
 								BackingProviderName: pointer.MakePtr("AWS"),
 								RegionName:          pointer.MakePtr("US_EAST_1"),
-								ElectableSpecs: &admin.HardwareSpec{
+								ElectableSpecs: &admin.HardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M0"),
 								},
 							},
@@ -934,7 +934,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				Name:                     pointer.MakePtr("cluster0"),
 				ClusterType:              pointer.MakePtr("REPLICASET"),
 				BackupEnabled:            pointer.MakePtr(true),
@@ -959,15 +959,15 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 				VersionReleaseSystem:         pointer.MakePtr("LTS"),
 				TerminationProtectionEnabled: pointer.MakePtr(false),
-				ReplicationSpecs: &[]admin.ReplicationSpec{
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						NumShards: pointer.MakePtr(1),
-						RegionConfigs: &[]admin.CloudRegionConfig{
+						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
 								ProviderName: pointer.MakePtr("AWS"),
 								RegionName:   pointer.MakePtr("US_EAST_1"),
 								Priority:     pointer.MakePtr(7),
-								ElectableSpecs: &admin.HardwareSpec{
+								ElectableSpecs: &admin.HardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(3),
 								},
@@ -1037,7 +1037,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				Name:                     pointer.MakePtr("cluster0"),
 				ClusterType:              pointer.MakePtr("REPLICASET"),
 				BackupEnabled:            pointer.MakePtr(true),
@@ -1062,15 +1062,15 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 				VersionReleaseSystem:         pointer.MakePtr("LTS"),
 				TerminationProtectionEnabled: pointer.MakePtr(false),
-				ReplicationSpecs: &[]admin.ReplicationSpec{
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						NumShards: pointer.MakePtr(1),
-						RegionConfigs: &[]admin.CloudRegionConfig{
+						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
 								ProviderName: pointer.MakePtr("AWS"),
 								RegionName:   pointer.MakePtr("US_EAST_1"),
 								Priority:     pointer.MakePtr(7),
-								ElectableSpecs: &admin.HardwareSpec{
+								ElectableSpecs: &admin.HardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(3),
 								},
@@ -1169,7 +1169,7 @@ func TestSpecAreEqual(t *testing.T) {
 					},
 				},
 			},
-			atlas: &admin.AdvancedClusterDescription{
+			atlas: &admin.ClusterDescription20240805{
 				Name:                     pointer.MakePtr("cluster0"),
 				ClusterType:              pointer.MakePtr("REPLICASET"),
 				BackupEnabled:            pointer.MakePtr(true),
@@ -1194,15 +1194,15 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 				VersionReleaseSystem:         pointer.MakePtr("LTS"),
 				TerminationProtectionEnabled: pointer.MakePtr(false),
-				ReplicationSpecs: &[]admin.ReplicationSpec{
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						NumShards: pointer.MakePtr(1),
-						RegionConfigs: &[]admin.CloudRegionConfig{
+						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
 								ProviderName: pointer.MakePtr("AWS"),
 								RegionName:   pointer.MakePtr("US_WEST_1"),
 								Priority:     pointer.MakePtr(7),
-								ElectableSpecs: &admin.HardwareSpec{
+								ElectableSpecs: &admin.HardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(3),
 								},
@@ -1223,7 +1223,7 @@ func TestSpecAreEqual(t *testing.T) {
 								ProviderName: pointer.MakePtr("AWS"),
 								RegionName:   pointer.MakePtr("US_EAST_1"),
 								Priority:     pointer.MakePtr(7),
-								ElectableSpecs: &admin.HardwareSpec{
+								ElectableSpecs: &admin.HardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(3),
 								},

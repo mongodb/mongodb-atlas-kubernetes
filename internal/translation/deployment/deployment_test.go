@@ -99,7 +99,7 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 			admin.ListClustersApiRequest{ApiService: mockClustersAPI})
 		mockClustersAPI.EXPECT().ListClustersExecute(admin.ListClustersApiRequest{ApiService: mockClustersAPI}).Return(
 			&admin.PaginatedAdvancedClusterDescription{
-				Results: &[]admin.AdvancedClusterDescription{
+				Results: &[]admin.ClusterDescription20240805{
 					{
 						Name:              pointer.MakePtr("testCluster"),
 						ConnectionStrings: &admin.ClusterConnectionStrings{StandardSrv: pointer.MakePtr("clusterSRV")},
@@ -475,7 +475,7 @@ func TestCreateDeployment(t *testing.T) {
 			deployment: geoShardedCluster(),
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().CreateCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.AdvancedClusterDescription")).
+				clusterAPI.EXPECT().CreateCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.ClusterDescription20240805")).
 					Return(admin.CreateClusterApiRequest{ApiService: clusterAPI})
 				clusterAPI.EXPECT().CreateClusterExecute(mock.AnythingOfType("admin.CreateClusterApiRequest")).
 					Return(nil, nil, errors.New("failed to create cluster in atlas"))
@@ -506,7 +506,7 @@ func TestCreateDeployment(t *testing.T) {
 			deployment: geoShardedCluster(),
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().CreateCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.AdvancedClusterDescription")).
+				clusterAPI.EXPECT().CreateCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.ClusterDescription20240805")).
 					Return(admin.CreateClusterApiRequest{ApiService: clusterAPI})
 				clusterAPI.EXPECT().CreateClusterExecute(mock.AnythingOfType("admin.CreateClusterApiRequest")).
 					Return(
@@ -567,7 +567,7 @@ func TestUpdateDeployment(t *testing.T) {
 			deployment: geoShardedCluster(),
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().UpdateCluster(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.AdvancedClusterDescription")).
+				clusterAPI.EXPECT().UpdateCluster(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescription20240805")).
 					Return(admin.UpdateClusterApiRequest{ApiService: clusterAPI})
 				clusterAPI.EXPECT().UpdateClusterExecute(mock.AnythingOfType("admin.UpdateClusterApiRequest")).
 					Return(nil, nil, errors.New("failed to update cluster in atlas"))
@@ -598,7 +598,7 @@ func TestUpdateDeployment(t *testing.T) {
 			deployment: geoShardedCluster(),
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().UpdateCluster(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.AdvancedClusterDescription")).
+				clusterAPI.EXPECT().UpdateCluster(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescription20240805")).
 					Return(admin.UpdateClusterApiRequest{ApiService: clusterAPI})
 				clusterAPI.EXPECT().UpdateClusterExecute(mock.AnythingOfType("admin.UpdateClusterApiRequest")).
 					Return(
@@ -765,7 +765,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 					Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
 				clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
 					Return(
-						&admin.ClusterDescriptionProcessArgs{
+						&admin.ClusterDescriptionProcessArgs20240805{
 							MinimumEnabledTlsProtocol: pointer.MakePtr("TLS1_2"),
 							JavascriptEnabled:         pointer.MakePtr(true),
 							NoTableScan:               pointer.MakePtr(false),
@@ -795,7 +795,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 					Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
 				clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
 					Return(
-						&admin.ClusterDescriptionProcessArgs{
+						&admin.ClusterDescriptionProcessArgs20240805{
 							DefaultReadConcern:               pointer.MakePtr("available"),
 							DefaultWriteConcern:              pointer.MakePtr("available"),
 							FailIndexKeyTooLong:              pointer.MakePtr(true),
@@ -893,7 +893,7 @@ func TestUpdateProcessArgs(t *testing.T) {
 			},
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().UpdateClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs")).
+				clusterAPI.EXPECT().UpdateClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs20240805")).
 					Return(admin.UpdateClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
 				clusterAPI.EXPECT().UpdateClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.UpdateClusterAdvancedConfigurationApiRequest")).
 					Return(nil, nil, errors.New("failed to update cluster process args in atlas"))
@@ -923,11 +923,11 @@ func TestUpdateProcessArgs(t *testing.T) {
 			},
 			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().UpdateClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs")).
+				clusterAPI.EXPECT().UpdateClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs20240805")).
 					Return(admin.UpdateClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
 				clusterAPI.EXPECT().UpdateClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.UpdateClusterAdvancedConfigurationApiRequest")).
 					Return(
-						&admin.ClusterDescriptionProcessArgs{
+						&admin.ClusterDescriptionProcessArgs20240805{
 							DefaultReadConcern:               pointer.MakePtr("available"),
 							DefaultWriteConcern:              pointer.MakePtr("available"),
 							FailIndexKeyTooLong:              pointer.MakePtr(true),
@@ -1414,8 +1414,8 @@ func expectedGeoShardedCluster() *Cluster {
 	}
 }
 
-func atlasGeoShardedCluster() *admin.AdvancedClusterDescription {
-	return &admin.AdvancedClusterDescription{
+func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
+	return &admin.ClusterDescription20240805{
 		GroupId:                      pointer.MakePtr("project-id"),
 		Name:                         pointer.MakePtr("cluster0"),
 		ClusterType:                  pointer.MakePtr("GEOSHARDED"),
@@ -1452,17 +1452,17 @@ func atlasGeoShardedCluster() *admin.AdvancedClusterDescription {
 				Value: "A",
 			},
 		},
-		ReplicationSpecs: &[]admin.ReplicationSpec{
+		ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 			{
 				Id:        pointer.MakePtr("replication-id-2"),
 				ZoneName:  pointer.MakePtr("Zone 2"),
 				NumShards: pointer.MakePtr(1),
-				RegionConfigs: &[]admin.CloudRegionConfig{
+				RegionConfigs: &[]admin.CloudRegionConfig20240805{
 					{
 						ProviderName: pointer.MakePtr("AWS"),
 						RegionName:   pointer.MakePtr("EU_CENTRAL_1"),
 						Priority:     pointer.MakePtr(6),
-						ElectableSpecs: &admin.HardwareSpec{
+						ElectableSpecs: &admin.HardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(2),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
@@ -1496,7 +1496,7 @@ func atlasGeoShardedCluster() *admin.AdvancedClusterDescription {
 						ProviderName: pointer.MakePtr("AWS"),
 						RegionName:   pointer.MakePtr("EU_WEST_1"),
 						Priority:     pointer.MakePtr(4),
-						ElectableSpecs: &admin.HardwareSpec{
+						ElectableSpecs: &admin.HardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
@@ -1532,12 +1532,12 @@ func atlasGeoShardedCluster() *admin.AdvancedClusterDescription {
 				Id:        pointer.MakePtr("replication-id-1"),
 				ZoneName:  pointer.MakePtr("Zone 1"),
 				NumShards: pointer.MakePtr(1),
-				RegionConfigs: &[]admin.CloudRegionConfig{
+				RegionConfigs: &[]admin.CloudRegionConfig20240805{
 					{
 						ProviderName: pointer.MakePtr("AWS"),
 						RegionName:   pointer.MakePtr("US_EAST_1"),
 						Priority:     pointer.MakePtr(7),
-						ElectableSpecs: &admin.HardwareSpec{
+						ElectableSpecs: &admin.HardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
@@ -1571,7 +1571,7 @@ func atlasGeoShardedCluster() *admin.AdvancedClusterDescription {
 						ProviderName: pointer.MakePtr("AWS"),
 						RegionName:   pointer.MakePtr("EU_WEST_1"),
 						Priority:     pointer.MakePtr(5),
-						ElectableSpecs: &admin.HardwareSpec{
+						ElectableSpecs: &admin.HardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
