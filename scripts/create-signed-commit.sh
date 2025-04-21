@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# GitHub will sign commits if the API request is authenticated and lacks
+# author and committer arguments. See:
+# https://github.com/peter-evans/create-pull-request/issues/1241#issuecomment-1232477512
+
 set -euo pipefail
   
 # Configuration defaults
