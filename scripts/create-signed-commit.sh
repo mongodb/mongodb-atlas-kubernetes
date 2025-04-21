@@ -64,11 +64,12 @@ NEW_TREE_SHA=$(curl -s -X POST -H "Authorization: token $github_token" \
 echo "New tree SHA: $NEW_TREE_SHA"  
   
 # Create a new commit
+set -x
 NEW_COMMIT_SHA=$(curl -s -X POST -H "Authorization: token $github_token" \
   -H "Accept: application/vnd.github.v3+json" \
   -d "{\"message\": \"$commit_message\", \"tree\": \"$NEW_TREE_SHA\", \"parents\": [\"$LATEST_COMMIT_SHA\"]}" \
   "https://api.github.com/repos/$repo_owner/$repo_name/git/commits" | jq -r '.sha')  
-  
+set +x
 echo "New commit SHA: $NEW_COMMIT_SHA"  
   
 # Update the reference of the branch to point to the new commit  
