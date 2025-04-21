@@ -49,8 +49,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
           COMMIT_MESSAGE: 'Fix licenses after dependabot changes\n\n[dependabot skip]'
         run: |
-          #if [[ $(git diff --stat) != '' ]]; then
-            echo "test 3 " > test.txt
+          if [[ $(git diff --stat) != '' ]]; then
             echo 'Committing changes'
             git add .
             scripts/create-signed-commit.sh
@@ -58,6 +57,6 @@ jobs:
             echo 'Adding label retest'
             gh pr edit ${{ env.BRANCH }} --remove-label retest
             gh pr edit ${{ env.BRANCH }} --add-label retest
-          #else
-          #  echo 'Clean nothing to do'
-          #fi
+          else
+            echo 'Clean nothing to do'
+          fi
