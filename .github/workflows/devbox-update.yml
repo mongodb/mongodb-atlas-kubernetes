@@ -47,13 +47,13 @@ jobs:
         echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT  # Export branch name
     - name: Commit and Push Changes
       if: steps.check_changes.outputs.CHANGES == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COMMIT_MESSAGE: 'Weekly devbox dependencies update'
+        BRANCH: ${{ steps.generate_branch.outputs.BRANCH_NAME }}
       run: |
-        git config user.name "ako-releaser"
-        git config user.email "285350+ako-releaser[bot]@users.noreply.github.com"
-        git checkout -b ${{ steps.generate_branch.outputs.BRANCH_NAME }}  # New branch
         git add .
-        git commit -m "Weekly devbox dependencies update"
-        git push origin ${{ steps.generate_branch.outputs.BRANCH_NAME }}  # Push branch
+        scripts/create-signed-commit.sh
 
     - name: Create Pull Request
       if: steps.check_changes.outputs.CHANGES == 'true'
