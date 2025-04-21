@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -euxo pipefail
+set -euo pipefail
   
 # Configuration defaults
 github_token=${GITHUB_TOKEN:?}
@@ -33,7 +33,7 @@ echo "Latest commit SHA: $LATEST_COMMIT_SHA"
 echo "Latest tree SHA: $LATEST_TREE_SHA"  
   
 # Collect all modified files  
-MODIFIED_FILES=$(git diff --name-only)  
+MODIFIED_FILES=$(git diff --name-only --cached)  
 echo "Modified files: $MODIFIED_FILES"  
   
 # Create blob and tree  

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-set -euxo pipefail
+set -euo pipefail
 
 repo_installation_id() {
 	REPO=$1
