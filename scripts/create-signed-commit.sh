@@ -1,6 +1,8 @@
 #!/bin/bash  
+
+set -euxo pipefail
   
-# Configuration  
+# Configuration defaults
 github_token=${GITHUB_TOKEN:?}
 repo_owner="${REPO_OWNER:-mongodb}"
 repo_name="${REPO_NAME:-mongodb-atlas-kubernetes}"
