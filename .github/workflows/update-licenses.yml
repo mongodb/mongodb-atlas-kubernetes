@@ -47,7 +47,7 @@ jobs:
       - name: Commit as needed
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          COMMIT_MESSAGE: "Fix licenses after dependabot changes\n\n[dependabot skip]"
+          COMMIT_MESSAGE: "Fix licenses after dependabot changes [dependabot skip]"
         run: |
           #if [[ $(git diff --stat) != '' ]]; then
             echo "test" > test.txt
