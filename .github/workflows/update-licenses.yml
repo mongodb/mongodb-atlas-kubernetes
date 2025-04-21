@@ -49,17 +49,16 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
           COMMIT_MESSAGE: "Fix licenses after dependabot changes [dependabot skip]"
         run: |
-          #if [[ $(git diff --stat) != '' ]]; then
-            echo "test" > test.txt
+          if [[ $(git diff --stat) != '' ]]; then
             echo 'Committing changes'
             git config user.name "ako-releaser"
             git config user.email "285350+ako-releaser[bot]@users.noreply.github.com"
             git add .
-            scripts/create-signed-commit.sh # no local commit
+            scripts/create-signed-commit.sh
 
             echo 'Adding label retest'
             gh pr edit ${{ env.BRANCH }} --remove-label retest
             gh pr edit ${{ env.BRANCH }} --add-label retest
-          #else
-          #  echo 'Clean nothing to do'
-          #fi
+          else
+            echo 'Clean nothing to do'
+          fi
