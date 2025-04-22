@@ -14,7 +14,7 @@ jobs:
       uses: actions/checkout@v4
     - name: Generate GitHub App Token
       id: generate_token
-      uses: actions/create-github-app-token@v1
+      uses: actions/create-github-app-token@v2
       with:
         app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
         private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
