@@ -20,7 +20,7 @@
     "operator-sdk@1.36.1",
     "shellcheck@latest",
     "golangci-lint@2.0.0",
-    "kubernetes-controller-tools@0.16.1",
+    "kubernetes-controller-tools@0.17.2",
     "setup-envtest@0.18.2",
     "awscli2@latest",
     "go-mockery@latest",

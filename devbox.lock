@@ -478,8 +478,8 @@
       }
     },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "last_modified": "2025-04-12T07:19:22Z",
-      "resolved": "github:NixOS/nixpkgs/2349f9de17183971db12ae9e0123dab132023bd7?lastModified=1744442362&narHash=sha256-i47t4DRIZgwBZw2Osbrp1OJhhO1k%2Fn%2BQzRx%2BTrmfE9Y%3D"
+      "last_modified": "2025-04-17T05:47:26Z",
+      "resolved": "github:NixOS/nixpkgs/ebe4301cbd8f81c4f8d3244b3632338bbeb6d49c?lastModified=1744868846&narHash=sha256-5RJTdUHDmj12Qsv7XOhuospjAjATNiTMElplWnJE9Hs%3D"
     },
     "go-mockery@latest": {
       "last_modified": "2025-03-27T11:50:31Z",
@@ -969,51 +969,51 @@
         }
       }
     },
-    "kubernetes-controller-tools@0.16.1": {
-      "last_modified": "2024-09-10T15:01:03Z",
-      "resolved": "github:NixOS/nixpkgs/5ed627539ac84809c78b2dd6d26a5cebeb5ae269#kubernetes-controller-tools",
+    "kubernetes-controller-tools@0.17.2": {
+      "last_modified": "2025-03-23T05:31:05Z",
+      "resolved": "github:NixOS/nixpkgs/dd613136ee91f67e5dba3f3f41ac99ae89c5406b#kubernetes-controller-tools",
       "source": "devbox-search",
-      "version": "0.16.1",
+      "version": "0.17.2",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/81ynvd61f8jha78p44r6ya7rsf5292qb-controller-tools-0.16.1",
+              "path": "/nix/store/x2g121jdk7fdxb7vx964rrhbiwd0g0rm-controller-tools-0.17.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/81ynvd61f8jha78p44r6ya7rsf5292qb-controller-tools-0.16.1"
+          "store_path": "/nix/store/x2g121jdk7fdxb7vx964rrhbiwd0g0rm-controller-tools-0.17.2"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/c2aaf01sisq5ai2zjgnqaxbykxghqy1h-controller-tools-0.16.1",
+              "path": "/nix/store/jaz48mw3pinfdw9gd8fng63gn7wwzmxy-controller-tools-0.17.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/c2aaf01sisq5ai2zjgnqaxbykxghqy1h-controller-tools-0.16.1"
+          "store_path": "/nix/store/jaz48mw3pinfdw9gd8fng63gn7wwzmxy-controller-tools-0.17.2"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/42ar5zfn1ycr6pg13q74r4bcrg89pwc5-controller-tools-0.16.1",
+              "path": "/nix/store/3wdf34xlpff7m01ggzr7pb9f3w3cl95f-controller-tools-0.17.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/42ar5zfn1ycr6pg13q74r4bcrg89pwc5-controller-tools-0.16.1"
+          "store_path": "/nix/store/3wdf34xlpff7m01ggzr7pb9f3w3cl95f-controller-tools-0.17.2"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/a28n08d6knfjdirnnn1n7ynn5dijccml-controller-tools-0.16.1",
+              "path": "/nix/store/xgppkdij5f73igwfp5as058fmh21wn9p-controller-tools-0.17.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/a28n08d6knfjdirnnn1n7ynn5dijccml-controller-tools-0.16.1"
+          "store_path": "/nix/store/xgppkdij5f73igwfp5as058fmh21wn9p-controller-tools-0.17.2"
         }
       }
     },
