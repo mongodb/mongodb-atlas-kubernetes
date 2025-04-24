@@ -50,13 +50,11 @@ jobs:
       - name: Create SBOMs PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVIEWERS: ${{ env.REVIEWERS }}
           BRANCH: ${{ steps.generate_branch.outputs.BRANCH }}
           COMMIT_MESSAGE: ${{ steps.generate_branch.outputs.COMMIT_MESSAGE }}
           VERSION: ${{ env.VERSION }}
         run: |
           gh pr create --head="${BRANCH}" \
           --title "${COMMIT_MESSAGE}" \
-          --reviewer "${REVIEWERS}" \
           --body ""SBOMs for version ${VERSION}" \
           && echo "Pull request created"
