@@ -95,6 +95,7 @@ git restore --staged .
 git restore .
 git clean -f
 git fetch "${remote}"
-git checkout -b "${branch}" "${remote}/${branch}"
+git checkout -b "${branch}" "${remote}/${branch}" || git checkout "${branch}"
+git pull
 
 echo "Local branch set to ${remote}/${branch}"
