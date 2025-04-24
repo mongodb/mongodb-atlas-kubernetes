@@ -17,7 +17,7 @@
 # author and committer arguments. See:
 # https://github.com/peter-evans/create-pull-request/issues/1241#issuecomment-1232477512
 
-set -euxo pipefail
+set -euo pipefail
 
 # Configuration defaults
 github_token=${GITHUB_TOKEN:?}
@@ -95,7 +95,7 @@ NEW_COMMIT_SHA=$(curl -s -X POST -H "Authorization: token $github_token" \
 echo "New commit SHA: $NEW_COMMIT_SHA"  
 
 # Update the reference of the branch to point to the new commit
-curl -v -X PATCH -H "Authorization: token $github_token" \
+curl -s -X PATCH -H "Authorization: token $github_token" \
   -H "Accept: application/vnd.github.v3+json" -d "{\"sha\": \"$NEW_COMMIT_SHA\"}" \
   "https://api.github.com/repos/$repo_owner/$repo_name/git/refs/heads/$branch"
 
