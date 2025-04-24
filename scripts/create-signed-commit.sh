@@ -89,6 +89,7 @@ echo "Branch ${branch} updated to new commit ${NEW_COMMIT_SHA}."
 git restore --staged .
 git restore .
 git clean -f
+git fetch "${remote}"
 git checkout -b "${branch}" "${remote}/${branch}"
 
 echo "Local branch set to ${remote}/${branch}"
