@@ -29,7 +29,16 @@ remote=${REMOTE:-origin}
 
 # Ensure remote branch exists
 echo "Check remote branch ${branch} exists..."
-git ls-remote --exit-code --heads origin "${branch}" >/dev/null
+
+function create_branch() {
+  echo "Creating branch ${remote}/${branch}"
+  git stash
+  git push "${remote}" "${branch}"
+  git stash pop
+  git add .
+}
+
+git ls-remote --exit-code --heads origin "${branch}" >/dev/null || create_branch
 
 # Fetch the latest commit SHA
 LATEST_COMMIT_SHA=$(curl -s -H "Authorization: token $github_token" \
@@ -96,6 +105,7 @@ git restore .
 git clean -f
 git fetch "${remote}"
 git checkout -b "${branch}" "${remote}/${branch}" || git checkout "${branch}"
+git branch -u "${remote}/${branch}"
 git pull
 
 echo "Local branch set to ${remote}/${branch}"
