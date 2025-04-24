@@ -276,12 +276,3 @@ jobs:
         with:
           name: logs
           path: output/**
-      - name: Upload test results to codecov.io
-        if: ${{ success() }}
-        uses: codecov/codecov-action@v5
-        with:
-          name: e2e-${{ matrix.test }}
-          flags: e2e,${{ matrix.test }}
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: test/e2e/coverprofile.out
-          verbose: true

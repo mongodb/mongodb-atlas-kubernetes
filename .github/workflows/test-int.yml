@@ -53,12 +53,3 @@ jobs:
           GINKGO_EDITOR_INTEGRATION: "true"
         run: |
           devbox run -- 'make ${{ matrix.target }}'
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          name: int-${{ matrix.test }}
-          flags: integration,${{ matrix.test }}
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverprofile.out
-          verbose: true
-
