@@ -105,7 +105,5 @@ git restore .
 git clean -f
 git fetch "${remote}"
 git checkout -b "${branch}" "${remote}/${branch}" || git checkout "${branch}"
-git branch -u "${remote}/${branch}"
-git pull --rebase
 
 echo "Local branch set to ${remote}/${branch}"
