@@ -6,6 +6,35 @@ metadata:
       [
         {
           "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasBackupCompliancePolicy",
+          "metadata": {
+            "name": "my-backup-compliance-policy"
+          },
+          "spec": {
+            "authorizedEmail": "john.doe@example.com",
+            "authorizedUserFirstName": "John",
+            "authorizedUserLastName": "Doe",
+            "copyProtectionEnabled": false,
+            "encryptionAtRestEnabled": false,
+            "onDemandPolicy": {
+              "retentionUnit": "weeks",
+              "retentionValue": 3
+            },
+            "overwriteBackupPolicies": false,
+            "pointInTimeEnabled": true,
+            "restoreWindowDays": 42,
+            "scheduledPolicyItems": [
+              {
+                "frequencyInterval": 2,
+                "frequencyType": "daily",
+                "retentionUnit": "days",
+                "retentionValue": 7
+              }
+            ]
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
           "kind": "AtlasBackupPolicy",
           "metadata": {
             "name": "atlasbackuppolicy-sample"
@@ -64,6 +93,109 @@ metadata:
             "referenceMinuteOfHour": 10,
             "restoreWindowDays": 2,
             "useOrgAndGroupNamesInExportPrefix": true
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasCustomRole",
+          "metadata": {
+            "name": "shard-operator-role"
+          },
+          "spec": {
+            "projectRef": {
+              "name": "my-project"
+            },
+            "role": {
+              "actions": [
+                {
+                  "name": "getShardMap",
+                  "resources": [
+                    {
+                      "cluster": true
+                    }
+                  ]
+                },
+                {
+                  "name": "shardingState",
+                  "resources": [
+                    {
+                      "cluster": true
+                    }
+                  ]
+                },
+                {
+                  "name": "connPoolStats",
+                  "resources": [
+                    {
+                      "cluster": true
+                    }
+                  ]
+                },
+                {
+                  "name": "getLog",
+                  "resources": [
+                    {
+                      "cluster": true
+                    }
+                  ]
+                }
+              ],
+              "inheritedRoles": [
+                {
+                  "database": "admin",
+                  "name": "operator-role-1"
+                }
+              ],
+              "name": "my-role"
+            }
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasDataFederation",
+          "metadata": {
+            "name": "my-data-federation",
+            "namespace": "mongodb-atlas-system"
+          },
+          "spec": {
+            "name": "my-data-federation",
+            "privateEndpoints": [
+              {
+                "endpointId": "vpce-03f9eeaa764e32454",
+                "provider": "AWS",
+                "type": "DATA_LAKE"
+              }
+            ],
+            "projectRef": {
+              "name": "my-project",
+              "namespace": "mongodb-atlas-system"
+            },
+            "storage": {
+              "databases": [
+                {
+                  "collections": [
+                    {
+                      "dataSources": [
+                        {
+                          "storeName": "http-test",
+                          "urls": [
+                            "https://data.cityofnewyork.us/api/views/vfnx-vebw/rows.csv"
+                          ]
+                        }
+                      ],
+                      "name": "test-collection-1"
+                    }
+                  ],
+                  "name": "test-db-1"
+                }
+              ],
+              "stores": [
+                {
+                  "name": "http-test",
+                  "provider": "http"
+                }
+              ]
+            }
           }
         },
         {
@@ -130,6 +262,51 @@ metadata:
             "projectRef": {
               "name": "my-project"
             }
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasFederatedAuth",
+          "metadata": {
+            "name": "atlas-default-federated-auth",
+            "namespace": "mongodb-atlas-system"
+          },
+          "spec": {
+            "connectionSecretRef": {
+              "name": "my-org-secret",
+              "namespace": "mongodb-atlas-system"
+            },
+            "domainAllowList": [
+              "my-org-domain.com"
+            ],
+            "domainRestrictionEnabled": true,
+            "enabled": true,
+            "postAuthRoleGrants": [
+              "ORG_MEMBER"
+            ],
+            "roleMappings": [
+              {
+                "externalGroupName": "org-admin",
+                "roleAssignments": [
+                  {
+                    "role": "ORG_OWNER"
+                  }
+                ]
+              },
+              {
+                "externalGroupName": "dev-team",
+                "roleAssignments": [
+                  {
+                    "role": "ORG_GROUP_CREATOR"
+                  },
+                  {
+                    "projectName": "dev-project",
+                    "role": "GROUP_OWNER"
+                  }
+                ]
+              }
+            ],
+            "ssoDebugEnabled": false
           }
         },
         {
@@ -203,6 +380,23 @@ metadata:
         },
         {
           "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasPrivateEndpoint",
+          "metadata": {
+            "name": "atlasprivateendpoint-sample"
+          },
+          "spec": {
+            "awsConfiguration": {
+              "id": "vpce-f4k34w51d"
+            },
+            "projectRef": {
+              "name": "my-project"
+            },
+            "provider": "AWS",
+            "region": "EU_CENTRAL_1"
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
           "kind": "AtlasProject",
           "metadata": {
             "name": "my-project"
@@ -223,6 +417,84 @@ metadata:
         },
         {
           "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasSearchIndexConfig",
+          "metadata": {
+            "name": "atlassearchindexconfig-sample"
+          },
+          "spec": {
+            "analyzer": "lucene.standard",
+            "analyzers": [
+              {
+                "name": "test-analyzer",
+                "tokenFilters": [
+                  {
+                    "asciiFolding": {
+                      "originalTokens": "omit"
+                    },
+                    "type": "asciiFolding"
+                  }
+                ],
+                "tokenizer": {
+                  "type": "whiteSpace",
+                  "whitespace": {
+                    "maxTokenLenght": 200
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasStreamConnection",
+          "metadata": {
+            "name": "my-streamconnection-kafka"
+          },
+          "spec": {
+            "kafkaConfig": {
+              "authentication": {
+                "credentials": {
+                  "name": "kafka-userpass"
+                },
+                "mechanism": "SCRAM-512"
+              },
+              "bootstrapServers": "kafka.server1:9001,kafka.server2:9002,kafka.server3:9003",
+              "security": {
+                "certificate": {
+                  "name": "kafka-cert"
+                },
+                "protocol": "SSL"
+              }
+            },
+            "name": "kafka-config",
+            "type": "Kafka"
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasStreamInstance",
+          "metadata": {
+            "name": "my-streaminstance-sample"
+          },
+          "spec": {
+            "clusterConfig": {
+              "provider": "AWS",
+              "region": "VIRGINIA_USA",
+              "tier": "SP30"
+            },
+            "connectionRegistry": [
+              {
+                "name": "my-streamconnection-sample"
+              }
+            ],
+            "name": "my-instance",
+            "projectRef": {
+              "name": "my-project"
+            }
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
           "kind": "AtlasTeam",
           "metadata": {
             "name": "atlasteam-sample"
@@ -237,7 +509,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Database
-    createdAt: "2025-03-06T14:09:19Z"
+    createdAt: "2025-04-24T13:04:21Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -248,18 +520,22 @@ metadata:
     features.operators.openshift.io/token-auth-gcp: "false"
     operators.operatorframework.io/builder: operator-sdk-v1.34.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.8.0
+    repository: https://github.com/mongodb/mongodb-atlas-kubernetes
+    support: support@mongodb.com
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.8.1
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.8.0
+  name: mongodb-atlas-kubernetes.v2.8.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-      - kind: AtlasBackupCompliancePolicy
+      - description: The AtlasBackupCompliancePolicy is a configuration that enforces specific backup and retention requirements
+        displayName: Atlas Backup Compliance Policy
+        kind: AtlasBackupCompliancePolicy
         name: atlasbackupcompliancepolicies.atlas.mongodb.com
         version: v1
       - description: AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
@@ -499,7 +775,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.8.0
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.8.1
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -583,5 +859,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.8.0
-  replaces: mongodb-atlas-kubernetes.v2.7.1
+  version: 2.8.1
+  replaces: mongodb-atlas-kubernetes.v2.8.0

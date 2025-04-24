@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasbackupcompliancepolicies.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -24,8 +24,8 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: AtlasBackupCompliancePolicy defines the desired state of a compliance
-          policy in Atlas.
+        description: The AtlasBackupCompliancePolicy is a configuration that enforces
+          specific backup and retention requirements
         properties:
           apiVersion:
             description: |-
@@ -45,6 +45,8 @@ spec:
           metadata:
             type: object
           spec:
+            description: AtlasBackupCompliancePolicySpec is the specification of the
+              desired configuration of backup compliance policy
             properties:
               authorizedEmail:
                 description: Email address of the user who authorized to update the
@@ -227,7 +229,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasbackuppolicies.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -400,7 +402,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasbackupschedules.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -602,7 +604,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlascustomroles.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -815,7 +817,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasdatabaseusers.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -1110,7 +1112,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasdatafederations.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -1372,7 +1374,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasdeployments.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -2552,7 +2554,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasfederatedauths.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -2743,7 +2745,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasipaccesslists.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -2935,7 +2937,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasnetworkcontainers.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -3132,7 +3134,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasnetworkpeerings.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -3431,7 +3433,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasprivateendpoints.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -3752,7 +3754,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasprojects.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -5300,7 +5302,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlassearchindexconfigs.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -5577,7 +5579,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasstreamconnections.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -5809,7 +5811,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasstreaminstances.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -6012,7 +6014,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: atlasteams.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
