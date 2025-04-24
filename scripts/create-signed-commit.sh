@@ -25,6 +25,7 @@ repo_owner="${REPO_OWNER:-mongodb}"
 repo_name="${REPO_NAME:-mongodb-atlas-kubernetes}"
 branch="${BRANCH:?}"
 commit_message="${COMMIT_MESSAGE:?}"
+remote=${REMOTE:-origin}
 
 # Fetch the latest commit SHA
 LATEST_COMMIT_SHA=$(curl -s -H "Authorization: token $github_token" \
@@ -84,3 +85,9 @@ curl -s -X PATCH -H "Authorization: token $github_token" \
   "https://api.github.com/repos/$repo_owner/$repo_name/git/refs/heads/$branch"  
 
 echo "Branch ${branch} updated to new commit ${NEW_COMMIT_SHA}."  
+git restore --staged .
+git restore .
+git clean
+git checkout -b "${branch}" "${remote}/${branch}"
+
+echo "Local branch set to ${remote}/${branch}"
