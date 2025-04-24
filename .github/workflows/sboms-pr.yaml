@@ -41,6 +41,7 @@ jobs:
         run: |
           OS=linux ARCH=amd64 DOCKER_SBOM_PLUGIN_VERSION=0.6.1 ./scripts/get-docker-sbom-plugin.sh
           devbox run -- make generate-sboms VERSION=${{ env.VERSION }}
+          rm docker-sbom # to avoid it getting into the final PR
           git checkout -b $BRANCH
           git add docs/releases
           scripts/create-signed-commit.sh
