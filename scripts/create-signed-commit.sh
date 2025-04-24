@@ -65,11 +65,13 @@ done
 # Remove trailing comma and close the array  
 NEW_TREE_ARRAY="${NEW_TREE_ARRAY%,}]"
 
-# Create new tree  
+# Create new tree
+echo "{\"base_tree\": \"$LATEST_TREE_SHA\", \"tree\": $NEW_TREE_ARRAY}" > new_tree_spec.json
 NEW_TREE_SHA=$(curl -s -X POST -H "Authorization: token $github_token" \
   -H "Accept: application/vnd.github.v3+json" \
-  -d "{\"base_tree\": \"$LATEST_TREE_SHA\", \"tree\": $NEW_TREE_ARRAY}" \
+  -d @new_tree_spec.json \
   "https://api.github.com/repos/$repo_owner/$repo_name/git/trees" | jq -r '.sha')  
+rm new_tree_spec.json
 
 echo "New tree SHA: $NEW_TREE_SHA"  
 
@@ -81,9 +83,9 @@ NEW_COMMIT_SHA=$(curl -s -X POST -H "Authorization: token $github_token" \
 echo "New commit SHA: $NEW_COMMIT_SHA"  
 
 # Update the reference of the branch to point to the new commit  
-curl -s -X PATCH -H "Authorization: token $github_token" \
+curl -v -X PATCH -H "Authorization: token $github_token" \
   -H "Accept: application/vnd.github.v3+json" -d "{\"sha\": \"$NEW_COMMIT_SHA\"}" \
-  "https://api.github.com/repos/$repo_owner/$repo_name/git/refs/heads/$branch"  
+  "https://api.github.com/repos/$repo_owner/$repo_name/git/refs/heads/$branch"
 
 echo "Branch ${branch} updated to new commit ${NEW_COMMIT_SHA}."  
 git restore --staged .
