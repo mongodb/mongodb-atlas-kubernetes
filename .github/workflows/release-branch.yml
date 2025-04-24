@@ -56,12 +56,12 @@ jobs:
       id: generate_branch
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        UPSTREAM_BRANCH: main
       run: |
         devbox run -- 'make check-major-version'
         export BRANCH="release/${VERSION}"
         export COMMIT_MESSAGE="Release ${VERSION}"
         git checkout -b $BRANCH
+        git push origin $BRANCH # pre-generate the target branch
         git add -f ./deploy ./bundle bundle.Dockerfile docs/releases
         scripts/create-signed-commit.sh
         echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT  # Export branch name

@@ -24,13 +24,16 @@ github_token=${GITHUB_TOKEN:?}
 repo_owner="${REPO_OWNER:-mongodb}"
 repo_name="${REPO_NAME:-mongodb-atlas-kubernetes}"
 branch="${BRANCH:?}"
-upstream_branch="${UPSTREAM_BRANCH:-$branch}"
 commit_message="${COMMIT_MESSAGE:?}"
 remote=${REMOTE:-origin}
 
+# Ensure remote branch exists
+echo "Check remote branch ${branch} exists..."
+git ls-remote --exit-code --heads origin "${branch}" >/dev/null
+
 # Fetch the latest commit SHA
 LATEST_COMMIT_SHA=$(curl -s -H "Authorization: token $github_token" \
-  "https://api.github.com/repos/$repo_owner/$repo_name/git/ref/heads/$upstream_branch" | jq -r '.object.sha')
+  "https://api.github.com/repos/$repo_owner/$repo_name/git/ref/heads/$branch" | jq -r '.object.sha')
 
 LATEST_TREE_SHA=$(curl -s -H "Authorization: token $github_token" \
   "https://api.github.com/repos/$repo_owner/$repo_name/git/commits/$LATEST_COMMIT_SHA" | jq -r '.tree.sha')
@@ -82,7 +85,7 @@ NEW_COMMIT_SHA=$(curl -s -X POST -H "Authorization: token $github_token" \
   "https://api.github.com/repos/$repo_owner/$repo_name/git/commits" | jq -r '.sha')
 echo "New commit SHA: $NEW_COMMIT_SHA"  
 
-# Update the reference of the branch to point to the new commit  
+# Update the reference of the branch to point to the new commit
 curl -v -X PATCH -H "Authorization: token $github_token" \
   -H "Accept: application/vnd.github.v3+json" -d "{\"sha\": \"$NEW_COMMIT_SHA\"}" \
   "https://api.github.com/repos/$repo_owner/$repo_name/git/refs/heads/$branch"
