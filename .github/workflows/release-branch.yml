@@ -56,6 +56,7 @@ jobs:
       id: generate_branch
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        UPSTREAM_BRANCH: main
       run: |
         devbox run -- 'make check-major-version'
         export BRANCH="release/${VERSION}"

@@ -24,12 +24,13 @@ github_token=${GITHUB_TOKEN:?}
 repo_owner="${REPO_OWNER:-mongodb}"
 repo_name="${REPO_NAME:-mongodb-atlas-kubernetes}"
 branch="${BRANCH:?}"
+upstream_branch="${UPSTREAM_BRANCH:-$branch}"
 commit_message="${COMMIT_MESSAGE:?}"
 remote=${REMOTE:-origin}
 
 # Fetch the latest commit SHA
 LATEST_COMMIT_SHA=$(curl -s -H "Authorization: token $github_token" \
-  "https://api.github.com/repos/$repo_owner/$repo_name/git/ref/heads/$branch" | jq -r '.object.sha')
+  "https://api.github.com/repos/$repo_owner/$repo_name/git/ref/heads/$upstream_branch" | jq -r '.object.sha')
 
 LATEST_TREE_SHA=$(curl -s -H "Authorization: token $github_token" \
   "https://api.github.com/repos/$repo_owner/$repo_name/git/commits/$LATEST_COMMIT_SHA" | jq -r '.tree.sha')

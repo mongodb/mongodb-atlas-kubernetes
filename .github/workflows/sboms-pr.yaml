@@ -38,6 +38,7 @@ jobs:
           BRANCH: version-${{ env.VERSION }}-sboms
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: "Add SBOMs for version ${{ env.VERSION }}"
+          UPSTREAM_BRANCH: main
         run: |
           OS=linux ARCH=amd64 DOCKER_SBOM_PLUGIN_VERSION=0.6.1 ./scripts/get-docker-sbom-plugin.sh
           devbox run -- make generate-sboms VERSION=${{ env.VERSION }}
