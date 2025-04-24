@@ -31,26 +31,32 @@ jobs:
       - name: Configure Git
         run: |
           git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
 
       - name: Create SBOMs branch
+        id: generate_branch
         env:
           BRANCH: version-${{ env.VERSION }}-sboms
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MESSAGE: "Add SBOMs for version ${{ env.VERSION }}"
         run: |
           OS=linux ARCH=amd64 DOCKER_SBOM_PLUGIN_VERSION=0.6.1 ./scripts/get-docker-sbom-plugin.sh
           devbox run -- make generate-sboms VERSION=${{ env.VERSION }}
           git checkout -b $BRANCH
           git add docs/releases
-          git commit -m "Add SBOMs for version ${{ env.VERSION }}"
-          git push --set-upstream origin $BRANCH
+          scripts/create-signed-commit.sh
+          echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT  # Export branch name
+          echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT  # Export commit message
 
       - name: Create SBOMs PR
-        uses: ./.github/actions/create-pr
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REVIEWERS: ${{ env.REVIEWERS }}
-        with:
-          REVIEWERS: ${{ env.REVIEWERS }}
-          TITLE_PREFIX: "SBOMs for version "
+          BRANCH: ${{ steps.generate_branch.outputs.BRANCH }}
+          COMMIT_MESSAGE: ${{ steps.generate_branch.outputs.COMMIT_MESSAGE }}
+          VERSION: ${{ env.VERSION }}
+        run: |
+          gh pr create --head="${BRANCH}" \
+          --title "${COMMIT_MESSAGE}" \
+          --reviewer "${REVIEWERS}" \
+          --body ""SBOMs for version ${VERSION}" \
+          && echo "Pull request created"
