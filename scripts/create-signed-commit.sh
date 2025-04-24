@@ -88,7 +88,7 @@ curl -s -X PATCH -H "Authorization: token $github_token" \
 echo "Branch ${branch} updated to new commit ${NEW_COMMIT_SHA}."  
 git restore --staged .
 git restore .
-git clean
+git clean -f
 git checkout -b "${branch}" "${remote}/${branch}"
 
 echo "Local branch set to ${remote}/${branch}"
