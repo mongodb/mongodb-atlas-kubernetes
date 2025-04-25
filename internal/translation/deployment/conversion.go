@@ -666,7 +666,7 @@ func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) 
 			DiskIOPS:      pointer.MakePtrOrNil(int64(spec.GetDiskIOPS())),
 		}
 	}
-	dHSpecOrDefault := func(spec admin.DedicatedHardwareSpec) *akov2.Specs {
+	dHSpecOrDefault := func(spec admin.DedicatedHardwareSpec20240805) *akov2.Specs {
 		if spec.GetNodeCount() == 0 {
 			return nil
 		}
@@ -822,7 +822,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 			DiskIOPS:      diskIOPs,
 		}
 	}
-	dHSpecOrDefault := func(spec *akov2.Specs) *admin.DedicatedHardwareSpec {
+	dHSpecOrDefault := func(spec *akov2.Specs) *admin.DedicatedHardwareSpec20240805 {
 		if spec == nil || *spec.NodeCount == 0 {
 			return nil
 		}
@@ -832,7 +832,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 			diskIOPs = pointer.MakePtr(int(*spec.DiskIOPS))
 		}
 
-		return &admin.DedicatedHardwareSpec{
+		return &admin.DedicatedHardwareSpec20240805{
 			InstanceSize:  &spec.InstanceSize,
 			NodeCount:     spec.NodeCount,
 			EbsVolumeType: pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD"),
@@ -1145,14 +1145,14 @@ func customZonesToAtlas(in *[]akov2.CustomZoneMapping) *admin.CustomZoneMappings
 	}
 }
 
-func managedNamespaceToAtlas(in *akov2.ManagedNamespace) *admin.ManagedNamespace {
+func managedNamespaceToAtlas(in *akov2.ManagedNamespace) *admin.ManagedNamespaces {
 	if in == nil {
 		return nil
 	}
-	return &admin.ManagedNamespace{
-		Db:                     pointer.MakePtr(in.Db),
-		Collection:             pointer.MakePtr(in.Collection),
-		CustomShardKey:         pointer.MakePtr(in.CustomShardKey),
+	return &admin.ManagedNamespaces{
+		Db:                     in.Db,
+		Collection:             in.Collection,
+		CustomShardKey:         in.CustomShardKey,
 		IsCustomShardKeyHashed: in.IsCustomShardKeyHashed,
 		IsShardKeyUnique:       in.IsShardKeyUnique,
 		NumInitialChunks:       pointer.MakePtr(int64(in.NumInitialChunks)),
