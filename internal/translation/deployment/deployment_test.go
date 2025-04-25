@@ -1468,13 +1468,13 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
 						},
-						ReadOnlySpecs: &admin.DedicatedHardwareSpec{
+						ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
 						},
-						AnalyticsSpecs: &admin.DedicatedHardwareSpec{
+						AnalyticsSpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(1),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
@@ -1502,13 +1502,13 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
 						},
-						ReadOnlySpecs: &admin.DedicatedHardwareSpec{
+						ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
 						},
-						AnalyticsSpecs: &admin.DedicatedHardwareSpec{
+						AnalyticsSpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(1),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
@@ -1543,13 +1543,13 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
 						},
-						ReadOnlySpecs: &admin.DedicatedHardwareSpec{
+						ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
 						},
-						AnalyticsSpecs: &admin.DedicatedHardwareSpec{
+						AnalyticsSpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(1),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
@@ -1577,13 +1577,13 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
 						},
-						ReadOnlySpecs: &admin.DedicatedHardwareSpec{
+						ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
 						},
-						AnalyticsSpecs: &admin.DedicatedHardwareSpec{
+						AnalyticsSpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(1),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),

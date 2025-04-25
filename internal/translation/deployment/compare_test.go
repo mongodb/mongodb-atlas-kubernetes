@@ -971,7 +971,7 @@ func TestSpecAreEqual(t *testing.T) {
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(3),
 								},
-								ReadOnlySpecs: &admin.DedicatedHardwareSpec{
+								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(5),
 								},
@@ -1074,7 +1074,7 @@ func TestSpecAreEqual(t *testing.T) {
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(3),
 								},
-								ReadOnlySpecs: &admin.DedicatedHardwareSpec{
+								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(5),
 								},
@@ -1206,7 +1206,7 @@ func TestSpecAreEqual(t *testing.T) {
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(3),
 								},
-								ReadOnlySpecs: &admin.DedicatedHardwareSpec{
+								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(5),
 								},
@@ -1227,7 +1227,7 @@ func TestSpecAreEqual(t *testing.T) {
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(3),
 								},
-								ReadOnlySpecs: &admin.DedicatedHardwareSpec{
+								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 									InstanceSize: pointer.MakePtr("M10"),
 									NodeCount:    pointer.MakePtr(5),
 								},
