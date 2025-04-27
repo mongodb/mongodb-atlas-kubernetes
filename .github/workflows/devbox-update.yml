@@ -52,6 +52,7 @@ jobs:
         COMMIT_MESSAGE: 'Weekly devbox dependencies update'
         BRANCH: ${{ steps.generate_branch.outputs.BRANCH_NAME }}
       run: |
+        git checkout -b "${BRANCH}"
         git add .
         scripts/create-signed-commit.sh
 
