@@ -17,7 +17,7 @@
 # author and committer arguments. See:
 # https://github.com/peter-evans/create-pull-request/issues/1241#issuecomment-1232477512
 
-set -euxo pipefail
+set -euo pipefail
 
 # Configuration defaults
 github_token=${GITHUB_TOKEN:?}
