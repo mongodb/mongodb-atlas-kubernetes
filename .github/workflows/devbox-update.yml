@@ -8,7 +8,7 @@ on:
 jobs:
   update-devbox:
     runs-on: ubuntu-latest
-
+    environment: release
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
