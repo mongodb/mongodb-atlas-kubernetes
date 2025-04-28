@@ -398,11 +398,11 @@ func jsonToArrayOfAny(in *apiextensionsv1.JSON) (*[]any, error) {
 	return &result, nil
 }
 
-func jsonToMap(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
+func jsonToMap(in *apiextensionsv1.JSON) (map[string]any, error) {
 	if in == nil {
 		return nil, nil
 	}
-	result := map[string]interface{}{}
+	result := map[string]any{}
 	if err := json.Unmarshal(in.Raw, &result); err != nil {
 		return result, err
 	}
@@ -502,7 +502,7 @@ func mappingsToAtlas(in *akov2.Mappings) (*admin.SearchMappings, error) {
 	}
 	return &admin.SearchMappings{
 		Dynamic: in.Dynamic,
-		Fields:  fields,
+		Fields:  &fields,
 	}, nil
 }
 
