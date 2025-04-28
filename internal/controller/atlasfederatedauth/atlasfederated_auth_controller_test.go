@@ -170,10 +170,8 @@ func TestReconcile(t *testing.T) {
 		atlasProvider := atlasmock.TestProvider{
 			SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 				return &atlas.ClientSet{
-					SdkClient20231115008: &admin.APIClient{
-						ProjectsApi: groupAPI,
-					},
-					SdkClient20241113001: &admin.APIClient{
+					SdkClient20250312002: &admin.APIClient{
+						ProjectsApi:                groupAPI,
 						FederatedAuthenticationApi: fedAuthAPI,
 					},
 				}, nil

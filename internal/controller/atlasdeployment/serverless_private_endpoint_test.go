@@ -121,7 +121,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					ServerlessPrivateEndpointsApi: speAPI,
 				},
 			},
@@ -157,7 +157,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					ServerlessPrivateEndpointsApi: speAPI,
 				},
 			},
@@ -209,7 +209,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					ServerlessPrivateEndpointsApi: speAPI,
 				},
 			},
@@ -276,7 +276,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					ServerlessPrivateEndpointsApi: speAPI,
 				},
 			},
@@ -377,7 +377,7 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					ServerlessPrivateEndpointsApi: speAPI,
 				},
 			},
@@ -418,7 +418,7 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					ServerlessPrivateEndpointsApi: speAPI,
 				},
 			},
@@ -471,7 +471,7 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					ServerlessPrivateEndpointsApi: speAPI,
 				},
 			},
@@ -517,7 +517,7 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 			Context: context.Background(),
 			Log:     zaptest.NewLogger(t).Sugar(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					ServerlessPrivateEndpointsApi: speAPI,
 				},
 			},

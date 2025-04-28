@@ -515,8 +515,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &admin.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312002: &admin.APIClient{},
 					}, nil
 				},
 			},
@@ -656,8 +656,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &admin.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312002: &admin.APIClient{},
 					}, nil
 				},
 			},
@@ -787,8 +787,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &admin.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312002: &admin.APIClient{},
 					}, nil
 				},
 			},
@@ -920,8 +920,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &admin.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312002: &admin.APIClient{},
 					}, nil
 				},
 			},
@@ -1052,8 +1052,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &admin.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312002: &admin.APIClient{},
 					}, nil
 				},
 			},

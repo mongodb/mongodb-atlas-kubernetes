@@ -159,7 +159,7 @@ func isGCPWithoutPrivateEndpoints(deployment *akov2.ServerlessSpec) bool {
 
 func listServerlessPrivateEndpoints(service *workflow.Context, projectID, deploymentName string) ([]admin.ServerlessTenantEndpoint, error) {
 	// this endpoint does not offer paginated responses
-	privateEndpoints, _, err := service.SdkClientSet.SdkClient20231115008.ServerlessPrivateEndpointsApi.
+	privateEndpoints, _, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
 		ListServerlessPrivateEndpoints(service.Context, projectID, deploymentName).
 		Execute()
 
@@ -171,7 +171,7 @@ func createServerLessPrivateEndpoint(service *workflow.Context, projectID, deplo
 		Comment: &privateEndpoint.Name,
 	}
 
-	atlasPrivateEndpoint, _, err := service.SdkClientSet.SdkClient20231115008.ServerlessPrivateEndpointsApi.
+	atlasPrivateEndpoint, _, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
 		CreateServerlessPrivateEndpoint(service.Context, projectID, deploymentName, &request).
 		Execute()
 
@@ -190,7 +190,7 @@ func updateServerLessPrivateEndpoint(service *workflow.Context, projectID, deplo
 		request.PrivateEndpointIpAddress = &privateEndpoint.PrivateEndpointIPAddress
 	}
 
-	atlasPrivateEndpoint, _, err := service.SdkClientSet.SdkClient20231115008.ServerlessPrivateEndpointsApi.
+	atlasPrivateEndpoint, _, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
 		UpdateServerlessPrivateEndpoint(service.Context, projectID, deploymentName, endpointID, &request).
 		Execute()
 
@@ -198,7 +198,7 @@ func updateServerLessPrivateEndpoint(service *workflow.Context, projectID, deplo
 }
 
 func deleteServerLessPrivateEndpoint(service *workflow.Context, projectID, deploymentName, endpointID string) error {
-	_, _, err := service.SdkClientSet.SdkClient20231115008.ServerlessPrivateEndpointsApi.
+	_, _, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
 		DeleteServerlessPrivateEndpoint(service.Context, projectID, deploymentName, endpointID).
 		Execute()
 

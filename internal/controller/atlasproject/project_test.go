@@ -751,7 +751,7 @@ func TestHandleProject(t *testing.T) {
 				Log:     logger,
 				Client:  tt.atlasClientMocker(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: tt.atlasSDKMocker(),
+					SdkClient20250312002: tt.atlasSDKMocker(),
 				},
 			}
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
@@ -1209,7 +1209,7 @@ func TestDelete(t *testing.T) {
 				Context: context.Background(),
 				Client:  tt.atlasClientMocker(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: tt.atlasSDKMocker(),
+					SdkClient20250312002: tt.atlasSDKMocker(),
 				},
 				Log: logger,
 			}

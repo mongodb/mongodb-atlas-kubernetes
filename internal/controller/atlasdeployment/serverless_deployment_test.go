@@ -915,7 +915,7 @@ func TestHandleServerlessInstance(t *testing.T) {
 				Context: ctx,
 				Log:     logger.Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: tt.sdkMock(),
+					SdkClient20250312002: tt.sdkMock(),
 				},
 			}
 

@@ -162,10 +162,10 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	workflowCtx.SdkClientSet = atlasSdkClient
 	services := AtlasProjectServices{}
-	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20231115008.ProjectsApi)
-	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.SdkClient20231115008.TeamsApi, atlasSdkClient.SdkClient20231115008.MongoDBCloudUsersApi)
-	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20231115008.MaintenanceWindowsApi)
-	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20231115008.EncryptionAtRestUsingCustomerKeyManagementApi)
+	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20250312002.ProjectsApi)
+	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.SdkClient20250312002.TeamsApi, atlasSdkClient.SdkClient20250312002.MongoDBCloudUsersApi)
+	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20250312002.MaintenanceWindowsApi)
+	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20250312002.EncryptionAtRestUsingCustomerKeyManagementApi)
 
 	atlasClient, err := r.AtlasProvider.Client(workflowCtx.Context, connectionConfig.Credentials, log)
 	if err != nil {
