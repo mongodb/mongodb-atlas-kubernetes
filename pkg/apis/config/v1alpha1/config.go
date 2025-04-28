@@ -37,6 +37,7 @@ type CRDConfig struct {
 	GVK        v1.GroupVersionKind `json:"gvk,omitempty"`
 	Categories []string            `json:"categories,omitempty"`
 	Mappings   []CRDMapping        `json:"mappings,omitempty"`
+	ShortNames []string            `json:"shortNames,omitempty"`
 }
 
 type CRDMapping struct {

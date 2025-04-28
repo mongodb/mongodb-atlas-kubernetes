@@ -9,6 +9,8 @@ spec:
         group: atlas.generated.mongodb.com
       categories:
         - atlas
+      shortNames:
+        - ag
       mappings:
         - majorVersion: v20231115
           openAPIRef:
@@ -42,6 +44,8 @@ spec:
         group: atlas.generated.mongodb.com
       categories:
         - atlas
+      shortNames:
+        - anp
       mappings:
         - majorVersion: v20250312
           openAPIRef:
@@ -77,6 +81,8 @@ spec:
         group: atlas.generated.mongodb.com
       categories:
         - atlas
+      shortNames:
+        - ac
       mappings:
         - majorVersion: v20231115
           openAPIRef:
@@ -128,6 +134,8 @@ spec:
         group: atlas.generated.mongodb.com
       categories:
         - atlas
+      shortNames:
+        - asi
       mappings:
         - majorVersion: v20231115
           openAPIRef:
@@ -164,6 +172,8 @@ spec:
         group: atlas.generated.mongodb.com
       categories:
         - atlas
+      shortNames:
+        - arole
       mappings:
         - majorVersion: v20231115
           openAPIRef:
@@ -181,6 +191,8 @@ spec:
         group: atlas.generated.mongodb.com
       categories:
         - atlas
+      shortNames:
+        - afc
       mappings:
         - majorVersion: v20241113
           openAPIRef:
@@ -210,6 +222,8 @@ spec:
         group: atlas.generated.mongodb.com
       categories:
         - atlas
+      shortNames:
+        - aga
       mappings:
         - majorVersion: v20241113
           openAPIRef:
@@ -256,6 +270,8 @@ spec:
         group: atlas.generated.mongodb.com
       categories:
         - atlas
+      shortNames:
+        - atpi
       mappings:
         - majorVersion: v20241113
           openAPIRef:

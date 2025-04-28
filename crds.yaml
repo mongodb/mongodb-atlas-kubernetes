@@ -13,6 +13,8 @@ spec:
     kind: Group
     listKind: GroupList
     plural: groups
+    shortNames:
+    - ag
     singular: group
   scope: Namespaced
   versions:
@@ -192,6 +194,8 @@ spec:
     kind: NetworkPermissionEntries
     listKind: NetworkPermissionEntriesList
     plural: networkpermissionentrieses
+    shortNames:
+    - anp
     singular: networkpermissionentries
   scope: Namespaced
   versions:
@@ -350,6 +354,8 @@ spec:
     kind: Cluster
     listKind: ClusterList
     plural: clusters
+    shortNames:
+    - ac
     singular: cluster
   scope: Namespaced
   versions:
@@ -1128,6 +1134,8 @@ spec:
     kind: SearchIndex
     listKind: SearchIndexList
     plural: searchindexes
+    shortNames:
+    - asi
     singular: searchindex
   scope: Namespaced
   versions:
@@ -1438,6 +1446,8 @@ spec:
     kind: UserCustomDBRole
     listKind: UserCustomDBRoleList
     plural: usercustomdbroles
+    shortNames:
+    - arole
     singular: usercustomdbrole
   scope: Namespaced
   versions:
@@ -1624,6 +1634,8 @@ spec:
     kind: FlexCluster
     listKind: FlexClusterList
     plural: flexclusters
+    shortNames:
+    - afc
     singular: flexcluster
   scope: Namespaced
   versions:
@@ -1876,6 +1888,8 @@ spec:
     kind: GroupAlertsConfig
     listKind: GroupAlertsConfigList
     plural: groupalertsconfigs
+    shortNames:
+    - aga
     singular: groupalertsconfig
   scope: Namespaced
   versions:
@@ -2455,6 +2469,8 @@ spec:
     kind: ThirdPartyIntegration
     listKind: ThirdPartyIntegrationList
     plural: thirdpartyintegrations
+    shortNames:
+    - atpi
     singular: thirdpartyintegration
   scope: Namespaced
   versions:

@@ -174,6 +174,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 	}
 
 	crd.Spec.Names.Categories = g.config.Categories
+	crd.Spec.Names.ShortNames = g.config.ShortNames
 
 	for _, version := range crd.Spec.Versions {
 		if version.Storage {
