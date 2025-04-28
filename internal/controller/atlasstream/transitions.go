@@ -90,7 +90,7 @@ func (r *AtlasStreamsInstanceReconciler) delete(ctx *workflow.Context, project *
 }
 
 func deleteStreamInstance(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) error {
-	_, _, err := ctx.SdkClientSet.SdkClient20250312002.StreamsApi.
+	_, err := ctx.SdkClientSet.SdkClient20250312002.StreamsApi.
 		DeleteStreamInstance(ctx.Context, project.ID(), streamInstance.Spec.Name).
 		Execute()
 
@@ -178,7 +178,7 @@ func deleteConnections(
 	atlasStreamConnections []*admin.StreamsConnection,
 ) error {
 	for _, atlasStreamConnection := range atlasStreamConnections {
-		_, _, err := ctx.SdkClientSet.SdkClient20250312002.StreamsApi.
+		_, err := ctx.SdkClientSet.SdkClient20250312002.StreamsApi.
 			DeleteStreamConnection(ctx.Context, project.ID(), streamInstance.Spec.Name, atlasStreamConnection.GetName()).
 			Execute()
 
