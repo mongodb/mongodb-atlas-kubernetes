@@ -336,7 +336,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			projectID := testProject.ID()
 			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
-			_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+			_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 			Expect(err).To(BeNil())
 
 			Eventually(func() bool {

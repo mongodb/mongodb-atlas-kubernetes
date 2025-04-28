@@ -370,7 +370,6 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 			Return(admin.DeleteServerlessPrivateEndpointApiRequest{ApiService: speAPI})
 		speAPI.EXPECT().DeleteServerlessPrivateEndpointExecute(mock.AnythingOfType("admin.DeleteServerlessPrivateEndpointApiRequest")).
 			Return(
-				map[string]interface{}{},
 				&http.Response{},
 				nil,
 			)
@@ -511,7 +510,6 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 			Return(admin.DeleteServerlessPrivateEndpointApiRequest{ApiService: speAPI})
 		speAPI.EXPECT().DeleteServerlessPrivateEndpointExecute(mock.AnythingOfType("admin.DeleteServerlessPrivateEndpointApiRequest")).
 			Return(
-				nil,
 				&http.Response{},
 				errors.New("failed to delete serverless private endpoint"),
 			)
