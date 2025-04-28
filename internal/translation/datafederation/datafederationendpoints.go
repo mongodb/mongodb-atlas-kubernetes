@@ -59,7 +59,7 @@ func (d *DatafederationPrivateEndpoints) Create(ctx context.Context, aep *Datafe
 }
 
 func (d *DatafederationPrivateEndpoints) Delete(ctx context.Context, aep *DatafederationPrivateEndpointEntry) error {
-	_, _, err := d.api.DeleteDataFederationPrivateEndpoint(ctx, aep.ProjectID, aep.EndpointID).Execute()
+	_, err := d.api.DeleteDataFederationPrivateEndpoint(ctx, aep.ProjectID, aep.EndpointID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete data federation private endpoint: %w", err)
 	}
