@@ -79,7 +79,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, atlasClientv20241113001.FlexClustersApi, false)
+		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, atlasClient.FlexClustersApi, false)
 		createdDeployment = &akov2.AtlasDeployment{}
 
 		manualDeletion = false
@@ -1586,7 +1586,7 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 func checkAtlasFlexInstanceRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClientv20241113001.FlexClustersApi.
+		_, r, err := atlasClient.FlexClustersApi.
 			GetFlexCluster(context.Background(), projectID, deploymentName).
 			Execute()
 		if err != nil {
@@ -1605,7 +1605,7 @@ func deleteAtlasDeployment(projectID string, deploymentName string) error {
 }
 
 func deleteFlexInstance(projectID string, deploymentName string) error {
-	_, err := atlasClientv20241113001.FlexClustersApi.
+	_, err := atlasClient.FlexClustersApi.
 		DeleteFlexCluster(context.Background(), projectID, deploymentName).
 		Execute()
 	return err

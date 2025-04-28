@@ -132,7 +132,7 @@ func TestCreate(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -220,7 +220,7 @@ func TestCreate(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -315,7 +315,7 @@ func TestDelete(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: &admin.APIClient{
+					SdkClient20250312002: &admin.APIClient{
 						StreamsApi: streamsAPI,
 					},
 				},
@@ -479,7 +479,7 @@ func TestDelete(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: &admin.APIClient{
+					SdkClient20250312002: &admin.APIClient{
 						StreamsApi: streamsAPI,
 					},
 				},
@@ -580,7 +580,7 @@ func TestDelete(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: &admin.APIClient{
+					SdkClient20250312002: &admin.APIClient{
 						StreamsApi: streamsAPI,
 					},
 				},
@@ -848,7 +848,7 @@ func TestUpdate(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -939,7 +939,7 @@ func TestUpdate(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -975,7 +975,7 @@ func TestCreateConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1053,7 +1053,7 @@ func TestCreateConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1201,7 +1201,7 @@ func TestUpdateConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1279,7 +1279,7 @@ func TestUpdateConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1423,7 +1423,7 @@ func TestDeleteConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1490,7 +1490,7 @@ func TestDeleteConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},

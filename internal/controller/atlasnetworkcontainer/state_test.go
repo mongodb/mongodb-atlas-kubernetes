@@ -246,7 +246,7 @@ func TestHandleCustomResource(t *testing.T) {
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					pAPI := mockadmin.NewProjectsApi(t)
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{ProjectsApi: pAPI},
+						SdkClient20250312002: &admin.APIClient{ProjectsApi: pAPI},
 					}, nil
 				},
 			},
@@ -308,7 +308,7 @@ func TestHandleCustomResource(t *testing.T) {
 						}, nil, nil,
 					)
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							NetworkPeeringApi: ncAPI,
 							ProjectsApi:       pAPI,
 						},
