@@ -112,7 +112,7 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 				return workflow.OK().ReconcileResult(), nil
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-				_, _, err := teamCtx.SdkClientSet.SdkClient20231115008.TeamsApi.DeleteTeam(teamCtx.Context, teamCtx.OrgID, team.Status.ID).Execute()
+				_, err := teamCtx.SdkClientSet.SdkClient20250312002.TeamsApi.DeleteTeam(teamCtx.Context, teamCtx.OrgID, team.Status.ID).Execute()
 				var apiError *mongodbatlas.ErrorResponse
 				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
@@ -210,7 +210,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 		username := team.Spec.Usernames[i]
 		if _, ok := atlasUsernamesMap[string(username)]; !ok {
 			g.Go(func() error {
-				user, _, err := workflowCtx.SdkClientSet.SdkClient20231115008.MongoDBCloudUsersApi.GetUserByUsername(taskContext, string(username)).Execute()
+				user, _, err := workflowCtx.SdkClientSet.SdkClient20250312002.MongoDBCloudUsersApi.GetUserByUsername(taskContext, string(username)).Execute()
 
 				if err != nil {
 					return err

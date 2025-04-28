@@ -85,7 +85,7 @@ func TeamToAtlas(team *Team) *admin.Team {
 	return &admin.Team{
 		Id:        pointer.MakePtrOrNil(team.TeamID),
 		Name:      team.TeamName,
-		Usernames: &team.Usernames,
+		Usernames: team.Usernames,
 	}
 }
 
@@ -125,7 +125,7 @@ func TeamRolesToAtlas(atlasTeams []AssignedTeam) []admin.TeamRole {
 	return teams
 }
 
-func UsersFromAtlas(users *admin.PaginatedApiAppUser) []TeamUser {
+func UsersFromAtlas(users *admin.PaginatedOrgUser) []TeamUser {
 	teamUsers := make([]TeamUser, 0, len(users.GetResults()))
 	for _, user := range users.GetResults() {
 		teamUsers = append(teamUsers, TeamUser{
