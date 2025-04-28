@@ -638,7 +638,7 @@ func TestHandleServerlessInstance(t *testing.T) {
 			},
 			sdkMock: func() *admin.APIClient {
 				mockError := &admin.GenericOpenAPIError{}
-				model := *admin.NewApiError()
+				model := *admin.NewApiErrorWithDefaults()
 				model.SetErrorCode("NOT_SERVERLESS_TENANT_CLUSTER")
 				mockError.SetModel(model)
 
