@@ -22,7 +22,6 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -36,7 +35,7 @@ type Atlas struct {
 	Public             string
 	Private            string
 	Client             *admin.APIClient
-	ClientV20241113001 *adminv20241113001.APIClient
+	ClientV20241113001 *admin.APIClient
 }
 
 func AClient() (Atlas, error) {
@@ -52,9 +51,9 @@ func AClient() (Atlas, error) {
 	}
 	a.Client = c
 
-	clientV20241113001, err := adminv20241113001.NewClient(
-		adminv20241113001.UseBaseURL(os.Getenv("MCLI_OPS_MANAGER_URL")),
-		adminv20241113001.UseDigestAuth(a.Public, a.Private),
+	clientV20241113001, err := admin.NewClient(
+		admin.UseBaseURL(os.Getenv("MCLI_OPS_MANAGER_URL")),
+		admin.UseDigestAuth(a.Public, a.Private),
 	)
 	if err != nil {
 		return Atlas{}, err
@@ -126,7 +125,7 @@ func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.ClusterD
 	return advancedDeployment, err
 }
 
-func (a *Atlas) GetFlexInstance(projectId, deploymentName string) (*adminv20241113001.FlexClusterDescription20241113, error) {
+func (a *Atlas) GetFlexInstance(projectId, deploymentName string) (*admin.FlexClusterDescription20241113, error) {
 	flexInstance, _, err := a.ClientV20241113001.FlexClustersApi.
 		GetFlexCluster(context.Background(), projectId, deploymentName).
 		Execute()
