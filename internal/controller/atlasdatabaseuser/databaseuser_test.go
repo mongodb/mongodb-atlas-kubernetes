@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -203,7 +202,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20241113001: &admin.APIClient{},
 					}, nil
 				},
 			},
@@ -2287,7 +2286,7 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 					ClustersApi:      clusterAPI,
 					DatabaseUsersApi: userAPI,
 				},
-				SdkClient20241113001: &adminv20241113001.APIClient{},
+				SdkClient20241113001: &admin.APIClient{},
 			}, nil
 		},
 	}
