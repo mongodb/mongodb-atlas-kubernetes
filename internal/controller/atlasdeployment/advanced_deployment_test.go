@@ -751,7 +751,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				Context: context.Background(),
 				Log:     logger,
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: tt.sdkMock(),
+					SdkClient20250312002: tt.sdkMock(),
 				},
 			}
 
