@@ -225,7 +225,7 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 						}),
 						Mappings: &admin.SearchMappings{
 							Dynamic: pointer.MakePtr(true),
-							Fields:  map[string]interface{}{"field": "value"},
+							Fields:  &map[string]interface{}{"field": "value"},
 						},
 						SearchAnalyzer: pointer.MakePtr("search-analyzer"),
 						Synonyms: &([]admin.SearchSynonymMappingDefinition{
@@ -488,7 +488,7 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 					}),
 					Mappings: &admin.SearchMappings{
 						Dynamic: pointer.MakePtr(true),
-						Fields:  map[string]interface{}{"field": "value"},
+						Fields:  &map[string]interface{}{"field": "value"},
 					},
 					SearchAnalyzer: pointer.MakePtr("search-analyzer"),
 					Synonyms: &([]admin.SearchSynonymMappingDefinition{
