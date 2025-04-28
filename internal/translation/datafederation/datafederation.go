@@ -80,7 +80,7 @@ func (dfs *AtlasDataFederationService) Update(ctx context.Context, df *DataFeder
 }
 
 func (dfs *AtlasDataFederationService) Delete(ctx context.Context, projectID, name string) error {
-	_, resp, err := dfs.api.DeleteFederatedDatabase(ctx, projectID, name).Execute()
+	resp, err := dfs.api.DeleteFederatedDatabase(ctx, projectID, name).Execute()
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return errors.Join(ErrorNotFound, err)
 	}

@@ -340,7 +340,7 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 					Return(admin.DeletePrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Times(removals)
 				privateEndpointsAPI.EXPECT().DeletePrivateEndpointServiceExecute(
 					mock.AnythingOfType("admin.DeletePrivateEndpointServiceApiRequest")).Return(
-					nil, nil, nil,
+					nil, nil,
 				).Times(removals)
 			}
 			privateEndpointsAPI.EXPECT().CreatePrivateEndpointService(mock.Anything, mock.Anything, mock.Anything).

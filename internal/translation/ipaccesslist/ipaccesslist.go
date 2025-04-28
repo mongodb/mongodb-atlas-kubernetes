@@ -56,7 +56,7 @@ func (i *IPAccessList) Add(ctx context.Context, projectID string, entries IPAcce
 }
 
 func (i *IPAccessList) Delete(ctx context.Context, projectID string, entry *IPAccessEntry) error {
-	_, _, err := i.ipAccessListAPI.DeleteProjectIpAccessList(ctx, projectID, entry.ID()).Execute()
+	_, err := i.ipAccessListAPI.DeleteProjectIpAccessList(ctx, projectID, entry.ID()).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete ip access list from Atlas: %w", err)
 	}

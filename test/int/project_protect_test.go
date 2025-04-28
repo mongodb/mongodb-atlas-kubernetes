@@ -79,7 +79,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+				_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -121,7 +121,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+				_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})

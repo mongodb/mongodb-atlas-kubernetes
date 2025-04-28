@@ -117,7 +117,7 @@ func (np *networkContainerService) Update(ctx context.Context, projectID, contai
 }
 
 func (np *networkContainerService) Delete(ctx context.Context, projectID, containerID string) error {
-	_, _, err := np.peeringAPI.DeletePeeringContainer(ctx, projectID, containerID).Execute()
+	_, err := np.peeringAPI.DeletePeeringContainer(ctx, projectID, containerID).Execute()
 	if admin.IsErrorCode(err, "CLOUD_PROVIDER_CONTAINER_NOT_FOUND") {
 		return errors.Join(err, ErrNotFound)
 	}

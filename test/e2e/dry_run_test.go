@@ -66,7 +66,7 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		DeferCleanup(func(ctx context.Context) {
-			_, _, err := atlasClient.Client.ProjectsApi.DeleteProject(ctx, group.GetId()).Execute()
+			_, err := atlasClient.Client.ProjectsApi.DeleteProject(ctx, group.GetId()).Execute()
 			Expect(err).NotTo(HaveOccurred())
 		})
 

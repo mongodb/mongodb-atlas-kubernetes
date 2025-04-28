@@ -172,7 +172,7 @@ func (a *Atlas) GetUserByName(database, projectID, username string) (*admin.Clou
 }
 
 func (a *Atlas) DeleteGlobalKey(key admin.ApiKeyUserDetails) error {
-	_, _, err := a.Client.ProgrammaticAPIKeysApi.DeleteApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
+	_, err := a.Client.ProgrammaticAPIKeysApi.DeleteApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
 
 	return err
 }

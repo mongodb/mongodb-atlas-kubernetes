@@ -73,7 +73,7 @@ func (a *ProjectAPI) CreateProject(ctx context.Context, project *Project) error 
 }
 
 func (a *ProjectAPI) DeleteProject(ctx context.Context, project *Project) error {
-	_, _, err := a.projectAPI.DeleteProject(ctx, project.ID).Execute()
+	_, err := a.projectAPI.DeleteProject(ctx, project.ID).Execute()
 	err = translateError(err)
 	if err != nil && !errors.Is(err, translation.ErrNotFound) {
 		return err
