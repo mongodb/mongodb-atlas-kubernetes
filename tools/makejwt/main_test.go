@@ -27,7 +27,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func generateRandomRSAKey() (*rsa.PrivateKey, error) {
