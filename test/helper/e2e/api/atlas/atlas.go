@@ -17,6 +17,7 @@ package atlas
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/onsi/ginkgo/v2"
@@ -24,7 +25,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/debug"
 )
 
@@ -185,20 +186,21 @@ func (a *Atlas) GetEncryptionAtRest(projectID string) (*admin.EncryptionAtRest, 
 	return encryptionAtRest, err
 }
 
-func (a *Atlas) GetOrgUsers() ([]admin.CloudAppUser, error) {
-	users, _, err := a.Client.OrganizationsApi.ListOrganizationUsers(context.Background(), a.OrgID).Execute()
-
-	return *users.Results, err
+func (a *Atlas) GetOrgUsers() ([]admin.OrgUserResponse, error) {
+	users, err := paging.ListAll(context.Background(), func(ctx context.Context, pageNum int) (paging.Response[admin.OrgUserResponse], *http.Response, error) {
+		return a.Client.MongoDBCloudUsersApi.ListOrganizationUsers(ctx, a.OrgID).PageNum(pageNum).Execute()
+	})
+	return users, err
 }
 
-func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*admin.DiskBackupSnapshotAWSExportBucket, error) {
+func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*admin.DiskBackupSnapshotExportBucketResponse, error) {
 	r, _, err := a.Client.CloudBackupsApi.
 		CreateExportBucket(
 			context.Background(),
 			projectID,
-			&admin.DiskBackupSnapshotAWSExportBucket{
+			&admin.DiskBackupSnapshotExportBucketRequest{
 				BucketName:    &bucketName,
-				CloudProvider: pointer.MakePtr("AWS"),
+				CloudProvider: "AWS",
 				IamRoleId:     &roleID,
 			},
 		).Execute()
