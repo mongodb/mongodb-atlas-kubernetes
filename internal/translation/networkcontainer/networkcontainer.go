@@ -52,7 +52,7 @@ type networkContainerService struct {
 }
 
 func NewNetworkContainerServiceFromClientSet(clientSet *atlas.ClientSet) NetworkContainerService {
-	return NewNetworkContainerService(clientSet.SdkClient20231115008.NetworkPeeringApi)
+	return NewNetworkContainerService(clientSet.SdkClient20250312002.NetworkPeeringApi)
 }
 
 func NewNetworkContainerService(peeringAPI admin.NetworkPeeringApi) NetworkContainerService {
