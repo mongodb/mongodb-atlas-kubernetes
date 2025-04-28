@@ -319,7 +319,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClientv20241113001.FlexClustersApi.
+				_, r, err := atlasClient.FlexClustersApi.
 					GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 					Execute()
 				if err != nil {

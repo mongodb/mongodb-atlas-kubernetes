@@ -471,8 +471,8 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			return &atlas.ClientSet{
-				SdkClient20241113001: &admin.APIClient{FlexClustersApi: flexAPI},
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
+					FlexClustersApi:        flexAPI,
 					ClustersApi:            clusterAPI,
 					AtlasSearchApi:         searchAPI,
 					ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
@@ -669,13 +669,13 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			return &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
+					FlexClustersApi:               flexAPI,
 					ClustersApi:                   clusterAPI,
 					ServerlessInstancesApi:        serverlessAPI,
 					ServerlessPrivateEndpointsApi: speClient,
 					ProjectsApi:                   projectAPI,
 				},
-				SdkClient20241113001: &admin.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -795,12 +795,12 @@ func TestFlexClusterReconciliation(t *testing.T) {
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
+					FlexClustersApi:        flexAPI,
 					ClustersApi:            clusterAPI,
 					ServerlessInstancesApi: serverlessAPI,
 					ProjectsApi:            projectAPI,
 				},
-				SdkClient20241113001: &admin.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -979,12 +979,12 @@ func TestDeletionReconciliation(t *testing.T) {
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
+					FlexClustersApi:        flexAPI,
 					ClustersApi:            clusterAPI,
 					ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
 					ProjectsApi:            projectAPI,
 				},
-				SdkClient20241113001: &admin.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -1336,11 +1336,10 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							ServerlessInstancesApi: serverlessAPI,
 							ProjectsApi:            projectAPI,
 						},
-						SdkClient20241113001: &admin.APIClient{},
 					}, nil
 				},
 			},
@@ -1394,11 +1393,10 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							ClustersApi: clusterAPI,
 							ProjectsApi: projectAPI,
 						},
-						SdkClient20241113001: &admin.APIClient{},
 					}, nil
 				},
 			},
