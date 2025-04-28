@@ -56,7 +56,7 @@ func (dus *AtlasUsers) Get(ctx context.Context, db, projectID, username string) 
 }
 
 func (dus *AtlasUsers) Delete(ctx context.Context, db, projectID, username string) error {
-	_, _, err := dus.usersAPI.DeleteDatabaseUser(ctx, projectID, db, username).Execute()
+	_, err := dus.usersAPI.DeleteDatabaseUser(ctx, projectID, db, username).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, atlas.UserNotfound) {
 			return errors.Join(ErrorNotFound, err)

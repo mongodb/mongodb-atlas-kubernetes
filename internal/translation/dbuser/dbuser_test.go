@@ -123,7 +123,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 				mockUsersAPI.EXPECT().DeleteDatabaseUser(ctx, projectID, db, username).Return(
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
-					Return(nil, &http.Response{StatusCode: http.StatusOK}, nil)
+					Return(&http.Response{StatusCode: http.StatusOK}, nil)
 			},
 			expectedErr: nil,
 		},
@@ -134,7 +134,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
-					Return(nil, &http.Response{StatusCode: http.StatusNotFound}, notFoundErr)
+					Return(&http.Response{StatusCode: http.StatusNotFound}, notFoundErr)
 			},
 			expectedErr: errors.Join(ErrorNotFound, notFoundErr),
 		},
@@ -147,7 +147,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 				internalServerError := &admin.GenericOpenAPIError{}
 				internalServerError.SetModel(admin.ApiError{ErrorCode: "500"})
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
-					Return(nil, &http.Response{StatusCode: http.StatusInternalServerError}, fmt.Errorf("some error"))
+					Return(&http.Response{StatusCode: http.StatusInternalServerError}, fmt.Errorf("some error"))
 			},
 			expectedErr: errors.New("some error"),
 		},

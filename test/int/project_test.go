@@ -272,7 +272,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Expect(checkAtlasProjectRemoved(createdProject.Status.ID)()).Should(BeFalse())
 			})
 			By("Manually deleting the project from Atlas", func() {
-				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), createdProject.ID()).Execute()
+				_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), createdProject.ID()).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				createdProject = nil
 			})

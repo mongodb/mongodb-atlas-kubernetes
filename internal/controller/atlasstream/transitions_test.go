@@ -309,7 +309,6 @@ func TestDelete(t *testing.T) {
 			streamsAPI.EXPECT().
 				DeleteStreamInstanceExecute(mock.AnythingOfType("admin.DeleteStreamInstanceApiRequest")).
 				Return(
-					nil,
 					&http.Response{},
 					nil,
 				)
@@ -474,7 +473,6 @@ func TestDelete(t *testing.T) {
 			streamsAPI.EXPECT().
 				DeleteStreamInstanceExecute(mock.AnythingOfType("admin.DeleteStreamInstanceApiRequest")).
 				Return(
-					nil,
 					&http.Response{},
 					errors.New("failed to delete instance"),
 				)
@@ -576,7 +574,6 @@ func TestDelete(t *testing.T) {
 			streamsAPI.EXPECT().
 				DeleteStreamInstanceExecute(mock.AnythingOfType("admin.DeleteStreamInstanceApiRequest")).
 				Return(
-					nil,
 					&http.Response{},
 					nil,
 				)
@@ -1420,7 +1417,6 @@ func TestDeleteConnections(t *testing.T) {
 		streamsAPI.EXPECT().
 			DeleteStreamConnectionExecute(mock.AnythingOfType("admin.DeleteStreamConnectionApiRequest")).
 			Return(
-				nil,
 				&http.Response{},
 				nil,
 			)
@@ -1490,7 +1486,7 @@ func TestDeleteConnections(t *testing.T) {
 			Return(admin.DeleteStreamConnectionApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().
 			DeleteStreamConnectionExecute(mock.AnythingOfType("admin.DeleteStreamConnectionApiRequest")).
-			Return(nil, &http.Response{}, errors.New("failed to delete connection"))
+			Return(&http.Response{}, errors.New("failed to delete connection"))
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{

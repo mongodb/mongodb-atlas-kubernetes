@@ -83,7 +83,7 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 }
 
 func (si *SearchIndexes) DeleteIndex(ctx context.Context, projectID, clusterName, indexID string) error {
-	_, resp, err := si.searchAPI.DeleteAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
+	resp, err := si.searchAPI.DeleteAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusNotFound || err != nil {
 		return fmt.Errorf("error deleting index, status code %d: %w", resp.StatusCode, err)
 	}

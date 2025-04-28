@@ -605,7 +605,7 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 				).Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: ipAccessAPI}).Times(removals)
 				ipAccessAPI.EXPECT().DeleteProjectIpAccessListExecute(
 					mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).Return(
-					nil, nil, nil,
+					nil, nil,
 				).Times(removals)
 			}
 
