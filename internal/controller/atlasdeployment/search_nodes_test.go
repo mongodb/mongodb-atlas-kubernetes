@@ -579,7 +579,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 func makeMockError() *admin.GenericOpenAPIError {
 	mockError := &admin.GenericOpenAPIError{}
-	model := *admin.NewApiError()
+	model := *admin.NewApiErrorWithDefaults()
 	model.SetError(http.StatusBadRequest)
 	mockError.SetModel(model)
 	return mockError
