@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -367,7 +366,7 @@ func TestEnsureCustomResource(t *testing.T) {
 
 					return &atlas.ClientSet{
 						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20241113001: &admin.APIClient{},
 					}, nil
 				},
 			},

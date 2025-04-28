@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -97,7 +96,7 @@ func TestReconcile(t *testing.T) {
 							ProjectIPAccessListApi: ialAPI,
 							ProjectsApi:            projectAPI,
 						},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20241113001: &admin.APIClient{},
 					}, nil
 				},
 			},
