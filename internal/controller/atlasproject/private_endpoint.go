@@ -361,7 +361,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 		interfaceEndpointIDs := peService.InterfaceEndpointIDs()
 		if len(interfaceEndpointIDs) != 0 {
 			for _, interfaceEndpointID := range interfaceEndpointIDs {
-				_, _, err := ctx.SdkClientSet.SdkClient20250312002.PrivateEndpointServicesApi.DeletePrivateEndpointWithParams(ctx.Context, &admin.DeletePrivateEndpointApiParams{
+				_, err := ctx.SdkClientSet.SdkClient20250312002.PrivateEndpointServicesApi.DeletePrivateEndpointWithParams(ctx.Context, &admin.DeletePrivateEndpointApiParams{
 					GroupId:           projectID,
 					CloudProvider:     peService.GetCloudProvider(),
 					EndpointId:        interfaceEndpointID,
@@ -375,7 +375,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 			continue
 		}
 
-		_, _, err := ctx.SdkClientSet.SdkClient20250312002.PrivateEndpointServicesApi.DeletePrivateEndpointServiceWithParams(ctx.Context, &admin.DeletePrivateEndpointServiceApiParams{
+		_, err := ctx.SdkClientSet.SdkClient20250312002.PrivateEndpointServicesApi.DeletePrivateEndpointServiceWithParams(ctx.Context, &admin.DeletePrivateEndpointServiceApiParams{
 			GroupId:           projectID,
 			CloudProvider:     peService.GetCloudProvider(),
 			EndpointServiceId: peService.GetId(),
