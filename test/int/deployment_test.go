@@ -1609,7 +1609,7 @@ func deleteAtlasDeployment(projectID string, deploymentName string) error {
 }
 
 func deleteFlexInstance(projectID string, deploymentName string) error {
-	_, _, err := atlasClientv20241113001.FlexClustersApi.
+	_, err := atlasClientv20241113001.FlexClustersApi.
 		DeleteFlexCluster(context.Background(), projectID, deploymentName).
 		Execute()
 	return err

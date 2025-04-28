@@ -184,7 +184,7 @@ func deleteUnusedContainers(context context.Context, containerService admin.Netw
 			continue
 		}
 		if !compare.Contains(doNotDelete, container.GetId()) {
-			_, response, errDelete := containerService.DeletePeeringContainer(context, groupID, container.GetId()).Execute()
+			response, errDelete := containerService.DeletePeeringContainer(context, groupID, container.GetId()).Execute()
 			if errDelete != nil && response.StatusCode != http.StatusConflict { // AWS peer does not contain container id
 				return errDelete
 			}

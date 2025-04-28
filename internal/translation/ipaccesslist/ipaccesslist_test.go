@@ -225,7 +225,6 @@ func TestIPAccessList_Delete(t *testing.T) {
 					Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().DeleteProjectIpAccessListExecute(mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).
 					Return(
-						nil,
 						&http.Response{},
 						nil,
 					)
@@ -241,7 +240,7 @@ func TestIPAccessList_Delete(t *testing.T) {
 				apiMock.EXPECT().DeleteProjectIpAccessList(context.Background(), projectID, "192.168.100.150/32").
 					Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().DeleteProjectIpAccessListExecute(mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).
-					Return(nil, &http.Response{}, apiErr)
+					Return(&http.Response{}, apiErr)
 
 				return apiMock
 			},

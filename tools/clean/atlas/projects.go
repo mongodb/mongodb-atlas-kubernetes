@@ -43,7 +43,7 @@ func (c *Cleaner) listProjectsByOrg(ctx context.Context, orgID string) []admin.G
 }
 
 func (c *Cleaner) deleteProject(ctx context.Context, p *admin.Group) {
-	_, _, err := c.client.ProjectsApi.DeleteProject(ctx, p.GetId()).Execute()
+	_, err := c.client.ProjectsApi.DeleteProject(ctx, p.GetId()).Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\tFailed to request deletion of project %s(%s): %s", p.GetName(), p.GetId(), err))
 
