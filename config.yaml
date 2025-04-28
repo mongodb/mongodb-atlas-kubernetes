@@ -38,14 +38,14 @@ spec:
 
     - gvk:
         version: v1
-        kind: NetworkPermissionEntry
+        kind: NetworkPermissionEntries
         group: atlas.generated.mongodb.com
       categories:
         - atlas
       mappings:
-        - majorVersion: v20231115
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20231115
+            name: v20250312
           parameters:
             path:
               name: '/api/atlas/v2/groups/{groupId}/accessList'
@@ -60,6 +60,16 @@ spec:
               skipFields:
                 - $[*].groupId
                 - $[*].links
+          status:
+            schema: 'NetworkPermissionEntry'
+            filters:
+              skipFields:
+                - $.cidrBlock
+                - $.comment
+                - $.deleteAfterDate
+                - $.awsSecurityGroup
+                - $.links
+                - $.ipAddress
 
     - gvk:
         version: v1
@@ -295,6 +305,9 @@ spec:
                 - $.writeToken
 
   openapi:
+    - name: v20250312
+      path: atlas-api-transformed-v20250312002.0.0.yaml
+
     - name: v20231115
       path: atlas-api-transformed-v20231115.yaml
 

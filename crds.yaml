@@ -183,39 +183,40 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: networkpermissionentries.atlas.generated.mongodb.com
+  name: networkpermissionentrieses.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
   names:
     categories:
     - atlas
-    kind: NetworkPermissionEntry
-    listKind: NetworkPermissionEntryList
-    plural: networkpermissionentries
-    singular: networkpermissionentry
+    kind: NetworkPermissionEntries
+    listKind: NetworkPermissionEntriesList
+    plural: networkpermissionentrieses
+    singular: networkpermissionentries
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: A networkpermissionentry, managed by the MongoDB Kubernetes Atlas
-          Operator.
+        description: A networkpermissionentries, managed by the MongoDB Kubernetes
+          Atlas Operator.
         properties:
           spec:
             description: |-
-              Specification of the networkpermissionentry supporting the following versions:
+              Specification of the networkpermissionentries supporting the following versions:
 
-              - v20231115
+              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              v20231115:
-                description: The spec of the networkpermissionentry resource for version
-                  v20231115.
+              v20250312:
+                description: The spec of the networkpermissionentries resource for
+                  version v20250312.
                 properties:
                   entry:
-                    description: The entry fields of the networkpermissionentry resource
-                      spec. These fields can be set for creating and updating networkpermissionentries.
+                    description: The entry fields of the networkpermissionentries
+                      resource spec. These fields can be set for creating and updating
+                      networkpermissionentrieses.
                     items:
                       properties:
                         awsSecurityGroup:
@@ -259,8 +260,8 @@ spec:
                       type: object
                     type: array
                   parameters:
-                    description: The parameter fields of the networkpermissionentry
-                      resource spec. These fields are used when creating networkpermissionentries
+                    description: The parameter fields of the networkpermissionentries
+                      resource spec. These fields are used when creating networkpermissionentrieses
                       only.
                     properties:
                       groupId:
@@ -273,7 +274,7 @@ spec:
                 type: object
             type: object
           status:
-            description: 'Most recently observed read-only status of the networkpermissionentry
+            description: 'Most recently observed read-only status of the networkpermissionentries
               for the specified resource version. This data may not be up to date
               and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
@@ -312,6 +313,16 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              v20250312:
+                description: The last observed Atlas state of the networkpermissionentries
+                  resource for version v20250312.
+                properties:
+                  groupId:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the project that contains the IP access list to which you want
+                      to add one or more entries.
+                    type: string
+                type: object
             type: object
         type: object
     served: true
