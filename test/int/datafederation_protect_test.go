@@ -85,7 +85,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 		if !manualDeletion {
 			By("Removing Atlas DataFederation "+testDataFederationName, func() {
-				_, _, err := atlasClient.DataFederationApi.
+				_, err := atlasClient.DataFederationApi.
 					DeleteFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
 					Execute()
 				Expect(err).To(BeNil())
@@ -93,7 +93,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 		}
 
 		By("Removing Atlas Project "+testProject.Status.ID, func() {
-			_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), testProject.ID()).Execute()
+			_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), testProject.ID()).Execute()
 			Expect(err).To(BeNil())
 		})
 

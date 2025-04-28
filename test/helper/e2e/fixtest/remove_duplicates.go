@@ -78,7 +78,7 @@ func selectProject(projects []admin.Group) (admin.Group, []admin.Group) {
 
 func removeProjects(client *admin.APIClient, projects []admin.Group) error {
 	for _, project := range projects {
-		_, _, err := client.ProjectsApi.DeleteProject(context.Background(), project.GetId()).Execute()
+		_, err := client.ProjectsApi.DeleteProject(context.Background(), project.GetId()).Execute()
 		if err != nil {
 			return err
 		}

@@ -205,7 +205,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 					Eventually(checkAtlasDatabaseUserRemoved(testProject.ID(), *testDBUser2)).
 						WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeFalse())
 
-					_, _, err := atlasClient.DatabaseUsersApi.
+					_, err := atlasClient.DatabaseUsersApi.
 						DeleteDatabaseUser(context.Background(), testProject.ID(), "admin", dbUserName2).
 						Execute()
 					Expect(err).To(BeNil())
