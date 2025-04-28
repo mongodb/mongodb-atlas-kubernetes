@@ -27,12 +27,12 @@ func TestServerlessMetricThreshold(t *testing.T) {
 	tests := []struct {
 		name      string
 		akoData   *MetricThreshold
-		atlasData *admin.ServerlessMetricThreshold
+		atlasData *admin.FlexClusterMetricThreshold
 		equal     bool
 	}{
 		{
 			name: "Should be able to parse float Theshold",
-			atlasData: &admin.ServerlessMetricThreshold{
+			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
 				Mode:       pointer.MakePtr("test"),
 				Operator:   pointer.MakePtr("IN"),
@@ -50,7 +50,7 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be able to parse int Theshold",
-			atlasData: &admin.ServerlessMetricThreshold{
+			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
 				Mode:       pointer.MakePtr("test"),
 				Operator:   pointer.MakePtr("IN"),
@@ -68,7 +68,7 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be false if Theshold is not a number",
-			atlasData: &admin.ServerlessMetricThreshold{
+			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
 				Mode:       pointer.MakePtr("test"),
 				Operator:   pointer.MakePtr("IN"),
@@ -98,7 +98,7 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be false if operator mismatched",
-			atlasData: &admin.ServerlessMetricThreshold{
+			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
 				Mode:       pointer.MakePtr("test"),
 				Operator:   pointer.MakePtr("IN"),
@@ -116,7 +116,7 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should fail if Threshold mismatched",
-			atlasData: &admin.ServerlessMetricThreshold{
+			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
 				Mode:       pointer.MakePtr("test"),
 				Operator:   pointer.MakePtr("IN"),
