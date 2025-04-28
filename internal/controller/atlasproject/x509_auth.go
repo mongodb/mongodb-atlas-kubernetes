@@ -70,7 +70,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 		return terminateX509(ctx, err)
 	}
 
-	ldapConfig, _, err := ctx.SdkClientSet.SdkClient20250312002.LDAPConfigurationApi.GetLDAPConfiguration(ctx.Context, atlasProject.ID()).Execute()
+	ldapConfig, _, err := ctx.SdkClientSet.SdkClient20250312002.LDAPConfigurationApi.GetLdapConfiguration(ctx.Context, atlasProject.ID()).Execute()
 	if err != nil {
 		return terminateX509(ctx, err)
 	}
@@ -84,7 +84,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 		}
 		r.Log.Infow("Saving new x509 cert", "projectID", atlasProject.ID())
 
-		_, _, err = ctx.SdkClientSet.SdkClient20250312002.LDAPConfigurationApi.SaveLDAPConfiguration(ctx.Context, atlasProject.ID(), &conf).Execute()
+		_, _, err = ctx.SdkClientSet.SdkClient20250312002.LDAPConfigurationApi.SaveLdapConfiguration(ctx.Context, atlasProject.ID(), &conf).Execute()
 		if err != nil {
 			return terminateX509(ctx, err)
 		}
