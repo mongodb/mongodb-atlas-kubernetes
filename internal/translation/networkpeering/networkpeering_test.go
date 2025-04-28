@@ -459,7 +459,7 @@ func testDeleteNetworkPeeringAPI(err error) admin.NetworkPeeringApi {
 func testAPIError(code string) error {
 	err := &admin.GenericOpenAPIError{}
 	err.SetModel(admin.ApiError{
-		ErrorCode: pointer.MakePtr(code),
+		ErrorCode: code,
 	})
 	return err
 }
