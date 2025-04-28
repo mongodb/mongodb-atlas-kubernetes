@@ -309,7 +309,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, nil)
 
 				mockError := &admin.GenericOpenAPIError{}
-				model := *admin.NewApiError()
+				model := *admin.NewApiErrorWithDefaults()
 				model.SetErrorCode(atlas.BackupComplianceNotMet)
 				mockError.SetModel(model)
 

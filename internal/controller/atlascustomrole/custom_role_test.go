@@ -923,7 +923,7 @@ func Test_handleCustomRole(t *testing.T) {
 							}(),
 							ProjectsApi: func() admin.ProjectsApi {
 								notFound := &admin.GenericOpenAPIError{}
-								notFound.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("RESOURCE_NOT_FOUND")})
+								notFound.SetModel(admin.ApiError{ErrorCode: "RESOURCE_NOT_FOUND"})
 
 								projectAPI := mockadmin.NewProjectsApi(t)
 								projectAPI.EXPECT().GetProjectByName(mock.Anything, "testProject").
