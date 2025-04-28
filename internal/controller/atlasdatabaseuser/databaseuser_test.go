@@ -201,8 +201,8 @@ func TestHandleDatabaseUser(t *testing.T) {
 					clusterAPI := mockadmin.NewClustersApi(t)
 
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI},
-						SdkClient20241113001: &adminv20241113001.APIClient{DatabaseUsersApi: userAPI},
+						SdkClient20231115008: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
+						SdkClient20241113001: &admin.APIClient{},
 					}, nil
 				},
 			},

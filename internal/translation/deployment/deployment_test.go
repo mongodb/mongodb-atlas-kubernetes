@@ -27,8 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
-	mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -48,7 +46,7 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 
 		mockServerlessAPI := mockadmin.NewServerlessInstancesApi(t)
 		mockServerlessAPI.EXPECT().ListServerlessInstancesExecute(mock.Anything).Unset()
-		mockFlexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+		mockFlexAPI := mockadmin.NewFlexClustersApi(t)
 		mockFlexAPI.EXPECT().ListFlexClustersExecute(mock.Anything).Unset()
 		ds := &ProductionAtlasDeployments{
 			clustersAPI:   mockClustersAPI,
@@ -75,11 +73,11 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 			admin.ListServerlessInstancesApiRequest{ApiService: mockServerlessAPI}).Return(
 			nil, &http.Response{StatusCode: http.StatusOK}, nil)
 
-		mockFlexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+		mockFlexAPI := mockadmin.NewFlexClustersApi(t)
 		mockFlexAPI.EXPECT().ListFlexClusters(context.Background(), mock.Anything).Return(
-			adminv20241113001.ListFlexClustersApiRequest{ApiService: mockFlexAPI})
+			admin.ListFlexClustersApiRequest{ApiService: mockFlexAPI})
 		mockFlexAPI.EXPECT().ListFlexClustersExecute(
-			adminv20241113001.ListFlexClustersApiRequest{ApiService: mockFlexAPI}).Return(
+			admin.ListFlexClustersApiRequest{ApiService: mockFlexAPI}).Return(
 			nil, &http.Response{StatusCode: http.StatusOK}, nil)
 
 		ds := &ProductionAtlasDeployments{
@@ -121,16 +119,16 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 				},
 			}, &http.Response{StatusCode: http.StatusOK}, nil)
 
-		mockFlexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+		mockFlexAPI := mockadmin.NewFlexClustersApi(t)
 		mockFlexAPI.EXPECT().ListFlexClusters(context.Background(), mock.Anything).Return(
-			adminv20241113001.ListFlexClustersApiRequest{ApiService: mockFlexAPI})
+			admin.ListFlexClustersApiRequest{ApiService: mockFlexAPI})
 		mockFlexAPI.EXPECT().ListFlexClustersExecute(
-			adminv20241113001.ListFlexClustersApiRequest{ApiService: mockFlexAPI}).Return(
-			&adminv20241113001.PaginatedFlexClusters20241113{
-				Results: &[]adminv20241113001.FlexClusterDescription20241113{
+			admin.ListFlexClustersApiRequest{ApiService: mockFlexAPI}).Return(
+			&admin.PaginatedFlexClusters20241113{
+				Results: &[]admin.FlexClusterDescription20241113{
 					{
 						Name:              pointer.MakePtr("testFlex"),
-						ConnectionStrings: &adminv20241113001.FlexConnectionStrings20241113{StandardSrv: pointer.MakePtr("flexSRV")},
+						ConnectionStrings: &admin.FlexConnectionStrings20241113{StandardSrv: pointer.MakePtr("flexSRV")},
 					},
 				},
 			}, &http.Response{StatusCode: http.StatusOK}, nil)
@@ -151,17 +149,17 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 func TestClusterExists(t *testing.T) {
 	tests := map[string]struct {
 		deployment *akov2.AtlasDeployment
-		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi)
 		gov        bool
 		result     bool
 		err        error
 	}{
 		"should fail to assert a cluster exists in atlas": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 					Return(nil, nil, errors.New("failed to get cluster from atlas"))
 
@@ -173,7 +171,7 @@ func TestClusterExists(t *testing.T) {
 		},
 		"should fail to assert a serverless instance exists in atlas": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -186,12 +184,12 @@ func TestClusterExists(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, errors.New("failed to get serverless instance from atlas"))
 
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.ClusterNotFound})
+				err := &admin.GenericOpenAPIError{}
+				err.SetModel(admin.ApiError{ErrorCode: atlas.ClusterNotFound})
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 					Return(nil, nil, err)
 
@@ -201,7 +199,7 @@ func TestClusterExists(t *testing.T) {
 		},
 		"should return false when cluster doesn't exist": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "cluster0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -214,12 +212,12 @@ func TestClusterExists(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, atlasAPIError(atlas.ProviderUnsupported))
 
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+				err := &admin.GenericOpenAPIError{}
+				err.SetModel(admin.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "cluster0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 					Return(nil, nil, err)
 
@@ -228,7 +226,7 @@ func TestClusterExists(t *testing.T) {
 		},
 		"should return false when serverless instance doesn't exist": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -241,12 +239,12 @@ func TestClusterExists(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceNotFound))
 
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+				err := &admin.GenericOpenAPIError{}
+				err.SetModel(admin.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 					Return(nil, nil, err)
 
@@ -255,7 +253,7 @@ func TestClusterExists(t *testing.T) {
 		},
 		"should return a cluster exists": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "cluster0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -268,12 +266,12 @@ func TestClusterExists(t *testing.T) {
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+				err := &admin.GenericOpenAPIError{}
+				err.SetModel(admin.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(mock.Anything, "project-id", "cluster0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 					Return(nil, &http.Response{}, err)
 
@@ -283,7 +281,7 @@ func TestClusterExists(t *testing.T) {
 		},
 		"should return a serverless instance exists": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -300,12 +298,12 @@ func TestClusterExists(t *testing.T) {
 						nil,
 					)
 
-				err := &adminv20241113001.GenericOpenAPIError{}
-				err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+				err := &admin.GenericOpenAPIError{}
+				err.SetModel(admin.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				flexAPI.EXPECT().GetFlexCluster(context.Background(), "project-id", "instance0").
-					Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 				flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 					Return(nil, nil, err)
 
@@ -315,7 +313,7 @@ func TestClusterExists(t *testing.T) {
 		},
 		"should return false when asserting serverless instance exists in gov": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "instance0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -323,7 +321,7 @@ func TestClusterExists(t *testing.T) {
 					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceFromClusterAPI))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -347,13 +345,13 @@ func TestClusterExists(t *testing.T) {
 func TestGetDeployment(t *testing.T) {
 	tests := map[string]struct {
 		deployment *akov2.AtlasDeployment
-		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi)
 		result     Deployment
 		err        error
 	}{
 		"should fail to retrieve cluster from atlas": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "cluster0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -361,14 +359,14 @@ func TestGetDeployment(t *testing.T) {
 					Return(nil, nil, errors.New("failed to get cluster from atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to get cluster from atlas"),
 		},
 		"should fail to retrieve serverless instance from atlas": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -377,14 +375,14 @@ func TestGetDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, errors.New("failed to get serverless instance from atlas"))
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to get serverless instance from atlas"),
 		},
 		"should return nil when cluster doesn't exist": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "cluster0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -392,13 +390,13 @@ func TestGetDeployment(t *testing.T) {
 					Return(nil, nil, atlasAPIError(atlas.ClusterNotFound))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 		},
 		"should return nil when serverless instance doesn't exist": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -407,13 +405,13 @@ func TestGetDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().GetServerlessInstanceExecute(mock.AnythingOfType("admin.GetServerlessInstanceApiRequest")).
 					Return(nil, nil, atlasAPIError(atlas.ServerlessInstanceNotFound))
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 		},
 		"should return a cluster": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetCluster(context.Background(), "project-id", "cluster0").
 					Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
@@ -425,14 +423,14 @@ func TestGetDeployment(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			result: expectedGeoShardedCluster(),
 		},
 		"should return a serverless instance": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -445,7 +443,7 @@ func TestGetDeployment(t *testing.T) {
 						nil,
 					)
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			result: expectedServerlessInstance(),
@@ -467,13 +465,13 @@ func TestGetDeployment(t *testing.T) {
 func TestCreateDeployment(t *testing.T) {
 	tests := map[string]struct {
 		deployment *akov2.AtlasDeployment
-		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi)
 		result     Deployment
 		err        error
 	}{
 		"should fail to create cluster in atlas": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().CreateCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.ClusterDescription20240805")).
 					Return(admin.CreateClusterApiRequest{ApiService: clusterAPI})
@@ -481,14 +479,14 @@ func TestCreateDeployment(t *testing.T) {
 					Return(nil, nil, errors.New("failed to create cluster in atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to create cluster in atlas"),
 		},
 		"should fail to create serverless instance in atlas": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -497,14 +495,14 @@ func TestCreateDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().CreateServerlessInstanceExecute(mock.AnythingOfType("admin.CreateServerlessInstanceApiRequest")).
 					Return(nil, nil, errors.New("failed to create serverless instance in atlas"))
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to create serverless instance in atlas"),
 		},
 		"should create a cluster": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().CreateCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.ClusterDescription20240805")).
 					Return(admin.CreateClusterApiRequest{ApiService: clusterAPI})
@@ -516,7 +514,7 @@ func TestCreateDeployment(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -524,7 +522,7 @@ func TestCreateDeployment(t *testing.T) {
 		},
 		"should create a serverless instance": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -537,7 +535,7 @@ func TestCreateDeployment(t *testing.T) {
 						nil,
 					)
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			result: expectedServerlessInstance(),
@@ -559,13 +557,13 @@ func TestCreateDeployment(t *testing.T) {
 func TestUpdateDeployment(t *testing.T) {
 	tests := map[string]struct {
 		deployment *akov2.AtlasDeployment
-		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi)
 		result     Deployment
 		err        error
 	}{
 		"should fail to update cluster in atlas": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().UpdateCluster(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescription20240805")).
 					Return(admin.UpdateClusterApiRequest{ApiService: clusterAPI})
@@ -573,14 +571,14 @@ func TestUpdateDeployment(t *testing.T) {
 					Return(nil, nil, errors.New("failed to update cluster in atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to update cluster in atlas"),
 		},
 		"should fail to update serverless instance in atlas": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -589,14 +587,14 @@ func TestUpdateDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().UpdateServerlessInstanceExecute(mock.AnythingOfType("admin.UpdateServerlessInstanceApiRequest")).
 					Return(nil, nil, errors.New("failed to update serverless instance in atlas"))
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			err: errors.New("failed to update serverless instance in atlas"),
 		},
 		"should update a cluster": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().UpdateCluster(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescription20240805")).
 					Return(admin.UpdateClusterApiRequest{ApiService: clusterAPI})
@@ -608,14 +606,14 @@ func TestUpdateDeployment(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
 			result: expectedGeoShardedCluster(),
 		},
 		"should update a serverless instance": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -628,7 +626,7 @@ func TestUpdateDeployment(t *testing.T) {
 						nil,
 					)
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -651,13 +649,13 @@ func TestUpdateDeployment(t *testing.T) {
 func TestDeleteDeployment(t *testing.T) {
 	tests := map[string]struct {
 		deployment *akov2.AtlasDeployment
-		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi)
 		result     Deployment
 		err        error
 	}{
 		"should fail to delete cluster in atlas": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().DeleteCluster(context.Background(), "project-id", "cluster0").
 					Return(admin.DeleteClusterApiRequest{ApiService: clusterAPI})
@@ -665,7 +663,7 @@ func TestDeleteDeployment(t *testing.T) {
 					Return(nil, errors.New("failed to delete cluster in atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -673,7 +671,7 @@ func TestDeleteDeployment(t *testing.T) {
 		},
 		"should fail to delete serverless instance in atlas": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -682,7 +680,7 @@ func TestDeleteDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().DeleteServerlessInstanceExecute(mock.AnythingOfType("admin.DeleteServerlessInstanceApiRequest")).
 					Return(nil, nil, errors.New("failed to delete serverless instance in atlas"))
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -690,7 +688,7 @@ func TestDeleteDeployment(t *testing.T) {
 		},
 		"should delete a cluster": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().DeleteCluster(context.Background(), "project-id", "cluster0").
 					Return(admin.DeleteClusterApiRequest{ApiService: clusterAPI})
@@ -698,7 +696,7 @@ func TestDeleteDeployment(t *testing.T) {
 					Return(nil, nil)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -706,7 +704,7 @@ func TestDeleteDeployment(t *testing.T) {
 		},
 		"should delete a serverless instance": {
 			deployment: serverlessInstance(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -715,7 +713,7 @@ func TestDeleteDeployment(t *testing.T) {
 				serverlessInstanceAPI.EXPECT().DeleteServerlessInstanceExecute(mock.AnythingOfType("admin.DeleteServerlessInstanceApiRequest")).
 					Return(nil, nil, nil)
 
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -737,13 +735,13 @@ func TestDeleteDeployment(t *testing.T) {
 func TestClusterWithProcessArgs(t *testing.T) {
 	tests := map[string]struct {
 		deployment *akov2.AtlasDeployment
-		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi)
 		result     Deployment
 		err        error
 	}{
 		"should fail to retrieve cluster process args from atlas": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0").
 					Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
@@ -751,7 +749,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 					Return(nil, nil, errors.New("failed to get cluster process args from atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -759,7 +757,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 		},
 		"should return process args with default settings": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0").
 					Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
@@ -775,7 +773,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -789,7 +787,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 		},
 		"should return process args": {
 			deployment: geoShardedCluster(),
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().GetClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0").
 					Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
@@ -812,7 +810,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -852,7 +850,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 func TestUpdateProcessArgs(t *testing.T) {
 	tests := map[string]struct {
 		deployment Deployment
-		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi)
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi)
 		result     Deployment
 		err        error
 	}{
@@ -866,10 +864,10 @@ func TestUpdateProcessArgs(t *testing.T) {
 					OplogMinRetentionHours: "wrong",
 				},
 			},
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -891,7 +889,7 @@ func TestUpdateProcessArgs(t *testing.T) {
 					OplogMinRetentionHours:    "12.0",
 				},
 			},
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().UpdateClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs20240805")).
 					Return(admin.UpdateClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
@@ -899,7 +897,7 @@ func TestUpdateProcessArgs(t *testing.T) {
 					Return(nil, nil, errors.New("failed to update cluster process args in atlas"))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -921,7 +919,7 @@ func TestUpdateProcessArgs(t *testing.T) {
 					OplogMinRetentionHours:    "12.0",
 				},
 			},
-			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, adminv20241113001.FlexClustersApi) {
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				clusterAPI.EXPECT().UpdateClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs20240805")).
 					Return(admin.UpdateClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
@@ -944,7 +942,7 @@ func TestUpdateProcessArgs(t *testing.T) {
 					)
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
-				flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},

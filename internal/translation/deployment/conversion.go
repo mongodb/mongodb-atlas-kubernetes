@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -1068,7 +1067,7 @@ func fillServerlessPrivateEndpoints(cpeList []admin.ServerlessConnectionStringsP
 	return pes
 }
 
-func flexToConnections(flex []adminv20241113001.FlexClusterDescription20241113) []Connection {
+func flexToConnections(flex []admin.FlexClusterDescription20241113) []Connection {
 	conns := []Connection{}
 	for _, f := range flex {
 		conns = append(conns, Connection{
@@ -1160,7 +1159,7 @@ func managedNamespaceToAtlas(in *akov2.ManagedNamespace) *admin.ManagedNamespace
 	}
 }
 
-func flexFromAtlas(instance *adminv20241113001.FlexClusterDescription20241113) *Flex {
+func flexFromAtlas(instance *admin.FlexClusterDescription20241113) *Flex {
 	connectionStrings := instance.GetConnectionStrings()
 	providerSettings := instance.GetProviderSettings()
 
@@ -1200,20 +1199,20 @@ func flexFromAtlas(instance *adminv20241113001.FlexClusterDescription20241113) *
 	return f
 }
 
-func flexCreateToAtlas(flex *Flex) *adminv20241113001.FlexClusterDescriptionCreate20241113 {
-	return &adminv20241113001.FlexClusterDescriptionCreate20241113{
+func flexCreateToAtlas(flex *Flex) *admin.FlexClusterDescriptionCreate20241113 {
+	return &admin.FlexClusterDescriptionCreate20241113{
 		Name:                         flex.Name,
 		Tags:                         tag.FlexToAtlas(flex.Tags),
 		TerminationProtectionEnabled: &flex.TerminationProtectionEnabled,
-		ProviderSettings: adminv20241113001.FlexProviderSettingsCreate20241113{
+		ProviderSettings: admin.FlexProviderSettingsCreate20241113{
 			BackingProviderName: flex.ProviderSettings.BackingProviderName,
 			RegionName:          flex.ProviderSettings.RegionName,
 		},
 	}
 }
 
-func flexUpdateToAtlas(flex *Flex) *adminv20241113001.FlexClusterDescriptionUpdate20241113 {
-	return &adminv20241113001.FlexClusterDescriptionUpdate20241113{
+func flexUpdateToAtlas(flex *Flex) *admin.FlexClusterDescriptionUpdate20241113 {
+	return &admin.FlexClusterDescriptionUpdate20241113{
 		Tags:                         tag.FlexToAtlas(flex.Tags),
 		TerminationProtectionEnabled: &flex.TerminationProtectionEnabled,
 	}

@@ -27,9 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
-	mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -467,13 +465,13 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			globalAPI.EXPECT().GetManagedNamespaceExecute(mock.Anything).
 				Return(&admin.GeoSharding20240805{}, nil, nil)
 
-			err := &adminv20241113001.GenericOpenAPIError{}
-			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+			err := &admin.GenericOpenAPIError{}
+			err.SetModel(admin.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
-			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			return &atlas.ClientSet{
-				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
+				SdkClient20241113001: &admin.APIClient{FlexClustersApi: flexAPI},
 				SdkClient20231115008: &admin.APIClient{
 					ClustersApi:            clusterAPI,
 					AtlasSearchApi:         searchAPI,
@@ -668,7 +666,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 			projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
-			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			return &atlas.ClientSet{
 				SdkClient20231115008: &admin.APIClient{
@@ -677,7 +675,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 					ServerlessPrivateEndpointsApi: speClient,
 					ProjectsApi:                   projectAPI,
 				},
-				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
+				SdkClient20241113001: &admin.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -766,16 +764,16 @@ func TestFlexClusterReconciliation(t *testing.T) {
 
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), mock.Anything).
-				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+				Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 				Return(
-					&adminv20241113001.FlexClusterDescription20241113{
+					&admin.FlexClusterDescription20241113{
 						GroupId: pointer.MakePtr(project.ID()),
 						Name:    pointer.MakePtr(d.GetDeploymentName()),
-						ProviderSettings: adminv20241113001.FlexProviderSettings20241113{
+						ProviderSettings: admin.FlexProviderSettings20241113{
 							BackingProviderName: pointer.MakePtr("AWS"),
 							ProviderName:        pointer.MakePtr("FLEX"),
 							RegionName:          pointer.MakePtr("US_EAST_1"),
@@ -802,7 +800,7 @@ func TestFlexClusterReconciliation(t *testing.T) {
 					ServerlessInstancesApi: serverlessAPI,
 					ProjectsApi:            projectAPI,
 				},
-				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
+				SdkClient20241113001: &admin.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -932,10 +930,10 @@ func TestDeletionReconciliation(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-			err := &adminv20241113001.GenericOpenAPIError{}
-			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+			err := &admin.GenericOpenAPIError{}
+			err.SetModel(admin.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
-			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			clusterAPI := mockadmin.NewClustersApi(t)
 			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), mock.Anything).
@@ -986,7 +984,7 @@ func TestDeletionReconciliation(t *testing.T) {
 					ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
 					ProjectsApi:            projectAPI,
 				},
-				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
+				SdkClient20241113001: &admin.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -1342,7 +1340,7 @@ func TestChangeDeploymentType(t *testing.T) {
 							ServerlessInstancesApi: serverlessAPI,
 							ProjectsApi:            projectAPI,
 						},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20241113001: &admin.APIClient{},
 					}, nil
 				},
 			},
@@ -1400,7 +1398,7 @@ func TestChangeDeploymentType(t *testing.T) {
 							ClustersApi: clusterAPI,
 							ProjectsApi: projectAPI,
 						},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20241113001: &admin.APIClient{},
 					}, nil
 				},
 			},

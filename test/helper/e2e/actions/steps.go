@@ -24,7 +24,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -209,7 +208,7 @@ func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admi
 	}
 }
 
-func CompareFlexSpec(requested model.DeploymentSpec, created adminv20241113001.FlexClusterDescription20241113) {
+func CompareFlexSpec(requested model.DeploymentSpec, created admin.FlexClusterDescription20241113) {
 	flexSpec := requested.FlexSpec
 	Expect(created.GetMongoDBVersion()).ToNot(BeEmpty())
 	Expect(created.ConnectionStrings.GetStandardSrv()).ToNot(BeEmpty())
