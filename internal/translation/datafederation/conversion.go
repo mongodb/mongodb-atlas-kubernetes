@@ -288,7 +288,7 @@ func cloudProviderConfigToAtlas(config *akov2.CloudProviderConfig) *admin.DataLa
 		return nil
 	}
 	return &admin.DataLakeCloudProviderConfig{
-		Aws: admin.DataLakeAWSCloudProviderConfig{
+		Aws: &admin.DataLakeAWSCloudProviderConfig{
 			RoleId:       config.AWS.RoleID,
 			TestS3Bucket: config.AWS.TestS3Bucket,
 		},
