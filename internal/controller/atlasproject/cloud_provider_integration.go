@@ -262,7 +262,7 @@ func createCloudProviderAccess(workflowCtx *workflow.Context, projectID string, 
 	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20250312002.CloudProviderAccessApi.CreateCloudProviderAccessRole(
 		workflowCtx.Context,
 		projectID,
-		&admin.CloudProviderAccessRole{
+		&admin.CloudProviderAccessRoleRequest{
 			ProviderName: cpiStatus.ProviderName,
 		},
 	).Execute()
@@ -284,7 +284,7 @@ func authorizeCloudProviderAccess(workflowCtx *workflow.Context, projectID strin
 		workflowCtx.Context,
 		projectID,
 		cpiStatus.RoleID,
-		&admin.CloudProviderAccessRole{
+		&admin.CloudProviderAccessRoleRequestUpdate{
 			ProviderName:      cpiStatus.ProviderName,
 			IamAssumedRoleArn: &cpiStatus.IamAssumedRoleArn,
 		},
