@@ -60,9 +60,8 @@ var (
 	testEnv *envtest.Environment
 
 	// These variables are initialized once per each node
-	k8sClient               client.Client
-	atlasClient             *admin.APIClient
-	atlasClientv20241113001 *admin.APIClient
+	k8sClient   client.Client
+	atlasClient *admin.APIClient
 
 	// These variables are per each test and are changed by each BeforeRun
 	namespace         corev1.Namespace
@@ -144,7 +143,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		atlasClient, err = atlas.NewClient(atlasDomain, publicKey, privateKey)
 		Expect(err).ToNot(HaveOccurred())
 
-		atlasClientv20241113001, err = admin.NewClient(
+		atlasClient, err = admin.NewClient(
 			admin.UseBaseURL(atlasDomain),
 			admin.UseDigestAuth(publicKey, privateKey),
 		)
