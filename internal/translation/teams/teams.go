@@ -139,7 +139,7 @@ func (tm *TeamsAPI) UpdateRoles(ctx context.Context, at *AssignedTeam, projectID
 }
 
 func (tm *TeamsAPI) GetTeamUsers(ctx context.Context, orgID, teamID string) ([]TeamUser, error) {
-	atlasUsers, _, err := tm.teamsAPI.ListTeamUsers(ctx, orgID, teamID).Execute()
+	atlasUsers, _, err := tm.teamUsersAPI.ListTeamUsers(ctx, orgID, teamID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get team users from Atlas: %w", err)
 	}
