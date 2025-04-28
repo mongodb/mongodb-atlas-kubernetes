@@ -77,7 +77,6 @@ func freeTierDeploymentFlow(userData *model.TestDataProvider) {
 		aClient := atlas.GetClientOrFail()
 		Expect(userData.InitialDeployments).Should(HaveLen(1))
 		name := userData.InitialDeployments[0].GetDeploymentName()
-		admin.NewAdvancedClusterDescriptionWithDefaults()
 		_, _, err := aClient.Client.ClustersApi.
 			CreateCluster(
 				userData.Context,
