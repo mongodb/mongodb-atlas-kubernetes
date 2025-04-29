@@ -26,8 +26,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go/apps,https://github.c
 github.com/Masterminds/semver,https://github.com/Masterminds/semver/blob/v1.5.0/LICENSE.txt,MIT
 github.com/antlr4-go/antlr/v4,https://github.com/antlr4-go/antlr/blob/v4.13.0/LICENSE,BSD-3-Clause
 github.com/asaskevich/govalidator,https://github.com/asaskevich/govalidator/blob/f61b66f89f4a/LICENSE,MIT
-github.com/aws/aws-sdk-go,https://github.com/aws/aws-sdk-go/blob/v1.55.6/LICENSE.txt,Apache-2.0
-github.com/aws/aws-sdk-go/internal/sync/singleflight,https://github.com/aws/aws-sdk-go/blob/v1.55.6/internal/sync/singleflight/LICENSE,BSD-3-Clause
+github.com/aws/aws-sdk-go,https://github.com/aws/aws-sdk-go/blob/v1.55.7/LICENSE.txt,Apache-2.0
+github.com/aws/aws-sdk-go/internal/sync/singleflight,https://github.com/aws/aws-sdk-go/blob/v1.55.7/internal/sync/singleflight/LICENSE,BSD-3-Clause
 github.com/beorn7/perks/quantile,https://github.com/beorn7/perks/blob/v1.0.1/LICENSE,MIT
 github.com/blang/semver/v4,https://github.com/blang/semver/blob/v4.0.0/v4/LICENSE,MIT
 github.com/cespare/xxhash/v2,https://github.com/cespare/xxhash/blob/v2.3.0/LICENSE.txt,MIT
