@@ -22,6 +22,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/status"
 )
 
+func init() {
+	SchemeBuilder.Register(&AtlasThirdPartyIntegration{}, &AtlasThirdPartyIntegrationList{})
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // AtlasThirdPartyIntegration is the Schema for the atlas 3rd party inegrations API.

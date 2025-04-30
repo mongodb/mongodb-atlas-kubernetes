@@ -93,6 +93,10 @@ func (r *AtlasThirdPartyIntegrationsReconciler) Reconcile(ctx context.Context, r
 }
 
 func (r *AtlasThirdPartyIntegrationsReconciler) handleCustomResource(ctx context.Context, integration *nextapi.AtlasThirdPartyIntegration) (ctrl.Result, error) {
+	if customresource.ReconciliationShouldBeSkipped(integration) {
+		return r.Skip(ctx, "AtlasThirdPartyIntegration", integration, &integration.Spec)
+	}
+
 	panic("unimplemented")
 }
 
