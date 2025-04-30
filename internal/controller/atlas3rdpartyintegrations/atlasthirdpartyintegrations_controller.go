@@ -38,7 +38,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
 // AtlasThirdPartyIntegrationsReconciler reconciles a AtlasNetworkPeering object
@@ -84,7 +84,7 @@ func NewAtlas3rdPartyIntegrationsReconciler(
 func (r *AtlasThirdPartyIntegrationsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.Infow("-> Starting AtlasThirdPartyIntegration reconciliation")
 
-	akoIntegrations := nextapi.AtlasThirdPartyIntegration{}
+	akoIntegrations := akov2next.AtlasThirdPartyIntegration{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &akoIntegrations, r.Log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
@@ -92,7 +92,7 @@ func (r *AtlasThirdPartyIntegrationsReconciler) Reconcile(ctx context.Context, r
 	return r.handleCustomResource(ctx, &akoIntegrations)
 }
 
-func (r *AtlasThirdPartyIntegrationsReconciler) handleCustomResource(ctx context.Context, integration *nextapi.AtlasThirdPartyIntegration) (ctrl.Result, error) {
+func (r *AtlasThirdPartyIntegrationsReconciler) handleCustomResource(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrl.Result, error) {
 	if customresource.ReconciliationShouldBeSkipped(integration) {
 		return r.Skip(ctx, "AtlasThirdPartyIntegration", integration, &integration.Spec)
 	}
@@ -102,7 +102,7 @@ func (r *AtlasThirdPartyIntegrationsReconciler) handleCustomResource(ctx context
 
 // For prepares the controller for its target Custom Resource; Network Containers
 func (r *AtlasThirdPartyIntegrationsReconciler) For() (client.Object, builder.Predicates) {
-	return &nextapi.AtlasThirdPartyIntegration{}, builder.WithPredicates(r.GlobalPredicates...)
+	return &akov2next.AtlasThirdPartyIntegration{}, builder.WithPredicates(r.GlobalPredicates...)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -126,7 +126,7 @@ func (r *AtlasThirdPartyIntegrationsReconciler) SetupWithManager(mgr ctrl.Manage
 func (r *AtlasThirdPartyIntegrationsReconciler) integrationForProjectMapFunc() handler.MapFunc {
 	return indexer.ProjectsIndexMapperFunc(
 		indexer.AtlasThirdPartyIntegrationByProjectIndex,
-		func() *nextapi.AtlasThirdPartyIntegrationList { return &nextapi.AtlasThirdPartyIntegrationList{} },
+		func() *akov2next.AtlasThirdPartyIntegrationList { return &akov2next.AtlasThirdPartyIntegrationList{} },
 		indexer.AtlasThirdPartyIntegrationRequests,
 		r.Client,
 		r.Log,
@@ -136,7 +136,7 @@ func (r *AtlasThirdPartyIntegrationsReconciler) integrationForProjectMapFunc() h
 func (r *AtlasThirdPartyIntegrationsReconciler) integrationForCredentialMapFunc() handler.MapFunc {
 	return indexer.CredentialsIndexMapperFunc(
 		indexer.AtlasThirdPartyIntegrationCredentialsIndex,
-		func() *nextapi.AtlasThirdPartyIntegrationList { return &nextapi.AtlasThirdPartyIntegrationList{} },
+		func() *akov2next.AtlasThirdPartyIntegrationList { return &akov2next.AtlasThirdPartyIntegrationList{} },
 		indexer.AtlasThirdPartyIntegrationRequests,
 		r.Client,
 		r.Log,

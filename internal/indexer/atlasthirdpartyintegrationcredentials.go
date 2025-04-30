@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
 const (
@@ -26,10 +26,10 @@ const (
 )
 
 func NewAtlasThirdPartyIntegrationByCredentialIndexer(logger *zap.Logger) *LocalCredentialIndexer {
-	return NewLocalCredentialsIndexer(AtlasThirdPartyIntegrationCredentialsIndex, &nextapi.AtlasThirdPartyIntegration{}, logger)
+	return NewLocalCredentialsIndexer(AtlasThirdPartyIntegrationCredentialsIndex, &akov2next.AtlasThirdPartyIntegration{}, logger)
 }
 
-func AtlasThirdPartyIntegrationRequests(list *nextapi.AtlasThirdPartyIntegrationList) []reconcile.Request {
+func AtlasThirdPartyIntegrationRequests(list *akov2next.AtlasThirdPartyIntegrationList) []reconcile.Request {
 	requests := make([]reconcile.Request, 0, len(list.Items))
 	for _, item := range list.Items {
 		requests = append(requests, toRequest(&item))
