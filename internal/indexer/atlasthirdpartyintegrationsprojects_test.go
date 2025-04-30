@@ -22,13 +22,13 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
 func TestAtlasThirdPartyIntegrationByProjectIndices(t *testing.T) {
 	t.Run("should return nil when instance has no project associated to it", func(t *testing.T) {
-		pe := &nextapi.AtlasThirdPartyIntegration{
-			Spec: nextapi.AtlasThirdPartyIntegrationSpec{},
+		pe := &akov2next.AtlasThirdPartyIntegration{
+			Spec: akov2next.AtlasThirdPartyIntegrationSpec{},
 		}
 
 		indexer := NewAtlasThirdPartyIntegrationByProjectIndexer(zaptest.NewLogger(t))
@@ -37,8 +37,8 @@ func TestAtlasThirdPartyIntegrationByProjectIndices(t *testing.T) {
 	})
 
 	t.Run("should return indexes slice when instance has project associated to it", func(t *testing.T) {
-		pe := &nextapi.AtlasThirdPartyIntegration{
-			Spec: nextapi.AtlasThirdPartyIntegrationSpec{
+		pe := &akov2next.AtlasThirdPartyIntegration{
+			Spec: akov2next.AtlasThirdPartyIntegrationSpec{
 				ProjectDualReference: akov2.ProjectDualReference{
 					ProjectRef: &common.ResourceRefNamespaced{
 						Name:      "project-1",

@@ -32,8 +32,8 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/status"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
@@ -42,7 +42,7 @@ func TestReconcile(t *testing.T) {
 
 	testScheme := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(testScheme))
-	require.NoError(t, nextapi.AddToScheme(testScheme))
+	require.NoError(t, akov2next.AddToScheme(testScheme))
 
 	tests := map[string]struct {
 		request        reconcile.Request
@@ -89,8 +89,8 @@ func TestReconcile(t *testing.T) {
 	}
 }
 
-func testThirdPartyIntegration() *nextapi.AtlasThirdPartyIntegration {
-	return &nextapi.AtlasThirdPartyIntegration{
+func testThirdPartyIntegration() *akov2next.AtlasThirdPartyIntegration {
+	return &akov2next.AtlasThirdPartyIntegration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tpi1",
 			Namespace: "default",
@@ -98,7 +98,7 @@ func testThirdPartyIntegration() *nextapi.AtlasThirdPartyIntegration {
 				customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 			},
 		},
-		Spec: nextapi.AtlasThirdPartyIntegrationSpec{
+		Spec: akov2next.AtlasThirdPartyIntegrationSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ExternalProjectRef: &akov2.ExternalProjectReference{
 					ID: "fake-project-id",
@@ -107,9 +107,9 @@ func testThirdPartyIntegration() *nextapi.AtlasThirdPartyIntegration {
 					Name: "fake-secret",
 				},
 			},
-			Type:           "DATADOG",
-			Datadog:        &nextapi.DatadogIntegration{
-				APIKeySecret:                 api.LocalObjectReference{
+			Type: "DATADOG",
+			Datadog: &akov2next.DatadogIntegration{
+				APIKeySecret: api.LocalObjectReference{
 					Name: "non-existing-secret",
 				},
 				Region:                       "US1",
