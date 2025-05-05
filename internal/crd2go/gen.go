@@ -108,7 +108,7 @@ func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProp
 		value := schema.Properties[key]
 		id := title(fmt.Sprintf("%s%s", typeName, title(key)))
 		tagValue := key
-		typeSuffix, err := namedType(id, &value, required(tagValue, schema))
+		typeSuffix, err := namedType(id, &value, slices.Contains(schema.Required, tagValue))
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse schema type: %w", err)
 		}
@@ -152,15 +152,6 @@ func requiredPrefix(required bool) *jen.Statement {
 		return jen.Null()
 	}
 	return jen.Op("*")
-}
-
-func required(field string, schema *apiextensions.JSONSchemaProps) bool {
-	for _, required := range schema.Required {
-		if required == field {
-			return true
-		}
-	}
-	return false
 }
 
 func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSchemaProps {
