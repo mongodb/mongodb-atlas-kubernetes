@@ -2,7 +2,8 @@
   "lockfile_version": "1",
   "packages": {
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "resolved": "github:NixOS/nixpkgs/74a40410369a1c35ee09b8a1abee6f4acbedc059?lastModified=1743938762&narHash=sha256-UgFYn8sGv9B8PoFpUfCa43CjMZBl1x%2FShQhRDHBFQdI%3D"
+      "last_modified": "2025-05-04T22:22:57Z",
+      "resolved": "github:NixOS/nixpkgs/ed30f8aba41605e3ab46421e3dcb4510ec560ff8?lastModified=1746397377&narHash=sha256-5oLdRa3vWSRbuqPIFFmQBGGUqaYZBxX%2BGGtN9f%2Fn4lU%3D"
     },
     "go@latest": {
       "last_modified": "2025-03-11T17:52:14Z",
@@ -24,37 +25,37 @@
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/8ply43gnxk1xwichr81mpgbjcd9a1y5w-go-1.24.1",
+              "path": "/nix/store/6zvrmsmdg7p8yw3vii20g40b4zsh6kjr-go-1.24.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/8ply43gnxk1xwichr81mpgbjcd9a1y5w-go-1.24.1"
+          "store_path": "/nix/store/6zvrmsmdg7p8yw3vii20g40b4zsh6kjr-go-1.24.1"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/87yxrfx5lh78bdz393i33cr5z23x06q4-go-1.24.1",
+              "path": "/nix/store/2bcic1xcha2k11djynr488v3pg0nnghr-go-1.24.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/87yxrfx5lh78bdz393i33cr5z23x06q4-go-1.24.1"
+          "store_path": "/nix/store/2bcic1xcha2k11djynr488v3pg0nnghr-go-1.24.1"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/cfjhl0kn7xc65466pha9fkrvigw3g72n-go-1.24.1",
+              "path": "/nix/store/g29rrn8qqlg4yjqv543ryrkimr7fk43h-go-1.24.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/cfjhl0kn7xc65466pha9fkrvigw3g72n-go-1.24.1"
+          "store_path": "/nix/store/g29rrn8qqlg4yjqv543ryrkimr7fk43h-go-1.24.1"
         }
       }
     },
     "neovim@latest": {
-      "last_modified": "2025-03-27T11:50:31Z",
-      "resolved": "github:NixOS/nixpkgs/6c5963357f3c1c840201eda129a99d455074db04#neovim",
+      "last_modified": "2025-03-29T14:41:00Z",
+      "resolved": "github:NixOS/nixpkgs/eb0e0f21f15c559d2ac7633dc81d079d1caf5f5f#neovim",
       "source": "devbox-search",
       "version": "0.11.0",
       "systems": {
@@ -62,89 +63,89 @@
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/slxm9xsral7sf7jn5zqqj81w95vqvxkk-neovim-0.11.0",
+              "path": "/nix/store/4ch16nz6lwmzlxhwr2lwc3wqy7khxbks-neovim-0.11.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/slxm9xsral7sf7jn5zqqj81w95vqvxkk-neovim-0.11.0"
+          "store_path": "/nix/store/4ch16nz6lwmzlxhwr2lwc3wqy7khxbks-neovim-0.11.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/vdjpga4px8i0hhm6mqma24qy7vgdyzvx-neovim-0.11.0",
+              "path": "/nix/store/8av5ivxr1x3cymnbdfvf1izbx7998iiq-neovim-0.11.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/vdjpga4px8i0hhm6mqma24qy7vgdyzvx-neovim-0.11.0"
+          "store_path": "/nix/store/8av5ivxr1x3cymnbdfvf1izbx7998iiq-neovim-0.11.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/cqcz97riawfsnrs1wg8026f33jfcv232-neovim-0.11.0",
+              "path": "/nix/store/5bd60mhl94s6gl1cqi2xjra0ad8v2cdp-neovim-0.11.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/cqcz97riawfsnrs1wg8026f33jfcv232-neovim-0.11.0"
+          "store_path": "/nix/store/5bd60mhl94s6gl1cqi2xjra0ad8v2cdp-neovim-0.11.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/b33ilgjc5x6mcq4zlnlghz6qxf1hsj2h-neovim-0.11.0",
+              "path": "/nix/store/97cka40y26y30mza1v4gfbvlbp5a2a42-neovim-0.11.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/b33ilgjc5x6mcq4zlnlghz6qxf1hsj2h-neovim-0.11.0"
+          "store_path": "/nix/store/97cka40y26y30mza1v4gfbvlbp5a2a42-neovim-0.11.0"
         }
       }
     },
     "vscodium@latest": {
-      "last_modified": "2025-03-18T04:27:45Z",
-      "resolved": "github:NixOS/nixpkgs/3549532663732bfd89993204d40543e9edaec4f2#vscodium",
+      "last_modified": "2025-04-07T13:23:10Z",
+      "resolved": "github:NixOS/nixpkgs/b0b4b5f8f621bfe213b8b21694bab52ecfcbf30b#vscodium",
       "source": "devbox-search",
-      "version": "1.98.2.25072",
+      "version": "1.99.02289",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/dzrlw977anh4lmma28z8vgxgbd4gaqhi-vscodium-1.98.2.25072",
+              "path": "/nix/store/8j87d4m50nc5vdwq3pb2ixm7fxhhm3kb-vscodium-1.99.02289",
               "default": true
             }
           ],
-          "store_path": "/nix/store/dzrlw977anh4lmma28z8vgxgbd4gaqhi-vscodium-1.98.2.25072"
+          "store_path": "/nix/store/8j87d4m50nc5vdwq3pb2ixm7fxhhm3kb-vscodium-1.99.02289"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/a9lhvh8nxyg5zk5g4icm733197ddbl9y-vscodium-1.98.2.25072",
+              "path": "/nix/store/9xv2bsmgd047sp45m079a5v5vhwgiyqq-vscodium-1.99.02289",
               "default": true
             }
           ],
-          "store_path": "/nix/store/a9lhvh8nxyg5zk5g4icm733197ddbl9y-vscodium-1.98.2.25072"
+          "store_path": "/nix/store/9xv2bsmgd047sp45m079a5v5vhwgiyqq-vscodium-1.99.02289"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/k4nd0zq199x33wfqw52gx5k7y8hf2rzx-vscodium-1.98.2.25072",
+              "path": "/nix/store/6k6z0r6hkz2lr40rxm69rsm6s9qqkgps-vscodium-1.99.02289",
               "default": true
             }
           ],
-          "store_path": "/nix/store/k4nd0zq199x33wfqw52gx5k7y8hf2rzx-vscodium-1.98.2.25072"
+          "store_path": "/nix/store/6k6z0r6hkz2lr40rxm69rsm6s9qqkgps-vscodium-1.99.02289"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/qa08h7icj5zicw2f8v60ahwpw8sknlrw-vscodium-1.98.2.25072",
+              "path": "/nix/store/s58zfyv5w8dkipmxy9n8nzf2ckd6gs5f-vscodium-1.99.02289",
               "default": true
             }
           ],
-          "store_path": "/nix/store/qa08h7icj5zicw2f8v60ahwpw8sknlrw-vscodium-1.98.2.25072"
+          "store_path": "/nix/store/s58zfyv5w8dkipmxy9n8nzf2ckd6gs5f-vscodium-1.99.02289"
         }
       }
     }
