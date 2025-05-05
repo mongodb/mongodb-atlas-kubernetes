@@ -1,8 +1,8 @@
 cel.dev/expr,https://github.com/google/cel-spec/blob/v0.19.2/LICENSE,Apache-2.0
 cloud.google.com/go/auth,https://github.com/googleapis/google-cloud-go/blob/auth/v0.16.0/auth/LICENSE,Apache-2.0
 cloud.google.com/go/auth/oauth2adapt,https://github.com/googleapis/google-cloud-go/blob/auth/oauth2adapt/v0.2.8/auth/oauth2adapt/LICENSE,Apache-2.0
-cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/blob/compute/v1.36.1/compute/apiv1/license_codes_client.go,Apache-2.0
-cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.36.1/compute/LICENSE,Apache-2.0
+cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/blob/compute/v1.37.0/compute/apiv1/license_codes_client.go,Apache-2.0
+cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.37.0/compute/LICENSE,Apache-2.0
 cloud.google.com/go/compute/metadata,https://github.com/googleapis/google-cloud-go/blob/compute/metadata/v0.6.0/compute/metadata/LICENSE,Apache-2.0
 cloud.google.com/go/iam,https://github.com/googleapis/google-cloud-go/blob/iam/v1.5.0/iam/LICENSE,Apache-2.0
 cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v1.21.2/kms/LICENSE,Apache-2.0
