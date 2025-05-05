@@ -56,13 +56,14 @@ func Generate(crd *apiextensions.CustomResourceDefinition, version string) (*jen
 		),
 	)
 
-	if err := genRootObject(f, crd, v); err != nil {
+	if err := generateCRDRootObject(f, crd, v); err != nil {
 		return nil, fmt.Errorf("failed to generate root object: %w", err)
 	}
 	return f, nil
 }
 
-func genRootObject(f *jen.File, crd *apiextensions.CustomResourceDefinition, v *apiextensions.CustomResourceDefinitionVersion) error {
+// generateCRDRootObject generates the root object for the CRD
+func generateCRDRootObject(f *jen.File, crd *apiextensions.CustomResourceDefinition, v *apiextensions.CustomResourceDefinitionVersion) error {
 	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object").Line()
 
 	specType := fmt.Sprintf("%sSpec", crd.Spec.Names.Kind)
@@ -77,14 +78,14 @@ func genRootObject(f *jen.File, crd *apiextensions.CustomResourceDefinition, v *
 	)
 
 	specSchema := v.Schema.OpenAPIV3Schema.Properties["spec"]
-	specCode, err := generateOpenAPICode(specType, &specSchema)
+	specCode, err := generateOpenAPIType(specType, &specSchema)
 	if err != nil {
 		return fmt.Errorf("failed to generate spec code: %w", err)
 	}
 	code.Add(specCode)
 
 	statusSchema := v.Schema.OpenAPIV3Schema.Properties["status"]
-	statusCode, err := generateOpenAPICode(statusType, &statusSchema)
+	statusCode, err := generateOpenAPIType(statusType, &statusSchema)
 	if err != nil {
 		return fmt.Errorf("failed to generate status code: %w", err)
 	}
@@ -92,7 +93,8 @@ func genRootObject(f *jen.File, crd *apiextensions.CustomResourceDefinition, v *
 	return nil
 }
 
-func generateOpenAPICode(typeName string, schema *apiextensions.JSONSchemaProps) (*jen.Statement, error) {
+// generateOpenAPIType generates a Go code type statement for the given OpenAPI schema
+func generateOpenAPIType(typeName string, schema *apiextensions.JSONSchemaProps) (*jen.Statement, error) {
 	switch schema.Type {
 	case "object":
 		return generateOpenAPIStruct(typeName, schema)
@@ -101,6 +103,7 @@ func generateOpenAPICode(typeName string, schema *apiextensions.JSONSchemaProps)
 	}
 }
 
+// generateOpenAPIStruct generates a Go struct for the given OpenAPI schema
 func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProps) (*jen.Statement, error) {
 	subtypes := []jen.Code{}
 	fields := []jen.Code{}
@@ -119,7 +122,7 @@ func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProp
 		entry = entry.Tag(map[string]string{"json": tagValue})
 		fields = append(fields, entry)
 		for _, complexSubtype := range complexTypes(&value) {
-			subtype, err := generateOpenAPICode(id, complexSubtype)
+			subtype, err := generateOpenAPIType(id, complexSubtype)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse schema type: %w", err)
 			}
@@ -130,6 +133,7 @@ func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProp
 	return mainType.Add(subtypes...), nil
 }
 
+// namedType generates a Go code statement for the given name and schema
 func namedType(name string, schema *apiextensions.JSONSchemaProps, required bool) (*jen.Statement, error) {
 	switch schema.Type {
 	case "array":
@@ -147,13 +151,14 @@ func namedType(name string, schema *apiextensions.JSONSchemaProps, required bool
 	}
 }
 
+// requiredPrefix generates a code statement indicating whether a field is required or optional
 func requiredPrefix(required bool) *jen.Statement {
 	if required {
 		return jen.Null()
 	}
 	return jen.Op("*")
 }
-
+// complexTypes returns a slice of JSONSchemaProps that represent complex types (objects or arrays) in the schema
 func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSchemaProps {
 	switch schema.Type {
 	case "object":
@@ -172,6 +177,7 @@ func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSc
 	}
 }
 
+// selectVersion returns the version from the CRD spec that matches the given version string
 func selectVersion(spec *apiextensions.CustomResourceDefinitionSpec, version string) *apiextensions.CustomResourceDefinitionVersion {
 	if len(spec.Versions) == 0 {
 		return nil
@@ -187,10 +193,12 @@ func selectVersion(spec *apiextensions.CustomResourceDefinitionSpec, version str
 	return nil
 }
 
+// title capitalizes the first letter of a string and returns it using Go cases library
 func title(s string) string {
 	return cases.Upper(language.English).String(s[0:1]) + s[1:]
 }
 
+// orderedkeys returns a sorted slice of keys from the given map
 func orderedkeys[T any](m map[string]T) []string {
 	keys := make([]string, 0, len(m))
 	for key := range m {
