@@ -28,14 +28,14 @@ func GenerateStream(w io.Writer, r io.Reader, version string) error {
 			return err // EOF might be an error or a proper reply, so no wrapping
 		}
 		if err != nil {
-			return fmt.Errorf("generation failed read input: %w", err)
+			return fmt.Errorf("failed to read input: %w", err)
 		}
 		stmt, err := Generate(crd, version)
 		if err != nil {
-			return fmt.Errorf("crd code generation failed: %w", err)
+			return fmt.Errorf("failed to generate CRD code: %w", err)
 		}
 		if _, err := w.Write(([]byte)(stmt.GoString())); err != nil {
-			return fmt.Errorf("code writing failed: %w", err)
+			return fmt.Errorf("failed to write Go code: %w", err)
 		}
 	}
 }
