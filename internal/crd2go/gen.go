@@ -110,27 +110,50 @@ func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProp
 	for _, key := range orderedkeys(schema.Properties) {
 		value := schema.Properties[key]
 		id := title(fmt.Sprintf("%s%s", typeName, title(key)))
-		tagValue := key
-		typeSuffix, err := namedType(id, &value, slices.Contains(schema.Required, tagValue))
+		field, err := fieldFor(id, key, &value, schema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse parse field %s: %w", id, err)
+		}
+		fields = append(fields, field)
+
+		valueSubtypes, err  := subtypesForValue(id, &value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract complex subtypes for value %s: %w", id, err)
+		}
+		subtypes = append(subtypes, valueSubtypes...)
+	}
+	return buildStruct(typeName, fields, subtypes), nil
+}
+
+// fieldFor generates a Go code statement for the given field name and schema
+func fieldFor(id, tagValue string, value *apiextensions.JSONSchemaProps, schema *apiextensions.JSONSchemaProps) (jen.Code, error) {
+	typeSuffix, err := namedType(id, value, slices.Contains(schema.Required, tagValue))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse schema type: %w", err)
+	}
+	entry := jen.Id(title(tagValue)).Add(typeSuffix)
+	if !slices.Contains(schema.Required, tagValue) {
+		tagValue = strings.Join([]string{tagValue, "omitempty"}, ",")
+	}
+	return entry.Tag(map[string]string{"json": tagValue}), nil
+}
+
+// substypesForValue generates subtypes for the given Props value
+func subtypesForValue(id string, value *apiextensions.JSONSchemaProps) ([]jen.Code, error) {
+	subtypes := []jen.Code{}
+	for _, complexSubtype := range complexTypes(value) {
+		subtype, err := generateOpenAPIType(id, complexSubtype)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse schema type: %w", err)
 		}
-		entry := jen.Id(title(key)).Add(typeSuffix)
-		if !slices.Contains(schema.Required, key) {
-			tagValue = strings.Join([]string{tagValue, "omitempty"}, ",")
-		}
-		entry = entry.Tag(map[string]string{"json": tagValue})
-		fields = append(fields, entry)
-		for _, complexSubtype := range complexTypes(&value) {
-			subtype, err := generateOpenAPIType(id, complexSubtype)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse schema type: %w", err)
-			}
-			subtypes = append(subtypes, subtype)
-		}
+		subtypes = append(subtypes, subtype)
 	}
-	mainType := jen.Line().Line().Type().Id(typeName).Struct(fields...)
-	return mainType.Add(subtypes...), nil
+	return subtypes, nil
+}
+
+// buildStruct generates a Go struct with the given type name, fields, and subtypes
+func buildStruct(typeName string, fields []jen.Code, subtypes []jen.Code) *jen.Statement {
+    return jen.Line().Line().Type().Id(typeName).Struct(fields...).Add(subtypes...)
 }
 
 // namedType generates a Go code statement for the given name and schema
@@ -158,6 +181,7 @@ func requiredPrefix(required bool) *jen.Statement {
 	}
 	return jen.Op("*")
 }
+
 // complexTypes returns a slice of JSONSchemaProps that represent complex types (objects or arrays) in the schema
 func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSchemaProps {
 	switch schema.Type {
