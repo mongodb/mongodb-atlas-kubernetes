@@ -92,14 +92,6 @@ func (r *AtlasThirdPartyIntegrationsReconciler) Reconcile(ctx context.Context, r
 	return r.handleCustomResource(ctx, &akoIntegrations)
 }
 
-func (r *AtlasThirdPartyIntegrationsReconciler) handleCustomResource(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrl.Result, error) {
-	if customresource.ReconciliationShouldBeSkipped(integration) {
-		return r.Skip(ctx, "AtlasThirdPartyIntegration", integration, &integration.Spec)
-	}
-
-	panic("unimplemented")
-}
-
 // For prepares the controller for its target Custom Resource; Network Containers
 func (r *AtlasThirdPartyIntegrationsReconciler) For() (client.Object, builder.Predicates) {
 	return &akov2next.AtlasThirdPartyIntegration{}, builder.WithPredicates(r.GlobalPredicates...)

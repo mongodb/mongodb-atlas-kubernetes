@@ -142,9 +142,12 @@ type PagerDutyIntegration struct {
 // +k8s:deepcopy-gen=true
 
 type PrometheusIntegration struct {
+	// Enabled is true when Prometheus integration is enabled
+	Enabled *string `json:"enabled"`
+
 	// PrometheusCredentials holds the name of a secret containing the Prometheus
 	// username & password
-	PrometheusCredentials api.LocalObjectReference `json:"prometheusCredentials"`
+	PrometheusCredentialsSecret api.LocalObjectReference `json:"prometheusCredentials"`
 
 	// ServiceDiscovery to be used by Prometheus
 	ServiceDiscovery string `json:"serviceDiscovery"`
@@ -167,10 +170,10 @@ type SlackIntegration struct {
 
 type VictorOpsIntegration struct {
 	// RoutingKey holds VictorOps routing key
-	RoutingKey api.LocalObjectReference `json:"routingKey"`
+	RoutingKey string `json:"routingKey"`
 
 	// APIKeySecret is the name of a secret containing Victor Ops API key
-	APIKeySecret string `json:"apiKeySecret"`
+	APIKeySecret api.LocalObjectReference `json:"apiKeySecret"`
 }
 
 // +k8s:deepcopy-gen=true
