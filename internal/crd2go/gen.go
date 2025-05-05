@@ -15,6 +15,8 @@ import (
 
 const (
 	FirstVersion = ""
+
+	CommentMaxWidth = 80
 )
 
 const (
@@ -112,11 +114,7 @@ func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProp
 		value := schema.Properties[key]
 		id := title(fmt.Sprintf("%s%s", typeName, title(key)))
 
-		fieldComment := value.Description
-		if fieldComment != "" {
-			goComment := fmt.Sprintf("%s %s", title(key), fieldComment)
-			fields = append(fields, jen.Comment(goComment))
-		}
+		fields = setDocComment(fields, title(key), value.Description)
 
 		field, err := fieldFor(id, key, &value, schema)
 		if err != nil {
@@ -131,6 +129,19 @@ func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProp
 		subtypes = append(subtypes, valueSubtypes...)
 	}
 	return buildStruct(typeName, fields, subtypes), nil
+}
+
+// setDocComment sets the documentation comment for the given fields
+func setDocComment(fields []jen.Code, name, comment string) []jen.Code {
+	if comment == "" {
+		return fields
+	}
+	goComment := fmt.Sprintf("%s %s", name, comment)
+	lines := formatComment(goComment, CommentMaxWidth)
+	for _, line := range lines {
+		fields = append(fields, jen.Comment(line))
+	}
+	return fields
 }
 
 // fieldFor generates a Go code statement for the given field name and schema
@@ -238,4 +249,31 @@ func orderedkeys[T any](m map[string]T) []string {
 	}
 	slices.Sort(keys)
 	return keys
+}
+
+// formatComment formats a comment string to fit within a specified width
+func formatComment(comment string, maxWidth int) []string {
+    if strings.Contains(comment, "\n") {
+        return []string{comment}
+    }
+
+    words := strings.Fields(comment) 
+    var lines []string
+    var currentLine string
+
+    for _, word := range words {
+        if len(currentLine)+len(word)+1 > maxWidth {
+            lines = append(lines, currentLine)
+            currentLine = word
+        } else {
+            if currentLine != "" {
+                currentLine += " "
+            }
+            currentLine += word
+        }
+    }
+    if currentLine != "" {
+        lines = append(lines, currentLine)
+    }
+    return lines
 }
