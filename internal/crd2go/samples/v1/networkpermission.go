@@ -19,32 +19,53 @@ type NetworkPermissionEntries struct {
 }
 
 type NetworkPermissionEntriesSpec struct {
-	// V20250312 The spec of the networkpermissionentries resource for version v20250312.
+	// V20250312 The spec of the networkpermissionentries resource for version
+	// v20250312.
 	V20250312 *NetworkPermissionEntriesSpecV20250312 `json:"v20250312,omitempty"`
 }
 
 type NetworkPermissionEntriesSpecV20250312 struct {
-	// Entry The entry fields of the networkpermissionentries resource spec. These fields can be set for creating and updating networkpermissionentrieses.
+	// Entry The entry fields of the networkpermissionentries resource spec. These
+	// fields can be set for creating and updating networkpermissionentrieses.
 	Entry *[]NetworkPermissionEntriesSpecV20250312Entry `json:"entry,omitempty"`
 
-	// Parameters The parameter fields of the networkpermissionentries resource spec. These fields are used when creating networkpermissionentrieses only.
+	// Parameters The parameter fields of the networkpermissionentries resource spec.
+	// These fields are used when creating networkpermissionentrieses only.
 	Parameters *NetworkPermissionEntriesSpecV20250312Parameters `json:"parameters,omitempty"`
 }
 
 type NetworkPermissionEntriesSpecV20250312Entry struct {
-	// AwsSecurityGroup Unique string of the Amazon Web Services (AWS) security group that you want to add to the project's IP access list. Your IP access list entry can be one **awsSecurityGroup**, one **cidrBlock**, or one **ipAddress**. You must configure Virtual Private Connection (VPC) peering for your project before you can add an AWS security group to an IP access list. You cannot set AWS security groups as temporary access list entries. Don't set this parameter if you set **cidrBlock** or **ipAddress**.
+	// AwsSecurityGroup Unique string of the Amazon Web Services (AWS) security group
+	// that you want to add to the project's IP access list. Your IP access list entry
+	// can be one **awsSecurityGroup**, one **cidrBlock**, or one **ipAddress**. You
+	// must configure Virtual Private Connection (VPC) peering for your project before
+	// you can add an AWS security group to an IP access list. You cannot set AWS
+	// security groups as temporary access list entries. Don't set this parameter if
+	// you set **cidrBlock** or **ipAddress**.
 	AwsSecurityGroup *string `json:"awsSecurityGroup,omitempty"`
 
-	// CidrBlock Range of IP addresses in Classless Inter-Domain Routing (CIDR) notation that you want to add to the project's IP access list. Your IP access list entry can be one **awsSecurityGroup**, one **cidrBlock**, or one **ipAddress**. Don't set this parameter if you set **awsSecurityGroup** or **ipAddress**.
+	// CidrBlock Range of IP addresses in Classless Inter-Domain Routing (CIDR)
+	// notation that you want to add to the project's IP access list. Your IP access
+	// list entry can be one **awsSecurityGroup**, one **cidrBlock**, or one
+	// **ipAddress**. Don't set this parameter if you set **awsSecurityGroup** or
+	// **ipAddress**.
 	CidrBlock *string `json:"cidrBlock,omitempty"`
 
 	// Comment Remark that explains the purpose or scope of this IP access list entry.
 	Comment *string `json:"comment,omitempty"`
 
-	// DeleteAfterDate Date and time after which MongoDB Cloud deletes the temporary access list entry. This parameter expresses its value in the ISO 8601 timestamp format in UTC and can include the time zone designation. The date must be later than the current date but no later than one week after you submit this request. The resource returns this parameter if you specified an expiration date when creating this IP access list entry.
+	// DeleteAfterDate Date and time after which MongoDB Cloud deletes the temporary
+	// access list entry. This parameter expresses its value in the ISO 8601 timestamp
+	// format in UTC and can include the time zone designation. The date must be later
+	// than the current date but no later than one week after you submit this request.
+	// The resource returns this parameter if you specified an expiration date when
+	// creating this IP access list entry.
 	DeleteAfterDate *string `json:"deleteAfterDate,omitempty"`
 
-	// IpAddress IP address that you want to add to the project's IP access list. Your IP access list entry can be one **awsSecurityGroup**, one **cidrBlock**, or one **ipAddress**. Don't set this parameter if you set **awsSecurityGroup** or **cidrBlock**.
+	// IpAddress IP address that you want to add to the project's IP access list. Your
+	// IP access list entry can be one **awsSecurityGroup**, one **cidrBlock**, or one
+	// **ipAddress**. Don't set this parameter if you set **awsSecurityGroup** or
+	// **cidrBlock**.
 	IpAddress *string `json:"ipAddress,omitempty"`
 }
 
@@ -58,21 +79,25 @@ type NetworkPermissionEntriesSpecV20250312Parameters struct {
 }
 
 type NetworkPermissionEntriesStatus struct {
-	// Conditions Represents the latest available observations of a resource's current state.
+	// Conditions Represents the latest available observations of a resource's current
+	// state.
 	Conditions *[]NetworkPermissionEntriesStatusConditions `json:"conditions,omitempty"`
 
-	// V20250312 The last observed Atlas state of the networkpermissionentries resource for version v20250312.
+	// V20250312 The last observed Atlas state of the networkpermissionentries resource
+	// for version v20250312.
 	V20250312 *NetworkPermissionEntriesStatusV20250312 `json:"v20250312,omitempty"`
 }
 
 type NetworkPermissionEntriesStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to another.
+	// LastTransitionTime Last time the condition transitioned from one status to
+	// another.
 	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
 
 	// Message A human readable message indicating details about the transition.
 	Message *string `json:"message,omitempty"`
 
-	// ObservedGeneration observedGeneration represents the .metadata.generation that the condition was set based upon.
+	// ObservedGeneration observedGeneration represents the .metadata.generation that
+	// the condition was set based upon.
 	ObservedGeneration *int `json:"observedGeneration,omitempty"`
 
 	// Reason The reason for the condition's last transition.
@@ -86,6 +111,7 @@ type NetworkPermissionEntriesStatusConditions struct {
 }
 
 type NetworkPermissionEntriesStatusV20250312 struct {
-	// GroupId Unique 24-hexadecimal digit string that identifies the project that contains the IP access list to which you want to add one or more entries.
+	// GroupId Unique 24-hexadecimal digit string that identifies the project that
+	// contains the IP access list to which you want to add one or more entries.
 	GroupId *string `json:"groupId,omitempty"`
 }
