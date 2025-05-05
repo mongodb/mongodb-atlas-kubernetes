@@ -29,10 +29,12 @@ type GroupSpecV20231115 struct {
 }
 
 type GroupSpecV20231115Entry struct {
-	// Name Human-readable label that identifies the project included in the MongoDB Cloud organization.
+	// Name Human-readable label that identifies the project included in the MongoDB
+	// Cloud organization.
 	Name string `json:"name"`
 
-	// OrgId Unique 24-hexadecimal digit string that identifies the MongoDB Cloud organization to which the project belongs.
+	// OrgId Unique 24-hexadecimal digit string that identifies the MongoDB Cloud
+	// organization to which the project belongs.
 	OrgId string `json:"orgId"`
 
 	/*
@@ -49,41 +51,51 @@ type GroupSpecV20231115Entry struct {
 	*/
 	RegionUsageRestrictions *string `json:"regionUsageRestrictions,omitempty"`
 
-	// Tags List that contains key-value pairs between 1 to 255 characters in length for tagging and categorizing the project.
+	// Tags List that contains key-value pairs between 1 to 255 characters in length
+	// for tagging and categorizing the project.
 	Tags *[]GroupSpecV20231115EntryTags `json:"tags,omitempty"`
 
-	// WithDefaultAlertsSettings Flag that indicates whether to create the project with default alert settings.
+	// WithDefaultAlertsSettings Flag that indicates whether to create the project with
+	// default alert settings.
 	WithDefaultAlertsSettings *bool `json:"withDefaultAlertsSettings,omitempty"`
 }
 
 type GroupSpecV20231115EntryTags struct {
-	// Key Constant that defines the set of the tag. For example, `environment` in the `environment : production` tag.
+	// Key Constant that defines the set of the tag. For example, `environment` in the
+	// `environment : production` tag.
 	Key string `json:"key"`
 
-	// Value Variable that belongs to the set of the tag. For example, `production` in the `environment : production` tag.
+	// Value Variable that belongs to the set of the tag. For example, `production` in
+	// the `environment : production` tag.
 	Value string `json:"value"`
 }
 
 type GroupSpecV20231115Parameters struct {
-	// ProjectOwnerId Unique 24-hexadecimal digit string that identifies the MongoDB Cloud user to whom to grant the Project Owner role on the specified project. If you set this parameter, it overrides the default value of the oldest Organization Owner.
+	// ProjectOwnerId Unique 24-hexadecimal digit string that identifies the MongoDB
+	// Cloud user to whom to grant the Project Owner role on the specified project. If
+	// you set this parameter, it overrides the default value of the oldest
+	// Organization Owner.
 	ProjectOwnerId *string `json:"projectOwnerId,omitempty"`
 }
 
 type GroupStatus struct {
-	// Conditions Represents the latest available observations of a resource's current state.
+	// Conditions Represents the latest available observations of a resource's current
+	// state.
 	Conditions *[]GroupStatusConditions `json:"conditions,omitempty"`
 
 	V20231115 *GroupStatusV20231115 `json:"v20231115,omitempty"`
 }
 
 type GroupStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to another.
+	// LastTransitionTime Last time the condition transitioned from one status to
+	// another.
 	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
 
 	// Message A human readable message indicating details about the transition.
 	Message *string `json:"message,omitempty"`
 
-	// ObservedGeneration observedGeneration represents the .metadata.generation that the condition was set based upon.
+	// ObservedGeneration observedGeneration represents the .metadata.generation that
+	// the condition was set based upon.
 	ObservedGeneration *int `json:"observedGeneration,omitempty"`
 
 	// Reason The reason for the condition's last transition.
@@ -100,7 +112,8 @@ type GroupStatusV20231115 struct {
 	// ClusterCount Quantity of MongoDB Cloud clusters deployed in this project.
 	ClusterCount int `json:"clusterCount"`
 
-	// Created Date and time when MongoDB Cloud created this project. This parameter expresses its value in the ISO 8601 timestamp format in UTC.
+	// Created Date and time when MongoDB Cloud created this project. This parameter
+	// expresses its value in the ISO 8601 timestamp format in UTC.
 	Created string `json:"created"`
 
 	// Id Unique 24-hexadecimal digit string that identifies the MongoDB Cloud project.
