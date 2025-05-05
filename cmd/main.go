@@ -16,7 +16,7 @@ func main() {
 	flag.Parse()
 	err := generate(output, input)
 	if err != nil {
-		log.Fatalf("Failed to generate go sturcts: %v", err)
+		log.Fatalf("Failed to generate go structs: %v", err)
 	}
 	log.Printf("Code generated at %s", output)
 }
