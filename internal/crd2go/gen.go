@@ -24,10 +24,14 @@ const (
 )
 
 func GenerateStream(w io.Writer, r io.Reader, version string) error {
+	generated := false
 	for {
 		crd, err := ParseCRD(r)
 		if errors.Is(err, io.EOF) {
-			return err // EOF might be an error or a proper reply, so no wrapping
+			if generated {
+				return nil
+			}
+			return err
 		}
 		if err != nil {
 			return fmt.Errorf("failed to read input: %w", err)
@@ -39,6 +43,7 @@ func GenerateStream(w io.Writer, r io.Reader, version string) error {
 		if _, err := w.Write(([]byte)(stmt.GoString())); err != nil {
 			return fmt.Errorf("failed to write Go code: %w", err)
 		}
+		generated = true
 	}
 }
 

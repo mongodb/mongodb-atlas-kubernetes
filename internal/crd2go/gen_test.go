@@ -1,6 +1,7 @@
 package crd2go_test
 
 import (
+	"bytes"
 	"embed"
 	"io"
 	"testing"
@@ -30,9 +31,9 @@ func TestGenerateCode(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f, err := samples.Open(tc.crd)
+			in, err := samples.Open(tc.crd)
 			require.NoError(t, err)
-			defer f.Close()
+			defer in.Close()
 		
 			sf, err := samples.Open(tc.src)
 			require.NoError(t, err)
@@ -41,12 +42,9 @@ func TestGenerateCode(t *testing.T) {
 			want := string(sample)
 			defer sf.Close()
 		
-			crd, err := crd2go.ParseCRD(f)
-			require.NoError(t, err)
-			stmt, err := crd2go.Generate(crd, crd2go.FirstVersion)
-			require.NoError(t, err)
-			require.NotNil(t, stmt)
-			require.Equal(t, want, stmt.GoString())
+			out := bytes.NewBufferString("")
+			require.NoError(t, crd2go.GenerateStream(out, in, crd2go.FirstVersion))
+			require.Equal(t, want, out.String())
 		})
 	}
 }

@@ -23,6 +23,9 @@ func ParseCRD(r io.Reader) (*apiextensionsv1.CustomResourceDefinition, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read all YAML input: %w", err)
 	}
+	if len(yml) == 0 {
+		return nil, io.EOF
+	}
 	return DecodeCRD(yml)
 }
 
