@@ -19,12 +19,17 @@ type Group struct {
 }
 
 type GroupSpec struct {
+	// V20231115 The spec of the group resource for version v20231115.
 	V20231115 *GroupSpecV20231115 `json:"v20231115,omitempty"`
 }
 
 type GroupSpecV20231115 struct {
+	// Entry The entry fields of the group resource spec. These fields can be set for
+	// creating and updating groups.
 	Entry *GroupSpecV20231115Entry `json:"entry,omitempty"`
 
+	// Parameters The parameter fields of the group resource spec. These fields are
+	// used when creating groups only.
 	Parameters *GroupSpecV20231115Parameters `json:"parameters,omitempty"`
 }
 
@@ -83,6 +88,8 @@ type GroupStatus struct {
 	// state.
 	Conditions *[]GroupStatusConditions `json:"conditions,omitempty"`
 
+	// V20231115 The last observed Atlas state of the group resource for version
+	// v20231115.
 	V20231115 *GroupStatusV20231115 `json:"v20231115,omitempty"`
 }
 
