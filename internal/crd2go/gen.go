@@ -1,9 +1,12 @@
 package crd2go
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -23,10 +26,25 @@ const (
 	metav1 = "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func GenerateStream(w io.Writer, r io.Reader, version string) error {
+type CodeWriterFunc func(*apiextensions.CustomResourceDefinition) (io.WriteCloser, error)
+
+func CodeFileForCRDAtPath(dir string) CodeWriterFunc {
+	return func(crd *apiextensions.CustomResourceDefinition) (io.WriteCloser, error) {
+		crdName := lowercase(crd.Spec.Names.Kind)
+		srcFile := filepath.Join(dir, fmt.Sprintf("%s.go", crdName))
+		w, err := os.Create(srcFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create file %s: %w", srcFile, err)
+		}
+		return w, nil
+	}
+}
+
+func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string) error {
 	generated := false
+	scanner := bufio.NewScanner(r)
 	for {
-		crd, err := ParseCRD(r)
+		crd, err := ParseCRD(scanner)
 		if errors.Is(err, io.EOF) {
 			if generated {
 				return nil
@@ -36,6 +54,11 @@ func GenerateStream(w io.Writer, r io.Reader, version string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read input: %w", err)
 		}
+		w, err := cwFn(crd)
+		if err != nil {
+			return fmt.Errorf("failed to get writer for CRD %s: %w", crd.Name, err)
+		}
+		defer w.Close()
 		stmt, err := Generate(crd, version)
 		if err != nil {
 			return fmt.Errorf("failed to generate CRD code: %w", err)
@@ -123,7 +146,7 @@ func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProp
 
 		field, err := fieldFor(id, key, &value, schema)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse parse field %s: %w", id, err)
+			return nil, fmt.Errorf("failed to parse field %s: %w", id, err)
 		}
 		fields = append(fields, field)
 
@@ -246,6 +269,11 @@ func title(s string) string {
 	return cases.Upper(language.English).String(s[0:1]) + s[1:]
 }
 
+// lowercase converts a string to lowercase using Go cases library
+func lowercase(s string) string {
+	return cases.Lower(language.English).String(s)
+}
+
 // orderedkeys returns a sorted slice of keys from the given map
 func orderedkeys[T any](m map[string]T) []string {
 	keys := make([]string, 0, len(m))
@@ -258,27 +286,27 @@ func orderedkeys[T any](m map[string]T) []string {
 
 // formatComment formats a comment string to fit within a specified width
 func formatComment(comment string, maxWidth int) []string {
-    if strings.Contains(comment, "\n") {
-        return []string{comment}
-    }
+	if strings.Contains(comment, "\n") {
+		return []string{comment}
+	}
 
-    words := strings.Fields(comment) 
-    var lines []string
-    var currentLine string
+	words := strings.Fields(comment)
+	var lines []string
+	var currentLine string
 
-    for _, word := range words {
-        if len(currentLine)+len(word)+1 > maxWidth {
-            lines = append(lines, currentLine)
-            currentLine = word
-        } else {
-            if currentLine != "" {
-                currentLine += " "
-            }
-            currentLine += word
-        }
-    }
-    if currentLine != "" {
-        lines = append(lines, currentLine)
-    }
-    return lines
+	for _, word := range words {
+		if len(currentLine)+len(word)+1 > maxWidth {
+			lines = append(lines, currentLine)
+			currentLine = word
+		} else {
+			if currentLine != "" {
+				currentLine += " "
+			}
+			currentLine += word
+		}
+	}
+	if currentLine != "" {
+		lines = append(lines, currentLine)
+	}
+	return lines
 }

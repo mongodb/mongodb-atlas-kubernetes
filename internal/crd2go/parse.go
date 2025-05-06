@@ -1,9 +1,12 @@
 package crd2go
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -18,15 +21,48 @@ var (
 	ErrNoCRD = errors.New("not a CRD")
 )
 
-func ParseCRD(r io.Reader) (*apiextensionsv1.CustomResourceDefinition, error) {
-	yml, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read all YAML input: %w", err)
+// ParseCRD scans a YAML stream and returns the next CRD found.
+// If more than one CRD is present in the stream, calling again
+// on the same stream will return the next CRD found.
+func ParseCRD(scanner *bufio.Scanner) (*apiextensionsv1.CustomResourceDefinition, error) {
+	var buffer bytes.Buffer
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.TrimSpace(line) == "---" {
+			if len(strings.TrimSpace(buffer.String())) > 0 {
+				crd, err := DecodeCRD(buffer.Bytes())
+				if errors.Is(err, ErrNoCRD) {
+					buffer.Reset()
+					continue
+				}
+				if err != nil {
+					return nil, err
+				}
+				return crd, nil
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		buffer.WriteString(line + "\n")
 	}
-	if len(yml) == 0 {
-		return nil, io.EOF
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read input: %w", err)
 	}
-	return DecodeCRD(yml)
+
+	if buffer.Len() > 0 {
+		crd, err := DecodeCRD(buffer.Bytes())
+		if err != nil && !errors.Is(err, ErrNoCRD) {
+			return nil, err
+		}
+		return crd, nil
+	}
+
+	return nil, io.EOF
 }
 
 func DecodeCRD(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
@@ -55,5 +91,5 @@ func DecodeCRD(content []byte) (*apiextensionsv1.CustomResourceDefinition, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert CRD object: %w", err)
 	}
-	return crd, err
+	return crd, nil
 }

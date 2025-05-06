@@ -12,7 +12,7 @@ import (
 func main() {
 	var input, output string
 	flag.StringVar(&input, "input", "crds.yaml", "input YAML to process")
-	flag.StringVar(&output, "output", "structs.go", "output Go to produce")
+	flag.StringVar(&output, "output", ".", "output directory to produce source code to")
 	flag.Parse()
 	err := generate(output, input)
 	if err != nil {
@@ -22,14 +22,9 @@ func main() {
 }
 
 func generate(output, input string) error {
-	o, err := os.Create(output)
-	if err != nil {
-		return fmt.Errorf("failed to create output file %s: %w", output, err)
-	}
-	defer o.Close()
 	i, err := os.Open(input)
 	if err != nil {
 		return fmt.Errorf("failed to open input file %s: %w", input, err)
 	}
-	return crd2go.GenerateStream(o, i, crd2go.FirstVersion)
+	return crd2go.GenerateStream(crd2go.CodeFileForCRDAtPath(output), i, crd2go.FirstVersion)
 }
