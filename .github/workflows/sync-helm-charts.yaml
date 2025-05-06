@@ -101,7 +101,7 @@ jobs:
 
             export GITHUB_TOKEN="${GH_TOKEN}"
             git add .
-            scripts/create-signed-commit.sh
+            ../scripts/create-signed-commit.sh
 
             gh pr create --base main --head "${BRANCH}" --title "${COMMIT_MSG}" --body "${COMMIT_MSG}"
           fi
