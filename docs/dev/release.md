@@ -52,11 +52,6 @@ See [Troubleshooting](#troubleshooting) in case of issues, such as [errors with 
 Expect this branch to include the Software Security Development Lifecycle Policy Checklist (SSDLC) document at path `docs/releases/v${VERSION}/sdlc-compliance.md`.
 Note the SBOM files cannot be generated yet, as they require the image to have been published already.
 
-**NOTE:** This create branch script currently does not bump the local Helm Chart references to the expected release `$VERSION` value. Please fix those manually in the release PR before merging it. The files to update are:
-- helm-charts/atlas-deployment/Chart.yaml
-- helm-charts/atlas-operator-crds/Chart.yaml
-- helm-charts/atlas-operator/Chart.yaml
-
 ## Approve the Pull Request named "Release x.y.z"
 
 1. Review the Pull Request.
