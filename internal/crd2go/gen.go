@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"slices"
@@ -207,11 +208,20 @@ func buildStruct(typeName string, fields []jen.Code, subtypes []jen.Code) *jen.S
 func namedType(name string, schema *apiextensions.JSONSchemaProps, required bool) (*jen.Statement, error) {
 	switch schema.Type {
 	case "array":
-		return requiredPrefix(required).Index().Id(title(name)), nil
+		if schema.Items != nil && schema.Items.Schema != nil {
+			itemType, err := namedType(name, schema.Items.Schema, true)
+			if err != nil {
+				return nil, fmt.Errorf("unsupported array element type for %q: %w", name, err)
+			}
+			return requiredPrefix(required).Index().Add(itemType), nil
+		}
+		return nil, fmt.Errorf("unsupported array schema for %q", name)
 	case "boolean":
 		return requiredPrefix(required).Bool(), nil
 	case "integer":
 		return requiredPrefix(required).Int(), nil
+	case "number":
+		return requiredPrefix(required).Float64(), nil
 	case "object":
 		return requiredPrefix(required).Id(title(name)), nil
 	case "string":
@@ -231,6 +241,9 @@ func requiredPrefix(required bool) *jen.Statement {
 
 // complexTypes returns a slice of JSONSchemaProps that represent complex types (objects or arrays) in the schema
 func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSchemaProps {
+	if strings.Contains(schema.Description, "atlas-org-roles") {
+		log.Print("found it")
+	}
 	switch schema.Type {
 	case "object":
 		return []*apiextensions.JSONSchemaProps{schema}
@@ -241,6 +254,9 @@ func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSc
 		schemas := []*apiextensions.JSONSchemaProps{}
 		for _, schema := range schema.Items.JSONSchemas {
 			schemas = append(schemas, complexTypes(&schema)...)
+		}
+		if len(schemas) == 0 {
+			return nil
 		}
 		return schemas
 	default:
