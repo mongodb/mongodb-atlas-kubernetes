@@ -101,6 +101,7 @@ jobs:
             echo "Changes detected. Creating PR"
 
             export GITHUB_TOKEN="${GH_TOKEN}"
+            git checkout -b "${BRANCH}"
             git add .
             ../scripts/create-signed-commit.sh
 
