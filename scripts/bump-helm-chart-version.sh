@@ -18,7 +18,6 @@ set -euo pipefail
 version=${VERSION:?}
 
 FILES=(
-  "helm-charts/atlas-deployment/Chart.yaml"
   "helm-charts/atlas-operator-crds/Chart.yaml"
   "helm-charts/atlas-operator/Chart.yaml"
 )
