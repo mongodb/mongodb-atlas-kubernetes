@@ -60,7 +60,7 @@ func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string) error {
 			return fmt.Errorf("failed to get writer for CRD %s: %w", crd.Name, err)
 		}
 		defer w.Close()
-		stmt, err := Generate(crd, version)
+		stmt, err := generate(crd, version)
 		if err != nil {
 			return fmt.Errorf("failed to generate CRD code: %w", err)
 		}
@@ -71,7 +71,7 @@ func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string) error {
 	}
 }
 
-func Generate(crd *apiextensions.CustomResourceDefinition, version string) (*jen.File, error) {
+func generate(crd *apiextensions.CustomResourceDefinition, version string) (*jen.File, error) {
 	v := selectVersion(&crd.Spec, version)
 	if v == nil {
 		if version == "" {
