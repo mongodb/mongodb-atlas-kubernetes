@@ -18,12 +18,12 @@ import (
 	"context"
 
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 )
 
 // WaitForAtlasDeploymentStateToNotBeReached periodically checks the given atlas deployment for a given condition. The function
 // returns true after the given context timeout is exceeded.
-func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient *admin.APIClient, projectName, deploymentName string, fns ...func(description *admin.AdvancedClusterDescription) bool) func() bool {
+func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient *admin.APIClient, projectName, deploymentName string, fns ...func(description *admin.ClusterDescription20240805) bool) func() bool {
 	return func() bool {
 		select {
 		case <-ctx.Done():

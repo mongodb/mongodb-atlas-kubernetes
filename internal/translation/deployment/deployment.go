@@ -19,8 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -60,12 +59,12 @@ type GlobalClusterService interface {
 type ProductionAtlasDeployments struct {
 	clustersAPI      admin.ClustersApi
 	serverlessAPI    admin.ServerlessInstancesApi
-	flexAPI          adminv20241113001.FlexClustersApi
+	flexAPI          admin.FlexClustersApi
 	globalClusterAPI admin.GlobalClustersApi
 	isGov            bool
 }
 
-func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, globalClusterAPI admin.GlobalClustersApi, flexAPI adminv20241113001.FlexClustersApi, isGov bool) *ProductionAtlasDeployments {
+func NewAtlasDeployments(clusterService admin.ClustersApi, serverlessAPI admin.ServerlessInstancesApi, globalClusterAPI admin.GlobalClustersApi, flexAPI admin.FlexClustersApi, isGov bool) *ProductionAtlasDeployments {
 	return &ProductionAtlasDeployments{clustersAPI: clusterService, serverlessAPI: serverlessAPI, globalClusterAPI: globalClusterAPI, flexAPI: flexAPI, isGov: isGov}
 }
 
@@ -138,7 +137,7 @@ func (ds *ProductionAtlasDeployments) ListDeploymentConnections(ctx context.Cont
 
 func (ds *ProductionAtlasDeployments) ClusterExists(ctx context.Context, projectID, name string) (bool, error) {
 	flex, err := ds.GetFlexCluster(ctx, projectID, name)
-	if !adminv20241113001.IsErrorCode(err, atlas.NonFlexInFlexAPI) && err != nil {
+	if !admin.IsErrorCode(err, atlas.NonFlexInFlexAPI) && err != nil {
 		return false, err
 	}
 	if flex != nil {
@@ -183,7 +182,7 @@ func (ds *ProductionAtlasDeployments) GetFlexCluster(ctx context.Context, projec
 		return flexFromAtlas(flex), nil
 	}
 
-	if !adminv20241113001.IsErrorCode(err, atlas.ClusterNotFound) {
+	if !admin.IsErrorCode(err, atlas.ClusterNotFound) {
 		return nil, err
 	}
 
@@ -322,7 +321,7 @@ func (ds *ProductionAtlasDeployments) DeleteDeployment(ctx context.Context, depl
 	case *Serverless:
 		_, _, err = ds.serverlessAPI.DeleteServerlessInstance(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
 	case *Flex:
-		_, _, err = ds.flexAPI.DeleteFlexCluster(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
+		_, err = ds.flexAPI.DeleteFlexCluster(ctx, deployment.GetProjectID(), deployment.GetName()).Execute()
 	}
 
 	if err != nil {

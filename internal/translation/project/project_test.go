@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -32,7 +32,7 @@ import (
 
 func TestGetProjectByName(t *testing.T) {
 	notFoundErr := &admin.GenericOpenAPIError{}
-	notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("NOT_IN_GROUP")})
+	notFoundErr.SetModel(admin.ApiError{ErrorCode: "NOT_IN_GROUP"})
 	tests := map[string]struct {
 		api      func() admin.ProjectsApi
 		name     string
@@ -212,7 +212,7 @@ func TestCreateProject(t *testing.T) {
 
 func TestDeleteProject(t *testing.T) {
 	notFoundErr := &admin.GenericOpenAPIError{}
-	notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("GROUP_NOT_FOUND")})
+	notFoundErr.SetModel(admin.ApiError{ErrorCode: "GROUP_NOT_FOUND"})
 	tests := map[string]struct {
 		api     func() admin.ProjectsApi
 		project *Project
@@ -224,7 +224,7 @@ func TestDeleteProject(t *testing.T) {
 				sdk.EXPECT().DeleteProject(context.Background(), "my-project-id").
 					Return(admin.DeleteProjectApiRequest{ApiService: sdk})
 				sdk.EXPECT().DeleteProjectExecute(mock.AnythingOfType("admin.DeleteProjectApiRequest")).
-					Return(nil, &http.Response{}, errors.New("fail to delete project"))
+					Return(&http.Response{}, errors.New("fail to delete project"))
 
 				return sdk
 			},
@@ -239,7 +239,7 @@ func TestDeleteProject(t *testing.T) {
 				sdk.EXPECT().DeleteProject(context.Background(), "my-project-id").
 					Return(admin.DeleteProjectApiRequest{ApiService: sdk})
 				sdk.EXPECT().DeleteProjectExecute(mock.AnythingOfType("admin.DeleteProjectApiRequest")).
-					Return(nil, &http.Response{}, notFoundErr)
+					Return(&http.Response{}, notFoundErr)
 
 				return sdk
 			},
@@ -253,7 +253,7 @@ func TestDeleteProject(t *testing.T) {
 				sdk.EXPECT().DeleteProject(context.Background(), "my-project-id").
 					Return(admin.DeleteProjectApiRequest{ApiService: sdk})
 				sdk.EXPECT().DeleteProjectExecute(mock.AnythingOfType("admin.DeleteProjectApiRequest")).
-					Return(nil, &http.Response{}, nil)
+					Return(&http.Response{}, nil)
 
 				return sdk
 			},
