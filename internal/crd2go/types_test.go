@@ -1,6 +1,8 @@
 package crd2go_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/josvazg/crd2go/internal/crd2go"
@@ -21,7 +23,7 @@ func TestRenameType(t *testing.T) {
 			name: "Group Spec named Spec without preloads",
 			input: crd2go.NewGoField(
 				"Spec",
-				crd2go.NewObject("Spec", []*crd2go.GoField{
+				crd2go.NewStruct("Spec", []*crd2go.GoField{
 					{
 						Name:   "V20231115",
 						GoType: &crd2go.GoType{},
@@ -42,7 +44,7 @@ func TestRenameType(t *testing.T) {
 			},
 			input: crd2go.NewGoField(
 				"Spec",
-				crd2go.NewObject("Spec", []*crd2go.GoField{
+				crd2go.NewStruct("Spec", []*crd2go.GoField{
 					{
 						Name:   "V20231115",
 						GoType: &crd2go.GoType{},
@@ -55,11 +57,11 @@ func TestRenameType(t *testing.T) {
 		},
 
 		{
-			name: "Identify Cross Reference",
+			name:      "Identify Cross Reference",
 			preloaded: []*crd2go.GoType{CrossReference()},
 			input: crd2go.NewGoField(
 				"SomeRef",
-				crd2go.NewObject("SomeRef", []*crd2go.GoField{
+				crd2go.NewStruct("SomeRef", []*crd2go.GoField{
 					{
 						Name: "Namespace",
 						GoType: &crd2go.GoType{
@@ -81,11 +83,11 @@ func TestRenameType(t *testing.T) {
 		},
 
 		{
-			name: "Identify Local Reference",
+			name:      "Identify Local Reference",
 			preloaded: []*crd2go.GoType{LocalReference()},
 			input: crd2go.NewGoField(
 				"SomeRef",
-				crd2go.NewObject("SomeRef", []*crd2go.GoField{
+				crd2go.NewStruct("SomeRef", []*crd2go.GoField{
 					{
 						Name: "Name",
 						GoType: &crd2go.GoType{
@@ -98,15 +100,37 @@ func TestRenameType(t *testing.T) {
 			parents: []string{"Group", "Spec"},
 			want:    "K8sLocalReference",
 		},
+
+		{
+			name:      "Identify Local Reference behind an Array",
+			preloaded: []*crd2go.GoType{LocalReference()},
+			input: crd2go.NewGoField(
+				"SomeRef",
+				crd2go.NewArray(
+					crd2go.NewStruct("SomeRef", []*crd2go.GoField{
+						{
+							Name: "Name",
+							GoType: &crd2go.GoType{
+								Name: "string",
+								Kind: "string",
+							},
+						},
+					}),
+				),
+			),
+			parents: []string{"Group", "Spec"},
+			want:    "K8sLocalReference",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			td := crd2go.NewTypeDict()
-			for _, preloadedType := range tc.preloaded {
-				td.Add(preloadedType)
-			}
+			td := crd2go.NewTypeDict(tc.preloaded...)
 			err := tc.input.RenameType(td, tc.parents)
 			require.NoError(t, err)
-			assert.Equal(t, tc.want, tc.input.GoType.Name)
+			goType := tc.input.GoType
+			if goType.Kind == crd2go.ArrayKind {
+				goType = goType.Element
+			}
+			assert.Equal(t, tc.want, goType.Name)
 		})
 	}
 }
@@ -170,22 +194,22 @@ func TestBuildOpenAPIType(t *testing.T) {
 	assert.NotNil(t, goType)
 
 	// Define the expected GoType
-	expectedType := crd2go.NewObject("RootType", []*crd2go.GoField{
-		crd2go.NewGoField("ArrayOfStrings", crd2go.NewArray("ArrayOfStrings", crd2go.NewPrimitive("string", "string"))),
-		crd2go.NewGoField("ArrayOfObjects", crd2go.NewArray("ArrayOfObjects",
-			crd2go.NewObject("arrayOfObjects", []*crd2go.GoField{
+	expectedType := crd2go.NewStruct("RootType", []*crd2go.GoField{
+		crd2go.NewGoField("ArrayOfStrings", crd2go.NewArray(crd2go.NewPrimitive("string", "string"))),
+		crd2go.NewGoField("ArrayOfObjects", crd2go.NewArray(
+			crd2go.NewStruct("arrayOfObjects", []*crd2go.GoField{
 				crd2go.NewGoField("Key", crd2go.NewPrimitive("string", "string")),
 				crd2go.NewGoField("Value", crd2go.NewPrimitive("int", "int")),
 			}),
 		)),
-		crd2go.NewGoField("RandomObject", crd2go.NewObject("RandomObject", []*crd2go.GoField{
+		crd2go.NewGoField("RandomObject", crd2go.NewStruct("RandomObject", []*crd2go.GoField{
 			crd2go.NewGoField("Field1", crd2go.NewPrimitive("string", "string")),
 			crd2go.NewGoField("Field2", crd2go.NewPrimitive("float64", "float64")),
 		})),
-		crd2go.NewGoField("LocalReference", crd2go.NewObject("K8sLocalReference", []*crd2go.GoField{
+		crd2go.NewGoField("LocalReference", crd2go.NewStruct("K8sLocalReference", []*crd2go.GoField{
 			crd2go.NewGoField("Name", crd2go.NewPrimitive("string", "string")),
 		})),
-		crd2go.NewGoField("CrossReference", crd2go.NewObject("K8sCrossReference", []*crd2go.GoField{
+		crd2go.NewGoField("CrossReference", crd2go.NewStruct("K8sCrossReference", []*crd2go.GoField{
 			crd2go.NewGoField("Name", crd2go.NewPrimitive("string", "string")),
 			crd2go.NewGoField("Namespace", crd2go.NewPrimitive("string", "string")),
 		})),
@@ -194,21 +218,31 @@ func TestBuildOpenAPIType(t *testing.T) {
 		crd2go.NewGoField("SimpleInteger", crd2go.NewPrimitive("int", "int")),
 	})
 
+	fmt.Printf("Generated GoType: %s\n", jsonize(goType))
+	fmt.Printf("Expected GoType: %s\n", jsonize(expectedType))
+
 	// Validate the generated type against the expected type
 	require.Equal(t, expectedType, goType)
 	assert.True(t, goType.Equal(expectedType), "Generated GoType does not match the expected GoType")
 }
 
+func jsonize(obj any) string {
+	js, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+	return string(js)
+}
 
 func CrossReference() *crd2go.GoType {
-	return crd2go.NewObject("K8sCrossReference", []*crd2go.GoField{
+	return crd2go.NewStruct("K8sCrossReference", []*crd2go.GoField{
 		crd2go.NewGoField("Name", crd2go.NewPrimitive("string", "string")),
 		crd2go.NewGoField("Namespace", crd2go.NewPrimitive("string", "string")),
 	})
 }
 
 func LocalReference() *crd2go.GoType {
-	return crd2go.NewObject("K8sLocalReference", []*crd2go.GoField{
+	return crd2go.NewStruct("K8sLocalReference", []*crd2go.GoField{
 		crd2go.NewGoField("Name", crd2go.NewPrimitive("string", "string")),
 	})
 }

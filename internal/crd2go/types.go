@@ -9,6 +9,24 @@ import (
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
+const (
+	StructKind = "struct"
+	ArrayKind  = "array"
+	StringKind = "string"
+	IntKind    = "int"
+	FloatKind  = "float64"
+	BoolKind   = "bool"
+)
+
+const (
+	OpenAPIObject  = "object"
+	OpenAPIArray   = "array"
+	OpenAPIString  = "string"
+	OpenAPIInteger = "integer"
+	OpenAPINumber  = "number"
+	OpenAPIBoolean = "boolean"
+)
+
 type GoType struct {
 	Name    string
 	Kind    string
@@ -16,9 +34,9 @@ type GoType struct {
 	Element *GoType
 }
 
-func (g *GoType) isPrimitive(kind string) bool {
-	switch kind {
-	case "string", "int", "float64", "bool":
+func (g *GoType) isPrimitive() bool {
+	switch g.Kind {
+	case StringKind, IntKind, FloatKind, BoolKind:
 		return true
 	default:
 		return false
@@ -55,23 +73,24 @@ func (gt *GoType) Signature() string {
 	if gt == nil {
 		return "nil"
 	}
-	if gt.Kind == "object" {
+	if gt.Kind == StructKind {
 		fieldSignatures := make([]string, len(gt.Fields))
 		for _, field := range gt.Fields {
 			fieldSignatures = append(fieldSignatures, field.Signature())
 		}
 		return fmt.Sprintf("{%s}", strings.Join(fieldSignatures, ","))
 	}
-	if gt.Kind == "array" {
+	if gt.Kind == ArrayKind {
 		return fmt.Sprintf("[%s]", gt.Element.Signature())
 	}
 	return fmt.Sprintf("%s(%s)", gt.Name, gt.Kind)
 }
 
 type GoField struct {
-	Comment string
-	Name    string
-	GoType  *GoType
+	Comment  string
+	Required bool
+	Name     string
+	GoType   *GoType
 }
 
 func NewGoField(name string, gt *GoType) *GoField {
@@ -92,19 +111,23 @@ func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 	if f.GoType == nil {
 		return fmt.Errorf("failed to rename type for field %s: GoType is nil", f.Name)
 	}
-	if f.GoType.isPrimitive(f.GoType.Kind) {
+	goType := f.GoType
+	for goType.Kind == ArrayKind {
+		goType = goType.Element
+	}
+	if goType.isPrimitive() {
 		return nil // primitive types are not to be renamed
 	}
-	if td.Has(f.GoType) {
-		existingType := td.bySiganture[f.GoType.Signature()]
+	if td.Has(goType) {
+		existingType := td.bySignature[goType.Signature()]
 		if existingType == nil {
 			return fmt.Errorf("failed to find existing type for %v", f)
 		}
-		f.GoType.Name = existingType.Name
+		goType.Name = existingType.Name
 		return nil
 	}
 
-	typeName := title(f.GoType.Name)
+	typeName := goType.Name
 	for i := len(parentNames) - 1; i >= 0; i-- {
 		_, used := td.Get(typeName)
 		if !used {
@@ -117,8 +140,8 @@ func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 	if used {
 		return fmt.Errorf("failed to find a free type name for type %v", f)
 	}
-	f.GoType.Name = typeName
-	td.Add(f.GoType)
+	goType.Name = typeName
+	td.Add(goType)
 
 	return nil
 }
@@ -130,31 +153,33 @@ func NewPrimitive(name, kind string) *GoType {
 	}
 }
 
-func NewArray(name string, element *GoType) *GoType {
+func NewArray(element *GoType) *GoType {
 	return &GoType{
-		Name:    name,
-		Kind:    "array",
+		Name:    "",
+		Kind:    ArrayKind,
 		Element: element,
 	}
 }
 
-func NewObject(name string, fields []*GoField) *GoType {
+func NewStruct(name string, fields []*GoField) *GoType {
 	return &GoType{
-		Name:   name,
-		Kind:   "object",
+		Name:   title(name),
+		Kind:   StructKind,
 		Fields: orderFieldsByName(fields),
 	}
 }
 
 type TypeDict struct {
-	bySiganture map[string]*GoType
+	bySignature map[string]*GoType
 	byName      map[string]*GoType
+	generated   map[string]bool
 }
 
-func NewTypeDict(goTypes ... *GoType) TypeDict {
+func NewTypeDict(goTypes ...*GoType) TypeDict {
 	td := TypeDict{
-		bySiganture: make(map[string]*GoType),
+		bySignature: make(map[string]*GoType),
 		byName:      make(map[string]*GoType),
+		generated:   make(map[string]bool),
 	}
 	for _, gt := range goTypes {
 		td.Add(gt)
@@ -162,19 +187,37 @@ func NewTypeDict(goTypes ... *GoType) TypeDict {
 	return td
 }
 
-func (d TypeDict) Has(gt *GoType) bool {
-	_, ok := d.bySiganture[gt.Signature()]
+func (td TypeDict) Has(gt *GoType) bool {
+	_, ok := td.bySignature[gt.Signature()]
 	return ok
 }
 
-func (d TypeDict) Get(name string) (*GoType, bool) {
-	gt, ok := d.byName[name]
+func (td TypeDict) Get(name string) (*GoType, bool) {
+	gt, ok := td.byName[name]
 	return gt, ok
 }
 
-func (d TypeDict) Add(gt *GoType) {
-	d.bySiganture[gt.Signature()] = gt
-	d.byName[gt.Name] = gt
+func (td TypeDict) Add(gt *GoType) {
+	titledName := title(gt.Name)
+	if gt.Name != titledName {
+		panic(fmt.Sprintf("type name %s is not titled", gt.Name))
+	}
+	td.bySignature[gt.Signature()] = gt
+	td.byName[gt.Name] = gt
+}
+
+func (td TypeDict) MarkGenerated(gt *GoType) {
+	if !td.Has(gt) {
+		td.Add(gt)
+	}
+	td.generated[gt.Name] = true
+}
+
+func (td TypeDict) WasGenerated(gt *GoType) bool {
+	if td.Has(gt) {
+		return td.generated[gt.Name]
+	}
+	return false
 }
 
 func orderFieldsByName(fields []*GoField) []*GoField {
@@ -186,11 +229,11 @@ func orderFieldsByName(fields []*GoField) []*GoField {
 
 func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *apiextensions.JSONSchemaProps) (*GoType, error) {
 	switch schema.Type {
-	case "object":
+	case OpenAPIObject:
 		return fromOpenAPIStruct(td, typeName, parents, schema)
-	case "array":
+	case OpenAPIArray:
 		return fromOpenAPIArray(td, typeName, schema)
-	case "string", "integer", "number", "boolean":
+	case OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean:
 		return fromOpenAPIPrimitive(schema.Type)
 	default:
 		return nil, fmt.Errorf("unsupported Open API type %q", schema.Type)
@@ -208,12 +251,13 @@ func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *a
 		}
 		field := NewGoField(title(key), fieldType)
 		field.Comment = props.Description
-		if err := field.RenameType(td, parents); err != nil {
+		field.Required = slices.Contains(schema.Required, key)
+		if err := field.RenameType(td, fieldsParents); err != nil {
 			return nil, fmt.Errorf("failed to rename field %v: %w", field, err)
 		}
 		fields = append(fields, field)
 	}
-	return NewObject(typeName, fields), nil
+	return NewStruct(typeName, fields), nil
 }
 
 func fromOpenAPIArray(td TypeDict, typeName string, schema *apiextensions.JSONSchemaProps) (*GoType, error) {
@@ -227,7 +271,7 @@ func fromOpenAPIArray(td TypeDict, typeName string, schema *apiextensions.JSONSc
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse array %s element type: %w", typeName, err)
 	}
-	return NewArray(typeName, elementType), nil
+	return NewArray(elementType), nil
 }
 
 func fromOpenAPIPrimitive(kind string) (*GoType, error) {
@@ -240,15 +284,25 @@ func fromOpenAPIPrimitive(kind string) (*GoType, error) {
 
 func openAPIKindtoGoType(kind string) (string, error) {
 	switch kind {
-	case "string":
-		return "string", nil
-	case "integer":
-		return "int", nil
-	case "number":
-		return "float64", nil
-	case "boolean":
-		return "bool", nil
+	case OpenAPIString:
+		return StringKind, nil
+	case OpenAPIInteger:
+		return IntKind, nil
+	case OpenAPINumber:
+		return FloatKind, nil
+	case OpenAPIBoolean:
+		return BoolKind, nil
 	default:
-		return "", fmt.Errorf("unsuppoerted Open API kind %s", kind)
+		return "", fmt.Errorf("unsupported Open API kind %s", kind)
 	}
+}
+
+// orderedkeys returns a sorted slice of keys from the given map
+func orderedkeys[T any](m map[string]T) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	return keys
 }

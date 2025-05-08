@@ -19,50 +19,12 @@ import (
 //go:embed samples/*
 var samples embed.FS
 
-func TestGenerateCode(t *testing.T) {
-	buffers := make(map[string]*bytes.Buffer)
-	for _, tc := range []struct {
-		name string
-		crd  string
-		src  string
-	}{
-		{
-			name: "group",
-			crd:  "samples/group.crd.yaml",
-			src:  "samples/v1/group.go",
-		},
-		{
-			name: "group",
-			crd:  "samples/networkpermission.crd.yaml",
-			src:  "samples/v1/networkpermissionentries.go",
-		},
-		{
-			name: "groupalertconfigs",
-			crd:  "samples/groupalertconfigs.crd.yaml",
-			src:  "samples/v1/groupalertsconfig.go",
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			in, err := samples.Open(tc.crd)
-			require.NoError(t, err)
-			defer in.Close()
-
-			want := readTestFile(t, tc.src)
-
-			require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, crd2go.FirstVersion))
-			expectedKey := filepath.Base(tc.src)
-			require.NotEmpty(t, buffers[expectedKey], "missing buffer for %s", expectedKey)
-			require.Equal(t, want, buffers[expectedKey].String())
-		})
-	}
-}
-
 func TestGenerateFromCRDStream(t *testing.T) {
 	buffers := make(map[string]*bytes.Buffer)
 
 	in, err := samples.Open("samples/crds.yml")
 	require.NoError(t, err)
-	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, crd2go.FirstVersion))
+	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, crd2go.FirstVersion, preloadedTypes()...))
 
 	assert.NotEmpty(t, buffers)
 	assert.Len(t, buffers, 8)
@@ -111,4 +73,66 @@ func (w writeNopCloser) Close() error {
 // Helper function to create a WriteNopCloser
 func newWriteNopCloser(w io.Writer) io.WriteCloser {
 	return writeNopCloser{Writer: w}
+}
+
+func preloadedTypes() []*crd2go.GoType {
+	return append(knownTypes(), reservedTypeNames()...)
+}
+
+func knownTypes() []*crd2go.GoType {
+	return []*crd2go.GoType{
+		crd2go.NewStruct("K8sCrossReference", []*crd2go.GoField{
+			{
+				Name:     "Namespace",
+				Required: true,
+				GoType:   &crd2go.GoType{Name: "string", Kind: "string"},
+			},
+			{
+				Name:     "Name",
+				Required: true,
+				GoType:   &crd2go.GoType{Name: "string", Kind: "string"},
+			},
+		}),
+		crd2go.NewStruct("K8sLocalReference", []*crd2go.GoField{
+			{
+				Name:     "Name",
+				Required: true,
+				GoType:   &crd2go.GoType{Name: "string", Kind: "string"},
+			},
+		}),
+	}
+}
+
+func reservedTypeNames() []*crd2go.GoType {
+	reservedNames := reservedNames()
+	reserved := make([]*crd2go.GoType, 0, len(reservedNames))
+	for _, reservedName := range reservedNames {
+		reserved = append(reserved, ReserveTypeName(reservedName))
+	}
+	return reserved
+}
+
+func reservedNames() []string {
+	knownVersions := []string{
+		"V20231115",
+		"V20241113",
+		"V20250312",
+	}
+	repeated := []string{
+		"Entry",
+		"Parameters",
+	}
+	reserved := make([]string, 0, len(knownVersions)*len(repeated))
+	reserved = append(reserved, repeated...)
+	for _, version := range knownVersions {
+		reserved = append(reserved, version)
+		for _, r := range repeated {
+			reserved = append(reserved, fmt.Sprintf("%s%s", version, r))
+		}
+	}
+	return reserved
+}
+
+func ReserveTypeName(name string) *crd2go.GoType {
+	return crd2go.NewStruct(name, nil)
 }

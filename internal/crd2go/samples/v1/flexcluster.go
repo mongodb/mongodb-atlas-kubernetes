@@ -30,7 +30,7 @@ type FlexClusterSpecV20241113 struct {
 
 	// Parameters The parameter fields of the flexcluster resource spec. These fields
 	// are used when creating flexclusters only.
-	Parameters *FlexClusterSpecV20241113Parameters `json:"parameters,omitempty"`
+	Parameters *NetworkPermissionEntriesSpecV20250312Parameters `json:"parameters,omitempty"`
 }
 
 type FlexClusterSpecV20241113Entry struct {
@@ -39,11 +39,11 @@ type FlexClusterSpecV20241113Entry struct {
 
 	// ProviderSettings Group of cloud provider settings that configure the provisioned
 	// MongoDB flex cluster.
-	ProviderSettings FlexClusterSpecV20241113EntryProviderSettings `json:"providerSettings"`
+	ProviderSettings ProviderSettings `json:"providerSettings"`
 
 	// Tags List that contains key-value pairs between 1 to 255 characters in length
 	// for tagging and categorizing the instance.
-	Tags *[]FlexClusterSpecV20241113EntryTags `json:"tags,omitempty"`
+	Tags *[]Tags `json:"tags,omitempty"`
 
 	// TerminationProtectionEnabled Flag that indicates whether termination protection
 	// is enabled on the cluster. If set to `true`, MongoDB Cloud won't delete the
@@ -51,7 +51,7 @@ type FlexClusterSpecV20241113Entry struct {
 	TerminationProtectionEnabled *bool `json:"terminationProtectionEnabled,omitempty"`
 }
 
-type FlexClusterSpecV20241113EntryProviderSettings struct {
+type ProviderSettings struct {
 	// BackingProviderName Cloud service provider on which MongoDB Cloud provisioned
 	// the flex cluster.
 	BackingProviderName string `json:"backingProviderName"`
@@ -65,67 +65,26 @@ type FlexClusterSpecV20241113EntryProviderSettings struct {
 	RegionName string `json:"regionName"`
 }
 
-type FlexClusterSpecV20241113EntryTags struct {
-	// Key Constant that defines the set of the tag. For example, `environment` in the
-	// `environment : production` tag.
-	Key string `json:"key"`
-
-	// Value Variable that belongs to the set of the tag. For example, `production` in
-	// the `environment : production` tag.
-	Value string `json:"value"`
-}
-
-type FlexClusterSpecV20241113Parameters struct {
-	/*
-	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
-
-	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-	*/
-	GroupId *string `json:"groupId,omitempty"`
-}
-
 type FlexClusterStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]FlexClusterStatusConditions `json:"conditions,omitempty"`
+	Conditions *[]Conditions `json:"conditions,omitempty"`
 
 	// V20241113 The last observed Atlas state of the flexcluster resource for version
 	// v20241113.
 	V20241113 *FlexClusterStatusV20241113 `json:"v20241113,omitempty"`
 }
 
-type FlexClusterStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to
-	// another.
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
-
-	// Message A human readable message indicating details about the transition.
-	Message *string `json:"message,omitempty"`
-
-	// ObservedGeneration observedGeneration represents the .metadata.generation that
-	// the condition was set based upon.
-	ObservedGeneration *int `json:"observedGeneration,omitempty"`
-
-	// Reason The reason for the condition's last transition.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the condition, one of True, False, Unknown.
-	Status string `json:"status"`
-
-	// Type Type of condition.
-	Type string `json:"type"`
-}
-
 type FlexClusterStatusV20241113 struct {
 	// BackupSettings Flex backup configuration
-	BackupSettings *FlexClusterStatusV20241113BackupSettings `json:"backupSettings,omitempty"`
+	BackupSettings *DiskGB `json:"backupSettings,omitempty"`
 
 	// ClusterType Flex cluster topology.
 	ClusterType *string `json:"clusterType,omitempty"`
 
 	// ConnectionStrings Collection of Uniform Resource Locators that point to the
 	// MongoDB database.
-	ConnectionStrings *FlexClusterStatusV20241113ConnectionStrings `json:"connectionStrings,omitempty"`
+	ConnectionStrings *V20241113ConnectionStrings `json:"connectionStrings,omitempty"`
 
 	// CreateDate Date and time when MongoDB Cloud created this instance. This
 	// parameter expresses its value in ISO 8601 format in UTC.
@@ -145,7 +104,7 @@ type FlexClusterStatusV20241113 struct {
 
 	// ProviderSettings Group of cloud provider settings that configure the provisioned
 	// MongoDB flex cluster.
-	ProviderSettings FlexClusterStatusV20241113ProviderSettings `json:"providerSettings"`
+	ProviderSettings V20241113ProviderSettings `json:"providerSettings"`
 
 	// StateName Human-readable label that indicates the current operating condition of
 	// this instance.
@@ -155,13 +114,7 @@ type FlexClusterStatusV20241113 struct {
 	VersionReleaseSystem *string `json:"versionReleaseSystem,omitempty"`
 }
 
-type FlexClusterStatusV20241113BackupSettings struct {
-	// Enabled Flag that indicates whether backups are performed for this flex cluster.
-	// Backup uses flex cluster backups.
-	Enabled *bool `json:"enabled,omitempty"`
-}
-
-type FlexClusterStatusV20241113ConnectionStrings struct {
+type V20241113ConnectionStrings struct {
 	// Standard Public connection string that you can use to connect to this cluster.
 	// This connection string uses the mongodb:// protocol.
 	Standard *string `json:"standard,omitempty"`
@@ -171,7 +124,7 @@ type FlexClusterStatusV20241113ConnectionStrings struct {
 	StandardSrv *string `json:"standardSrv,omitempty"`
 }
 
-type FlexClusterStatusV20241113ProviderSettings struct {
+type V20241113ProviderSettings struct {
 	// BackingProviderName Cloud service provider on which MongoDB Cloud provisioned
 	// the flex cluster.
 	BackingProviderName *string `json:"backingProviderName,omitempty"`
