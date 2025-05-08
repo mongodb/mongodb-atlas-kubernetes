@@ -81,37 +81,9 @@ type NetworkPermissionEntriesSpecV20250312Parameters struct {
 type NetworkPermissionEntriesStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]NetworkPermissionEntriesStatusConditions `json:"conditions,omitempty"`
+	Conditions *[]Conditions `json:"conditions,omitempty"`
 
 	// V20250312 The last observed Atlas state of the networkpermissionentries resource
 	// for version v20250312.
-	V20250312 *NetworkPermissionEntriesStatusV20250312 `json:"v20250312,omitempty"`
-}
-
-type NetworkPermissionEntriesStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to
-	// another.
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
-
-	// Message A human readable message indicating details about the transition.
-	Message *string `json:"message,omitempty"`
-
-	// ObservedGeneration observedGeneration represents the .metadata.generation that
-	// the condition was set based upon.
-	ObservedGeneration *int `json:"observedGeneration,omitempty"`
-
-	// Reason The reason for the condition's last transition.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the condition, one of True, False, Unknown.
-	Status string `json:"status"`
-
-	// Type Type of condition.
-	Type string `json:"type"`
-}
-
-type NetworkPermissionEntriesStatusV20250312 struct {
-	// GroupId Unique 24-hexadecimal digit string that identifies the project that
-	// contains the IP access list to which you want to add one or more entries.
-	GroupId *string `json:"groupId,omitempty"`
+	V20250312 *NetworkPermissionEntriesSpecV20250312Parameters `json:"v20250312,omitempty"`
 }

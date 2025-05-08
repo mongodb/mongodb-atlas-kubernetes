@@ -51,7 +51,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ApiKeyRef *ThirdPartyIntegrationSpecV20241113EntryApiKeyRef `json:"apiKeyRef,omitempty"`
+	ApiKeyRef *ApiTokenRef `json:"apiKeyRef,omitempty"`
 
 	/*
 	   ApiTokenRef SENSITIVE FIELD
@@ -68,7 +68,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   **IMPORTANT**: Slack integrations now use the OAuth2 verification method and must  be initially configured, or updated from a legacy integration, through the Atlas  third-party service integrations page. Legacy tokens will soon no longer be  supported.
 	*/
-	ApiTokenRef *ThirdPartyIntegrationSpecV20241113EntryApiTokenRef `json:"apiTokenRef,omitempty"`
+	ApiTokenRef *ApiTokenRef `json:"apiTokenRef,omitempty"`
 
 	// ChannelName Name of the Slack channel to which MongoDB Cloud sends alert
 	// notifications.
@@ -88,7 +88,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 	   **IMPORTANT**: Effective Wednesday, June 16th, 2021, New Relic no longer supports the plugin-based integration with MongoDB. We do not recommend that you sign up for the plugin-based integration.
 	   To learn more, see the <a href="https://discuss.newrelic.com/t/new-relic-plugin-eol-wednesday-june-16th-2021/127267" target="_blank">New Relic Plugin EOL Statement</a> Consider configuring an alternative monitoring integration before June 16th to maintain visibility into your MongoDB deployments.
 	*/
-	LicenseKeyRef *ThirdPartyIntegrationSpecV20241113EntryLicenseKeyRef `json:"licenseKeyRef,omitempty"`
+	LicenseKeyRef *ApiTokenRef `json:"licenseKeyRef,omitempty"`
 
 	/*
 	   MicrosoftTeamsWebhookUrlRef SENSITIVE FIELD
@@ -99,7 +99,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a Microsoft Teams notification, the URL appears partially redacted.
 	*/
-	MicrosoftTeamsWebhookUrlRef *ThirdPartyIntegrationSpecV20241113EntryMicrosoftTeamsWebhookUrlRef `json:"microsoftTeamsWebhookUrlRef,omitempty"`
+	MicrosoftTeamsWebhookUrlRef *ApiTokenRef `json:"microsoftTeamsWebhookUrlRef,omitempty"`
 
 	/*
 	   PasswordRef SENSITIVE FIELD
@@ -108,7 +108,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   Password needed to allow MongoDB Cloud to access your Prometheus account.
 	*/
-	PasswordRef *ThirdPartyIntegrationSpecV20241113EntryPasswordRef `json:"passwordRef,omitempty"`
+	PasswordRef *ApiTokenRef `json:"passwordRef,omitempty"`
 
 	/*
 	   ReadTokenRef SENSITIVE FIELD
@@ -117,7 +117,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   Query key used to access your New Relic account.
 	*/
-	ReadTokenRef *ThirdPartyIntegrationSpecV20241113EntryReadTokenRef `json:"readTokenRef,omitempty"`
+	ReadTokenRef *ApiTokenRef `json:"readTokenRef,omitempty"`
 
 	// Region PagerDuty region that indicates the API Uniform Resource Locator (URL) to
 	// use.
@@ -130,7 +130,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   Routing key associated with your Splunk On-Call account.
 	*/
-	RoutingKeyRef *ThirdPartyIntegrationSpecV20241113EntryRoutingKeyRef `json:"routingKeyRef,omitempty"`
+	RoutingKeyRef *ApiTokenRef `json:"routingKeyRef,omitempty"`
 
 	/*
 	   SecretRef SENSITIVE FIELD
@@ -141,7 +141,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
 	*/
-	SecretRef *ThirdPartyIntegrationSpecV20241113EntrySecretRef `json:"secretRef,omitempty"`
+	SecretRef *ApiTokenRef `json:"secretRef,omitempty"`
 
 	// ServiceDiscovery Desired method to discover the Prometheus service.
 	ServiceDiscovery *string `json:"serviceDiscovery,omitempty"`
@@ -159,7 +159,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ServiceKeyRef *ThirdPartyIntegrationSpecV20241113EntryServiceKeyRef `json:"serviceKeyRef,omitempty"`
+	ServiceKeyRef *ApiTokenRef `json:"serviceKeyRef,omitempty"`
 
 	// TeamName Human-readable label that identifies your Slack team. Set this
 	// parameter when you configure a legacy Slack integration.
@@ -179,7 +179,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the URL appears partially redacted.
 	*/
-	UrlRef *ThirdPartyIntegrationSpecV20241113EntryUrlRef `json:"urlRef,omitempty"`
+	UrlRef *ApiTokenRef `json:"urlRef,omitempty"`
 
 	// Username Human-readable label that identifies your Prometheus incoming webhook.
 	Username *string `json:"username,omitempty"`
@@ -191,106 +191,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   Insert key associated with your New Relic account.
 	*/
-	WriteTokenRef *ThirdPartyIntegrationSpecV20241113EntryWriteTokenRef `json:"writeTokenRef,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryApiKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "apiKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryApiTokenRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "apiToken".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryLicenseKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "licenseKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryMicrosoftTeamsWebhookUrlRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "microsoftTeamsWebhookUrl".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryPasswordRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "password".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryReadTokenRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "readToken".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryRoutingKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "routingKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntrySecretRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "secret".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryServiceKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "serviceKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryUrlRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "url".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113EntryWriteTokenRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "writeToken".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
+	WriteTokenRef *ApiTokenRef `json:"writeTokenRef,omitempty"`
 }
 
 type ThirdPartyIntegrationSpecV20241113Parameters struct {
@@ -309,33 +210,11 @@ type ThirdPartyIntegrationSpecV20241113Parameters struct {
 type ThirdPartyIntegrationStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]ThirdPartyIntegrationStatusConditions `json:"conditions,omitempty"`
+	Conditions *[]Conditions `json:"conditions,omitempty"`
 
 	// V20241113 The last observed Atlas state of the thirdpartyintegration resource
 	// for version v20241113.
 	V20241113 *ThirdPartyIntegrationStatusV20241113 `json:"v20241113,omitempty"`
-}
-
-type ThirdPartyIntegrationStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to
-	// another.
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
-
-	// Message A human readable message indicating details about the transition.
-	Message *string `json:"message,omitempty"`
-
-	// ObservedGeneration observedGeneration represents the .metadata.generation that
-	// the condition was set based upon.
-	ObservedGeneration *int `json:"observedGeneration,omitempty"`
-
-	// Reason The reason for the condition's last transition.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the condition, one of True, False, Unknown.
-	Status string `json:"status"`
-
-	// Type Type of condition.
-	Type string `json:"type"`
 }
 
 type ThirdPartyIntegrationStatusV20241113 struct {
