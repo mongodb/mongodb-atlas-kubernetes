@@ -58,14 +58,14 @@ type GroupSpecV20231115Entry struct {
 
 	// Tags List that contains key-value pairs between 1 to 255 characters in length
 	// for tagging and categorizing the project.
-	Tags *[]GroupSpecV20231115EntryTags `json:"tags,omitempty"`
+	Tags *[]Tags `json:"tags,omitempty"`
 
 	// WithDefaultAlertsSettings Flag that indicates whether to create the project with
 	// default alert settings.
 	WithDefaultAlertsSettings *bool `json:"withDefaultAlertsSettings,omitempty"`
 }
 
-type GroupSpecV20231115EntryTags struct {
+type Tags struct {
 	// Key Constant that defines the set of the tag. For example, `environment` in the
 	// `environment : production` tag.
 	Key string `json:"key"`
@@ -86,14 +86,14 @@ type GroupSpecV20231115Parameters struct {
 type GroupStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]GroupStatusConditions `json:"conditions,omitempty"`
+	Conditions *[]Conditions `json:"conditions,omitempty"`
 
 	// V20231115 The last observed Atlas state of the group resource for version
 	// v20231115.
 	V20231115 *GroupStatusV20231115 `json:"v20231115,omitempty"`
 }
 
-type GroupStatusConditions struct {
+type Conditions struct {
 	// LastTransitionTime Last time the condition transitioned from one status to
 	// another.
 	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`

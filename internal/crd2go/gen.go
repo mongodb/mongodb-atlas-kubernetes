@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -31,7 +29,7 @@ type CodeWriterFunc func(*apiextensions.CustomResourceDefinition) (io.WriteClose
 
 func CodeFileForCRDAtPath(dir string) CodeWriterFunc {
 	return func(crd *apiextensions.CustomResourceDefinition) (io.WriteCloser, error) {
-		crdName := lowercase(crd.Spec.Names.Kind)
+		crdName := strings.ToLower(crd.Spec.Names.Kind)
 		srcFile := filepath.Join(dir, fmt.Sprintf("%s.go", crdName))
 		w, err := os.Create(srcFile)
 		if err != nil {
@@ -41,9 +39,10 @@ func CodeFileForCRDAtPath(dir string) CodeWriterFunc {
 	}
 }
 
-func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string) error {
+func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string, preloadedTypes ...*GoType) error {
 	generated := false
 	scanner := bufio.NewScanner(r)
+	td := NewTypeDict(preloadedTypes...)
 	for {
 		crd, err := ParseCRD(scanner)
 		if errors.Is(err, io.EOF) {
@@ -60,7 +59,7 @@ func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string) error {
 			return fmt.Errorf("failed to get writer for CRD %s: %w", crd.Name, err)
 		}
 		defer w.Close()
-		stmt, err := generate(crd, version)
+		stmt, err := generateCRD(td, crd, version)
 		if err != nil {
 			return fmt.Errorf("failed to generate CRD code: %w", err)
 		}
@@ -71,7 +70,7 @@ func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string) error {
 	}
 }
 
-func generate(crd *apiextensions.CustomResourceDefinition, version string) (*jen.File, error) {
+func generateCRD(td TypeDict, crd *apiextensions.CustomResourceDefinition, version string) (*jen.File, error) {
 	v := selectVersion(&crd.Spec, version)
 	if v == nil {
 		if version == "" {
@@ -88,14 +87,14 @@ func generate(crd *apiextensions.CustomResourceDefinition, version string) (*jen
 		),
 	)
 
-	if err := generateCRDRootObject(f, crd, v); err != nil {
+	if err := generateCRDRootObject(f, td, crd, v); err != nil {
 		return nil, fmt.Errorf("failed to generate root object: %w", err)
 	}
 	return f, nil
 }
 
 // generateCRDRootObject generates the root object for the CRD
-func generateCRDRootObject(f *jen.File, crd *apiextensions.CustomResourceDefinition, v *apiextensions.CustomResourceDefinitionVersion) error {
+func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomResourceDefinition, v *apiextensions.CustomResourceDefinitionVersion) error {
 	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object").Line()
 
 	specType := fmt.Sprintf("%sSpec", crd.Spec.Names.Kind)
@@ -110,14 +109,22 @@ func generateCRDRootObject(f *jen.File, crd *apiextensions.CustomResourceDefinit
 	)
 
 	specSchema := v.Schema.OpenAPIV3Schema.Properties["spec"]
-	specCode, err := generateOpenAPIType(specType, &specSchema)
+	spec, err := FromOpenAPIType(td, specType, []string{crd.Spec.Names.Kind}, &specSchema)
+	if err != nil {
+		return fmt.Errorf("failed to generate spec type: %w", err)
+	}
+	specCode, err := generateType(td, spec)
 	if err != nil {
 		return fmt.Errorf("failed to generate spec code: %w", err)
 	}
 	code.Add(specCode)
 
 	statusSchema := v.Schema.OpenAPIV3Schema.Properties["status"]
-	statusCode, err := generateOpenAPIType(statusType, &statusSchema)
+	status, err := FromOpenAPIType(td, statusType, []string{crd.Spec.Names.Kind}, &statusSchema)
+	if err != nil {
+		return fmt.Errorf("failed to generate status code: %w", err)
+	}
+	statusCode, err := generateType(td, status)
 	if err != nil {
 		return fmt.Errorf("failed to generate status code: %w", err)
 	}
@@ -125,143 +132,109 @@ func generateCRDRootObject(f *jen.File, crd *apiextensions.CustomResourceDefinit
 	return nil
 }
 
-// generateOpenAPIType generates a Go code type statement for the given OpenAPI schema
-func generateOpenAPIType(typeName string, schema *apiextensions.JSONSchemaProps) (*jen.Statement, error) {
-	switch schema.Type {
-	case "object":
-		return generateOpenAPIStruct(typeName, schema)
-	default:
-		return nil, fmt.Errorf("unsupported Open API type %q", schema.Type)
+func generateType(td TypeDict, t *GoType) (*jen.Statement, error) {
+	if t.Kind == StructKind {
+		return generateStructType(td, t)
 	}
+	if t.Kind == ArrayKind {
+		return generateArrayType(td, t)
+	}
+	return nil, fmt.Errorf("unsupported type %q", t.Kind)
 }
 
-// generateOpenAPIStruct generates a Go struct for the given OpenAPI schema
-func generateOpenAPIStruct(typeName string, schema *apiextensions.JSONSchemaProps) (*jen.Statement, error) {
-	subtypes := []jen.Code{}
-	fields := []jen.Code{}
-	for _, key := range orderedkeys(schema.Properties) {
-		value := schema.Properties[key]
-		id := title(fmt.Sprintf("%s%s", typeName, title(key)))
-
-		fields = setDocComment(fields, title(key), value.Description)
-
-		field, err := fieldFor(id, key, &value, schema)
+func generateStructType(td TypeDict, t *GoType) (*jen.Statement, error) {
+	fields := make([]jen.Code, 0, len(t.Fields))
+	subtypes := make([]jen.Code, 0, len(t.Fields))
+	for _, field := range t.Fields {
+		fieldCode, err := generateField(field)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse field %s: %w", id, err)
+			return nil, fmt.Errorf("failed to generate field %s: %w", field.Name, err)
 		}
-		fields = append(fields, field)
-
-		valueSubtypes, err := subtypesForValue(id, &value)
+		fields = append(fields, fieldCode)
+		subtype, err := generateSubtype(td, field.GoType)
 		if err != nil {
-			return nil, fmt.Errorf("failed to extract complex subtypes for value %s: %w", id, err)
-		}
-		subtypes = append(subtypes, valueSubtypes...)
-	}
-	return buildStruct(typeName, fields, subtypes), nil
-}
-
-// setDocComment sets the documentation comment for the given fields
-func setDocComment(fields []jen.Code, name, comment string) []jen.Code {
-	if comment == "" {
-		return fields
-	}
-	goComment := fmt.Sprintf("%s %s", name, comment)
-	lines := formatComment(goComment, CommentMaxWidth)
-	for _, line := range lines {
-		fields = append(fields, jen.Comment(line))
-	}
-	return fields
-}
-
-// fieldFor generates a Go code statement for the given field name and schema
-func fieldFor(id, tagValue string, value *apiextensions.JSONSchemaProps, schema *apiextensions.JSONSchemaProps) (jen.Code, error) {
-	typeSuffix, err := namedType(id, value, slices.Contains(schema.Required, tagValue))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse schema type: %w", err)
-	}
-	entry := jen.Id(title(tagValue)).Add(typeSuffix)
-	if !slices.Contains(schema.Required, tagValue) {
-		tagValue = strings.Join([]string{tagValue, "omitempty"}, ",")
-	}
-	return entry.Tag(map[string]string{"json": tagValue}).Line(), nil
-}
-
-// substypesForValue generates subtypes for the given Props value
-func subtypesForValue(id string, value *apiextensions.JSONSchemaProps) ([]jen.Code, error) {
-	subtypes := []jen.Code{}
-	for _, complexSubtype := range complexTypes(value) {
-		subtype, err := generateOpenAPIType(id, complexSubtype)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse schema type: %w", err)
+			return nil, fmt.Errorf("failed to generate field %s subtype: %w", field.Name, err)
 		}
 		subtypes = append(subtypes, subtype)
 	}
-	return subtypes, nil
+	return jen.Line().Line().Type().Id(t.Name).Struct(fields...).Add(subtypes...), nil
 }
 
-// buildStruct generates a Go struct with the given type name, fields, and subtypes
-func buildStruct(typeName string, fields []jen.Code, subtypes []jen.Code) *jen.Statement {
-	return jen.Line().Line().Type().Id(typeName).Struct(fields...).Add(subtypes...)
-}
-
-// namedType generates a Go code statement for the given name and schema
-func namedType(name string, schema *apiextensions.JSONSchemaProps, required bool) (*jen.Statement, error) {
-	switch schema.Type {
-	case "array":
-		if schema.Items != nil && schema.Items.Schema != nil {
-			itemType, err := namedType(name, schema.Items.Schema, true)
-			if err != nil {
-				return nil, fmt.Errorf("unsupported array element type for %q: %w", name, err)
-			}
-			return requiredPrefix(required).Index().Add(itemType), nil
-		}
-		return nil, fmt.Errorf("unsupported array schema for %q", name)
-	case "boolean":
-		return requiredPrefix(required).Bool(), nil
-	case "integer":
-		return requiredPrefix(required).Int(), nil
-	case "number":
-		return requiredPrefix(required).Float64(), nil
-	case "object":
-		return requiredPrefix(required).Id(title(name)), nil
-	case "string":
-		return requiredPrefix(required).String(), nil
-	default:
-		return nil, fmt.Errorf("unsupported Open API type %q conversion to Go type", schema.Type)
+func generateArrayType(td TypeDict, t *GoType) (*jen.Statement, error) {
+	elementType, err := generateSubtype(td, t.Element)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate array subtype: %w", err)
 	}
+	return elementType, nil
 }
 
-// requiredPrefix generates a code statement indicating whether a field is required or optional
-func requiredPrefix(required bool) *jen.Statement {
+func generateSubtype(td TypeDict, t *GoType) (*jen.Statement, error) {
+	if !t.isPrimitive() && !td.WasGenerated(t) {
+		subtypeCode, err := generateType(td, t)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate subtype %s: %w", t.Name, err)
+		}
+		td.MarkGenerated(t)
+		return subtypeCode, nil
+	}
+	return jen.Null(), nil
+}
+
+func generateField(f *GoField) (jen.Code, error) {
+	if f.GoType == nil {
+		return nil, fmt.Errorf("field %q has no Go type", f.Name)
+	}
+	typeRefCode, err := qualifyRequired(generateTypeRef(f.GoType), f.Required)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate field type: %w", err)
+	}
+	fieldCode := jen.Null()
+	if f.Comment != "" {
+		fieldCode = generateFieldComment(fieldCode, f.Name, f.Comment)
+	}
+	return fieldCode.Id(f.Name).Add(typeRefCode).Add(generateJSONTag(f)).Line(), nil
+}
+
+func generateFieldComment(code *jen.Statement, name, comment string) *jen.Statement {
+	goComment := fmt.Sprintf("%s %s", name, comment)
+	lines := formatComment(goComment, CommentMaxWidth)
+	for _, line := range lines {
+		code.Add(jen.Comment(line).Line())
+	}
+	return code
+}
+
+func qualifyRequired(typeRef *jen.Statement, required bool) (*jen.Statement, error) {
 	if required {
-		return jen.Null()
+		return typeRef, nil
 	}
-	return jen.Op("*")
+	return jen.Op("*").Add(typeRef), nil
 }
 
-// complexTypes returns a slice of JSONSchemaProps that represent complex types (objects or arrays) in the schema
-func complexTypes(schema *apiextensions.JSONSchemaProps) []*apiextensions.JSONSchemaProps {
-	if strings.Contains(schema.Description, "atlas-org-roles") {
-		log.Print("found it")
-	}
-	switch schema.Type {
-	case "object":
-		return []*apiextensions.JSONSchemaProps{schema}
-	case "array":
-		if schema.Items.Schema != nil {
-			return complexTypes(schema.Items.Schema)
-		}
-		schemas := []*apiextensions.JSONSchemaProps{}
-		for _, schema := range schema.Items.JSONSchemas {
-			schemas = append(schemas, complexTypes(&schema)...)
-		}
-		if len(schemas) == 0 {
-			return nil
-		}
-		return schemas
+func generateTypeRef(t *GoType) *jen.Statement {
+	switch t.Kind {
+	case StringKind:
+		return jen.String()
+	case IntKind:
+		return jen.Int()
+	case FloatKind:
+		return jen.Float64()
+	case BoolKind:
+		return jen.Bool()
+	case ArrayKind:
+		return jen.Index().Add(generateTypeRef(t.Element))
 	default:
-		return nil
+		return jen.Id(title(t.Name))
 	}
+}
+
+func generateJSONTag(f *GoField) *jen.Statement {
+	name := untitle(f.Name)
+	jsTag := fmt.Sprintf("%s,omitempty", name)
+	if f.Required {
+		jsTag = fmt.Sprintf("%s", name)
+	}
+	return jen.Tag(map[string]string{"json": jsTag})
 }
 
 // selectVersion returns the version from the CRD spec that matches the given version string
@@ -282,22 +255,18 @@ func selectVersion(spec *apiextensions.CustomResourceDefinitionSpec, version str
 
 // title capitalizes the first letter of a string and returns it using Go cases library
 func title(s string) string {
+	if s == "" {
+		return ""
+	}
 	return cases.Upper(language.English).String(s[0:1]) + s[1:]
 }
 
-// lowercase converts a string to lowercase using Go cases library
-func lowercase(s string) string {
-	return cases.Lower(language.English).String(s)
-}
-
-// orderedkeys returns a sorted slice of keys from the given map
-func orderedkeys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
+// untitle de-capitalizes the first letter of a string and returns it using Go cases library
+func untitle(s string) string {
+	if s == "" {
+		return ""
 	}
-	slices.Sort(keys)
-	return keys
+	return cases.Lower(language.English).String(s[0:1]) + s[1:]
 }
 
 // formatComment formats a comment string to fit within a specified width

@@ -30,7 +30,7 @@ type ClusterSpecV20231115 struct {
 
 	// Parameters The parameter fields of the cluster resource spec. These fields are
 	// used when creating clusters only.
-	Parameters *ClusterSpecV20231115Parameters `json:"parameters,omitempty"`
+	Parameters *NetworkPermissionEntriesSpecV20250312Parameters `json:"parameters,omitempty"`
 }
 
 type ClusterSpecV20231115Entry struct {
@@ -55,7 +55,7 @@ type ClusterSpecV20231115Entry struct {
 
 	// BiConnector Settings needed to configure the MongoDB Connector for Business
 	// Intelligence for this cluster.
-	BiConnector *ClusterSpecV20231115EntryBiConnector `json:"biConnector,omitempty"`
+	BiConnector *BiConnector `json:"biConnector,omitempty"`
 
 	// ClusterType Configuration of nodes that comprise the cluster.
 	ClusterType *string `json:"clusterType,omitempty"`
@@ -85,7 +85,7 @@ type ClusterSpecV20231115Entry struct {
 
 	   Cluster labels are deprecated and will be removed in a future release. We strongly recommend that you use [resource tags](https://dochub.mongodb.org/core/add-cluster-tag-atlas) instead.
 	*/
-	Labels *[]ClusterSpecV20231115EntryLabels `json:"labels,omitempty"`
+	Labels *[]Tags `json:"labels,omitempty"`
 
 	// MongoDBMajorVersion Major MongoDB version of the cluster. MongoDB Cloud deploys
 	// the cluster with the latest stable release of the specified version.
@@ -105,7 +105,7 @@ type ClusterSpecV20231115Entry struct {
 	// Global Clusters, each object in the array represents a zone where your clusters
 	// nodes deploy. For non-Global sharded clusters and replica sets, this array has
 	// one object representing where your clusters nodes deploy.
-	ReplicationSpecs *[]ClusterSpecV20231115EntryReplicationSpecs `json:"replicationSpecs,omitempty"`
+	ReplicationSpecs *[]ReplicationSpecs `json:"replicationSpecs,omitempty"`
 
 	// RootCertType Root Certificate Authority that MongoDB Cloud cluster uses. MongoDB
 	// Cloud supports Internet Security Research Group.
@@ -113,7 +113,7 @@ type ClusterSpecV20231115Entry struct {
 
 	// Tags List that contains key-value pairs between 1 to 255 characters in length
 	// for tagging and categorizing the cluster.
-	Tags *[]ClusterSpecV20231115EntryTags `json:"tags,omitempty"`
+	Tags *[]Tags `json:"tags,omitempty"`
 
 	// TerminationProtectionEnabled Flag that indicates whether termination protection
 	// is enabled on the cluster. If set to `true`, MongoDB Cloud won't delete the
@@ -125,7 +125,7 @@ type ClusterSpecV20231115Entry struct {
 	VersionReleaseSystem *string `json:"versionReleaseSystem,omitempty"`
 }
 
-type ClusterSpecV20231115EntryBiConnector struct {
+type BiConnector struct {
 	// Enabled Flag that indicates whether MongoDB Connector for Business Intelligence
 	// is enabled on the specified cluster.
 	Enabled *bool `json:"enabled,omitempty"`
@@ -138,19 +138,11 @@ type ClusterSpecV20231115EntryBiConnector struct {
 	ReadPreference *string `json:"readPreference,omitempty"`
 }
 
-type ClusterSpecV20231115EntryLabels struct {
-	// Key Key applied to tag and categorize this component.
-	Key *string `json:"key,omitempty"`
-
-	// Value Value set to the Key applied to tag and categorize this component.
-	Value *string `json:"value,omitempty"`
-}
-
-type ClusterSpecV20231115EntryReplicationSpecs struct {
+type ReplicationSpecs struct {
 	/*
 	   NumShards Positive integer that specifies the number of shards to deploy in each specified zone. If you set this value to `1` and **clusterType** is `SHARDED`, MongoDB Cloud deploys a single-shard sharded cluster. Don't create a sharded cluster with a single shard for production environments. Single-shard sharded clusters don't provide the same benefits as multi-shard configurations.
 
-	   	If you are upgrading a replica set to a sharded cluster, you cannot increase the number of shards in the same update request.  You should wait until after the cluster has completed upgrading to sharded and you have reconnected all application clients to the MongoDB router before adding additional shards. Otherwise, your data might become inconsistent once MongoDB Cloud begins distributing data across shards.
+	    If you are upgrading a replica set to a sharded cluster, you cannot increase the number of shards in the same update request.  You should wait until after the cluster has completed upgrading to sharded and you have reconnected all application clients to the MongoDB router before adding additional shards. Otherwise, your data might become inconsistent once MongoDB Cloud begins distributing data across shards.
 	*/
 	NumShards *int `json:"numShards,omitempty"`
 
@@ -161,26 +153,26 @@ type ClusterSpecV20231115EntryReplicationSpecs struct {
 
 	   If you set `"replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize" : "M30"`, set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : `"M30"` if you have electable nodes and `"replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize" : `"M30"` if you have read-only nodes.
 	*/
-	RegionConfigs *[]ClusterSpecV20231115EntryReplicationSpecsRegionConfigs `json:"regionConfigs,omitempty"`
+	RegionConfigs *[]RegionConfigs `json:"regionConfigs,omitempty"`
 
 	// ZoneName Human-readable label that identifies the zone in a Global Cluster.
 	// Provide this value only if `"clusterType" : "GEOSHARDED"`.
 	ZoneName *string `json:"zoneName,omitempty"`
 }
 
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigs struct {
+type RegionConfigs struct {
 	// AnalyticsAutoScaling Options that determine how this cluster handles resource
 	// scaling.
-	AnalyticsAutoScaling *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsAutoScaling `json:"analyticsAutoScaling,omitempty"`
+	AnalyticsAutoScaling *AnalyticsAutoScaling `json:"analyticsAutoScaling,omitempty"`
 
 	// AnalyticsSpecs Hardware specifications for read-only nodes in the region.
 	// Read-only nodes can never become the primary member, but can enable local
 	// reads.If you don't specify this parameter, no read-only nodes are deployed to
 	// the region.
-	AnalyticsSpecs *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsSpecs `json:"analyticsSpecs,omitempty"`
+	AnalyticsSpecs *AnalyticsSpecs `json:"analyticsSpecs,omitempty"`
 
 	// AutoScaling Options that determine how this cluster handles resource scaling.
-	AutoScaling *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAutoScaling `json:"autoScaling,omitempty"`
+	AutoScaling *AnalyticsAutoScaling `json:"autoScaling,omitempty"`
 
 	// BackingProviderName Cloud service provider on which MongoDB Cloud provisioned
 	// the multi-tenant cluster. The resource returns this parameter when
@@ -192,7 +184,7 @@ type ClusterSpecV20231115EntryReplicationSpecsRegionConfigs struct {
 	// region. Electable nodes can become the primary and can enable local reads. If
 	// you don't specify this option, MongoDB Cloud deploys no electable nodes to the
 	// region.
-	ElectableSpecs *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsElectableSpecs `json:"electableSpecs,omitempty"`
+	ElectableSpecs *AnalyticsSpecs `json:"electableSpecs,omitempty"`
 
 	/*
 	   Priority Precedence is given to this region when a primary election occurs. If your **regionConfigs** has only **readOnlySpecs**, **analyticsSpecs**, or both, set this value to `0`. If you have multiple **regionConfigs** objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
@@ -209,7 +201,7 @@ type ClusterSpecV20231115EntryReplicationSpecsRegionConfigs struct {
 	// Read-only nodes can never become the primary member, but can enable local
 	// reads.If you don't specify this parameter, no read-only nodes are deployed to
 	// the region.
-	ReadOnlySpecs *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsReadOnlySpecs `json:"readOnlySpecs,omitempty"`
+	ReadOnlySpecs *AnalyticsSpecs `json:"readOnlySpecs,omitempty"`
 
 	// RegionName Physical location of your MongoDB cluster nodes. The region you
 	// choose can affect network latency for clients accessing your databases. The
@@ -226,15 +218,15 @@ type ClusterSpecV20231115EntryReplicationSpecsRegionConfigs struct {
 	RegionName *string `json:"regionName,omitempty"`
 }
 
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsAutoScaling struct {
+type AnalyticsAutoScaling struct {
 	// Compute Options that determine how this cluster handles CPU scaling.
-	Compute *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsAutoScalingCompute `json:"compute,omitempty"`
+	Compute *Compute `json:"compute,omitempty"`
 
 	// DiskGB Setting that enables disk auto-scaling.
-	DiskGB *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsAutoScalingDiskGB `json:"diskGB,omitempty"`
+	DiskGB *DiskGB `json:"diskGB,omitempty"`
 }
 
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsAutoScalingCompute struct {
+type Compute struct {
 	/*
 	   Enabled Flag that indicates whether someone enabled instance size auto-scaling.
 
@@ -263,14 +255,14 @@ type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsAutoScalingC
 	ScaleDownEnabled *bool `json:"scaleDownEnabled,omitempty"`
 }
 
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsAutoScalingDiskGB struct {
+type DiskGB struct {
 	// Enabled Flag that indicates whether this cluster enables disk auto-scaling. The
 	// maximum memory allowed for the selected cluster tier and the oplog size can
 	// limit storage auto-scaling.
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsSpecs struct {
+type AnalyticsSpecs struct {
 	/*
 	   DiskIOPS Target throughput desired for storage attached to your AWS-provisioned cluster. Change this parameter only if you:
 
@@ -304,179 +296,22 @@ type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAnalyticsSpecs struct
 	// NodeCount Number of nodes of the given type for MongoDB Cloud to deploy to the
 	// region.
 	NodeCount *int `json:"nodeCount,omitempty"`
-}
-
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAutoScaling struct {
-	// Compute Options that determine how this cluster handles CPU scaling.
-	Compute *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAutoScalingCompute `json:"compute,omitempty"`
-
-	// DiskGB Setting that enables disk auto-scaling.
-	DiskGB *ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAutoScalingDiskGB `json:"diskGB,omitempty"`
-}
-
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAutoScalingCompute struct {
-	/*
-	   Enabled Flag that indicates whether someone enabled instance size auto-scaling.
-
-	   - Set to `true` to enable instance size auto-scaling. If enabled, you must specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize**.
-	   - Set to `false` to disable instance size automatic scaling.
-	*/
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// MaxInstanceSize Minimum instance size to which your cluster can automatically
-	// scale. MongoDB Cloud requires this parameter if
-	// `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.scaleDownEnabled" :
-	// true`.
-	MaxInstanceSize *string `json:"maxInstanceSize,omitempty"`
-
-	// MinInstanceSize Minimum instance size to which your cluster can automatically
-	// scale. MongoDB Cloud requires this parameter if
-	// `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.scaleDownEnabled" :
-	// true`.
-	MinInstanceSize *string `json:"minInstanceSize,omitempty"`
-
-	// ScaleDownEnabled Flag that indicates whether the instance size may scale down.
-	// MongoDB Cloud requires this parameter if
-	// `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled" : true`. If
-	// you enable this option, specify a value for
-	// **replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize**.
-	ScaleDownEnabled *bool `json:"scaleDownEnabled,omitempty"`
-}
-
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsAutoScalingDiskGB struct {
-	// Enabled Flag that indicates whether this cluster enables disk auto-scaling. The
-	// maximum memory allowed for the selected cluster tier and the oplog size can
-	// limit storage auto-scaling.
-	Enabled *bool `json:"enabled,omitempty"`
-}
-
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsElectableSpecs struct {
-	/*
-	   DiskIOPS Target throughput desired for storage attached to your AWS-provisioned cluster. Change this parameter only if you:
-
-	   - set `"replicationSpecs[n].regionConfigs[m].providerName" : "AWS"`.
-	   - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M30"` or greater not including `Mxx_NVME` tiers.
-
-	   The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
-	   This parameter defaults to the cluster tier's standard IOPS value.
-	   Changing this value impacts cluster cost.
-	   MongoDB Cloud enforces minimum ratios of storage capacity to system memory for given cluster tiers. This keeps cluster performance consistent with large datasets.
-
-	   - Instance sizes `M10` to `M40` have a ratio of disk capacity to system memory of 60:1.
-	   - Instance sizes greater than `M40` have a ratio of 120:1.
-	*/
-	DiskIOPS *int `json:"diskIOPS,omitempty"`
-
-	/*
-	   EbsVolumeType Type of storage you want to attach to your AWS-provisioned cluster.
-
-	   - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size.
-
-	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.
-	*/
-	EbsVolumeType *string `json:"ebsVolumeType,omitempty"`
-
-	// InstanceSize Hardware specification for the instance sizes in this region. Each
-	// instance size has a default storage and memory capacity. The instance size you
-	// select applies to all the data-bearing hosts in your instance size.
-	InstanceSize *string `json:"instanceSize,omitempty"`
-
-	// NodeCount Number of nodes of the given type for MongoDB Cloud to deploy to the
-	// region.
-	NodeCount *int `json:"nodeCount,omitempty"`
-}
-
-type ClusterSpecV20231115EntryReplicationSpecsRegionConfigsReadOnlySpecs struct {
-	/*
-	   DiskIOPS Target throughput desired for storage attached to your AWS-provisioned cluster. Change this parameter only if you:
-
-	   - set `"replicationSpecs[n].regionConfigs[m].providerName" : "AWS"`.
-	   - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M30"` or greater not including `Mxx_NVME` tiers.
-
-	   The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
-	   This parameter defaults to the cluster tier's standard IOPS value.
-	   Changing this value impacts cluster cost.
-	   MongoDB Cloud enforces minimum ratios of storage capacity to system memory for given cluster tiers. This keeps cluster performance consistent with large datasets.
-
-	   - Instance sizes `M10` to `M40` have a ratio of disk capacity to system memory of 60:1.
-	   - Instance sizes greater than `M40` have a ratio of 120:1.
-	*/
-	DiskIOPS *int `json:"diskIOPS,omitempty"`
-
-	/*
-	   EbsVolumeType Type of storage you want to attach to your AWS-provisioned cluster.
-
-	   - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size.
-
-	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.
-	*/
-	EbsVolumeType *string `json:"ebsVolumeType,omitempty"`
-
-	// InstanceSize Hardware specification for the instance sizes in this region. Each
-	// instance size has a default storage and memory capacity. The instance size you
-	// select applies to all the data-bearing hosts in your instance size.
-	InstanceSize *string `json:"instanceSize,omitempty"`
-
-	// NodeCount Number of nodes of the given type for MongoDB Cloud to deploy to the
-	// region.
-	NodeCount *int `json:"nodeCount,omitempty"`
-}
-
-type ClusterSpecV20231115EntryTags struct {
-	// Key Constant that defines the set of the tag. For example, `environment` in the
-	// `environment : production` tag.
-	Key string `json:"key"`
-
-	// Value Variable that belongs to the set of the tag. For example, `production` in
-	// the `environment : production` tag.
-	Value string `json:"value"`
-}
-
-type ClusterSpecV20231115Parameters struct {
-	/*
-	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
-
-	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-	*/
-	GroupId *string `json:"groupId,omitempty"`
 }
 
 type ClusterStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]ClusterStatusConditions `json:"conditions,omitempty"`
+	Conditions *[]Conditions `json:"conditions,omitempty"`
 
 	// V20231115 The last observed Atlas state of the cluster resource for version
 	// v20231115.
 	V20231115 *ClusterStatusV20231115 `json:"v20231115,omitempty"`
 }
 
-type ClusterStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to
-	// another.
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
-
-	// Message A human readable message indicating details about the transition.
-	Message *string `json:"message,omitempty"`
-
-	// ObservedGeneration observedGeneration represents the .metadata.generation that
-	// the condition was set based upon.
-	ObservedGeneration *int `json:"observedGeneration,omitempty"`
-
-	// Reason The reason for the condition's last transition.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the condition, one of True, False, Unknown.
-	Status string `json:"status"`
-
-	// Type Type of condition.
-	Type string `json:"type"`
-}
-
 type ClusterStatusV20231115 struct {
 	// ConnectionStrings Collection of Uniform Resource Locators that point to the
 	// MongoDB database.
-	ConnectionStrings *ClusterStatusV20231115ConnectionStrings `json:"connectionStrings,omitempty"`
+	ConnectionStrings *ConnectionStrings `json:"connectionStrings,omitempty"`
 
 	// CreateDate Date and time when MongoDB Cloud created this cluster. This parameter
 	// expresses its value in ISO 8601 format in UTC.
@@ -499,27 +334,27 @@ type ClusterStatusV20231115 struct {
 	// Global Clusters, each object in the array represents a zone where your clusters
 	// nodes deploy. For non-Global sharded clusters and replica sets, this array has
 	// one object representing where your clusters nodes deploy.
-	ReplicationSpecs *[]ClusterStatusV20231115ReplicationSpecs `json:"replicationSpecs,omitempty"`
+	ReplicationSpecs *[]V20231115ReplicationSpecs `json:"replicationSpecs,omitempty"`
 
 	// StateName Human-readable label that indicates the current operating condition of
 	// this cluster.
 	StateName *string `json:"stateName,omitempty"`
 }
 
-type ClusterStatusV20231115ConnectionStrings struct {
+type ConnectionStrings struct {
 	// AwsPrivateLink Private endpoint-aware connection strings that use AWS-hosted
 	// clusters with Amazon Web Services (AWS) PrivateLink. Each key identifies an
 	// Amazon Web Services (AWS) interface endpoint. Each value identifies the related
 	// `mongodb://` connection string that you use to connect to MongoDB Cloud through
 	// the interface endpoint that the key names.
-	AwsPrivateLink *ClusterStatusV20231115ConnectionStringsAwsPrivateLink `json:"awsPrivateLink,omitempty"`
+	AwsPrivateLink *V20250312Parameters `json:"awsPrivateLink,omitempty"`
 
 	// AwsPrivateLinkSrv Private endpoint-aware connection strings that use AWS-hosted
 	// clusters with Amazon Web Services (AWS) PrivateLink. Each key identifies an
 	// Amazon Web Services (AWS) interface endpoint. Each value identifies the related
 	// `mongodb://` connection string that you use to connect to Atlas through the
 	// interface endpoint that the key names.
-	AwsPrivateLinkSrv *ClusterStatusV20231115ConnectionStringsAwsPrivateLinkSrv `json:"awsPrivateLinkSrv,omitempty"`
+	AwsPrivateLinkSrv *V20250312Parameters `json:"awsPrivateLinkSrv,omitempty"`
 
 	// Private Network peering connection strings for each interface Virtual Private
 	// Cloud (VPC) endpoint that you configured to connect to this cluster. This
@@ -538,7 +373,7 @@ type ClusterStatusV20231115ConnectionStrings struct {
 	// use to connect to this cluster through a private endpoint. This parameter
 	// returns only if you deployed a private endpoint to all regions to which you
 	// deployed this clusters' nodes.
-	PrivateEndpoint *[]ClusterStatusV20231115ConnectionStringsPrivateEndpoint `json:"privateEndpoint,omitempty"`
+	PrivateEndpoint *[]PrivateEndpoint `json:"privateEndpoint,omitempty"`
 
 	// PrivateSrv Network peering connection strings for each interface Virtual Private
 	// Cloud (VPC) endpoint that you configured to connect to this cluster. This
@@ -563,11 +398,9 @@ type ClusterStatusV20231115ConnectionStrings struct {
 	StandardSrv *string `json:"standardSrv,omitempty"`
 }
 
-type ClusterStatusV20231115ConnectionStringsAwsPrivateLink struct{}
+type V20250312Parameters struct{}
 
-type ClusterStatusV20231115ConnectionStringsAwsPrivateLinkSrv struct{}
-
-type ClusterStatusV20231115ConnectionStringsPrivateEndpoint struct {
+type PrivateEndpoint struct {
 	// ConnectionString Private endpoint-aware connection string that uses the
 	// `mongodb://` protocol to connect to MongoDB Cloud through a private endpoint.
 	ConnectionString *string `json:"connectionString,omitempty"`
@@ -576,7 +409,7 @@ type ClusterStatusV20231115ConnectionStringsPrivateEndpoint struct {
 	// MongoDB Cloud when you use
 	// **connectionStrings.privateEndpoint[n].connectionString** or
 	// **connectionStrings.privateEndpoint[n].srvConnectionString**.
-	Endpoints *[]ClusterStatusV20231115ConnectionStringsPrivateEndpointEndpoints `json:"endpoints,omitempty"`
+	Endpoints *[]Endpoints `json:"endpoints,omitempty"`
 
 	// SrvConnectionString Private endpoint-aware connection string that uses the
 	// `mongodb+srv://` protocol to connect to MongoDB Cloud through a private
@@ -604,7 +437,7 @@ type ClusterStatusV20231115ConnectionStringsPrivateEndpoint struct {
 	Type *string `json:"type,omitempty"`
 }
 
-type ClusterStatusV20231115ConnectionStringsPrivateEndpointEndpoints struct {
+type Endpoints struct {
 	// EndpointId Unique string that the cloud provider uses to identify the private
 	// endpoint.
 	EndpointId *string `json:"endpointId,omitempty"`
@@ -616,7 +449,7 @@ type ClusterStatusV20231115ConnectionStringsPrivateEndpointEndpoints struct {
 	Region *string `json:"region,omitempty"`
 }
 
-type ClusterStatusV20231115ReplicationSpecs struct {
+type V20231115ReplicationSpecs struct {
 	// Id Unique 24-hexadecimal digit string that identifies the replication object for
 	// a zone in a Multi-Cloud Cluster. If you include existing zones in the request,
 	// you must specify this parameter. If you add a new zone to an existing

@@ -37,20 +37,20 @@ type SearchIndexSpecV20231115Entry struct {
 	/*
 	   Analyzer Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a **term** or **token**. This process, known as tokenization, involves a variety of changes made to the text in fields:
 
-	     - extracting words
-	     - removing punctuation
-	     - removing accents
-	     - changing to lowercase
-	     - removing common words
-	     - reducing words to their root form (stemming)
-	     - changing words to their base form (lemmatization)
-	       MongoDB Cloud uses the selected process to build the Atlas Search index.
+	   - extracting words
+	   - removing punctuation
+	   - removing accents
+	   - changing to lowercase
+	   - removing common words
+	   - reducing words to their root form (stemming)
+	   - changing words to their base form (lemmatization)
+	    MongoDB Cloud uses the selected process to build the Atlas Search index.
 	*/
 	Analyzer *string `json:"analyzer,omitempty"`
 
 	// Analyzers List of user-defined methods to convert database field text into
 	// searchable words.
-	Analyzers *[]SearchIndexSpecV20231115EntryAnalyzers `json:"analyzers,omitempty"`
+	Analyzers *[]Analyzers `json:"analyzers,omitempty"`
 
 	// CollectionName Human-readable label that identifies the collection that contains
 	// one or more Atlas Search indexes.
@@ -63,10 +63,10 @@ type SearchIndexSpecV20231115Entry struct {
 	// Fields Settings that configure the fields, one per object, to index. You must
 	// define at least one "vector" type field. You can optionally define "filter" type
 	// fields also.
-	Fields *[]SearchIndexSpecV20231115EntryFields `json:"fields,omitempty"`
+	Fields *[]V20250312Parameters `json:"fields,omitempty"`
 
 	// Mappings Index specifications for the collection's fields.
-	Mappings *SearchIndexSpecV20231115EntryMappings `json:"mappings,omitempty"`
+	Mappings *Mappings `json:"mappings,omitempty"`
 
 	// Name Human-readable label that identifies this index. Within each namespace,
 	// names of all indexes in the namespace must be unique.
@@ -80,19 +80,19 @@ type SearchIndexSpecV20231115Entry struct {
 	// Alternatively, you can specify an object that only contains the list of fields
 	// to store (include) or not store (exclude) on Atlas Search. To learn more, see
 	// documentation.
-	StoredSource *SearchIndexSpecV20231115EntryStoredSource `json:"storedSource,omitempty"`
+	StoredSource *V20250312Parameters `json:"storedSource,omitempty"`
 
 	// Synonyms Rule sets that map words to their synonyms in this index.
-	Synonyms *[]SearchIndexSpecV20231115EntrySynonyms `json:"synonyms,omitempty"`
+	Synonyms *[]Synonyms `json:"synonyms,omitempty"`
 
 	// Type Type of the index. Default type is search.
 	Type *string `json:"type,omitempty"`
 }
 
-type SearchIndexSpecV20231115EntryAnalyzers struct {
+type Analyzers struct {
 	// CharFilters Filters that examine text one character at a time and perform
 	// filtering operations.
-	CharFilters *[]SearchIndexSpecV20231115EntryAnalyzersCharFilters `json:"charFilters,omitempty"`
+	CharFilters *[]V20250312Parameters `json:"charFilters,omitempty"`
 
 	/*
 	   Name Human-readable name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
@@ -109,18 +109,14 @@ type SearchIndexSpecV20231115EntryAnalyzers struct {
 
 	   - Redaction, the removal of sensitive information from public documents.
 	*/
-	TokenFilters *[]SearchIndexSpecV20231115EntryAnalyzersTokenFilters `json:"tokenFilters,omitempty"`
+	TokenFilters *[]V20250312Parameters `json:"tokenFilters,omitempty"`
 
 	// Tokenizer Tokenizer that you want to use to create tokens. Tokens determine how
 	// Atlas Search splits up text into discrete chunks for indexing.
-	Tokenizer SearchIndexSpecV20231115EntryAnalyzersTokenizer `json:"tokenizer"`
+	Tokenizer Tokenizer `json:"tokenizer"`
 }
 
-type SearchIndexSpecV20231115EntryAnalyzersCharFilters struct{}
-
-type SearchIndexSpecV20231115EntryAnalyzersTokenFilters struct{}
-
-type SearchIndexSpecV20231115EntryAnalyzersTokenizer struct {
+type Tokenizer struct {
 	// Group Index of the character group within the matching expression to extract
 	// into tokens. Use `0` to extract all character groups.
 	Group *int `json:"group,omitempty"`
@@ -142,23 +138,17 @@ type SearchIndexSpecV20231115EntryAnalyzersTokenizer struct {
 	Type *string `json:"type,omitempty"`
 }
 
-type SearchIndexSpecV20231115EntryFields struct{}
-
-type SearchIndexSpecV20231115EntryMappings struct {
+type Mappings struct {
 	// Dynamic Flag that indicates whether the index uses dynamic or static mappings.
 	// Required if **mappings.fields** is omitted.
 	Dynamic *bool `json:"dynamic,omitempty"`
 
 	// Fields One or more field specifications for the Atlas Search index. Required if
 	// **mappings.dynamic** is omitted or set to **false**.
-	Fields *SearchIndexSpecV20231115EntryMappingsFields `json:"fields,omitempty"`
+	Fields *V20250312Parameters `json:"fields,omitempty"`
 }
 
-type SearchIndexSpecV20231115EntryMappingsFields struct{}
-
-type SearchIndexSpecV20231115EntryStoredSource struct{}
-
-type SearchIndexSpecV20231115EntrySynonyms struct {
+type Synonyms struct {
 	// Analyzer Specific pre-defined method chosen to apply to the synonyms to be
 	// searched.
 	Analyzer string `json:"analyzer"`
@@ -169,10 +159,10 @@ type SearchIndexSpecV20231115EntrySynonyms struct {
 
 	// Source Data set that stores the mapping one or more words map to one or more
 	// synonyms of those words.
-	Source SearchIndexSpecV20231115EntrySynonymsSource `json:"source"`
+	Source Source `json:"source"`
 }
 
-type SearchIndexSpecV20231115EntrySynonymsSource struct {
+type Source struct {
 	// Collection Human-readable label that identifies the MongoDB collection that
 	// stores words and their applicable synonyms.
 	Collection string `json:"collection"`
@@ -194,33 +184,11 @@ type SearchIndexSpecV20231115Parameters struct {
 type SearchIndexStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]SearchIndexStatusConditions `json:"conditions,omitempty"`
+	Conditions *[]Conditions `json:"conditions,omitempty"`
 
 	// V20231115 The last observed Atlas state of the searchindex resource for version
 	// v20231115.
 	V20231115 *SearchIndexStatusV20231115 `json:"v20231115,omitempty"`
-}
-
-type SearchIndexStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to
-	// another.
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
-
-	// Message A human readable message indicating details about the transition.
-	Message *string `json:"message,omitempty"`
-
-	// ObservedGeneration observedGeneration represents the .metadata.generation that
-	// the condition was set based upon.
-	ObservedGeneration *int `json:"observedGeneration,omitempty"`
-
-	// Reason The reason for the condition's last transition.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the condition, one of True, False, Unknown.
-	Status string `json:"status"`
-
-	// Type Type of condition.
-	Type string `json:"type"`
 }
 
 type SearchIndexStatusV20231115 struct {
@@ -232,13 +200,12 @@ type SearchIndexStatusV20231115 struct {
 	   Status Condition of the search index when you made this request.
 
 	   | Status | Index Condition |
-
-	   	|---|---|
-	   	| IN_PROGRESS | Atlas is building or re-building the index after an edit. |
-	   	| STEADY | You can use this search index. |
-	   	| FAILED | Atlas could not build the index. |
-	   	| MIGRATING | Atlas is upgrading the underlying cluster tier and migrating indexes. |
-	   	| PAUSED | The cluster is paused. |
+	    |---|---|
+	    | IN_PROGRESS | Atlas is building or re-building the index after an edit. |
+	    | STEADY | You can use this search index. |
+	    | FAILED | Atlas could not build the index. |
+	    | MIGRATING | Atlas is upgrading the underlying cluster tier and migrating indexes. |
+	    | PAUSED | The cluster is paused. |
 	*/
 	Status *string `json:"status,omitempty"`
 }

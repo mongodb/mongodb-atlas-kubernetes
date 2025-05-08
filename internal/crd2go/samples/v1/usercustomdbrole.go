@@ -30,30 +30,30 @@ type UserCustomDBRoleSpecV20231115 struct {
 
 	// Parameters The parameter fields of the usercustomdbrole resource spec. These
 	// fields are used when creating usercustomdbroles only.
-	Parameters *UserCustomDBRoleSpecV20231115Parameters `json:"parameters,omitempty"`
+	Parameters *NetworkPermissionEntriesSpecV20250312Parameters `json:"parameters,omitempty"`
 }
 
 type UserCustomDBRoleSpecV20231115Entry struct {
 	// Actions List of the individual privilege actions that the role grants.
-	Actions *[]UserCustomDBRoleSpecV20231115EntryActions `json:"actions,omitempty"`
+	Actions *[]Actions `json:"actions,omitempty"`
 
 	// InheritedRoles List of the built-in roles that this custom role inherits.
-	InheritedRoles *[]UserCustomDBRoleSpecV20231115EntryInheritedRoles `json:"inheritedRoles,omitempty"`
+	InheritedRoles *[]InheritedRoles `json:"inheritedRoles,omitempty"`
 
 	// RoleName Human-readable label that identifies the role for the request. This
 	// name must be unique for this custom role in this project.
 	RoleName string `json:"roleName"`
 }
 
-type UserCustomDBRoleSpecV20231115EntryActions struct {
+type Actions struct {
 	// Action Human-readable label that identifies the privilege action.
 	Action string `json:"action"`
 
 	// Resources List of resources on which you grant the action.
-	Resources *[]UserCustomDBRoleSpecV20231115EntryActionsResources `json:"resources,omitempty"`
+	Resources *[]Resources `json:"resources,omitempty"`
 }
 
-type UserCustomDBRoleSpecV20231115EntryActionsResources struct {
+type Resources struct {
 	// Cluster Flag that indicates whether to grant the action on the cluster resource.
 	// If `true`, MongoDB Cloud ignores the **actions.resources.collection** and
 	// **actions.resources.db** parameters.
@@ -72,7 +72,7 @@ type UserCustomDBRoleSpecV20231115EntryActionsResources struct {
 	Db string `json:"db"`
 }
 
-type UserCustomDBRoleSpecV20231115EntryInheritedRoles struct {
+type InheritedRoles struct {
 	// Db Human-readable label that identifies the database on which someone grants the
 	// action to one MongoDB user.
 	Db string `json:"db"`
@@ -82,39 +82,8 @@ type UserCustomDBRoleSpecV20231115EntryInheritedRoles struct {
 	Role string `json:"role"`
 }
 
-type UserCustomDBRoleSpecV20231115Parameters struct {
-	/*
-	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
-
-	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-	*/
-	GroupId *string `json:"groupId,omitempty"`
-}
-
 type UserCustomDBRoleStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]UserCustomDBRoleStatusConditions `json:"conditions,omitempty"`
-}
-
-type UserCustomDBRoleStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to
-	// another.
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
-
-	// Message A human readable message indicating details about the transition.
-	Message *string `json:"message,omitempty"`
-
-	// ObservedGeneration observedGeneration represents the .metadata.generation that
-	// the condition was set based upon.
-	ObservedGeneration *int `json:"observedGeneration,omitempty"`
-
-	// Reason The reason for the condition's last transition.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the condition, one of True, False, Unknown.
-	Status string `json:"status"`
-
-	// Type Type of condition.
-	Type string `json:"type"`
+	Conditions *[]Conditions `json:"conditions,omitempty"`
 }

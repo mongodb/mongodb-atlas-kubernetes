@@ -30,7 +30,7 @@ type GroupAlertsConfigSpecV20241113 struct {
 
 	// Parameters The parameter fields of the groupalertsconfig resource spec. These
 	// fields are used when creating groupalertsconfigs only.
-	Parameters *GroupAlertsConfigSpecV20241113Parameters `json:"parameters,omitempty"`
+	Parameters *NetworkPermissionEntriesSpecV20250312Parameters `json:"parameters,omitempty"`
 }
 
 type GroupAlertsConfigSpecV20241113Entry struct {
@@ -43,22 +43,22 @@ type GroupAlertsConfigSpecV20241113Entry struct {
 
 	// Matchers List of rules that determine whether MongoDB Cloud checks an object for
 	// the alert configuration.
-	Matchers *[]GroupAlertsConfigSpecV20241113EntryMatchers `json:"matchers,omitempty"`
+	Matchers *[]Matchers `json:"matchers,omitempty"`
 
 	// MetricThreshold Threshold for the metric that, when exceeded, triggers an alert.
 	// The metric threshold pertains to event types which reflects changes of
 	// measurements and metrics about the serverless database.
-	MetricThreshold *GroupAlertsConfigSpecV20241113EntryMetricThreshold `json:"metricThreshold,omitempty"`
+	MetricThreshold *MetricThreshold `json:"metricThreshold,omitempty"`
 
 	// Notifications List that contains the targets that MongoDB Cloud sends
 	// notifications.
-	Notifications *[]GroupAlertsConfigSpecV20241113EntryNotifications `json:"notifications,omitempty"`
+	Notifications *[]Notifications `json:"notifications,omitempty"`
 
 	// Threshold A Limit that triggers an alert when greater than a number.
-	Threshold *GroupAlertsConfigSpecV20241113EntryThreshold `json:"threshold,omitempty"`
+	Threshold *Threshold `json:"threshold,omitempty"`
 }
 
-type GroupAlertsConfigSpecV20241113EntryMatchers struct {
+type Matchers struct {
 	// FieldName Name of the parameter in the target object that MongoDB Cloud checks.
 	// The parameter must match all rules for MongoDB Cloud to check for alert
 	// configurations.
@@ -72,7 +72,7 @@ type GroupAlertsConfigSpecV20241113EntryMatchers struct {
 	Value string `json:"value"`
 }
 
-type GroupAlertsConfigSpecV20241113EntryMetricThreshold struct {
+type MetricThreshold struct {
 	// MetricName Human-readable label that identifies the metric against which MongoDB
 	// Cloud checks the configured **metricThreshold.threshold**.
 	MetricName string `json:"metricName"`
@@ -91,7 +91,7 @@ type GroupAlertsConfigSpecV20241113EntryMetricThreshold struct {
 	Units *string `json:"units,omitempty"`
 }
 
-type GroupAlertsConfigSpecV20241113EntryNotifications struct {
+type Notifications struct {
 	/*
 	   ApiTokenRef SENSITIVE FIELD
 
@@ -105,7 +105,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ApiTokenRef *GroupAlertsConfigSpecV20241113EntryNotificationsApiTokenRef `json:"apiTokenRef,omitempty"`
+	ApiTokenRef *ApiTokenRef `json:"apiTokenRef,omitempty"`
 
 	// ChannelName Name of the Slack channel to which MongoDB Cloud sends alert
 	// notifications. The resource requires this parameter when
@@ -125,7 +125,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	DatadogApiKeyRef *GroupAlertsConfigSpecV20241113EntryNotificationsDatadogApiKeyRef `json:"datadogApiKeyRef,omitempty"`
+	DatadogApiKeyRef *ApiTokenRef `json:"datadogApiKeyRef,omitempty"`
 
 	/*
 	   DatadogRegion Datadog region that indicates which API Uniform Resource Locator (URL) to use. The resource requires this parameter when `"notifications.[n].typeName" : "DATADOG"`.
@@ -179,7 +179,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   **NOTE**: When you view or edit the alert for a Microsoft Teams notification, the URL appears partially redacted.
 	*/
-	MicrosoftTeamsWebhookUrlRef *GroupAlertsConfigSpecV20241113EntryNotificationsMicrosoftTeamsWebhookUrlRef `json:"microsoftTeamsWebhookUrlRef,omitempty"`
+	MicrosoftTeamsWebhookUrlRef *ApiTokenRef `json:"microsoftTeamsWebhookUrlRef,omitempty"`
 
 	// MobileNumber Mobile phone number to which MongoDB Cloud sends alert
 	// notifications. The resource requires this parameter when
@@ -199,7 +199,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	NotificationTokenRef *GroupAlertsConfigSpecV20241113EntryNotificationsNotificationTokenRef `json:"notificationTokenRef,omitempty"`
+	NotificationTokenRef *ApiTokenRef `json:"notificationTokenRef,omitempty"`
 
 	// NotifierId The notifierId is a system-generated unique identifier assigned to
 	// each notification method. This is needed when updating third-party notifications
@@ -219,7 +219,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	OpsGenieApiKeyRef *GroupAlertsConfigSpecV20241113EntryNotificationsOpsGenieApiKeyRef `json:"opsGenieApiKeyRef,omitempty"`
+	OpsGenieApiKeyRef *ApiTokenRef `json:"opsGenieApiKeyRef,omitempty"`
 
 	// OpsGenieRegion Opsgenie region that indicates which API Uniform Resource Locator
 	// (URL) to use.
@@ -257,7 +257,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ServiceKeyRef *GroupAlertsConfigSpecV20241113EntryNotificationsServiceKeyRef `json:"serviceKeyRef,omitempty"`
+	ServiceKeyRef *ApiTokenRef `json:"serviceKeyRef,omitempty"`
 
 	/*
 	   SmsEnabled Flag that indicates whether MongoDB Cloud should send text message notifications. The resource requires this parameter when one of the following values have been set:
@@ -299,7 +299,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	VictorOpsApiKeyRef *GroupAlertsConfigSpecV20241113EntryNotificationsVictorOpsApiKeyRef `json:"victorOpsApiKeyRef,omitempty"`
+	VictorOpsApiKeyRef *ApiTokenRef `json:"victorOpsApiKeyRef,omitempty"`
 
 	/*
 	   VictorOpsRoutingKeyRef SENSITIVE FIELD
@@ -308,7 +308,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   Routing key that MongoDB Cloud needs to send alert notifications to Splunk On-Call. The resource requires this parameter when `"notifications.[n].typeName" : "VICTOR_OPS"`. If the key later becomes invalid, MongoDB Cloud sends an email to the project owners. If the key remains invalid, MongoDB Cloud removes it.
 	*/
-	VictorOpsRoutingKeyRef *GroupAlertsConfigSpecV20241113EntryNotificationsVictorOpsRoutingKeyRef `json:"victorOpsRoutingKeyRef,omitempty"`
+	VictorOpsRoutingKeyRef *ApiTokenRef `json:"victorOpsRoutingKeyRef,omitempty"`
 
 	/*
 	   WebhookSecretRef SENSITIVE FIELD
@@ -323,7 +323,7 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
 	*/
-	WebhookSecretRef *GroupAlertsConfigSpecV20241113EntryNotificationsWebhookSecretRef `json:"webhookSecretRef,omitempty"`
+	WebhookSecretRef *ApiTokenRef `json:"webhookSecretRef,omitempty"`
 
 	/*
 	   WebhookUrlRef SENSITIVE FIELD
@@ -338,10 +338,10 @@ type GroupAlertsConfigSpecV20241113EntryNotifications struct {
 
 	   **NOTE**: When you view or edit the alert for a Webhook URL notification, the URL appears partially redacted.
 	*/
-	WebhookUrlRef *GroupAlertsConfigSpecV20241113EntryNotificationsWebhookUrlRef `json:"webhookUrlRef,omitempty"`
+	WebhookUrlRef *ApiTokenRef `json:"webhookUrlRef,omitempty"`
 }
 
-type GroupAlertsConfigSpecV20241113EntryNotificationsApiTokenRef struct {
+type ApiTokenRef struct {
 	// Key Key of the secret data containing the sensitive field value, defaults to
 	// "apiToken".
 	Key *string `json:"key,omitempty"`
@@ -350,88 +350,7 @@ type GroupAlertsConfigSpecV20241113EntryNotificationsApiTokenRef struct {
 	Name *string `json:"name,omitempty"`
 }
 
-type GroupAlertsConfigSpecV20241113EntryNotificationsDatadogApiKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "datadogApiKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryNotificationsMicrosoftTeamsWebhookUrlRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "microsoftTeamsWebhookUrl".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryNotificationsNotificationTokenRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "notificationToken".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryNotificationsOpsGenieApiKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "opsGenieApiKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryNotificationsServiceKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "serviceKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryNotificationsVictorOpsApiKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "victorOpsApiKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryNotificationsVictorOpsRoutingKeyRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "victorOpsRoutingKey".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryNotificationsWebhookSecretRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "webhookSecret".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryNotificationsWebhookUrlRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "webhookUrl".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
-}
-
-type GroupAlertsConfigSpecV20241113EntryThreshold struct {
+type Threshold struct {
 	// Operator Comparison operator to apply when checking the current metric value.
 	Operator *string `json:"operator,omitempty"`
 
@@ -443,45 +362,14 @@ type GroupAlertsConfigSpecV20241113EntryThreshold struct {
 	Units *string `json:"units,omitempty"`
 }
 
-type GroupAlertsConfigSpecV20241113Parameters struct {
-	/*
-	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
-
-	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-	*/
-	GroupId *string `json:"groupId,omitempty"`
-}
-
 type GroupAlertsConfigStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]GroupAlertsConfigStatusConditions `json:"conditions,omitempty"`
+	Conditions *[]Conditions `json:"conditions,omitempty"`
 
 	// V20241113 The last observed Atlas state of the groupalertsconfig resource for
 	// version v20241113.
 	V20241113 *GroupAlertsConfigStatusV20241113 `json:"v20241113,omitempty"`
-}
-
-type GroupAlertsConfigStatusConditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to
-	// another.
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
-
-	// Message A human readable message indicating details about the transition.
-	Message *string `json:"message,omitempty"`
-
-	// ObservedGeneration observedGeneration represents the .metadata.generation that
-	// the condition was set based upon.
-	ObservedGeneration *int `json:"observedGeneration,omitempty"`
-
-	// Reason The reason for the condition's last transition.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the condition, one of True, False, Unknown.
-	Status string `json:"status"`
-
-	// Type Type of condition.
-	Type string `json:"type"`
 }
 
 type GroupAlertsConfigStatusV20241113 struct {
