@@ -86,6 +86,16 @@ func (gt *GoType) Signature() string {
 	return fmt.Sprintf("%s(%s)", gt.Name, gt.Kind)
 }
 
+func (g *GoType) BaseType() *GoType {
+    if g == nil {
+        return nil
+    }
+    if g.Kind == ArrayKind {
+        return g.Element.BaseType()
+    }
+    return g
+}
+
 type GoField struct {
 	Comment  string
 	Required bool
@@ -111,10 +121,7 @@ func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 	if f.GoType == nil {
 		return fmt.Errorf("failed to rename type for field %s: GoType is nil", f.Name)
 	}
-	goType := f.GoType
-	for goType.Kind == ArrayKind {
-		goType = goType.Element
-	}
+	goType := f.GoType.BaseType()
 	if goType.isPrimitive() {
 		return nil // primitive types are not to be renamed
 	}
