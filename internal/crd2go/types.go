@@ -27,6 +27,8 @@ const (
 	OpenAPIBoolean = "boolean"
 )
 
+// GoType represents a Go type, which can be a primitive type, a struct, or an array.
+// It is used in conjunbction with TypeDict to track and ensure unique type names.
 type GoType struct {
 	Name    string
 	Kind    string
@@ -34,6 +36,7 @@ type GoType struct {
 	Element *GoType
 }
 
+// isPrimitive checks if the GoType is a primitive type
 func (g *GoType) isPrimitive() bool {
 	switch g.Kind {
 	case StringKind, IntKind, FloatKind, BoolKind:
@@ -43,59 +46,39 @@ func (g *GoType) isPrimitive() bool {
 	}
 }
 
-func (g *GoType) Equal(gt *GoType) bool {
-	if g.Name != gt.Name || g.Kind != gt.Kind {
-		return false
-	}
-
-	if len(g.Fields) != len(gt.Fields) {
-		return false
-	}
-
-	if !slices.EqualFunc(g.Fields, gt.Fields, func(f1, f2 *GoField) bool {
-		return f1.Name == f2.Name && f1.GoType.Equal(f2.GoType)
-	}) {
-		return false
-	}
-
-	if (g.Element == nil) != (gt.Element == nil) {
-		return false
-	}
-
-	if g.Element != nil && !g.Element.Equal(gt.Element) {
-		return false
-	}
-
-	return true
-}
-
-func (gt *GoType) Signature() string {
+// signature generates a unique signature for the GoType.
+// This is leveraged by TypeDict to quickly check if a type is already registered.
+func (gt *GoType) signature() string {
 	if gt == nil {
 		return "nil"
 	}
 	if gt.Kind == StructKind {
 		fieldSignatures := make([]string, len(gt.Fields))
 		for _, field := range gt.Fields {
-			fieldSignatures = append(fieldSignatures, field.Signature())
+			fieldSignatures = append(fieldSignatures, field.signature())
 		}
 		return fmt.Sprintf("{%s}", strings.Join(fieldSignatures, ","))
 	}
 	if gt.Kind == ArrayKind {
-		return fmt.Sprintf("[%s]", gt.Element.Signature())
+		return fmt.Sprintf("[%s]", gt.Element.signature())
 	}
 	return fmt.Sprintf("%s(%s)", gt.Name, gt.Kind)
 }
 
-func (g *GoType) BaseType() *GoType {
+// baseType returns the base type of the GoType.
+// If a type is an array, it returns the element type,
+// traversing until a non-array type is found.
+func (g *GoType) baseType() *GoType {
     if g == nil {
         return nil
     }
     if g.Kind == ArrayKind {
-        return g.Element.BaseType()
+        return g.Element.baseType()
     }
     return g
 }
 
+// GoField is a field in a Go struct
 type GoField struct {
 	Comment  string
 	Required bool
@@ -103,6 +86,7 @@ type GoField struct {
 	GoType   *GoType
 }
 
+// NewGoField creates a new GoField with the given name and GoType
 func NewGoField(name string, gt *GoType) *GoField {
 	return &GoField{
 		Name:   name,
@@ -110,23 +94,28 @@ func NewGoField(name string, gt *GoType) *GoField {
 	}
 }
 
-func (g *GoField) Signature() string {
+// signature generates a unique signature for the GoField leveraging the type 
+// signature
+func (g *GoField) signature() string {
 	if g == nil {
 		return "nil"
 	}
-	return fmt.Sprintf("%s:%s", g.Name, g.GoType.Signature())
+	return fmt.Sprintf("%s:%s", g.Name, g.GoType.signature())
 }
 
+// RenameType renames the GoType of the field to ensure it is unique within the
+// TypeDict. It uses the parent names as needed to create a unique name for the
+// type, if the type is not a primitive and its name is already taken.
 func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 	if f.GoType == nil {
 		return fmt.Errorf("failed to rename type for field %s: GoType is nil", f.Name)
 	}
-	goType := f.GoType.BaseType()
+	goType := f.GoType.baseType()
 	if goType.isPrimitive() {
 		return nil // primitive types are not to be renamed
 	}
 	if td.Has(goType) {
-		existingType := td.bySignature[goType.Signature()]
+		existingType := td.bySignature[goType.signature()]
 		if existingType == nil {
 			return fmt.Errorf("failed to find existing type for %v", f)
 		}
@@ -153,6 +142,7 @@ func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 	return nil
 }
 
+// NewPrimitive creates a new GoType representing a primitive type
 func NewPrimitive(name, kind string) *GoType {
 	return &GoType{
 		Name: name,
@@ -160,6 +150,7 @@ func NewPrimitive(name, kind string) *GoType {
 	}
 }
 
+// NewArray creates a new GoType representing an array type
 func NewArray(element *GoType) *GoType {
 	return &GoType{
 		Name:    "",
@@ -168,6 +159,7 @@ func NewArray(element *GoType) *GoType {
 	}
 }
 
+// NewStruct creates a new GoType representing a struct type
 func NewStruct(name string, fields []*GoField) *GoType {
 	return &GoType{
 		Name:   title(name),
@@ -176,12 +168,15 @@ func NewStruct(name string, fields []*GoField) *GoType {
 	}
 }
 
+// TypeDict is a dictionary of Go types, used to track and ensure unique type names.
+// It also keeps track of generated types to avoid re-genrating the same type again.
 type TypeDict struct {
 	bySignature map[string]*GoType
 	byName      map[string]*GoType
 	generated   map[string]bool
 }
 
+// NewTypeDict creates a new TypeDict with the given Go types
 func NewTypeDict(goTypes ...*GoType) TypeDict {
 	td := TypeDict{
 		bySignature: make(map[string]*GoType),
@@ -194,25 +189,29 @@ func NewTypeDict(goTypes ...*GoType) TypeDict {
 	return td
 }
 
+// Has checks if the TypeDict contains a GoType with the same signature
 func (td TypeDict) Has(gt *GoType) bool {
-	_, ok := td.bySignature[gt.Signature()]
+	_, ok := td.bySignature[gt.signature()]
 	return ok
 }
 
+// Get retrieves a GoType by its name from the TypeDict
 func (td TypeDict) Get(name string) (*GoType, bool) {
 	gt, ok := td.byName[name]
 	return gt, ok
 }
 
+// Add adds a GoType to the TypeDict, ensuring that the type name is unique
 func (td TypeDict) Add(gt *GoType) {
 	titledName := title(gt.Name)
 	if gt.Name != titledName {
 		panic(fmt.Sprintf("type name %s is not titled", gt.Name))
 	}
-	td.bySignature[gt.Signature()] = gt
+	td.bySignature[gt.signature()] = gt
 	td.byName[gt.Name] = gt
 }
 
+// MarkGenerated marks a GoType as generated
 func (td TypeDict) MarkGenerated(gt *GoType) {
 	if !td.Has(gt) {
 		td.Add(gt)
@@ -220,6 +219,7 @@ func (td TypeDict) MarkGenerated(gt *GoType) {
 	td.generated[gt.Name] = true
 }
 
+// WasGenerated checks if a GoType was marked as generated
 func (td TypeDict) WasGenerated(gt *GoType) bool {
 	if td.Has(gt) {
 		return td.generated[gt.Name]
@@ -227,6 +227,7 @@ func (td TypeDict) WasGenerated(gt *GoType) bool {
 	return false
 }
 
+// orderFieldsByName sorts the fields of a GoType by name
 func orderFieldsByName(fields []*GoField) []*GoField {
 	sort.Slice(fields, func(i, j int) bool {
 		return fields[i].Name < fields[j].Name
@@ -234,6 +235,7 @@ func orderFieldsByName(fields []*GoField) []*GoField {
 	return fields
 }
 
+// FromOpenAPIType converts an OpenAPI schema to a GoType
 func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *apiextensions.JSONSchemaProps) (*GoType, error) {
 	switch schema.Type {
 	case OpenAPIObject:
@@ -247,6 +249,7 @@ func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *api
 	}
 }
 
+// fromOpenAPIStruct converts an OpenAPI object schema to a GoType struct
 func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *apiextensions.JSONSchemaProps) (*GoType, error) {
 	fields := []*GoField{}
 	fieldsParents := append(parents, typeName)
@@ -267,6 +270,7 @@ func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *a
 	return NewStruct(typeName, fields), nil
 }
 
+// fromOpenAPIArray converts an OpenAPI array schema to a GoType array
 func fromOpenAPIArray(td TypeDict, typeName string, schema *apiextensions.JSONSchemaProps) (*GoType, error) {
 	if schema.Items == nil {
 		return nil, fmt.Errorf("array %s has no items", typeName)
@@ -281,6 +285,7 @@ func fromOpenAPIArray(td TypeDict, typeName string, schema *apiextensions.JSONSc
 	return NewArray(elementType), nil
 }
 
+// fromOpenAPIPrimitive converts an OpenAPI primitive type to a GoType
 func fromOpenAPIPrimitive(kind string) (*GoType, error) {
 	goTypeName, err := openAPIKindtoGoType(kind)
 	if err != nil {
@@ -289,6 +294,7 @@ func fromOpenAPIPrimitive(kind string) (*GoType, error) {
 	return NewPrimitive(goTypeName, goTypeName), nil
 }
 
+// openAPIKindtoGoType converts an OpenAPI kind to a Go type
 func openAPIKindtoGoType(kind string) (string, error) {
 	switch kind {
 	case OpenAPIString:
