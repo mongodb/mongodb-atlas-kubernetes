@@ -138,7 +138,6 @@ func TestRenameType(t *testing.T) {
 func TestBuildOpenAPIType(t *testing.T) {
 	td := crd2go.NewTypeDict(CrossReference(), LocalReference())
 
-	// Define the schema
 	schema := &apiextensions.JSONSchemaProps{
 		Type: "object",
 		Properties: map[string]apiextensions.JSONSchemaProps{
@@ -188,12 +187,10 @@ func TestBuildOpenAPIType(t *testing.T) {
 		},
 	}
 
-	// Build the GoType
 	goType, err := crd2go.FromOpenAPIType(td, "RootType", []string{}, schema)
 	assert.NoError(t, err)
 	assert.NotNil(t, goType)
 
-	// Define the expected GoType
 	expectedType := crd2go.NewStruct("RootType", []*crd2go.GoField{
 		crd2go.NewGoField("ArrayOfStrings", crd2go.NewArray(crd2go.NewPrimitive("string", "string"))),
 		crd2go.NewGoField("ArrayOfObjects", crd2go.NewArray(
@@ -221,9 +218,7 @@ func TestBuildOpenAPIType(t *testing.T) {
 	fmt.Printf("Generated GoType: %s\n", jsonize(goType))
 	fmt.Printf("Expected GoType: %s\n", jsonize(expectedType))
 
-	// Validate the generated type against the expected type
-	require.Equal(t, expectedType, goType)
-	assert.True(t, goType.Equal(expectedType), "Generated GoType does not match the expected GoType")
+	assert.Equal(t, expectedType, goType)
 }
 
 func jsonize(obj any) string {

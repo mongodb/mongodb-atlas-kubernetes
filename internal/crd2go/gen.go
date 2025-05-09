@@ -25,8 +25,10 @@ const (
 	metav1 = "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// CodeWriterFunc is a function type that takes a CRD and returns a writer for the generated code
 type CodeWriterFunc func(*apiextensions.CustomResourceDefinition) (io.WriteCloser, error)
 
+// CodeFileForCRDAtPath creates a file writer for the given CRD at the specified directory
 func CodeFileForCRDAtPath(dir string) CodeWriterFunc {
 	return func(crd *apiextensions.CustomResourceDefinition) (io.WriteCloser, error) {
 		crdName := strings.ToLower(crd.Spec.Names.Kind)
@@ -39,6 +41,10 @@ func CodeFileForCRDAtPath(dir string) CodeWriterFunc {
 	}
 }
 
+// GenerateStream generates Go code from a stream of CRDs within a YAML reader.
+// It uses the provided CodeWriterFunc to write the generated code to the specified output.
+// The version parameter specifies the version of the CRD to generate code for.
+// The preloadedTypes parameter allows for preloading specific types to avoid name collisions.
 func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string, preloadedTypes ...*GoType) error {
 	generated := false
 	scanner := bufio.NewScanner(r)
@@ -70,6 +76,7 @@ func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string, preloadedT
 	}
 }
 
+// generateCRD generates Go code for a CustomResourceDefinition (CRD) using the provided TypeDict and version
 func generateCRD(td TypeDict, crd *apiextensions.CustomResourceDefinition, version string) (*jen.File, error) {
 	v := selectVersion(&crd.Spec, version)
 	if v == nil {
@@ -132,6 +139,7 @@ func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomRe
 	return nil
 }
 
+// generateType generates Go code for a given type using the provided TypeDict
 func generateType(td TypeDict, t *GoType) (*jen.Statement, error) {
 	if t.Kind == StructKind {
 		return generateStructType(td, t)
@@ -142,6 +150,7 @@ func generateType(td TypeDict, t *GoType) (*jen.Statement, error) {
 	return nil, fmt.Errorf("unsupported type %q", t.Kind)
 }
 
+// generateStructType generates Go code for a struct type
 func generateStructType(td TypeDict, t *GoType) (*jen.Statement, error) {
 	fields := make([]jen.Code, 0, len(t.Fields))
 	subtypes := make([]jen.Code, 0, len(t.Fields))
@@ -160,6 +169,7 @@ func generateStructType(td TypeDict, t *GoType) (*jen.Statement, error) {
 	return jen.Line().Line().Type().Id(t.Name).Struct(fields...).Add(subtypes...), nil
 }
 
+// generateArrayType generates Go code for an array type
 func generateArrayType(td TypeDict, t *GoType) (*jen.Statement, error) {
 	elementType, err := generateSubtype(td, t.Element)
 	if err != nil {
@@ -168,6 +178,7 @@ func generateArrayType(td TypeDict, t *GoType) (*jen.Statement, error) {
 	return elementType, nil
 }
 
+// generateSubtype generates Go code for a subtype of a given type
 func generateSubtype(td TypeDict, t *GoType) (*jen.Statement, error) {
 	if !t.isPrimitive() && !td.WasGenerated(t) {
 		subtypeCode, err := generateType(td, t)
@@ -180,6 +191,7 @@ func generateSubtype(td TypeDict, t *GoType) (*jen.Statement, error) {
 	return jen.Null(), nil
 }
 
+// generateField generates Go code for a field in a struct
 func generateField(f *GoField) (jen.Code, error) {
 	if f.GoType == nil {
 		return nil, fmt.Errorf("field %q has no Go type", f.Name)
@@ -195,6 +207,7 @@ func generateField(f *GoField) (jen.Code, error) {
 	return fieldCode.Id(f.Name).Add(typeRefCode).Add(generateJSONTag(f)).Line(), nil
 }
 
+// generateFieldComment generates a comment for a field in a struct
 func generateFieldComment(code *jen.Statement, name, comment string) *jen.Statement {
 	goComment := fmt.Sprintf("%s %s", name, comment)
 	lines := formatComment(goComment, CommentMaxWidth)
@@ -204,6 +217,7 @@ func generateFieldComment(code *jen.Statement, name, comment string) *jen.Statem
 	return code
 }
 
+// qualifyRequired qualifies the type reference based on whether the field is required
 func qualifyRequired(typeRef *jen.Statement, required bool) (*jen.Statement, error) {
 	if required {
 		return typeRef, nil
@@ -211,6 +225,7 @@ func qualifyRequired(typeRef *jen.Statement, required bool) (*jen.Statement, err
 	return jen.Op("*").Add(typeRef), nil
 }
 
+// generateTypeRef generates a type reference for a given GoType
 func generateTypeRef(t *GoType) *jen.Statement {
 	switch t.Kind {
 	case StringKind:
@@ -228,6 +243,7 @@ func generateTypeRef(t *GoType) *jen.Statement {
 	}
 }
 
+// generateJSONTag generates a JSON tag for a field in a struct
 func generateJSONTag(f *GoField) *jen.Statement {
 	name := untitle(f.Name)
 	jsTag := fmt.Sprintf("%s,omitempty", name)
@@ -269,7 +285,8 @@ func untitle(s string) string {
 	return cases.Lower(language.English).String(s[0:1]) + s[1:]
 }
 
-// formatComment formats a comment string to fit within a specified width
+// formatComment formats a comment string to fit within a specified width,
+// without splitting words.
 func formatComment(comment string, maxWidth int) []string {
 	if strings.Contains(comment, "\n") {
 		return []string{comment}
