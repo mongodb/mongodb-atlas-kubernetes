@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 )
 
 type EncryptionAtRestService interface {
