@@ -76,5 +76,3 @@ jobs:
     if: (github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true')
     uses: ./.github/workflows/cloud-tests.yml
     secrets: inherit
-    with:
-      forked: ${{ github.event.repository.full_name != github.event.pull_request.head.repo.full_name }}

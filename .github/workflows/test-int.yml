@@ -2,11 +2,6 @@ name: Integration tests.
 
 on:
   workflow_call:
-    inputs:
-      forked:
-        type: boolean
-        required: false
-        default: false
   workflow_dispatch:
 
 jobs:
@@ -26,18 +21,10 @@ jobs:
             nodes: 1
 
     steps:
-      - if: ${{ inputs.forked == false }}
-        name: Check out code
+      - name: Check out code
         uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.sha}}
-
-      - if: ${{ inputs.forked == true }}
-        name: Check out code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{github.event.pull_request.head.sha}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.12.0
         with:
