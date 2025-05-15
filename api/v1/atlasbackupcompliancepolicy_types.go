@@ -99,11 +99,14 @@ func (b *AtlasBackupCompliancePolicy) ToAtlas(projectID string) *admin.DataProte
 		RestoreWindowDays:       pointer.MakePtr(b.Spec.RestoreWindowDays),
 	}
 
-	result.OnDemandPolicyItem = &admin.BackupComplianceOnDemandPolicyItem{
-		FrequencyInterval: 0,
-		FrequencyType:     "ondemand",
-		RetentionValue:    b.Spec.OnDemandPolicy.RetentionValue,
-		RetentionUnit:     strings.ToLower(b.Spec.OnDemandPolicy.RetentionUnit),
+	var emptyPolicy AtlasOnDemandPolicy
+	if b.Spec.OnDemandPolicy != emptyPolicy {
+		result.OnDemandPolicyItem = &admin.BackupComplianceOnDemandPolicyItem{
+			FrequencyInterval: 0,
+			FrequencyType:     "ondemand",
+			RetentionValue:    b.Spec.OnDemandPolicy.RetentionValue,
+			RetentionUnit:     strings.ToLower(b.Spec.OnDemandPolicy.RetentionUnit),
+		}
 	}
 
 	temp := make([]admin.BackupComplianceScheduledPolicyItem, len(b.Spec.ScheduledPolicyItems))
