@@ -299,7 +299,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					secret.StringData = secretData()
 				})
 				Expect(err).To(BeNil())
-
 			})
 
 			By("Checking that the Deployment is deleted", func() {
@@ -722,7 +721,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Updating the Deployment tags", func() {
 				createdDeployment = performUpdate(ctx, 30*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.Tags = []*akov2.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
+					deployment.Spec.DeploymentSpec.Tags = []*akov2.TagSpec{{Key: "test 1", Value: "value 1"}, {Key: "test-2", Value: "value-2"}}
 				})
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
@@ -970,7 +969,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	Describe("Setting the deployment skip annotation should skip reconciliations.", func() {
 		It("Should Succeed", func(ctx context.Context) {
-
 			By(`Creating the deployment with reconciliation policy "skip" first`, func() {
 				createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 				performCreate(createdDeployment, 30*time.Minute)
@@ -1356,7 +1354,6 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 					}
 					return nil
 				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Not(HaveOccurred()))
-
 			})
 		})
 	})
@@ -1443,7 +1440,6 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 					}
 				})
 				Expect(err).To(BeNil())
-
 			})
 
 			By("Deployment is ready with backup and snapshot distribution configured", func() {

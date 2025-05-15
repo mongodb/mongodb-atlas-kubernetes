@@ -218,7 +218,7 @@ type TagSpec struct {
 	Key string `json:"key"`
 	// +kubebuilder:validation:MaxLength:=255
 	// +kubebuilder:validation:MinLength:=1
-	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
 	Value string `json:"value"`
 }
 
