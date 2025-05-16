@@ -62,6 +62,7 @@ jobs:
     uses: ./.github/workflows/check-licenses.yml
   
   cloud-tests-filter:
+    if: github.event.pull_request.head.repo.fork == false
     needs:
       - run-tests
     uses: ./.github/workflows/cloud-tests-filter.yml
@@ -73,8 +74,7 @@ jobs:
       - validate-manifests
       - check-licenses
       - cloud-tests-filter
-    if: (github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true')
+    if: |
+      github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true'
     uses: ./.github/workflows/cloud-tests.yml
     secrets: inherit
-    with:
-      forked: ${{ github.event.repository.full_name != github.event.pull_request.head.repo.full_name }}
