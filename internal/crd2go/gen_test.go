@@ -76,31 +76,7 @@ func newWriteNopCloser(w io.Writer) io.WriteCloser {
 }
 
 func preloadedTypes() []*crd2go.GoType {
-	return append(knownTypes(), reservedTypeNames()...)
-}
-
-func knownTypes() []*crd2go.GoType {
-	return []*crd2go.GoType{
-		crd2go.NewStruct("K8sCrossReference", []*crd2go.GoField{
-			{
-				Name:     "Namespace",
-				Required: true,
-				GoType:   &crd2go.GoType{Name: "string", Kind: "string"},
-			},
-			{
-				Name:     "Name",
-				Required: true,
-				GoType:   &crd2go.GoType{Name: "string", Kind: "string"},
-			},
-		}),
-		crd2go.NewStruct("K8sLocalReference", []*crd2go.GoField{
-			{
-				Name:     "Name",
-				Required: true,
-				GoType:   &crd2go.GoType{Name: "string", Kind: "string"},
-			},
-		}),
-	}
+	return append(crd2go.KnownTypes(), reservedTypeNames()...)
 }
 
 func reservedTypeNames() []*crd2go.GoType {

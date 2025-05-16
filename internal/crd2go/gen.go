@@ -239,6 +239,9 @@ func generateTypeRef(t *GoType) *jen.Statement {
 	case ArrayKind:
 		return jen.Index().Add(generateTypeRef(t.Element))
 	default:
+		if t.Import != nil {
+			return jen.Qual(t.Import.Path,title(t.Name))
+		}
 		return jen.Id(title(t.Name))
 	}
 }
