@@ -2,20 +2,24 @@ package crd2go
 
 import (
 	"fmt"
+	"path"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
 
+	"github.com/josvazg/crd2go/k8s"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 const (
-	StructKind = "struct"
-	ArrayKind  = "array"
-	StringKind = "string"
-	IntKind    = "int"
-	FloatKind  = "float64"
-	BoolKind   = "bool"
+	UnsupportedKind = "unsupported"
+	StructKind      = "struct"
+	ArrayKind       = "array"
+	StringKind      = "string"
+	IntKind         = "int"
+	FloatKind       = "float64"
+	BoolKind        = "bool"
 )
 
 const (
@@ -27,6 +31,8 @@ const (
 	OpenAPIBoolean = "boolean"
 )
 
+const PACKAGE_BASE = "github.com/josvazg/crd2go"
+
 // GoType represents a Go type, which can be a primitive type, a struct, or an array.
 // It is used in conjunbction with TypeDict to track and ensure unique type names.
 type GoType struct {
@@ -34,6 +40,13 @@ type GoType struct {
 	Kind    string
 	Fields  []*GoField
 	Element *GoType
+	Import  *ImportInfo
+}
+
+// ImportInfo holds the import path and alias for existing types
+type ImportInfo struct {
+	Alias string
+	Path  string
 }
 
 // isPrimitive checks if the GoType is a primitive type
@@ -69,13 +82,13 @@ func (gt *GoType) signature() string {
 // If a type is an array, it returns the element type,
 // traversing until a non-array type is found.
 func (g *GoType) baseType() *GoType {
-    if g == nil {
-        return nil
-    }
-    if g.Kind == ArrayKind {
-        return g.Element.baseType()
-    }
-    return g
+	if g == nil {
+		return nil
+	}
+	if g.Kind == ArrayKind {
+		return g.Element.baseType()
+	}
+	return g
 }
 
 // GoField is a field in a Go struct
@@ -94,7 +107,7 @@ func NewGoField(name string, gt *GoType) *GoField {
 	}
 }
 
-// signature generates a unique signature for the GoField leveraging the type 
+// signature generates a unique signature for the GoField leveraging the type
 // signature
 func (g *GoField) signature() string {
 	if g == nil {
@@ -166,6 +179,15 @@ func NewStruct(name string, fields []*GoField) *GoType {
 		Kind:   StructKind,
 		Fields: orderFieldsByName(fields),
 	}
+}
+
+func AddImportInfo(gt *GoType, packagePath, alias string) *GoType {
+	effectiveAlias := alias
+	if effectiveAlias == "" {
+		effectiveAlias = path.Base(packagePath)
+	}
+	gt.Import = &ImportInfo{Path: packagePath, Alias: effectiveAlias}
+	return gt
 }
 
 // TypeDict is a dictionary of Go types, used to track and ensure unique type names.
@@ -318,4 +340,76 @@ func orderedkeys[T any](m map[string]T) []string {
 	}
 	slices.Sort(keys)
 	return keys
+}
+
+func KnownTypes() []*GoType {
+	return []*GoType{
+		MustTypeFrom(reflect.TypeOf(k8s.LocalReference{})),
+		MustTypeFrom(reflect.TypeOf(k8s.Reference{})),
+	}
+}
+
+func MustTypeFrom(t reflect.Type) *GoType {
+	gt, err := TypeFrom(t)
+	if err != nil {
+		panic(fmt.Errorf("failed to translate type %v: %w", t.Name(), err))
+	}
+	return gt
+}
+
+func TypeFrom(t reflect.Type) (*GoType, error) {
+	kind := GoKind(t.Kind())
+	switch kind {
+	case StructKind:
+		return StructTypeFrom(t)
+	case ArrayKind:
+		return ArrayTypeFrom(t)
+	case StringKind, IntKind, FloatKind, BoolKind:
+		return NewPrimitive(t.Name(), kind), nil
+	default:
+		return nil, fmt.Errorf("unsupported kind %v", kind)
+	}
+}
+
+func StructTypeFrom(t reflect.Type) (*GoType, error) {
+	fields := []*GoField{}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		gt, err := TypeFrom(f.Type)
+		if err != nil {
+			return nil, fmt.Errorf("failed to translate field's %s type %v: %w",
+				f.Name, f.Type, err)
+		}
+		fields = append(gt.Fields, NewGoField(f.Name, gt))
+	}
+	return AddImportInfo(NewStruct(t.Name(), fields), t.PkgPath(), ""), nil
+}
+
+func ArrayTypeFrom(t reflect.Type) (*GoType, error) {
+	gt, err := TypeFrom(t.Elem())
+	if err != nil {
+		return nil, fmt.Errorf("failed to translate array element type %v: %w",
+			t.Elem(), err)
+	}
+	return AddImportInfo(NewArray(gt), t.Key().PkgPath(), ""), nil
+}
+
+func GoKind(k reflect.Kind) string {
+	switch k {
+	case reflect.Array:
+		return ArrayKind
+	case reflect.Bool:
+		return BoolKind
+	case reflect.Complex128, reflect.Complex64, reflect.Float32, reflect.Float64:
+	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int8:
+		return IntKind
+	case reflect.String:
+		return StringKind
+	case reflect.Struct:
+		return StructKind
+	case reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint8:
+	default:
+		panic(fmt.Sprintf("%s reflect.Kind: %#v", UnsupportedKind, k))
+	}
+	return ""
 }
