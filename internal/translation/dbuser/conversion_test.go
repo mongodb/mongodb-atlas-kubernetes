@@ -272,6 +272,7 @@ func TestDiffSpecs(t *testing.T) {
 					spec.OIDCAuthType = "IDP_GROUP"
 					spec.AWSIAMType = "USER"
 					spec.X509Type = "MANAGED"
+					spec.LDAPAuthType = "GROUP"
 					return spec
 				}(),
 			},
@@ -282,6 +283,7 @@ func TestDiffSpecs(t *testing.T) {
 				"oidcAuthType",
 				"awsIamType",
 				"x509Type",
+				"ldapAuthType",
 			},
 		},
 

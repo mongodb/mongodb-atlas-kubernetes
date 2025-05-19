@@ -120,6 +120,16 @@ spec:
                   - value
                   type: object
                 type: array
+              ldapAuthType:
+                default: NONE
+                description: |-
+                  Part of the Lightweight Directory Access Protocol (LDAP) record that
+                  the database uses to authenticate this database user on the LDAP host.
+                enum:
+                - NONE
+                - GROUP
+                - USER
+                type: string
               oidcAuthType:
                 default: NONE
                 description: |-
