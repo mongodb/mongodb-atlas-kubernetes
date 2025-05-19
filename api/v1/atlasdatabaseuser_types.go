@@ -110,6 +110,13 @@ type AtlasDatabaseUserSpec struct {
 	// +kubebuilder:validation:Enum:=NONE;MANAGED;CUSTOMER
 	// +optional
 	X509Type string `json:"x509Type,omitempty"`
+
+	// Part of the Lightweight Directory Access Protocol (LDAP) record that
+	// the database uses to authenticate this database user on the LDAP host.
+	// +kubebuilder:default:=NONE
+	// +kubebuilder:validation:Enum:=NONE;GROUP;USER
+	// +optional
+	LDAPAuthType string `json:"ldapAuthType,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
