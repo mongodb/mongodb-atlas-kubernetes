@@ -2,11 +2,6 @@ name: CloudTests
 
 on:
   workflow_call:
-    inputs:
-      forked:
-        type: boolean
-        required: false
-        default: false
 
 concurrency:
     group: cloud-tests-${{ github.ref == 'refs/heads/main' && 'main' || github.actor || github.triggering_actor }}
@@ -30,15 +25,11 @@ jobs:
     needs: allowed
     uses: ./.github/workflows/test-int.yml
     secrets: inherit
-    with:
-      forked:  ${{ inputs.forked }}
 
   e2e-tests:
     needs: allowed
     uses: ./.github/workflows/test-e2e.yml
     secrets: inherit
-    with:
-      forked:  ${{ inputs.forked }}
 
   test-e2e-gov:
     needs:
@@ -50,5 +41,3 @@ jobs:
     needs: allowed
     uses: ./.github/workflows/openshift-upgrade-test.yaml
     secrets: inherit
-    with:
-      forked:  ${{ inputs.forked }}
