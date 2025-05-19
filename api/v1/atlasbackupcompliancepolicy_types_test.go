@@ -144,8 +144,8 @@ func TestBackupCompliancePolicyFromAtlas(t *testing.T) {
 	})
 }
 
-func TestBackupCompliancePolicyNilOndemandPolicy(t *testing.T) {
-	t.Run("Can convert when OndemandPolicyItem is nil", func(t *testing.T) {
+func TestBackupCompliancePolicyFromAtlasNilOndemandPolicy(t *testing.T) {
+	t.Run("Can convert from Atlas when OndemandPolicyItem is nil", func(t *testing.T) {
 		in := &admin.DataProtectionSettings20231001{
 			AuthorizedEmail:         "example@test.com",
 			AuthorizedUserFirstName: "James",
@@ -185,6 +185,60 @@ func TestBackupCompliancePolicyNilOndemandPolicy(t *testing.T) {
 				},
 			},
 			OnDemandPolicy: AtlasOnDemandPolicy{},
+		}
+
+		assert.True(t, reflect.DeepEqual(*out, want), cmp.Diff(*out, want))
+	})
+}
+
+func TestBackupCompliancePolicyToAtlasNilOndemandPolicy(t *testing.T) {
+	t.Run("Can convert to Atlas when OndemandPolicyItem is nil", func(t *testing.T) {
+		in := AtlasBackupCompliancePolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-bcp",
+				Namespace: "test-ns",
+				Labels: map[string]string{
+					"test": "label",
+				},
+			},
+			Spec: AtlasBackupCompliancePolicySpec{
+				AuthorizedEmail:         "example@test.com",
+				AuthorizedUserFirstName: "James",
+				AuthorizedUserLastName:  "Bond",
+				CopyProtectionEnabled:   true,
+				EncryptionAtRestEnabled: false,
+				PITEnabled:              true,
+				RestoreWindowDays:       24,
+				ScheduledPolicyItems: []AtlasBackupPolicyItem{
+					{
+						FrequencyType:     "monthly",
+						FrequencyInterval: 2,
+						RetentionUnit:     "months",
+						RetentionValue:    4,
+					},
+				},
+			},
+		}
+		out := in.ToAtlas("testProjectID")
+
+		want := admin.DataProtectionSettings20231001{
+			AuthorizedEmail:         "example@test.com",
+			AuthorizedUserFirstName: "James",
+			AuthorizedUserLastName:  "Bond",
+			CopyProtectionEnabled:   pointer.MakePtr(true),
+			EncryptionAtRestEnabled: pointer.MakePtr(false),
+			PitEnabled:              pointer.MakePtr(true),
+			ProjectId:               pointer.MakePtr("testProjectID"),
+			RestoreWindowDays:       pointer.MakePtr(24),
+			ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
+				{
+					FrequencyType:     "monthly",
+					FrequencyInterval: 2,
+					RetentionUnit:     "months",
+					RetentionValue:    4,
+				},
+			},
+			OnDemandPolicyItem: nil,
 		}
 
 		assert.True(t, reflect.DeepEqual(*out, want), cmp.Diff(*out, want))
