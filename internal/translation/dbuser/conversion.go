@@ -133,7 +133,6 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 			OIDCAuthType:    dbUser.GetOidcAuthType(),
 			AWSIAMType:      dbUser.GetAwsIAMType(),
 			X509Type:        dbUser.GetX509Type(),
-			LDAPAuthType:    dbUser.GetLdapAuthType(),
 		},
 	}
 	if err := normalize(u.AtlasDatabaseUserSpec); err != nil {
@@ -162,7 +161,6 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 		Username:        au.Username,
 		Password:        pointer.MakePtrOrNil(au.Password),
 		OidcAuthType:    pointer.MakePtrOrNil(au.OIDCAuthType),
-		LdapAuthType:    pointer.MakePtrOrNil(au.LDAPAuthType),
 	}, nil
 }
 
