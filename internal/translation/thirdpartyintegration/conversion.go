@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package thirdpartyintegration
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -29,6 +29,59 @@ var (
 	// ErrUnsupportedIntegrationType when the integration type is not supported
 	ErrUnsupportedIntegrationType = errors.New("unsupported integration type")
 )
+
+func NewFromSpec(crd *akov2next.AtlasThirdPartyIntegration, secrets map[string][]byte) (*ThirdPartyIntegration, error) {
+	tpi := ThirdPartyIntegration{
+		AtlasThirdPartyIntegrationSpec: crd.Spec,
+		ID:                             crd.Status.ID,
+	}
+	switch tpi.Type {
+	case "DATADOG":
+		tpi.DatadogSecrets = &DatadogSecrets{
+			APIKey: string(secrets["apikey"]),
+		}
+	case "MICROSOFT_TEAMS":
+		tpi.MicrosoftTeamsSecrets = &MicrosoftTeamsSecrets{
+			WebhookUrl: string(secrets["webhookURL"]),
+		}
+	case "NEW_RELIC":
+		tpi.NewRelicSecrets = &NewRelicSecrets{
+			AccountID:  string(secrets["accountId"]),
+			LicenseKey: string(secrets["licenseKey"]),
+			ReadToken:  string(secrets["readToken"]),
+			WriteToken: string(secrets["writeToken"]),
+		}
+	case "OPS_GENIE":
+		tpi.OpsGenieSecrets = &OpsGenieSecrets{
+			APIKey: string(secrets["apikey"]),
+		}
+	case "PAGER_DUTY":
+		tpi.PagerDutySecrets = &PagerDutySecrets{
+			ServiceKey: string(secrets["serviceKey"]),
+		}
+	case "PROMETHEUS":
+		tpi.PrometheusSecrets = &PrometheusSecrets{
+			Username: string(secrets["username"]),
+			Password: string(secrets["password"]),
+		}
+	case "SLACK":
+		tpi.SlackSecrets = &SlackSecrets{
+			APIToken: string(secrets["apiToken"]),
+		}
+	case "VICTOR_OPS":
+		tpi.VictorOpsSecrets = &VictorOpsSecrets{
+			APIKey: string(secrets["apikey"]),
+		}
+	case "WEBHOOK":
+		tpi.WebhookSecrets = &WebhookSecrets{
+			URL:    string(secrets["url"]),
+			Secret: string(secrets["secret"]),
+		}
+	default:
+		return nil, fmt.Errorf("%w %v", ErrUnsupportedIntegrationType, tpi.Type)
+	}
+	return &tpi, nil
+}
 
 type ThirdPartyIntegration struct {
 	akov2next.AtlasThirdPartyIntegrationSpec

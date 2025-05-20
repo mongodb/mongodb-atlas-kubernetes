@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration_test
+package thirdpartyintegration_test
 
 import (
 	"context"
@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312001/admin"
-	"go.mongodb.org/atlas-sdk/v20250312001/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 
 	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -470,6 +470,6 @@ func testDeleteIntegrationAPI(err error) admin.ThirdPartyIntegrationsApi {
 
 	apiMock.EXPECT().DeleteThirdPartyIntegrationExecute(
 		mock.AnythingOfType("admin.DeleteThirdPartyIntegrationApiRequest"),
-	).Return(nil, nil, err)
+	).Return(nil, err)
 	return &apiMock
 }

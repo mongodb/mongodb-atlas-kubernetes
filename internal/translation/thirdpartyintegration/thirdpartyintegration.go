@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package thirdpartyintegration
 
 import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/atlas"
 )
 
 type ThirdPartyIntegrationService interface {
@@ -26,6 +28,10 @@ type ThirdPartyIntegrationService interface {
 	Get(ctx context.Context, projectID, integrationType string) (*ThirdPartyIntegration, error)
 	Update(ctx context.Context, projectID string, integration *ThirdPartyIntegration) (*ThirdPartyIntegration, error)
 	Delete(ctx context.Context, projectID, integrationType string) error
+}
+
+func NewThirdPartyIntegrationServiceFromClientSet(clientSet *atlas.ClientSet) ThirdPartyIntegrationService {
+	return NewThirdPartyIntegrationService(clientSet.SdkClient20250312002.ThirdPartyIntegrationsApi)
 }
 
 func NewThirdPartyIntegrationService(integrationsAPI admin.ThirdPartyIntegrationsApi) ThirdPartyIntegrationService {
@@ -91,7 +97,7 @@ func (tpi *thirdPartyIntegration) Update(ctx context.Context, projectID string, 
 }
 
 func (tpi *thirdPartyIntegration) Delete(ctx context.Context, projectID, integrationType string) error {
-	_, _, err := tpi.integrationsAPI.DeleteThirdPartyIntegration(ctx, projectID, integrationType).Execute()
+	_, err := tpi.integrationsAPI.DeleteThirdPartyIntegration(ctx, projectID, integrationType).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete integration type %s: %w", integrationType, err)
 	}
