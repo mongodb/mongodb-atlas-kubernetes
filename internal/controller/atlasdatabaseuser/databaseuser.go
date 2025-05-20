@@ -92,7 +92,7 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUser
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
 		}
 
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserExpired, false, errors.New("an expired user cannot be managed"))
+		return r.unmanage(ctx, atlasProject.ID, atlasDatabaseUser)
 	}
 
 	scopesAreValid, err := r.areDeploymentScopesValid(ctx, deploymentService, atlasProject.ID, atlasDatabaseUser)

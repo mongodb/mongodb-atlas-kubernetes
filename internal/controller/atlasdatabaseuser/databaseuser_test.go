@@ -478,11 +478,6 @@ func TestDbuLifeCycle(t *testing.T) {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
 			expectedResult: ctrl.Result{},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.DatabaseUserReadyType).
-					WithReason(string(workflow.DatabaseUserExpired)).
-					WithMessageRegexp("an expired user cannot be managed"),
-			},
 		},
 		"failed to validate scope": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
