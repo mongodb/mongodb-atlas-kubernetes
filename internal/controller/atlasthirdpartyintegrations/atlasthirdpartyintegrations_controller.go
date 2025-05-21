@@ -44,7 +44,6 @@ import (
 // AtlasThirdPartyIntegrationsReconciler reconciles a AtlasNetworkPeering object
 type AtlasThirdPartyIntegrationsReconciler struct {
 	reconciler.AtlasReconciler
-	AtlasProvider            atlas.Provider
 	Scheme                   *runtime.Scheme
 	EventRecorder            record.EventRecorder
 	GlobalPredicates         []predicate.Predicate
@@ -66,10 +65,10 @@ func NewAtlas3rdPartyIntegrationsReconciler(
 			Client:          c.GetClient(),
 			Log:             logger.Named("controllers").Named("Atlas3rdPartyIntegrationsReconciler").Sugar(),
 			GlobalSecretRef: globalSecretRef,
+			AtlasProvider:   atlasProvider,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasThirdPartyIntegration"),
-		AtlasProvider:            atlasProvider,
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
