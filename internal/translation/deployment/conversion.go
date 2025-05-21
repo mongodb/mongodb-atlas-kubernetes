@@ -116,6 +116,14 @@ func (c *Cluster) Deprecated() (bool, string) {
 			}
 		}
 	}
+	if c.ProcessArgs != nil {
+		if c.ProcessArgs.DefaultReadConcern != "" {
+			return true, "Process Arg DefaultReadConcern is no longer available in Atlas. Setting this will have no effect."
+		}
+		if c.ProcessArgs.FailIndexKeyTooLong != nil {
+			return true, "Process Arg FailIndexKeyTooLong is no longer available in Atlas. Setting this will have no effect."
+		}
+	}
 	return false, ""
 }
 
@@ -743,10 +751,8 @@ func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs20240805) *
 	}
 
 	args := akov2.ProcessArgs{
-		DefaultReadConcern:               config.GetDefaultReadConcern(),
 		DefaultWriteConcern:              config.GetDefaultWriteConcern(),
 		MinimumEnabledTLSProtocol:        config.GetMinimumEnabledTlsProtocol(),
-		FailIndexKeyTooLong:              config.FailIndexKeyTooLong,
 		JavascriptEnabled:                config.JavascriptEnabled,
 		NoTableScan:                      pointer.MakePtr(pointer.GetOrDefault(config.NoTableScan, false)),
 		OplogSizeMB:                      pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.OplogSizeMB, 0))),
@@ -923,10 +929,8 @@ func processArgsToAtlas(config *akov2.ProcessArgs) (*admin.ClusterDescriptionPro
 	}
 
 	return &admin.ClusterDescriptionProcessArgs20240805{
-		DefaultReadConcern:               pointer.MakePtrOrNil(config.DefaultReadConcern),
 		DefaultWriteConcern:              pointer.MakePtrOrNil(config.DefaultWriteConcern),
 		MinimumEnabledTlsProtocol:        pointer.MakePtrOrNil(config.MinimumEnabledTLSProtocol),
-		FailIndexKeyTooLong:              config.FailIndexKeyTooLong,
 		JavascriptEnabled:                config.JavascriptEnabled,
 		NoTableScan:                      config.NoTableScan,
 		OplogSizeMB:                      pointer.MakePtrOrNil(int(pointer.GetOrDefault(config.OplogSizeMB, 0))),
