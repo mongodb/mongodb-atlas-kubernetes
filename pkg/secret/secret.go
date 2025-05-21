@@ -22,9 +22,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Fetch(ctx context.Context, kubeClient client.Client, secretName string) (map[string][]byte, error) {
+type Secret map[string][]byte
+
+type SecretProvider interface {
+	Fetch(ctx context.Context, name string) (Secret, error)
+}
+
+type kubernetesSecrets struct {
+	client client.Client
+}
+
+func NewKubernetesSecretProvider(c client.Client) SecretProvider {
+	return &kubernetesSecrets{client: c}
+}
+
+func (ks *kubernetesSecrets) Fetch(ctx context.Context, secretName string) (Secret, error) {
 	secret := v1.Secret{}
-	err := kubeClient.Get(ctx, client.ObjectKey{Name: secretName}, &secret)
+	err := ks.client.Get(ctx, client.ObjectKey{Name: secretName}, &secret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch secret %q: %w", secretName, err)
 	}

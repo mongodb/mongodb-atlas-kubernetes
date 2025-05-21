@@ -104,25 +104,26 @@ func (r *Reconciler) populateIntegration(ctx context.Context, integration *akov2
 }
 
 func fetchIntegrationSecrets(ctx context.Context, kubeClient client.Client, integration *akov2next.AtlasThirdPartyIntegration) (map[string][]byte, error) {
+	ks := secret.NewKubernetesSecretProvider(kubeClient)
 	switch integration.Spec.Type {
 	case "DATADOG":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.Datadog.APIKeySecret.Name)
+		return ks.Fetch(ctx, integration.Spec.Datadog.APIKeySecret.Name)
 	case "MICROSOFT_TEAMS":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.MicrosoftTeams.URLSecret.Name)
+		return ks.Fetch(ctx, integration.Spec.MicrosoftTeams.URLSecret.Name)
 	case "NEW_RELIC":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.NewRelic.CredentialsSecret.Name)
+		return ks.Fetch(ctx, integration.Spec.NewRelic.CredentialsSecret.Name)
 	case "OPS_GENIE":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.OpsGenie.APIKeySecret.Name)
+		return ks.Fetch(ctx, integration.Spec.OpsGenie.APIKeySecret.Name)
 	case "PAGER_DUTY":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.PagerDuty.ServiceKeySecret.Name)
+		return ks.Fetch(ctx, integration.Spec.PagerDuty.ServiceKeySecret.Name)
 	case "PROMETHEUS":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.Prometheus.PrometheusCredentialsSecret.Name)
+		return ks.Fetch(ctx, integration.Spec.Prometheus.PrometheusCredentialsSecret.Name)
 	case "SLACK":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.Slack.APITokenSecret.Name)
+		return ks.Fetch(ctx, integration.Spec.Slack.APITokenSecret.Name)
 	case "VICTOR_OPS":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.VictorOps.APIKeySecret.Name)
+		return ks.Fetch(ctx, integration.Spec.VictorOps.APIKeySecret.Name)
 	case "WEBHOOK":
-		return secret.Fetch(ctx, kubeClient, integration.Spec.Webhook.URLSecret.Name)
+		return ks.Fetch(ctx, integration.Spec.Webhook.URLSecret.Name)
 	default:
 		return nil, fmt.Errorf("%w %v", thirdpartyintegration.ErrUnsupportedIntegrationType, integration.Spec.Type)
 	}
