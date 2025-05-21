@@ -11,6 +11,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
+const (
+	DefaultRequeueTIme = 15 * time.Second
+)
+
 func NextState(s state.ResourceState, msg string) (ctrlstate.Result, error) {
 	if !strings.HasSuffix(msg, ".") {
 		msg = msg + "."
@@ -37,28 +41,28 @@ func NextState(s state.ResourceState, msg string) (ctrlstate.Result, error) {
 
 	case state.StateCreating:
 		return ctrlstate.Result{
-			Result:    reconcile.Result{RequeueAfter: 15 * time.Second},
+			Result:    reconcile.Result{RequeueAfter: DefaultRequeueTIme},
 			NextState: s,
 			StateMsg:  msg,
 		}, nil
 
 	case state.StateUpdating:
 		return ctrlstate.Result{
-			Result:    reconcile.Result{RequeueAfter: 15 * time.Second},
+			Result:    reconcile.Result{RequeueAfter: DefaultRequeueTIme},
 			NextState: s,
 			StateMsg:  msg,
 		}, nil
 
 	case state.StateDeleting:
 		return ctrlstate.Result{
-			Result:    reconcile.Result{RequeueAfter: 15 * time.Second},
+			Result:    reconcile.Result{RequeueAfter: DefaultRequeueTIme},
 			NextState: s,
 			StateMsg:  msg,
 		}, nil
 
 	case state.StateDeletionRequested:
 		return ctrlstate.Result{
-			Result:    reconcile.Result{RequeueAfter: 15 * time.Second},
+			Result:    reconcile.Result{RequeueAfter: DefaultRequeueTIme},
 			NextState: s,
 			StateMsg:  msg,
 		}, nil

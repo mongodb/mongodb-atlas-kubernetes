@@ -20,7 +20,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 )
 
 type ThirdPartyIntegrationService interface {
