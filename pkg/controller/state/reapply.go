@@ -1,16 +1,19 @@
-package reapply
+package state
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+const AnnotationReapplyTimestamp = "mongodb.internal.com/reapply-timestamp"
 
 func ShouldReapply(obj metav1.Object) (bool, error) {
 	timestamp, hasTimestamp, err := ReapplyTimestamp(obj)
@@ -55,7 +58,7 @@ func ReapplyPeriod(obj metav1.Object) (time.Duration, bool, error) {
 }
 
 func ReapplyTimestamp(obj metav1.Object) (time.Time, bool, error) {
-	annotationTimestamp, ok := obj.GetAnnotations()["mongodb.internal.com/reapply-timestamp"]
+	annotationTimestamp, ok := obj.GetAnnotations()[AnnotationReapplyTimestamp]
 	if !ok {
 		return time.Time{}, false, nil
 	}
@@ -89,11 +92,13 @@ func PatchReapplyTimestamp(ctx context.Context, kubeClient client.Client, obj cl
 		return diff, nil
 	}
 
+	escapedAnnotation := strings.ReplaceAll(AnnotationReapplyTimestamp, "/", "~1")
+
 	patch := []byte(fmt.Sprintf(`[{
 	"op":    "replace",
-	"path":  "/metadata/annotations/mongodb.internal.com~1reapply-timestamp",
+	"path":  "/metadata/annotations/%v",
 	"value": "%v"
-}]`, now.UnixMilli()))
+}]`, escapedAnnotation, now.UnixMilli()))
 
 	if err := kubeClient.Patch(ctx, obj, client.RawPatch(types.JSONPatchType, patch)); err != nil {
 		return 0, fmt.Errorf("failed to patch object: %w", err)

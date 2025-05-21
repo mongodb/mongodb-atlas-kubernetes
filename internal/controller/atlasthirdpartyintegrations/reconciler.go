@@ -23,27 +23,28 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/atlas"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/dualref"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/result"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/secret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/state"
+	internalbuilder "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/builder"
 	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 type Reconciler struct {
 	client client.Client
 }
 
-func NewAtlasThirdPartyIntegrationsRecionciler() *Reconciler {
+func NewAtlasThirdPartyIntegrationsReconciler() *Reconciler {
 	return &Reconciler{}
 }
 
 func (r *Reconciler) NewBuilderWithManager(mgr ctrl.Manager) *builder.Builder {
 	r.client = mgr.GetClient()
 	obj := &akov2next.AtlasThirdPartyIntegration{}
-	return ctrlstate.DefaultNewControllerBuilder(mgr, obj)
+	return internalbuilder.NewDefaultControllerBuilder(mgr, obj)
 }
 
 func (r *Reconciler) HandleInitial(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {

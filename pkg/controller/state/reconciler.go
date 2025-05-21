@@ -15,17 +15,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/finalizer"
-	internalpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/predicate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/ratelimit"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/reapply"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/state"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/finalizer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/status"
 )
 
 type Result struct {
@@ -269,7 +264,7 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 		result.NextState == state.StateUpdated
 
 	if isReapplyState && result.RequeueAfter == 0 && err == nil {
-		requeueAfter, err := reapply.PatchReapplyTimestamp(ctx, r.cluster.GetClient(), obj)
+		requeueAfter, err := PatchReapplyTimestamp(ctx, r.cluster.GetClient(), obj)
 		if err != nil {
 			return Result{}, err
 		}
@@ -308,21 +303,4 @@ func getObservedGeneration(obj client.Object, prevStatus *status.Resource, nextS
 	}
 
 	return observedGeneration
-}
-
-func DefaultNewControllerBuilder(mgr ctrl.Manager, obj client.Object) *builder.Builder {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(
-			obj,
-			builder.WithPredicates(
-				predicate.Or(
-					internalpredicate.AnnotationChanged("mongodb.com/reapply-period"),
-					predicate.GenerationChangedPredicate{},
-				),
-				internalpredicate.IgnoreDeletedPredicate[client.Object](),
-			),
-		).
-		WithOptions(controller.Options{
-			RateLimiter: ratelimit.NewRateLimiter[reconcile.Request](),
-		})
 }

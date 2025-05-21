@@ -7,8 +7,8 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/controller/state"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/state"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 func NextState(s state.ResourceState, msg string) (ctrlstate.Result, error) {
