@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package status
+package state
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,42 +25,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type Resource struct {
-	client.Object `json:"-"`
-	Status        Status `json:"status,omitempty"`
+type StatusObject interface {
+	client.Object
+	GetConditions() []metav1.Condition
 }
 
-type Status struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-}
-
-func GetStatus(obj client.Object) *Resource {
-	result := &Resource{
-		Object: obj,
+func newStatusObject(obj client.Object) (StatusObject, error) {
+	statusObj, ok := obj.(StatusObject)
+	if ok {
+		return statusObj, nil
 	}
-	mustUnmarshal(mustMarshal(obj), result)
-	return result
+	return nil, errors.New("object must implement StatusObject")
 }
 
-func PatchStatus(ctx context.Context, c client.Client, obj client.Object, status any) error {
-	patchErr := c.Status().Patch(ctx, obj, client.RawPatch(types.MergePatchType, mustMarshal(status)))
+func patchStatus(ctx context.Context, c client.Client, obj client.Object, status any) error {
+	statusJSON, err := json.Marshal(status)
+	if err != nil {
+		return fmt.Errorf("failed to marshal status: %w", err)
+	}
+	patchErr := c.Status().Patch(ctx, obj, client.RawPatch(types.MergePatchType, statusJSON))
 	if patchErr != nil {
 		return fmt.Errorf("failed to patch status: %w", patchErr)
 	}
 	return nil
-}
-
-func mustUnmarshal(data []byte, v interface{}) {
-	err := json.Unmarshal(data, v)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func mustMarshal(v interface{}) []byte {
-	b, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
-	return b
 }

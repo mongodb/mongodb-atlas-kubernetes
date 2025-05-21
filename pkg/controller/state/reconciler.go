@@ -34,7 +34,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/finalizer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/status"
 )
 
 type Result struct {
@@ -109,8 +108,11 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 		return ctrl.Result{}, fmt.Errorf("unable to get object: %w", err)
 	}
 
-	currentStatus := status.GetStatus(obj)
-	currentState := state.GetState(currentStatus.Status.Conditions)
+	currentStatus, err := newStatusObject(obj)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get status object: %w", err)
+	}
+	currentState := state.GetState(currentStatus.GetConditions())
 
 	logger.Info("reconcile started", "currentState", currentState)
 	if err := finalizer.EnsureFinalizers(ctx, r.cluster.GetClient(), obj, "mongodb.com/finalizer"); err != nil {
@@ -123,9 +125,13 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 		// error message will be displayed in Ready state.
 		stateStatus = false
 	}
-	newStatus := status.GetStatus(obj)
+	newStatus, err := newStatusObject(obj)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get status object: %w", err)
+	}
 	observedGeneration := getObservedGeneration(obj, currentStatus, result.NextState)
-	state.EnsureState(&newStatus.Status.Conditions, observedGeneration, result.NextState, result.StateMsg, stateStatus)
+	newStatusConditions := newStatus.GetConditions()
+	state.EnsureState(&newStatusConditions, observedGeneration, result.NextState, result.StateMsg, stateStatus)
 
 	logger.Info("reconcile finished", "nextState", result.NextState)
 
@@ -146,9 +152,9 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 		ready.Message = reconcileErr.Error()
 	}
 
-	meta.SetStatusCondition(&newStatus.Status.Conditions, ready)
+	meta.SetStatusCondition(&newStatusConditions, ready)
 
-	if err := status.PatchStatus(ctx, r.cluster.GetClient(), obj, newStatus); err != nil {
+	if err := patchStatus(ctx, r.cluster.GetClient(), obj, newStatus); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
 
@@ -226,8 +232,6 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 	obj := any(t).(client.Object)
 
 	var (
-		currentState = state.GetState(status.GetStatus(obj).Status.Conditions)
-
 		result = Result{
 			Result:    reconcile.Result{},
 			NextState: state.StateInitial,
@@ -235,6 +239,11 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 
 		err error
 	)
+	statusObj, err := newStatusObject(obj)
+	if err != nil {
+		return Result{}, fmt.Errorf("failed to get status object: %w", err)
+	}
+	currentState := state.GetState(statusObj.GetConditions())
 
 	if currentState == state.StateInitial {
 		for key := range obj.GetAnnotations() {
@@ -267,6 +276,8 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 		result, err = r.reconciler.HandleDeletionRequested(ctx, t)
 	case state.StateDeleting:
 		result, err = r.reconciler.HandleDeleting(ctx, t)
+	default:
+		return Result{}, fmt.Errorf("unsupported state %q", currentState)
 	}
 
 	if result.NextState == "" {
@@ -289,11 +300,11 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 	return result, err
 }
 
-func getObservedGeneration(obj client.Object, prevStatus *status.Resource, nextState state.ResourceState) int64 {
+func getObservedGeneration(obj client.Object, prevStatus StatusObject, nextState state.ResourceState) int64 {
 	observedGeneration := obj.GetGeneration()
-	prevState := state.GetState(prevStatus.Status.Conditions)
+	prevState := state.GetState(prevStatus.GetConditions())
 
-	if prevCondition := meta.FindStatusCondition(prevStatus.Status.Conditions, state.StateCondition); prevCondition != nil {
+	if prevCondition := meta.FindStatusCondition(prevStatus.GetConditions(), state.StateCondition); prevCondition != nil {
 		from := prevState
 		to := nextState
 

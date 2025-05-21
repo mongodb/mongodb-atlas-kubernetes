@@ -30,7 +30,7 @@ const (
 )
 
 func NextState(s state.ResourceState, msg string) (ctrlstate.Result, error) {
-	if !strings.HasSuffix(msg, ".") {
+	if len(msg) > 0 && !strings.HasSuffix(msg, ".") {
 		msg = msg + "."
 	}
 
