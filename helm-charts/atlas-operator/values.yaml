@@ -86,6 +86,21 @@ podSecurityContext:
 securityContext:
   allowPrivilegeEscalation: false
 
+
+# configure extra environment variables
+# Extra environment variables are writen in kubernetes format and added "as is" to the pod's env variables
+# https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/
+# https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#environment-variables
+extraEnvs:
+  []
+  # Exemple of setting environment variables
+  # - name: MY_VAR
+  #   value: my-value
+  # - name: GOMEMLIMIT
+  #   valueFrom:
+  #     resourceFieldRef:
+  #       resource: limits.memory
+
 # resources sets resources for the Operator container.
 # More information: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 resources:
