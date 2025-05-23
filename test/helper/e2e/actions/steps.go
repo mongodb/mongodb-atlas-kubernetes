@@ -23,8 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -187,7 +186,7 @@ func CheckUserExistInAtlas(data *model.TestDataProvider) func() bool {
 	}
 }
 
-func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admin.AdvancedClusterDescription) {
+func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admin.ClusterDescription20240805) {
 	advancedSpec := requested.DeploymentSpec
 
 	Expect(created.GetMongoDBVersion()).ToNot(BeEmpty())
@@ -209,7 +208,7 @@ func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admi
 	}
 }
 
-func CompareFlexSpec(requested model.DeploymentSpec, created adminv20241113001.FlexClusterDescription20241113) {
+func CompareFlexSpec(requested model.DeploymentSpec, created admin.FlexClusterDescription20241113) {
 	flexSpec := requested.FlexSpec
 	Expect(created.GetMongoDBVersion()).ToNot(BeEmpty())
 	Expect(created.ConnectionStrings.GetStandardSrv()).ToNot(BeEmpty())

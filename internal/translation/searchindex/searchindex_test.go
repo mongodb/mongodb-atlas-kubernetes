@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -225,7 +225,7 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 						}),
 						Mappings: &admin.SearchMappings{
 							Dynamic: pointer.MakePtr(true),
-							Fields:  map[string]interface{}{"field": "value"},
+							Fields:  &map[string]interface{}{"field": "value"},
 						},
 						SearchAnalyzer: pointer.MakePtr("search-analyzer"),
 						Synonyms: &([]admin.SearchSynonymMappingDefinition{
@@ -488,7 +488,7 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 					}),
 					Mappings: &admin.SearchMappings{
 						Dynamic: pointer.MakePtr(true),
-						Fields:  map[string]interface{}{"field": "value"},
+						Fields:  &map[string]interface{}{"field": "value"},
 					},
 					SearchAnalyzer: pointer.MakePtr("search-analyzer"),
 					Synonyms: &([]admin.SearchSynonymMappingDefinition{

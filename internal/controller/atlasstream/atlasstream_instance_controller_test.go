@@ -22,9 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -516,8 +515,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
 					}, nil
 				},
 			},
@@ -657,8 +655,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
 					}, nil
 				},
 			},
@@ -788,8 +785,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
 					}, nil
 				},
 			},
@@ -907,7 +903,6 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			Return(admin.DeleteStreamInstanceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().DeleteStreamInstanceExecute(mock.AnythingOfType("admin.DeleteStreamInstanceApiRequest")).
 			Return(
-				nil,
 				&http.Response{},
 				nil,
 			)
@@ -922,8 +917,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
 					}, nil
 				},
 			},
@@ -1054,8 +1048,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{StreamsApi: streamsAPI},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
+						SdkClient20250312002: &admin.APIClient{StreamsApi: streamsAPI},
 					}, nil
 				},
 			},
