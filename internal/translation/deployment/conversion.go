@@ -427,13 +427,20 @@ func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenan
 		diskUnsetOrDisabled := regionConfig.AutoScaling == nil || regionConfig.AutoScaling.DiskGB == nil ||
 			regionConfig.AutoScaling.DiskGB.Enabled == nil || !*regionConfig.AutoScaling.DiskGB.Enabled
 
-		switch {
-		case computeUnsetOrDisabled && regionConfig.AutoScaling != nil:
+		if regionConfig.AutoScaling == nil {
+			regionConfig.AutoScaling = &akov2.AdvancedAutoScalingSpec{}
+		}
+
+		if computeUnsetOrDisabled {
 			regionConfig.AutoScaling.Compute = &akov2.ComputeSpec{
 				Enabled: pointer.MakePtr(false),
 			}
-		case computeUnsetOrDisabled && diskUnsetOrDisabled:
-			regionConfig.AutoScaling = nil
+		}
+
+		if diskUnsetOrDisabled {
+			regionConfig.AutoScaling.DiskGB = &akov2.DiskGB{
+				Enabled: pointer.MakePtr(false),
+			}
 		}
 	}
 }
