@@ -551,6 +551,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 					},
 				},
 			},
+			//nolint:dupl
 			deploymentInAtlas: &deployment.Cluster{
 				ProjectID: "project-id",
 				State:     "IDLE",
@@ -576,6 +577,14 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
 										NodeCount:    pointer.MakePtr(3),
+									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled: pointer.MakePtr(false),
+										},
+										DiskGB: &akov2.DiskGB{
+											Enabled: pointer.MakePtr(false),
+										},
 									},
 								},
 							},
@@ -634,6 +643,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 					},
 				},
 			},
+			//nolint:dupl
 			deploymentInAtlas: &deployment.Cluster{
 				ProjectID: "project-id",
 				State:     "IDLE",
@@ -659,6 +669,14 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
 										NodeCount:    pointer.MakePtr(3),
+									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled: pointer.MakePtr(false),
+										},
+										DiskGB: &akov2.DiskGB{
+											Enabled: pointer.MakePtr(false),
+										},
 									},
 								},
 							},

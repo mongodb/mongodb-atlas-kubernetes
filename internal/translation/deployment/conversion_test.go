@@ -200,6 +200,14 @@ func TestNewDeployment(t *testing.T) {
 										InstanceSize: "M10",
 										NodeCount:    pointer.MakePtr(3),
 									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled: pointer.MakePtr(false),
+										},
+										DiskGB: &akov2.DiskGB{
+											Enabled: pointer.MakePtr(false),
+										},
+									},
 								},
 							},
 						},
@@ -547,6 +555,14 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 									AnalyticsSpecs: nil,
 									ElectableSpecs: nil,
 									ReadOnlySpecs:  nil,
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled: pointer.MakePtr(false),
+										},
+										DiskGB: &akov2.DiskGB{
+											Enabled: pointer.MakePtr(false),
+										},
+									},
 								},
 							},
 						},
@@ -591,6 +607,74 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 									AnalyticsSpecs: nil,
 									ElectableSpecs: nil,
 									ReadOnlySpecs:  nil,
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled: pointer.MakePtr(false),
+										},
+										DiskGB: &akov2.DiskGB{
+											Enabled: pointer.MakePtr(false),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"regionconfig specs with autoscaling": {
+			deployment: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									AnalyticsSpecs: &akov2.Specs{},
+									ElectableSpecs: &akov2.Specs{},
+									ReadOnlySpecs:  &akov2.Specs{},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled:          pointer.MakePtr(false),
+											ScaleDownEnabled: pointer.MakePtr(false),
+											MinInstanceSize:  "M10",
+											MaxInstanceSize:  "M10",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ClusterType:              "REPLICASET",
+					EncryptionAtRestProvider: "NONE",
+					MongoDBMajorVersion:      "7.0",
+					VersionReleaseSystem:     "LTS",
+					Paused:                   pointer.MakePtr(false),
+					PitEnabled:               pointer.MakePtr(false),
+					RootCertType:             "ISRGROOTX1",
+					BackupEnabled:            pointer.MakePtr(false),
+					Tags:                     []*akov2.TagSpec{},
+
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							NumShards: 1,
+							ZoneName:  "Zone 1",
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									AnalyticsSpecs: nil,
+									ElectableSpecs: nil,
+									ReadOnlySpecs:  nil,
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled: pointer.MakePtr(false),
+										},
+										DiskGB: &akov2.DiskGB{
+											Enabled: pointer.MakePtr(false),
+										},
+									},
 								},
 							},
 						},
@@ -689,6 +773,14 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
 										NodeCount:    pointer.MakePtr(3),
+									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled: pointer.MakePtr(false),
+										},
+										DiskGB: &akov2.DiskGB{
+											Enabled: pointer.MakePtr(false),
+										},
 									},
 								},
 							},
