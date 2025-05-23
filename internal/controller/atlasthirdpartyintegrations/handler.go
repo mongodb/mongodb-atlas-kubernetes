@@ -65,6 +65,7 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, i
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to populate integration: %w", err))
 	}
+	// TODO skew detection here
 
 	createdIntegration, err := req.Service.Create(ctx, req.Project.ID, integrationSpec)
 	if err != nil {
@@ -72,9 +73,19 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, i
 			integration.Spec.Type, err))
 	}
 	integration.Status.ID = createdIntegration.ID
-	// patch the status here (think about improvements for autogen)
+	// TODO patch the status here (think about improvements for autogen)
 	return result.NextState(state.StateCreated,
 		fmt.Sprintf("Creating Atlas Third Party Integration for %s", integration.Spec.Type))
+}
+
+func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+	return h.handleIdle(ctx, integration)
+}
+
+func (h *AtlasThirdPartyIntegrationHandler) handleIdle(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+	// TODO skew detection here
+	
+	return ctrlstate.Result{}, nil
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (*reconcileRequest, error) {
