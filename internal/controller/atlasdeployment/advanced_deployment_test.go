@@ -551,6 +551,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 					},
 				},
 			},
+			//nolint:dupl
 			deploymentInAtlas: &deployment.Cluster{
 				ProjectID: "project-id",
 				State:     "IDLE",
@@ -642,6 +643,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 					},
 				},
 			},
+			//nolint:dupl
 			deploymentInAtlas: &deployment.Cluster{
 				ProjectID: "project-id",
 				State:     "IDLE",
