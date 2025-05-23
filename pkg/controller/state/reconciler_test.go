@@ -537,9 +537,8 @@ type dummyPodReconciler struct {
 	handleState func(context.Context, *dummyObject) (Result, error)
 }
 
-func (d *dummyPodReconciler) NewBuilderWithManager(mgr ctrl.Manager) *ctrl.Builder {
-	// Not used in this test
-	return &ctrl.Builder{}
+func (d *dummyPodReconciler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler) error {
+	return nil
 }
 func (d *dummyPodReconciler) HandleInitial(ctx context.Context, do *dummyObject) (Result, error) {
 	return d.handleState(ctx, do)

@@ -16,7 +16,7 @@ package builder
 
 import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
-	builder2 "sigs.k8s.io/controller-runtime/pkg/builder"
+	ctrlrtbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -26,11 +26,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
-func NewDefaultControllerBuilder(mgr controllerruntime.Manager, obj client.Object) *builder2.Builder {
+func NewDefaultSetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, obj client.Object) error {
 	return controllerruntime.NewControllerManagedBy(mgr).
 		For(
 			obj,
-			builder2.WithPredicates(
+			ctrlrtbuilder.WithPredicates(
 				predicate.Or(
 					mckpredicate.AnnotationChanged("mongodb.com/reapply-period"),
 					predicate.GenerationChangedPredicate{},
@@ -40,5 +40,5 @@ func NewDefaultControllerBuilder(mgr controllerruntime.Manager, obj client.Objec
 		).
 		WithOptions(controller.Options{
 			RateLimiter: ratelimit.NewRateLimiter[reconcile.Request](),
-		})
+		}).Complete(rec)
 }

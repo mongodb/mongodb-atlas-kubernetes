@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -42,9 +41,8 @@ type Result struct {
 	StateMsg  string
 }
 
-type StateReconciler[T any] interface {
-	NewBuilderWithManager(mgr ctrl.Manager) *builder.Builder
-
+type StateHandler[T any] interface {
+	SetupWithManager(ctrl.Manager, reconcile.Reconciler) error
 	HandleInitial(context.Context, *T) (Result, error)
 	HandleImportRequested(context.Context, *T) (Result, error)
 	HandleImported(context.Context, *T) (Result, error)
@@ -65,13 +63,13 @@ const (
 
 type Reconciler[T any] struct {
 	cluster         cluster.Cluster
-	reconciler      StateReconciler[T]
+	reconciler      StateHandler[T]
 	unstructuredGVK schema.GroupVersionKind
 }
 
-type UnstructuredStateReconciler = StateReconciler[unstructured.Unstructured]
+type UnstructuredStateReconciler = StateHandler[unstructured.Unstructured]
 
-func NewStateReconciler[T any](target StateReconciler[T]) *Reconciler[T] {
+func NewStateReconciler[T any](target StateHandler[T]) *Reconciler[T] {
 	return &Reconciler[T]{
 		reconciler: target,
 	}
@@ -86,7 +84,7 @@ func NewUnstructuredStateReconciler(target UnstructuredStateReconciler, gvk sche
 
 func (r *Reconciler[T]) SetupWithManager(mgr ctrl.Manager) error {
 	r.cluster = mgr
-	return r.reconciler.NewBuilderWithManager(mgr).Complete(r)
+	return r.reconciler.SetupWithManager(mgr, r)
 }
 
 func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconcile.Result, error) {

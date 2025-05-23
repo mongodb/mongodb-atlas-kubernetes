@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	internalbuilder "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/builder"
@@ -34,7 +34,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
-type Reconciler struct {
+type AtlasThirdPartyIntegrationHandler struct {
+	ctrlstate.StateHandler[akov2next.AtlasThirdPartyIntegration]
 	reconciler.AtlasReconciler
 }
 
@@ -44,23 +45,23 @@ type reconcileRequest struct {
 	Service   thirdpartyintegration.ThirdPartyIntegrationService
 }
 
-func NewAtlasThirdPartyIntegrationsReconciler() *Reconciler {
-	return &Reconciler{}
+func NewAtlasThirdPartyIntegrationsReconciler() *ctrlstate.Reconciler[akov2next.AtlasThirdPartyIntegration] {
+	return ctrlstate.NewStateReconciler(&AtlasThirdPartyIntegrationHandler{})
 }
 
-func (r *Reconciler) NewBuilderWithManager(mgr ctrl.Manager) *builder.Builder {
-	r.Client = mgr.GetClient()
+func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler) error {
+	h.Client = mgr.GetClient()
 	obj := &akov2next.AtlasThirdPartyIntegration{}
-	return internalbuilder.NewDefaultControllerBuilder(mgr, obj)
+	return internalbuilder.NewDefaultSetupWithManager(mgr, rec, obj)
 }
 
-func (r *Reconciler) HandleInitial(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
-	req, err := r.newReconcileRequest(ctx, integration)
+func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to build reconcile request: %w", err))
 	}
 
-	integrationSpec, err := r.populateIntegration(ctx, integration)
+	integrationSpec, err := h.populateIntegration(ctx, integration)
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to populate integration: %w", err))
 	}
@@ -71,19 +72,20 @@ func (r *Reconciler) HandleInitial(ctx context.Context, integration *akov2next.A
 			integration.Spec.Type, err))
 	}
 	integration.Status.ID = createdIntegration.ID
-	return result.NextState(state.StateCreating,
+	// patch the status here (think about improvements for autogen)
+	return result.NextState(state.StateCreated,
 		fmt.Sprintf("Creating Atlas Third Party Integration for %s", integration.Spec.Type))
 }
 
-func (r *Reconciler) newReconcileRequest(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (*reconcileRequest, error) {
+func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (*reconcileRequest, error) {
 	req := reconcileRequest{}
-	sdkClientSet, err := r.ResolveSDKClientSet(ctx, integration)
+	sdkClientSet, err := h.ResolveSDKClientSet(ctx, integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve connection config: %w", err)
 	}
 	req.ClientSet = sdkClientSet
 	req.Service = thirdpartyintegration.NewThirdPartyIntegrationServiceFromClientSet(sdkClientSet)
-	project, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20231115008, integration)
+	project, err := h.ResolveProject(ctx, sdkClientSet.SdkClient20231115008, integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch referenced project: %w", err)
 	}
@@ -91,8 +93,8 @@ func (r *Reconciler) newReconcileRequest(ctx context.Context, integration *akov2
 	return &req, nil
 }
 
-func (r *Reconciler) populateIntegration(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (*thirdpartyintegration.ThirdPartyIntegration, error) {
-	secrets, err := fetchIntegrationSecrets(ctx, r.Client, integration)
+func (h *AtlasThirdPartyIntegrationHandler) populateIntegration(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (*thirdpartyintegration.ThirdPartyIntegration, error) {
+	secrets, err := fetchIntegrationSecrets(ctx, h.Client, integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch integration secrets: %w", err)
 	}
