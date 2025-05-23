@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// +kubebuilder:object:generate=true
+// +groupName=nextapi.mongodb.com
 package v1
 
 import (

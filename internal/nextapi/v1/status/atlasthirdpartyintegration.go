@@ -18,8 +18,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 )
 
-// +k8s:deepcopy-gen=true
-
 // AtlasThirdPartyIntegrationStatus holds the status of an integration
 type AtlasThirdPartyIntegrationStatus struct {
 	api.Common `json:",inline"`

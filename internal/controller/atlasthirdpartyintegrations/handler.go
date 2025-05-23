@@ -84,7 +84,7 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, i
 
 func (h *AtlasThirdPartyIntegrationHandler) handleIdle(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	// TODO skew detection here
-	
+
 	return ctrlstate.Result{}, nil
 }
 
