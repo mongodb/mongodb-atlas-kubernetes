@@ -25,6 +25,7 @@ import (
 	"github.com/mongodb-forks/digest"
 	adminv20231115008 "go.mongodb.org/atlas-sdk/v20231115008/admin"
 	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	adminv20250312002 "go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
@@ -49,6 +50,7 @@ type Provider interface {
 type ClientSet struct {
 	SdkClient20231115008 *adminv20231115008.APIClient
 	SdkClient20241113001 *adminv20241113001.APIClient
+	SdkClient20250312002 *adminv20250312002.APIClient
 }
 
 type ProductionProvider struct {
