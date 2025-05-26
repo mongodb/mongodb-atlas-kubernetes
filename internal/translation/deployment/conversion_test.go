@@ -412,7 +412,6 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
-					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
 					Paused:                   pointer.MakePtr(false),
 					PitEnabled:               pointer.MakePtr(false),
@@ -436,7 +435,6 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
-					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
 					Paused:                   pointer.MakePtr(false),
 					PitEnabled:               pointer.MakePtr(false),
@@ -464,7 +462,6 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
-					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
 					Paused:                   pointer.MakePtr(false),
 					PitEnabled:               pointer.MakePtr(false),
@@ -498,7 +495,6 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
-					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
 					Paused:                   pointer.MakePtr(false),
 					PitEnabled:               pointer.MakePtr(false),
@@ -538,7 +534,6 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
-					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
 					Paused:                   pointer.MakePtr(false),
 					PitEnabled:               pointer.MakePtr(false),
@@ -590,7 +585,6 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
-					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
 					Paused:                   pointer.MakePtr(false),
 					PitEnabled:               pointer.MakePtr(false),
@@ -650,7 +644,6 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
-					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
 					Paused:                   pointer.MakePtr(false),
 					PitEnabled:               pointer.MakePtr(false),
@@ -733,7 +726,6 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
 					BackupEnabled:            pointer.MakePtr(false),
-					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
 					EncryptionAtRestProvider: "NONE",
 					Paused:                   pointer.MakePtr(false),
