@@ -332,7 +332,7 @@ jobs:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
-          MCLI_OPS_MANAGER_URL: ${{ steps.select-env.outputs.ENV }}
+          MCLI_OPS_MANAGER_URL: "${{ steps.select-env.outputs.ENV }}"
           IMAGE_URL: "${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}"
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
           IMAGE_PULL_SECRET_USERNAME: $
@@ -351,4 +351,6 @@ jobs:
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
-        run: devbox run -- ./scripts/launch-ci-e2e.sh
+        run: |
+          echo "Using ENV: ${{ steps.select-env.outputs.ENV }}"
+          devbox run -- ./scripts/launch-ci-e2e.sh
