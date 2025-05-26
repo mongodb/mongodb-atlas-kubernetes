@@ -21,6 +21,7 @@ jobs:
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
+
   prepare-e2e:
     name: Prepare E2E configuration and image
     environment: release
@@ -77,24 +78,29 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
+
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
+
       - name: Generate configuration for the tests
         uses: ./.github/actions/gen-install-scripts
         with:
           IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
           VERSION: ${{ steps.prepare.outputs.tag }}
           ENV: dev
+
       - name: Change path for the test
         run: |
           awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+
       - name: Cache repo files
         uses: actions/cache@v4
         with:
           path: |
             ./*
           key: ${{ github.sha }}
+
       - name: Prepare docker tag
         id: prepare-docker-bundle-tag
         run: |
@@ -102,8 +108,10 @@ jobs:
           TAG=${{ steps.prepare.outputs.tag }}
           TAGS="${REPOSITORY}:${TAG}"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
       - name: Log in to ghcr.io registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
@@ -174,6 +182,7 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}
+
       - name: Checkout if cache repo files missed
         if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
@@ -181,6 +190,7 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
+
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.12.0
         with:
@@ -204,6 +214,7 @@ jobs:
       - name: Change path for the test
         run: |
           awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+
       - name: Create k8s Kind Cluster
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         uses: helm/kind-action@v1.12.0
@@ -213,16 +224,20 @@ jobs:
           node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
           cluster_name: ${{ matrix.test }}
           wait: 180s
+
       - name: Print kubectl version
         run: |
           devbox run -- 'kubectl version'
+
       - name: Print kubectl version
         run: |
           devbox run -- 'kubectl version'
+
       - name: Install CRDs if needed
         if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'helm-ns' || matrix.test == 'bundle-test' ) }}
         run: |
           devbox run -- 'kubectl apply -f deploy/crds'
+
       - name: Run e2e test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}

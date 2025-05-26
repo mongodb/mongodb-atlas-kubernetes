@@ -328,9 +328,6 @@ func normalizeClusterDeployment(cluster *Cluster) {
 	if !isTenant {
 		cluster.BackupEnabled = pointer.GetOrPointerToDefault(cluster.BackupEnabled, false)
 		cluster.PitEnabled = pointer.GetOrPointerToDefault(cluster.PitEnabled, false)
-		if cluster.MongoDBMajorVersion == "" {
-			cluster.MongoDBMajorVersion = "7.0"
-		}
 
 		if cluster.EncryptionAtRestProvider == "" {
 			cluster.EncryptionAtRestProvider = "NONE"
