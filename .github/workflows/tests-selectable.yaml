@@ -318,12 +318,21 @@ jobs:
         run: |
           devbox run -- 'kubectl apply -f deploy/crds'
 
+      - name: Select environment to run E2E test
+        id: select-env
+        run: |
+            if [[ "${{ matrix.test }}" == "atlas-gov*" ]]; then
+                echo "ENV=https://cloud-qa.mongodbgov.com" >> $GITHUB_ENV
+            else
+                echo "ENV=https://cloud-qa.mongodb.com" >> $GITHUB_ENV
+            fi
+
       - name: Run E2E test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
-          MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
+          MCLI_OPS_MANAGER_URL: "${{ steps.select-env.outputs.ENV }}"
           IMAGE_URL: "${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}"
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
           IMAGE_PULL_SECRET_USERNAME: $
