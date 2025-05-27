@@ -362,7 +362,7 @@ jobs:
           path: output/**
 
   run-e2e-gov-tests:
-    needs: [detect-tests, prepare-e2e, prepare-e2e-bundle, compute]
+    needs: detect-tests
     environment: gov-test
     if: ${{ needs.detect-tests.outputs.e2e_gov_matrix != '[]' && fromJSON(needs.detect-tests.outputs.e2e_gov_matrix) != '[]' }}
     strategy:
