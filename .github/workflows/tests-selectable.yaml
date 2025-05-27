@@ -28,6 +28,7 @@ jobs:
     outputs:
       int_matrix: ${{ steps.set-matrix.outputs.int_matrix }}
       e2e_matrix: ${{ steps.set-matrix.outputs.e2e_matrix }}
+      e2e_gov_matrix: ${{ steps.set-matrix.outputs.e2e_gov_matrix }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
