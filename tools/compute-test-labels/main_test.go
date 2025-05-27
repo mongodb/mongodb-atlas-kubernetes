@@ -18,6 +18,116 @@ import (
 	"testing"
 )
 
+func TestFilterLabelsContain(t *testing.T) {
+	tests := []struct {
+		name           string
+		labels         []string
+		substr         string
+		expectedResult []string
+	}{
+		{
+			name:           "Single match",
+			labels:         []string{"atlas-gov", "atlas", "cloud"},
+			substr:         "gov",
+			expectedResult: []string{"atlas-gov"},
+		},
+		{
+			name:           "Multiple matches",
+			labels:         []string{"atlas-gov", "atlas-gov-cloud", "cloud"},
+			substr:         "gov",
+			expectedResult: []string{"atlas-gov", "atlas-gov-cloud"},
+		},
+		{
+			name:           "No matches",
+			labels:         []string{"atlas", "cloud"},
+			substr:         "gov",
+			expectedResult: []string{},
+		},
+		{
+			name:           "Empty labels",
+			labels:         []string{},
+			substr:         "gov",
+			expectedResult: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FilterLabelsContain(tt.labels, tt.substr)
+			if len(result) != len(tt.expectedResult) {
+				t.Errorf("Test %s failed: expected %v, got %v", tt.name, tt.expectedResult, result)
+			}
+			for _, label := range tt.expectedResult {
+				found := false
+				for _, res := range result {
+					if res == label {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Test %s failed: expected %v to be in the result", tt.name, label)
+				}
+			}
+		})
+	}
+}
+
+func TestFilterLabelsDoNotContain(t *testing.T) {
+	tests := []struct {
+		name           string
+		labels         []string
+		substr         string
+		expectedResult []string
+	}{
+		{
+			name:           "Single exclusion",
+			labels:         []string{"atlas-gov", "atlas", "cloud"},
+			substr:         "gov",
+			expectedResult: []string{"atlas", "cloud"},
+		},
+		{
+			name:           "Multiple exclusions",
+			labels:         []string{"atlas-gov", "atlas-gov-cloud", "cloud"},
+			substr:         "gov",
+			expectedResult: []string{"cloud"},
+		},
+		{
+			name:           "No exclusions",
+			labels:         []string{"atlas", "cloud"},
+			substr:         "gov",
+			expectedResult: []string{"atlas", "cloud"},
+		},
+		{
+			name:           "Empty labels",
+			labels:         []string{},
+			substr:         "gov",
+			expectedResult: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FilterLabelsDoNotContain(tt.labels, tt.substr)
+			if len(result) != len(tt.expectedResult) {
+				t.Errorf("Test %s failed: expected %v, got %v", tt.name, tt.expectedResult, result)
+			}
+			for _, label := range tt.expectedResult {
+				found := false
+				for _, res := range result {
+					if res == label {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Test %s failed: expected %v to be in the result", tt.name, label)
+				}
+			}
+		})
+	}
+}
+
 func TestMatchWildcards(t *testing.T) {
 	tests := []struct {
 		name           string

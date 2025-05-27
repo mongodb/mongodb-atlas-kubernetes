@@ -58,6 +58,26 @@ func MatchWildcards(labels []string, testLabels []string, testType string) []str
 	return result
 }
 
+func FilterLabelsDoNotContain(labels []string, substr string) []string {
+	filtered := make([]string, 0, len(labels))
+	for _, label := range labels {
+		if !strings.Contains(label, substr) {
+			filtered = append(filtered, label)
+		}
+	}
+	return filtered
+}
+
+func FilterLabelsContain(labels []string, substr string) []string {
+	filtered := make([]string, 0, len(labels))
+	for _, label := range labels {
+		if strings.Contains(label, substr) {
+			filtered = append(filtered, label)
+		}
+	}
+	return filtered
+}
+
 func main() {
 	envPRLabels := os.Getenv("PR_LABELS")
 	envIntLabels := os.Getenv("INT_LABELS")
@@ -83,17 +103,24 @@ func main() {
 
 	matchedIntTests := MatchWildcards(labels, intLabels, "int")
 	matchedE2ETests := MatchWildcards(labels, e2eLabels, "e2e")
+	// These have to be executed in their own environment )
+	matchedE2EGovTests := FilterLabelsContain(matchedE2ETests, "atlas-gov")
+
+	matchedE2ETests = FilterLabelsDoNotContain(matchedE2ETests, "atlas-gov")
 
 	matchedIntTestsJSON, _ := json.Marshal(matchedIntTests)
 	matchedE2ETestsJSON, _ := json.Marshal(matchedE2ETests)
+	matchedE2EGovTestsJSON, _ := json.Marshal(matchedE2EGovTests)
 
 	if envUseJSON != "" {
 		res := map[string]any{}
 		res["int"] = matchedIntTests
 		res["e2e"] = matchedE2ETests
+		res["e2e_gov"] = matchedE2EGovTests
 		fmt.Println(jsonDump(res))
 		return
 	}
 	fmt.Printf("Matched Integration Tests: %s\n", matchedIntTestsJSON)
 	fmt.Printf("Matched E2E Tests: %s\n", matchedE2ETestsJSON)
+	fmt.Printf("Matched E2E GOV Tests: %s\n", matchedE2EGovTestsJSON)
 }
