@@ -413,7 +413,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
-          TEST_NAME: "${{ matrix.test }}""
+          TEST_NAME: "${{ matrix.test }}"
         run: devbox run -- ./scripts/launch-ci-e2e.sh
       - name: Upload operator logs
         if: ${{ failure() }}
