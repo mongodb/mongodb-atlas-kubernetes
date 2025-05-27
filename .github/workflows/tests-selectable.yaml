@@ -323,15 +323,21 @@ jobs:
         run: |
             if [[ "${{ matrix.test }}" == *"atlas-gov"* ]]; then
                 echo "ENV=https://cloud-qa.mongodbgov.com" >> $GITHUB_OUTPUT
+                echo "ORG_ID=${{ secrets.ATLAS_GOV_ORG_ID }}" >> $GITHUB_OUTPUT
+                echo "PUBLIC_KEY=${{ secrets.ATLAS_GOV_PUBLIC_KEY }}" >> $GITHUB_OUTPUT
+                echo "PRIVATE_KEY=${{ secrets.ATLAS_GOV_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
             else
                 echo "ENV=https://cloud-qa.mongodb.com" >> $GITHUB_OUTPUT
+                echo "ORG_ID=${{ secrets.ATLAS_ORG_ID }}" >> $GITHUB_OUTPUT
+                echo "PUBLIC_KEY=${{ secrets.ATLAS_PUBLIC_KEY }}" >> $GITHUB_OUTPUT
+                echo "PRIVATE_KEY=${{ secrets.ATLAS_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
             fi
 
       - name: Run E2E test
         env:
-          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
+          MCLI_PUBLIC_API_KEY: "${{ steps.select-env.outputs.PUBLIC_KEY }}"
+          MCLI_PRIVATE_API_KEY: "${{ steps.select-env.outputs.PRIVATE_KEY }}"
+          MCLI_ORG_ID: "${{ steps.select-env.outputs.ORG_ID }}"
           MCLI_OPS_MANAGER_URL: "${{ steps.select-env.outputs.ENV }}"
           IMAGE_URL: "${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}"
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
