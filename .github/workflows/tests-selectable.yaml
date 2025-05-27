@@ -321,7 +321,7 @@ jobs:
       - name: Select environment to run E2E test
         id: select-env
         run: |
-            if [[ "${{ matrix.test }}" == "atlas-gov*" ]]; then
+            if [[ "${{ matrix.test }}" == *"atlas-gov"* ]]; then
                 echo "ENV=https://cloud-qa.mongodbgov.com" >> $GITHUB_OUTPUT
             else
                 echo "ENV=https://cloud-qa.mongodb.com" >> $GITHUB_OUTPUT
@@ -354,3 +354,10 @@ jobs:
         run: |
           echo "Using ENV: ${{ steps.select-env.outputs.ENV }}"
           devbox run -- ./scripts/launch-ci-e2e.sh
+
+      - name: Upload operator logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: output/**
