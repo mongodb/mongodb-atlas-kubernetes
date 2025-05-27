@@ -1,6 +1,11 @@
 name: Tests-selectable
 
 # This workflow is for running tests based on PR labels
+# NOTE:
+# The label filter app is used to select tests based on GitHub PR labels
+# Tests in the ./int directory are considered an integration test and executed in a separate job
+# Tests in the ./e2e directory are considered an end-to-end test and executed in a separate job
+# Tests in the ./e2e directory are considered a GOV test ONLY IF their labels contain "atlas-gov" and executed in a separate job
 
 on:
   pull_request:
@@ -82,9 +87,11 @@ jobs:
           ./bin/ginkgo-labels > result.json
           echo "Int tests to execute $(cat result.json | jq -c .int)"
           echo "E2E tests to execute $(cat result.json | jq -c .e2e)"
+          echo "E2E GOV tests to execute $(cat result.json | jq -c .e2e_gov)"
           
           echo "int_matrix=$(cat result.json | jq -c .int)" >> $GITHUB_OUTPUT
           echo "e2e_matrix=$(cat result.json | jq -c .e2e)" >> $GITHUB_OUTPUT
+          echo "e2e_gov_matrix=$(cat result.json | jq -c .e2e_gov)" >> $GITHUB_OUTPUT
 
   compute:
     needs: detect-tests
@@ -318,27 +325,12 @@ jobs:
         run: |
           devbox run -- 'kubectl apply -f deploy/crds'
 
-      - name: Select environment to run E2E test
-        id: select-env
-        run: |
-            if [[ "${{ matrix.test }}" == *"atlas-gov"* ]]; then
-                echo "ENV=https://cloud-qa.mongodbgov.com" >> $GITHUB_OUTPUT
-                echo "ORG_ID=${{ secrets.ATLAS_GOV_ORG_ID }}" >> $GITHUB_OUTPUT
-                echo "PUBLIC_KEY=${{ secrets.ATLAS_GOV_PUBLIC_KEY }}" >> $GITHUB_OUTPUT
-                echo "PRIVATE_KEY=${{ secrets.ATLAS_GOV_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
-            else
-                echo "ENV=https://cloud-qa.mongodb.com" >> $GITHUB_OUTPUT
-                echo "ORG_ID=${{ secrets.ATLAS_ORG_ID }}" >> $GITHUB_OUTPUT
-                echo "PUBLIC_KEY=${{ secrets.ATLAS_PUBLIC_KEY }}" >> $GITHUB_OUTPUT
-                echo "PRIVATE_KEY=${{ secrets.ATLAS_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
-            fi
-
       - name: Run E2E test
         env:
-          MCLI_PUBLIC_API_KEY: "${{ steps.select-env.outputs.PUBLIC_KEY }}"
-          MCLI_PRIVATE_API_KEY: "${{ steps.select-env.outputs.PRIVATE_KEY }}"
-          MCLI_ORG_ID: "${{ steps.select-env.outputs.ORG_ID }}"
-          MCLI_OPS_MANAGER_URL: "${{ steps.select-env.outputs.ENV }}"
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
+          MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
           IMAGE_URL: "${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}"
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
           IMAGE_PULL_SECRET_USERNAME: $
@@ -361,6 +353,68 @@ jobs:
           echo "Using ENV: ${{ steps.select-env.outputs.ENV }}"
           devbox run -- ./scripts/launch-ci-e2e.sh
 
+      - name: Upload operator logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: output/**
+
+  run-e2e-gov-tests:
+    needs: [detect-tests, prepare-e2e, prepare-e2e-bundle, compute]
+    environment: gov-test
+    if: ${{ needs.detect-tests.outputs.e2e_gov_matrix != '[]' && fromJSON(needs.detect-tests.outputs.e2e_gov_matrix) != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJSON(needs.detect-tests.outputs.e2e_gov_matrix) }}
+    runs-on: ubuntu-latest
+    name: "e2e gov: ${{ matrix.test }}"
+    steps:
+      - name: Get repo files from cache
+        id: get-repo-files-from-cache
+        uses: actions/cache@v4
+        with:
+          path: ./*
+          key: ${{ github.sha }}
+
+      - name: Checkout if cache repo files missed
+        if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+          submodules: true
+          fetch-depth: 0
+
+      - name: Create k8s Kind Cluster
+        if: ${{ !env.ACT }}
+        uses: helm/kind-action@v1.12.0
+        with:
+          version: v0.26.0
+          config: test/helper/e2e/config/kind.yaml
+          cluster_name: "atlas-gov-e2e-test"
+          wait: 180s
+
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.12.0
+        with:
+          enable-cache: 'true'
+
+      - name: Install CRDs
+        run: devbox run -- 'make install'
+
+      - name: Run e2e test
+        env:
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_GOV_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_GOV_PRIVATE_KEY }}
+          MCLI_ORG_ID: ${{ secrets.ATLAS_GOV_ORG_ID}}
+          MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodbgov.com/"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
+          PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
+          TEST_NAME: "${{ matrix.test }}""
+        run: devbox run -- ./scripts/launch-ci-e2e.sh
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
