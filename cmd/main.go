@@ -194,7 +194,8 @@ func operatorGlobalKeySecretOrDefault(secretNameOverride string) client.ObjectKe
 func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
 	lv := zap.AtomicLevel{}
 
-	numericLevel, err := strconv.Atoi(level)
+	i64, err := strconv.ParseInt(level, 10, 8)
+	numericLevel := int8(i64)
 	if err != nil {
 		// not a numeric level, try to unmarshal it as a zapcore.Level ("debug", "info", "warn", "error", "dpanic", "panic", or "fatal")
 		err := lv.UnmarshalText([]byte(strings.ToLower(level)))
@@ -206,14 +207,14 @@ func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
 		// 1. configure klog if the numeric log level is negative and the absolute value of the negative numeric value represents the klog level.
 		// 2. configure the atomic zap level based on the numeric value (5..-9).
 
-		klogLevel := 0
+		var klogLevel int8 = 0
 		if numericLevel < 0 {
 			klogLevel = -numericLevel
 		}
 
 		klogFlagSet := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 		klog.InitFlags(klogFlagSet)
-		if err := klogFlagSet.Set("v", strconv.Itoa(klogLevel)); err != nil {
+		if err := klogFlagSet.Set("v", strconv.Itoa(int(klogLevel))); err != nil {
 			return nil, err
 		}
 

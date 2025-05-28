@@ -222,6 +222,11 @@ func TestInitCustomZapLogger(t *testing.T) {
 			wantErr:   false,
 		},
 		{
+			name:    "valid numeric level",
+			level:   "-255",
+			wantErr: true,
+		},
+		{
 			name:    "invalid level",
 			level:   "invalid",
 			wantErr: true,
@@ -241,6 +246,9 @@ func TestInitCustomZapLogger(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, logger)
 
+			if logger == nil {
+				return
+			}
 			// Verify logger configuration
 			loggerImpl := logger.Core()
 			assert.True(t, loggerImpl.Enabled(tt.wantLevel))
