@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zapcore"
 )
 
 func Test_configureDeletionProtection(t *testing.T) {
@@ -193,4 +194,56 @@ func Test_configureDeletionProtection(t *testing.T) {
 			config,
 		)
 	})
+}
+
+func TestInitCustomZapLogger(t *testing.T) {
+	tests := []struct {
+		name      string
+		level     string
+		wantLevel zapcore.Level
+		wantErr   bool
+	}{
+		{
+			name:      "valid string level info with json encoding",
+			level:     "info",
+			wantLevel: zapcore.InfoLevel,
+			wantErr:   false,
+		},
+		{
+			name:      "valid string level debug with console encoding",
+			level:     "debug",
+			wantLevel: zapcore.DebugLevel,
+			wantErr:   false,
+		},
+		{
+			name:      "valid numeric level",
+			level:     "-1",
+			wantLevel: zapcore.Level(-1),
+			wantErr:   false,
+		},
+		{
+			name:    "invalid level",
+			level:   "invalid",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, err := initCustomZapLogger(tt.level, "json")
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, logger)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, logger)
+
+			// Verify logger configuration
+			loggerImpl := logger.Core()
+			assert.True(t, loggerImpl.Enabled(tt.wantLevel))
+		})
+	}
 }
