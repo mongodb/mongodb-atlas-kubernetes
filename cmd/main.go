@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,8 +69,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctrl.SetLogger(zapr.NewLogger(logger))
-	klog.SetLogger(zapr.NewLogger(logger))
+	logrLogger := zapr.NewLogger(logger)
+	ctrl.SetLogger(logrLogger.WithName("ctrl"))
+	klog.SetLogger(logrLogger.WithName("klog"))
 	setupLog := logger.Named("setup").Sugar()
 	setupLog.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))
 
@@ -127,7 +129,7 @@ func parseConfiguration() Config {
 	flag.BoolVar(&config.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&config.LogLevel, "log-level", "info", "Log level. Available values: debug | info | warn | error | dpanic | panic | fatal")
+	flag.StringVar(&config.LogLevel, "log-level", "info", "Log level. Available values: debug | info | warn | error | dpanic | panic | fatal or a numeric value from -9 to 5, where -9 is the most verbose and 5 is the least verbose.")
 	flag.StringVar(&config.LogEncoder, "log-encoder", "json", "Log encoder. Available values: json | console")
 	flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "Defines if the operator deletes Atlas resource "+
 		"when a Custom Resource is deleted")
@@ -191,9 +193,32 @@ func operatorGlobalKeySecretOrDefault(secretNameOverride string) client.ObjectKe
 
 func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
 	lv := zap.AtomicLevel{}
-	err := lv.UnmarshalText([]byte(strings.ToLower(level)))
+
+	i64, err := strconv.ParseInt(level, 10, 8)
+	numericLevel := int8(i64)
 	if err != nil {
-		return nil, err
+		// not a numeric level, try to unmarshal it as a zapcore.Level ("debug", "info", "warn", "error", "dpanic", "panic", or "fatal")
+		err := lv.UnmarshalText([]byte(strings.ToLower(level)))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// numeric level:
+		// 1. configure klog if the numeric log level is negative and the absolute value of the negative numeric value represents the klog level.
+		// 2. configure the atomic zap level based on the numeric value (5..-9).
+
+		var klogLevel int8 = 0
+		if numericLevel < 0 {
+			klogLevel = -numericLevel
+		}
+
+		klogFlagSet := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+		klog.InitFlags(klogFlagSet)
+		if err := klogFlagSet.Set("v", strconv.Itoa(int(klogLevel))); err != nil {
+			return nil, err
+		}
+
+		lv = zap.NewAtomicLevelAt(zapcore.Level(numericLevel))
 	}
 
 	enc := strings.ToLower(encoding)
