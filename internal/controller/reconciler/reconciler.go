@@ -23,11 +23,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 )
 
 type AtlasReconciler struct {
+	AtlasProvider   atlas.Provider
 	Client          client.Client
 	Log             *zap.SugaredLogger
 	GlobalSecretRef client.ObjectKey
