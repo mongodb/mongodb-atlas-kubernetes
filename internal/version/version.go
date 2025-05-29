@@ -24,7 +24,14 @@ const DefaultVersion = "unknown"
 // Version set by the linker during link time.
 var Version = DefaultVersion
 
+// Experimental enables unreleased features
+var Experimental = "false"
+
 func IsRelease(v string) bool {
 	return v != DefaultVersion &&
 		regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+[-certified]*$`).Match([]byte(strings.TrimSpace(v)))
+}
+
+func IsExperimental() bool {
+	return Experimental == "true"
 }
