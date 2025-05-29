@@ -81,14 +81,15 @@ type Builder struct {
 	leaderElection        bool
 	leaderElectionID      string
 
-	atlasDomain        string
-	predicates         []predicate.Predicate
-	apiSecret          client.ObjectKey
-	atlasProvider      atlas.Provider
-	featureFlags       *featureflags.FeatureFlags
-	deletionProtection bool
-	skipNameValidation bool
-	dryRun             bool
+	atlasDomain             string
+	predicates              []predicate.Predicate
+	apiSecret               client.ObjectKey
+	atlasProvider           atlas.Provider
+	featureFlags            *featureflags.FeatureFlags
+	deletionProtection      bool
+	skipNameValidation      bool
+	dryRun                  bool
+	experimentalReconcilers bool
 }
 
 func (b *Builder) WithConfig(config *rest.Config) *Builder {
@@ -175,6 +176,11 @@ func (b *Builder) WithDryRun(dryRun bool) *Builder {
 	return b
 }
 
+func (b *Builder) WithExperimentalReconcilers(experimentalReconcilers bool) *Builder {
+	b.experimentalReconcilers = experimentalReconcilers
+	return b
+}
+
 // Build builds the cluster object and configures operator controllers
 func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 	mergeDefaults(b)
@@ -202,7 +208,15 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		}
 	}
 
-	controllerRegistry := controller.NewRegistry(b.predicates, b.deletionProtection, b.logger, b.independentSyncPeriod, b.featureFlags, b.apiSecret)
+	controllerRegistry := controller.NewRegistry(
+		b.predicates,
+		b.deletionProtection,
+		b.logger,
+		b.independentSyncPeriod,
+		b.featureFlags,
+		b.apiSecret,
+		b.experimentalReconcilers,
+	)
 
 	var akoCluster cluster.Cluster
 	if b.dryRun {
