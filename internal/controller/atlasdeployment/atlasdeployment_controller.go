@@ -60,7 +60,6 @@ type AtlasDeploymentReconciler struct {
 	Scheme                      *runtime.Scheme
 	GlobalPredicates            []predicate.Predicate
 	EventRecorder               record.EventRecorder
-	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	independentSyncPeriod       time.Duration
@@ -422,11 +421,11 @@ func NewAtlasDeploymentReconciler(
 			Client:          c.GetClient(),
 			Log:             suggaredLogger,
 			GlobalSecretRef: globalSecretref,
+			AtlasProvider:   atlasProvider,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasDeployment"),
 		GlobalPredicates:         predicates,
-		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
 	}

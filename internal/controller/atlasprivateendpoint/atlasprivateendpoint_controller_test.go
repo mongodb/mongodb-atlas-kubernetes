@@ -398,10 +398,10 @@ func TestEnsureCustomResource(t *testing.T) {
 				Build()
 			r := &AtlasPrivateEndpointReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: fakeClient,
-					Log:    zap.New(core).Sugar(),
+					Client:        fakeClient,
+					Log:           zap.New(core).Sugar(),
+					AtlasProvider: tt.provider,
 				},
-				AtlasProvider: tt.provider,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			result, err := r.ensureCustomResource(ctx, tt.atlasPrivateEndpoint)
