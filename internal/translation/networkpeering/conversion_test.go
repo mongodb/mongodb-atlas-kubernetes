@@ -76,7 +76,7 @@ func FuzzConvertListOfConnections(f *testing.F) {
 
 func fuzzPeer(fuzzer *gofuzz.Fuzzer, index uint, peer *NetworkPeer) {
 	fuzzer.NilChance(0).Fuzz(peer)
-	peer.ID = ""                           // ID is provided by Atlas, cannoy complete a roundtrip
+	peer.ID = ""                           // ID is provided by Atlas, cannot complete a roundtrip
 	peer.Provider = providerNames[index%3] // provider can only be one of 3 AWS, AZURE or GCP
 	switch peer.Provider {                 // only the selected provider config is expected
 	case string(provider.ProviderAWS):
