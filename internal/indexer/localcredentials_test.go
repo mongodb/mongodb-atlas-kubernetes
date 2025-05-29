@@ -256,7 +256,7 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			index:  AtlasDeploymentCredentialsIndex,
 			output: &akov2.AtlasDeployment{},
 			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
-				return CredentialsIndexMapperFunc[*akov2.AtlasDeploymentList](
+				return CredentialsIndexMapperFunc(
 					AtlasDeploymentCredentialsIndex,
 					func() *akov2.AtlasDeploymentList { return &akov2.AtlasDeploymentList{} },
 					DeploymentRequests,
@@ -292,7 +292,7 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			index:  AtlasCustomRoleCredentialsIndex,
 			output: &akov2.AtlasCustomRole{},
 			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
-				return CredentialsIndexMapperFunc[*akov2.AtlasCustomRoleList](
+				return CredentialsIndexMapperFunc(
 					AtlasCustomRoleCredentialsIndex,
 					func() *akov2.AtlasCustomRoleList { return &akov2.AtlasCustomRoleList{} },
 					CustomRoleRequests,
@@ -328,7 +328,7 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			index:  AtlasPrivateEndpointCredentialsIndex,
 			output: &akov2.AtlasPrivateEndpoint{},
 			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
-				return CredentialsIndexMapperFunc[*akov2.AtlasPrivateEndpointList](
+				return CredentialsIndexMapperFunc(
 					AtlasPrivateEndpointCredentialsIndex,
 					func() *akov2.AtlasPrivateEndpointList { return &akov2.AtlasPrivateEndpointList{} },
 					PrivateEndpointRequests,
@@ -364,7 +364,7 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			index:  AtlasNetworkContainerCredentialsIndex,
 			output: &akov2.AtlasNetworkContainer{},
 			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
-				return CredentialsIndexMapperFunc[*akov2.AtlasNetworkContainerList](
+				return CredentialsIndexMapperFunc(
 					AtlasNetworkContainerCredentialsIndex,
 					func() *akov2.AtlasNetworkContainerList { return &akov2.AtlasNetworkContainerList{} },
 					NetworkContainerRequests,
@@ -400,7 +400,7 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			index:  AtlasNetworkPeeringCredentialsIndex,
 			output: &akov2.AtlasNetworkPeering{},
 			mapperFn: func(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
-				return CredentialsIndexMapperFunc[*akov2.AtlasNetworkPeeringList](
+				return CredentialsIndexMapperFunc(
 					AtlasNetworkPeeringCredentialsIndex,
 					func() *akov2.AtlasNetworkPeeringList { return &akov2.AtlasNetworkPeeringList{} },
 					NetworkPeeringRequests,
@@ -519,7 +519,7 @@ func newTestSecret(name string) *corev1.Secret {
 }
 
 func dbUserMapperFunc(kubeClient client.Client, logger *zap.SugaredLogger) handler.MapFunc {
-	return CredentialsIndexMapperFunc[*akov2.AtlasDatabaseUserList](
+	return CredentialsIndexMapperFunc(
 		AtlasDatabaseUserCredentialsIndex,
 		func() *akov2.AtlasDatabaseUserList { return &akov2.AtlasDatabaseUserList{} },
 		DatabaseUserRequests,
@@ -539,5 +539,6 @@ func testIndexers(t *testing.T) map[string]*LocalCredentialIndexer {
 	indexers[AtlasPrivateEndpointCredentialsIndex] = NewAtlasPrivateEndpointByCredentialIndexer(logger)
 	indexers[AtlasNetworkContainerCredentialsIndex] = NewAtlasNetworkContainerByCredentialIndexer(logger)
 	indexers[AtlasNetworkPeeringCredentialsIndex] = NewAtlasNetworkPeeringByCredentialIndexer(logger)
+	indexers[AtlasThirdPartyIntegrationCredentialsIndex] = NewAtlasThirdPartyIntegrationByCredentialIndexer(logger)
 	return indexers
 }

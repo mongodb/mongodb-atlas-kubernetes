@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -40,9 +41,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlassearchindexconfig"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasstream"
+	integrations "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasthirdpartyintegrations"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
 type Reconciler interface {
@@ -122,8 +126,11 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	r.reconcilers = reconcilers
 }
 
-func (r *Registry) appendExperimentalReconcilers(reconcilers []Reconciler, _ cluster.Cluster, _ atlas.Provider) []Reconciler {
-	// Experimental reconciler initializations go here
+func (r *Registry) appendExperimentalReconcilers(reconcilers []Reconciler, _ cluster.Cluster, ap atlas.Provider) []Reconciler {
+	// TODO cluster.Cluster needed in initialization
+	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(ap, r.deletionProtection, r.logger, r.globalSecretRef)
+	compatibleIntegrationsReconciler := newCtrlStateReconciler(*integrationsReconciler)
+	reconcilers = append(reconcilers, compatibleIntegrationsReconciler)
 	return reconcilers
 }
 
@@ -136,4 +143,27 @@ func (r *Registry) deprecatedPredicates() []predicate.Predicate {
 // spurious after delete handling and acting on finalizers setting or unsetting
 func (r *Registry) defaultPredicates() []predicate.Predicate {
 	return append(r.sharedPredicates, watch.DefaultPredicates[client.Object]())
+}
+
+type ctrlStateReconciler[T any] struct {
+	ctrlstate.Reconciler[T]
+}
+
+func newCtrlStateReconciler[T any](r ctrlstate.Reconciler[T]) *ctrlStateReconciler[T] {
+	return &ctrlStateReconciler[T]{Reconciler: r}
+}
+
+func (nr *ctrlStateReconciler[T]) For() (client.Object, builder.Predicates) {
+	return nil, builder.Predicates{}
+}
+
+func (nr *ctrlStateReconciler[T]) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
+	skipNameOptionFn := func(skipNameValidation bool) ctrlstate.SetupManagerOption {
+		return func(builder *ctrlstate.ControllerSetupBuilder) *ctrlstate.ControllerSetupBuilder {
+			return builder.WithOptions(controller.TypedOptions[reconcile.Request]{
+				SkipNameValidation: pointer.MakePtr(skipNameValidation),
+			})
+		}
+	}
+	return nr.Reconciler.SetupWithManager(mgr, skipNameOptionFn(skipNameValidation))
 }
