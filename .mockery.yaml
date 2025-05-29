@@ -18,3 +18,4 @@ packages:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer:
   github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkpeering:
+  github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration:

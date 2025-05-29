@@ -37,7 +37,7 @@ const (
 	PollingInterval     = 10 * time.Second
 )
 
-var GinkGoFieldOwner = client.FieldOwner("field-owner")
+var GinkGoFieldOwner = client.FieldOwner("ginkgo")
 
 func TestE2e(t *testing.T) {
 	control.SkipTestUnless(t, "AKO_E2E2_TEST")

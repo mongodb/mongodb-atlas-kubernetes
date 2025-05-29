@@ -1,0 +1,190 @@
+// Copyright 2025 MongoDB Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package integrations
+
+import (
+	"context"
+	"fmt"
+
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	ctrlrtbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	mckpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/predicate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
+)
+
+type serviceBuilderFunc func(*atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService
+
+type AtlasThirdPartyIntegrationHandler struct {
+	ctrlstate.StateHandler[akov2next.AtlasThirdPartyIntegration]
+	reconciler.AtlasReconciler
+	deletionProtection bool
+	serviceBuilder     serviceBuilderFunc
+}
+
+func NewAtlasThirdPartyIntegrationsReconciler(
+	c cluster.Cluster,
+	atlasProvider atlas.Provider,
+	deletionProtection bool,
+	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
+	reapplySupport bool,
+) *ctrlstate.Reconciler[akov2next.AtlasThirdPartyIntegration] {
+	handler := &AtlasThirdPartyIntegrationHandler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client:          c.GetClient(),
+			AtlasProvider:   atlasProvider,
+			Log:             logger.Named("controllers").Named("AtlasThirdPartyIntegration").Sugar(),
+			GlobalSecretRef: globalSecretRef,
+		},
+		deletionProtection: deletionProtection,
+		serviceBuilder:     thirdpartyintegration.NewThirdPartyIntegrationServiceFromClientSet,
+	}
+	return ctrlstate.NewStateReconciler(
+		handler,
+		ctrlstate.WithCluster[akov2next.AtlasThirdPartyIntegration](c),
+		ctrlstate.WithReapplySupport[akov2next.AtlasThirdPartyIntegration](reapplySupport),
+	)
+}
+
+// For prepares the controller for its target Custom Resource; AtlasThirdPartyIntegration
+func (r *AtlasThirdPartyIntegrationHandler) For() (client.Object, builder.Predicates) {
+	return &akov2next.AtlasThirdPartyIntegration{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})
+}
+
+func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler, opts ...ctrlstate.SetupManagerOption) error {
+	h.Client = mgr.GetClient()
+	obj := &akov2next.AtlasThirdPartyIntegration{}
+	builder := controllerruntime.NewControllerManagedBy(mgr).
+		For(
+			obj,
+			ctrlrtbuilder.WithPredicates(
+				predicate.Or(
+					mckpredicate.AnnotationChanged("mongodb.com/reapply-period"),
+					predicate.GenerationChangedPredicate{},
+				),
+				mckpredicate.IgnoreDeletedPredicate[client.Object](),
+			),
+		).
+		Watches(
+			&akov2.AtlasProject{},
+			handler.EnqueueRequestsFromMapFunc(h.integrationForProjectMapFunc()),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(h.integrationForSecretMapFunc()),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		WithOptions(controller.Options{
+			RateLimiter: ratelimit.NewRateLimiter[reconcile.Request](),
+		})
+	return ctrlstate.ApplyOptions(builder, opts...).Complete(rec)
+}
+
+func (h *AtlasThirdPartyIntegrationHandler) integrationForProjectMapFunc() handler.MapFunc {
+	return indexer.ProjectsIndexMapperFunc(
+		string(indexer.AtlasThirdPartyIntegrationByProjectIndex),
+		func() *akov2next.AtlasThirdPartyIntegrationList { return &akov2next.AtlasThirdPartyIntegrationList{} },
+		indexer.AtlasThirdPartyIntegrationRequests,
+		h.Client,
+		h.Log,
+	)
+}
+
+func (h *AtlasThirdPartyIntegrationHandler) integrationForSecretMapFunc() handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		secret, ok := obj.(*corev1.Secret)
+		if !ok {
+			h.Log.Warnf("watching Secret but got %T", obj)
+			return nil
+		}
+
+		listOpts := &client.ListOptions{
+			FieldSelector: fields.OneTermEqualSelector(
+				indexer.AtlasThirdPartyIntegrationBySecretsIndex,
+				client.ObjectKeyFromObject(secret).String(),
+			),
+		}
+		list1 := &akov2next.AtlasThirdPartyIntegrationList{}
+		err := h.Client.List(ctx, list1, listOpts)
+		if err != nil {
+			h.Log.Errorf("failed to list from indexer %s: %v",
+				indexer.AtlasThirdPartyIntegrationBySecretsIndex, err)
+			return nil
+		}
+		requests1 := indexer.AtlasThirdPartyIntegrationRequests(list1)
+
+		listOpts = &client.ListOptions{
+			FieldSelector: fields.OneTermEqualSelector(
+				indexer.AtlasThirdPartyIntegrationCredentialsIndex,
+				client.ObjectKeyFromObject(secret).String(),
+			),
+		}
+		list2 := &akov2next.AtlasThirdPartyIntegrationList{}
+		err = h.Client.List(ctx, list2, listOpts)
+		if err != nil {
+			h.Log.Errorf("failed to list from indexer %s: %v",
+				indexer.AtlasThirdPartyIntegrationCredentialsIndex, err)
+			return nil
+		}
+		requests2 := indexer.AtlasThirdPartyIntegrationRequests(list2)
+
+		return append(requests1, requests2...)
+	}
+}
+
+type reconcileRequest struct {
+	ClientSet   *atlas.ClientSet
+	Project     *project.Project
+	Service     thirdpartyintegration.ThirdPartyIntegrationService
+	integration *akov2next.AtlasThirdPartyIntegration
+}
+
+func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (*reconcileRequest, error) {
+	req := reconcileRequest{}
+	sdkClientSet, err := h.ResolveSDKClientSet(ctx, integration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve connection config: %w", err)
+	}
+	req.ClientSet = sdkClientSet
+	req.Service = h.serviceBuilder(sdkClientSet)
+	project, err := h.ResolveProject(ctx, sdkClientSet.SdkClient20231115008, integration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch referenced project: %w", err)
+	}
+	req.Project = project
+	req.integration = integration
+	return &req, nil
+}
