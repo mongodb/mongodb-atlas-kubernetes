@@ -15,23 +15,37 @@
 package version
 
 import (
-	"regexp"
-	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-const DefaultVersion = "unknown"
-
-// Version set by the linker during link time.
-var Version = DefaultVersion
-
-// Experimental enables unreleased features
-var Experimental = "false"
-
-func IsRelease(v string) bool {
-	return v != DefaultVersion &&
-		regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+[-certified]*$`).Match([]byte(strings.TrimSpace(v)))
-}
-
-func IsExperimental() bool {
-	return Experimental == "true"
+func TestIsExperimental(t *testing.T) {
+	testCases := []struct {
+		title string
+		set   string
+		want  bool
+	}{
+		{
+			title: "default is not experimental",
+		},
+		{
+			title: "setting true makes it experimental",
+			set:   "true",
+			want:  true,
+		},
+		{
+			title: "setting other value is not experimental",
+			set:   "1",
+			want:  false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			if tc.set != "" {
+				Experimental = tc.set
+			}
+			assert.Equal(t, tc.want, IsExperimental())
+		})
+	}
 }
