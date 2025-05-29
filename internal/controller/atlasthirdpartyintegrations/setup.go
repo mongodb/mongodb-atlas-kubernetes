@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlrtbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -44,6 +45,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
+var integrationPredicates = predicate.ResourceVersionChangedPredicate{}
+
 type AtlasThirdPartyIntegrationHandler struct {
 	ctrlstate.StateHandler[akov2next.AtlasThirdPartyIntegration]
 	reconciler.AtlasReconciler
@@ -51,20 +54,32 @@ type AtlasThirdPartyIntegrationHandler struct {
 }
 
 func NewAtlasThirdPartyIntegrationsReconciler(
+	c cluster.Cluster,
 	atlasProvider atlas.Provider,
 	deletionProtection bool,
 	logger *zap.Logger,
 	globalSecretRef client.ObjectKey,
 	reapplySupport bool,
 ) *ctrlstate.Reconciler[akov2next.AtlasThirdPartyIntegration] {
-	return ctrlstate.NewStateReconciler(&AtlasThirdPartyIntegrationHandler{
+	handler := &AtlasThirdPartyIntegrationHandler{
 		AtlasReconciler: reconciler.AtlasReconciler{
+			Client:          c.GetClient(),
 			AtlasProvider:   atlasProvider,
 			Log:             logger.Named("controllers").Named("AtlasThirdPartyIntegration").Sugar(),
 			GlobalSecretRef: globalSecretRef,
 		},
 		deletionProtection: deletionProtection,
-	}, ctrlstate.WithReapplySupport[akov2next.AtlasThirdPartyIntegration](reapplySupport))
+	}
+	return ctrlstate.NewStateReconciler(
+		handler,
+		ctrlstate.WithCluster[akov2next.AtlasThirdPartyIntegration](c),
+		ctrlstate.WithReapplySupport[akov2next.AtlasThirdPartyIntegration](reapplySupport),
+	)
+}
+
+// For prepares the controller for its target Custom Resource; AtlasThirdPartyIntegration
+func (r *AtlasThirdPartyIntegrationHandler) For() (client.Object, builder.Predicates) {
+	return &akov2next.AtlasThirdPartyIntegration{}, builder.WithPredicates(integrationPredicates)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler, opts ...ctrlstate.SetupManagerOption) error {
@@ -84,17 +99,17 @@ func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, r
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForProjectMapFunc()),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(integrationPredicates),
 		).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForCredentialMapFunc()),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(integrationPredicates),
 		).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForSecretMapFunc()),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(integrationPredicates),
 		).
 		WithOptions(controller.Options{
 			RateLimiter: ratelimit.NewRateLimiter[reconcile.Request](),

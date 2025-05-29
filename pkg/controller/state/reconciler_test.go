@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
@@ -539,6 +540,9 @@ type dummyPodReconciler struct {
 
 func (d *dummyPodReconciler) SetupWithManager(_ ctrl.Manager, _ reconcile.Reconciler, _ ...SetupManagerOption) error {
 	return nil
+}
+func (d *dummyPodReconciler) For() (client.Object, builder.Predicates) {
+	return nil, builder.Predicates{}
 }
 func (d *dummyPodReconciler) HandleInitial(ctx context.Context, do *dummyObject) (Result, error) {
 	return d.handleState(ctx, do)

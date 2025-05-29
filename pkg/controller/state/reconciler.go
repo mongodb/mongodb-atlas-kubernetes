@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	ctrlrtbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
@@ -44,6 +45,7 @@ type Result struct {
 
 type StateHandler[T any] interface {
 	SetupWithManager(ctrl.Manager, reconcile.Reconciler, ...SetupManagerOption) error
+	For() (client.Object, builder.Predicates)
 	HandleInitial(context.Context, *T) (Result, error)
 	HandleImportRequested(context.Context, *T) (Result, error)
 	HandleImported(context.Context, *T) (Result, error)
@@ -70,6 +72,12 @@ type Reconciler[T any] struct {
 }
 
 type ReconcilerOptionFn[T any] func(*Reconciler[T])
+
+func WithCluster[T any](c cluster.Cluster) ReconcilerOptionFn[T] {
+	return func(r *Reconciler[T]) {
+		r.cluster = c
+	}
+}
 
 func WithReapplySupport[T any](supportReapply bool) ReconcilerOptionFn[T] {
 	return func(r *Reconciler[T]) {
@@ -103,6 +111,10 @@ func NewUnstructuredStateReconciler(target UnstructuredStateReconciler, gvk sche
 func (r *Reconciler[T]) SetupWithManager(mgr ctrl.Manager, options ...SetupManagerOption) error {
 	r.cluster = mgr
 	return r.reconciler.SetupWithManager(mgr, r, options...)
+}
+
+func (r *Reconciler[T]) For() (client.Object, builder.Predicates) {
+	return r.reconciler.For()
 }
 
 func ApplyOptions(builder *ControllerSetupBuilder, options ...SetupManagerOption) *ControllerSetupBuilder {

@@ -131,9 +131,10 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	r.reconcilers = reconcilers
 }
 
-func (r *Registry) appendExperimentalReconcilers(reconcilers []Reconciler, _ cluster.Cluster, ap atlas.Provider) []Reconciler {
+func (r *Registry) appendExperimentalReconcilers(reconcilers []Reconciler, c cluster.Cluster, ap atlas.Provider) []Reconciler {
 	// TODO cluster.Cluster needed in initialization
 	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(
+		c,
 		ap,
 		r.deletionProtection,
 		r.logger,
@@ -162,10 +163,6 @@ type ctrlStateReconciler[T any] struct {
 
 func newCtrlStateReconciler[T any](r ctrlstate.Reconciler[T]) *ctrlStateReconciler[T] {
 	return &ctrlStateReconciler[T]{Reconciler: r}
-}
-
-func (nr *ctrlStateReconciler[T]) For() (client.Object, builder.Predicates) {
-	return nil, builder.Predicates{}
 }
 
 func (nr *ctrlStateReconciler[T]) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
