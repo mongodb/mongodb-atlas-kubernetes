@@ -57,19 +57,21 @@ type Registry struct {
 	independentSyncPeriod time.Duration
 	featureFlags          *featureflags.FeatureFlags
 
-	logger          *zap.Logger
-	reconcilers     []Reconciler
-	globalSecretRef client.ObjectKey
+	logger                  *zap.Logger
+	reconcilers             []Reconciler
+	globalSecretRef         client.ObjectKey
+	experimentalReconcilers bool
 }
 
-func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey) *Registry {
+func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey, experimentalReconcilers bool) *Registry {
 	return &Registry{
-		sharedPredicates:      predicates,
-		deletionProtection:    deletionProtection,
-		logger:                logger,
-		independentSyncPeriod: independentSyncPeriod,
-		featureFlags:          featureFlags,
-		globalSecretRef:       globalSecretRef,
+		sharedPredicates:        predicates,
+		deletionProtection:      deletionProtection,
+		logger:                  logger,
+		independentSyncPeriod:   independentSyncPeriod,
+		featureFlags:            featureFlags,
+		globalSecretRef:         globalSecretRef,
+		experimentalReconcilers: experimentalReconcilers,
 	}
 }
 
@@ -114,7 +116,15 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
+	if r.experimentalReconcilers {
+		reconcilers = r.appendExperimentalReconcilers(reconcilers, c, ap)
+	}
 	r.reconcilers = reconcilers
+}
+
+func (r *Registry) appendExperimentalReconcilers(reconcilers []Reconciler, _ cluster.Cluster, _ atlas.Provider) []Reconciler {
+	// Experimental reconciler initializations go here
+	return reconcilers
 }
 
 // deprecatedPredicates are to be phased out in favor of defaultPredicates
