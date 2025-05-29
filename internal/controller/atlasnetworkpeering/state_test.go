@@ -941,8 +941,8 @@ func testReconciler(k8sClient client.Client, provider atlas.Provider, logger *za
 				Namespace: "default",
 				Name:      "secret",
 			},
+			AtlasProvider: provider,
 		},
-		AtlasProvider: provider,
 		EventRecorder: record.NewFakeRecorder(10),
 	}
 }

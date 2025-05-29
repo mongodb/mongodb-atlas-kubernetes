@@ -50,7 +50,6 @@ type AtlasCustomRoleReconciler struct {
 	reconciler.AtlasReconciler
 	Scheme                      *runtime.Scheme
 	EventRecorder               record.EventRecorder
-	AtlasProvider               atlas.Provider
 	GlobalPredicates            []predicate.Predicate
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
@@ -71,10 +70,10 @@ func NewAtlasCustomRoleReconciler(
 			Client:          c.GetClient(),
 			Log:             logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
 			GlobalSecretRef: globalSecretRef,
+			AtlasProvider:   atlasProvider,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasCustomRoles"),
-		AtlasProvider:            atlasProvider,
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,

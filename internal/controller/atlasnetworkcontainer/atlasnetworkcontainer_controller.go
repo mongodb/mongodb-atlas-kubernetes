@@ -42,7 +42,6 @@ import (
 // AtlasNetworkContainerReconciler reconciles a AtlasNetworkContainer object
 type AtlasNetworkContainerReconciler struct {
 	reconciler.AtlasReconciler
-	AtlasProvider            atlas.Provider
 	Scheme                   *runtime.Scheme
 	EventRecorder            record.EventRecorder
 	GlobalPredicates         []predicate.Predicate
@@ -123,10 +122,10 @@ func NewAtlasNetworkContainerReconciler(
 			Client:          c.GetClient(),
 			Log:             logger.Named("controllers").Named("AtlasNetworkContainer").Sugar(),
 			GlobalSecretRef: globalSecretRef,
+			AtlasProvider:   atlasProvider,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasNetworkContainer"),
-		AtlasProvider:            atlasProvider,
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,

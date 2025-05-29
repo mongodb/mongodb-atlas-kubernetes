@@ -54,7 +54,6 @@ var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authent
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
 	reconciler.AtlasReconciler
-	AtlasProvider               atlas.Provider
 	Scheme                      *runtime.Scheme
 	EventRecorder               record.EventRecorder
 	GlobalPredicates            []predicate.Predicate
@@ -287,8 +286,8 @@ func NewAtlasDatabaseUserReconciler(
 			Client:          c.GetClient(),
 			Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 			GlobalSecretRef: globalSecretRef,
+			AtlasProvider:   atlasProvider,
 		},
-		AtlasProvider:            atlasProvider,
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasDatabaseUser"),
 		GlobalPredicates:         predicates,
