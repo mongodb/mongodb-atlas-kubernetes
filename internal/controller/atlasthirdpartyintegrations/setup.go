@@ -55,6 +55,7 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 	deletionProtection bool,
 	logger *zap.Logger,
 	globalSecretRef client.ObjectKey,
+	reapplySupport bool,
 ) *ctrlstate.Reconciler[akov2next.AtlasThirdPartyIntegration] {
 	return ctrlstate.NewStateReconciler(&AtlasThirdPartyIntegrationHandler{
 		AtlasReconciler: reconciler.AtlasReconciler{
@@ -63,7 +64,7 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 			GlobalSecretRef: globalSecretRef,
 		},
 		deletionProtection: deletionProtection,
-	})
+	}, ctrlstate.WithReapplySupport[akov2next.AtlasThirdPartyIntegration](reapplySupport))
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler, opts ...ctrlstate.SetupManagerOption) error {

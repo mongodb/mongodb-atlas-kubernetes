@@ -66,6 +66,15 @@ type Reconciler[T any] struct {
 	cluster         cluster.Cluster
 	reconciler      StateHandler[T]
 	unstructuredGVK schema.GroupVersionKind
+	supportReapply  bool
+}
+
+type ReconcilerOptionFn[T any] func(*Reconciler[T])
+
+func WithReapplySupport[T any](supportReapply bool) ReconcilerOptionFn[T] {
+	return func(r *Reconciler[T]) {
+		r.supportReapply = supportReapply
+	}
 }
 
 type UnstructuredStateReconciler = StateHandler[unstructured.Unstructured]
@@ -74,10 +83,14 @@ type ControllerSetupBuilder = ctrlrtbuilder.TypedBuilder[reconcile.Request]
 
 type SetupManagerOption func(builder *ControllerSetupBuilder) *ControllerSetupBuilder
 
-func NewStateReconciler[T any](target StateHandler[T]) *Reconciler[T] {
-	return &Reconciler[T]{
+func NewStateReconciler[T any](target StateHandler[T], options ...ReconcilerOptionFn[T]) *Reconciler[T] {
+	r := &Reconciler[T]{
 		reconciler: target,
 	}
+	for _, opt := range options {
+		opt(r)
+	}
+	return r
 }
 
 func NewUnstructuredStateReconciler(target UnstructuredStateReconciler, gvk schema.GroupVersionKind) *Reconciler[unstructured.Unstructured] {
@@ -287,6 +300,17 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 		result.NextState = state.StateInitial
 	}
 
+	if r.supportReapply {
+		err := r.reconcileReapply(ctx, obj, result, err)
+		if err != nil {
+			return Result{}, fmt.Errorf("failed to reconcile reapply: %w", err)
+		}
+	}
+
+	return result, err
+}
+
+func (r *Reconciler[T]) reconcileReapply(ctx context.Context, obj client.Object, result Result, err error) error {
 	isReapplyState := result.NextState == state.StateImported ||
 		result.NextState == state.StateCreated ||
 		result.NextState == state.StateUpdated
@@ -294,13 +318,12 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 	if isReapplyState && result.RequeueAfter == 0 && err == nil {
 		requeueAfter, err := PatchReapplyTimestamp(ctx, r.cluster.GetClient(), obj)
 		if err != nil {
-			return Result{}, err
+			return fmt.Errorf("failed to patch reapply timestamp: %w", err)
 		}
 
 		result.RequeueAfter = requeueAfter
 	}
-
-	return result, err
+	return nil
 }
 
 func getObservedGeneration(obj client.Object, prevStatusConditions []metav1.Condition, nextState state.ResourceState) int64 {

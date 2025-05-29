@@ -49,6 +49,8 @@ import (
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
+const DefaultReapplySupport = true
+
 type Reconciler interface {
 	reconcile.Reconciler
 	For() (client.Object, builder.Predicates)
@@ -65,6 +67,8 @@ type Registry struct {
 	reconcilers             []Reconciler
 	globalSecretRef         client.ObjectKey
 	experimentalReconcilers bool
+
+	reapplySupport bool
 }
 
 func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey, experimentalReconcilers bool) *Registry {
@@ -76,6 +80,7 @@ func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logg
 		featureFlags:            featureFlags,
 		globalSecretRef:         globalSecretRef,
 		experimentalReconcilers: experimentalReconcilers,
+		reapplySupport:          DefaultReapplySupport,
 	}
 }
 
@@ -128,7 +133,13 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 
 func (r *Registry) appendExperimentalReconcilers(reconcilers []Reconciler, _ cluster.Cluster, ap atlas.Provider) []Reconciler {
 	// TODO cluster.Cluster needed in initialization
-	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(ap, r.deletionProtection, r.logger, r.globalSecretRef)
+	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(
+		ap,
+		r.deletionProtection,
+		r.logger,
+		r.globalSecretRef,
+		r.reapplySupport,
+	)
 	compatibleIntegrationsReconciler := newCtrlStateReconciler(*integrationsReconciler)
 	reconcilers = append(reconcilers, compatibleIntegrationsReconciler)
 	return reconcilers
