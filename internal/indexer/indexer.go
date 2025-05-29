@@ -21,6 +21,8 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 type Indexer interface {
@@ -34,7 +36,15 @@ type Indexer interface {
 // passing that to each indexer.
 func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) error {
 	logger = logger.Named("indexer")
-	return Register(ctx, c,
+	indexers := productionIndexers([]Indexer{}, ctx, c, logger)
+	if version.IsExperimental() {
+		indexers = experimentalIndexers(indexers, ctx, c, logger)
+	}
+	return Register(ctx, c, indexers...)
+}
+
+func productionIndexers(indexers []Indexer, ctx context.Context, c cluster.Cluster, logger *zap.Logger) []Indexer {
+	return append(indexers,
 		NewAtlasBackupScheduleByBackupPolicyIndexer(logger),
 		NewAtlasDeploymentByBackupScheduleIndexer(logger),
 		NewAtlasDeploymentBySearchIndexIndexer(logger),
@@ -61,6 +71,14 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasNetworkContainerByCredentialIndexer(logger),
 		NewAtlasNetworkContainerByProjectIndexer(logger),
 		NewAtlasNetworkPeeringByContainerIndexer(logger),
+	)
+}
+
+func experimentalIndexers(indexers []Indexer, _ context.Context, _ cluster.Cluster, logger *zap.Logger) []Indexer {
+	return append(indexers,
+		NewAtlasThirdPartyIntegrationByProjectIndexer(logger),
+		NewAtlasThirdPartyIntegrationByCredentialIndexer(logger),
+		NewAtlasThirdPartyIntegrationBySecretsIndexer(logger),
 	)
 }
 
