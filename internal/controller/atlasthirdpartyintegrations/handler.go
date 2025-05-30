@@ -39,15 +39,15 @@ const (
 )
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateInitial, integration)
+	return h.upsert(ctx, state.StateInitial, state.StateCreated, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateCreated, integration)
+	return h.upsert(ctx, state.StateCreated, state.StateCreated, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleUpdated(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateUpdated, integration)
+	return h.upsert(ctx, state.StateUpdated, state.StateUpdated, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
@@ -62,7 +62,7 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.
 	return h.unmanage(integration.Spec.Type)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState state.ResourceState, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to build reconcile request: %w", err))
@@ -97,7 +97,7 @@ func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentS
 		return h.update(ctx, currentState, req, integrationSpec)
 	}
 	return result.NextState(
-		state.StateCreated,
+		nextState,
 		fmt.Sprintf("%s Atlas Third Party Integration for %s", integrationSpec.Type, req.Project.ID),
 	)
 }
@@ -147,7 +147,7 @@ func (h *AtlasThirdPartyIntegrationHandler) delete(ctx context.Context, req *rec
 	}
 	if err != nil {
 		return result.Error(
-			state.StateInitial,
+			state.StateDeletionRequested,
 			fmt.Errorf("Error deleting %s Atlas Integration for project %s: %w", integrationType, req.Project.ID, err),
 		)
 	}
