@@ -45,8 +45,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
-var integrationPredicates = predicate.ResourceVersionChangedPredicate{}
-
 type AtlasThirdPartyIntegrationHandler struct {
 	ctrlstate.StateHandler[akov2next.AtlasThirdPartyIntegration]
 	reconciler.AtlasReconciler
@@ -79,7 +77,7 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 
 // For prepares the controller for its target Custom Resource; AtlasThirdPartyIntegration
 func (r *AtlasThirdPartyIntegrationHandler) For() (client.Object, builder.Predicates) {
-	return &akov2next.AtlasThirdPartyIntegration{}, builder.WithPredicates(integrationPredicates)
+	return &akov2next.AtlasThirdPartyIntegration{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler, opts ...ctrlstate.SetupManagerOption) error {
@@ -99,17 +97,17 @@ func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, r
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForProjectMapFunc()),
-			builder.WithPredicates(integrationPredicates),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForCredentialMapFunc()),
-			builder.WithPredicates(integrationPredicates),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForSecretMapFunc()),
-			builder.WithPredicates(integrationPredicates),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
 			RateLimiter: ratelimit.NewRateLimiter[reconcile.Request](),
