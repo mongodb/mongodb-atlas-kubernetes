@@ -45,7 +45,7 @@ func NewEmbeddedOperator(runnerFunc RunnerFunc, args []string) *EmbeddedOperator
 func (e *EmbeddedOperator) Start(t testingT) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	t.Logf("starting operator in process with args: %v", e.args)
+	t.Logf("starting operator in-process with args: %v", e.args)
 
 	if e.ctx != nil {
 		return
@@ -55,7 +55,10 @@ func (e *EmbeddedOperator) Start(t testingT) {
 	go func() {
 		defer e.wg.Done()
 		fs := flag.NewFlagSet("direct-ako-run", flag.ContinueOnError)
-		e.runnerFunc(e.ctx, fs, e.args)
+		if err := e.runnerFunc(e.ctx, fs, e.args); err != nil {
+			t.Logf("in-process operator ended with error: %v", err)
+		}
+		t.Logf("in-process operator ended successfully")
 	}()
 }
 

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: msteams-secret-2
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  webhookURL: https://example.com/some/other/path
+---
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-msteams-integ
+spec:
+  projectRef:
+    name: atlas-project-test-msteams
+  type: MICROSOFT_TEAMS
+  microsoftTeams:
+    urlSecretRef:
+      name: msteams-secret-2

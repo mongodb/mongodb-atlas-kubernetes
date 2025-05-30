@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
 const (
@@ -63,7 +64,8 @@ func TestKubeClient() (client.Client, error) {
 	testScheme, err := newTestScheme(
 		corev1.AddToScheme,
 		apiextensionsv1.AddToScheme,
-		akov2.AddToScheme)
+		akov2.AddToScheme,
+		akov2next.AddToScheme)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup Kubernetes test env scheme: %w", err)
 	}

@@ -1,0 +1,13 @@
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-pagerduty-integ
+spec:
+  projectRef:
+    name: atlas-project-test-pagerduty
+  type: PAGER_DUTY
+  pagerDuty:
+    serviceKeySecretRef:
+      name: pagerduty-secret
+    region: EU
+

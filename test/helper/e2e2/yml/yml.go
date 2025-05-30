@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
 var (
@@ -135,6 +136,7 @@ func DecodeObject(content []byte) (client.Object, error) {
 
 	for _, addToSchemeFn := range []func(*runtime.Scheme) error{
 		akov2.AddToScheme,
+		akov2next.AddToScheme,
 	} {
 		if err := addToSchemeFn(sch); err != nil {
 			return nil, fmt.Errorf("failed to add Operator scheme: %w", err)

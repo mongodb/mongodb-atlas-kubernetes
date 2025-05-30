@@ -37,6 +37,11 @@ const (
 	PollingInterval     = 10 * time.Second
 )
 
+const (
+	// nolint:gosec
+	DefaultGlobalCredentials = "mongodb-atlas-operator-api-key"
+)
+
 var GinkGoFieldOwner = client.FieldOwner("ginkgo")
 
 func TestE2e(t *testing.T) {
@@ -49,8 +54,8 @@ func TestE2e(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	if !control.Enabled("AKO_E2E_TEST") {
-		fmt.Println("Skipping e2e2 BeforeSuite, AKO_E2E_ETEST is not set")
+	if !control.Enabled("AKO_E2E2_TEST") {
+		fmt.Println("Skipping e2e2 BeforeSuite, AKO_E2E2_TEST is not set")
 		return
 	}
 	GinkgoWriter.Write([]byte("==============================Before==============================\n"))
@@ -70,10 +75,10 @@ func initTestLogging(t *testing.T) {
 	ctrllog.SetLogger(logrLogger.WithName("test"))
 }
 
-func runTestAKO(ns string, deletionprotection bool) operator.Operator {
+func runTestAKO(globalCreds, ns string, deletionprotection bool) operator.Operator {
 	args := []string{
 		"--log-level=-9",
-		"--global-api-secret-name=mongodb-atlas-operator-api-key",
+		fmt.Sprintf("--global-api-secret-name=%s", globalCreds),
 		"--log-encoder=json",
 		`--atlas-domain=https://cloud-qa.mongodb.com`,
 	}
