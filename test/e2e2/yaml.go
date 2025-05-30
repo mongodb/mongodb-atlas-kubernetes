@@ -1,0 +1,131 @@
+// Copyright 2025 MongoDB Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package e2e2
+
+import (
+	"bufio"
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/scale/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+		corev1 "k8s.io/api/core/v1"
+
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+)
+
+var (
+	// ErrNoCR indicates the parsed YAML is not valid CR
+	ErrNoCR = errors.New("YAML definition is not a CR")
+)
+
+func MustParseCRs(ymls io.Reader) []client.Object {
+	objs, err := ParseCRs(ymls)
+	if err != nil {
+		panic(fmt.Errorf("Fatal: could not parse CRs: %w", err))
+	}
+	return objs
+}
+
+func ParseCRs(ymls io.Reader) ([]client.Object, error) {
+	var buffer bytes.Buffer
+	scanner := bufio.NewScanner(ymls)
+	objs := []client.Object{}
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.TrimSpace(line) == "---" {
+			if len(strings.TrimSpace(buffer.String())) > 0 {
+				obj, err := DecodeCR(buffer.Bytes())
+				if errors.Is(err, ErrNoCR) {
+					buffer.Reset()
+					continue
+				}
+				if err != nil {
+					return nil, err
+				}
+				objs = append(objs, obj)
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		buffer.WriteString(line + "\n")
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read input: %w", err)
+	}
+
+	if buffer.Len() > 0 {
+		obj, err := DecodeCR(buffer.Bytes())
+		if err != nil && !errors.Is(err, ErrNoCR) {
+			return nil, err
+		}
+		objs = append(objs, obj)
+	}
+	return objs, nil
+}
+
+func DecodeCR(content []byte) (client.Object, error) {
+	sch := runtime.NewScheme()
+
+	for _, addOrRegisterFn := range []func(*runtime.Scheme) error{
+		scheme.AddToScheme,
+		apiextensions.AddToScheme,
+		apiextensionsv1.AddToScheme,
+		apiextensionsv1.RegisterConversions,
+		apiextensionsv1beta1.AddToScheme,
+		apiextensionsv1beta1.RegisterConversions,
+		corev1.AddToScheme,
+	} {
+		if err := addOrRegisterFn(sch); err != nil {
+			return nil, fmt.Errorf("failed to add API extension scheme or register conversion: %w", err)
+		}
+	}
+
+	for _, addToSchemeFn := range []func(*runtime.Scheme) error{
+		akov2.AddToScheme,
+		akov2next.AddToScheme,
+	} {
+		if err := addToSchemeFn(sch); err != nil {
+			return nil, fmt.Errorf("failed to add Operator scheme: %w", err)
+		}
+	}
+
+	decode := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode
+
+	rtObj, _, err := decode(content, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode YAML: %w", err)
+	}
+
+	obj, ok := rtObj.(client.Object)  
+	if !ok {  
+		return nil, fmt.Errorf("decoded object is not a client.Object: %T", rtObj)  
+	}  
+  
+	return obj, nil
+}
