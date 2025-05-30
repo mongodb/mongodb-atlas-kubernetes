@@ -135,7 +135,7 @@ func patchSecretAnnotation(ctx context.Context, kubeClient client.Client, secret
 func fetchSecretData(ctx context.Context, kubeClient client.Client, name, namespace string) (map[string][]byte, error) {
 	secret, err := fetchSecret(ctx, kubeClient, name, namespace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve secret  value: %w", err)
+		return nil, fmt.Errorf("failed to retrieve secret value: %w", err)
 	}
 	return secret.Data, nil
 }

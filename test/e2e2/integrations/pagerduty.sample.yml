@@ -1,0 +1,29 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: atlas-project-test-pagerduty
+spec:
+  name: atlas-project-test-pagerduty
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pagerduty-secret
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  serviceKey: "00000000000000000000000000000000"
+---
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-pagerduty-integ
+spec:
+  projectRef:
+    name: atlas-project-test-pagerduty
+  type: PAGER_DUTY
+  pagerDuty:
+    serviceKeySecretRef:
+      name: pagerduty-secret
+    region: US
+

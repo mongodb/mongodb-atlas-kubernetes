@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webhook-secret-2
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  url: https://example.com/path2
+  secret: password2
+---
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-webhook-integ
+spec:
+  projectRef:
+    name: atlas-project-test-webhook
+  type: WEBHOOK
+  webhook:
+    urlSecretRef:
+      name: webhook-secret-2

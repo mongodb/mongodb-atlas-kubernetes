@@ -1,0 +1,13 @@
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-prometheus-integ
+spec:
+  projectRef:
+    name: atlas-project-test-prometheus
+  type: PROMETHEUS
+  prometheus:
+    enabled:               disabled
+    serviceDiscovery:      file
+    prometheusCredentialsSecretRef:
+      name: prometheus-secret

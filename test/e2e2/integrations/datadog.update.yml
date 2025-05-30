@@ -1,0 +1,14 @@
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-datadog-integ
+spec:
+  projectRef:
+    name: atlas-project-test-datadog
+  type: DATADOG
+  datadog:
+    apiKeySecretRef:
+      name: datadog-secret
+    region: EU
+    sendCollectionLatencyMetrics: disabled
+    sendDatabaseMetrics: disabled
