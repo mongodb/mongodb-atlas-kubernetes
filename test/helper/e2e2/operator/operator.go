@@ -25,6 +25,10 @@ import (
 	"syscall"
 )
 
+const (
+	DefaultDelveListen = ":2345"
+)
+
 func NoGoRunEnvSet() bool {
 	envSet, _ := strconv.ParseBool(os.Getenv("NO_GORUN"))
 	return envSet
@@ -37,11 +41,18 @@ func RunDelveEnvSet() bool {
 
 func operatorCommand() []string {
 	if RunDelveEnvSet() {
-		return []string{"dlv", "exec", "--api-version=2", "--headless=true", "--listen=:2345", filepath.Join(repositoryDir(), "bin", "manager"), "--"}
+		return []string{
+			"dlv", "exec",
+			"--api-version=2",
+			"--headless=true",
+			delveListenFlag(),
+			filepath.Join(repositoryDir(), operatorBinary()),
+			"--",
+		}
 	}
 
 	if NoGoRunEnvSet() {
-		return []string{filepath.Join(repositoryDir(), "bin", "manager")}
+		return []string{filepath.Join(repositoryDir(), operatorBinary())}
 	}
 
 	return []string{"go", "run", filepath.Join(repositoryDir(), "cmd")}
@@ -117,4 +128,20 @@ func (o *Operator) Stop(t testingT) {
 	if err := o.cmd.Wait(); err != nil {
 		t.Errorf("error stopping operator: %v", err)
 	}
+}
+
+func operatorBinary() string {
+	return envVarOrDefault("AKO_BINARY", filepath.Join("bin", "manager"))
+}
+
+func delveListenFlag() string {
+	return fmt.Sprintf("--listen=%s", envVarOrDefault("DELVE_LISTEN", DefaultDelveListen))
+}
+
+func envVarOrDefault(name, defaultValue string) string {
+	value, ok := os.LookupEnv(name)
+	if ok {
+		return value
+	}
+	return defaultValue
 }

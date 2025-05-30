@@ -39,7 +39,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	e2e_config "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/operator"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
 )
 
 type (

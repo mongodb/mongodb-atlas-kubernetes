@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e2_test
+package yml_test
 
 import (
 	"embed"
@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e2"
 	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/yml"
 )
 
 //go:embed samples/*
@@ -34,7 +34,7 @@ func TestParseCRs(t *testing.T) {
 	require.NoError(t, err)
 	defer in.Close()
 
-	objs, err := e2e2.ParseCRs(in)
+	objs, err := yml.ParseCRs(in)
 	require.NoError(t, err)
 	assert.Len(t, objs, 2)
 	assert.IsType(t, &corev1.Secret{}, objs[0])

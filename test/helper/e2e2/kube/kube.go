@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e2
+package kube
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
-	"strconv"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,30 +32,30 @@ import (
 	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
-// InitK8sTest initializes a test enviroment on Kubernetes.
-// It requires:
-// - A running kubernetes cluster with a local configuration accessing it.
-// - The given target CRD being installed in that cluster
-// - Certain environment variables, such as OPERATOR_NAMESPACE, being set
-// - The operator running on a given Pod or as a process with a given PID
-func InitK8sTest(ctx context.Context, targetCRD string) (client.Client, error) {
-	if err := assertRequiredEnvVars("OPERATOR_NAMESPACE"); err != nil {
-		return nil, fmt.Errorf("missing required test Kubernetes env vars: %w", err)
-	}
+const (
+	Pause = time.Second
+)
 
+type ObjectWithStatus interface {
+	client.Object
+	GetConditions() []metav1.Condition
+}
+
+// NewK8sTest initializes a test environment on Kubernetes.
+// It requires:
+// - A running Kubernetes cluster with a local configuration bound to it.
+// - The given set CRDs installed in that cluster
+func NewK8sTest(ctx context.Context, crds ...string) (client.Client, error) {
 	kubeClient, err := TestKubeClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup Kubernetes test env client: %w", err)
 	}
 
-	if err := assertCRD(ctx, kubeClient, targetCRD); err != nil {
-		return nil, fmt.Errorf("failed to asert for test-required CRD: %w", err)
+	for _, targetCRD := range crds {
+		if err := assertCRD(ctx, kubeClient, targetCRD); err != nil {
+			return nil, fmt.Errorf("failed to asert for test-required CRD: %w", err)
+		}
 	}
-
-	if err := assertOperator(ctx, kubeClient); err != nil {
-		return nil, fmt.Errorf("failed to asert for test operator running: %w", err)
-	}
-
 	return kubeClient, nil
 }
 
@@ -70,6 +72,72 @@ func TestKubeClient() (client.Client, error) {
 		return nil, fmt.Errorf("failed to setup Kubernetes test env scheme: %w", err)
 	}
 	return getKubeClient(testScheme)
+}
+
+func Apply(ctx context.Context, kubeClient client.Client, defaultNamespace string, objs ...client.Object) error {
+	for i, obj := range objs {
+		if obj.GetNamespace() == "" {
+			obj = obj.DeepCopyObject().(client.Object)
+			obj.SetNamespace(defaultNamespace)
+		}
+		if err := apply(ctx, kubeClient, obj); err != nil {
+			return fmt.Errorf("failed to apply object %d: %w", (i + 1), err)
+		}
+	}
+	return nil
+}
+
+func apply(ctx context.Context, kubeClient client.Client, obj client.Object) error {
+	key := client.ObjectKeyFromObject(obj)
+	old := obj.DeepCopyObject().(client.Object)
+	err := kubeClient.Get(ctx, key, old)
+	switch {
+	case err == nil:
+		obj = obj.DeepCopyObject().(client.Object)
+		obj.SetResourceVersion(old.GetResourceVersion())
+		if err := kubeClient.Update(ctx, obj); err != nil {
+			return fmt.Errorf("failed to update %s: %w", key, err)
+		}
+	case apierrors.IsNotFound(err):
+		if err := kubeClient.Create(ctx, obj); err != nil {
+			return fmt.Errorf("failed to create %s: %w", key, err)
+		}
+	default:
+		return fmt.Errorf("failed to apply %s: %w", key, err)
+	}
+	return nil
+}
+
+type OKOrFailureFunc func() (bool, error)
+
+func WaitConditionOrFailure(timeout time.Duration, okOrFailFn OKOrFailureFunc) error {
+	start := time.Now()
+	for {
+		ok, err := okOrFailFn()
+		if ok {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("failed to check condition: %w", err)
+		}
+		if time.Since(start) > timeout {
+			return errors.New("wait condition timed out")
+		}
+		time.Sleep(Pause)
+	}
+}
+
+func AssertObjReady(ctx context.Context, kubeClient client.Client, key client.ObjectKey, obj ObjectWithStatus) (bool, error) {
+	err := kubeClient.Get(ctx, key, obj)
+	if err != nil {
+		return false, fmt.Errorf("failed to get object %v: %w", key, err)
+	}
+	for _, condition := range obj.GetConditions() {
+		if condition.Type == "Ready" && condition.Status == metav1.ConditionTrue {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func getTestScheme(addToSchemeFunctions ...func(*runtime.Scheme) error) (*runtime.Scheme, error) {
@@ -105,51 +173,4 @@ func assertCRD(ctx context.Context, kubeClient client.Client, targetCRD string) 
 		}
 	}
 	return fmt.Errorf("%s not found", targetCRD)
-}
-
-func assertRequiredEnvVars(envVars ...string) error {
-	missing := make([]string, 0, len(envVars))
-	for _, envVar := range envVars {
-		_, ok := os.LookupEnv(envVar)
-		if !ok {
-			missing = append(missing, envVar)
-		}
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("missing required env vars: %v", missing)
-	}
-	return nil
-}
-
-func assertOperator(ctx context.Context, kubeClient client.Client) error {
-	pid := os.Getenv("OPERATOR_PID")
-	if pid != "" {
-		return assertProcessIsRunning(pid)
-	}
-	pod := os.Getenv("OPERATOR_POD_NAME")
-	if pod != "" {
-		ns := os.Getenv("OPERATOR_NAMESPACE")
-		return assertPod(ctx, kubeClient, pod, ns)
-	}
-	return fmt.Errorf("please set OPERATOR_PID or OPERATOR_POD_NAME to allow to check he operator is running")
-}
-
-func assertProcessIsRunning(pidString string) error {
-	pid, err := strconv.Atoi(pidString)
-	if err != nil {
-		return fmt.Errorf("failed to convert %s to a numeric PID: %w", pidString, err)
-	}
-	if _, err := os.FindProcess(pid); err != nil {
-		return fmt.Errorf("failed to find process for PID %d: %w", pid, err)
-	}
-	return nil
-}
-
-func assertPod(ctx context.Context, kubeClient client.Client, pod, ns string) error {
-	podObj := corev1.Pod{}
-	key := client.ObjectKey{Name: pod, Namespace: ns}
-	if err := kubeClient.Get(ctx, key, &podObj, &client.GetOptions{}); err != nil {
-		return fmt.Errorf("failed to get POD %s/%s: %w", ns, pod, err)
-	}
-	return nil
 }

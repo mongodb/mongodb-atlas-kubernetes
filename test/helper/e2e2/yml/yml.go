@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e2
+package yml
 
 import (
 	"bufio"
@@ -20,8 +20,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"log"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -29,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/scale/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-		corev1 "k8s.io/api/core/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
@@ -39,6 +41,32 @@ var (
 	// ErrNoCR indicates the parsed YAML is not valid CR
 	ErrNoCR = errors.New("YAML definition is not a CR")
 )
+
+type autoCloser struct {
+	io.ReadCloser
+	closed bool
+}
+
+func (ac *autoCloser) Read(b []byte) (int, error) {
+	if ac.closed {
+		return 0, io.EOF
+	}
+	n, err := ac.ReadCloser.Read(b)
+	if err == io.EOF {
+		if err := ac.ReadCloser.Close(); err != nil {
+			log.Printf("autoCloser failed to close %v: %v", ac.ReadCloser, err)
+		}
+	}
+	return n, err
+}
+
+func MustOpen(fsys fs.FS, path string) io.Reader {
+	f, err := fsys.Open(path)
+	if err != nil {
+		panic(fmt.Errorf("Fatal: could not open virtual file system path %q: %w", path, err))
+	}
+	return &autoCloser{ReadCloser: f}
+}
 
 func MustParseCRs(ymls io.Reader) []client.Object {
 	objs, err := ParseCRs(ymls)
@@ -122,10 +150,10 @@ func DecodeCR(content []byte) (client.Object, error) {
 		return nil, fmt.Errorf("failed to decode YAML: %w", err)
 	}
 
-	obj, ok := rtObj.(client.Object)  
-	if !ok {  
-		return nil, fmt.Errorf("decoded object is not a client.Object: %T", rtObj)  
-	}  
-  
+	obj, ok := rtObj.(client.Object)
+	if !ok {
+		return nil, fmt.Errorf("decoded object is not a client.Object: %T", rtObj)
+	}
+
 	return obj, nil
 }

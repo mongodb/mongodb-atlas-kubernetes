@@ -53,7 +53,8 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleUpdated(ctx context.Context, i
 func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to build reconcile request: %w", err))
+		// TODO is this good for all cases?
+		return h.unmanage(integration.Spec.Type)
 	}
 
 	if !h.deletionProtection {
