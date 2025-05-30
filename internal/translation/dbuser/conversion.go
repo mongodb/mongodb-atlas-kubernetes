@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/nsf/jsondiff"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -126,6 +126,7 @@ func fromAtlas(dbUser *admin.CloudDatabaseUser) (*User, error) {
 		AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
 			DatabaseName:    dbUser.DatabaseName,
 			DeleteAfterDate: dateFromAtlas(dbUser.DeleteAfterDate),
+			Description:     dbUser.GetDescription(),
 			Labels:          labelsFromAtlas(dbUser.Labels),
 			Roles:           rolesFromAtlas(dbUser.GetRoles()),
 			Scopes:          scopes,
@@ -155,6 +156,7 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 		X509Type:        pointer.MakePtrOrNil(au.X509Type),
 		AwsIAMType:      pointer.MakePtrOrNil(au.AWSIAMType),
 		GroupId:         au.ProjectID,
+		Description:     pointer.MakePtrOrNil(au.Description),
 		Labels:          labelsToAtlas(au.Labels),
 		Roles:           rolesToAtlas(au.Roles),
 		Scopes:          scopesToAtlas(au.Scopes),

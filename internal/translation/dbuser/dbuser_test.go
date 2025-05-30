@@ -23,11 +23,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestAtlasUsersGet(t *testing.T) {
@@ -37,7 +36,7 @@ func TestAtlasUsersGet(t *testing.T) {
 	username := "test-user"
 
 	notFoundErr := &admin.GenericOpenAPIError{}
-	notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("USERNAME_NOT_FOUND")})
+	notFoundErr.SetModel(admin.ApiError{ErrorCode: "USERNAME_NOT_FOUND"})
 
 	tests := []struct {
 		name         string
@@ -83,7 +82,7 @@ func TestAtlasUsersGet(t *testing.T) {
 					admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI})
 
 				internalServerError := &admin.GenericOpenAPIError{}
-				internalServerError.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("500")})
+				internalServerError.SetModel(admin.ApiError{ErrorCode: "500"})
 				mockUsersAPI.EXPECT().GetDatabaseUserExecute(admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI}).Return(
 					nil, &http.Response{StatusCode: http.StatusInternalServerError}, errors.New("some error"))
 			},
@@ -112,7 +111,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 	db := "database"
 	username := "test-user"
 	notFoundErr := &admin.GenericOpenAPIError{}
-	notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("USER_NOT_FOUND")})
+	notFoundErr.SetModel(admin.ApiError{ErrorCode: "USER_NOT_FOUND"})
 	tests := []struct {
 		name        string
 		setupMock   func(mockUsersAPI *mockadmin.DatabaseUsersApi)
@@ -146,7 +145,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 
 				internalServerError := &admin.GenericOpenAPIError{}
-				internalServerError.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("500")})
+				internalServerError.SetModel(admin.ApiError{ErrorCode: "500"})
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
 					Return(nil, &http.Response{StatusCode: http.StatusInternalServerError}, fmt.Errorf("some error"))
 			},

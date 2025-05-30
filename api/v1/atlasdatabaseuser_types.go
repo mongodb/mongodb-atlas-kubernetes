@@ -65,6 +65,10 @@ type AtlasDatabaseUserSpec struct {
 	// The specified date must be in the future and within one week.
 	DeleteAfterDate string `json:"deleteAfterDate,omitempty"`
 
+	// Description of this database user. Maximum 100 characters.
+	// +kubebuilder:validation:MaxLength:=100
+	Description string `json:"description,omitempty"`
+
 	// Labels is an array containing key-value pairs that tag and categorize the database user.
 	// Each key and value has a maximum length of 255 characters.
 	Labels []common.LabelSpec `json:"labels,omitempty"`
