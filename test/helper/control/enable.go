@@ -15,14 +15,23 @@
 package control
 
 import (
+	"fmt"
 	"os"
-	"strings"
+	"strconv"
 	"testing"
 )
 
 func Enabled(envvar string) bool {
-	value := strings.ToLower(os.Getenv(envvar))
-	return value == "1"
+	envSet, _ := strconv.ParseBool(os.Getenv(envvar))
+	return envSet
+}
+
+func MustEnvVar(envvar string) string {
+	value, ok := os.LookupEnv(envvar)
+	if !ok {
+		panic(fmt.Errorf("missing required environment variable: %v", envvar))
+	}
+	return value
 }
 
 func SkipTestUnless(t *testing.T, envvar string) {

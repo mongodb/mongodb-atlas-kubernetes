@@ -368,48 +368,48 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				AtlasReconciler: reconciler.AtlasReconciler{
 					Client: k8sClient,
 					Log:    zap.S(),
+					AtlasProvider: &atlasmocks.TestProvider{
+						SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+							if tt.sdkShouldError {
+								return nil, fmt.Errorf("failed to create sdk")
+							}
+							cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+							cdrAPI.EXPECT().GetCustomDatabaseRole(mock.Anything, "testProjectID", "TestRoleName").
+								Return(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
+							cdrAPI.EXPECT().GetCustomDatabaseRoleExecute(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+								Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
+							cdrAPI.EXPECT().CreateCustomDatabaseRole(mock.Anything, "testProjectID",
+								mock.AnythingOfType("*admin.UserCustomDBRole")).
+								Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
+							cdrAPI.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+								Return(nil, nil, nil)
+
+							pAPI := mockadmin.NewProjectsApi(t)
+							if tt.akoCustomRole.Spec.ExternalProjectRef != nil {
+								grp := &admin.Group{
+									Id:   &tt.akoCustomRole.Spec.ExternalProjectRef.ID,
+									Name: tt.akoCustomRole.Spec.ExternalProjectRef.ID,
+								}
+								pAPI.EXPECT().GetProject(context.Background(), tt.akoCustomRole.Spec.ExternalProjectRef.ID).
+									Return(admin.GetProjectApiRequest{ApiService: pAPI})
+								pAPI.EXPECT().GetProjectExecute(admin.GetProjectApiRequest{ApiService: pAPI}).
+									Return(grp, nil, nil)
+							}
+							return &atlas.ClientSet{SdkClient20231115008: &admin.APIClient{
+								CustomDatabaseRolesApi: cdrAPI,
+								ProjectsApi:            pAPI,
+							}}, nil
+						},
+						IsCloudGovFunc: func() bool {
+							return false
+						},
+						IsSupportedFunc: func() bool {
+							return tt.isSupported
+						},
+					},
 				},
 				Scheme:        testScheme,
 				EventRecorder: record.NewFakeRecorder(10),
-				AtlasProvider: &atlasmocks.TestProvider{
-					SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-						if tt.sdkShouldError {
-							return nil, fmt.Errorf("failed to create sdk")
-						}
-						cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-						cdrAPI.EXPECT().GetCustomDatabaseRole(mock.Anything, "testProjectID", "TestRoleName").
-							Return(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
-						cdrAPI.EXPECT().GetCustomDatabaseRoleExecute(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
-							Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
-						cdrAPI.EXPECT().CreateCustomDatabaseRole(mock.Anything, "testProjectID",
-							mock.AnythingOfType("*admin.UserCustomDBRole")).
-							Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
-						cdrAPI.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
-							Return(nil, nil, nil)
-
-						pAPI := mockadmin.NewProjectsApi(t)
-						if tt.akoCustomRole.Spec.ExternalProjectRef != nil {
-							grp := &admin.Group{
-								Id:   &tt.akoCustomRole.Spec.ExternalProjectRef.ID,
-								Name: tt.akoCustomRole.Spec.ExternalProjectRef.ID,
-							}
-							pAPI.EXPECT().GetProject(context.Background(), tt.akoCustomRole.Spec.ExternalProjectRef.ID).
-								Return(admin.GetProjectApiRequest{ApiService: pAPI})
-							pAPI.EXPECT().GetProjectExecute(admin.GetProjectApiRequest{ApiService: pAPI}).
-								Return(grp, nil, nil)
-						}
-						return &atlas.ClientSet{SdkClient20231115008: &admin.APIClient{
-							CustomDatabaseRolesApi: cdrAPI,
-							ProjectsApi:            pAPI,
-						}}, nil
-					},
-					IsCloudGovFunc: func() bool {
-						return false
-					},
-					IsSupportedFunc: func() bool {
-						return tt.isSupported
-					},
-				},
 			}
 
 			result, err := r.Reconcile(context.Background(), ctrl.Request{

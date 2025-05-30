@@ -106,10 +106,10 @@ func TestCleanupBindings(t *testing.T) {
 		}
 		r := &AtlasDeploymentReconciler{
 			AtlasReconciler: reconciler.AtlasReconciler{
-				Log:    testLog(t),
-				Client: testK8sClient(),
+				Log:           testLog(t),
+				Client:        testK8sClient(),
+				AtlasProvider: atlasProvider,
 			},
-			AtlasProvider: atlasProvider,
 		}
 		policy := testBackupPolicy() // deployment -> schedule -> policy
 		require.NoError(t, r.Client.Create(context.Background(), policy))
@@ -140,10 +140,10 @@ func TestCleanupBindings(t *testing.T) {
 		}
 		r := &AtlasDeploymentReconciler{
 			AtlasReconciler: reconciler.AtlasReconciler{
-				Log:    testLog(t),
-				Client: testK8sClient(),
+				Log:           testLog(t),
+				Client:        testK8sClient(),
+				AtlasProvider: atlasProvider,
 			},
-			AtlasProvider: atlasProvider,
 		}
 		policy := testBackupPolicy() // deployment + deployment2 -> schedule -> policy
 		require.NoError(t, r.Client.Create(context.Background(), policy))
@@ -179,10 +179,10 @@ func TestCleanupBindings(t *testing.T) {
 		}
 		r := &AtlasDeploymentReconciler{
 			AtlasReconciler: reconciler.AtlasReconciler{
-				Log:    testLog(t),
-				Client: testK8sClient(),
+				Log:           testLog(t),
+				Client:        testK8sClient(),
+				AtlasProvider: atlasProvider,
 			},
-			AtlasProvider: atlasProvider,
 		}
 		policy := testBackupPolicy() // deployment -> schedule + schedule2 -> policy
 		require.NoError(t, r.Client.Create(context.Background(), policy))
@@ -556,10 +556,10 @@ func TestRegularClusterReconciliation(t *testing.T) {
 
 	reconciler := &AtlasDeploymentReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: k8sClient,
-			Log:    logger.Sugar(),
+			Client:        k8sClient,
+			Log:           logger.Sugar(),
+			AtlasProvider: atlasProvider,
 		},
-		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
@@ -693,10 +693,10 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 
 	reconciler := &AtlasDeploymentReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: k8sClient,
-			Log:    logger.Sugar(),
+			Client:        k8sClient,
+			Log:           logger.Sugar(),
+			AtlasProvider: atlasProvider,
 		},
-		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
@@ -818,10 +818,10 @@ func TestFlexClusterReconciliation(t *testing.T) {
 
 	reconciler := &AtlasDeploymentReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: k8sClient,
-			Log:    logger.Sugar(),
+			Client:        k8sClient,
+			Log:           logger.Sugar(),
+			AtlasProvider: atlasProvider,
 		},
-		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
@@ -1002,10 +1002,10 @@ func TestDeletionReconciliation(t *testing.T) {
 
 	reconciler := &AtlasDeploymentReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: k8sClient,
-			Log:    logger,
+			Client:        k8sClient,
+			Log:           logger,
+			AtlasProvider: atlasProvider,
 		},
-		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
@@ -1455,10 +1455,10 @@ func TestChangeDeploymentType(t *testing.T) {
 
 			r := &AtlasDeploymentReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger.Sugar(),
+					Client:        k8sClient,
+					Log:           logger.Sugar(),
+					AtlasProvider: tt.atlasProvider,
 				},
-				AtlasProvider: tt.atlasProvider,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			result, err := r.Reconcile(
