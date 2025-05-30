@@ -48,6 +48,12 @@ jobs:
 
           echo credentials=$(realpath ~/gcp_sa_cred.json) >> $GITHUB_OUTPUT
 
+      - name: Download tools for openshift test cleaner
+        run: |
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
+          tar xvf openshift.tar.gz
+          chmod +x oc && sudo mv oc /usr/local/bin/oc
+
       - name: Run cleaner
         env:
           MCLI_OPS_MANAGER_URL: 'https://cloud-qa.mongodb.com/'
@@ -66,3 +72,10 @@ jobs:
           PROJECT_LIFETIME: ${{ inputs.lifetime || 1 }}
         run: |
          devbox run -- 'cd tools/clean && ./clean atlas'
+
+      - name: Run openshift test cleaner
+        env:
+          OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
+          CLUSTER_API_URL: ${{ secrets.OPENSHIFT_UPGRADE_SERVER_API }}
+        run: |
+          devbox run -- 'cd scripts && ./openshift-upgrade-test-cleaner.sh'
