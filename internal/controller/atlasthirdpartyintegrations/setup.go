@@ -21,7 +21,6 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -101,11 +100,6 @@ func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, r
 		).
 		Watches(
 			&corev1.Secret{},
-			handler.EnqueueRequestsFromMapFunc(h.integrationForCredentialMapFunc()),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-		).
-		Watches(
-			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForSecretMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
@@ -118,16 +112,6 @@ func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, r
 func (h *AtlasThirdPartyIntegrationHandler) integrationForProjectMapFunc() handler.MapFunc {
 	return indexer.ProjectsIndexMapperFunc(
 		string(indexer.AtlasThirdPartyIntegrationByProjectIndex),
-		func() *akov2next.AtlasThirdPartyIntegrationList { return &akov2next.AtlasThirdPartyIntegrationList{} },
-		indexer.AtlasThirdPartyIntegrationRequests,
-		h.Client,
-		h.Log,
-	)
-}
-
-func (h *AtlasThirdPartyIntegrationHandler) integrationForCredentialMapFunc() handler.MapFunc {
-	return indexer.CredentialsIndexMapperFunc(
-		string(indexer.AtlasThirdPartyIntegrationCredentialsIndex),
 		func() *akov2next.AtlasThirdPartyIntegrationList { return &akov2next.AtlasThirdPartyIntegrationList{} },
 		indexer.AtlasThirdPartyIntegrationRequests,
 		h.Client,
@@ -149,23 +133,31 @@ func (h *AtlasThirdPartyIntegrationHandler) integrationForSecretMapFunc() handle
 				client.ObjectKeyFromObject(secret).String(),
 			),
 		}
-		list := &akov2next.AtlasThirdPartyIntegrationList{}
-		err := h.Client.List(ctx, list, listOpts)
+		list1 := &akov2next.AtlasThirdPartyIntegrationList{}
+		err := h.Client.List(ctx, list1, listOpts)
 		if err != nil {
 			h.Log.Errorf("failed to list from indexer %s: %v",
 				indexer.AtlasThirdPartyIntegrationBySecretsIndex, err)
 			return nil
 		}
-		requests := make([]reconcile.Request, 0, len(list.Items))
-		for _, item := range list.Items {
-			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      item.GetName(),
-					Namespace: item.GetNamespace(),
-				},
-			})
+		requests1 := indexer.AtlasThirdPartyIntegrationRequests(list1)
+
+		listOpts = &client.ListOptions{
+			FieldSelector: fields.OneTermEqualSelector(
+				indexer.AtlasThirdPartyIntegrationCredentialsIndex,
+				client.ObjectKeyFromObject(secret).String(),
+			),
 		}
-		return requests
+		list2 := &akov2next.AtlasThirdPartyIntegrationList{}
+		err = h.Client.List(ctx, list2, listOpts)
+		if err != nil {
+			h.Log.Errorf("failed to list from indexer %s: %v",
+				indexer.AtlasThirdPartyIntegrationCredentialsIndex, err)
+			return nil
+		}
+		requests2 := indexer.AtlasThirdPartyIntegrationRequests(list2)
+
+		return append(requests1, requests2...)
 	}
 }
 
