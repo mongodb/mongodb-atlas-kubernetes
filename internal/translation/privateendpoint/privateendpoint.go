@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"golang.org/x/exp/slices"
 )
 
@@ -119,7 +119,7 @@ func (pe *PrivateEndpoint) CreatePrivateEndpointService(ctx context.Context, pro
 }
 
 func (pe *PrivateEndpoint) DeleteEndpointService(ctx context.Context, projectID, provider, ID string) error {
-	_, _, err := pe.api.DeletePrivateEndpointService(ctx, projectID, provider, ID).Execute()
+	_, err := pe.api.DeletePrivateEndpointService(ctx, projectID, provider, ID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete the private endpoint service: %w", err)
 	}
@@ -138,7 +138,7 @@ func (pe *PrivateEndpoint) CreatePrivateEndpointInterface(ctx context.Context, p
 }
 
 func (pe *PrivateEndpoint) DeleteEndpointInterface(ctx context.Context, projectID, provider, serviceID, ID string) error {
-	_, _, err := pe.api.DeletePrivateEndpoint(ctx, projectID, provider, ID, serviceID).Execute()
+	_, err := pe.api.DeletePrivateEndpoint(ctx, projectID, provider, ID, serviceID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete the private endpoint interface: %w", err)
 	}
