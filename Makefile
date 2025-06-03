@@ -122,7 +122,6 @@ GOMOD_SHA := $(shell git ls-files -s go.mod | awk '{print $$1" "$$2" "$$4}')
 LICENSES_GOMOD_SHA_FILE := .licenses-gomod.sha256
 GOMOD_LICENSES_SHA := $(shell cat $(LICENSES_GOMOD_SHA_FILE))
 
-OPERATOR_NAMESPACE=atlas-operator
 OPERATOR_POD_NAME=mongodb-atlas-operator
 RUN_YAML= # Set to the YAML to run when calling make run
 RUN_LOG_LEVEL ?= debug
