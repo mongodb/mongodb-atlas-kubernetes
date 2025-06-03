@@ -23,7 +23,7 @@ jobs:
           cluster_name: "atlas-gov-e2e-test"
           wait: 180s
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.12.0
+        uses: jetify-com/devbox-install-action@v0.13.0
         with:
           enable-cache: 'true'
       - name: Install CRDs
