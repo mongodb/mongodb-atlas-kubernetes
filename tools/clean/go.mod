@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.7
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	go.mongodb.org/atlas-sdk/v20231115008 v20231115008.5.0
-	google.golang.org/api v0.234.0
+	google.golang.org/api v0.235.0
 )
 
 require (
