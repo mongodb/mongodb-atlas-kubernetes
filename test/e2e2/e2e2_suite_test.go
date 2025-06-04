@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zaptest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
@@ -35,6 +36,8 @@ const (
 	ConsistentlyTimeout = 1 * time.Second
 	PollingInterval     = 10 * time.Second
 )
+
+var GinkGoFieldOwner = client.FieldOwner("field-owner")
 
 func TestE2e(t *testing.T) {
 	control.SkipTestUnless(t, "AKO_E2E2_TEST")
@@ -71,6 +74,7 @@ func runTestAKO(ns string, deletionprotection bool) *operator.Operator {
 	args := []string{
 		"--log-level=-9",
 		"--global-api-secret-name=mongodb-atlas-operator-api-key",
+		"--log-encoder=json",
 		`--atlas-domain=https://cloud-qa.mongodb.com`,
 	}
 	args = append(args, fmt.Sprintf("--object-deletion-protection=%v", deletionprotection))

@@ -33,12 +33,12 @@ import (
 //go:embed samples/*
 var samples embed.FS
 
-func TestParseCRs(t *testing.T) {
+func TestParseObjects(t *testing.T) {
 	in, err := samples.Open("samples/sample.yml")
 	require.NoError(t, err)
 	defer in.Close()
 
-	objs, err := yml.ParseCRs(in)
+	objs, err := yml.ParseObjects(in)
 	require.NoError(t, err)
 	assert.Len(t, objs, 2)
 	assert.IsType(t, &corev1.Secret{}, objs[0])

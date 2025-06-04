@@ -68,15 +68,15 @@ func MustOpen(fsys fs.FS, path string) io.Reader {
 	return &autoCloser{ReadCloser: f}
 }
 
-func MustParseCRs(ymls io.Reader) []client.Object {
-	objs, err := ParseCRs(ymls)
+func MustParseObjects(ymls io.Reader) []client.Object {
+	objs, err := ParseObjects(ymls)
 	if err != nil {
 		panic(fmt.Errorf("Fatal: could not parse CRs: %w", err))
 	}
 	return objs
 }
 
-func ParseCRs(ymls io.Reader) ([]client.Object, error) {
+func ParseObjects(ymls io.Reader) ([]client.Object, error) {
 	var buffer bytes.Buffer
 	scanner := bufio.NewScanner(ymls)
 	objs := []client.Object{}
@@ -85,7 +85,7 @@ func ParseCRs(ymls io.Reader) ([]client.Object, error) {
 
 		if strings.TrimSpace(line) == "---" {
 			if len(strings.TrimSpace(buffer.String())) > 0 {
-				obj, err := DecodeCR(buffer.Bytes())
+				obj, err := DecodeObject(buffer.Bytes())
 				if errors.Is(err, ErrNoCR) {
 					buffer.Reset()
 					continue
@@ -108,7 +108,7 @@ func ParseCRs(ymls io.Reader) ([]client.Object, error) {
 	}
 
 	if buffer.Len() > 0 {
-		obj, err := DecodeCR(buffer.Bytes())
+		obj, err := DecodeObject(buffer.Bytes())
 		if err != nil && !errors.Is(err, ErrNoCR) {
 			return nil, err
 		}
@@ -117,7 +117,7 @@ func ParseCRs(ymls io.Reader) ([]client.Object, error) {
 	return objs, nil
 }
 
-func DecodeCR(content []byte) (client.Object, error) {
+func DecodeObject(content []byte) (client.Object, error) {
 	sch := runtime.NewScheme()
 
 	for _, addOrRegisterFn := range []func(*runtime.Scheme) error{

@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DefaultDelveListen = ":2345"
+	DefaultDelveListenPort = ":2345"
 )
 
 func NoGoRunEnvSet() bool {
@@ -40,19 +40,20 @@ func RunDelveEnvSet() bool {
 }
 
 func operatorCommand() []string {
+	operatorBinary := envVarOrDefault("AKO_BINARY", filepath.Join("bin", "manager"))
 	if RunDelveEnvSet() {
 		return []string{
 			"dlv", "exec",
 			"--api-version=2",
 			"--headless=true",
-			delveListenFlag(),
-			filepath.Join(repositoryDir(), operatorBinary()),
+			fmt.Sprintf("--listen=%s", envVarOrDefault("DELVE_LISTEN", DefaultDelveListenPort)),
+			filepath.Join(repositoryDir(), operatorBinary),
 			"--",
 		}
 	}
 
 	if NoGoRunEnvSet() {
-		return []string{filepath.Join(repositoryDir(), operatorBinary())}
+		return []string{filepath.Join(repositoryDir(), operatorBinary)}
 	}
 
 	if os.Getenv("EXPERIMENTAL") == "true" {
@@ -161,14 +162,6 @@ func (o *Operator) Stop(t testingT) {
 		}
 		t.Errorf("error stopping operator terminated=%v : %+#v", terminated, err)
 	}
-}
-
-func operatorBinary() string {
-	return envVarOrDefault("AKO_BINARY", filepath.Join("bin", "manager"))
-}
-
-func delveListenFlag() string {
-	return fmt.Sprintf("--listen=%s", envVarOrDefault("DELVE_LISTEN", DefaultDelveListen))
 }
 
 func envVarOrDefault(name, defaultValue string) string {
