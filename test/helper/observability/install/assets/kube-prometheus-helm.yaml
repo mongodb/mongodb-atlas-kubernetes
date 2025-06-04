@@ -1,0 +1,8 @@
+alertmanager:
+  enabled: false
+
+kube-state-metrics:
+  rbac:
+    create: false
+  monitor:
+    interval: 2s
