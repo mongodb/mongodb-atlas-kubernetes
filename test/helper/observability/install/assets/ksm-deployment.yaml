@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-prometheus-kube-state-metrics
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+        - name: kube-state-metrics
+          args:
+            - --port=8080
+            - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,leases,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments
+            - --custom-resource-state-config-file=/etc/kube-state-metrics/ksm-config.yaml
+          volumeMounts:
+            - mountPath: /etc/kube-state-metrics
+              name: ako
+      volumes:
+        - name: ako
+          configMap:
+            defaultMode: 420
+            items:
+              - key: ksm-config.yaml
+                path: ksm-config.yaml
+            name: kube-state-metrics-config

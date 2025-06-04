@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: loki
+spec:
+  template:
+    spec:
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - rm -rf *; wget -O - $(LOKI_SNAPSHOT_URL) | tar xvzf -
+        image: busybox:1.28
+        imagePullPolicy: IfNotPresent
+        name: init
+        workingDir: /var/loki
+        volumeMounts:
+        - mountPath: /var/loki
+          name: storage
+        envFrom:
+          - configMapRef:
+              name: artifact-urls

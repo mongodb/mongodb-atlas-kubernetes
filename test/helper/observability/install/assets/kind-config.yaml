@@ -1,0 +1,20 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # prometheus
+      - containerPort: 30000
+        hostPort: 30000
+        listenAddress: "0.0.0.0"
+        protocol: tcp
+      # grafana
+      - containerPort: 30001
+        hostPort: 30001
+        listenAddress: "0.0.0.0"
+        protocol: tcp
+      # loki
+      - containerPort: 30002
+        hostPort: 30002
+        listenAddress: "0.0.0.0"
+        protocol: tcp

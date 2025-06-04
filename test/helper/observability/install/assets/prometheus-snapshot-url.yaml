@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: kube-prometheus-kube-prome-prometheus
+  namespace: monitoring
+spec:
+  retention: 9999d
+  initContainers:
+    - command:
+        - sh
+        - -c
+        - |
+          rm -rf *; \
+          wget -O - $(PROMETHEUS_SNAPSHOT_URL) | tar xvzf -
+      image: busybox:1.28
+      imagePullPolicy: IfNotPresent
+      name: init-db
+      workingDir: /prometheus
+      volumeMounts:
+        - mountPath: /prometheus
+          name: prometheus-kube-prometheus-kube-prome-prometheus-db
+      envFrom:
+        - configMapRef:
+            name: artifact-urls

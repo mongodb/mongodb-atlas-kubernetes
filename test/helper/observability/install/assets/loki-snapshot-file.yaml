@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: loki
+spec:
+  template:
+    spec:
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - tar xvzf /loki.tar.gz
+        image: busybox:1.28
+        imagePullPolicy: IfNotPresent
+        name: init
+        workingDir: /var/loki
+        volumeMounts:
+        - mountPath: /var/loki
+          name: storage
+        - mountPath: /loki.tar.gz
+          name: snapshot-file
+      volumes:
+        - name: snapshot-file
+          hostPath:
+            path: /home/loki.tar.gz
+            type: File
