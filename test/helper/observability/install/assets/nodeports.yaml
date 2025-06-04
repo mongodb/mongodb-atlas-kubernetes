@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-nodeport
+  namespace: monitoring
+spec:
+  type: NodePort
+  ports:
+    - port: 9090
+      nodePort: 30000
+      name: http-web
+      targetPort: http-web
+  selector:
+    app.kubernetes.io/name: prometheus
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-nodeport
+  namespace: monitoring
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      nodePort: 30001
+      name: http-web
+      targetPort: 3000
+  selector:
+    app.kubernetes.io/name: grafana
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-nodeport
+  namespace: loki
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      nodePort: 30002
+      name: http-metrics
+      targetPort: http-metrics
+  selector:
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/name: loki

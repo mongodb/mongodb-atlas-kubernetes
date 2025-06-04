@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: kube-prometheus-kube-prome-prometheus
+  namespace: monitoring
+spec:
+  retention: 9999d
+  initContainers:
+    - command:
+        - sh
+        - -c
+        - |
+          rm -rf *; \
+          tar xvzf /prometheus.tar.gz
+      image: busybox:1.28
+      imagePullPolicy: IfNotPresent
+      name: init-db
+      workingDir: /prometheus
+      volumeMounts:
+        - mountPath: /prometheus
+          name: prometheus-kube-prometheus-kube-prome-prometheus-db
+        - mountPath: /prometheus.tar.gz
+          name: snapshot-file
+  volumes:
+    - name: snapshot-file
+      hostPath:
+        path: /home/prometheus.tar.gz
+        type: File

@@ -238,6 +238,7 @@ func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
 			EncodeLevel: zapcore.CapitalLevelEncoder,
 			TimeKey:     "time",
 			EncodeTime:  zapcore.ISO8601TimeEncoder,
+			NameKey:     "logger",
 		},
 	}
 	return cfg.Build()

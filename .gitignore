@@ -51,3 +51,6 @@ tools/metrics/metrics
 # ignore the ako.siging key local copy
 ako.pem
 
+# e2e artifacts
+*.tar.gz
+urls.json
