@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: newrelic-secret-2
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  accountId: myaccountid2
+  licenseKey: mylicensekey2
+  readToken: 2117e51ce6725368c37c3535959a3a75
+  writeToken: 2ce67253681117ec37c3535959a3a755
+---
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-newrelic-integ
+spec:
+  projectRef:
+    name: atlas-project-test-newrelic
+  type: NEW_RELIC
+  newRelic:
+    credentialsSecretRef:
+      name: newrelic-secret-2

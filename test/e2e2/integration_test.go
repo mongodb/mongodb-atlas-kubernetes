@@ -30,6 +30,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
@@ -48,23 +49,12 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 	var ctx context.Context
 	var kubeClient client.Client
 	var ako *operator.Operator
-	testNamespace := corev1.Namespace{}
+	var testNamespace *corev1.Namespace
 
 	_ = BeforeAll(func() {
-		// Launch one Operator instance for all tests
 		deletionProtectionOff := false
 		ako = runTestAKO(control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
-	})
-
-	_ = AfterAll(func() {
-		ako.Stop(GinkgoT())
-	})
-
-	_ = BeforeEach(OncePerOrdered, func() {
-		testNamespace = corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: utils.RandomName("integrations-ctlr-ns"),
-		}}
 
 		ctx = context.Background()
 		client, err := kube.NewK8sTest(ctx, &apiextensionsv1.CustomResourceDefinition{
@@ -72,30 +62,32 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		})
 		Expect(err).To(Succeed())
 		kubeClient = client
-		Expect(kubeClient.Create(ctx, &testNamespace))
+	})
+
+	_ = AfterAll(func() {
+		ako.Stop(GinkgoT())
+	})
+
+	_ = BeforeEach(func() {
+		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+			Name: utils.RandomName("integrations-ctlr-ns"),
+		}}
+		Expect(kubeClient.Create(ctx, testNamespace))
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
 
 	_ = AfterEach(func() {
-		GinkgoWriter.Write([]byte("\n"))
-		GinkgoWriter.Write([]byte("===============================================\n"))
-		GinkgoWriter.Write([]byte("Atlas Third-Party Integrations Controller Test\n"))
-		GinkgoWriter.Write([]byte("Operator namespace: " + testNamespace.Name + "\n"))
-		GinkgoWriter.Write([]byte("===============================================\n"))
-
-		By("Delete Kubernetes resources", func() {
-			Expect(
-				kubeClient.Delete(ctx, &testNamespace),
-			).To(Succeed())
-			Eventually(func(g Gomega) bool {
-				return kubeClient.Get(ctx, client.ObjectKeyFromObject(&testNamespace), &testNamespace) == nil
-			}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
-		})
+		Expect(
+			kubeClient.Delete(ctx, testNamespace),
+		).To(Succeed())
+		Eventually(func(g Gomega) bool {
+			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
+		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	DescribeTable("Integrations samples",
-		func(objs []client.Object, wantReady string) {
-			By("Prepare and apply test case objects", func() {
+		func(objs []client.Object, updates []client.Object, wantReady string) {
+			By("Prepare & apply test case objects", func() {
 				for _, obj := range objs {
 					objToApply := WithRandomAtlasProject(kube.WithRenamedNamespace(obj, testNamespace.Name))
 					Expect(
@@ -104,10 +96,10 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 				}
 			})
 
-			By("Wait main Object to be Ready", func() {
-				integration := akov2next.AtlasThirdPartyIntegration{
-					ObjectMeta: v1.ObjectMeta{Name: wantReady, Namespace: testNamespace.Name},
-				}
+			integration := akov2next.AtlasThirdPartyIntegration{
+				ObjectMeta: v1.ObjectMeta{Name: wantReady, Namespace: testNamespace.Name},
+			}
+			By("Wait integration to be Ready", func() {
 				Eventually(func(g Gomega) bool {
 					g.Expect(
 						kubeClient.Get(ctx, client.ObjectKeyFromObject(&integration), &integration),
@@ -118,11 +110,68 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					return false
 				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 			})
+
+			By("Apply updates", func() {
+				for _, objUpdate := range updates {
+					objToPatch := WithRandomAtlasProject(kube.WithRenamedNamespace(objUpdate, testNamespace.Name))
+					Expect(
+						kubeClient.Patch(ctx, objToPatch, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+					).To(Succeed())
+				}
+			})
+
+			By("Wait integration to be Ready & updated", func() {
+				Eventually(func(g Gomega) bool {
+					g.Expect(
+						kubeClient.Get(ctx, client.ObjectKeyFromObject(&integration), &integration),
+					).To(Succeed())
+					ready := false
+					if condition := meta.FindStatusCondition(integration.GetConditions(), "Ready"); condition != nil {
+						ready = (condition.Status == metav1.ConditionTrue)
+					}
+					if ready {
+						if condition := meta.FindStatusCondition(integration.GetConditions(), "State"); condition != nil {
+							return state.ResourceState(condition.Reason) == state.StateUpdated
+						}
+					}
+					return false
+				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+			})
+
+			By("Delete integration", func() {
+				Expect(kubeClient.Delete(ctx, &integration)).To(Succeed())
+			})
+
+			By("Wait integration to be gone", func() {
+				Eventually(func(g Gomega) error {
+					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(&integration), &integration)
+					return err
+				}).WithTimeout(time.Minute).WithPolling(time.Second).NotTo(Succeed())
+			})
 		},
 		Entry("Test[datadog]: Datadog integration with a parent project",
 			Label("datadog"),
 			yml.MustParseObjects(yml.MustOpen(configs, "configs/datadog.sample.yml")),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/datadog.update.yml")),
 			"atlas-datadog-integ",
+		),
+		Entry("Test[msteams]: Microsoft Teams integration with a parent project",
+			Label("msteams"),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/msteams.sample.yml")),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/msteams.update.yml")),
+			"atlas-msteams-integ",
+		),
+		Entry("Test[newrelic]: New Relic integration with a parent project",
+			Label("newrelic"),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/newrelic.sample.yml")),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/newrelic.update.yml")),
+			"atlas-newrelic-integ",
+		),
+		Entry("Test[opsgenie]: Ops Genie integration with a parent project",
+			Label("opsgenie"),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/opsgenie.sample.yml")),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/opsgenie.update.yml")),
+			"atlas-opsgenie-integ",
 		),
 	)
 })
