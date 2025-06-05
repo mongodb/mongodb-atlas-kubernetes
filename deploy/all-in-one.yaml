@@ -934,6 +934,10 @@ spec:
                   DeleteAfterDate is a timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the user.
                   The specified date must be in the future and within one week.
                 type: string
+              description:
+                description: Description of this database user. Maximum 100 characters.
+                maxLength: 100
+                type: string
               externalProjectRef:
                 description: |-
                   "externalProjectRef" holds the parent Atlas project ID.
@@ -2004,7 +2008,7 @@ spec:
                         value:
                           maxLength: 255
                           minLength: 1
-                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
                           type: string
                       required:
                       - key
@@ -2084,7 +2088,7 @@ spec:
                         value:
                           maxLength: 255
                           minLength: 1
-                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
                           type: string
                       required:
                       - key
@@ -2303,7 +2307,7 @@ spec:
                         value:
                           maxLength: 255
                           minLength: 1
-                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
                           type: string
                       required:
                       - key

@@ -1,14 +1,14 @@
 SSDLC Compliance Report: Atlas Kubernetes Operator Manager v2.8.1
 =================================================================
 
-- Release Creators: jose.vazquez@mongodb.com
-- Created On:       2025-04-24
+- Release Creators: helder.santana@mongodb.com
+- Created On:       2025-06-05
 
 Overview:
 
 - **Product and Release Name**
 
-    - Atlas Kubernetes Operator v2.8.1, 2025-04-24.
+    - Atlas Kubernetes Operator v2.8.1, 2025-06-05.
 
 - **Process Document**
   - http://go/how-we-develop-software-doc
