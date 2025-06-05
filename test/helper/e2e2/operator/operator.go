@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/run"
 )
 
 const (
@@ -74,7 +76,14 @@ type testingT interface {
 	Errorf(format string, a ...any)
 }
 
-type Operator struct {
+type Operator interface {
+	Start(t testingT)
+	Running() bool
+	Wait(t testingT)
+	Stop(t testingT)
+}
+
+type OperatorProcess struct {
 	cmd     *exec.Cmd
 	cmdLine []string
 }
@@ -97,7 +106,10 @@ func AllNamespacesOperatorEnv(operatorNamespace string) []string {
 	)
 }
 
-func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) *Operator {
+func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Operator {
+	if RunEmbeddedSet() {
+		return NewEmbeddedOperator(run.Run, cmdArgs)
+	}
 	cmdLine := append(operatorCommand(), cmdArgs...)
 	//nolint:gosec
 	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
@@ -111,31 +123,31 @@ func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) *Ope
 	cmd.Stderr = stderr
 	cmd.Env = env
 
-	return &Operator{
+	return &OperatorProcess{
 		cmd:     cmd,
 		cmdLine: cmdLine,
 	}
 }
 
-func (o *Operator) Start(t testingT) {
+func (o *OperatorProcess) Start(t testingT) {
 	t.Logf("starting operator command: %q", strings.Join(o.cmdLine, " "))
 	if err := o.cmd.Start(); err != nil {
 		t.Fatalf("failed to start operator: %v", err)
 	}
 }
 
-func (o *Operator) Running() bool {
+func (o *OperatorProcess) Running() bool {
 	return o.cmd.ProcessState == nil
 }
 
-func (o *Operator) Wait(t testingT) {
+func (o *OperatorProcess) Wait(t testingT) {
 	t.Logf("waiting for operator to stop")
 	if err := o.cmd.Wait(); err != nil {
 		t.Errorf("error waiting for command: %v", err)
 	}
 }
 
-func (o *Operator) Stop(t testingT) {
+func (o *OperatorProcess) Stop(t testingT) {
 	// Ensure child process is killed on cleanup - send the negative of the pid, which is the process group id.
 	// See https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
 	pid := 0

@@ -70,7 +70,7 @@ func initTestLogging(t *testing.T) {
 	ctrllog.SetLogger(logrLogger.WithName("test"))
 }
 
-func runTestAKO(ns string, deletionprotection bool) *operator.Operator {
+func runTestAKO(ns string, deletionprotection bool) operator.Operator {
 	args := []string{
 		"--log-level=-9",
 		"--global-api-secret-name=mongodb-atlas-operator-api-key",
