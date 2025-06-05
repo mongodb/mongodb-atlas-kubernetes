@@ -39,7 +39,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	e2e_config "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/operator"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
 )
 
 type (
@@ -206,7 +206,7 @@ func StartDryRunUntil(ctx context.Context, kubeClient client.Client, namespace s
 	waitForEvents := dryRunEventsFunc(ctx, kubeClient, 5*time.Minute, predicate)
 
 	By("starting the operator in dry-run mode")
-	o := operator.NewOperator(namespace, GinkgoWriter, GinkgoWriter,
+	o := operator.NewOperator(operator.DefaulltOperatorEnv(namespace), GinkgoWriter, GinkgoWriter,
 		"--log-level=debug",
 		"--dry-run=true",
 		"--global-api-secret-name=mongodb-atlas-operator-api-key",
