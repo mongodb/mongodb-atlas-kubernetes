@@ -8,4 +8,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: mongodb/mongodb-atlas-kubernetes-operator
-  newTag: 2.8.1
+  newTag: 2.8.2
