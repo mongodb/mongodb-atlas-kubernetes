@@ -15,7 +15,11 @@
 package main
 
 import (
+	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFilterLabelsContain(t *testing.T) {
@@ -211,6 +215,46 @@ func TestMatchWildcards(t *testing.T) {
 						tt.name, label, jsonDump(expectedMap), jsonDump(gotMap))
 				}
 			}
+		})
+	}
+}
+
+func TestComputeTestLabel(t *testing.T) {
+	outputJSON := true
+	for _, tc := range []struct {
+		name   string
+		inputs labelSet
+		want   string
+	}{
+		{
+			name: "empty input renders nothing",
+			inputs: labelSet{
+				prLabels: "[]",
+			},
+			want: `{"e2e":[],"e2e2":[],"e2e_gov":[],"int":[]}` + "\n",
+		},
+		{
+			name: "e2e2 explicit name is targeted",
+			inputs: labelSet{
+				prLabels:   `["test/e2e2/some-test"]`,
+				e2e2Labels: `["some-test"]`,
+			},
+			want: `{"e2e":[],"e2e2":["some-test"],"e2e_gov":[],"int":[]}` + "\n",
+		},
+		{
+			name: "e2e2 wildcard ",
+			inputs: labelSet{
+				prLabels:   `["test/e2e2/some*"]`,
+				e2e2Labels: `["some-other-test"]`,
+			},
+			want: `{"e2e":[],"e2e2":["some-other-test"],"e2e_gov":[],"int":[]}` + "\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := bytes.NewBufferString("")
+			err := computeTestLabels(buf, outputJSON, &tc.inputs)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, buf.String())
 		})
 	}
 }
