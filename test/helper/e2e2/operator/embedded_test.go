@@ -1,4 +1,4 @@
-// Copyright 2020 The Kubernetes authors.
+// Copyright 2025 MongoDB Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package operator_test
 
 import (
+	"context"
 	"flag"
-	"fmt"
-	"os"
+	"testing"
 
-	ctrl "sigs.k8s.io/controller-runtime"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/run"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
 )
 
-func main() {
-	if err := run.Run(ctrl.SetupSignalHandler(), flag.CommandLine, os.Args[1:]); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+func TestEmbeddedOperator(t *testing.T) {
+	eo := operator.NewEmbeddedOperator(testRun, []string{})
+	eo.Start(t)
+	assert.True(t, eo.Running())
+	eo.Stop(t)
+}
+
+func testRun(ctx context.Context, _ *flag.FlagSet, _ []string) error {
+	ch := ctx.Done()
+	<-ch
+	return nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package run
 
 import (
 	"flag"
@@ -21,12 +21,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 )
 
 func Test_configureDeletionProtection(t *testing.T) {
 	t.Run("should do no action when config is nil", func(t *testing.T) {
 		var config *Config
-		configureDeletionProtection(config)
+		configureDeletionProtection(flag.CommandLine, config)
 
 		assert.Nil(t, config)
 	})
@@ -43,7 +46,7 @@ func Test_configureDeletionProtection(t *testing.T) {
 		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
 		flag.Parse()
 
-		configureDeletionProtection(&config)
+		configureDeletionProtection(flag.CommandLine, &config)
 
 		assert.Equal(
 			t,
@@ -67,7 +70,7 @@ func Test_configureDeletionProtection(t *testing.T) {
 		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
 		flag.Parse()
 
-		configureDeletionProtection(&config)
+		configureDeletionProtection(flag.CommandLine, &config)
 
 		assert.Equal(
 			t,
@@ -91,7 +94,7 @@ func Test_configureDeletionProtection(t *testing.T) {
 		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
 		flag.Parse()
 
-		configureDeletionProtection(&config)
+		configureDeletionProtection(flag.CommandLine, &config)
 
 		assert.Equal(
 			t,
@@ -122,7 +125,7 @@ func Test_configureDeletionProtection(t *testing.T) {
 		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
 		flag.Parse()
 
-		configureDeletionProtection(&config)
+		configureDeletionProtection(flag.CommandLine, &config)
 
 		assert.Equal(
 			t,
@@ -153,7 +156,7 @@ func Test_configureDeletionProtection(t *testing.T) {
 		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
 		flag.Parse()
 
-		configureDeletionProtection(&config)
+		configureDeletionProtection(flag.CommandLine, &config)
 
 		assert.Equal(
 			t,
@@ -183,7 +186,7 @@ func Test_configureDeletionProtection(t *testing.T) {
 		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
 		flag.Parse()
 
-		configureDeletionProtection(&config)
+		configureDeletionProtection(flag.CommandLine, &config)
 
 		assert.Equal(
 			t,
@@ -252,6 +255,78 @@ func TestInitCustomZapLogger(t *testing.T) {
 			// Verify logger configuration
 			loggerImpl := logger.Core()
 			assert.True(t, loggerImpl.Enabled(tt.wantLevel))
+		})
+	}
+}
+
+func TestParseConfiguration(t *testing.T) {
+	os.Setenv("OPERATOR_NAMESPACE", "atlas-operator")
+	os.Setenv("OPERATOR_POD_NAME", "podname-797f946f88-97f2q")
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		want    Config
+		wantErr string
+	}{
+		{
+			name: "empty args default config",
+			args: []string{},
+			want: Config{
+				AtlasDomain:          "https://cloud.mongodb.com/",
+				EnableLeaderElection: false,
+				MetricsAddr:          ":8080",
+				WatchedNamespaces:    nil,
+				ProbeAddr:            ":8081",
+				GlobalAPISecret: client.ObjectKey{
+					Namespace: "atlas-operator",
+					Name:      "podname-api-key",
+				},
+				LogLevel:                    "info",
+				LogEncoder:                  "json",
+				ObjectDeletionProtection:    true,
+				SubObjectDeletionProtection: false,
+				IndependentSyncPeriod:       15,
+				FeatureFlags:                featureflags.NewFeatureFlags(os.Environ),
+				DryRun:                      false,
+			},
+		},
+		{
+			name: "typical test args",
+			args: []string{
+				"--log-level=-9",
+				"--global-api-secret-name=mongodb-atlas-operator-api-key",
+				"--log-encoder=json",
+				`--atlas-domain=https://cloud-qa.mongodb.com`,
+			},
+			want: Config{
+				AtlasDomain:          "https://cloud-qa.mongodb.com",
+				EnableLeaderElection: false,
+				MetricsAddr:          ":8080",
+				WatchedNamespaces:    nil,
+				ProbeAddr:            ":8081",
+				GlobalAPISecret: client.ObjectKey{
+					Namespace: "atlas-operator",
+					Name:      "mongodb-atlas-operator-api-key",
+				},
+				LogLevel:                    "-9",
+				LogEncoder:                  "json",
+				ObjectDeletionProtection:    true,
+				SubObjectDeletionProtection: false,
+				IndependentSyncPeriod:       15,
+				FeatureFlags:                featureflags.NewFeatureFlags(os.Environ),
+				DryRun:                      false,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := flag.NewFlagSet("test", flag.ContinueOnError)
+			got, err := parseConfiguration(fs, tc.args)
+			if tc.wantErr == "" {
+				assert.Equal(t, tc.want, got)
+			} else {
+				assert.ErrorContains(t, err, tc.wantErr)
+			}
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

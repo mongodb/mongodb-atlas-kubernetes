@@ -41,7 +41,7 @@ const (
 var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start-stop"), func() {
 	var ctx context.Context
 	var kubeClient client.Client
-	var ako *operator.Operator
+	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 
 	_ = BeforeAll(func() {
