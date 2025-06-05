@@ -151,7 +151,6 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
-
 .PHONY: compute-labels
 compute-labels:
 	mkdir -p bin
@@ -209,6 +208,13 @@ envtest-assets:
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
 
+.PHONY: e2e2
+e2e2: run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
+	NO_GORUN=1 \
+	AKO_E2E2_TEST=1 \
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
+	ginkgo --race --label-filter=$(label) --timeout 120m -vv test/e2e2/
+
 .PHONY: e2e-openshift-upgrade
 e2e-openshift-upgrade:
 	cd scripts && ./openshift-upgrade-test.sh
@@ -245,7 +251,6 @@ manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
-
 
 .PHONY: lint
 lint: ## Run the lint against the code
@@ -552,7 +557,7 @@ prepare-run: generate vet manifests run-kind install-crds install-credentials
 .PHONY: run
 run: prepare-run ## Run a freshly compiled manager against kind
 ifdef RUN_YAML
-	kubectl apply -f $(RUN_YAML)
+	kubectl apply -n $(OPERATOR_NAMESPACE) -f $(RUN_YAML)
 endif
 	VERSION=$(NEXT_VERSION) \
 	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
