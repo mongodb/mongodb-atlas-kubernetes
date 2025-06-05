@@ -734,7 +734,6 @@ func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) 
 		specs = append(
 			specs,
 			&akov2.AdvancedReplicationSpec{
-				NumShards:     spec.GetNumShards(),
 				ZoneName:      spec.GetZoneName(),
 				RegionConfigs: regionConfigs,
 			},
@@ -907,11 +906,14 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 		specs = append(
 			specs,
 			admin.ReplicationSpec20240805{
-				NumShards:     pointer.NonZeroOrDefault(spec.NumShards, 1),
 				ZoneName:      pointer.MakePtrOrNil(spec.ZoneName),
 				RegionConfigs: &regionConfigs,
 			},
 		)
+	}
+
+	for len(specs) != replicationSpecs[0].NumShards {
+		specs = append(specs, specs[0])
 	}
 
 	return &specs
