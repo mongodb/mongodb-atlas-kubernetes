@@ -14,8 +14,8 @@ metadata:
 stringData:
   accountId: myaccountid
   licenseKey: mylicensekey
-  readToken: 1117e51ce6725368c37c3535959a3a75
-  writeToken: 1ce67253681117ec37c3535959a3a755
+  readToken: "00000000000000000000000000000000"
+  writeToken: "00000000000000000000000000000000"
 ---
 apiVersion: atlas.nextapi.mongodb.com/v1
 kind: AtlasThirdPartyIntegration

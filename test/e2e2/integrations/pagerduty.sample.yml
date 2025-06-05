@@ -12,7 +12,7 @@ metadata:
   labels:
     atlas.mongodb.com/type: credentials
 stringData:
-  serviceKey: 53681117ec37c351ce67235959a3a755
+  serviceKey: "00000000000000000000000000000000"
 ---
 apiVersion: atlas.nextapi.mongodb.com/v1
 kind: AtlasThirdPartyIntegration

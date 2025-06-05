@@ -9,5 +9,5 @@ spec:
   slack:
     channelName: mychannel2
     teamName: myteam2
-    apiKeySecretRef:
+    apiTokenSecretRef:
       name: slack-secret

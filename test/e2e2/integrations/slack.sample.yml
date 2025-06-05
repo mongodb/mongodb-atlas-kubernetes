@@ -12,7 +12,7 @@ metadata:
   labels:
     atlas.mongodb.com/type: credentials
 stringData:
-  apiKey: 00000000000000000000000000000000
+  apiToken: "00000000000000000000000000000000"
 ---
 apiVersion: atlas.nextapi.mongodb.com/v1
 kind: AtlasThirdPartyIntegration
@@ -25,5 +25,5 @@ spec:
   slack:
     channelName: mychannel
     teamName: myteam
-    apiKeySecretRef:
+    apiTokenSecretRef:
       name: slack-secret
