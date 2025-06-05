@@ -149,6 +149,12 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 				}).WithTimeout(time.Minute).WithPolling(time.Second).NotTo(Succeed())
 			})
 		},
+		Entry("Test[slack]: Slack integration with a parent project",
+			Label("slack"),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/slack.sample.yml")),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/slack.update.yml")),
+			"atlas-slack-integ",
+		),
 		Entry("Test[datadog]: Datadog integration with a parent project",
 			Label("datadog"),
 			yml.MustParseObjects(yml.MustOpen(configs, "configs/datadog.sample.yml")),
@@ -172,6 +178,18 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			yml.MustParseObjects(yml.MustOpen(configs, "configs/opsgenie.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(configs, "configs/opsgenie.update.yml")),
 			"atlas-opsgenie-integ",
+		),
+		Entry("Test[pagerduty]: PagerDuty integration with a parent project",
+			Label("pagerduty"),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/pagerduty.sample.yml")),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/pagerduty.update.yml")),
+			"atlas-pagerduty-integ",
+		),
+		Entry("Test[prometheus]: Prometheus integration with a parent project",
+			Label("prometheus"),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/prometheus.sample.yml")),
+			yml.MustParseObjects(yml.MustOpen(configs, "configs/prometheus.update.yml")),
+			"atlas-prometheus-integ",
 		),
 	)
 })
