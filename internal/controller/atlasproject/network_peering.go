@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -103,7 +103,7 @@ func failedPeerStatus(errMessage string, peer akov2.NetworkPeer) status.AtlasNet
 func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer, lastAppliedPeers []akov2.NetworkPeer) (workflow.Result, api.ConditionType) {
 	defer workflowCtx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
 	logger := workflowCtx.Log
-	mongoClient := workflowCtx.SdkClientSet.SdkClient20231115008
+	mongoClient := workflowCtx.SdkClientSet.SdkClient20250312002
 	logger.Debugf("syncing network peers for project %v", groupID)
 	list, err := GetAllExistedNetworkPeer(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID)
 	if err != nil {
@@ -184,7 +184,7 @@ func deleteUnusedContainers(context context.Context, containerService admin.Netw
 			continue
 		}
 		if !compare.Contains(doNotDelete, container.GetId()) {
-			_, response, errDelete := containerService.DeletePeeringContainer(context, groupID, container.GetId()).Execute()
+			response, errDelete := containerService.DeletePeeringContainer(context, groupID, container.GetId()).Execute()
 			if errDelete != nil && response.StatusCode != http.StatusConflict { // AWS peer does not contain container id
 				return errDelete
 			}
