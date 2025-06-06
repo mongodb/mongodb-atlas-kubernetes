@@ -150,7 +150,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
 
-	if err := validate.AtlasDeployment(atlasDeployment, r.AtlasProvider.IsCloudGov(), atlasProject.RegionUsageRestrictions); err != nil {
+	if err := validate.AtlasDeployment(atlasDeployment); err != nil {
 		result = workflow.Terminate(workflow.Internal, err)
 		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
