@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parca
+  namespace: parca
+spec:
+  template:
+    spec:
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - |
+              rm -rf *; \
+              tar xvzf /parca.tar.gz
+          image: busybox:1.28
+          imagePullPolicy: IfNotPresent
+          name: init-db
+          workingDir: /var/lib/parca
+          volumeMounts:
+            - mountPath: /var/lib/parca
+              name: data
+            - mountPath: /parca.tar.gz
+              name: snapshot-file
+      volumes:
+        - name: snapshot-file
+          hostPath:
+            path: /home/parca.tar.gz
+            type: File
+      containers:
+        - args:
+            - /parca
+            - --http-address=:7070
+            - --config-path=/etc/parca/parca.yaml
+            - --log-level=info
+            - --cors-allowed-origins=*
+            - --debuginfod-upstream-servers=debuginfod.systemtap.org
+            - --debuginfod-http-request-timeout=5m
+            - --enable-persistence
+            - --storage-enable-wal
+            - --storage-path=/var/lib/parca
+          name: parca

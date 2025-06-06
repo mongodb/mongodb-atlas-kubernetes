@@ -1,0 +1,41 @@
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+    - groupVersionKind:
+        version: "*"
+        group: atlas.mongodb.com
+        kind: AtlasProject
+      labelsFromPath:
+        name: [metadata, name]
+        namespace: [metadata, namespace]
+        kind: [kind]
+        version: [version]
+      metrics:
+        - name: "atlasproject_status"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, conditions]
+              labelsFromPath:
+                type: ["type"]
+                status: ["status"]
+              valueFrom: ["status"]
+    - groupVersionKind:
+        version: "*"
+        group: atlas.mongodb.com
+        kind: AtlasDeployment
+      labelsFromPath:
+        name: [metadata, name]
+        namespace: [metadata, namespace]
+        kind: [kind]
+        version: [version]
+      metrics:
+        - name: "atlasdeployment_status"
+          each:
+            type: Gauge
+            gauge:
+              path: [status, conditions]
+              labelsFromPath:
+                type: ["type"]
+                status: ["status"]
+              valueFrom: ["status"]
