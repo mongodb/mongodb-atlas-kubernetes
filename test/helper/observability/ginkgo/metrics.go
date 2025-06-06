@@ -81,9 +81,15 @@ func sendMetrics(report types.Report) error {
 	}
 
 	data, err := proto.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("error marshaling WriteRequest: %w", err)
+	}
 	compressed := snappy.Encode(nil, data)
 
 	httpReq, err := http.NewRequest("POST", "http://localhost:30000/api/v1/write", bytes.NewReader(compressed))
+	if err != nil {
+		return fmt.Errorf("error creating http request: %w", err)
+	}
 	httpReq.Header.Add("Content-Encoding", "snappy")
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
