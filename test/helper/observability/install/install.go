@@ -24,14 +24,16 @@ var defaultBackOff = wait.Backoff{
 
 func InstallSnapshot(logger io.Writer) error {
 	var (
-		snapshotURL      string
-		lokiSnapshotPath string
-		promSnapshotPath string
+		snapshotURL       string
+		lokiSnapshotPath  string
+		promSnapshotPath  string
+		parcaSnapshotPath string
 	)
 
 	flag.StringVar(&snapshotURL, "snapshot-url", "", "The snapshot URL to download the snapshots from. If set, it has precedence over -loki-snapshot and -prom-snapshot.")
-	flag.StringVar(&lokiSnapshotPath, "loki-snapshot", "", "The path to the loki snapshot .tar.gz file to use. If set, -prom-snapshot must be provided.")
-	flag.StringVar(&promSnapshotPath, "prom-snapshot", "", "The path to the prometheus snapshot .tar.gz file to use. If set, -loki-snapshot must be provided.")
+	flag.StringVar(&lokiSnapshotPath, "loki-snapshot", "", "The path to the loki snapshot .tar.gz file to use. If set, -prom-snapshot and -parca-snapshot must be provided.")
+	flag.StringVar(&promSnapshotPath, "prom-snapshot", "", "The path to the prometheus snapshot .tar.gz file to use. If set, -loki-snapshot and -parca-snapshot must be provided.")
+	flag.StringVar(&parcaSnapshotPath, "parca-snapshot", "", "The path to the parca snapshot .tar.gz file to use. If set, -loki-snapshot and -prom-snapshot must be provided.")
 	err := flag.CommandLine.Parse(os.Args[2:])
 	if err != nil {
 		return fmt.Errorf("error parsing flags: %w", err)
@@ -53,6 +55,10 @@ func InstallSnapshot(logger io.Writer) error {
 		promSnapshotPath, err = filepath.Abs(promSnapshotPath)
 		if err != nil {
 			return fmt.Errorf("error getting absolute path for prometheus snapshot: %w", err)
+		}
+		parcaSnapshotPath, err = filepath.Abs(parcaSnapshotPath)
+		if err != nil {
+			return fmt.Errorf("error getting absolute path for parca snapshot: %w", err)
 		}
 	default:
 		return fmt.Errorf("either -snapshot-url or both -loki-snapshot and -prom-snapshot must be provided")
@@ -76,6 +82,10 @@ func InstallSnapshot(logger io.Writer) error {
 	}
 
 	for _, cmdArgs := range [][]string{
+		{"kubectl", "create", "ns", "parca"},
+		{"kubectl", "apply", "--server-side", "-f", "https://github.com/parca-dev/parca/releases/download/v0.23.1/kubernetes-manifest.yaml"},
+		{"kubectl", "apply", "--server-side", "-f", "https://github.com/parca-dev/parca-agent/releases/download/v0.39.0/kubernetes-manifest.yaml"},
+		{"kubectl", "-n", "parca", "scale", "--replicas=0", "deployment/parca"},
 		{"helm", "repo", "add", "prometheus-community", "https://prometheus-community.github.io/helm-charts"},
 		{"helm", "repo", "add", "grafana", "https://grafana.github.io/helm-charts"},
 		{"helm", "repo", "update"},
@@ -115,6 +125,9 @@ func InstallSnapshot(logger io.Writer) error {
 
 			{"docker", "cp", promSnapshotPath, "dos-control-plane:/home/prometheus.tar.gz"},
 			{"kubectl", "apply", "--server-side", "--force-conflicts", "-f", fmt.Sprintf("%v/prometheus-snapshot-file.yaml", assetsDir)},
+
+			{"docker", "cp", parcaSnapshotPath, "dos-control-plane:/home/parca.tar.gz"},
+			{"kubectl", "-n", "parca", "patch", "deployment/parca", "--patch-file", fmt.Sprintf("%v/parca-snapshot-file.yaml", assetsDir)},
 		} {
 			if err := observability.ExecCommand(logger, cmdArgs...); err != nil {
 				return err
@@ -123,6 +136,7 @@ func InstallSnapshot(logger io.Writer) error {
 	}
 
 	for _, cmdArgs := range [][]string{
+		{"kubectl", "-n", "parca", "scale", "--replicas=1", "deployment/parca"},
 		{"kubectl", "-n", "loki", "scale", "--replicas=1", "sts/loki"},
 		{"kubectl", "-n", "loki", "wait", "pods", "-l", `app.kubernetes.io/name=loki`, "--for", "condition=Ready", "--timeout=600s"},
 		{"kubectl", "-n", "monitoring", "wait", "pods", "-l", `app.kubernetes.io/instance=kube-prometheus-kube-prome-prometheus`, "--for", "condition=Ready", "--timeout=600s"},
@@ -173,6 +187,14 @@ func Install(logger io.Writer) error {
 
 	ctx := context.Background()
 	for _, cmdArgs := range [][]string{
+		{"kubectl", "create", "ns", "parca"},
+		{"kubectl", "apply", "--server-side", "-f", "https://github.com/parca-dev/parca/releases/download/v0.23.1/kubernetes-manifest.yaml"},
+		{"kubectl", "apply", "--server-side", "-f", "https://github.com/parca-dev/parca-agent/releases/download/v0.39.0/kubernetes-manifest.yaml"},
+		{"kubectl", "-n", "parca", "scale", "--replicas=0", "deployment/parca"},
+		{"kubectl", "-n", "parca", "delete", "configmap", "parca"},
+		{"kubectl", "-n", "parca", "create", "configmap", "parca", fmt.Sprintf("--from-file=parca.yaml=%v/parca-config.yaml", assetsDir)},
+		{"kubectl", "-n", "parca", "patch", "deployment/parca", "--patch-file", fmt.Sprintf("%v/parca-deployment.yaml", assetsDir)},
+		{"kubectl", "-n", "parca", "scale", "--replicas=1", "deployment/parca"},
 		{"helm", "repo", "add", "prometheus-community", "https://prometheus-community.github.io/helm-charts"},
 		{"helm", "repo", "add", "grafana", "https://grafana.github.io/helm-charts"},
 		{"helm", "repo", "update"},

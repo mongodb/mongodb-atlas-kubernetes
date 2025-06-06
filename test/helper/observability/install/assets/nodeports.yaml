@@ -43,3 +43,20 @@ spec:
   selector:
     app.kubernetes.io/component: gateway
     app.kubernetes.io/name: loki
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: parca-nodeport
+  namespace: parca
+spec:
+  type: NodePort
+  ports:
+    - port: 7070
+      nodePort: 30003
+      name: http
+      targetPort: http
+  selector:
+    app.kubernetes.io/component: observability
+    app.kubernetes.io/instance: parca
+    app.kubernetes.io/name: parca

@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parca
+  namespace: parca
+spec:
+  template:
+    spec:
+      containers:
+        - args:
+            - /parca
+            - --http-address=:7070
+            - --config-path=/etc/parca/parca.yaml
+            - --log-level=info
+            - --cors-allowed-origins=*
+            - --debuginfod-upstream-servers=debuginfod.systemtap.org
+            - --debuginfod-http-request-timeout=5m
+            - --enable-persistence
+            - --storage-enable-wal
+            - --storage-path=/var/lib/parca
+          name: parca

@@ -1,0 +1,7 @@
+server:
+  image:
+    tag: v0.23.1
+
+agent:
+  image:
+    tag: v0.39.0

@@ -18,3 +18,8 @@ nodes:
         hostPort: 30002
         listenAddress: "0.0.0.0"
         protocol: tcp
+      # parca
+      - containerPort: 30003
+        hostPort: 30003
+        listenAddress: "0.0.0.0"
+        protocol: tcp

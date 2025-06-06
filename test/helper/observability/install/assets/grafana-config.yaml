@@ -15,6 +15,10 @@ data:
         url: http://loki-gateway.loki.svc.cluster.local
         jsonData:
           maxLines: 5000
+      - name: Parca
+        type: parca
+        uid: parca
+        url: http://parca.parca.svc.cluster.local:7070
 ---
 apiVersion: v1
 kind: ConfigMap
