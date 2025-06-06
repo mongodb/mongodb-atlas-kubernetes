@@ -156,7 +156,7 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 		X509Type:        pointer.MakePtrOrNil(au.X509Type),
 		AwsIAMType:      pointer.MakePtrOrNil(au.AWSIAMType),
 		GroupId:         au.ProjectID,
-		Description:     pointer.MakePtrOrNil(au.Description),
+		Description:     pointer.MakePtr(au.Description),
 		Labels:          labelsToAtlas(au.Labels),
 		Roles:           rolesToAtlas(au.Roles),
 		Scopes:          scopesToAtlas(au.Scopes),
