@@ -9,6 +9,7 @@ import (
 
 func ExecCommand(logger io.Writer, cmdArgs ...string) error {
 	fmt.Fprintln(logger, cmdArgs)
+	//nolint:gosec
 	out, err := exec.Command(cmdArgs[0], cmdArgs[1:]...).Output()
 	fmt.Fprintln(logger, string(out))
 
