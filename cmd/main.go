@@ -39,6 +39,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
@@ -73,6 +74,10 @@ func main() {
 	ctrl.SetLogger(logrLogger.WithName("ctrl"))
 	klog.SetLogger(logrLogger.WithName("klog"))
 	setupLog := logger.Named("setup").Sugar()
+	if version.IsExperimental() {
+		setupLog.Warn("Experimental features enabled!")
+		utilruntime.Must(akov2next.AddToScheme(akoScheme))
+	}
 	setupLog.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))
 
 	runnable, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme, time.Duration(minimumIndependentSyncPeriod)*time.Minute).
@@ -87,6 +92,7 @@ func main() {
 		WithDeletionProtection(config.ObjectDeletionProtection).
 		WithIndependentSyncPeriod(time.Duration(config.IndependentSyncPeriod) * time.Minute).
 		WithDryRun(config.DryRun).
+		WithExperimentalReconcilers(version.IsExperimental()).
 		Build(ctx)
 	if err != nil {
 		setupLog.Error(err, "unable to start operator")

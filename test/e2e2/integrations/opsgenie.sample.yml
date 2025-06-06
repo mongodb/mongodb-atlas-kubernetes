@@ -1,0 +1,29 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: atlas-project-test-opsgenie
+spec:
+  name: atlas-project-test-opsgenie
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opsgenie-secret
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  apiKey: 00000000-0000-0000-0000-000000000000
+---
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-opsgenie-integ
+spec:
+  projectRef:
+    name: atlas-project-test-opsgenie
+  type: OPS_GENIE
+  opsGenie:
+    apiKeySecretRef:
+      name: opsgenie-secret
+    region: US
+

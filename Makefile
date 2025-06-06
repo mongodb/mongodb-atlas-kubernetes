@@ -13,6 +13,15 @@ DOCKER_SBOM_PLUGIN_VERSION=0.6.1
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= $(shell git describe --always --tags --dirty --broken | cut -c 2-)
 
+# LD_FLAGS
+LD_FLAG_SET_VERSION = -X github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version.Version=$(VERSION)
+LD_FLAGS_SET_EXPERIMENTAL = -X github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version.Experimental=$(EXPERIMENTAL)
+ifdef EXPERIMENTAL
+LD_FLAGS = $(LD_FLAGS_SET_EXPERIMENTAL) $(LD_FLAG_SET_VERSION)
+else
+LD_FLAGS = $(LD_FLAG_SET_VERSION)
+endif
+
 # NEXT_VERSION represents a version that is higher than anything released
 # VERSION default value does not play well with the run target which might end up failing
 # with errors such as:
@@ -151,7 +160,6 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
-
 .PHONY: compute-labels
 compute-labels:
 	mkdir -p bin
@@ -209,6 +217,14 @@ envtest-assets:
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
 
+.PHONY: e2e2
+e2e2: run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
+	NO_GORUN=1 \
+	AKO_E2E2_TEST=1 \
+	EXPERIMENTAL=$(EXPERIMENTAL) \
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
+	ginkgo --race --label-filter=$(label) --timeout 120m -vv test/e2e2/
+
 .PHONY: e2e-openshift-upgrade
 e2e-openshift-upgrade:
 	cd scripts && ./openshift-upgrade-test.sh
@@ -218,7 +234,7 @@ bin/$(TARGET_OS)/$(TARGET_ARCH):
 
 bin/$(TARGET_OS)/$(TARGET_ARCH)/manager: $(GO_SOURCES) bin/$(TARGET_OS)/$(TARGET_ARCH)
 	@echo "Building operator with version $(VERSION); $(TARGET_OS) - $(TARGET_ARCH)"
-	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version.Version=$(VERSION)" cmd/main.go
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="$(LD_FLAGS)" cmd/main.go
 	@touch $@
 
 bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
@@ -245,7 +261,9 @@ manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
-
+ifdef EXPERIMENTAL
+	controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds
+endif
 
 .PHONY: lint
 lint: ## Run the lint against the code
@@ -274,6 +292,9 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
+ifdef EXPERIMENTAL
+	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
+endif
 	$(MAKE) fmt
 
 .PHONY: check-missing-files
@@ -529,6 +550,9 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 .PHONY: install-crds
 install-crds: ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
+ifdef EXPERIMENTAL
+	kubectl apply -f internal/next-crds/*.yaml
+endif
 
 .PHONY: set-namespace
 set-namespace:
@@ -552,14 +576,28 @@ prepare-run: generate vet manifests run-kind install-crds install-credentials
 .PHONY: run
 run: prepare-run ## Run a freshly compiled manager against kind
 ifdef RUN_YAML
-	kubectl apply -f $(RUN_YAML)
+	kubectl apply -n $(OPERATOR_NAMESPACE) -f $(RUN_YAML)
 endif
+ifdef BACKGROUND
+	@bash -c '(VERSION=$(NEXT_VERSION) \
+	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
+	nohup bin/manager --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
+	--atlas-domain=$(ATLAS_DOMAIN) \
+	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME) > ako.log 2>&1 & echo $$! > ako.pid \
+	&& echo "OPERATOR_PID=$$!")'
+else
 	VERSION=$(NEXT_VERSION) \
 	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
 	bin/manager --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
 	--atlas-domain=$(ATLAS_DOMAIN) \
 	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME)
+endif
+
+.PHONY: stop-ako
+stop-ako:  
+	@kill `cat ako.pid` && rm ako.pid || echo "AKO process not found or already stopped!"  
 
 .PHONY: local-docker-build
 local-docker-build:

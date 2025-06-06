@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datadog-secret
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  apiKey: 1117e51ce6725368c37c3535959a3a75
+---
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: my-atlas-integ
+spec:
+  externalProjectRef:                     # Either this or an projectRef as usual
+    id: 68359c51ce672533a751117e
+  connectionSecret:                       # Optional ref when using projectRef instead
+    name: mongodb-atlas-operator-api-key
+  type: DATADOG
+  datadog:
+    apiKeySecretRef:
+      name: datadog-secret                # secret contains Datadog's ApiKey
+    region: US
+    sendCollectionLatencyMetrics: enabled
+    sendDatabaseMetrics: enabled
+

@@ -884,10 +884,10 @@ func getConditions(networkContainer *akov2.AtlasNetworkContainer) []api.Conditio
 func testReconciler(k8sClient client.Client, provider atlas.Provider, logger *zap.Logger) *AtlasNetworkContainerReconciler {
 	return &AtlasNetworkContainerReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: k8sClient,
-			Log:    logger.Sugar(),
+			Client:        k8sClient,
+			Log:           logger.Sugar(),
+			AtlasProvider: provider,
 		},
-		AtlasProvider: provider,
 		EventRecorder: record.NewFakeRecorder(10),
 	}
 }

@@ -1,0 +1,28 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: atlas-project-test-victorops
+spec:
+  name: atlas-project-test-victorops
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: victorops-secret
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  apiKey: 00000000-0000-0000-0000-000000000000
+---
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-victorops-integ
+spec:
+  projectRef:
+    name: atlas-project-test-victorops
+  type: VICTOR_OPS
+  victorOps:
+    apiKeySecretRef:
+      name: victorops-secret
+    routingKey: routing-key

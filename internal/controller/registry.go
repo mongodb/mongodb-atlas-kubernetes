@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -40,10 +41,15 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlassearchindexconfig"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasstream"
+	integrations "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasthirdpartyintegrations"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
+
+const DefaultReapplySupport = true
 
 type Reconciler interface {
 	reconcile.Reconciler
@@ -57,19 +63,24 @@ type Registry struct {
 	independentSyncPeriod time.Duration
 	featureFlags          *featureflags.FeatureFlags
 
-	logger          *zap.Logger
-	reconcilers     []Reconciler
-	globalSecretRef client.ObjectKey
+	logger                  *zap.Logger
+	reconcilers             []Reconciler
+	globalSecretRef         client.ObjectKey
+	experimentalReconcilers bool
+
+	reapplySupport bool
 }
 
-func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey) *Registry {
+func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey, experimentalReconcilers bool) *Registry {
 	return &Registry{
-		sharedPredicates:      predicates,
-		deletionProtection:    deletionProtection,
-		logger:                logger,
-		independentSyncPeriod: independentSyncPeriod,
-		featureFlags:          featureFlags,
-		globalSecretRef:       globalSecretRef,
+		sharedPredicates:        predicates,
+		deletionProtection:      deletionProtection,
+		logger:                  logger,
+		independentSyncPeriod:   independentSyncPeriod,
+		featureFlags:            featureFlags,
+		globalSecretRef:         globalSecretRef,
+		experimentalReconcilers: experimentalReconcilers,
+		reapplySupport:          DefaultReapplySupport,
 	}
 }
 
@@ -114,7 +125,25 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
+	if r.experimentalReconcilers {
+		reconcilers = r.appendExperimentalReconcilers(reconcilers, c, ap)
+	}
 	r.reconcilers = reconcilers
+}
+
+func (r *Registry) appendExperimentalReconcilers(reconcilers []Reconciler, c cluster.Cluster, ap atlas.Provider) []Reconciler {
+	// TODO cluster.Cluster needed in initialization
+	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(
+		c,
+		ap,
+		r.deletionProtection,
+		r.logger,
+		r.globalSecretRef,
+		r.reapplySupport,
+	)
+	compatibleIntegrationsReconciler := newCtrlStateReconciler(*integrationsReconciler)
+	reconcilers = append(reconcilers, compatibleIntegrationsReconciler)
+	return reconcilers
 }
 
 // deprecatedPredicates are to be phased out in favor of defaultPredicates
@@ -126,4 +155,23 @@ func (r *Registry) deprecatedPredicates() []predicate.Predicate {
 // spurious after delete handling and acting on finalizers setting or unsetting
 func (r *Registry) defaultPredicates() []predicate.Predicate {
 	return append(r.sharedPredicates, watch.DefaultPredicates[client.Object]())
+}
+
+type ctrlStateReconciler[T any] struct {
+	ctrlstate.Reconciler[T]
+}
+
+func newCtrlStateReconciler[T any](r ctrlstate.Reconciler[T]) *ctrlStateReconciler[T] {
+	return &ctrlStateReconciler[T]{Reconciler: r}
+}
+
+func (nr *ctrlStateReconciler[T]) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
+	skipNameOptionFn := func(skipNameValidation bool) ctrlstate.SetupManagerOption {
+		return func(builder *ctrlstate.ControllerSetupBuilder) *ctrlstate.ControllerSetupBuilder {
+			return builder.WithOptions(controller.TypedOptions[reconcile.Request]{
+				SkipNameValidation: pointer.MakePtr(skipNameValidation),
+			})
+		}
+	}
+	return nr.Reconciler.SetupWithManager(mgr, skipNameOptionFn(skipNameValidation))
 }
