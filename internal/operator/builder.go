@@ -89,6 +89,7 @@ type Builder struct {
 	deletionProtection bool
 	skipNameValidation bool
 	dryRun             bool
+	pprofBindAddress   string
 }
 
 func (b *Builder) WithConfig(config *rest.Config) *Builder {
@@ -113,6 +114,11 @@ func (b *Builder) WithSyncPeriod(period time.Duration) *Builder {
 
 func (b *Builder) WithMetricAddress(address string) *Builder {
 	b.metricAddress = address
+	return b
+}
+
+func (b *Builder) WithPprofBindAddress(address string) *Builder {
+	b.pprofBindAddress = address
 	return b
 }
 
@@ -269,6 +275,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 				HealthProbeBindAddress: b.probeAddress,
 				LeaderElection:         b.leaderElection,
 				LeaderElectionID:       b.leaderElectionID,
+				PprofBindAddress:       b.pprofBindAddress,
 			},
 		)
 
