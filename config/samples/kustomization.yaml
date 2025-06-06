@@ -19,4 +19,6 @@ resources:
   - atlas_v1_atlassearchindexconfigs.yaml
   - atlas_v1_atlasbackupcompliancepolicy.yaml
   - atlas_v1_atlascustomrole.yaml
+  - atlas_v1_atlasintegration.yaml
+  - atlas_v1_atlasthirdpartyintegration.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
