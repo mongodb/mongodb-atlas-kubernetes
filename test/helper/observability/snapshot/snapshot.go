@@ -19,13 +19,13 @@ import (
 func Snapshot(logger io.Writer) error {
 	kubeClient, err := kubecli.CreateNewClient()
 	if err != nil {
-		return fmt.Errorf("Failed to create client: %v", err)
+		return fmt.Errorf("Failed to create client: %w", err)
 	}
 
 	n := &corev1.Node{}
 	err = kubeClient.Get(context.Background(), client.ObjectKey{Name: "dos-control-plane"}, n)
 	if err != nil {
-		return fmt.Errorf("Failed to get dos-control-plane node: %v", err)
+		return fmt.Errorf("Failed to get dos-control-plane node: %w", err)
 	}
 	start := n.GetObjectMeta().GetCreationTimestamp()
 	now := time.Now()
@@ -46,9 +46,10 @@ Loki query:
 Parca query:
 %s
 `, promQuery, lokiQuery, parcaQuery)
+	//nolint:gosec
 	err = os.WriteFile("urls.txt", []byte(out), 0644)
 	if err != nil {
-		return fmt.Errorf("failed to write to file: %v", err)
+		return fmt.Errorf("failed to write to file: %w", err)
 	}
 
 	for _, cmdArgs := range [][]string{

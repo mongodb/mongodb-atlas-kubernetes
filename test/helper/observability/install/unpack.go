@@ -25,6 +25,7 @@ func Unpack() (string, error) {
 		targetPath := filepath.Join(tempDir, path)
 
 		if d.IsDir() {
+			//nolint:gosec
 			return os.MkdirAll(targetPath, 0755)
 		}
 
@@ -35,6 +36,7 @@ func Unpack() (string, error) {
 		}
 
 		// Write to the temp directory
+		//nolint:gosec
 		err = os.WriteFile(targetPath, data, 0644)
 		if err != nil {
 			return fmt.Errorf("failed to write file %s: %w", targetPath, err)

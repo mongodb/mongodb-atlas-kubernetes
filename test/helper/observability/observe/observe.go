@@ -33,6 +33,7 @@ func Observe(cmdArgs ...string) error {
 }
 
 func forwardTo(target io.Writer, cmdArgs ...string) error {
+	//nolint:gosec
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 
 	cmdStdout, err := cmd.StdoutPipe()

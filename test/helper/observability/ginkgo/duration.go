@@ -57,6 +57,7 @@ func ReportDuration(ctx ginkgo.SpecContext, report ginkgotypes.Report) {
 	}
 
 	reportPath := filepath.Join(strings.TrimSpace(string(out)), "urls.json")
+	//nolint:gosec
 	file, _ := os.OpenFile(reportPath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.ModePerm)
 	defer file.Close()
 	encoder := json.NewEncoder(file)
