@@ -84,6 +84,7 @@ func main() {
 		WithLogger(logger).
 		WithMetricAddress(config.MetricsAddr).
 		WithProbeAddress(config.ProbeAddr).
+		WithPprofBindAddress(config.PprofAddress).
 		WithLeaderElection(config.EnableLeaderElection).
 		WithAtlasDomain(config.AtlasDomain).
 		WithAPISecret(config.GlobalAPISecret).
