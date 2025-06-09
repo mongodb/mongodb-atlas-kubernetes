@@ -54,3 +54,7 @@ ako.pem
 # e2e artifacts
 *.tar.gz
 urls.json
+
+# DOS artifacts
+dos
+urls.txt
