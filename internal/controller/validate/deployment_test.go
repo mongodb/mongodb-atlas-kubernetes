@@ -26,10 +26,8 @@ import (
 
 func TestAtlasDeployment(t *testing.T) {
 	tests := map[string]struct {
-		atlasDeployment         *akov2.AtlasDeployment
-		isGov                   bool
-		regionUsageRestrictions string
-		expectedError           string
+		atlasDeployment *akov2.AtlasDeployment
+		expectedError   string
 	}{
 		"All specs present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -39,9 +37,7 @@ func TestAtlasDeployment(t *testing.T) {
 					FlexSpec:       &akov2.FlexSpec{},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
+			expectedError: "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
 		},
 		"Advanced & Serverless specs present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -50,9 +46,7 @@ func TestAtlasDeployment(t *testing.T) {
 					ServerlessSpec: &akov2.ServerlessSpec{},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
+			expectedError: "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
 		},
 		"Advanced & Flex specs present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -61,9 +55,7 @@ func TestAtlasDeployment(t *testing.T) {
 					FlexSpec:       &akov2.FlexSpec{},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
+			expectedError: "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
 		},
 		"Serverless & Flex specs present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -72,17 +64,13 @@ func TestAtlasDeployment(t *testing.T) {
 					FlexSpec:       &akov2.FlexSpec{},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
+			expectedError: "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but multiple were",
 		},
 		"No spec present": {
 			atlasDeployment: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
+			expectedError: "expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were",
 		},
 		"Only DeploymentSpec present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -101,9 +89,7 @@ func TestAtlasDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "",
+			expectedError: "",
 		},
 		"Only ServerlessSpec present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -116,9 +102,7 @@ func TestAtlasDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "",
+			expectedError: "",
 		},
 		"Only FlexSpec present": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -131,9 +115,7 @@ func TestAtlasDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "",
+			expectedError: "",
 		},
 		"ServerlessSpec with provider config error": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -146,9 +128,7 @@ func TestAtlasDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "provider name must be SERVERLESS",
+			expectedError: "provider name must be SERVERLESS",
 		},
 		"Regular deployment with config errors": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -164,9 +144,7 @@ func TestAtlasDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "provider name is not supported",
+			expectedError: "provider name is not supported",
 		},
 		"Deployment with misconfigured tags": {
 			atlasDeployment: &akov2.AtlasDeployment{
@@ -195,15 +173,13 @@ func TestAtlasDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "duplicate keys found in tags, this is forbidden",
+			expectedError: "duplicate keys found in tags, this is forbidden",
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := AtlasDeployment(tt.atlasDeployment, tt.isGov, tt.regionUsageRestrictions)
+			err := AtlasDeployment(tt.atlasDeployment)
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
 			} else {
@@ -215,10 +191,8 @@ func TestAtlasDeployment(t *testing.T) {
 
 func TestRegularDeployment(t *testing.T) {
 	tests := map[string]struct {
-		spec                    *akov2.AdvancedDeploymentSpec
-		isGov                   bool
-		regionUsageRestrictions string
-		expectedError           string
+		spec          *akov2.AdvancedDeploymentSpec
+		expectedError string
 	}{
 		"Valid regular deployment": {
 			spec: &akov2.AdvancedDeploymentSpec{
@@ -233,40 +207,7 @@ func TestRegularDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "",
-		},
-		"Valid government deployment": {
-			spec: &akov2.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
-					{
-						RegionConfigs: []*akov2.AdvancedRegionConfig{
-							{
-								ProviderName: "AWS",
-								RegionName:   "us-gov-west-1",
-							},
-						},
-					},
-				},
-			},
-			isGov:                   true,
-			regionUsageRestrictions: "GOV_REGIONS_ONLY",
-			expectedError:           "",
-		},
-		"Invalid government deployment": {
-			spec: &akov2.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
-					{
-						RegionConfigs: []*akov2.AdvancedRegionConfig{
-							{RegionName: "us-east-1"},
-						},
-					},
-				},
-			},
-			isGov:                   true,
-			regionUsageRestrictions: "GOV_REGIONS_ONLY",
-			expectedError:           "deployment in atlas for government support a restricted set of regions: us-east-1 is not part of AWS for government regions",
+			expectedError: "",
 		},
 		"Provider config error": {
 			spec: &akov2.AdvancedDeploymentSpec{
@@ -278,9 +219,7 @@ func TestRegularDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "provider name is not supported",
+			expectedError: "provider name is not supported",
 		},
 		"AutoScaling is misconfigured across regions": {
 			spec: &akov2.AdvancedDeploymentSpec{
@@ -313,9 +252,7 @@ func TestRegularDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "autoscaling must be the same for all regions and across all replication specs for advanced deployment",
+			expectedError: "autoscaling must be the same for all regions and across all replication specs for advanced deployment",
 		},
 		"AutoScaling is misconfigured across replications": {
 			spec: &akov2.AdvancedDeploymentSpec{
@@ -352,9 +289,7 @@ func TestRegularDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "autoscaling must be the same for all regions and across all replication specs for advanced deployment",
+			expectedError: "autoscaling must be the same for all regions and across all replication specs for advanced deployment",
 		},
 		"Instance size is misconfigured": {
 			spec: &akov2.AdvancedDeploymentSpec{
@@ -375,9 +310,7 @@ func TestRegularDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment",
+			expectedError: "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment",
 		},
 		"Instance size is out of autoscaling range": {
 			spec: &akov2.AdvancedDeploymentSpec{
@@ -402,15 +335,13 @@ func TestRegularDeployment(t *testing.T) {
 					},
 				},
 			},
-			isGov:                   false,
-			regionUsageRestrictions: "",
-			expectedError:           "the instance size is below the minimum autoscaling configuration",
+			expectedError: "the instance size is below the minimum autoscaling configuration",
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := regularDeployment(tt.spec, tt.isGov, tt.regionUsageRestrictions)
+			err := regularDeployment(tt.spec)
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
 			} else {
@@ -808,85 +739,6 @@ func TestAdvancedInstanceSizeInRange(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			err := advancedInstanceSizeInRange(tt.currentInstanceSize, tt.minInstanceSize, tt.maxInstanceSize)
-			if tt.expectedError != "" {
-				assert.EqualError(t, err, tt.expectedError)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestDeploymentForGov(t *testing.T) {
-	tests := map[string]struct {
-		spec                    *akov2.AdvancedDeploymentSpec
-		regionUsageRestrictions string
-		expectedError           string
-	}{
-		"All regions supported": {
-			spec: &akov2.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
-					{
-						RegionConfigs: []*akov2.AdvancedRegionConfig{
-							{RegionName: "us-gov-west-1"},
-						},
-					},
-				},
-			},
-			regionUsageRestrictions: "GOV_REGIONS_ONLY",
-			expectedError:           "",
-		},
-		"One region not supported": {
-			spec: &akov2.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
-					{
-						RegionConfigs: []*akov2.AdvancedRegionConfig{
-							{RegionName: "us-gov-west-1"},
-							{RegionName: "us-east-1"},
-						},
-					},
-				},
-			},
-			regionUsageRestrictions: "COMMERCIAL_FEDRAMP_REGIONS_ONLY",
-			expectedError:           "deployment in atlas for government support a restricted set of regions: us-gov-west-1 is not part of AWS FedRAMP regions",
-		},
-		"All regions not supported": {
-			spec: &akov2.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
-					{
-						RegionConfigs: []*akov2.AdvancedRegionConfig{
-							{RegionName: "us-east-1"},
-							{RegionName: "eu-west-1"},
-						},
-					},
-				},
-			},
-			regionUsageRestrictions: "GOV_REGIONS_ONLY",
-			expectedError:           "deployment in atlas for government support a restricted set of regions: us-east-1 is not part of AWS for government regions",
-		},
-		"No regions specified": {
-			spec: &akov2.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
-					{
-						RegionConfigs: []*akov2.AdvancedRegionConfig{},
-					},
-				},
-			},
-			regionUsageRestrictions: "GOV_REGIONS_ONLY",
-			expectedError:           "",
-		},
-		"No replication specs specified": {
-			spec: &akov2.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{},
-			},
-			regionUsageRestrictions: "GOV_REGIONS_ONLY",
-			expectedError:           "",
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := deploymentForGov(tt.spec, tt.regionUsageRestrictions)
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
 			} else {

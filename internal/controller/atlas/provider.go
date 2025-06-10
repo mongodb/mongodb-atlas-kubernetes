@@ -105,7 +105,9 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 		*akov2.AtlasSearchIndexConfig,
 		*akov2.AtlasBackupCompliancePolicy,
 		*akov2.AtlasFederatedAuth,
-		*akov2.AtlasPrivateEndpoint:
+		*akov2.AtlasPrivateEndpoint,
+		*akov2.AtlasNetworkContainer,
+		*akov2.AtlasNetworkPeering:
 		return true
 	case *akov2.AtlasDataFederation,
 		*akov2.AtlasStreamInstance,

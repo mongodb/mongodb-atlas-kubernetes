@@ -45,7 +45,7 @@ func deploymentSpecMask(atlasDeployment *akov2.AtlasDeployment) int {
 	return mask
 }
 
-func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment, isGov bool, regionUsageRestrictions string) error {
+func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment) error {
 	var err error
 	var tagsSpec []*akov2.TagSpec
 	switch deploymentSpecMask(atlasDeployment) {
@@ -53,7 +53,7 @@ func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment, isGov bool, regionU
 		return errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec or spec.flexSpec to be present, but none were")
 	case DeploymentSet:
 		tagsSpec = atlasDeployment.Spec.DeploymentSpec.Tags
-		err = regularDeployment(atlasDeployment.Spec.DeploymentSpec, isGov, regionUsageRestrictions)
+		err = regularDeployment(atlasDeployment.Spec.DeploymentSpec)
 	case ServerlessSet:
 		tagsSpec = atlasDeployment.Spec.ServerlessSpec.Tags
 		err = serverlessDeployment(atlasDeployment.Spec.ServerlessSpec)
@@ -75,13 +75,7 @@ func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment, isGov bool, regionU
 	return nil
 }
 
-func regularDeployment(spec *akov2.AdvancedDeploymentSpec, isGov bool, regionUsageRestrictions string) error {
-	if isGov {
-		if err := deploymentForGov(spec, regionUsageRestrictions); err != nil {
-			return err
-		}
-	}
-
+func regularDeployment(spec *akov2.AdvancedDeploymentSpec) error {
 	var autoscaling akov2.AdvancedAutoScalingSpec
 	var instanceSize string
 	for _, replicaSetSpec := range spec.ReplicationSpecs {
@@ -249,19 +243,6 @@ func advancedInstanceSizeInRange(currentInstanceSize, minInstanceSize, maxInstan
 
 	if CompareInstanceSizes(currentSize, maxSize) == 1 {
 		return errors.New("the instance size is above the maximum autoscaling configuration")
-	}
-
-	return nil
-}
-
-func deploymentForGov(spec *akov2.AdvancedDeploymentSpec, regionUsageRestrictions string) error {
-	for _, replication := range spec.ReplicationSpecs {
-		for _, region := range replication.RegionConfigs {
-			regionErr := validCloudGovRegion(regionUsageRestrictions, region.RegionName)
-			if regionErr != nil {
-				return fmt.Errorf("deployment in atlas for government support a restricted set of regions: %w", regionErr)
-			}
-		}
 	}
 
 	return nil
