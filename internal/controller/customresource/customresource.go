@@ -54,7 +54,7 @@ func PrepareResource(ctx context.Context, client client.Client, request reconcil
 		// Error reading the object - requeue the request. Note, that we don't intend to update resource status
 		// as most of all it will fail as well.
 		log.Errorf("Failed to query object %s: %s", request.NamespacedName, err)
-		return workflow.TerminateSilently(err)
+		return workflow.Terminate(workflow.Internal, err)
 	}
 
 	return workflow.OK()
@@ -70,11 +70,11 @@ func ValidateResourceVersion(ctx *workflow.Context, resource akov2.AtlasCustomRe
 	}
 
 	if !valid {
+		e := fmt.Errorf("version of the resource '%s' is higher than the operator version '%s'. ",
+			resource.GetName(),
+			version.Version)
 		log.Debugf("resource '%s' version mismatch", resource.GetName())
-		result := workflow.Terminate(workflow.AtlasResourceVersionMismatch,
-			fmt.Errorf("version of the resource '%s' is higher than the operator version '%s'. ",
-				resource.GetName(),
-				version.Version))
+		result := workflow.Terminate(workflow.AtlasResourceVersionMismatch, e)
 		ctx.SetConditionFromResult(api.ResourceVersionStatus, result)
 		return result
 	}

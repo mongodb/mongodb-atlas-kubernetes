@@ -94,7 +94,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	atlasProject := &akov2.AtlasProject{}
 	result := customresource.PrepareResource(ctx, r.Client, req, atlasProject, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), fmt.Errorf("failed to prepare AtlasProject resource: %s", result.GetMessage())
+		return result.ReconcileResult(), fmt.Errorf("failed to prepare AtlasProject resource")
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(atlasProject) {

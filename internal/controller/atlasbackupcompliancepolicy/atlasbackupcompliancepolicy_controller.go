@@ -67,7 +67,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, r
 	bcp := &akov2.AtlasBackupCompliancePolicy{}
 	result := customresource.PrepareResource(ctx, r.Client, req, bcp, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult(), fmt.Errorf("failed to prepare AtlasBackupCompliance resource: %s", result.GetMessage())
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(bcp) {
@@ -80,17 +80,17 @@ func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, r
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, bcp, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid), nil
+		return r.invalidate(isValid), fmt.Errorf("failed to validate AtlasBackupCompliance resource: %s", isValid.GetMessage())
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(bcp) {
-		return r.unsupport(workflowCtx), nil
+		return r.unsupport(workflowCtx), fmt.Errorf("AtlasBackupCompliance resource %s is not supported", bcp.Name)
 	}
 
-	return r.ensureAtlasBackupCompliancePolicy(workflowCtx, bcp), nil
+	return r.ensureAtlasBackupCompliancePolicy(workflowCtx, bcp)
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolicy(workflowCtx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolicy(workflowCtx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	projects := &akov2.AtlasProjectList{}
 	listOpts := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
@@ -191,11 +191,11 @@ func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context)
 	return unsupported.ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ReadyType, terminated)
-	return terminated.ReconcileResult()
+	return terminated.ReconcileResult(), err
 }
 
 func (r *AtlasBackupCompliancePolicyReconciler) ready(ctx *workflow.Context) ctrl.Result {
@@ -204,26 +204,26 @@ func (r *AtlasBackupCompliancePolicyReconciler) ready(ctx *workflow.Context) ctr
 	return result.ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) lock(ctx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) lock(ctx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	if customresource.HaveFinalizer(bcp, customresource.FinalizerLabel) {
-		return r.ready(ctx)
+		return r.ready(ctx), nil
 	}
 
 	if err := customresource.ManageFinalizer(ctx.Context, r.Client, bcp, customresource.SetFinalizer); err != nil {
 		return r.terminate(ctx, workflow.AtlasFinalizerNotSet, err)
 	}
 
-	return r.ready(ctx)
+	return r.ready(ctx), nil
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) release(ctx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) release(ctx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	if !customresource.HaveFinalizer(bcp, customresource.FinalizerLabel) {
-		return r.ready(ctx)
+		return r.ready(ctx), nil
 	}
 
 	if err := customresource.ManageFinalizer(ctx.Context, r.Client, bcp, customresource.UnsetFinalizer); err != nil {
 		return r.terminate(ctx, workflow.AtlasFinalizerNotRemoved, err)
 	}
 
-	return r.ready(ctx)
+	return r.ready(ctx), nil
 }

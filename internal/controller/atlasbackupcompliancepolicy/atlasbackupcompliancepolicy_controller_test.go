@@ -50,8 +50,9 @@ func TestReconcile(t *testing.T) {
 		wantFinalizers       []string
 	}{
 		{
-			name:        "should terminate silently when resource is not found",
+			name:        "should not terminate silently when resource is not found",
 			isSupported: true,
+			wantErr:     "failed to prepare AtlasBackupCompliance resource: ",
 		},
 		{
 			name: "should skip reconciliation when annotation is set",
@@ -81,6 +82,7 @@ func TestReconcile(t *testing.T) {
 					},
 				},
 			},
+			wantErr: "failed to validate AtlasBackupCompliance resource: blah is not a valid semver version for label mongodb.com/atlas-resource-version",
 			wantResult: ctrl.Result{
 				RequeueAfter: workflow.DefaultRetry,
 			},
@@ -99,7 +101,8 @@ func TestReconcile(t *testing.T) {
 			},
 		},
 		{
-			name: "should transition to error state when resource is unsupported",
+			name:    "should transition to error state when resource is unsupported",
+			wantErr: "AtlasBackupCompliance resource bcp is not supported",
 			objects: []client.Object{
 				&akov2.AtlasBackupCompliancePolicy{
 					ObjectMeta: metav1.ObjectMeta{
