@@ -94,7 +94,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	atlasDeployment := &akov2.AtlasDeployment{}
 	result := customresource.PrepareResource(ctx, r.Client, req, atlasDeployment, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult(), fmt.Errorf("failed to prepare atlas deployment: %v", result.GetMessage())
 	}
 
 	if shouldSkip := customresource.ReconciliationShouldBeSkipped(atlasDeployment); shouldSkip {
@@ -103,8 +103,9 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			err := r.removeDeletionFinalizer(ctx, atlasDeployment)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
-				log.Errorw("failed to remove finalizer", "error", err)
-				return result.ReconcileResult(), nil
+				e := fmt.Errorf("failed to remove finalizer after deletion: %w", err)
+				log.Error(e.Error())
+				return result.ReconcileResult(), e
 			}
 		}
 		return workflow.OK().ReconcileResult(), nil

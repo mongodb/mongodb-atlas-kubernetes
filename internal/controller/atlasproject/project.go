@@ -95,7 +95,7 @@ func (r *AtlasProjectReconciler) terminate(ctx *workflow.Context, errorCondition
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ProjectReadyType, terminated)
 
-	return terminated.ReconcileResult(), nil
+	return terminated.ReconcileResult(), err
 }
 
 func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, services *AtlasProjectServices, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {

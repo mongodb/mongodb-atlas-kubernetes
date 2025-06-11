@@ -94,7 +94,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	atlasProject := &akov2.AtlasProject{}
 	result := customresource.PrepareResource(ctx, r.Client, req, atlasProject, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult(), fmt.Errorf("failed to prepare AtlasProject resource: %s", result.GetMessage())
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(atlasProject) {
@@ -103,15 +103,17 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			err := customresource.ManageFinalizer(ctx, r.Client, atlasProject, customresource.UnsetFinalizer)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
-				log.Errorw("Failed to remove finalizer", "error", err)
-				return result.ReconcileResult(), nil
+				e := fmt.Errorf("failed to remove finalizer from AtlasProject: %w", err)
+				log.Error(e.Error())
+				return result.ReconcileResult(), e
 			}
 		}
 
 		if err := r.clearLastAppliedMigratedResources(ctx, atlasProject); err != nil {
 			result = workflow.Terminate(workflow.Internal, err)
-			log.Errorw("Failed to clear migrated independent resources", "error", err)
-			return result.ReconcileResult(), nil
+			e := fmt.Errorf("failed to remove last applied migrated resources from AtlasProject: %w", err)
+			log.Error(e.Error())
+			return result.ReconcileResult(), e
 		}
 
 		return workflow.OK().ReconcileResult(), nil
@@ -128,14 +130,16 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, atlasProject, r.Log)
 	if !resourceVersionIsValid.IsOk() {
-		r.Log.Debugf("project validation result: %v", resourceVersionIsValid)
-		return resourceVersionIsValid.ReconcileResult(), nil
+		e := fmt.Errorf("failed to validate AtlasProject resource version: %s", resourceVersionIsValid.GetMessage())
+		r.Log.Error(e.Error())
+		return resourceVersionIsValid.ReconcileResult(), e
 	}
 
 	if err := validate.Project(atlasProject, r.AtlasProvider.IsCloudGov()); err != nil {
 		result := workflow.Terminate(workflow.Internal, err)
 		setCondition(workflowCtx, api.ValidationSucceeded, result)
-		return result.ReconcileResult(), nil
+		e := fmt.Errorf("failed to validate AtlasProject resource: %w", err)
+		return result.ReconcileResult(), e
 	}
 	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
@@ -143,21 +147,24 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasProject is not supported by Atlas for government")).
 			WithoutRetry()
 		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+		e := fmt.Errorf("the AtlasProject %s is not supported by Atlas for government", atlasProject.Name)
+		return result.ReconcileResult(), e
 	}
 
 	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, atlasProject.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+		e := fmt.Errorf("failed to get connection configuration for AtlasProject resource: %w", err)
+		return result.ReconcileResult(), e
 	}
 
 	atlasSdkClient, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+		e := fmt.Errorf("failed to instantiate Atlas SDK client set for AtlasProject resource: %w", err)
+		return result.ReconcileResult(), e
 	}
 
 	workflowCtx.SdkClientSet = atlasSdkClient
@@ -171,7 +178,8 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+		e := fmt.Errorf("failed to instantiate legacy Atlas client for AtlasProject resource: %w", err)
+		return result.ReconcileResult(), e
 	}
 	workflowCtx.OrgID = connectionConfig.OrgID
 	workflowCtx.Client = atlasClient
