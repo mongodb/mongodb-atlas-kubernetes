@@ -406,8 +406,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 						StateName:     pointer.MakePtr("IDLE"),
 						ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 							{
-								ZoneName:  pointer.MakePtr("Zone 1"),
-								NumShards: pointer.MakePtr(1),
+								ZoneName: pointer.MakePtr("Zone 1"),
 								RegionConfigs: &[]admin.CloudRegionConfig20240805{
 									{
 										ProviderName: pointer.MakePtr("AWS"),
@@ -948,8 +947,7 @@ func TestDeletionReconciliation(t *testing.T) {
 						StateName:     pointer.MakePtr("IDLE"),
 						ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 							{
-								ZoneName:  pointer.MakePtr("Zone 1"),
-								NumShards: pointer.MakePtr(1),
+								ZoneName: pointer.MakePtr("Zone 1"),
 								RegionConfigs: &[]admin.CloudRegionConfig20240805{
 									{
 										ProviderName: pointer.MakePtr("AWS"),
