@@ -331,7 +331,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doDeploymentStatusChecks()
 
 				singleNumShard := func(deployment *admin.ClusterDescription20240805) {
-					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(1))
+					Expect(len(deployment.GetReplicationSpecs())).To(Equal(1))
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
 			})
@@ -343,7 +343,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doDeploymentStatusChecks()
 
 				singleNumShard := func(deployment *admin.ClusterDescription20240805) {
-					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(1))
+					Expect(len(deployment.GetReplicationSpecs())).To(Equal(1))
 				}
 				// ReplicationSpecs has the same defaults but the number of shards has changed
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
@@ -357,7 +357,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doDeploymentStatusChecks()
 
 				twoNumShard := func(deployment *admin.ClusterDescription20240805) {
-					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(numShards))
+					Expect(len(deployment.GetReplicationSpecs())).To(Equal(numShards))
 				}
 				// ReplicationSpecs has the same defaults but the number of shards has changed
 				checkAtlasState(replicationSpecsCheck, twoNumShard)
@@ -535,7 +535,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				Expect(c.GetReplicationSpecs()[0].GetId()).NotTo(BeEmpty())
 
 				// Apart from 'ID' all other fields are equal to the ones sent by the Operator
-				Expect(c.GetReplicationSpecs()[0].GetNumShards()).To(Equal(expectedReplicationSpecs[0].NumShards))
+				Expect(len(c.GetReplicationSpecs())).To(Equal(expectedReplicationSpecs[0].NumShards))
 				Expect(c.GetReplicationSpecs()[0].GetZoneName()).To(Equal(expectedReplicationSpecs[0].ZoneName))
 
 				less := func(a, b *admin.CloudRegionConfig20240805) bool { return a.GetRegionName() < b.GetRegionName() }
@@ -669,7 +669,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		It("Should succeed (AWS) with enabled autoscaling for Disk size", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr[int](20)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr(20)
 			createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &akov2.AdvancedAutoScalingSpec{
 				DiskGB: &akov2.DiskGB{
 					Enabled: pointer.MakePtr(true),
@@ -694,7 +694,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					// Expect(*c.DiskSizeGB).To(BeEquivalentTo(prevDiskSize)) // todo: find out if this should still work for advanced clusters
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
-					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(pointer.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeAssignableToTypeOf(pointer.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
 				})
 			})
 		})
@@ -763,10 +763,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				})
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.ClusterDescription20240805) {
-					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
+					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
-					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(pointer.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeAssignableToTypeOf(pointer.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
 				})
 			})
 
@@ -1557,7 +1557,7 @@ func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentN
 	g.Expect(atlasCluster.GetBackupEnabled()).Should(BeTrue())
 
 	for i := range copySettings {
-		copySettings[i].SetReplicationSpecId(atlasCluster.GetReplicationSpecs()[0].GetId())
+		copySettings[i].SetZoneId(atlasCluster.GetReplicationSpecs()[0].GetId())
 	}
 
 	atlasBSchedule, _, err := atlasClient.CloudBackupsApi.
@@ -1693,18 +1693,28 @@ func mergedAdvancedDeployment(
 			for _, regionConfig := range replicationSpec.GetRegionConfigs() {
 				if regionConfig.ElectableSpecs != nil &&
 					regionConfig.ElectableSpecs.GetInstanceSize() == atlasdeployment.FreeTier {
-					atlasDeploymentAsAtlas.DiskSizeGB = nil
 				}
 			}
 		}
 	}
 
-	var value *int
-	if atlasDeploymentAsAtlas.DiskSizeGB != nil && *atlasDeploymentAsAtlas.DiskSizeGB >= 1 {
-		value = pointer.MakePtr(int(*atlasDeploymentAsAtlas.DiskSizeGB))
+	var value float64
+
+	if specs := atlasDeploymentAsAtlas.GetReplicationSpecs(); len(specs) > 0 {
+		if configs := specs[0].GetRegionConfigs(); len(configs) > 0 {
+			if e, ok := configs[0].GetElectableSpecsOk(); ok {
+				value = e.GetDiskSizeGB()
+			} else if r, ok := configs[0].GetReadOnlySpecsOk(); ok {
+				value = r.GetDiskSizeGB()
+			} else if a, ok := configs[0].GetAnalyticsSpecsOk(); ok {
+				value = a.GetDiskSizeGB()
+			}
+		}
 	}
-	atlasDeployment.DiskSizeGB = value
-	atlasDeploymentAsAtlas.DiskSizeGB = nil
+	if value >= 1 {
+		atlasDeployment.DiskSizeGB = pointer.MakePtr(int(value))
+	}
+
 	if err = compat.JSONCopy(&atlasDeployment, atlasDeploymentAsAtlas); err != nil {
 		return mergedDeployment, atlasDeployment, err
 	}

@@ -96,7 +96,7 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 		mockClustersAPI.EXPECT().ListClusters(context.Background(), mock.Anything).Return(
 			admin.ListClustersApiRequest{ApiService: mockClustersAPI})
 		mockClustersAPI.EXPECT().ListClustersExecute(admin.ListClustersApiRequest{ApiService: mockClustersAPI}).Return(
-			&admin.PaginatedAdvancedClusterDescription{
+			&admin.PaginatedClusterDescription20240805{
 				Results: &[]admin.ClusterDescription20240805{
 					{
 						Name:              pointer.MakePtr("testCluster"),
@@ -794,9 +794,7 @@ func TestClusterWithProcessArgs(t *testing.T) {
 				clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
 					Return(
 						&admin.ClusterDescriptionProcessArgs20240805{
-							DefaultReadConcern:               pointer.MakePtr("available"),
 							DefaultWriteConcern:              pointer.MakePtr("available"),
-							FailIndexKeyTooLong:              pointer.MakePtr(true),
 							JavascriptEnabled:                pointer.MakePtr(false),
 							MinimumEnabledTlsProtocol:        pointer.MakePtr("TLS1_1"),
 							NoTableScan:                      pointer.MakePtr(true),
@@ -816,10 +814,8 @@ func TestClusterWithProcessArgs(t *testing.T) {
 			},
 			result: &Cluster{
 				ProcessArgs: &akov2.ProcessArgs{
-					DefaultReadConcern:               "available",
 					DefaultWriteConcern:              "available",
 					MinimumEnabledTLSProtocol:        "TLS1_1",
-					FailIndexKeyTooLong:              pointer.MakePtr(true),
 					JavascriptEnabled:                pointer.MakePtr(true),
 					NoTableScan:                      pointer.MakePtr(false),
 					OplogSizeMB:                      pointer.MakePtr(int64(5)),
@@ -926,9 +922,7 @@ func TestUpdateProcessArgs(t *testing.T) {
 				clusterAPI.EXPECT().UpdateClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.UpdateClusterAdvancedConfigurationApiRequest")).
 					Return(
 						&admin.ClusterDescriptionProcessArgs20240805{
-							DefaultReadConcern:               pointer.MakePtr("available"),
 							DefaultWriteConcern:              pointer.MakePtr("available"),
-							FailIndexKeyTooLong:              pointer.MakePtr(true),
 							JavascriptEnabled:                pointer.MakePtr(true),
 							MinimumEnabledTlsProtocol:        pointer.MakePtr("TLS1_2"),
 							NoTableScan:                      pointer.MakePtr(false),
@@ -948,10 +942,8 @@ func TestUpdateProcessArgs(t *testing.T) {
 			},
 			result: &Cluster{
 				ProcessArgs: &akov2.ProcessArgs{
-					DefaultReadConcern:               "available",
 					DefaultWriteConcern:              "available",
 					MinimumEnabledTLSProtocol:        "TLS1_2",
-					FailIndexKeyTooLong:              pointer.MakePtr(true),
 					JavascriptEnabled:                pointer.MakePtr(true),
 					NoTableScan:                      pointer.MakePtr(false),
 					OplogSizeMB:                      pointer.MakePtr(int64(5)),
@@ -980,7 +972,7 @@ func TestUpdateProcessArgs(t *testing.T) {
 
 func atlasAPIError(code string) *admin.GenericOpenAPIError {
 	err := admin.GenericOpenAPIError{}
-	err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(code)})
+	err.SetModel(admin.ApiError{ErrorCode: code})
 
 	return &err
 }
@@ -1417,7 +1409,6 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 		GroupId:                      pointer.MakePtr("project-id"),
 		Name:                         pointer.MakePtr("cluster0"),
 		ClusterType:                  pointer.MakePtr("GEOSHARDED"),
-		DiskSizeGB:                   pointer.MakePtr(40.0),
 		BackupEnabled:                pointer.MakePtr(true),
 		PitEnabled:                   pointer.MakePtr(true),
 		Paused:                       pointer.MakePtr(false),
@@ -1452,9 +1443,8 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 		},
 		ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 			{
-				Id:        pointer.MakePtr("replication-id-2"),
-				ZoneName:  pointer.MakePtr("Zone 2"),
-				NumShards: pointer.MakePtr(1),
+				Id:       pointer.MakePtr("replication-id-2"),
+				ZoneName: pointer.MakePtr("Zone 2"),
 				RegionConfigs: &[]admin.CloudRegionConfig20240805{
 					{
 						ProviderName: pointer.MakePtr("AWS"),
@@ -1465,18 +1455,21 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 							NodeCount:     pointer.MakePtr(2),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						AnalyticsSpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(1),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						AutoScaling: &admin.AdvancedAutoScalingSettings{
 							DiskGB: &admin.DiskGBAutoScaling{
@@ -1499,18 +1492,21 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						AnalyticsSpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(1),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						AutoScaling: &admin.AdvancedAutoScalingSettings{
 							DiskGB: &admin.DiskGBAutoScaling{
@@ -1527,9 +1523,8 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 				},
 			},
 			{
-				Id:        pointer.MakePtr("replication-id-1"),
-				ZoneName:  pointer.MakePtr("Zone 1"),
-				NumShards: pointer.MakePtr(1),
+				Id:       pointer.MakePtr("replication-id-1"),
+				ZoneName: pointer.MakePtr("Zone 1"),
 				RegionConfigs: &[]admin.CloudRegionConfig20240805{
 					{
 						ProviderName: pointer.MakePtr("AWS"),
@@ -1540,18 +1535,21 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						AnalyticsSpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(1),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						AutoScaling: &admin.AdvancedAutoScalingSettings{
 							DiskGB: &admin.DiskGBAutoScaling{
@@ -1574,18 +1572,21 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(3),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						AnalyticsSpecs: &admin.DedicatedHardwareSpec20240805{
 							InstanceSize:  pointer.MakePtr("M30"),
 							NodeCount:     pointer.MakePtr(1),
 							EbsVolumeType: pointer.MakePtr("STANDARD"),
 							DiskIOPS:      pointer.MakePtr(3000),
+							DiskSizeGB:    pointer.MakePtr(40.0),
 						},
 						AutoScaling: &admin.AdvancedAutoScalingSettings{
 							DiskGB: &admin.DiskGBAutoScaling{

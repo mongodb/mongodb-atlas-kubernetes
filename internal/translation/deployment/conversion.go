@@ -622,7 +622,6 @@ func replicaSetFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) []sta
 }
 
 func diskSizeFromAtlas(cluster *admin.ClusterDescription20240805) *int {
-
 	var value float64
 
 	if specs := cluster.GetReplicationSpecs(); len(specs) > 0 {
@@ -777,14 +776,6 @@ func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs20240805) *
 	return &args
 }
 
-func diskSizeToAtlas(value *int) *float64 {
-	if value != nil {
-		return pointer.MakePtr(float64(*value))
-	}
-
-	return nil
-}
-
 func biConnectToAtlas(conn *akov2.BiConnectorSpec) *admin.BiConnector {
 	if conn == nil {
 		return nil
@@ -932,7 +923,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, d
 		)
 	}
 
-	for len(specs) != replicationSpecs[0].NumShards {
+	for range replicationSpecs[0].NumShards {
 		specs = append(specs, specs[0])
 	}
 
