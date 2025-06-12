@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   creationTimestamp: null
   labels:
     app.kubernetes.io/component: controller
@@ -600,7 +600,7 @@ spec:
                         value:
                           maxLength: 255
                           minLength: 1
-                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
                           type: string
                       required:
                       - key
@@ -680,7 +680,7 @@ spec:
                         value:
                           maxLength: 255
                           minLength: 1
-                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
                           type: string
                       required:
                       - key
@@ -899,7 +899,7 @@ spec:
                         value:
                           maxLength: 255
                           minLength: 1
-                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
                           type: string
                       required:
                       - key
