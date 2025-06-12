@@ -630,3 +630,13 @@ install-ako-helm:
 	--set subobjectDeletionProtection=false \
 	--namespace=$(HELM_AKO_NAMESPACE) --create-namespace
 	kubectl get crds
+
+.PHONY: license-headers
+license-headers:
+	addlicense \
+    -l apache \
+    -c "MongoDB Inc" \
+    -ignore "**/*.md" \
+    -ignore "**/*.yaml" \
+    -ignore "**/*.yml" \
+    -ignore "**/*Dockerfile" .

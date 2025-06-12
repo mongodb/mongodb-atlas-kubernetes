@@ -25,6 +25,7 @@
     "awscli2@latest",
     "go-mockery@latest",
     "docker-sbom@latest",
-    "openshift@latest"
+    "openshift@latest",
+    "addlicense@latest"
   ]
 }
