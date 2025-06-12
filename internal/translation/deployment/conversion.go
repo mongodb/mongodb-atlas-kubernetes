@@ -547,7 +547,7 @@ func clusterFromAtlas(clusterDesc *admin.ClusterDescription20240805) *Cluster {
 			MongoDBMajorVersion:          clusterDesc.GetMongoDBMajorVersion(),
 			MongoDBVersion:               clusterDesc.GetMongoDBVersion(),
 			VersionReleaseSystem:         clusterDesc.GetVersionReleaseSystem(),
-			DiskSizeGB:                   diskSizeFromAtlas(clusterDesc.GetDiskSizeGB()),
+			DiskSizeGB:                   diskSizeFromAtlas(clusterDesc),
 			BackupEnabled:                clusterDesc.BackupEnabled,
 			BiConnector:                  biConnectFromAtlas(clusterDesc.BiConnector),
 			EncryptionAtRestProvider:     clusterDesc.GetEncryptionAtRestProvider(),
@@ -575,14 +575,13 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
 		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),
 		VersionReleaseSystem:         pointer.MakePtrOrNil(cluster.VersionReleaseSystem),
-		DiskSizeGB:                   diskSizeToAtlas(cluster.DiskSizeGB),
 		BackupEnabled:                cluster.BackupEnabled,
 		BiConnector:                  biConnectToAtlas(cluster.BiConnector),
 		EncryptionAtRestProvider:     pointer.MakePtrOrNil(cluster.EncryptionAtRestProvider),
 		Labels:                       labelsToAtlas(cluster.Labels),
 		Paused:                       cluster.Paused,
 		PitEnabled:                   cluster.PitEnabled,
-		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs),
+		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.DiskSizeGB),
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
@@ -594,14 +593,13 @@ func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
 		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),
 		VersionReleaseSystem:         pointer.MakePtrOrNil(cluster.VersionReleaseSystem),
-		DiskSizeGB:                   diskSizeToAtlas(cluster.DiskSizeGB),
 		BackupEnabled:                cluster.BackupEnabled,
 		BiConnector:                  biConnectToAtlas(cluster.BiConnector),
 		EncryptionAtRestProvider:     pointer.MakePtrOrNil(cluster.EncryptionAtRestProvider),
 		Labels:                       labelsToAtlas(cluster.Labels),
 		Paused:                       cluster.Paused,
 		PitEnabled:                   cluster.PitEnabled,
-		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs),
+		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.DiskSizeGB),
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
@@ -623,7 +621,22 @@ func replicaSetFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) []sta
 	return replicaSet
 }
 
-func diskSizeFromAtlas(value float64) *int {
+func diskSizeFromAtlas(cluster *admin.ClusterDescription20240805) *int {
+
+	var value float64
+
+	if specs := cluster.GetReplicationSpecs(); len(specs) > 0 {
+		if configs := specs[0].GetRegionConfigs(); len(configs) > 0 {
+			if e, ok := configs[0].GetElectableSpecsOk(); ok {
+				value = e.GetDiskSizeGB()
+			} else if r, ok := configs[0].GetReadOnlySpecsOk(); ok {
+				value = r.GetDiskSizeGB()
+			} else if a, ok := configs[0].GetAnalyticsSpecsOk(); ok {
+				value = a.GetDiskSizeGB()
+			}
+		}
+	}
+
 	if value >= 1 {
 		return pointer.MakePtr(int(value))
 	}
@@ -804,9 +817,14 @@ func labelsToAtlas(labels []common.LabelSpec) *[]admin.ComponentLabel {
 	return &cLabels
 }
 
-func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *[]admin.ReplicationSpec20240805 {
+func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, diskSize *int) *[]admin.ReplicationSpec20240805 {
 	if len(replicationSpecs) == 0 {
 		return nil
+	}
+
+	var diskSizeGB *float64
+	if diskSize != nil {
+		diskSizeGB = pointer.MakePtr(float64(*diskSize))
 	}
 
 	hSpecOrDefault := func(spec *akov2.Specs) *admin.HardwareSpec20240805 {
@@ -824,6 +842,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 			NodeCount:     spec.NodeCount,
 			EbsVolumeType: pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD"),
 			DiskIOPS:      diskIOPs,
+			DiskSizeGB:    diskSizeGB,
 		}
 	}
 	dHSpecOrDefault := func(spec *akov2.Specs) *admin.DedicatedHardwareSpec20240805 {
@@ -841,6 +860,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec) *
 			NodeCount:     spec.NodeCount,
 			EbsVolumeType: pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD"),
 			DiskIOPS:      diskIOPs,
+			DiskSizeGB:    diskSizeGB,
 		}
 	}
 	autoScalingOrDefault := func(spec *akov2.AdvancedAutoScalingSpec) *admin.AdvancedAutoScalingSettings {
