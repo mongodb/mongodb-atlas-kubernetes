@@ -19,6 +19,6 @@ maintainers:
     email: support@mongodb.com
 dependencies:
   - name: mongodb-atlas-operator-crds
-    version: "2.8.1"
+    version: "2.8.2"
     repository:  "file://../../helm-charts/atlas-operator-crds"
     condition: mongodb-atlas-operator-crds.enabled
