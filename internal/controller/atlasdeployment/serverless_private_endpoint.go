@@ -198,7 +198,7 @@ func updateServerLessPrivateEndpoint(service *workflow.Context, projectID, deplo
 }
 
 func deleteServerLessPrivateEndpoint(service *workflow.Context, projectID, deploymentName, endpointID string) error {
-	_, _, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
+	_, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
 		DeleteServerlessPrivateEndpoint(service.Context, projectID, deploymentName, endpointID).
 		Execute()
 
