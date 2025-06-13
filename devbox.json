@@ -24,6 +24,7 @@
     "setup-envtest@0.18.2",
     "awscli2@latest",
     "go-mockery@latest",
-    "docker-sbom@latest"
+    "docker-sbom@latest",
+    "oct@latest"
   ]
 }

@@ -48,12 +48,6 @@ jobs:
 
           echo credentials=$(realpath ~/gcp_sa_cred.json) >> $GITHUB_OUTPUT
 
-      - name: Download tools for openshift test cleaner
-        run: |
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
-          tar xvf openshift.tar.gz
-          chmod +x oc && sudo mv oc /usr/local/bin/oc
-
       - name: Run cleaner
         env:
           MCLI_OPS_MANAGER_URL: 'https://cloud-qa.mongodb.com/'
