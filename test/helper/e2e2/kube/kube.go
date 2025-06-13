@@ -23,6 +23,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -60,13 +61,10 @@ func NewK8sTest(ctx context.Context, crds ...*apiextensionsv1.CustomResourceDefi
 // It requires a running Kubernetes cluster and a local configuration to it.
 // It supports core Kubernetes types, production and experimental CRDs.
 func TestKubeClient() (client.Client, error) {
-	testScheme, err := newTestScheme(
-		corev1.AddToScheme,
-		apiextensionsv1.AddToScheme,
-		akov2.AddToScheme)
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup Kubernetes test env scheme: %w", err)
-	}
+	testScheme := runtime.NewScheme()
+	utilruntime.Must(corev1.AddToScheme(testScheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(testScheme))
+	utilruntime.Must(akov2.AddToScheme(testScheme))
 	return getKubeClient(testScheme)
 }
 
@@ -74,16 +72,6 @@ func WithRenamedNamespace(obj client.Object, ns string) client.Object {
 	renamed := obj.DeepCopyObject().(client.Object)
 	renamed.SetNamespace(ns)
 	return renamed
-}
-
-func newTestScheme(addToSchemeFunctions ...func(*runtime.Scheme) error) (*runtime.Scheme, error) {
-	testScheme := runtime.NewScheme()
-	for _, addToSchemeFn := range addToSchemeFunctions {
-		if err := addToSchemeFn(testScheme); err != nil {
-			return nil, fmt.Errorf("failed to add to testScheme: %w", err)
-		}
-	}
-	return testScheme, nil
 }
 
 func getKubeClient(scheme *runtime.Scheme) (client.Client, error) {

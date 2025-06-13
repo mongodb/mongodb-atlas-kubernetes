@@ -30,6 +30,7 @@ import (
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/scale/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -118,28 +119,15 @@ func ParseObjects(ymls io.Reader) ([]client.Object, error) {
 
 func DecodeObject(content []byte) (client.Object, error) {
 	sch := runtime.NewScheme()
+	utilruntime.Must(scheme.AddToScheme(sch))
+	utilruntime.Must(apiextensions.AddToScheme(sch))
+	utilruntime.Must(apiextensionsv1.AddToScheme(sch))
+	utilruntime.Must(apiextensionsv1.RegisterConversions(sch))
+	utilruntime.Must(apiextensionsv1beta1.AddToScheme(sch))
+	utilruntime.Must(apiextensionsv1beta1.RegisterConversions(sch))
+	utilruntime.Must(corev1.AddToScheme(sch))
 
-	for _, addOrRegisterFn := range []func(*runtime.Scheme) error{
-		scheme.AddToScheme,
-		apiextensions.AddToScheme,
-		apiextensionsv1.AddToScheme,
-		apiextensionsv1.RegisterConversions,
-		apiextensionsv1beta1.AddToScheme,
-		apiextensionsv1beta1.RegisterConversions,
-		corev1.AddToScheme,
-	} {
-		if err := addOrRegisterFn(sch); err != nil {
-			return nil, fmt.Errorf("failed to add API extension scheme or register conversion: %w", err)
-		}
-	}
-
-	for _, addToSchemeFn := range []func(*runtime.Scheme) error{
-		akov2.AddToScheme,
-	} {
-		if err := addToSchemeFn(sch); err != nil {
-			return nil, fmt.Errorf("failed to add Operator scheme: %w", err)
-		}
-	}
+	utilruntime.Must(akov2.AddToScheme(sch))
 
 	decode := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode
 

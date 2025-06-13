@@ -88,7 +88,7 @@ type OperatorProcess struct {
 	cmdLine []string
 }
 
-func DefaulltOperatorEnv(namespace string) []string {
+func DefaultOperatorEnv(namespace string) []string {
 	return append(
 		os.Environ(),
 		fmt.Sprintf(`WATCH_NAMESPACE=%s`, namespace),
