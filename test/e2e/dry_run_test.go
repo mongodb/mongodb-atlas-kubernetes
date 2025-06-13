@@ -206,7 +206,7 @@ func StartDryRunUntil(ctx context.Context, kubeClient client.Client, namespace s
 	waitForEvents := dryRunEventsFunc(ctx, kubeClient, 5*time.Minute, predicate)
 
 	By("starting the operator in dry-run mode")
-	o := operator.NewOperator(operator.DefaulltOperatorEnv(namespace), GinkgoWriter, GinkgoWriter,
+	o := operator.NewOperator(operator.DefaultOperatorEnv(namespace), GinkgoWriter, GinkgoWriter,
 		"--log-level=debug",
 		"--dry-run=true",
 		"--global-api-secret-name=mongodb-atlas-operator-api-key",

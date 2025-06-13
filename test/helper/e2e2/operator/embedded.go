@@ -54,7 +54,7 @@ func (e *EmbeddedOperator) Start(t testingT) {
 	e.wg.Add(1)
 	go func() {
 		defer e.wg.Done()
-		fs := flag.NewFlagSet("direct-ako-run", flag.ContinueOnError)
+		fs := flag.NewFlagSet("", flag.ContinueOnError)
 		e.runnerFunc(e.ctx, fs, e.args)
 	}()
 }
