@@ -17,10 +17,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
 )
+
+type labelSet struct {
+	prLabels   string
+	intLabels  string
+	e2eLabels  string
+	e2e2Labels string
+}
 
 func jsonDump(data interface{}) string {
 	r, _ := json.Marshal(data)
@@ -78,31 +86,34 @@ func FilterLabelsContain(labels []string, substr string) []string {
 	return filtered
 }
 
-func main() {
-	envPRLabels := os.Getenv("PR_LABELS")
-	envIntLabels := os.Getenv("INT_LABELS")
-	envE2ELabels := os.Getenv("E2E_LABELS")
-	envUseJSON := os.Getenv("USE_JSON")
-
+func computeTestLabels(out io.Writer, outputJSON bool, inputs *labelSet) error {
 	var labels []string
 	var intLabels []string
 	var e2eLabels []string
+	var e2e2Labels []string
 
-	if err := json.Unmarshal([]byte(envPRLabels), &labels); err != nil {
-		fmt.Printf("Error parsing PR labels: %v\n", err)
-		return
+	if err := json.Unmarshal([]byte(inputs.prLabels), &labels); err != nil {
+		return fmt.Errorf("Error parsing PR labels: %w", err)
 	}
-	if err := json.Unmarshal([]byte(envIntLabels), &intLabels); err != nil {
-		fmt.Printf("Error parsing integration tests labels: %v\n", err)
-		return
+	if len(inputs.intLabels) > 0 {
+		if err := json.Unmarshal([]byte(inputs.intLabels), &intLabels); err != nil {
+			return fmt.Errorf("Error parsing integration tests labels: %w", err)
+		}
 	}
-	if err := json.Unmarshal([]byte(envE2ELabels), &e2eLabels); err != nil {
-		fmt.Printf("Error parsing E2E tests labels: %v\n", err)
-		return
+	if len(inputs.e2eLabels) > 0 {
+		if err := json.Unmarshal([]byte(inputs.e2eLabels), &e2eLabels); err != nil {
+			return fmt.Errorf("Error parsing E2E tests labels: %w", err)
+		}
+	}
+	if len(inputs.e2e2Labels) > 0 {
+		if err := json.Unmarshal([]byte(inputs.e2e2Labels), &e2e2Labels); err != nil {
+			return fmt.Errorf("Error parsing E2E2 tests labels: %w", err)
+		}
 	}
 
 	matchedIntTests := MatchWildcards(labels, intLabels, "int")
 	matchedE2ETests := MatchWildcards(labels, e2eLabels, "e2e")
+	matchedE2E2Tests := MatchWildcards(labels, e2e2Labels, "e2e2")
 	// These have to be executed in their own environment )
 	matchedE2EGovTests := FilterLabelsContain(matchedE2ETests, "atlas-gov")
 
@@ -110,17 +121,34 @@ func main() {
 
 	matchedIntTestsJSON, _ := json.Marshal(matchedIntTests)
 	matchedE2ETestsJSON, _ := json.Marshal(matchedE2ETests)
+	matchedE2E2TestsJSON, _ := json.Marshal(matchedE2E2Tests)
 	matchedE2EGovTestsJSON, _ := json.Marshal(matchedE2EGovTests)
 
-	if envUseJSON != "" {
+	if outputJSON {
 		res := map[string]any{}
 		res["int"] = matchedIntTests
 		res["e2e"] = matchedE2ETests
+		res["e2e2"] = matchedE2E2Tests
 		res["e2e_gov"] = matchedE2EGovTests
-		fmt.Println(jsonDump(res))
-		return
+		fmt.Fprintln(out, jsonDump(res))
+		return nil
 	}
-	fmt.Printf("Matched Integration Tests: %s\n", matchedIntTestsJSON)
-	fmt.Printf("Matched E2E Tests: %s\n", matchedE2ETestsJSON)
-	fmt.Printf("Matched E2E GOV Tests: %s\n", matchedE2EGovTestsJSON)
+	fmt.Fprintf(out, "Matched Integration Tests: %s\n", matchedIntTestsJSON)
+	fmt.Fprintf(out, "Matched E2E Tests: %s\n", matchedE2ETestsJSON)
+	fmt.Fprintf(out, "Matched E2E2 Tests: %s\n", matchedE2E2TestsJSON)
+	fmt.Fprintf(out, "Matched E2E GOV Tests: %s\n", matchedE2EGovTestsJSON)
+	return nil
+}
+
+func main() {
+	useJSON := os.Getenv("USE_JSON") != ""
+	inputs := labelSet{
+		prLabels:   os.Getenv("PR_LABELS"),
+		intLabels:  os.Getenv("INT_LABELS"),
+		e2eLabels:  os.Getenv("E2E_LABELS"),
+		e2e2Labels: os.Getenv("E2E2_LABELS"),
+	}
+	if err := computeTestLabels(os.Stdout, useJSON, &inputs); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
 }
