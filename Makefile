@@ -567,7 +567,7 @@ endif
 	VERSION=$(NEXT_VERSION) \
 	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
-	bin/manager --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
+	bin/manager --log-encoder=json --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
 	--atlas-domain=$(ATLAS_DOMAIN) \
 	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME)
 
@@ -613,3 +613,13 @@ install-ako-helm:
 	--set subobjectDeletionProtection=false \
 	--namespace=$(HELM_AKO_NAMESPACE) --create-namespace
 	kubectl get crds
+
+.PHONY: license-headers
+license-headers:
+	addlicense \
+    -l apache \
+    -c "MongoDB Inc" \
+    -ignore "**/*.md" \
+    -ignore "**/*.yaml" \
+    -ignore "**/*.yml" \
+    -ignore "**/*Dockerfile" .

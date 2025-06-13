@@ -1,0 +1,6 @@
+deployment:
+  enabled: true
+
+config:
+  clients:
+    - url: http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push
