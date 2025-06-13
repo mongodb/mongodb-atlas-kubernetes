@@ -40,11 +40,9 @@ func (h *AtlasThirdPartyIntegrationHandler) secretChanged(ctx context.Context, i
 		return false, fmt.Errorf("failed to retrieve secret %s to evaluate changes: %w", secretName, err)
 	}
 	currentValue := hashSecret(secret.Data)
-	for k, v := range secret.Annotations {
-		if k == AnnotationContentHash {
-			if v == currentValue {
-				return false, nil
-			}
+	if v, ok := secret.GetAnnotations()[AnnotationContentHash]; ok {
+		if v == currentValue {
+			return false, nil
 		}
 	}
 	if err := patchSecretAnnotation(ctx, h.Client, secret, AnnotationContentHash, currentValue); err != nil {
