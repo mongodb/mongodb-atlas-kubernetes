@@ -1,9 +1,9 @@
 # TODO: Eventually replace main Dockerfile
-FROM golang:1.24 as certs-source
+FROM golang:1.24 AS certs-source
 ARG GOTOOLCHAIN=auto
 
 # Using rolling tag to stay on latest UBI 9
-FROM registry.access.redhat.com/ubi9/ubi:latest as ubi-certs
+FROM registry.access.redhat.com/ubi9/ubi:latest AS ubi-certs
 FROM registry.access.redhat.com/ubi9/ubi-micro:latest
 
 ARG TARGETOS

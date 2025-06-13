@@ -321,11 +321,20 @@ bundle: manifests  ## Generate bundle manifests and metadata, then validate gene
 	operator-sdk bundle validate ./bundle
 
 .PHONY: image
-image: ## Build the operator image
+image: ## Build an operator image for local development
 	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64 VERSION=$(VERSION)
 	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64 VERSION=$(VERSION)
 	$(CONTAINER_ENGINE) build -f fast.Dockerfile --build-arg VERSION=$(VERSION) -t $(OPERATOR_IMAGE) .
 	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
+
+.PHONY: image-multiarch
+image-multiarch: ## Build releaseable multi-architecture operator image
+	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64 VERSION=$(VERSION)
+	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64 VERSION=$(VERSION)
+	$(CONTAINER_ENGINE) buildx create --use --name multiarch-builder \
+	--driver docker-container --bootstrap || echo "reusing multiarch-builder"
+	$(CONTAINER_ENGINE) buildx build --platform linux/amd64,linux/arm64 --push \
+	-f fast.Dockerfile --build-arg VERSION=$(VERSION) -t $(OPERATOR_IMAGE) .
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
