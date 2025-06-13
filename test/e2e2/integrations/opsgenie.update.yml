@@ -1,0 +1,12 @@
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-opsgenie-integ
+spec:
+  projectRef:
+    name: atlas-project-test-opsgenie
+  type: OPS_GENIE
+  opsGenie:
+    apiKeySecretRef:
+      name: opsgenie-secret
+    region: EU

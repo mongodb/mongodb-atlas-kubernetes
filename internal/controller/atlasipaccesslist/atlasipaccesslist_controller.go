@@ -45,10 +45,8 @@ import (
 // AtlasIPAccessListReconciler reconciles a AtlasIPAccessList object
 type AtlasIPAccessListReconciler struct {
 	reconciler.AtlasReconciler
-
 	Scheme                   *runtime.Scheme
 	EventRecorder            record.EventRecorder
-	AtlasProvider            atlas.Provider
 	GlobalPredicates         []predicate.Predicate
 	ObjectDeletionProtection bool
 	independentSyncPeriod    time.Duration
@@ -151,10 +149,10 @@ func NewAtlasIPAccessListReconciler(
 			Client:          c.GetClient(),
 			Log:             logger.Named("controllers").Named("AtlasIPAccessList").Sugar(),
 			GlobalSecretRef: globalSecretRef,
+			AtlasProvider:   atlasProvider,
 		},
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasIPAccessList"),
-		AtlasProvider:            atlasProvider,
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,

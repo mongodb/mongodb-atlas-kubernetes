@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datadog-secret
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  apiKey: 1117e51ce6725368c37c3535959a3a75
+---
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: atlas-project
+spec:
+  name: atlas-project

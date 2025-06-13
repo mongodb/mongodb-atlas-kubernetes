@@ -23,6 +23,12 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/run"
+)
+
+const (
+	DefaultDelveListenPort = ":2345"
 )
 
 func NoGoRunEnvSet() bool {
@@ -36,14 +42,30 @@ func RunDelveEnvSet() bool {
 }
 
 func operatorCommand() []string {
+	operatorBinary := envVarOrDefault("AKO_BINARY", filepath.Join("bin", "manager"))
 	if RunDelveEnvSet() {
-		return []string{"dlv", "exec", "--api-version=2", "--headless=true", "--listen=:2345", filepath.Join(repositoryDir(), "bin", "manager"), "--"}
+		return []string{
+			"dlv", "exec",
+			"--api-version=2",
+			"--headless=true",
+			fmt.Sprintf("--listen=%s", envVarOrDefault("DELVE_LISTEN", DefaultDelveListenPort)),
+			filepath.Join(repositoryDir(), operatorBinary),
+			"--",
+		}
 	}
 
 	if NoGoRunEnvSet() {
-		return []string{filepath.Join(repositoryDir(), "bin", "manager")}
+		return []string{filepath.Join(repositoryDir(), operatorBinary)}
 	}
 
+	if os.Getenv("EXPERIMENTAL") == "true" {
+		return []string{
+			"go",
+			"run",
+			"-ldflags=-X github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version.Experimental=true",
+			filepath.Join(repositoryDir(), "cmd"),
+		}
+	}
 	return []string{"go", "run", filepath.Join(repositoryDir(), "cmd")}
 }
 
@@ -54,12 +76,40 @@ type testingT interface {
 	Errorf(format string, a ...any)
 }
 
-type Operator struct {
+type Operator interface {
+	Start(t testingT)
+	Running() bool
+	Wait(t testingT)
+	Stop(t testingT)
+}
+
+type OperatorProcess struct {
 	cmd     *exec.Cmd
 	cmdLine []string
 }
 
-func NewOperator(namespace string, stdout, stderr io.Writer, cmdArgs ...string) *Operator {
+func DefaulltOperatorEnv(namespace string) []string {
+	return append(
+		os.Environ(),
+		fmt.Sprintf(`WATCH_NAMESPACE=%s`, namespace),
+		fmt.Sprintf(`JOB_NAMESPACE=%s`, namespace),
+		fmt.Sprintf(`OPERATOR_NAMESPACE=%s`, namespace),
+		`OPERATOR_POD_NAME=mongodb-atlas-operator`,
+	)
+}
+
+func AllNamespacesOperatorEnv(operatorNamespace string) []string {
+	return append(
+		os.Environ(),
+		fmt.Sprintf(`OPERATOR_NAMESPACE=%s`, operatorNamespace),
+		`OPERATOR_POD_NAME=mongodb-atlas-operator`,
+	)
+}
+
+func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Operator {
+	if RunEmbeddedSet() {
+		return NewEmbeddedOperator(run.Run, cmdArgs)
+	}
 	cmdLine := append(operatorCommand(), cmdArgs...)
 	//nolint:gosec
 	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
@@ -71,35 +121,33 @@ func NewOperator(namespace string, stdout, stderr io.Writer, cmdArgs ...string) 
 
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	cmd.Env = append(
-		os.Environ(),
-		fmt.Sprintf(`WATCH_NAMESPACE=%s`, namespace),
-		fmt.Sprintf(`JOB_NAMESPACE=%s`, namespace),
-		fmt.Sprintf(`OPERATOR_NAMESPACE=%s`, namespace),
-		`OPERATOR_POD_NAME=mongodb-atlas-operator`,
-	)
+	cmd.Env = env
 
-	return &Operator{
+	return &OperatorProcess{
 		cmd:     cmd,
 		cmdLine: cmdLine,
 	}
 }
 
-func (o *Operator) Start(t testingT) {
+func (o *OperatorProcess) Start(t testingT) {
 	t.Logf("starting operator command: %q", strings.Join(o.cmdLine, " "))
 	if err := o.cmd.Start(); err != nil {
 		t.Fatalf("failed to start operator: %v", err)
 	}
 }
 
-func (o *Operator) Wait(t testingT) {
+func (o *OperatorProcess) Running() bool {
+	return o.cmd.ProcessState == nil
+}
+
+func (o *OperatorProcess) Wait(t testingT) {
 	t.Logf("waiting for operator to stop")
 	if err := o.cmd.Wait(); err != nil {
 		t.Errorf("error waiting for command: %v", err)
 	}
 }
 
-func (o *Operator) Stop(t testingT) {
+func (o *OperatorProcess) Stop(t testingT) {
 	// Ensure child process is killed on cleanup - send the negative of the pid, which is the process group id.
 	// See https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
 	pid := 0
@@ -108,13 +156,30 @@ func (o *Operator) Stop(t testingT) {
 		pid = -o.cmd.Process.Pid
 	}
 
+	terminated := false
 	if pid != 0 {
 		if err := syscall.Kill(pid, syscall.SIGTERM); err != nil {
 			t.Errorf("error trying to kill command: %v", err)
 		}
+		terminated = true
 	}
 
 	if err := o.cmd.Wait(); err != nil {
-		t.Errorf("error stopping operator: %v", err)
+		if terminated {
+			if waitStatus, ok := (o.cmd.ProcessState.Sys()).(syscall.WaitStatus); ok {
+				if waitStatus.Signaled() && waitStatus.Signal() == syscall.SIGTERM {
+					return // ignore sigterm if we sent SIGTERM ourselves
+				}
+			}
+		}
+		t.Errorf("error stopping operator terminated=%v : %+#v", terminated, err)
 	}
+}
+
+func envVarOrDefault(name, defaultValue string) string {
+	value, ok := os.LookupEnv(name)
+	if ok {
+		return value
+	}
+	return defaultValue
 }

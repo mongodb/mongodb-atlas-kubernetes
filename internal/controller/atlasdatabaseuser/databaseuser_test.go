@@ -311,8 +311,8 @@ func TestHandleDatabaseUser(t *testing.T) {
 						Namespace: "default",
 						Name:      "secret",
 					},
+					AtlasProvider: tt.atlasProvider,
 				},
-				AtlasProvider: tt.atlasProvider,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
