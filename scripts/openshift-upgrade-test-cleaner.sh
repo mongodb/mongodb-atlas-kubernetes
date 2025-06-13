@@ -13,13 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 # This script is made to make sure the test environment is clean after running the upgrade test.
-set -eou pipefail
 
-expect_success_silent(){
+expect_success_silent() {
   local cmd=$1
-  if $cmd ; then
+  if $cmd; then
     return 0
   fi
   return 1
