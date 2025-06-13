@@ -73,6 +73,9 @@ func main() {
 	ctrl.SetLogger(logrLogger.WithName("ctrl"))
 	klog.SetLogger(logrLogger.WithName("klog"))
 	setupLog := logger.Named("setup").Sugar()
+	if version.IsExperimental() {
+		setupLog.Warn("Experimental features enabled!")
+	}
 	setupLog.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))
 
 	runnable, err := operator.NewBuilder(operator.ManagerProviderFunc(ctrl.NewManager), akoScheme, time.Duration(minimumIndependentSyncPeriod)*time.Minute).

@@ -43,6 +43,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 type Reconciler interface {
@@ -114,6 +115,9 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
+	if version.IsExperimental() {
+		// Experimental reconciler initializations go here
+	}
 	r.reconcilers = reconcilers
 }
 

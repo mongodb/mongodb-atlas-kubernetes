@@ -202,7 +202,14 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		}
 	}
 
-	controllerRegistry := controller.NewRegistry(b.predicates, b.deletionProtection, b.logger, b.independentSyncPeriod, b.featureFlags, b.apiSecret)
+	controllerRegistry := controller.NewRegistry(
+		b.predicates,
+		b.deletionProtection,
+		b.logger,
+		b.independentSyncPeriod,
+		b.featureFlags,
+		b.apiSecret,
+	)
 
 	var akoCluster cluster.Cluster
 	if b.dryRun {
