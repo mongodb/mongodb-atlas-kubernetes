@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20241113001/admin"
-	"go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -123,7 +123,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 				mockUsersAPI.EXPECT().DeleteDatabaseUser(ctx, projectID, db, username).Return(
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
-					Return(nil, &http.Response{StatusCode: http.StatusOK}, nil)
+					Return(&http.Response{StatusCode: http.StatusOK}, nil)
 			},
 			expectedErr: nil,
 		},
@@ -134,7 +134,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
-					Return(nil, &http.Response{StatusCode: http.StatusNotFound}, notFoundErr)
+					Return(&http.Response{StatusCode: http.StatusNotFound}, notFoundErr)
 			},
 			expectedErr: errors.Join(ErrorNotFound, notFoundErr),
 		},
@@ -147,7 +147,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 				internalServerError := &admin.GenericOpenAPIError{}
 				internalServerError.SetModel(admin.ApiError{ErrorCode: "500"})
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
-					Return(nil, &http.Response{StatusCode: http.StatusInternalServerError}, fmt.Errorf("some error"))
+					Return(&http.Response{StatusCode: http.StatusInternalServerError}, fmt.Errorf("some error"))
 			},
 			expectedErr: errors.New("some error"),
 		},

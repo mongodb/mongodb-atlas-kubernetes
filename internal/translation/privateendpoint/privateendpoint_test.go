@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -150,7 +150,7 @@ func TestListPrivateEndpoints(t *testing.T) {
 
 func TestGetPrivateEndpoint(t *testing.T) {
 	notFoundErr := &admin.GenericOpenAPIError{}
-	notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("PRIVATE_ENDPOINT_SERVICE_NOT_FOUND")})
+	notFoundErr.SetModel(admin.ApiError{ErrorCode: "PRIVATE_ENDPOINT_SERVICE_NOT_FOUND"})
 	tests := map[string]struct {
 		provider                string
 		mockGetReturnFunc       func() (*admin.EndpointService, *http.Response, error)
@@ -395,18 +395,18 @@ func TestCreatePrivateEndpointService(t *testing.T) {
 
 func TestDeletePrivateEndpointService(t *testing.T) {
 	tests := map[string]struct {
-		mockDeleteReturnFunc func() (map[string]interface{}, *http.Response, error)
+		mockDeleteReturnFunc func() (*http.Response, error)
 		expectedErr          error
 	}{
 		"failed to delete the service": {
-			mockDeleteReturnFunc: func() (map[string]interface{}, *http.Response, error) {
-				return nil, &http.Response{}, errors.New("atlas failed to delete")
+			mockDeleteReturnFunc: func() (*http.Response, error) {
+				return &http.Response{}, errors.New("atlas failed to delete")
 			},
 			expectedErr: fmt.Errorf("failed to delete the private endpoint service: %w", errors.New("atlas failed to delete")),
 		},
 		"delete private endpoint service": {
-			mockDeleteReturnFunc: func() (map[string]interface{}, *http.Response, error) {
-				return nil, &http.Response{}, nil
+			mockDeleteReturnFunc: func() (*http.Response, error) {
+				return &http.Response{}, nil
 			},
 		},
 	}
@@ -594,18 +594,18 @@ func TestCreatePrivateEndpointInterface(t *testing.T) {
 
 func TestDeletePrivateEndpointInterface(t *testing.T) {
 	tests := map[string]struct {
-		mockDeleteReturnFunc func() (map[string]interface{}, *http.Response, error)
+		mockDeleteReturnFunc func() (*http.Response, error)
 		expectedErr          error
 	}{
 		"failed to delete the interface": {
-			mockDeleteReturnFunc: func() (map[string]interface{}, *http.Response, error) {
-				return nil, &http.Response{}, errors.New("atlas failed to delete")
+			mockDeleteReturnFunc: func() (*http.Response, error) {
+				return &http.Response{}, errors.New("atlas failed to delete")
 			},
 			expectedErr: fmt.Errorf("failed to delete the private endpoint interface: %w", errors.New("atlas failed to delete")),
 		},
 		"delete private endpoint service": {
-			mockDeleteReturnFunc: func() (map[string]interface{}, *http.Response, error) {
-				return nil, &http.Response{}, nil
+			mockDeleteReturnFunc: func() (*http.Response, error) {
+				return &http.Response{}, nil
 			},
 		},
 	}
