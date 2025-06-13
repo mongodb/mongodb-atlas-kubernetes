@@ -389,6 +389,7 @@ func (r *AtlasProjectReconciler) clearLastAppliedMigratedResources(ctx context.C
 	clearedCfg.PrivateEndpoints = nil
 	clearedCfg.ProjectIPAccessList = nil
 	clearedCfg.NetworkPeers = nil
+	clearedCfg.Integrations = nil
 
 	if err := customresource.PatchLastConfigApplied(ctx, r.Client, atlasProject, clearedCfg); err != nil {
 		return fmt.Errorf("failed to clear migrated resources in last applied config annotation: %w", err)

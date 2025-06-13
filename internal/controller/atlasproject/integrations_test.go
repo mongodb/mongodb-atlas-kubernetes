@@ -16,14 +16,19 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
@@ -322,4 +327,188 @@ func TestCheckIntegrationsReady(t *testing.T) {
 			assert.Equal(t, tc.expected, result)
 		})
 	}
+}
+
+func TestMapLastAppliedProjectIntegrations(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		project *akov2.AtlasProject
+		want    []project.Integration
+		wantErr bool
+	}{
+		{
+			name: "returns integrations when present",
+			project: setLastApplied(
+				defaultTestProject(),
+				mustJSONIZE(
+					appendIntegrations(&defaultTestProject().Spec, []project.Integration{
+						{Type: "TYPE1"},
+						{Type: "TYPE2"},
+					}),
+				),
+			),
+			want:    []project.Integration{{Type: "TYPE1"}, {Type: "TYPE2"}},
+			wantErr: false,
+		},
+		{
+			name: "returns nil when no integrations",
+			project: setLastApplied(
+				defaultTestProject(),
+				mustJSONIZE(appendIntegrations(&defaultTestProject().Spec, nil)),
+			),
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name:    "returns nil when lastApplied is nil",
+			project: defaultTestProject(),
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "returns error if lastAppliedSpecFrom fails",
+			project: setLastApplied(
+				defaultTestProject(),
+				"broken json",
+			),
+			want:    nil,
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := mapLastAppliedProjectIntegrations(tt.project)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func defaultTestProject() *akov2.AtlasProject {
+	return &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-name",
+			Namespace: "ns",
+		},
+		Spec: akov2.AtlasProjectSpec{
+			Name: "test-project",
+		},
+	}
+}
+
+func appendIntegrations(spec *akov2.AtlasProjectSpec, integrations []project.Integration) *akov2.AtlasProjectSpec {
+	spec.Integrations = integrations
+	return spec
+}
+
+func mustJSONIZE(obj any) string {
+	js, err := json.Marshal(obj)
+	if err != nil {
+		panic(err)
+	}
+	return string(js)
+}
+
+func setLastApplied(project *akov2.AtlasProject, lastApplied string) *akov2.AtlasProject {
+	if project.Annotations == nil {
+		project.Annotations = map[string]string{}
+	}
+	project.Annotations[customresource.AnnotationLastAppliedConfiguration] = lastApplied
+	return project
+}
+
+func TestFilterOwnedIntegrations(t *testing.T) {
+	type args struct {
+		integrationIDs []project.Integration
+		lastApplied    []project.Integration
+	}
+	for _, tc := range []struct {
+		name string
+		args args
+		want []set.DeprecatedIdentifiable
+	}{
+		{
+			name: "returns only owned integrations",
+			args: args{
+				integrationIDs: []project.Integration{
+					{Type: "TYPE1"},
+					{Type: "TYPE2"},
+					{Type: "TYPE3"},
+				},
+				lastApplied: []project.Integration{
+					{Type: "TYPE1"},
+					{Type: "TYPE3"},
+				},
+			},
+			want: toIdentifiableSlice([]project.Integration{
+				{Type: "TYPE1"},
+				{Type: "TYPE3"},
+			}),
+		},
+		{
+			name: "returns nil if no integrationIDs",
+			args: args{
+				integrationIDs: nil,
+				lastApplied:    []project.Integration{{Type: "TYPE1"}},
+			},
+			want: nil,
+		},
+		{
+			name: "returns nil if none are owned",
+			args: args{
+				integrationIDs: []project.Integration{
+					{Type: "TYPE4"},
+				},
+				lastApplied: []project.Integration{
+					{Type: "TYPE1"},
+					{Type: "TYPE2"},
+				},
+			},
+			want: []set.DeprecatedIdentifiable{},
+		},
+		{
+			name: "returns all if all are owned",
+			args: args{
+				integrationIDs: []project.Integration{
+					{Type: "TYPE1"},
+					{Type: "TYPE2"},
+				},
+				lastApplied: []project.Integration{
+					{Type: "TYPE1"},
+					{Type: "TYPE2"},
+				},
+			},
+			want: toIdentifiableSlice([]project.Integration{
+				{Type: "TYPE1"},
+				{Type: "TYPE2"},
+			}),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := filterOwnedIntegrations(
+				toIdentifiableSlice(tc.args.integrationIDs),
+				tc.args.lastApplied,
+			)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
+type identifiableIntegration struct {
+	project.Integration
+}
+
+func (ii identifiableIntegration) Identifier() interface{} {
+	return ii.Integration.Type
+}
+
+func toIdentifiableSlice(integrations []project.Integration) []set.DeprecatedIdentifiable {
+	identifiables := make([]set.DeprecatedIdentifiable, 0, len(integrations))
+	for _, integration := range integrations {
+		identifiables = append(identifiables, identifiableIntegration{Integration: integration})
+	}
+	return identifiables
 }

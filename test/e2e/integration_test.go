@@ -17,18 +17,24 @@ package e2e_test
 import (
 	"os"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 )
 
 const (
@@ -161,6 +167,127 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 			},
 		),
 	)
+
+	It("Project Integrations are not greedy", Label("project-integration-not-greedy"), func() {
+		testData = model.DataProvider(
+			"several-integrations",
+			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+			30018,
+			[]func(*model.TestDataProvider){},
+		).WithProject(data.DefaultProject()).WithObjectDeletionProtection(false)
+		actions.ProjectCreationFlow(testData)
+		ctx := testData.Context
+
+		By("Create Secrets for integrations", func() {
+			for _, secretName := range []string{"datadog-secret", "slack-secret", "webhook-secret"} {
+				fakeSecret := os.Getenv(datadogEnvKey) // good for datadog and slack
+				if secretName == "webhook-secret" {
+					fakeSecret = utils.RandomName("fake-secret")
+				}
+				Expect(
+					k8s.CreateUserSecret(ctx, testData.K8SClient, fakeSecret, secretName, testData.Resources.Namespace),
+				).Should(Succeed())
+			}
+		})
+
+		integrations := []project.Integration{
+			{
+				Type:   "DATADOG",
+				Region: "US",
+				APIKeyRef: common.ResourceRefNamespaced{
+					Name:      "datadog-secret",
+					Namespace: testData.Resources.Namespace,
+				},
+			},
+			{
+				Type:        "SLACK",
+				ChannelName: "channel",
+				TeamName:    "team",
+				APITokenRef: common.ResourceRefNamespaced{
+					Name:      "slack-secret",
+					Namespace: testData.Resources.Namespace,
+				},
+			},
+			{
+				Type: "WEBHOOK",
+				URL:  "https://www.example.com/path",
+				SecretRef: common.ResourceRefNamespaced{
+					Name:      "webhook-secret",
+					Namespace: testData.Resources.Namespace,
+				},
+			},
+		}
+
+		projectKey := types.NamespacedName{
+			Name:      testData.Project.Name,
+			Namespace: testData.Resources.Namespace,
+		}
+
+		By("Add integrations", func() {
+			_, err := akoretry.RetryUpdateOnConflict(ctx, testData.K8SClient, projectKey, func(project *akov2.AtlasProject) {
+				project.Spec.Integrations = integrations
+			})
+			Expect(err).To(Succeed())
+		})
+
+		By("Integrations are ready", func() {
+			actions.WaitForConditionsToBecomeTrue(testData, api.IntegrationReadyType, api.ReadyType)
+
+			for _, integration := range integrations {
+				_, err := atlasClient.GetIntegrationByType(testData.Project.ID(), integration.Type)
+				Expect(err).ShouldNot(HaveOccurred())
+			}
+		})
+
+		By("Skip reconciliation & remove one integration", func() {
+			_, err := akoretry.RetryUpdateOnConflict(ctx, testData.K8SClient, projectKey, func(project *akov2.AtlasProject) {
+				project.Annotations[customresource.ReconciliationPolicyAnnotation] =
+					customresource.ReconciliationPolicySkip
+				kubeIntegrations := project.Spec.Integrations
+				project.Spec.Integrations = kubeIntegrations[:2]
+			})
+			Expect(err).To(Succeed())
+		})
+
+		By("Project reconciliation skipped", func() {
+			// TODO: how to reliable wait for the skip reocniliation to have been evaluated?
+			time.Sleep(5 * time.Second)
+		})
+
+		By("Resume reconciliation", func() {
+			_, err := akoretry.RetryUpdateOnConflict(ctx, testData.K8SClient, projectKey, func(project *akov2.AtlasProject) {
+				delete(project.Annotations, customresource.ReconciliationPolicyAnnotation)
+			})
+			Expect(err).To(Succeed())
+		})
+
+		var kubeProject *akov2.AtlasProject
+		By("Change another integration", func() {
+			var err error
+			kubeProject, err = akoretry.RetryUpdateOnConflict(ctx, testData.K8SClient, projectKey, func(project *akov2.AtlasProject) {
+				project.Spec.Integrations[1].ChannelName = "other-channel"
+			})
+			Expect(err).To(Succeed())
+		})
+
+		By("Integrations are ready again", func() {
+			actions.WaitForConditionsToBecomeTrue(testData, api.IntegrationReadyType, api.ReadyType)
+
+			for _, integration := range integrations {
+				_, err := atlasClient.GetIntegrationByType(testData.Project.ID(), integration.Type)
+				Expect(err).ShouldNot(HaveOccurred())
+			}
+		})
+
+		By("Expect removed WEBHOOK integration to still exist in Atlas", func() {
+			atlasClient, err := atlas.AClient()
+			Expect(err).To(Succeed())
+			_, _, err = atlasClient.Client.ThirdPartyIntegrationsApi.GetThirdPartyIntegration(
+				ctx, kubeProject.Status.ID, "WEBHOOK",
+			).Execute()
+			Expect(err).To(Succeed())
+		})
+	})
 })
 
 func integrationTest(data *model.TestDataProvider, integration project.Integration, key string, setSecret configSecret) {

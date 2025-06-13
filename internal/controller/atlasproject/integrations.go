@@ -53,7 +53,12 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 	}
 	integrationsInAtlasAlias := toAliasThirdPartyIntegration(integrationsInAtlas.Results)
 
-	identifiersForDelete := set.DeprecatedDifference(integrationsInAtlasAlias, project.Spec.Integrations)
+	candidatesForDelete := set.DeprecatedDifference(integrationsInAtlasAlias, project.Spec.Integrations)
+	lastApplied, err := mapLastAppliedProjectIntegrations(project)
+	if err != nil {
+		return workflow.Terminate(workflow.ProjectIntegrationInternal, err)
+	}
+	identifiersForDelete := filterOwnedIntegrations(candidatesForDelete, lastApplied)
 	ctx.Log.Debugf("identifiersForDelete: %v", identifiersForDelete)
 	if err := deleteIntegrationsFromAtlas(ctx, projectID, identifiersForDelete); err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInternal, err)
@@ -216,4 +221,40 @@ func isPrometheusType(typeName string) bool {
 func buildPrometheusDiscoveryURL(baseURL *url.URL, projectID string) string {
 	api := fmt.Sprintf("https://%s/prometheus/v1.0", baseURL.Host)
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
+}
+
+func mapLastAppliedProjectIntegrations(atlasProject *akov2.AtlasProject) ([]project.Integration, error) {
+	lastApplied, err := lastAppliedSpecFrom(atlasProject)
+	if err != nil {
+		return nil, err
+	}
+
+	if lastApplied == nil || len(lastApplied.Integrations) == 0 {
+		return nil, nil
+	}
+
+	return lastApplied.Integrations, nil
+}
+
+func filterOwnedIntegrations(integrationIDs []set.DeprecatedIdentifiable, lastApplied []project.Integration) []set.DeprecatedIdentifiable {
+	if len(integrationIDs) == 0 {
+		return nil
+	}
+	filteredIDs := make([]set.DeprecatedIdentifiable, 0, len(integrationIDs))
+	for _, integration := range integrationIDs {
+		id := integration.Identifier().(string)
+		if isIntegrationOwned(lastApplied, id) {
+			filteredIDs = append(filteredIDs, integration)
+		}
+	}
+	return filteredIDs
+}
+
+func isIntegrationOwned(lastApplied []project.Integration, integrationType string) bool {
+	for _, ownedIntegration := range lastApplied {
+		if ownedIntegration.Type == integrationType {
+			return true
+		}
+	}
+	return false
 }
