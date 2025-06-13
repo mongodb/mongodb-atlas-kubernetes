@@ -67,6 +67,11 @@ jobs:
         run: |
          devbox run -- 'cd tools/clean && ./clean atlas'
 
+  openshift-cleanup:
+    name: Cleanup Openshift upgrade test
+    runs-on: ubuntu-latest
+    environment: openshift-test
+    steps:
       - name: Run openshift test cleaner
         env:
           OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
