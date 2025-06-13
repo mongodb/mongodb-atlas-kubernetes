@@ -72,6 +72,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: openshift-test
     steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v4
+
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.13.0
+        with:
+          enable-cache: 'true'
+        
       - name: Run openshift test cleaner
         env:
           OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
