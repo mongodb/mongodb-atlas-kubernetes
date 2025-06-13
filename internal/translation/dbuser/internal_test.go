@@ -105,6 +105,34 @@ func TestToAndFromAtlas(t *testing.T) {
 	}
 }
 
+func TestToAtlas(t *testing.T) {
+	for _, tc := range []struct {
+		title     string
+		user      *User
+		atlasUser *admin.CloudDatabaseUser
+	}{
+		{
+			title: "Empty description should be converted as empty string, not nil",
+			user: func() *User {
+				user := defaultTestUser()
+				user.Description = ""
+				return user
+			}(),
+			atlasUser: func() *admin.CloudDatabaseUser {
+				inAtlas := defaultTestAtlasUser()
+				inAtlas.Description = pointer.MakePtr("")
+				return inAtlas
+			}(),
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			atlasUser, err := toAtlas(tc.user)
+			require.NoError(t, err)
+			assert.Equal(t, tc.atlasUser, atlasUser)
+		})
+	}
+}
+
 func TestToAtlasDateFailure(t *testing.T) {
 	user := defaultTestUser()
 	user.DeleteAfterDate = "bad-date-string"
@@ -143,5 +171,7 @@ func defaultTestAtlasUser() *admin.CloudDatabaseUser {
 		GroupId:      testProjectID,
 		Password:     pointer.MakePtr(testPassword),
 		Username:     testUsername,
+		Scopes:       pointer.MakePtr([]admin.UserScope{}),
+		Description:  pointer.MakePtr(""),
 	}
 }
