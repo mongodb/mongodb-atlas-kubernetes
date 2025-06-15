@@ -61,10 +61,21 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 		changes.DiskSizeGB = desired.DiskSizeGB
 	}
 
+	diskScaling := false
+
 	changesReplicationSpecs := make([]*akov2.AdvancedReplicationSpec, 0, len(desired.ReplicationSpecs))
 	for _, desiredReplicationSpec := range desired.ReplicationSpecs {
 		changesRegionConfig := make([]*akov2.AdvancedRegionConfig, 0, len(desiredReplicationSpec.RegionConfigs))
 		for _, desiredRegionConfig := range desiredReplicationSpec.RegionConfigs {
+			as := getAutoScalingChanges(desiredRegionConfig.AutoScaling)
+
+			scalingEnabled := as != nil &&
+				as.DiskGB != nil &&
+				as.DiskGB.Enabled != nil &&
+				*as.DiskGB.Enabled
+
+			diskScaling = diskScaling || scalingEnabled
+
 			changesRegionConfig = append(
 				changesRegionConfig,
 				&akov2.AdvancedRegionConfig{
@@ -75,7 +86,7 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 					ElectableSpecs:      getSpecsChanges(desiredRegionConfig.ElectableSpecs),
 					ReadOnlySpecs:       getSpecsChanges(desiredRegionConfig.ReadOnlySpecs),
 					AnalyticsSpecs:      getSpecsChanges(desiredRegionConfig.AnalyticsSpecs),
-					AutoScaling:         getAutoScalingChanges(desiredRegionConfig.AutoScaling),
+					AutoScaling:         as,
 				},
 			)
 		}
@@ -86,6 +97,11 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 			RegionConfigs: changesRegionConfig,
 		}
 		changesReplicationSpecs = append(changesReplicationSpecs, changedReplicationSpec)
+	}
+
+	// If disk scaling is enabled, we do not want to compare the potentially scaled disk size to the static size in AKO
+	if diskScaling {
+		changes.DiskSizeGB = nil
 	}
 
 	changes.ReplicationSpecs = changesReplicationSpecs
