@@ -32,11 +32,10 @@ import (
 var globalAtlas *Atlas
 
 type Atlas struct {
-	OrgID              string
-	Public             string
-	Private            string
-	Client             *admin.APIClient
-	ClientV20241113001 *admin.APIClient
+	OrgID   string
+	Public  string
+	Private string
+	Client  *admin.APIClient
 }
 
 func AClient() (Atlas, error) {
@@ -51,15 +50,6 @@ func AClient() (Atlas, error) {
 		return Atlas{}, err
 	}
 	a.Client = c
-
-	clientV20241113001, err := admin.NewClient(
-		admin.UseBaseURL(os.Getenv("MCLI_OPS_MANAGER_URL")),
-		admin.UseDigestAuth(a.Public, a.Private),
-	)
-	if err != nil {
-		return Atlas{}, err
-	}
-	a.ClientV20241113001 = clientV20241113001
 
 	return a, nil
 }
@@ -107,7 +97,7 @@ func (a *Atlas) GetDeploymentNames(projectID string) []string {
 	for _, cluster := range clusters.GetResults() {
 		names = append(names, cluster.GetName())
 	}
-	flex, _, err := a.ClientV20241113001.FlexClustersApi.ListFlexClusters(ctx, projectID).Execute()
+	flex, _, err := a.Client.FlexClustersApi.ListFlexClusters(ctx, projectID).Execute()
 	Expect(err).NotTo(HaveOccurred())
 	ginkgoPrettyPrintf(flex.GetResults(), "listing flex deployments in project %s", projectID)
 	for _, cluster := range flex.GetResults() {
@@ -127,7 +117,7 @@ func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.ClusterD
 }
 
 func (a *Atlas) GetFlexInstance(projectId, deploymentName string) (*admin.FlexClusterDescription20241113, error) {
-	flexInstance, _, err := a.ClientV20241113001.FlexClustersApi.
+	flexInstance, _, err := a.Client.FlexClustersApi.
 		GetFlexCluster(context.Background(), projectId, deploymentName).
 		Execute()
 
