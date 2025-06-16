@@ -84,6 +84,7 @@ func main() {
 		WithLogger(logger).
 		WithMetricAddress(config.MetricsAddr).
 		WithProbeAddress(config.ProbeAddr).
+		WithPprofBindAddress(config.PprofAddress).
 		WithLeaderElection(config.EnableLeaderElection).
 		WithAtlasDomain(config.AtlasDomain).
 		WithAPISecret(config.GlobalAPISecret).
@@ -118,6 +119,7 @@ type Config struct {
 	IndependentSyncPeriod       int
 	FeatureFlags                *featureflags.FeatureFlags
 	DryRun                      bool
+	PprofAddress                string
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -126,6 +128,7 @@ func parseConfiguration() Config {
 	config := Config{}
 	flag.StringVar(&config.AtlasDomain, "atlas-domain", operator.DefaultAtlasDomain, "the Atlas URL domain name (with slash in the end).")
 	flag.StringVar(&config.MetricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&config.PprofAddress, "pprof-bind-address", ":7070", "The address the pprof endpoint binds to.")
 	flag.StringVar(&config.ProbeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.StringVar(&globalAPISecretName, "global-api-secret-name", "", "The name of the Secret that contains Atlas API keys. "+
 		"It is used by the Operator if AtlasProject configuration doesn't contain API key reference. Defaults to <deployment_name>-api-key.")
@@ -241,6 +244,7 @@ func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
 			EncodeLevel: zapcore.CapitalLevelEncoder,
 			TimeKey:     "time",
 			EncodeTime:  zapcore.ISO8601TimeEncoder,
+			NameKey:     "logger",
 		},
 	}
 	return cfg.Build()

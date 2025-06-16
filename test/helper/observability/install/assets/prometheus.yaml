@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: kube-prometheus-kube-prome-prometheus
+  namespace: monitoring
+spec:
+  replicas: 1
+  evaluationInterval: 2s
+  scrapeInterval: 2s
+  enableRemoteWriteReceiver: true
+  enableAdminAPI: true
+  scrapeConfigSelector:
+    matchLabels:
+      prometheus: ako
+  additionalScrapeConfigs:
+    name: host-scrape-config
+    key:  prometheus-host-scrape-config.yaml
