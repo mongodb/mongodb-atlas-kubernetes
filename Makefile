@@ -159,7 +159,6 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
-
 .PHONY: compute-labels
 compute-labels:
 	mkdir -p bin
@@ -218,6 +217,13 @@ envtest-assets:
 .PHONY: e2e
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
+
+.PHONY: e2e2
+e2e2: run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
+	NO_GORUN=1 \
+	AKO_E2E2_TEST=1 \
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
+	ginkgo --race --label-filter=$(label) --timeout 120m -vv test/e2e2/
 
 .PHONY: e2e-openshift-upgrade
 e2e-openshift-upgrade:

@@ -12,32 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package control
+package operator_test
 
 import (
-	"fmt"
-	"os"
-	"strconv"
+	"context"
+	"flag"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
 )
 
-func Enabled(envvar string) bool {
-	envSet, _ := strconv.ParseBool(os.Getenv(envvar))
-	return envSet
+func TestEmbeddedOperator(t *testing.T) {
+	eo := operator.NewEmbeddedOperator(testRun, []string{})
+	eo.Start(t)
+	assert.True(t, eo.Running())
+	eo.Stop(t)
 }
 
-func MustEnvVar(envvar string) string {
-	value, ok := os.LookupEnv(envvar)
-	if !ok {
-		panic(fmt.Errorf("missing required environment variable: %v", envvar))
-	}
-	return value
-}
-
-func SkipTestUnless(t *testing.T, envvars ...string) {
-	for _, envvar := range envvars {
-		if !Enabled(envvar) {
-			t.Skipf("Skipping tests, %s is not set", envvar)
-		}
-	}
+func testRun(ctx context.Context, _ *flag.FlagSet, _ []string) error {
+	ch := ctx.Done()
+	<-ch
+	return nil
 }
