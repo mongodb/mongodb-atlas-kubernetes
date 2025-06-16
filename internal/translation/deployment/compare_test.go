@@ -948,20 +948,6 @@ func TestSpecAreEqual(t *testing.T) {
 							},
 						},
 					},
-					{
-						RegionConfigs: &[]admin.CloudRegionConfig20240805{
-							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
-								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(20.0),
-								},
-							},
-						},
-					},
 				},
 			},
 			expected: false,
