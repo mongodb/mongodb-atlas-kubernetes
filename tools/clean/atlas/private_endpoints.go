@@ -76,7 +76,7 @@ func (c *Cleaner) deletePrivateEndpoints(ctx context.Context, projectID, provide
 		}
 
 		for _, endpoint := range endpointIDs {
-			_, _, err := c.client.PrivateEndpointServicesApi.DeletePrivateEndpoint(ctx, projectID, provider, endpoint, endpointService.GetId()).Execute()
+			_, err := c.client.PrivateEndpointServicesApi.DeletePrivateEndpoint(ctx, projectID, provider, endpoint, endpointService.GetId()).Execute()
 			if err != nil {
 				fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of private endpoint %s: %s", endpoint, err))
 
@@ -85,7 +85,7 @@ func (c *Cleaner) deletePrivateEndpoints(ctx context.Context, projectID, provide
 		}
 
 		if len(endpointIDs) == 0 {
-			_, _, err := c.client.PrivateEndpointServicesApi.DeletePrivateEndpointService(ctx, projectID, provider, endpointService.GetId()).Execute()
+			_, err := c.client.PrivateEndpointServicesApi.DeletePrivateEndpointService(ctx, projectID, provider, endpointService.GetId()).Execute()
 			if err != nil {
 				fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of private endpoint %s: %s", endpointService.GetId(), err))
 
