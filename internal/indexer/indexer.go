@@ -36,15 +36,8 @@ type Indexer interface {
 // passing that to each indexer.
 func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) error {
 	logger = logger.Named("indexer")
-	indexers := productionIndexers([]Indexer{}, ctx, c, logger)
-	if version.IsExperimental() {
-		indexers = experimentalIndexers(indexers, ctx, c, logger)
-	}
-	return Register(ctx, c, indexers...)
-}
-
-func productionIndexers(indexers []Indexer, ctx context.Context, c cluster.Cluster, logger *zap.Logger) []Indexer {
-	return append(indexers,
+	indexers := []Indexer{}
+	indexers = append(indexers,
 		NewAtlasBackupScheduleByBackupPolicyIndexer(logger),
 		NewAtlasDeploymentByBackupScheduleIndexer(logger),
 		NewAtlasDeploymentBySearchIndexIndexer(logger),
@@ -71,15 +64,14 @@ func productionIndexers(indexers []Indexer, ctx context.Context, c cluster.Clust
 		NewAtlasNetworkContainerByCredentialIndexer(logger),
 		NewAtlasNetworkContainerByProjectIndexer(logger),
 		NewAtlasNetworkPeeringByContainerIndexer(logger),
-	)
-}
-
-func experimentalIndexers(indexers []Indexer, _ context.Context, _ cluster.Cluster, logger *zap.Logger) []Indexer {
-	return append(indexers,
 		NewAtlasThirdPartyIntegrationByProjectIndexer(logger),
 		NewAtlasThirdPartyIntegrationByCredentialIndexer(logger),
 		NewAtlasThirdPartyIntegrationBySecretsIndexer(logger),
 	)
+	if version.IsExperimental() {
+		// add experimental indexers here
+	}
+	return Register(ctx, c, indexers...)
 }
 
 // Register registers the given indexers to the given manager's field indexer.

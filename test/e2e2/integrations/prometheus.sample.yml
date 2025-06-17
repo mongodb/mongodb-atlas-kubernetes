@@ -15,7 +15,7 @@ stringData:
   username: username
   password: password
 ---
-apiVersion: atlas.nextapi.mongodb.com/v1
+apiVersion: atlas.mongodb.com/v1
 kind: AtlasThirdPartyIntegration
 metadata:
  name: atlas-prometheus-integ

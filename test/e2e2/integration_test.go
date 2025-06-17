@@ -32,8 +32,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
@@ -46,7 +44,7 @@ import (
 var integrations embed.FS
 
 const (
-	AtlasThirdPartyIntegrationsCRDName = "atlasthirdpartyintegrations.atlas.nextapi.mongodb.com"
+	AtlasThirdPartyIntegrationsCRDName = "atlasthirdpartyintegrations.atlas.mongodb.com"
 )
 
 var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctlr"), func() {
@@ -57,7 +55,6 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
-		Expect(version.IsExperimental()).To(BeTrue())
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
 
@@ -106,7 +103,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 				}
 			})
 
-			integration := akov2next.AtlasThirdPartyIntegration{
+			integration := akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Name: wantReady, Namespace: testNamespace.Name},
 			}
 			By("Wait integration to be Ready", func() {
@@ -256,10 +253,10 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 				"apiKey": ([]byte)("00000000-0000-0000-0000-000000000000"),
 			},
 		}
-		integration := akov2next.AtlasThirdPartyIntegration{
-			TypeMeta:   v1.TypeMeta{Kind: "AtlasThirdPartyIntegration", APIVersion: akov2next.GroupVersion.String()},
+		integration := akov2.AtlasThirdPartyIntegration{
+			TypeMeta:   v1.TypeMeta{Kind: "AtlasThirdPartyIntegration", APIVersion: akov2.GroupVersion.String()},
 			ObjectMeta: v1.ObjectMeta{Name: "test-victor-ops-integration", Namespace: testNamespace.Name},
-			Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			Spec: akov2.AtlasThirdPartyIntegrationSpec{
 				ProjectDualReference: akov2.ProjectDualReference{
 					ExternalProjectRef: &akov2.ExternalProjectReference{
 						ID: projectID,
@@ -267,7 +264,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					ConnectionSecret: &api.LocalObjectReference{},
 				},
 				Type: "VICTOR_OPS",
-				VictorOps: &akov2next.VictorOpsIntegration{
+				VictorOps: &akov2.VictorOpsIntegration{
 					RoutingKey: "routing-key",
 					APIKeySecretRef: api.LocalObjectReference{
 						Name: integrationSecret.Name,
@@ -305,8 +302,8 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		})
 
 		By("Update integration", func() {
-			updatedIntegration := akov2next.AtlasThirdPartyIntegration{
-				TypeMeta:   v1.TypeMeta{Kind: "AtlasThirdPartyIntegration", APIVersion: akov2next.GroupVersion.String()},
+			updatedIntegration := akov2.AtlasThirdPartyIntegration{
+				TypeMeta:   v1.TypeMeta{Kind: "AtlasThirdPartyIntegration", APIVersion: akov2.GroupVersion.String()},
 				ObjectMeta: v1.ObjectMeta{Name: "test-victor-ops-integration", Namespace: testNamespace.Name},
 				Spec:       integration.Spec,
 			}

@@ -25,7 +25,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
 func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
@@ -40,14 +39,14 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name:   "should return nil when there are no references",
-			object: &akov2next.AtlasThirdPartyIntegration{},
+			object: &akov2.AtlasThirdPartyIntegration{},
 		},
 		{
 			name: "should return nil when there is an empty reference",
-			object: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			object: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						APIKeySecretRef: api.LocalObjectReference{},
 					},
 				},
@@ -55,11 +54,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the datadog secret name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						APIKeySecretRef: api.LocalObjectReference{
 							Name: "datadogSecret",
 						},
@@ -70,11 +69,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the microsoft teams secret name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "MICROSOFT_TEAMS",
-					MicrosoftTeams: &akov2next.MicrosoftTeamsIntegration{
+					MicrosoftTeams: &akov2.MicrosoftTeamsIntegration{
 						URLSecretRef: api.LocalObjectReference{
 							Name: "microsoftTeamsSecret",
 						},
@@ -85,11 +84,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the new relic secret name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "NEW_RELIC",
-					NewRelic: &akov2next.NewRelicIntegration{
+					NewRelic: &akov2.NewRelicIntegration{
 						CredentialsSecretRef: api.LocalObjectReference{
 							Name: "newRelicSecret",
 						},
@@ -100,11 +99,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the ops genie secret name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "OPS_GENIE",
-					OpsGenie: &akov2next.OpsGenieIntegration{
+					OpsGenie: &akov2.OpsGenieIntegration{
 						APIKeySecretRef: api.LocalObjectReference{
 							Name: "opsGenieSecret",
 						},
@@ -115,11 +114,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the pager duty secret name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "PAGER_DUTY",
-					PagerDuty: &akov2next.PagerDutyIntegration{
+					PagerDuty: &akov2.PagerDutyIntegration{
 						ServiceKeySecretRef: api.LocalObjectReference{
 							Name: "pagerDutySecret",
 						},
@@ -130,11 +129,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the prometheus secret name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "PROMETHEUS",
-					Prometheus: &akov2next.PrometheusIntegration{
+					Prometheus: &akov2.PrometheusIntegration{
 						PrometheusCredentialsSecretRef: api.LocalObjectReference{
 							Name: "prometheusSecret",
 						},
@@ -145,11 +144,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the slack secret name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "SLACK",
-					Slack: &akov2next.SlackIntegration{
+					Slack: &akov2.SlackIntegration{
 						APITokenSecretRef: api.LocalObjectReference{
 							Name: "slackSecret",
 						},
@@ -160,11 +159,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the victor ops secret name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "VICTOR_OPS",
-					VictorOps: &akov2next.VictorOpsIntegration{
+					VictorOps: &akov2.VictorOpsIntegration{
 						APIKeySecretRef: api.LocalObjectReference{
 							Name: "victorOpsSecret",
 						},
@@ -175,11 +174,11 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "should return the webhook api key name",
-			object: &akov2next.AtlasThirdPartyIntegration{
+			object: &akov2.AtlasThirdPartyIntegration{
 				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "WEBHOOK",
-					Webhook: &akov2next.WebhookIntegration{
+					Webhook: &akov2.WebhookIntegration{
 						URLSecretRef: api.LocalObjectReference{
 							Name: "webhookSecret",
 						},
@@ -190,10 +189,10 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		},
 		{
 			name: "wrong type returns nothing",
-			object: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			object: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
-					Webhook: &akov2next.WebhookIntegration{
+					Webhook: &akov2.WebhookIntegration{
 						URLSecretRef: api.LocalObjectReference{
 							Name: "webhookSecret",
 						},

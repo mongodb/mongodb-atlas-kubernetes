@@ -21,7 +21,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
@@ -30,7 +30,7 @@ var (
 	ErrUnsupportedIntegrationType = errors.New("unsupported integration type")
 )
 
-func NewFromSpec(crd *akov2next.AtlasThirdPartyIntegration, secrets map[string][]byte) (*ThirdPartyIntegration, error) {
+func NewFromSpec(crd *akov2.AtlasThirdPartyIntegration, secrets map[string][]byte) (*ThirdPartyIntegration, error) {
 	tpi := ThirdPartyIntegration{
 		AtlasThirdPartyIntegrationSpec: crd.Spec,
 		ID:                             crd.Status.ID,
@@ -84,7 +84,7 @@ func NewFromSpec(crd *akov2next.AtlasThirdPartyIntegration, secrets map[string][
 }
 
 type ThirdPartyIntegration struct {
-	akov2next.AtlasThirdPartyIntegrationSpec
+	akov2.AtlasThirdPartyIntegrationSpec
 	ID                    string
 	DatadogSecrets        *DatadogSecrets
 	MicrosoftTeamsSecrets *MicrosoftTeamsSecrets
@@ -252,7 +252,7 @@ func toAtlas(tpi *ThirdPartyIntegration) (*admin.ThirdPartyIntegration, error) {
 
 func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) {
 	tpi := &ThirdPartyIntegration{
-		AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+		AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 			Type: ai.GetType(),
 		},
 		ID: ai.GetId(),
@@ -262,7 +262,7 @@ func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) 
 		tpi.DatadogSecrets = &DatadogSecrets{
 			APIKey: ai.GetApiKey(),
 		}
-		tpi.Datadog = &akov2next.DatadogIntegration{
+		tpi.Datadog = &akov2.DatadogIntegration{
 			Region:                       ai.GetRegion(),
 			SendCollectionLatencyMetrics: encodeEnabled(ai.GetSendCollectionLatencyMetrics()),
 			SendDatabaseMetrics:          encodeEnabled(ai.GetSendDatabaseMetrics()),
@@ -271,7 +271,7 @@ func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) 
 		tpi.MicrosoftTeamsSecrets = &MicrosoftTeamsSecrets{
 			WebhookUrl: ai.GetMicrosoftTeamsWebhookUrl(),
 		}
-		tpi.MicrosoftTeams = &akov2next.MicrosoftTeamsIntegration{}
+		tpi.MicrosoftTeams = &akov2.MicrosoftTeamsIntegration{}
 	case "NEW_RELIC":
 		tpi.NewRelicSecrets = &NewRelicSecrets{
 			AccountID:  ai.GetAccountId(),
@@ -279,23 +279,23 @@ func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) 
 			ReadToken:  ai.GetReadToken(),
 			WriteToken: ai.GetWriteToken(),
 		}
-		tpi.NewRelic = &akov2next.NewRelicIntegration{}
+		tpi.NewRelic = &akov2.NewRelicIntegration{}
 	case "OPS_GENIE":
 		tpi.OpsGenieSecrets = &OpsGenieSecrets{
 			APIKey: ai.GetApiKey(),
 		}
-		tpi.OpsGenie = &akov2next.OpsGenieIntegration{
+		tpi.OpsGenie = &akov2.OpsGenieIntegration{
 			Region: ai.GetRegion(),
 		}
 	case "PAGER_DUTY":
 		tpi.PagerDutySecrets = &PagerDutySecrets{
 			ServiceKey: ai.GetServiceKey(),
 		}
-		tpi.PagerDuty = &akov2next.PagerDutyIntegration{
+		tpi.PagerDuty = &akov2.PagerDutyIntegration{
 			Region: ai.GetRegion(),
 		}
 	case "PROMETHEUS":
-		tpi.Prometheus = &akov2next.PrometheusIntegration{
+		tpi.Prometheus = &akov2.PrometheusIntegration{
 			Enabled:          encodeEnabled(ai.GetEnabled()),
 			ServiceDiscovery: ai.GetServiceDiscovery(),
 		}
@@ -304,7 +304,7 @@ func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) 
 			Password: ai.GetPassword(),
 		}
 	case "SLACK":
-		tpi.Slack = &akov2next.SlackIntegration{
+		tpi.Slack = &akov2.SlackIntegration{
 			ChannelName: ai.GetChannelName(),
 			TeamName:    ai.GetTeamName(),
 		}
@@ -312,14 +312,14 @@ func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) 
 			APIToken: ai.GetApiToken(),
 		}
 	case "VICTOR_OPS":
-		tpi.VictorOps = &akov2next.VictorOpsIntegration{
+		tpi.VictorOps = &akov2.VictorOpsIntegration{
 			RoutingKey: ai.GetRoutingKey(),
 		}
 		tpi.VictorOpsSecrets = &VictorOpsSecrets{
 			APIKey: ai.GetApiKey(),
 		}
 	case "WEBHOOK":
-		tpi.Webhook = &akov2next.WebhookIntegration{}
+		tpi.Webhook = &akov2.WebhookIntegration{}
 		tpi.WebhookSecrets = &WebhookSecrets{
 			URL:    ai.GetUrl(),
 			Secret: ai.GetSecret(),

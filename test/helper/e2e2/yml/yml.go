@@ -35,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
 var (
@@ -129,7 +128,7 @@ func DecodeObject(content []byte) (client.Object, error) {
 	utilruntime.Must(corev1.AddToScheme(sch))
 
 	utilruntime.Must(akov2.AddToScheme(sch))
-	utilruntime.Must(akov2next.AddToScheme(sch))
+	utilruntime.Must(akov2.AddToScheme(sch))
 
 	decode := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode
 
