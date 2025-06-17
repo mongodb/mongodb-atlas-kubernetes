@@ -19,15 +19,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +29,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 func TestHandleFlexInstance(t *testing.T) {

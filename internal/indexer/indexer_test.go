@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	"go.uber.org/zap/zaptest"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"

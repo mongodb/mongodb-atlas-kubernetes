@@ -21,10 +21,9 @@ import (
 	"reflect"
 	"regexp"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
 
 func Project(project *akov2.AtlasProject, isGov bool) error {

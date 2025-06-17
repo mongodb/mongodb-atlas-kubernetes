@@ -270,17 +270,11 @@ lint: ## Run the lint against the code
 	golangci-lint run --timeout 10m
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
-	@echo "goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -l -w \$$(GO_SOURCES)"
-	@goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -l -w $(GO_SOURCES)
+	gci write -s standard -s default -s localmodule $(GO_SOURCES)
 	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: fmt
-fmt: $(TIMESTAMPS_DIR)/fmt ## Run go fmt against code
-
-fix-lint:
-	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
-	goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -w ./internal ./api ./test
-	golangci-lint run --fix
+fmt: $(TIMESTAMPS_DIR)/fmt ## Run gci (stricter go fmt & imports) against code
 
 $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
 	go vet ./...

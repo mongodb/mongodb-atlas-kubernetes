@@ -15,10 +15,10 @@
 package opm
 
 import (
+	"strings"
+
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-
-	"strings"
 
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/cli"
 )

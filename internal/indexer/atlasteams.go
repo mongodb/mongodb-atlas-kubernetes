@@ -16,7 +16,6 @@ package indexer
 
 import (
 	"go.uber.org/zap"
-
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 

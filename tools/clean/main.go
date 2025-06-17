@@ -20,10 +20,9 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/jedib0t/go-pretty/v6/text"
 	"tools/clean/atlas"
 	"tools/clean/provider"
-
-	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 func main() {
