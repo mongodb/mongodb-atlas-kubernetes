@@ -15,8 +15,10 @@
 package v1
 
 import (
+	"fmt"
 	"testing"
 
+	gofuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,6 +27,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel"
 )
+
+const fuzzIterations = 100
 
 func TestIntegrationCELChecks(t *testing.T) {
 	for _, tc := range []struct {
@@ -212,4 +216,16 @@ func TestIntegrationCELChecks(t *testing.T) {
 			require.Equal(t, tc.expectedErrors, cel.ErrorListAsStrings(errs))
 		})
 	}
+}
+
+func FuzzIntegrationCloning(f *testing.F) {
+	for i := uint(0); i < fuzzIterations; i++ {
+		f.Add(([]byte)(fmt.Sprintf("seed sample %x", i)), i)
+	}
+	f.Fuzz(func(t *testing.T, data []byte, index uint) {
+		integrationData := &AtlasThirdPartyIntegration{}
+		gofuzz.NewFromGoFuzz(data).Fuzz(integrationData)
+		copy := integrationData.DeepCopy()
+		assert.Equal(t, integrationData, copy, "failed copy for index=%d", index)
+	})
 }
