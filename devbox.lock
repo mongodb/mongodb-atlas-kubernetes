@@ -257,6 +257,54 @@
         }
       }
     },
+    "gci@latest": {
+      "last_modified": "2025-05-16T20:19:48Z",
+      "resolved": "github:NixOS/nixpkgs/12a55407652e04dcf2309436eb06fef0d3713ef3#gci",
+      "source": "devbox-search",
+      "version": "0.13.6",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/py27impa9idn43bzb7y2r4zk14h0q7yk-gci-0.13.6",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/py27impa9idn43bzb7y2r4zk14h0q7yk-gci-0.13.6"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/mx093fkx35pjw4l1mqklg545qs7ibg6n-gci-0.13.6",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/mx093fkx35pjw4l1mqklg545qs7ibg6n-gci-0.13.6"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/hhzqb12pdlm5yjs7kfwx8d8iyzdnxrzz-gci-0.13.6",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/hhzqb12pdlm5yjs7kfwx8d8iyzdnxrzz-gci-0.13.6"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gg1h96hk4xbj23z9lk5w8z8yjcaynxjz-gci-0.13.6",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gg1h96hk4xbj23z9lk5w8z8yjcaynxjz-gci-0.13.6"
+        }
+      }
+    },
     "gettext@latest": {
       "last_modified": "2025-05-26T17:43:11Z",
       "resolved": "github:NixOS/nixpkgs/bdc995d3e97cec29eacc8fbe87e66edfea26b861#gettext",
