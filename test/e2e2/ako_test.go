@@ -45,7 +45,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
-		ako = runTestAKO(control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
+		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
 
 		ctx = context.Background()

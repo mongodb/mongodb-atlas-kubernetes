@@ -162,10 +162,10 @@ func TestReconcile(t *testing.T) {
 				Build()
 			r := &AtlasDatabaseUserReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    zaptest.NewLogger(t).Sugar(),
+					Client:        k8sClient,
+					Log:           zaptest.NewLogger(t).Sugar(),
+					AtlasProvider: DefaultTestProvider(t),
 				},
-				AtlasProvider: DefaultTestProvider(t),
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 

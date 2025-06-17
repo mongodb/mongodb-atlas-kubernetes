@@ -1,0 +1,29 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: atlas-project-test-slack
+spec:
+  name: atlas-project-test-slack
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: slack-secret
+  labels:
+    atlas.mongodb.com/type: credentials
+stringData:
+  apiToken: "00000000000000000000000000000000"
+---
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-slack-integ
+spec:
+  projectRef:
+    name: atlas-project-test-slack
+  type: SLACK
+  slack:
+    channelName: mychannel
+    teamName: myteam
+    apiTokenSecretRef:
+      name: slack-secret

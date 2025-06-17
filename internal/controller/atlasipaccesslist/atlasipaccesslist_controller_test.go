@@ -157,14 +157,13 @@ func TestReconcile(t *testing.T) {
 			logger := zaptest.NewLogger(t).Sugar()
 			ctx := &workflow.Context{
 				Context: context.Background(),
-				Log:     logger,
 			}
 			r := &AtlasIPAccessListReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
+					Client:        k8sClient,
+					Log:           logger,
+					AtlasProvider: tt.provider,
 				},
-				AtlasProvider: tt.provider,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			result, err := r.Reconcile(ctx.Context, tt.request)

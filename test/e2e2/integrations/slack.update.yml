@@ -1,0 +1,13 @@
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-slack-integ
+spec:
+  projectRef:
+    name: atlas-project-test-slack
+  type: SLACK
+  slack:
+    channelName: mychannel2
+    teamName: myteam2
+    apiTokenSecretRef:
+      name: slack-secret

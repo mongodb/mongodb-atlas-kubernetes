@@ -1,0 +1,117 @@
+// Copyright 2025 MongoDB Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package thirdpartyintegration
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+)
+
+var (
+	// ErrNotFound is returned when the expected integration is not found
+	ErrNotFound = errors.New("integration not found")
+)
+
+type ThirdPartyIntegrationService interface {
+	Create(ctx context.Context, projectID string, integration *ThirdPartyIntegration) (*ThirdPartyIntegration, error)
+	Get(ctx context.Context, projectID, integrationType string) (*ThirdPartyIntegration, error)
+	Update(ctx context.Context, projectID string, integration *ThirdPartyIntegration) (*ThirdPartyIntegration, error)
+	Delete(ctx context.Context, projectID, integrationType string) error
+}
+
+func NewThirdPartyIntegrationServiceFromClientSet(clientSet *atlas.ClientSet) ThirdPartyIntegrationService {
+	return NewThirdPartyIntegrationService(clientSet.SdkClient20250312002.ThirdPartyIntegrationsApi)
+}
+
+func NewThirdPartyIntegrationService(integrationsAPI admin.ThirdPartyIntegrationsApi) ThirdPartyIntegrationService {
+	return &thirdPartyIntegration{integrationsAPI: integrationsAPI}
+}
+
+type thirdPartyIntegration struct {
+	integrationsAPI admin.ThirdPartyIntegrationsApi
+}
+
+func (tpi *thirdPartyIntegration) Create(ctx context.Context, projectID string, integration *ThirdPartyIntegration) (*ThirdPartyIntegration, error) {
+	atlasIntegration, err := toAtlas(integration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert integration to Atlas: %w", err)
+	}
+	integrationPages, _, err := tpi.integrationsAPI.CreateThirdPartyIntegration(
+		ctx, atlasIntegration.GetType(), projectID, atlasIntegration).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create integration from config %v: %w", integration, err)
+	}
+	if len(integrationPages.GetResults()) != 1 {
+		return nil, fmt.Errorf("expected an integration result reply but got %d", len(*integrationPages.Results))
+	}
+
+	newIntegration, err := fromAtlas(&integrationPages.GetResults()[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert integration from Atlas: %w", err)
+	}
+	return newIntegration, nil
+}
+
+func (tpi *thirdPartyIntegration) Get(ctx context.Context, projectID, integrationType string) (*ThirdPartyIntegration, error) {
+	atlasIntegration, _, err := tpi.integrationsAPI.GetThirdPartyIntegration(ctx, projectID, integrationType).Execute()
+	if err != nil {
+		if admin.IsErrorCode(err, "INTEGRATION_NOT_CONFIGURED") {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to get integration type %v for project %v: %w", integrationType, projectID, err)
+	}
+	peer, err := fromAtlas(atlasIntegration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert integration from Atlas: %w", err)
+	}
+	return peer, nil
+}
+
+func (tpi *thirdPartyIntegration) Update(ctx context.Context, projectID string, integration *ThirdPartyIntegration) (*ThirdPartyIntegration, error) {
+	atlasIntegration, err := toAtlas(integration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert integration to Atlas: %w", err)
+	}
+	integrationPages, _, err := tpi.integrationsAPI.UpdateThirdPartyIntegration(
+		ctx, atlasIntegration.GetType(), projectID, atlasIntegration).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to update integration with config %v: %w", integration, err)
+	}
+	if len(integrationPages.GetResults()) != 1 {
+		return nil, fmt.Errorf("expected an integration result reply but got %d", len(*integrationPages.Results))
+	}
+
+	newIntegration, err := fromAtlas(&integrationPages.GetResults()[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert integration from Atlas: %w", err)
+	}
+	return newIntegration, nil
+}
+
+func (tpi *thirdPartyIntegration) Delete(ctx context.Context, projectID, integrationType string) error {
+	_, err := tpi.integrationsAPI.DeleteThirdPartyIntegration(ctx, integrationType, projectID).Execute()
+	if err != nil {
+		if admin.IsErrorCode(err, "INTEGRATION_NOT_CONFIGURED") {
+			return ErrNotFound
+		}
+		return fmt.Errorf("failed to delete integration type %s: %w", integrationType, err)
+	}
+	return nil
+}

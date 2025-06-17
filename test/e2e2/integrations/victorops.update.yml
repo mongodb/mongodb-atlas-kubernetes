@@ -1,0 +1,12 @@
+apiVersion: atlas.nextapi.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+ name: atlas-victorops-integ
+spec:
+  projectRef:
+    name: atlas-project-test-victorops
+  type: VICTOR_OPS
+  victorOps:
+    apiKeySecretRef:
+      name: victorops-secret
+    routingKey: routing-key2

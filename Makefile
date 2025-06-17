@@ -223,7 +223,7 @@ e2e2: run-kind manager install-credentials install-crds set-namespace ## Run e2e
 	NO_GORUN=1 \
 	AKO_E2E2_TEST=1 \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
-	ginkgo --race --label-filter=$(label) --timeout 120m -vv test/e2e2/
+	ginkgo --race --label-filter=$(label) -ldflags="$(LD_FLAGS)" --timeout 120m -vv test/e2e2/
 
 .PHONY: e2e-openshift-upgrade
 e2e-openshift-upgrade:
@@ -581,12 +581,26 @@ run: prepare-run ## Run a freshly compiled manager against kind
 ifdef RUN_YAML
 	kubectl apply -n $(OPERATOR_NAMESPACE) -f $(RUN_YAML)
 endif
+ifdef BACKGROUND
+	@bash -c '(VERSION=$(NEXT_VERSION) \
+	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
+	nohup bin/manager --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
+	--atlas-domain=$(ATLAS_DOMAIN) \
+	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME) > ako.log 2>&1 & echo $$! > ako.pid \
+	&& echo "OPERATOR_PID=$$!")'
+else
 	VERSION=$(NEXT_VERSION) \
 	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
 	bin/manager --object-deletion-protection=false --log-level=$(RUN_LOG_LEVEL) \
 	--atlas-domain=$(ATLAS_DOMAIN) \
 	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME)
+endif
+
+.PHONY: stop-ako
+stop-ako:  
+	@kill `cat ako.pid` && rm ako.pid || echo "AKO process not found or already stopped!"  
 
 .PHONY: local-docker-build
 local-docker-build:
