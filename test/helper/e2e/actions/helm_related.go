@@ -18,14 +18,12 @@ import (
 	"fmt"
 	"time"
 
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/cli/helm"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 

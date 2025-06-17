@@ -19,13 +19,12 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"time"
-
-	"encoding/base64"
 	"testing"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )

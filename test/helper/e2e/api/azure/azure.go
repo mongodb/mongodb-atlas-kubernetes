@@ -21,13 +21,12 @@ import (
 	"path"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
-
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
-
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 )
 
 // AZURE_CLIENT_ID	id of an Azure Active Directory application

@@ -17,9 +17,8 @@ package v1
 import (
 	"testing"
 
-	"go.mongodb.org/atlas/mongodbatlas"
-
 	"github.com/go-test/deep"
+	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
