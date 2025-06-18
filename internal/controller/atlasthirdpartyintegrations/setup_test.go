@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -122,7 +123,7 @@ func TestSetupWithManager(t *testing.T) {
 		deletionProtection: false,
 	}
 
-	require.NoError(t, handler.SetupWithManager(fakeMgr, &fakeReconciler{}))
+	require.NoError(t, handler.SetupWithManager(fakeMgr, &fakeReconciler{}, controller.Options{}))
 }
 
 func TestNewReconcileRequest(t *testing.T) {

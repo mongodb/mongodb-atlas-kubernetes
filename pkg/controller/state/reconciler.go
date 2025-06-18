@@ -30,6 +30,7 @@ import (
 	ctrlrtbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -44,7 +45,7 @@ type Result struct {
 }
 
 type StateHandler[T any] interface {
-	SetupWithManager(ctrl.Manager, reconcile.Reconciler, ...SetupManagerOption) error
+	SetupWithManager(ctrl.Manager, reconcile.Reconciler, controller.Options) error
 	For() (client.Object, builder.Predicates)
 	HandleInitial(context.Context, *T) (Result, error)
 	HandleImportRequested(context.Context, *T) (Result, error)
@@ -89,8 +90,6 @@ type UnstructuredStateReconciler = StateHandler[unstructured.Unstructured]
 
 type ControllerSetupBuilder = ctrlrtbuilder.TypedBuilder[reconcile.Request]
 
-type SetupManagerOption func(builder *ControllerSetupBuilder) *ControllerSetupBuilder
-
 func NewStateReconciler[T any](target StateHandler[T], options ...ReconcilerOptionFn[T]) *Reconciler[T] {
 	r := &Reconciler[T]{
 		reconciler: target,
@@ -108,20 +107,13 @@ func NewUnstructuredStateReconciler(target UnstructuredStateReconciler, gvk sche
 	}
 }
 
-func (r *Reconciler[T]) SetupWithManager(mgr ctrl.Manager, options ...SetupManagerOption) error {
+func (r *Reconciler[T]) SetupWithManager(mgr ctrl.Manager, defaultOptions controller.Options) error {
 	r.cluster = mgr
-	return r.reconciler.SetupWithManager(mgr, r, options...)
+	return r.reconciler.SetupWithManager(mgr, r, defaultOptions)
 }
 
 func (r *Reconciler[T]) For() (client.Object, builder.Predicates) {
 	return r.reconciler.For()
-}
-
-func ApplyOptions(builder *ControllerSetupBuilder, options ...SetupManagerOption) *ControllerSetupBuilder {
-	for _, optionFn := range options {
-		builder = optionFn(builder)
-	}
-	return builder
 }
 
 func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconcile.Result, error) {

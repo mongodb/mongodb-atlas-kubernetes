@@ -48,6 +48,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 const DefaultReapplySupport = true
@@ -159,12 +160,9 @@ func newCtrlStateReconciler[T any](r ctrlstate.Reconciler[T]) *ctrlStateReconcil
 }
 
 func (nr *ctrlStateReconciler[T]) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
-	skipNameOptionFn := func(skipNameValidation bool) ctrlstate.SetupManagerOption {
-		return func(builder *ctrlstate.ControllerSetupBuilder) *ctrlstate.ControllerSetupBuilder {
-			return builder.WithOptions(controller.TypedOptions[reconcile.Request]{
-				SkipNameValidation: pointer.MakePtr(skipNameValidation),
-			})
-		}
+	defaultReconcilerOptions := controller.TypedOptions[reconcile.Request]{
+		RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+		SkipNameValidation: pointer.MakePtr(skipNameValidation),
 	}
-	return nr.Reconciler.SetupWithManager(mgr, skipNameOptionFn(skipNameValidation))
+	return nr.Reconciler.SetupWithManager(mgr, defaultReconcilerOptions)
 }
