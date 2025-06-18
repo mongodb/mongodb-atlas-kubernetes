@@ -134,7 +134,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 			r.globalSecretRef,
 			r.reapplySupport,
 		)
-		compatibleIntegrationsReconciler := newCtrlStateReconciler(*integrationsReconciler)
+		compatibleIntegrationsReconciler := newCtrlStateReconciler(integrationsReconciler)
 		reconcilers = append(reconcilers, compatibleIntegrationsReconciler)
 	}
 	r.reconcilers = reconcilers
@@ -152,10 +152,10 @@ func (r *Registry) defaultPredicates() []predicate.Predicate {
 }
 
 type ctrlStateReconciler[T any] struct {
-	ctrlstate.Reconciler[T]
+	*ctrlstate.Reconciler[T]
 }
 
-func newCtrlStateReconciler[T any](r ctrlstate.Reconciler[T]) *ctrlStateReconciler[T] {
+func newCtrlStateReconciler[T any](r *ctrlstate.Reconciler[T]) *ctrlStateReconciler[T] {
 	return &ctrlStateReconciler[T]{Reconciler: r}
 }
 
