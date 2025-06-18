@@ -28,6 +28,13 @@ component_management:
       paths:
         - "!tests/"
         - "!tools/"
+      statuses:    
+        - type: project
+          threshold: -0.5   # Allow -0.5% regression in coverage
+          carryforward: false
+          target: auto
+          informational: true   
+        - type: patch
     - component_id: test-helpers
       name: test-helpers
       paths:
