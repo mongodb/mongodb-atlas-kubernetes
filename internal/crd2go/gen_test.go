@@ -34,6 +34,21 @@ func TestGenerateFromCRDStream(t *testing.T) {
 	}
 }
 
+func TestRefs(t *testing.T) {
+	buffers := make(map[string]*bytes.Buffer)
+
+	in, err := samples.Open("samples/samplerefs.yaml")
+	require.NoError(t, err)
+	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, crd2go.FirstVersion, preloadedTypes()...))
+
+	assert.NotEmpty(t, buffers)
+	assert.Len(t, buffers, 1)
+	for key, buf := range buffers {
+		want := readTestFile(t, filepath.Join("samples", "refs", "v1",  key))
+		require.Equal(t, want, buf.String())
+	}
+}
+
 func readTestFile(t *testing.T, path string) string {
 	t.Helper()
 	f, err := samples.Open(path)

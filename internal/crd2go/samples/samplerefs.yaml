@@ -1,0 +1,71 @@
+apiVersion: apiextensions.k8s.io/v1  
+kind: CustomResourceDefinition  
+metadata:  
+  name: mycrds.sample.example.com  
+spec:  
+  group: sample.example.com  
+  names:  
+    kind: MyCRD  
+    plural: mycrds  
+    singular: mycrd  
+  scope: Namespaced  
+  versions:  
+    - name: v1  
+      served: true  
+      storage: true  
+      schema:  
+        openAPIV3Schema:  
+          type: object  
+          properties:  
+            apiVersion:  
+              type: string  
+              enum:  
+                - sample.example.com/v1  
+            kind:  
+              type: string  
+              enum:  
+                - MyCRD  
+            metadata:  
+              type: object  
+            spec:  
+              type: object  
+              properties:  
+                title:  
+                  type: string  
+                localRef:  
+                  type: object  
+                  properties:  
+                    name:  
+                      type: string  
+                ref:  
+                  type: object  
+                  properties:  
+                    name:  
+                      type: string  
+                    namespace:  
+                      type: string  
+            status:  
+              type: object  
+              properties:  
+                id:  
+                  type: string  
+                conditions:  
+                  type: array  
+                  items:  
+                    type: object  
+                    properties:  
+                      type:  
+                        type: string  
+                      status:  
+                        type: string  
+                        enum:  
+                          - "True"  
+                          - "False"  
+                          - "Unknown"  
+                      reason:  
+                        type: string  
+                      message:  
+                        type: string  
+                      lastTransitionTime:  
+                        type: string  
+                        format: date-time  
