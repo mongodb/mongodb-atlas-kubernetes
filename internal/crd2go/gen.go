@@ -142,6 +142,9 @@ func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomRe
 
 // generateType generates Go code for a given type using the provided TypeDict
 func generateType(td TypeDict, t *GoType) (*jen.Statement, error) {
+	if t.Import != nil { // do not generate code for known imported types
+		return jen.Null(), nil
+	}
 	if t.Kind == StructKind {
 		return generateStructType(td, t)
 	}
