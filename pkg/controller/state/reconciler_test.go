@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
@@ -538,7 +539,7 @@ type dummyPodReconciler struct {
 	handleState func(context.Context, *dummyObject) (Result, error)
 }
 
-func (d *dummyPodReconciler) SetupWithManager(_ ctrl.Manager, _ reconcile.Reconciler, _ ...SetupManagerOption) error {
+func (d *dummyPodReconciler) SetupWithManager(_ ctrl.Manager, _ reconcile.Reconciler, _ controller.Options) error {
 	return nil
 }
 func (d *dummyPodReconciler) For() (client.Object, builder.Predicates) {

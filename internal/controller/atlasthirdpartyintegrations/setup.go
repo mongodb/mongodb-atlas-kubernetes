@@ -41,7 +41,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	mckpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/predicate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 type serviceBuilderFunc func(*atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService
@@ -83,10 +82,10 @@ func (r *AtlasThirdPartyIntegrationHandler) For() (client.Object, builder.Predic
 	return &akov2next.AtlasThirdPartyIntegration{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler, opts ...ctrlstate.SetupManagerOption) error {
+func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
 	obj := &akov2next.AtlasThirdPartyIntegration{}
-	builder := controllerruntime.NewControllerManagedBy(mgr).
+	return controllerruntime.NewControllerManagedBy(mgr).
 		For(
 			obj,
 			ctrlrtbuilder.WithPredicates(
@@ -107,10 +106,7 @@ func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, r
 			handler.EnqueueRequestsFromMapFunc(h.integrationForSecretMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
-		WithOptions(controller.Options{
-			RateLimiter: ratelimit.NewRateLimiter[reconcile.Request](),
-		})
-	return ctrlstate.ApplyOptions(builder, opts...).Complete(rec)
+		WithOptions(defaultOptions).Complete(rec)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) integrationForProjectMapFunc() handler.MapFunc {

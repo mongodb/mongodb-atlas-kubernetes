@@ -48,6 +48,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 const DefaultReapplySupport = true
@@ -133,7 +134,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 			r.globalSecretRef,
 			r.reapplySupport,
 		)
-		compatibleIntegrationsReconciler := newCtrlStateReconciler(*integrationsReconciler)
+		compatibleIntegrationsReconciler := newCtrlStateReconciler(integrationsReconciler)
 		reconcilers = append(reconcilers, compatibleIntegrationsReconciler)
 	}
 	r.reconcilers = reconcilers
@@ -151,20 +152,17 @@ func (r *Registry) defaultPredicates() []predicate.Predicate {
 }
 
 type ctrlStateReconciler[T any] struct {
-	ctrlstate.Reconciler[T]
+	*ctrlstate.Reconciler[T]
 }
 
-func newCtrlStateReconciler[T any](r ctrlstate.Reconciler[T]) *ctrlStateReconciler[T] {
+func newCtrlStateReconciler[T any](r *ctrlstate.Reconciler[T]) *ctrlStateReconciler[T] {
 	return &ctrlStateReconciler[T]{Reconciler: r}
 }
 
 func (nr *ctrlStateReconciler[T]) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
-	skipNameOptionFn := func(skipNameValidation bool) ctrlstate.SetupManagerOption {
-		return func(builder *ctrlstate.ControllerSetupBuilder) *ctrlstate.ControllerSetupBuilder {
-			return builder.WithOptions(controller.TypedOptions[reconcile.Request]{
-				SkipNameValidation: pointer.MakePtr(skipNameValidation),
-			})
-		}
+	defaultReconcilerOptions := controller.TypedOptions[reconcile.Request]{
+		RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+		SkipNameValidation: pointer.MakePtr(skipNameValidation),
 	}
-	return nr.Reconciler.SetupWithManager(mgr, skipNameOptionFn(skipNameValidation))
+	return nr.Reconciler.SetupWithManager(mgr, defaultReconcilerOptions)
 }
