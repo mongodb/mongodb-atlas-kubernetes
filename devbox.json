@@ -3,7 +3,8 @@
   "packages": [
     "neovim@latest",
     "go@latest",
-    "vscodium@latest"
+    "vscodium@latest",
+    "kubebuilder@latest"
   ],
   "shell": {
     "init_hook": [

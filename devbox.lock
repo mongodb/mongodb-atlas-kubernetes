@@ -53,6 +53,54 @@
         }
       }
     },
+    "kubebuilder@latest": {
+      "last_modified": "2025-05-16T20:19:48Z",
+      "resolved": "github:NixOS/nixpkgs/12a55407652e04dcf2309436eb06fef0d3713ef3#kubebuilder",
+      "source": "devbox-search",
+      "version": "4.5.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/4i17mznvpzns68pv3jwkx53k2bcjg2i7-kubebuilder-4.5.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/4i17mznvpzns68pv3jwkx53k2bcjg2i7-kubebuilder-4.5.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/d384rw9h29288l8v4yqf8wcd591nnx9k-kubebuilder-4.5.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/d384rw9h29288l8v4yqf8wcd591nnx9k-kubebuilder-4.5.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/3mrj62xs7qyzgv2x7my5fdr3i5lh1kvb-kubebuilder-4.5.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/3mrj62xs7qyzgv2x7my5fdr3i5lh1kvb-kubebuilder-4.5.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/hwa68xs5rwygadq8qfliaz7l58h0m9bh-kubebuilder-4.5.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/hwa68xs5rwygadq8qfliaz7l58h0m9bh-kubebuilder-4.5.1"
+        }
+      }
+    },
     "neovim@latest": {
       "last_modified": "2025-03-29T14:41:00Z",
       "resolved": "github:NixOS/nixpkgs/eb0e0f21f15c559d2ac7633dc81d079d1caf5f5f#neovim",

@@ -66,7 +66,7 @@ func (gt *GoType) signature() string {
 		return "nil"
 	}
 	if gt.Kind == StructKind {
-		fieldSignatures := make([]string, len(gt.Fields))
+		fieldSignatures := make([]string, 0, len(gt.Fields))
 		for _, field := range gt.Fields {
 			fieldSignatures = append(fieldSignatures, field.signature())
 		}
@@ -133,6 +133,7 @@ func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 			return fmt.Errorf("failed to find existing type for %v", f)
 		}
 		goType.Name = existingType.Name
+		goType.Import = existingType.Import
 		return nil
 	}
 
@@ -380,7 +381,7 @@ func StructTypeFrom(t reflect.Type) (*GoType, error) {
 			return nil, fmt.Errorf("failed to translate field's %s type %v: %w",
 				f.Name, f.Type, err)
 		}
-		fields = append(gt.Fields, NewGoField(f.Name, gt))
+		fields = append(fields, NewGoField(f.Name, gt))
 	}
 	return AddImportInfo(NewStruct(t.Name(), fields), t.PkgPath(), ""), nil
 }
