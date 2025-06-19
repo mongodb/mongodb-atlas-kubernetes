@@ -74,12 +74,21 @@ jobs:
           E2E2_LABELS: ${{ env.e2e2_labels }}
           USE_JSON: true
         run: |
+          PR_LABELS=${{ env.PR_LABELS }}
+          # Nightly runs all tests, overriding PR labels as '["test/e2e2/*"]'
+          if [ "${{ github.ref }}" == "refs/heads/main" ];then
+            PR_LABELS='["test/e2e2/*"]'
+            echo "Nightly runs all tests"
+          fi
           echo PR_LABELS=${{ env.PR_LABELS }}
           echo E2E2_LABELS=${{ env.E2E2_LABELS }}
-          make compute-labels
-          ./bin/ginkgo-labels > result.json
+          if [ "${PR_LABELS}" == '["test/e2e2/*"]' ]; then
+            echo "["all-e2e2-tests"]" > result.json
+          else
+            make compute-labels
+            ./bin/ginkgo-labels > result.json
+          fi
           echo "E2E2 tests to execute $(cat result.json | jq -c .e2e2)"
-          
           echo "e2e2_matrix=$(cat result.json | jq -c .e2e2)" >> $GITHUB_OUTPUT
 
   compute:
@@ -94,8 +103,10 @@ jobs:
         run: |
           # Note the use of external single quotes to allow for double quotes at inline YAML array
           matrix='["v1.30.10-kind"]'
+          # Nightly runs in both the newest and oldest supported Kubernetes versions
           if [ "${{ github.ref }}" == "refs/heads/main" ];then
             matrix='["v1.30.10-kind", "v1.32.2-kind"]'
+            echo "Nightly runs oldest and newest Kubernetes supported versions"
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
@@ -173,7 +184,12 @@ jobs:
           USE_KIND: false
         run: |
           echo "Using ENV: ${{ steps.select-env.outputs.ENV }}"
-          devbox run -- make e2e2 label=${{ env.TEST_NAME }}
+          label=${TEST_NAME}
+          if [ "${TEST_NAME}" == "all-e2e2-tests" ]; then
+            echo "Passing an empty label to run all tests"
+            label=""
+          fi
+          devbox run -- make e2e2 label="${label}"          
 
       - name: Upload operator logs
         if: ${{ failure() }}
