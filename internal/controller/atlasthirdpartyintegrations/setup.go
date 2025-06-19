@@ -179,7 +179,7 @@ func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Cont
 	}
 	req.ClientSet = sdkClientSet
 	req.Service = h.serviceBuilder(sdkClientSet)
-	project, err := h.ResolveProject(ctx, sdkClientSet.SdkClient20231115008, integration)
+	project, err := h.ResolveProject(ctx, sdkClientSet.SdkClient20250312002, integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch referenced project: %w", err)
 	}
