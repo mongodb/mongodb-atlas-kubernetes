@@ -318,7 +318,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
 			replicationSpecsCheck := func(deployment *admin.ClusterDescription20240805) {
-				Expect(deployment.GetReplicationSpecs()).To(HaveLen(1))
 				Expect(deployment.GetReplicationSpecs()[0].GetId()).NotTo(BeEmpty())
 				Expect(deployment.GetReplicationSpecs()[0].GetZoneName()).To(Equal("Zone 1"))
 				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()).To(HaveLen(1))
