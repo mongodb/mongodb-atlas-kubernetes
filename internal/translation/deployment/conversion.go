@@ -923,7 +923,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, d
 		)
 	}
 
-	for range replicationSpecs[0].NumShards {
+	for i := 1; i < replicationSpecs[0].NumShards; i++ {
 		specs = append(specs, specs[0])
 	}
 
