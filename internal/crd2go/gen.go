@@ -90,7 +90,7 @@ func generateCRD(td TypeDict, crd *apiextensions.CustomResourceDefinition, versi
 	f.ImportAlias(metav1, "metav1")
 	f.Func().Id("init").Params().Block(
 		jen.Id("SchemeBuilder").Dot("Register").Params(
-			jen.Op("&").Id("Group").Values(),
+			jen.Op("&").Id(crd.Spec.Names.Kind).Values(),
 		),
 	)
 
@@ -102,7 +102,8 @@ func generateCRD(td TypeDict, crd *apiextensions.CustomResourceDefinition, versi
 
 // generateCRDRootObject generates the root object for the CRD
 func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomResourceDefinition, v *apiextensions.CustomResourceDefinitionVersion) error {
-	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object").Line()
+	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object")
+	f.Comment("+kubebuilder:object:root=true").Line()
 
 	specType := fmt.Sprintf("%sSpec", crd.Spec.Names.Kind)
 	statusType := fmt.Sprintf("%sStatus", crd.Spec.Names.Kind)
