@@ -56,8 +56,10 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 	var testNamespace *corev1.Namespace
 
 	_ = BeforeAll(func() {
+		if !version.IsExperimental() {
+			Skip("Skipping experimental test on non experimental build")
+		}
 		deletionProtectionOff := false
-		Expect(version.IsExperimental()).To(BeTrue())
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
 
@@ -160,62 +162,53 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			})
 		},
 		Entry("Test[datadog]: Datadog integration with a parent project",
-			Label("datadog"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/datadog.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/datadog.update.yml")),
 			"atlas-datadog-integ",
 		),
 		Entry("Test[msteams]: Microsoft Teams integration with a parent project",
-			Label("msteams"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/msteams.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/msteams.update.yml")),
 			"atlas-msteams-integ",
 		),
 		Entry("Test[newrelic]: New Relic integration with a parent project",
-			Label("newrelic"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/newrelic.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/newrelic.update.yml")),
 			"atlas-newrelic-integ",
 		),
 		Entry("Test[opsgenie]: Ops Genie integration with a parent project",
-			Label("opsgenie"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/opsgenie.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/opsgenie.update.yml")),
 			"atlas-opsgenie-integ",
 		),
 		Entry("Test[pagerduty]: PagerDuty integration with a parent project",
-			Label("pagerduty"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/pagerduty.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/pagerduty.update.yml")),
 			"atlas-pagerduty-integ",
 		),
 		Entry("Test[prometheus]: Prometheus integration with a parent project",
-			Label("prometheus"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/prometheus.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/prometheus.update.yml")),
 			"atlas-prometheus-integ",
 		),
 		Entry("Test[slack]: Slack integration with a parent project",
-			Label("slack"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/slack.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/slack.update.yml")),
 			"atlas-slack-integ",
 		),
 		Entry("Test[victorops]: Victor Ops integration with a parent project",
-			Label("victorops"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/victorops.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/victorops.update.yml")),
 			"atlas-victorops-integ",
 		),
 		Entry("Test[webhook]: Webhooks integration with a parent project",
-			Label("webhook"),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/webhook.sample.yml")),
 			yml.MustParseObjects(yml.MustOpen(integrations, "integrations/webhook.update.yml")),
 			"atlas-webhook-integ",
 		),
 	)
 
-	It("Can handle isolated integrations", Label("isolated-integration"), func() {
+	It("Can handle isolated integrations", func() {
 		project := akov2.AtlasProject{
 			TypeMeta:   v1.TypeMeta{Kind: "AtlasProject", APIVersion: akov2.GroupVersion.String()},
 			ObjectMeta: v1.ObjectMeta{Name: "atlas-project", Namespace: testNamespace.Name},
