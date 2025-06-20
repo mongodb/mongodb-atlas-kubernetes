@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
 
 const (
@@ -40,5 +40,5 @@ func NewAtlasThirdPartyIntegrationByProjectIndexer(logger *zap.Logger) *AtlasThi
 }
 
 func (*AtlasThirdPartyIntegrationByProjectIndexer) Object() client.Object {
-	return &akov2next.AtlasThirdPartyIntegration{}
+	return &akov2.AtlasThirdPartyIntegration{}
 }

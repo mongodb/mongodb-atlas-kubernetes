@@ -125,17 +125,12 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
+
+	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(c, ap, r.deletionProtection, r.logger, r.globalSecretRef, r.reapplySupport)
+	reconcilers = append(reconcilers, newCtrlStateReconciler(integrationsReconciler))
+
 	if version.IsExperimental() {
-		integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(
-			c,
-			ap,
-			r.deletionProtection,
-			r.logger,
-			r.globalSecretRef,
-			r.reapplySupport,
-		)
-		compatibleIntegrationsReconciler := newCtrlStateReconciler(integrationsReconciler)
-		reconcilers = append(reconcilers, compatibleIntegrationsReconciler)
+		// Add experimental controllers here
 	}
 	r.reconcilers = reconcilers
 }

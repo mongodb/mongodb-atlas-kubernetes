@@ -30,8 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 )
 
 const testSecret = "my-slack-secret"
@@ -40,7 +40,7 @@ func TestIntegrationsSecretChanged(t *testing.T) {
 	integration := sampleSlackIntegration(testSecret)
 	testScheme := runtime.NewScheme()
 	assert.NoError(t, v1.AddToScheme(testScheme))
-	assert.NoError(t, akov2next.AddToScheme(testScheme))
+	assert.NoError(t, akov2.AddToScheme(testScheme))
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(testScheme).
 		WithObjects(integration).
@@ -111,7 +111,7 @@ func TestIntegrationsSecretHash(t *testing.T) {
 	integration := sampleSlackIntegration(testSecret)
 	testScheme := runtime.NewScheme()
 	assert.NoError(t, v1.AddToScheme(testScheme))
-	assert.NoError(t, akov2next.AddToScheme(testScheme))
+	assert.NoError(t, akov2.AddToScheme(testScheme))
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(testScheme).
 		WithObjects(integration).
@@ -140,20 +140,20 @@ func TestIntegrationsSecretHash(t *testing.T) {
 func TestFetchIntegrationSecrets(t *testing.T) {
 	testScheme := runtime.NewScheme()
 	assert.NoError(t, v1.AddToScheme(testScheme))
-	assert.NoError(t, akov2next.AddToScheme(testScheme))
+	assert.NoError(t, akov2.AddToScheme(testScheme))
 	for _, tc := range []struct {
 		name        string
-		integration *akov2next.AtlasThirdPartyIntegration
+		integration *akov2.AtlasThirdPartyIntegration
 		secret      *v1.Secret
 		want        map[string][]byte
 		wantErr     string
 	}{
 		{
 			name: "datadog secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						APIKeySecretRef: api.LocalObjectReference{
 							Name: "datadog-secret",
 						},
@@ -171,10 +171,10 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "ms teams secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "MICROSOFT_TEAMS",
-					MicrosoftTeams: &akov2next.MicrosoftTeamsIntegration{
+					MicrosoftTeams: &akov2.MicrosoftTeamsIntegration{
 						URLSecretRef: api.LocalObjectReference{
 							Name: "msteams-secret",
 						},
@@ -189,10 +189,10 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "new relic secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "NEW_RELIC",
-					NewRelic: &akov2next.NewRelicIntegration{
+					NewRelic: &akov2.NewRelicIntegration{
 						CredentialsSecretRef: api.LocalObjectReference{
 							Name: "new-relic-secret",
 						},
@@ -207,10 +207,10 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "ops genie secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "OPS_GENIE",
-					OpsGenie: &akov2next.OpsGenieIntegration{
+					OpsGenie: &akov2.OpsGenieIntegration{
 						APIKeySecretRef: api.LocalObjectReference{
 							Name: "ops-genie-secret",
 						},
@@ -226,10 +226,10 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "pager duty secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "PAGER_DUTY",
-					PagerDuty: &akov2next.PagerDutyIntegration{
+					PagerDuty: &akov2.PagerDutyIntegration{
 						ServiceKeySecretRef: api.LocalObjectReference{
 							Name: "pager-duty-secret",
 						},
@@ -245,10 +245,10 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "prometheus secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "PROMETHEUS",
-					Prometheus: &akov2next.PrometheusIntegration{
+					Prometheus: &akov2.PrometheusIntegration{
 						PrometheusCredentialsSecretRef: api.LocalObjectReference{
 							Name: "prometheus-secret",
 						},
@@ -265,10 +265,10 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "slack secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "SLACK",
-					Slack: &akov2next.SlackIntegration{
+					Slack: &akov2.SlackIntegration{
 						APITokenSecretRef: api.LocalObjectReference{
 							Name: "slack-secret",
 						},
@@ -285,10 +285,10 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "victor ops secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "VICTOR_OPS",
-					VictorOps: &akov2next.VictorOpsIntegration{
+					VictorOps: &akov2.VictorOpsIntegration{
 						APIKeySecretRef: api.LocalObjectReference{
 							Name: "victor-ops-secret",
 						},
@@ -304,10 +304,10 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "webhook secret",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "WEBHOOK",
-					Webhook: &akov2next.WebhookIntegration{
+					Webhook: &akov2.WebhookIntegration{
 						URLSecretRef: api.LocalObjectReference{
 							Name: "webhook-secret",
 						},
@@ -322,8 +322,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 		},
 		{
 			name: "bad integration",
-			integration: &akov2next.AtlasThirdPartyIntegration{
-				Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+			integration: &akov2.AtlasThirdPartyIntegration{
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "MADE_UP_TYPE",
 				},
 			},
@@ -362,11 +362,11 @@ func apply(ctx context.Context, k8sClient client.Client, obj client.Object) erro
 	return k8sClient.Patch(ctx, copy, client.RawPatch(types.MergePatchType, objJSON))
 }
 
-func sampleSlackIntegration(secretName string) *akov2next.AtlasThirdPartyIntegration {
-	return &akov2next.AtlasThirdPartyIntegration{
-		Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+func sampleSlackIntegration(secretName string) *akov2.AtlasThirdPartyIntegration {
+	return &akov2.AtlasThirdPartyIntegration{
+		Spec: akov2.AtlasThirdPartyIntegrationSpec{
 			Type: "SLACK",
-			Slack: &akov2next.SlackIntegration{
+			Slack: &akov2.SlackIntegration{
 				APITokenSecretRef: api.LocalObjectReference{
 					Name: secretName,
 				},

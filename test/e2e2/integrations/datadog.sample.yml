@@ -14,7 +14,7 @@ metadata:
 stringData:
   apiKey: 1117e51ce6725368c37c3535959a3a75
 ---
-apiVersion: atlas.nextapi.mongodb.com/v1
+apiVersion: atlas.mongodb.com/v1
 kind: AtlasThirdPartyIntegration
 metadata:
  name: atlas-datadog-integ

@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
 
 const (
@@ -36,7 +36,7 @@ func NewAtlasThirdPartyIntegrationBySecretsIndexer(logger *zap.Logger) *AtlasThi
 }
 
 func (*AtlasThirdPartyIntegrationBySecretsIndexer) Object() client.Object {
-	return &akov2next.AtlasThirdPartyIntegration{}
+	return &akov2.AtlasThirdPartyIntegration{}
 }
 
 func (*AtlasThirdPartyIntegrationBySecretsIndexer) Name() string {
@@ -44,9 +44,9 @@ func (*AtlasThirdPartyIntegrationBySecretsIndexer) Name() string {
 }
 
 func (a *AtlasThirdPartyIntegrationBySecretsIndexer) Keys(object client.Object) []string {
-	tpi, ok := object.(*akov2next.AtlasThirdPartyIntegration)
+	tpi, ok := object.(*akov2.AtlasThirdPartyIntegration)
 	if !ok {
-		a.logger.Errorf("expected %T but got %T", &akov2next.AtlasThirdPartyIntegration{}, object)
+		a.logger.Errorf("expected %T but got %T", &akov2.AtlasThirdPartyIntegration{}, object)
 		return nil
 	}
 	name := keyName(tpi)
@@ -56,7 +56,7 @@ func (a *AtlasThirdPartyIntegrationBySecretsIndexer) Keys(object client.Object) 
 	return []string{client.ObjectKey{Name: name, Namespace: tpi.Namespace}.String()}
 }
 
-func keyName(tpi *akov2next.AtlasThirdPartyIntegration) string {
+func keyName(tpi *akov2.AtlasThirdPartyIntegration) string {
 	switch tpi.Spec.Type {
 	case "DATADOG":
 		if tpi.Spec.Datadog != nil && tpi.Spec.Datadog.APIKeySecretRef.Name != "" {

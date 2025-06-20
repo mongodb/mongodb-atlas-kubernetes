@@ -7,7 +7,7 @@ metadata:
 stringData:
   webhookURL: https://example.com/some/other/path
 ---
-apiVersion: atlas.nextapi.mongodb.com/v1
+apiVersion: atlas.mongodb.com/v1
 kind: AtlasThirdPartyIntegration
 metadata:
  name: atlas-msteams-integ

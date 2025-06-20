@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -35,19 +35,19 @@ const (
 	AnnotationContentHash = "mongodb.com/content-hash"
 )
 
-func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	return h.upsert(ctx, state.StateInitial, state.StateCreated, integration)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	return h.upsert(ctx, state.StateCreated, state.StateUpdated, integration)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) HandleUpdated(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) HandleUpdated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	return h.upsert(ctx, state.StateUpdated, state.StateUpdated, integration)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
 		// TODO is this good for all error cases?
@@ -60,7 +60,7 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.
 	return h.unmanage(integration.Spec.Type)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState, integration *akov2next.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to build reconcile request: %w", err))
@@ -166,7 +166,7 @@ func (h *AtlasThirdPartyIntegrationHandler) patchNonConditionStatus(ctx context.
 	return nil
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) populateIntegration(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (*thirdpartyintegration.ThirdPartyIntegration, error) {
+func (h *AtlasThirdPartyIntegrationHandler) populateIntegration(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (*thirdpartyintegration.ThirdPartyIntegration, error) {
 	secrets, err := fetchIntegrationSecrets(ctx, h.Client, integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch integration secrets: %w", err)

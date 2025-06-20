@@ -48,7 +48,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
@@ -95,15 +94,15 @@ func TestNewAtlasThirdPartyIntegrationsReconciler(t *testing.T) {
 func TestAtlasThirdPartyIntegrationHandlerFor(t *testing.T) {
 	handler := &AtlasThirdPartyIntegrationHandler{}
 	obj, preds := handler.For()
-	assert.IsType(t, &akov2next.AtlasThirdPartyIntegration{}, obj)
+	assert.IsType(t, &akov2.AtlasThirdPartyIntegration{}, obj)
 	assert.NotNil(t, preds)
 }
 
 func TestSetupWithManager(t *testing.T) {
 	scheme := runtime.NewScheme()
-	require.NoError(t, akov2next.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
 	require.NoError(t, corev1.AddToScheme(scheme))
-	require.NoError(t, akov2next.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
 
 	mgr, err := manager.New(&rest.Config{}, manager.Options{Scheme: scheme})
 	require.NoError(t, err)
@@ -130,13 +129,13 @@ func TestNewReconcileRequest(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
 	require.NoError(t, akov2.AddToScheme(scheme))
-	require.NoError(t, akov2next.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
 
-	integration := akov2next.AtlasThirdPartyIntegration{
-		Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+	integration := akov2.AtlasThirdPartyIntegration{
+		Spec: akov2.AtlasThirdPartyIntegrationSpec{
 			ProjectDualReference: referenceFakeProject,
 			Type:                 "WEBHOOK",
-			Webhook: &akov2next.WebhookIntegration{
+			Webhook: &akov2.WebhookIntegration{
 				URLSecretRef: api.LocalObjectReference{
 					Name: "webhook-secret",
 				},
@@ -178,7 +177,7 @@ func TestNewReconcileRequest(t *testing.T) {
 func TestIntegrationForSecretMapFunc(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
-	require.NoError(t, akov2next.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
 	logger := zaptest.NewLogger(t)
 	ctx := context.Background()
 	for _, tc := range []struct {
@@ -210,11 +209,11 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 						Name: "test-credential",
 					},
 				},
-				&akov2next.AtlasThirdPartyIntegration{
+				&akov2.AtlasThirdPartyIntegration{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "integration",
 					},
-					Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+					Spec: akov2.AtlasThirdPartyIntegrationSpec{
 						ProjectDualReference: v1.ProjectDualReference{
 							ConnectionSecret: &api.LocalObjectReference{
 								Name: "test-credential",
@@ -235,13 +234,13 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 						Name: "test-prometheus-secret",
 					},
 				},
-				&akov2next.AtlasThirdPartyIntegration{
+				&akov2.AtlasThirdPartyIntegration{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "integration-2",
 					},
-					Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+					Spec: akov2.AtlasThirdPartyIntegrationSpec{
 						Type: "PROMETHEUS",
-						Prometheus: &akov2next.PrometheusIntegration{
+						Prometheus: &akov2.PrometheusIntegration{
 							PrometheusCredentialsSecretRef: api.LocalObjectReference{
 								Name: "test-prometheus-secret",
 							},
@@ -261,8 +260,8 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().
 				WithScheme(scheme).
 				WithObjects(tc.objects...).
-				WithIndex(&akov2next.AtlasThirdPartyIntegration{}, indexer.AtlasThirdPartyIntegrationBySecretsIndex, secretIndex.Keys).
-				WithIndex(&akov2next.AtlasThirdPartyIntegration{}, indexer.AtlasThirdPartyIntegrationCredentialsIndex, credIndex.Keys).
+				WithIndex(&akov2.AtlasThirdPartyIntegration{}, indexer.AtlasThirdPartyIntegrationBySecretsIndex, secretIndex.Keys).
+				WithIndex(&akov2.AtlasThirdPartyIntegration{}, indexer.AtlasThirdPartyIntegrationCredentialsIndex, credIndex.Keys).
 				Build()
 
 			handler := &AtlasThirdPartyIntegrationHandler{

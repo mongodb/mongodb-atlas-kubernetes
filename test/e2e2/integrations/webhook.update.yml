@@ -8,7 +8,7 @@ stringData:
   url: https://example.com/path2
   secret: password2
 ---
-apiVersion: atlas.nextapi.mongodb.com/v1
+apiVersion: atlas.mongodb.com/v1
 kind: AtlasThirdPartyIntegration
 metadata:
  name: atlas-webhook-integ

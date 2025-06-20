@@ -26,11 +26,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
-func (h *AtlasThirdPartyIntegrationHandler) secretChanged(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (bool, error) {
+func (h *AtlasThirdPartyIntegrationHandler) secretChanged(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (bool, error) {
 	secretName, err := secretName(integration) // at this point the secret should have filed at populateIntegration
 	if err != nil {
 		return false, fmt.Errorf("failed to check for secret changes: %w", err)
@@ -51,7 +51,7 @@ func (h *AtlasThirdPartyIntegrationHandler) secretChanged(ctx context.Context, i
 	return true, nil
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) ensureSecretHash(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) error {
+func (h *AtlasThirdPartyIntegrationHandler) ensureSecretHash(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) error {
 	if _, err := h.secretChanged(ctx, integration); err != nil {
 		return fmt.Errorf("failed to ensure secret hash annotation: %w", err)
 	}
@@ -72,7 +72,7 @@ func hashSecret(secretData map[string][]byte) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func fetchIntegrationSecrets(ctx context.Context, kubeClient client.Client, integration *akov2next.AtlasThirdPartyIntegration) (map[string][]byte, error) {
+func fetchIntegrationSecrets(ctx context.Context, kubeClient client.Client, integration *akov2.AtlasThirdPartyIntegration) (map[string][]byte, error) {
 	name, err := secretName(integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to solve integration secret name: %w", err)
@@ -80,7 +80,7 @@ func fetchIntegrationSecrets(ctx context.Context, kubeClient client.Client, inte
 	return fetchSecretData(ctx, kubeClient, name, integration.Namespace)
 }
 
-func secretName(integration *akov2next.AtlasThirdPartyIntegration) (string, error) {
+func secretName(integration *akov2.AtlasThirdPartyIntegration) (string, error) {
 	switch integration.Spec.Type {
 	case "DATADOG":
 		return integration.Spec.Datadog.APIKeySecretRef.Name, nil
