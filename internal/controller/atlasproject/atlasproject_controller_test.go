@@ -26,9 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -71,7 +70,7 @@ func TestRenconcile(t *testing.T) {
 			},
 			atlasSDKMocker: func() *admin.APIClient {
 				notFoundErr := &admin.GenericOpenAPIError{}
-				notFoundErr.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("NOT_IN_GROUP")})
+				notFoundErr.SetModel(admin.ApiError{ErrorCode: "NOT_IN_GROUP"})
 				projectsAPI := mockadmin.NewProjectsApi(t)
 				projectsAPI.EXPECT().GetProjectByName(mock.Anything, "my-project").
 					Return(admin.GetProjectByNameApiRequest{ApiService: projectsAPI})
@@ -173,8 +172,7 @@ func TestRenconcile(t *testing.T) {
 					},
 					SdkClientSetFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, error) {
 						return &atlas_controllers.ClientSet{
-							SdkClient20231115008: tt.atlasSDKMocker(),
-							SdkClient20241113001: &adminv20241113001.APIClient{},
+							SdkClient20250312002: tt.atlasSDKMocker(),
 						}, nil
 					},
 				},

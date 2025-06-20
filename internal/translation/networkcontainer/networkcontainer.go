@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -52,7 +52,7 @@ type networkContainerService struct {
 }
 
 func NewNetworkContainerServiceFromClientSet(clientSet *atlas.ClientSet) NetworkContainerService {
-	return NewNetworkContainerService(clientSet.SdkClient20231115008.NetworkPeeringApi)
+	return NewNetworkContainerService(clientSet.SdkClient20250312002.NetworkPeeringApi)
 }
 
 func NewNetworkContainerService(peeringAPI admin.NetworkPeeringApi) NetworkContainerService {
@@ -117,7 +117,7 @@ func (np *networkContainerService) Update(ctx context.Context, projectID, contai
 }
 
 func (np *networkContainerService) Delete(ctx context.Context, projectID, containerID string) error {
-	_, _, err := np.peeringAPI.DeletePeeringContainer(ctx, projectID, containerID).Execute()
+	_, err := np.peeringAPI.DeletePeeringContainer(ctx, projectID, containerID).Execute()
 	if admin.IsErrorCode(err, "CLOUD_PROVIDER_CONTAINER_NOT_FOUND") {
 		return errors.Join(err, ErrNotFound)
 	}

@@ -21,8 +21,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-cmp/cmp"
-	adminv20231115008 "go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
@@ -36,27 +35,27 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	}
 
 	// Get current IDP for the ORG
-	atlasFedSettings, _, err := service.SdkClientSet.SdkClient20241113001.FederatedAuthenticationApi.
+	atlasFedSettings, _, err := service.SdkClientSet.SdkClient20250312002.FederatedAuthenticationApi.
 		GetFederationSettings(service.Context, service.OrgID).
 		Execute()
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err)
 	}
 
-	identityProvider, err := GetIdentityProviderForFederatedSettings(service.Context, service.SdkClientSet.SdkClient20241113001, atlasFedSettings)
+	identityProvider, err := GetIdentityProviderForFederatedSettings(service.Context, service.SdkClientSet.SdkClient20250312002, atlasFedSettings)
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err)
 	}
 
 	// Get current Org config
-	orgConfig, _, err := service.SdkClientSet.SdkClient20241113001.FederatedAuthenticationApi.
+	orgConfig, _, err := service.SdkClientSet.SdkClient20250312002.FederatedAuthenticationApi.
 		GetConnectedOrgConfig(service.Context, atlasFedSettings.GetId(), service.OrgID).
 		Execute()
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthOrgNotConnected, err)
 	}
 
-	projectList, err := prepareProjectList(service.Context, service.SdkClientSet.SdkClient20231115008)
+	projectList, err := prepareProjectList(service.Context, service.SdkClientSet.SdkClient20250312002)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Errorf("cannot list projects for org ID %s: %w", service.OrgID, err))
 	}
@@ -66,7 +65,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.Terminate(workflow.Internal, fmt.Errorf("cannot convert Federated Auth spec to Atlas: %w", err))
 	}
 
-	if result := r.ensureIDPSettings(service.Context, atlasFedSettings.GetId(), identityProvider, fedauth, service.SdkClientSet.SdkClient20241113001); !result.IsOk() {
+	if result := r.ensureIDPSettings(service.Context, atlasFedSettings.GetId(), identityProvider, fedauth, service.SdkClientSet.SdkClient20250312002); !result.IsOk() {
 		return result
 	}
 
@@ -74,7 +73,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.OK()
 	}
 
-	updatedSettings, _, err := service.SdkClientSet.SdkClient20241113001.FederatedAuthenticationApi.
+	updatedSettings, _, err := service.SdkClientSet.SdkClient20250312002.FederatedAuthenticationApi.
 		UpdateConnectedOrgConfig(service.Context, atlasFedSettings.GetId(), service.OrgID, operatorConf).
 		Execute()
 	if err != nil {
@@ -94,12 +93,12 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	return workflow.OK()
 }
 
-func prepareProjectList(ctx context.Context, client *adminv20231115008.APIClient) (map[string]string, error) {
+func prepareProjectList(ctx context.Context, client *admin.APIClient) (map[string]string, error) {
 	if client == nil {
 		return nil, errors.New("client is not created")
 	}
 
-	projects, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[adminv20231115008.Group], *http.Response, error) {
+	projects, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.Group], *http.Response, error) {
 		return client.ProjectsApi.ListProjects(ctx).PageNum(pageNum).Execute()
 	})
 	if err != nil {

@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sort"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -63,7 +63,7 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov
 
 func syncCloudProviderIntegration(workflowCtx *workflow.Context, projectID string, cpaSpecs []akov2.CloudProviderIntegration) (bool, error) {
 	// this endpoint does not offer paginated responses
-	atlasCPAs, _, err := workflowCtx.SdkClientSet.SdkClient20231115008.CloudProviderAccessApi.
+	atlasCPAs, _, err := workflowCtx.SdkClientSet.SdkClient20250312002.CloudProviderAccessApi.
 		ListCloudProviderAccessRoles(workflowCtx.Context, projectID).
 		Execute()
 	if err != nil {
@@ -259,10 +259,10 @@ func copyCloudProviderAccessData(cpiStatus *status.CloudProviderIntegration, atl
 }
 
 func createCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) *status.CloudProviderIntegration {
-	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20231115008.CloudProviderAccessApi.CreateCloudProviderAccessRole(
+	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20250312002.CloudProviderAccessApi.CreateCloudProviderAccessRole(
 		workflowCtx.Context,
 		projectID,
-		&admin.CloudProviderAccessRole{
+		&admin.CloudProviderAccessRoleRequest{
 			ProviderName: cpiStatus.ProviderName,
 		},
 	).Execute()
@@ -280,11 +280,11 @@ func createCloudProviderAccess(workflowCtx *workflow.Context, projectID string, 
 }
 
 func authorizeCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) *status.CloudProviderIntegration {
-	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20231115008.CloudProviderAccessApi.AuthorizeCloudProviderAccessRole(
+	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20250312002.CloudProviderAccessApi.AuthorizeCloudProviderAccessRole(
 		workflowCtx.Context,
 		projectID,
 		cpiStatus.RoleID,
-		&admin.CloudProviderAccessRole{
+		&admin.CloudProviderAccessRoleRequestUpdate{
 			ProviderName:      cpiStatus.ProviderName,
 			IamAssumedRoleArn: &cpiStatus.IamAssumedRoleArn,
 		},
@@ -303,7 +303,7 @@ func authorizeCloudProviderAccess(workflowCtx *workflow.Context, projectID strin
 }
 
 func deleteCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) {
-	_, err := workflowCtx.SdkClientSet.SdkClient20231115008.CloudProviderAccessApi.DeauthorizeCloudProviderAccessRole(
+	_, err := workflowCtx.SdkClientSet.SdkClient20250312002.CloudProviderAccessApi.DeauthorizeCloudProviderAccessRole(
 		workflowCtx.Context,
 		projectID,
 		cpiStatus.ProviderName,
