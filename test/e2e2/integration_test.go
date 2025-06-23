@@ -32,7 +32,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
@@ -55,9 +54,6 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 	var testNamespace *corev1.Namespace
 
 	_ = BeforeAll(func() {
-		if !version.IsExperimental() {
-			Skip("Skipping experimental test on non experimental build")
-		}
 		deletionProtectionOff := false
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
