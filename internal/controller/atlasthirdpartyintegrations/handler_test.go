@@ -37,18 +37,17 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
-var sampleWebhookIntegration = akov2next.AtlasThirdPartyIntegration{
+var sampleWebhookIntegration = akov2.AtlasThirdPartyIntegration{
 	ObjectMeta: metav1.ObjectMeta{Name: "webhook-test"},
-	Spec: akov2next.AtlasThirdPartyIntegrationSpec{
+	Spec: akov2.AtlasThirdPartyIntegrationSpec{
 		ProjectDualReference: referenceFakeProject,
 		Type:                 "WEBHOOK",
-		Webhook: &akov2next.WebhookIntegration{
+		Webhook: &akov2.WebhookIntegration{
 			URLSecretRef: api.LocalObjectReference{
 				Name: "webhook-secret",
 			},
@@ -66,7 +65,7 @@ func TestHandleUpsert(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
 	require.NoError(t, akov2.AddToScheme(scheme))
-	require.NoError(t, akov2next.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
 	ctx := context.Background()
 
 	for _, tc := range []struct {
@@ -74,7 +73,7 @@ func TestHandleUpsert(t *testing.T) {
 		state          state.ResourceState
 		provider       atlas.Provider
 		serviceBuilder serviceBuilderFunc
-		input          *akov2next.AtlasThirdPartyIntegration
+		input          *akov2.AtlasThirdPartyIntegration
 		objects        []client.Object
 		want           ctrlstate.Result
 		wantErr        string
@@ -263,7 +262,7 @@ func TestHandleDeletion(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
 	require.NoError(t, akov2.AddToScheme(scheme))
-	require.NoError(t, akov2next.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
 	ctx := context.Background()
 
 	for _, tc := range []struct {
@@ -271,7 +270,7 @@ func TestHandleDeletion(t *testing.T) {
 		deletionProtection bool
 		provider           atlas.Provider
 		serviceBuilder     serviceBuilderFunc
-		input              *akov2next.AtlasThirdPartyIntegration
+		input              *akov2.AtlasThirdPartyIntegration
 		objects            []client.Object
 		want               ctrlstate.Result
 		wantErr            string

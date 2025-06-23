@@ -14,7 +14,7 @@ metadata:
 stringData:
   apiKey: 00000000-0000-0000-0000-000000000000
 ---
-apiVersion: atlas.nextapi.mongodb.com/v1
+apiVersion: atlas.mongodb.com/v1
 kind: AtlasThirdPartyIntegration
 metadata:
  name: atlas-opsgenie-integ

@@ -36,7 +36,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
@@ -46,7 +45,7 @@ import (
 type serviceBuilderFunc func(*atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService
 
 type AtlasThirdPartyIntegrationHandler struct {
-	ctrlstate.StateHandler[akov2next.AtlasThirdPartyIntegration]
+	ctrlstate.StateHandler[akov2.AtlasThirdPartyIntegration]
 	reconciler.AtlasReconciler
 	deletionProtection bool
 	serviceBuilder     serviceBuilderFunc
@@ -59,7 +58,7 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 	logger *zap.Logger,
 	globalSecretRef client.ObjectKey,
 	reapplySupport bool,
-) *ctrlstate.Reconciler[akov2next.AtlasThirdPartyIntegration] {
+) *ctrlstate.Reconciler[akov2.AtlasThirdPartyIntegration] {
 	handler := &AtlasThirdPartyIntegrationHandler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
@@ -72,19 +71,19 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 	}
 	return ctrlstate.NewStateReconciler(
 		handler,
-		ctrlstate.WithCluster[akov2next.AtlasThirdPartyIntegration](c),
-		ctrlstate.WithReapplySupport[akov2next.AtlasThirdPartyIntegration](reapplySupport),
+		ctrlstate.WithCluster[akov2.AtlasThirdPartyIntegration](c),
+		ctrlstate.WithReapplySupport[akov2.AtlasThirdPartyIntegration](reapplySupport),
 	)
 }
 
 // For prepares the controller for its target Custom Resource; AtlasThirdPartyIntegration
 func (r *AtlasThirdPartyIntegrationHandler) For() (client.Object, builder.Predicates) {
-	return &akov2next.AtlasThirdPartyIntegration{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})
+	return &akov2.AtlasThirdPartyIntegration{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
-	obj := &akov2next.AtlasThirdPartyIntegration{}
+	obj := &akov2.AtlasThirdPartyIntegration{}
 	return controllerruntime.NewControllerManagedBy(mgr).
 		For(
 			obj,
@@ -112,7 +111,7 @@ func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, r
 func (h *AtlasThirdPartyIntegrationHandler) integrationForProjectMapFunc() handler.MapFunc {
 	return indexer.ProjectsIndexMapperFunc(
 		string(indexer.AtlasThirdPartyIntegrationByProjectIndex),
-		func() *akov2next.AtlasThirdPartyIntegrationList { return &akov2next.AtlasThirdPartyIntegrationList{} },
+		func() *akov2.AtlasThirdPartyIntegrationList { return &akov2.AtlasThirdPartyIntegrationList{} },
 		indexer.AtlasThirdPartyIntegrationRequests,
 		h.Client,
 		h.Log,
@@ -133,7 +132,7 @@ func (h *AtlasThirdPartyIntegrationHandler) integrationForSecretMapFunc() handle
 				client.ObjectKeyFromObject(secret).String(),
 			),
 		}
-		list1 := &akov2next.AtlasThirdPartyIntegrationList{}
+		list1 := &akov2.AtlasThirdPartyIntegrationList{}
 		err := h.Client.List(ctx, list1, listOpts)
 		if err != nil {
 			h.Log.Errorf("failed to list from indexer %s: %v",
@@ -148,7 +147,7 @@ func (h *AtlasThirdPartyIntegrationHandler) integrationForSecretMapFunc() handle
 				client.ObjectKeyFromObject(secret).String(),
 			),
 		}
-		list2 := &akov2next.AtlasThirdPartyIntegrationList{}
+		list2 := &akov2.AtlasThirdPartyIntegrationList{}
 		err = h.Client.List(ctx, list2, listOpts)
 		if err != nil {
 			h.Log.Errorf("failed to list from indexer %s: %v",
@@ -165,10 +164,10 @@ type reconcileRequest struct {
 	ClientSet   *atlas.ClientSet
 	Project     *project.Project
 	Service     thirdpartyintegration.ThirdPartyIntegrationService
-	integration *akov2next.AtlasThirdPartyIntegration
+	integration *akov2.AtlasThirdPartyIntegration
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Context, integration *akov2next.AtlasThirdPartyIntegration) (*reconcileRequest, error) {
+func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (*reconcileRequest, error) {
 	req := reconcileRequest{}
 	sdkClientSet, err := h.ResolveSDKClientSet(ctx, integration)
 	if err != nil {

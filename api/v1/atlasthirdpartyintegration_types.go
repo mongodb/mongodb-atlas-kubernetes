@@ -18,8 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
 
 func init() {
@@ -31,7 +30,7 @@ func init() {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:subresource:status
-// +groupName:=atlas.nextapi.mongodb.com
+// +groupName:=atlas.mongodb.com
 // +kubebuilder:resource:categories=atlas,shortName=atpi
 type AtlasThirdPartyIntegration struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -65,7 +64,7 @@ func (atpi *AtlasThirdPartyIntegration) GetConditions() []metav1.Condition {
 // +kubebuilder:validation:XValidation:rule="!has(self.victorOps) || (self.type == 'VICTOR_OPS' && has(self.victorOps))",message="only VICTOR_OPS type may set victorOps fields"
 // +kubebuilder:validation:XValidation:rule="!has(self.webhook) || (self.type == 'WEBHOOK' && has(self.webhook))",message="only WEBHOOK type may set webhook fields"
 type AtlasThirdPartyIntegrationSpec struct {
-	akov2.ProjectDualReference `json:",inline"`
+	ProjectDualReference `json:",inline"`
 
 	// Type of the integration
 	// +kubebuilder:validation:Enum:=DATADOG;MICROSOFT_TEAMS;NEW_RELIC;OPS_GENIE;PAGER_DUTY;PROMETHEUS;SLACK;VICTOR_OPS;WEBHOOK
@@ -219,6 +218,6 @@ type AtlasThirdPartyIntegrationList struct {
 	Items           []AtlasThirdPartyIntegration `json:"items"`
 }
 
-func (i *AtlasThirdPartyIntegration) ProjectDualRef() *akov2.ProjectDualReference {
+func (i *AtlasThirdPartyIntegration) ProjectDualRef() *ProjectDualReference {
 	return &i.Spec.ProjectDualReference
 }

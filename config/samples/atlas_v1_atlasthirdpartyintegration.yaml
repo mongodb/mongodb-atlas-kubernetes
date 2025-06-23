@@ -1,0 +1,17 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasThirdPartyIntegration
+metadata:
+  labels:
+    app.kubernetes.io/name: mongodb-atlas-kubernetes
+    app.kubernetes.io/managed-by: kustomize
+  name: atlasintegration-sample
+spec:
+  projectRef:
+    name: my-atlas-project
+  type: DATADOG
+  datadog:
+    apiKeySecretRef:
+      name: "secret-ref"
+    region: "string"
+    sendCollectionLatencyMetrics: "string"
+    sendDatabaseMetrics: "string"

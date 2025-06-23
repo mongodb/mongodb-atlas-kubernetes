@@ -24,7 +24,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	integration "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
@@ -66,9 +66,9 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "successful api create",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
 						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
 						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
@@ -90,9 +90,9 @@ func TestIntegrationsCreate(t *testing.T) {
 			),
 			expected: &integration.ThirdPartyIntegration{
 				ID: testID,
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
 						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
 						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
@@ -108,9 +108,9 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "API failure gets passed through",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
 						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
 						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
@@ -131,9 +131,9 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "failure to parse config returns before calling API",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "BLAH",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
 						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
 						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
@@ -150,9 +150,9 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "failure to parse API reply",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
 						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
 						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
@@ -206,9 +206,9 @@ func TestIntegrationsgGet(t *testing.T) {
 				nil,
 			),
 			expected: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: testIntegrationType,
-					PagerDuty: &akov2next.PagerDutyIntegration{
+					PagerDuty: &akov2.PagerDutyIntegration{
 						Region: testRegion,
 					},
 				},
@@ -267,9 +267,9 @@ func TestIntegrationsUpdate(t *testing.T) {
 		{
 			title: "successful api update returns success",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type:     "NEW_RELIC",
-					NewRelic: &akov2next.NewRelicIntegration{},
+					NewRelic: &akov2.NewRelicIntegration{},
 				},
 				NewRelicSecrets: &integration.NewRelicSecrets{
 					AccountID:  testAccount,
@@ -291,9 +291,9 @@ func TestIntegrationsUpdate(t *testing.T) {
 			),
 			expected: &integration.ThirdPartyIntegration{
 				ID: testID,
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type:     "NEW_RELIC",
-					NewRelic: &akov2next.NewRelicIntegration{},
+					NewRelic: &akov2.NewRelicIntegration{},
 				},
 				NewRelicSecrets: &integration.NewRelicSecrets{
 					AccountID:  testAccount,
@@ -308,9 +308,9 @@ func TestIntegrationsUpdate(t *testing.T) {
 		{
 			title: "API failure gets passed through",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type:     "NEW_RELIC",
-					NewRelic: &akov2next.NewRelicIntegration{},
+					NewRelic: &akov2.NewRelicIntegration{},
 				},
 				NewRelicSecrets: &integration.NewRelicSecrets{
 					AccountID:  testAccount,
@@ -330,9 +330,9 @@ func TestIntegrationsUpdate(t *testing.T) {
 		{
 			title: "failure to parse config returns before calling API",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "BLAH",
-					Datadog: &akov2next.DatadogIntegration{
+					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
 						SendCollectionLatencyMetrics: pointer.MakePtr("true"),
 						SendDatabaseMetrics:          nil,
@@ -349,9 +349,9 @@ func TestIntegrationsUpdate(t *testing.T) {
 		{
 			title: "failure to parse API reply",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2next.AtlasThirdPartyIntegrationSpec{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type:     "NEW_RELIC",
-					NewRelic: &akov2next.NewRelicIntegration{},
+					NewRelic: &akov2.NewRelicIntegration{},
 				},
 				NewRelicSecrets: &integration.NewRelicSecrets{
 					AccountID:  testAccount,
