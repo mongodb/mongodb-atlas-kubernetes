@@ -26,9 +26,18 @@ for FILE in "${FILES[@]}"; do
   if [[ -f "$FILE" ]]; then
     echo "Updating $FILE..."
     awk -v version="$version" '
-      BEGIN { updated_version = 0; updated_appVersion = 0 }
-      /^version:/ && updated_version == 0 { $0 = "version: " version; updated_version = 1 }
-      /^appVersion:/ && updated_appVersion == 0 { $0 = "appVersion: " version; updated_appVersion = 1 }
+      BEGIN {
+        updated_version = 0; updated_appVersion = 0; updated_img_version = 0;
+      }
+      /^version:/ && updated_version == 0 {
+        $0 = "version: " version; updated_version = 1
+      }
+      /^appVersion:/ && updated_appVersion == 0 {
+        $0 = "appVersion: " version; updated_appVersion = 1
+      }
+      /^    version:/ && updated_img_version == 0 {
+        $0 = "    version: \"" version "\""; updated_img_version = 1
+      }
       { print }
     ' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     rm -f "${FILE}.bak"
