@@ -122,6 +122,12 @@ spec:
       kind: AtlasTeam
       name: atlasteams.atlas.mongodb.com
       version: v1
+    - description: AtlasThirdPartyIntegration is the Schema for the atlas 3rd party
+        integrations API.
+      displayName: Atlas Third Party Integration
+      kind: AtlasThirdPartyIntegration
+      name: atlasthirdpartyintegrations.atlas.mongodb.com
+      version: v1
   description: |
     The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB
     Atlas — the only multi-cloud document database service that gives you the versatility you need to build sophisticated

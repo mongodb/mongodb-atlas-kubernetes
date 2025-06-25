@@ -505,11 +505,36 @@ metadata:
               "username@mongodb.com"
             ]
           }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasThirdPartyIntegration",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/managed-by": "kustomize",
+              "app.kubernetes.io/name": "mongodb-atlas-kubernetes"
+            },
+            "name": "atlasintegration-sample"
+          },
+          "spec": {
+            "datadog": {
+              "apiKeySecretRef": {
+                "name": "secret-ref"
+              },
+              "region": "string",
+              "sendCollectionLatencyMetrics": "string",
+              "sendDatabaseMetrics": "string"
+            },
+            "projectRef": {
+              "name": "my-atlas-project"
+            },
+            "type": "DATADOG"
+          }
         }
       ]
     capabilities: Full Lifecycle
     categories: Database
-    createdAt: "2025-06-05T08:38:10Z"
+    createdAt: "2025-06-25T15:11:57Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -522,12 +547,12 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/mongodb/mongodb-atlas-kubernetes
     support: support@mongodb.com
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.8.2
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.9.0
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.8.2
+  name: mongodb-atlas-kubernetes.v2.9.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -617,6 +642,11 @@ spec:
         displayName: Atlas Team
         kind: AtlasTeam
         name: atlasteams.atlas.mongodb.com
+        version: v1
+      - description: AtlasThirdPartyIntegration is the Schema for the atlas 3rd party integrations API.
+        displayName: Atlas Third Party Integration
+        kind: AtlasThirdPartyIntegration
+        name: atlasthirdpartyintegrations.atlas.mongodb.com
         version: v1
   description: |
     The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB
@@ -775,7 +805,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.8.2
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.9.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -859,5 +889,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.8.2
-  replaces: mongodb-atlas-kubernetes.v2.8.1
+  version: 2.9.0
+  replaces: mongodb-atlas-kubernetes.v2.8.2
