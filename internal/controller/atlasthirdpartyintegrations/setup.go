@@ -78,23 +78,20 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 
 // For prepares the controller for its target Custom Resource; AtlasThirdPartyIntegration
 func (r *AtlasThirdPartyIntegrationHandler) For() (client.Object, builder.Predicates) {
-	return &akov2.AtlasThirdPartyIntegration{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})
+	obj := &akov2.AtlasThirdPartyIntegration{}
+	return obj, ctrlrtbuilder.WithPredicates(
+		predicate.Or(
+			mckpredicate.AnnotationChanged("mongodb.com/reapply-period"),
+			predicate.GenerationChangedPredicate{},
+		),
+		mckpredicate.IgnoreDeletedPredicate[client.Object](),
+	)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
-	obj := &akov2.AtlasThirdPartyIntegration{}
 	return controllerruntime.NewControllerManagedBy(mgr).
-		For(
-			obj,
-			ctrlrtbuilder.WithPredicates(
-				predicate.Or(
-					mckpredicate.AnnotationChanged("mongodb.com/reapply-period"),
-					predicate.GenerationChangedPredicate{},
-				),
-				mckpredicate.IgnoreDeletedPredicate[client.Object](),
-			),
-		).
+		For(h.For()).
 		Watches(
 			&akov2.AtlasProject{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForProjectMapFunc()),
