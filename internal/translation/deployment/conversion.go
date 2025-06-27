@@ -581,7 +581,7 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		Labels:                       labelsToAtlas(cluster.Labels),
 		Paused:                       cluster.Paused,
 		PitEnabled:                   cluster.PitEnabled,
-		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.DiskSizeGB),
+		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB),
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
@@ -599,7 +599,7 @@ func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		Labels:                       labelsToAtlas(cluster.Labels),
 		Paused:                       cluster.Paused,
 		PitEnabled:                   cluster.PitEnabled,
-		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.DiskSizeGB),
+		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB),
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
@@ -808,7 +808,7 @@ func labelsToAtlas(labels []common.LabelSpec) *[]admin.ComponentLabel {
 	return &cLabels
 }
 
-func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, diskSize *int) *[]admin.ReplicationSpec20240805 {
+func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, clusterType string, diskSize *int) *[]admin.ReplicationSpec20240805 {
 	if len(replicationSpecs) == 0 {
 		return nil
 	}
@@ -922,9 +922,10 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, d
 			},
 		)
 	}
-
-	for i := 1; i < replicationSpecs[0].NumShards; i++ {
-		specs = append(specs, specs[0])
+	if clusterType == string(akov2.TypeSharded) {
+		for i := 1; i < replicationSpecs[0].NumShards; i++ {
+			specs = append(specs, specs[0])
+		}
 	}
 
 	return &specs

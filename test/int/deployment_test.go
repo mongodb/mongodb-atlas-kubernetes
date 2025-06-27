@@ -762,7 +762,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				})
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.ClusterDescription20240805) {
-					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
+					Expect(int(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.GetDiskSizeGB())).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
 					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeAssignableToTypeOf(pointer.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
