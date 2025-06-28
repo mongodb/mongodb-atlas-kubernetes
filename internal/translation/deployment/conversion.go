@@ -465,6 +465,10 @@ func normalizeProcessArgs(args *akov2.ProcessArgs) {
 	if args.NoTableScan == nil {
 		args.NoTableScan = pointer.MakePtr(false)
 	}
+
+	// those are ignored fields nowadays
+	args.DefaultReadConcern = ""
+	args.FailIndexKeyTooLong = nil
 }
 
 func getAutoscalingOverride(replications []*akov2.AdvancedReplicationSpec) (bool, bool, string) {
