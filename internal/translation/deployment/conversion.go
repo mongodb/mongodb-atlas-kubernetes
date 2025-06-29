@@ -51,6 +51,7 @@ type Cluster struct {
 	Connection     *status.ConnectionStrings
 	ProcessArgs    *akov2.ProcessArgs
 	ReplicaSet     []status.ReplicaSet
+	ZoneID         string
 
 	customResource            *akov2.AtlasDeployment
 	computeAutoscalingEnabled bool
@@ -569,6 +570,10 @@ func clusterFromAtlas(clusterDesc *admin.ClusterDescription20240805) *Cluster {
 		},
 	}
 	normalizeClusterDeployment(cluster)
+
+	if len(clusterDesc.GetReplicationSpecs()) > 0 {
+		cluster.ZoneID = clusterDesc.GetReplicationSpecs()[0].GetZoneId()
+	}
 
 	return cluster
 }
