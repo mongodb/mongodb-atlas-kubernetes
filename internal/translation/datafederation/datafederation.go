@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 )
 
 var (
@@ -80,7 +80,7 @@ func (dfs *AtlasDataFederationService) Update(ctx context.Context, df *DataFeder
 }
 
 func (dfs *AtlasDataFederationService) Delete(ctx context.Context, projectID, name string) error {
-	_, resp, err := dfs.api.DeleteFederatedDatabase(ctx, projectID, name).Execute()
+	resp, err := dfs.api.DeleteFederatedDatabase(ctx, projectID, name).Execute()
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return errors.Join(ErrorNotFound, err)
 	}

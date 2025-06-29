@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 )
 
 func (c *Cleaner) listFederatedDBPrivateEndpoints(ctx context.Context, projectID string) []admin.PrivateNetworkEndpointIdEntry {
@@ -35,7 +35,7 @@ func (c *Cleaner) listFederatedDBPrivateEndpoints(ctx context.Context, projectID
 
 func (c *Cleaner) deleteFederatedDBPrivateEndpoints(ctx context.Context, projectID string, dbpes []admin.PrivateNetworkEndpointIdEntry) {
 	for _, fedDBPE := range dbpes {
-		_, _, err := c.client.DataFederationApi.DeleteDataFederationPrivateEndpoint(ctx, projectID, fedDBPE.GetEndpointId()).Execute()
+		_, err := c.client.DataFederationApi.DeleteDataFederationPrivateEndpoint(ctx, projectID, fedDBPE.GetEndpointId()).Execute()
 		if err != nil {
 			fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of Federated DB private endpoint %s: %s", fedDBPE.GetEndpointId(), err))
 		}

@@ -68,7 +68,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			return r.inProgress(ctx, akoCluster.GetCustomResource(), updatedDeployment, workflow.DeploymentUpdating, "deployment is updating")
 		}
 
-		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource())
+		transition := r.ensureBackupScheduleAndPolicy(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), atlasCluster.ZoneID)
 		if transition != nil {
 			return transition(workflow.Internal)
 		}
@@ -89,7 +89,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			results = append(results, searchNodeResult)
 		}
 
-		searchService := searchindex.NewSearchIndexes(ctx.SdkClientSet.SdkClient20241113001.AtlasSearchApi)
+		searchService := searchindex.NewSearchIndexes(ctx.SdkClientSet.SdkClient20250312002.AtlasSearchApi)
 		result := handleSearchIndexes(ctx, r.Client, searchService, akoCluster.GetCustomResource(), akoCluster.GetProjectID())
 		results = append(results, result)
 
@@ -220,13 +220,21 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context,
 		return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
 	}
 
-	if deploymentInAKO.ProcessArgs != nil && !reflect.DeepEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
-		err = deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
-		if err != nil {
-			return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
+	if deploymentInAKO.ProcessArgs != nil {
+		if deploymentInAKO.ProcessArgs.DefaultReadConcern != "" {
+			ctx.Log.Warn("Process Arg DefaultReadConcern is no longer available in Atlas. Setting this will have no effect.")
 		}
+		if deploymentInAKO.ProcessArgs.FailIndexKeyTooLong != nil {
+			ctx.Log.Warn("Process Arg FailIndexKeyTooLong is no longer available in Atlas. Setting this will have no effect.")
+		}
+		if !reflect.DeepEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
+			err = deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
+			if err != nil {
+				return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
+			}
 
-		return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), nil)
+			return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), nil)
+		}
 	}
 
 	return nil

@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -49,21 +49,19 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 		}
 		clusterName := "testCluster"
 		replicaSetID := "test-cluster-replica-set-id"
-		output := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
-			ClusterID:                         "test-id",
-			ClusterName:                       "testCluster",
+		output := &admin.DiskBackupSnapshotSchedule20240805{
+			ClusterId:                         pointer.MakePtr("test-id"),
+			ClusterName:                       pointer.MakePtr("testCluster"),
 			AutoExportEnabled:                 pointer.MakePtr(true),
-			ReferenceHourOfDay:                pointer.MakePtr[int64](10),
-			ReferenceMinuteOfHour:             pointer.MakePtr[int64](10),
-			RestoreWindowDays:                 pointer.MakePtr[int64](7),
+			ReferenceHourOfDay:                pointer.MakePtr(10),
+			ReferenceMinuteOfHour:             pointer.MakePtr(10),
+			RestoreWindowDays:                 pointer.MakePtr(7),
 			UpdateSnapshots:                   pointer.MakePtr(false),
 			UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
-			Policies: []mongodbatlas.Policy{
+			Policies: &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{
 				{
-					ID: "",
-					PolicyItems: []mongodbatlas.PolicyItem{
+					PolicyItems: &[]admin.DiskBackupApiPolicyItem{
 						{
-							ID:                "",
 							FrequencyType:     "hourly",
 							FrequencyInterval: 10,
 							RetentionUnit:     "weeks",
@@ -72,10 +70,10 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 					},
 				},
 			},
-			CopySettings: []mongodbatlas.CopySetting{},
+			CopySettings: &[]admin.DiskBackupCopySetting20240805{},
 		}
 
-		result := inSchedule.ToAtlas(output.ClusterID, clusterName, replicaSetID, inPolicy)
+		result := inSchedule.ToAtlas(output.GetClusterId(), clusterName, replicaSetID, inPolicy)
 		if diff := deep.Equal(result, output); diff != nil {
 			t.Error(diff)
 		}

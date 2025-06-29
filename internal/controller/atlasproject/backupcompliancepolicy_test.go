@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -309,7 +309,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, nil)
 
 				mockError := &admin.GenericOpenAPIError{}
-				model := *admin.NewApiError()
+				model := *admin.NewApiErrorWithDefaults()
 				model.SetErrorCode(atlas.BackupComplianceNotMet)
 				mockError.SetModel(model)
 
@@ -392,7 +392,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: &admin.APIClient{
+					SdkClient20250312002: &admin.APIClient{
 						CloudBackupsApi: tc.backupAPI,
 					},
 				},

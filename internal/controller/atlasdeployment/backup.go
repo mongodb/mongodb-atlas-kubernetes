@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,12 +37,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 )
 
-func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
-	service *workflow.Context,
-	deploymentService deployment.AtlasDeploymentsService,
-	projectID string,
-	deployment *akov2.AtlasDeployment,
-) transitionFn {
+func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, projectID string, deployment *akov2.AtlasDeployment, zoneID string) transitionFn {
 	if deployment.Spec.BackupScheduleRef.Name == "" {
 		r.Log.Debug("no backup schedule configured for the deployment")
 
@@ -66,7 +62,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		return r.transitionFromLegacy(service, deploymentService, projectID, deployment, err)
 	}
 
-	return r.updateBackupScheduleAndPolicy(service.Context, service, deploymentService, projectID, deployment, bSchedule, bPolicy)
+	return r.updateBackupScheduleAndPolicy(service.Context, service, deploymentService, projectID, deployment, bSchedule, bPolicy, zoneID)
 }
 
 func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
@@ -173,17 +169,9 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(service *workflow.Context
 	return bPolicy, nil
 }
 
-func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
-	ctx context.Context,
-	service *workflow.Context,
-	deploymentService deployment.AtlasDeploymentsService,
-	projectID string,
-	deployment *akov2.AtlasDeployment,
-	bSchedule *akov2.AtlasBackupSchedule,
-	bPolicy *akov2.AtlasBackupPolicy,
-) transitionFn {
+func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(ctx context.Context, service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, projectID string, deployment *akov2.AtlasDeployment, bSchedule *akov2.AtlasBackupSchedule, bPolicy *akov2.AtlasBackupPolicy, zoneID string) transitionFn {
 	clusterName := deployment.GetDeploymentName()
-	currentSchedule, response, err := service.Client.CloudProviderSnapshotBackupPolicies.Get(ctx, projectID, clusterName)
+	currentSchedule, response, err := service.SdkClientSet.SdkClient20250312002.CloudBackupsApi.GetBackupSchedule(ctx, projectID, clusterName).Execute()
 	if err != nil {
 		errMessage := "unable to get current backup configuration for project"
 		r.Log.Debugf("%s: %s:%s, %v", errMessage, projectID, clusterName, err)
@@ -198,10 +186,10 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 
 	r.Log.Debugf("updating backup configuration for the atlas deployment: %v", clusterName)
 
-	apiScheduleReq := bSchedule.ToAtlas(currentSchedule.ClusterID, clusterName, deployment.GetReplicationSetID(), bPolicy)
+	apiScheduleReq := bSchedule.ToAtlas(currentSchedule.GetClusterId(), clusterName, zoneID, bPolicy)
 
 	// There is only one policy, always
-	apiScheduleReq.Policies[0].ID = currentSchedule.Policies[0].ID
+	apiScheduleReq.GetPolicies()[0].SetId(currentSchedule.GetPolicies()[0].GetId())
 
 	equal, err := backupSchedulesAreEqual(currentSchedule, apiScheduleReq)
 	if err != nil {
@@ -214,14 +202,14 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	}
 
 	r.Log.Debugf("applying backup configuration: %v", *bSchedule)
-	if _, _, err := service.Client.CloudProviderSnapshotBackupPolicies.Update(ctx, projectID, clusterName, apiScheduleReq); err != nil {
+	if _, _, err := service.SdkClientSet.SdkClient20250312002.CloudBackupsApi.UpdateBackupSchedule(ctx, projectID, clusterName, apiScheduleReq).Execute(); err != nil {
 		return r.transitionFromLegacy(service, deploymentService, projectID, deployment, fmt.Errorf("unable to create backup schedule %s. e: %w", client.ObjectKeyFromObject(bSchedule).String(), err))
 	}
 	r.Log.Infof("successfully updated backup configuration for deployment %v", clusterName)
 	return r.transitionFromLegacy(service, deploymentService, projectID, deployment, nil)
 }
 
-func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (bool, error) {
+func backupSchedulesAreEqual(currentSchedule, newSchedule *admin.DiskBackupSnapshotSchedule20240805) (bool, error) {
 	currentCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
 	err := compat.JSONCopy(&currentCopy, currentSchedule)
 	if err != nil {
