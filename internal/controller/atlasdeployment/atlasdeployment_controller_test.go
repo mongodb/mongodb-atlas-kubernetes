@@ -469,6 +469,34 @@ func TestRegularClusterReconciliation(t *testing.T) {
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 
+			cloudBackupsAPI := mockadmin.NewCloudBackupsApi(t)
+			cloudBackupsAPI.EXPECT().GetBackupSchedule(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
+				Return(admin.GetBackupScheduleApiRequest{ApiService: cloudBackupsAPI})
+			cloudBackupsAPI.EXPECT().GetBackupScheduleExecute(mock.Anything).Return(&admin.DiskBackupSnapshotSchedule20240805{
+				AutoExportEnabled:     pointer.MakePtr(false),
+				ClusterId:             pointer.MakePtr("123789"),
+				ClusterName:           pointer.MakePtr(d.GetDeploymentName()),
+				ReferenceHourOfDay:    pointer.MakePtr(20),
+				ReferenceMinuteOfHour: pointer.MakePtr(30),
+				RestoreWindowDays:     pointer.MakePtr(7),
+				UpdateSnapshots:       pointer.MakePtr(false),
+				CopySettings:          &[]admin.DiskBackupCopySetting20240805{},
+				Policies: &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{
+					{
+						Id: pointer.MakePtr("456987"),
+						PolicyItems: &[]admin.DiskBackupApiPolicyItem{
+							{
+								FrequencyInterval: 1,
+								FrequencyType:     "days",
+								RetentionUnit:     "weekly",
+								RetentionValue:    1,
+							},
+						},
+					},
+				},
+				UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
+			}, nil, nil)
+
 			return &atlas.ClientSet{
 				SdkClient20250312002: &admin.APIClient{
 					FlexClustersApi:        flexAPI,
@@ -477,71 +505,12 @@ func TestRegularClusterReconciliation(t *testing.T) {
 					ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
 					GlobalClustersApi:      globalAPI,
 					ProjectsApi:            projectAPI,
+					CloudBackupsApi:        cloudBackupsAPI,
 				},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-			return &mongodbatlas.Client{
-				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
-					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
-						return &mongodbatlas.AdvancedCluster{
-							ID:            "123789",
-							Name:          clusterName,
-							GroupID:       projectID,
-							BackupEnabled: pointer.MakePtr(true),
-							ClusterType:   "REPLICASET",
-							ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
-								{
-									ID:       "789123",
-									ZoneName: "Zone 1",
-									RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
-										{
-											ProviderName: "AWS",
-											RegionName:   "US_EAST_1",
-											ElectableSpecs: &mongodbatlas.Specs{
-												InstanceSize: "M10",
-												NodeCount:    pointer.MakePtr(3),
-											},
-											Priority: pointer.MakePtr(7),
-										},
-									},
-								},
-							},
-							StateName: "IDLE",
-						}, nil, nil
-					},
-					DeleteFunc: func(projectID string, clusterName string) (*mongodbatlas.Response, error) {
-						return nil, nil
-					},
-				},
-				CloudProviderSnapshotBackupPolicies: &atlasmock.CloudProviderSnapshotBackupPoliciesClientMock{
-					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
-						return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
-							ClusterID:             "123789",
-							ClusterName:           d.GetDeploymentName(),
-							ReferenceHourOfDay:    pointer.MakePtr(int64(20)),
-							ReferenceMinuteOfHour: pointer.MakePtr(int64(30)),
-							RestoreWindowDays:     pointer.MakePtr(int64(7)),
-							Policies: []mongodbatlas.Policy{
-								{
-									ID: "456987",
-									PolicyItems: []mongodbatlas.PolicyItem{
-										{
-											ID:                "987654",
-											FrequencyInterval: 1,
-											FrequencyType:     "days",
-											RetentionUnit:     "weekly",
-											RetentionValue:    1,
-										},
-									},
-								},
-							},
-							AutoExportEnabled:                 pointer.MakePtr(false),
-							UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
-						}, nil, nil
-					},
-				},
-			}, nil
+			return &mongodbatlas.Client{}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
