@@ -1556,7 +1556,7 @@ func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentN
 	g.Expect(atlasCluster.GetBackupEnabled()).Should(BeTrue())
 
 	for i := range copySettings {
-		copySettings[i].SetZoneId(atlasCluster.GetReplicationSpecs()[0].GetId())
+		copySettings[i].SetZoneId(atlasCluster.GetReplicationSpecs()[0].GetZoneId())
 	}
 
 	atlasBSchedule, _, err := atlasClient.CloudBackupsApi.
