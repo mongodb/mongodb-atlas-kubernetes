@@ -78,9 +78,12 @@ func NewAtlasNetworkPeeringsReconciler(
 	}
 }
 
-//+kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasnetworkpeerings,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasnetworkpeerings/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasnetworkpeerings/finalizers,verbs=update
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasnetworkpeerings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasnetworkpeerings/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasnetworkpeerings/finalizers,verbs=update
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasnetworkpeerings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasnetworkpeerings/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasnetworkpeerings/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
