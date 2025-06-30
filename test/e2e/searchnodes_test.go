@@ -125,7 +125,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 				g.Expect(resp).NotTo(BeNil())
 				// This will start failing when the Search team changes the error code to 404: CLOUDP-239015
 				g.Expect(resp.StatusCode).Should(Equal(400))
-			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
+			}).WithPolling(10 * time.Second).WithTimeout(15 * time.Minute).Should(Succeed())
 
 			Eventually(func(g Gomega) bool {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{

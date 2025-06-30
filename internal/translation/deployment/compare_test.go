@@ -716,6 +716,7 @@ func TestSpecAreEqual(t *testing.T) {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ClusterType: "SHARDED",
 						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
 								NumShards: 3,
@@ -725,6 +726,7 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
+				ClusterType: pointer.MakePtr("SHARDED"),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						Id: pointer.MakePtr("abc123"),
@@ -898,7 +900,8 @@ func TestSpecAreEqual(t *testing.T) {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-						Name: "cluster0",
+						Name:        "cluster0",
+						ClusterType: "SHARDED",
 						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
 								NumShards: 1,
@@ -919,6 +922,7 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
+				ClusterType: pointer.MakePtr("SHARDED"),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{

@@ -178,8 +178,10 @@ func specAreEqual(desired, current *Cluster) bool {
 	}
 
 	for ix, desiredReplicationSpec := range desired.ReplicationSpecs {
-		if desiredReplicationSpec.NumShards != len(current.ReplicationSpecs) {
-			return false
+		if desired.ClusterType == string(akov2.TypeSharded) {
+			if desiredReplicationSpec.NumShards != len(current.ReplicationSpecs) {
+				return false
+			}
 		}
 		if !replicationSpecAreEqual(desiredReplicationSpec, current.ReplicationSpecs[ix], desired.computeAutoscalingEnabled) {
 			return false
