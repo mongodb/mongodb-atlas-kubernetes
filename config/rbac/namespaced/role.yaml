@@ -36,12 +36,14 @@ rules:
   - atlasdeployments
   - atlasfederatedauths
   - atlasipaccesslists
+  - atlasnetworkpeerings
   - atlasprivateendpoints
   - atlasprojects
   - atlassearchindexconfigs
   - atlasstreamconnections
   - atlasstreaminstances
   - atlasteams
+  - atlasthirdpartyintegrations
   verbs:
   - create
   - delete
@@ -61,12 +63,14 @@ rules:
   - atlasdeployments/status
   - atlasfederatedauths/status
   - atlasipaccesslists/status
+  - atlasnetworkpeerings/status
   - atlasprivateendpoints/status
   - atlasprojects/status
   - atlassearchindexconfigs/status
   - atlasstreamconnections/status
   - atlasstreaminstances/status
   - atlasteams/status
+  - atlasthirdpartyintegrations/status
   verbs:
   - get
   - patch
@@ -75,5 +79,7 @@ rules:
   - atlas.mongodb.com
   resources:
   - atlasipaccesslists/finalizers
+  - atlasnetworkpeerings/finalizers
+  - atlasthirdpartyintegrations/finalizers
   verbs:
   - update
