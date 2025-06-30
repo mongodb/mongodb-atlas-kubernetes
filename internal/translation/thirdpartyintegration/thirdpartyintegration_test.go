@@ -35,6 +35,8 @@ const (
 
 	testID = "fake-id"
 
+	testID2 = "fake-id-2"
+
 	testRegion = "fake-region"
 
 	testIntegrationType = "PAGER_DUTY"
@@ -79,12 +81,14 @@ func TestIntegrationsCreate(t *testing.T) {
 				},
 			},
 			api: testCreateIntegrationAPI(
-				&admin.ThirdPartyIntegration{
-					Id:                           pointer.MakePtr(string(testID)),
-					Type:                         pointer.MakePtr("DATADOG"),
-					ApiKey:                       pointer.MakePtr(testAPIKey),
-					Region:                       pointer.MakePtr(string(testRegion)),
-					SendCollectionLatencyMetrics: pointer.MakePtr(true),
+				[]admin.ThirdPartyIntegration{
+					{
+						Id:                           pointer.MakePtr(string(testID)),
+						Type:                         pointer.MakePtr("DATADOG"),
+						ApiKey:                       pointer.MakePtr(testAPIKey),
+						Region:                       pointer.MakePtr(string(testRegion)),
+						SendCollectionLatencyMetrics: pointer.MakePtr(true),
+					},
 				},
 				nil,
 			),
@@ -163,17 +167,105 @@ func TestIntegrationsCreate(t *testing.T) {
 				},
 			},
 			api: testCreateIntegrationAPI(
-				&admin.ThirdPartyIntegration{
-					Id:                           pointer.MakePtr(string(testID)),
-					Type:                         pointer.MakePtr("BLAH"),
-					ApiKey:                       pointer.MakePtr(testAPIKey),
-					Region:                       pointer.MakePtr(string(testRegion)),
-					SendCollectionLatencyMetrics: pointer.MakePtr(true),
+				[]admin.ThirdPartyIntegration{
+					{
+						Id:                           pointer.MakePtr(string(testID)),
+						Type:                         pointer.MakePtr("BLAH"),
+						ApiKey:                       pointer.MakePtr(testAPIKey),
+						Region:                       pointer.MakePtr(string(testRegion)),
+						SendCollectionLatencyMetrics: pointer.MakePtr(true),
+					},
 				},
 				nil,
 			),
 			expected:      nil,
 			expectedError: integration.ErrUnsupportedIntegrationType,
+		},
+
+		{
+			title: "failure to extract matching type from API reply",
+			integration: &integration.ThirdPartyIntegration{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+					Type: "DATADOG",
+					Datadog: &akov2.DatadogIntegration{
+						Region:                       testRegion,
+						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
+						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+					},
+				},
+				DatadogSecrets: &integration.DatadogSecrets{
+					APIKey: testAPIKey,
+				},
+			},
+			api: testCreateIntegrationAPI(
+				[]admin.ThirdPartyIntegration{
+					{
+						Id:          pointer.MakePtr(string(testID)),
+						Type:        pointer.MakePtr("SLACK"),
+						ApiToken:    pointer.MakePtr("fake-token"),
+						ChannelName: pointer.MakePtr("channel"),
+						TeamName:    pointer.MakePtr("team"),
+					},
+					{
+						Id:   pointer.MakePtr(string(testID2)),
+						Type: pointer.MakePtr("WEBHOOK"),
+						Url:  pointer.MakePtr("http://example.com/fake"),
+					},
+				},
+				nil,
+			),
+			expected:      nil,
+			expectedError: integration.ErrNotFound,
+		},
+
+		{
+			title: "extracts matching type from API reply",
+			integration: &integration.ThirdPartyIntegration{
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+					Type: "DATADOG",
+					Datadog: &akov2.DatadogIntegration{
+						Region:                       testRegion,
+						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
+						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+					},
+				},
+				DatadogSecrets: &integration.DatadogSecrets{
+					APIKey: testAPIKey,
+				},
+			},
+			api: testCreateIntegrationAPI(
+				[]admin.ThirdPartyIntegration{
+					{
+						Id:          pointer.MakePtr(string(testID)),
+						Type:        pointer.MakePtr("SLACK"),
+						ApiToken:    pointer.MakePtr("fake-token"),
+						ChannelName: pointer.MakePtr("channel"),
+						TeamName:    pointer.MakePtr("team"),
+					},
+					{
+						Id:                           pointer.MakePtr(string(testID2)),
+						Type:                         pointer.MakePtr("DATADOG"),
+						SendCollectionLatencyMetrics: pointer.MakePtr(false),
+						SendDatabaseMetrics:          pointer.MakePtr(true),
+						ApiKey:                       pointer.MakePtr(testAPIKey),
+					},
+				},
+				nil,
+			),
+			expected: &integration.ThirdPartyIntegration{
+				ID: testID2,
+				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+					Type: "DATADOG",
+					Datadog: &akov2.DatadogIntegration{
+						SendCollectionLatencyMetrics: pointer.MakePtr("disabled"),
+						SendDatabaseMetrics:          pointer.MakePtr("enabled"),
+					},
+				},
+				DatadogSecrets: &integration.DatadogSecrets{
+					APIKey: testAPIKey,
+				},
+			},
+			expectedError: nil,
 		},
 	} {
 		ctx := context.Background()
@@ -410,7 +502,7 @@ func TestIntegrationDelete(t *testing.T) {
 	}
 }
 
-func testCreateIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsApi {
+func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsApi {
 	var apiMock mockadmin.ThirdPartyIntegrationsApi
 
 	apiMock.EXPECT().CreateThirdPartyIntegration(
@@ -418,11 +510,7 @@ func testCreateIntegrationAPI(integration *admin.ThirdPartyIntegration, err erro
 	).Return(admin.CreateThirdPartyIntegrationApiRequest{ApiService: &apiMock})
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
-	if integration != nil {
-		paginatedIntegration.Results = &[]admin.ThirdPartyIntegration{
-			*integration,
-		}
-	}
+	paginatedIntegration.Results = &integrations
 	apiMock.EXPECT().CreateThirdPartyIntegrationExecute(
 		mock.AnythingOfType("admin.CreateThirdPartyIntegrationApiRequest"),
 	).Return(paginatedIntegration, nil, err)
