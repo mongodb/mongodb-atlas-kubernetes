@@ -16,13 +16,14 @@ package generator
 
 import (
 	"fmt"
-	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 	"k8s.io/utils/ptr"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stoewer/go-strcase"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
+	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 )
 
 func FilterSchemaProps(key string, relaxed bool, schema *openapi3.SchemaRef, predicate func(string, *openapi3.SchemaRef) bool) *openapi3.SchemaRef {
@@ -77,7 +78,7 @@ func jsonPath(path []string) string {
 	return strings.ReplaceAll(result, ".[*]", "[*]")
 }
 
-func isSensitiveField(path []string, mapping *v1alpha1.FieldMapping) bool {
+func isSensitiveField(path []string, mapping *configv1alpha1.FieldMapping) bool {
 	if mapping == nil {
 		return false
 	}
@@ -93,7 +94,7 @@ func isSensitiveField(path []string, mapping *v1alpha1.FieldMapping) bool {
 	return false
 }
 
-func isSkippedField(path []string, mapping *v1alpha1.FieldMapping) bool {
+func isSkippedField(path []string, mapping *configv1alpha1.FieldMapping) bool {
 	if mapping == nil {
 		return false
 	}
@@ -110,7 +111,7 @@ func isSkippedField(path []string, mapping *v1alpha1.FieldMapping) bool {
 }
 
 // schemaPropsToJSONProps converts openapi3.Schema to a JSONProps
-func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mapping *v1alpha1.FieldMapping, path ...string) *apiextensions.JSONSchemaProps {
+func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path ...string) *apiextensions.JSONSchemaProps {
 	if schemaRef == nil {
 		return nil
 	}
@@ -129,6 +130,7 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 	}
 
 	schemaProps := schemaRef.Value
+	example := apiextensions.JSON(schemaProps.Example)
 	props := &apiextensions.JSONSchemaProps{
 		//ID:               schemaProps.ID,
 		//Schema:           apiextensions.JSONSchemaURL(string(schemaRef.Ref.)),
@@ -153,16 +155,32 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 		//MaxProperties:        castUInt64P(schemaProps.MaxProps),
 		//MinProperties:        castUInt64(schemaProps.MinProps),
 		Required:             filterSlice(schemaProps.Required, skipFields),
-		Items:                g.schemaToJSONSchemaPropsOrArray(schemaProps.Items, mapping, append(path, "[*]")),
-		AllOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AllOf, mapping, path),
-		OneOf:                g.schemasToJSONSchemaPropsArray(schemaProps.OneOf, mapping, path),
-		AnyOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AnyOf, mapping, path),
-		Not:                  g.schemaPropsToJSONProps(schemaProps.Not, mapping, path...),
-		Properties:           g.schemasToJSONSchemaPropsMap(schemaProps.Properties, mapping, path),
-		AdditionalProperties: g.schemaToJSONSchemaPropsOrBool(schemaProps.AdditionalProperties, mapping, path),
+		Items:                g.schemaToJSONSchemaPropsOrArray(schemaProps.Items, mapping, extensionsSchema, append(path, "[*]")),
+		AllOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AllOf, mapping, extensionsSchema, path),
+		OneOf:                g.schemasToJSONSchemaPropsArray(schemaProps.OneOf, mapping, extensionsSchema, path),
+		AnyOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AnyOf, mapping, extensionsSchema, path),
+		Not:                  g.schemaPropsToJSONProps(schemaProps.Not, mapping, extensionsSchema, path...),
+		Properties:           g.schemasToJSONSchemaPropsMap(schemaProps.Properties, mapping, extensionsSchema, path),
+		AdditionalProperties: g.schemaToJSONSchemaPropsOrBool(schemaProps.AdditionalProperties, mapping, extensionsSchema, path),
+		Example:              &example,
 	}
 
 	if isSensitiveField(path, mapping) {
+		if extensionsSchema.Extensions == nil {
+			extensionsSchema.Extensions = map[string]interface{}{}
+		}
+
+		extensionsSchema.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
+			"gvr":           "secrets/v1",
+			"nameSelector":  ".name",
+			"fieldSelector": ".key",
+		}
+
+		extensionsSchema.Extensions["x-openapi-mapping"] = map[string]interface{}{
+			"field": path[len(path)-1],
+			"type":  schemaProps.Type,
+		}
+
 		props.Type = "object"
 		props.Description = fmt.Sprintf("SENSITIVE FIELD\n\nReference to a secret containing data for the %q field:\n\n%v", path[len(path)-1], schemaProps.Description)
 		defaultKey := apiextensions.JSON(path[len(path)-1])
@@ -185,7 +203,7 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 	}
 
 	// Apply custom transformations
-	props = g.transformations(props, schemaRef, mapping, path)
+	props = g.transformations(props, schemaRef, mapping, extensionsSchema, path)
 
 	return props
 }
@@ -208,11 +226,11 @@ func filterSlice(source, by []string) []string {
 	}
 	return filtered
 }
-func (g *Generator) transformations(props *apiextensions.JSONSchemaProps, schemaRef *openapi3.SchemaRef, mapping *v1alpha1.FieldMapping, path []string) *apiextensions.JSONSchemaProps {
+func (g *Generator) transformations(props *apiextensions.JSONSchemaProps, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) *apiextensions.JSONSchemaProps {
 	result := props
 	result = handleAdditionalProperties(result, schemaRef.Value.AdditionalPropertiesAllowed)
 	result = removeUnknownFormats(result)
-	result = g.oneOfRefsTransform(result, schemaRef.Value.OneOf, mapping, path)
+	result = g.oneOfRefsTransform(result, schemaRef.Value.OneOf, mapping, extensionsSchema, path)
 	return result
 }
 
@@ -236,7 +254,7 @@ func removeUnknownFormats(props *apiextensions.JSONSchemaProps) *apiextensions.J
 }
 
 // oneOfRefsTransform transforms oneOf with a list of $ref to a list of nullable properties
-func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, oneOf openapi3.SchemaRefs, mapping *v1alpha1.FieldMapping, path []string) *apiextensions.JSONSchemaProps {
+func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, oneOf openapi3.SchemaRefs, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) *apiextensions.JSONSchemaProps {
 	if props.OneOf != nil && len(props.Properties) == 0 && props.AdditionalProperties == nil {
 		result := props.DeepCopy()
 		result.Type = "object"
@@ -253,7 +271,7 @@ func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, one
 			name = name[strings.LastIndex(name, "/")+1:]
 			name = strcase.LowerCamelCase(name)
 			options = append(options, name)
-			result.Properties[name] = *g.schemaPropsToJSONProps(v, mapping, append(path, name)...)
+			result.Properties[name] = *g.schemaPropsToJSONProps(v, mapping, extensionsSchema, append(path, name)...)
 		}
 
 		result.Properties["type"] = apiextensions.JSONSchemaProps{
@@ -267,10 +285,10 @@ func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, one
 	return props
 }
 
-func (g *Generator) schemasToJSONSchemaPropsArray(schemas openapi3.SchemaRefs, mapping *v1alpha1.FieldMapping, path []string) []apiextensions.JSONSchemaProps {
+func (g *Generator) schemasToJSONSchemaPropsArray(schemas openapi3.SchemaRefs, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) []apiextensions.JSONSchemaProps {
 	var s []apiextensions.JSONSchemaProps
 	for _, schema := range schemas {
-		s = append(s, *g.schemaPropsToJSONProps(schema, mapping, path...))
+		s = append(s, *g.schemaPropsToJSONProps(schema, mapping, extensionsSchema, path...))
 	}
 	return s
 }
@@ -284,55 +302,51 @@ func enumJSON(enum []interface{}) []apiextensions.JSON {
 	return s
 }
 
-func (g *Generator) schemaToJSONSchemaPropsOrArray(schema *openapi3.SchemaRef, mapping *v1alpha1.FieldMapping, path []string) *apiextensions.JSONSchemaPropsOrArray {
+func (g *Generator) schemaToJSONSchemaPropsOrArray(schema *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) *apiextensions.JSONSchemaPropsOrArray {
 	if schema == nil {
 		return nil
 	}
+	extensionsSchema.Items = openapi3.NewSchemaRef("", openapi3.NewSchema())
 	return &apiextensions.JSONSchemaPropsOrArray{
-		Schema: g.schemaPropsToJSONProps(schema, mapping, path...),
+		Schema: g.schemaPropsToJSONProps(schema, mapping, extensionsSchema.Items.Value, path...),
 	}
 }
 
-func (g *Generator) schemaToJSONSchemaPropsOrBool(schema *openapi3.SchemaRef, mapping *v1alpha1.FieldMapping, path []string) *apiextensions.JSONSchemaPropsOrBool {
+func (g *Generator) schemaToJSONSchemaPropsOrBool(schema *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) *apiextensions.JSONSchemaPropsOrBool {
 	if schema == nil {
 		return nil
 	}
 
 	return &apiextensions.JSONSchemaPropsOrBool{
-		Schema: g.schemaPropsToJSONProps(schema, mapping, path...),
+		Schema: g.schemaPropsToJSONProps(schema, mapping, extensionsSchema, path...),
 		Allows: true,
 	}
 }
 
-func (g *Generator) schemasToJSONSchemaPropsMap(schemaMap openapi3.Schemas, mapping *v1alpha1.FieldMapping, path []string) map[string]apiextensions.JSONSchemaProps {
+func (g *Generator) schemasToJSONSchemaPropsMap(schemaMap openapi3.Schemas, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) map[string]apiextensions.JSONSchemaProps {
 	m := make(map[string]apiextensions.JSONSchemaProps)
 	for key, schema := range schemaMap {
-		result := g.schemaPropsToJSONProps(schema, mapping, append(path, key)...)
+		propName := key
+		if extensionsSchema.Properties == nil {
+			extensionsSchema.Properties = make(openapi3.Schemas)
+		}
+
+		if extensionsSchema.Properties == nil {
+			extensionsSchema.Properties = make(openapi3.Schemas)
+		}
+
+		if isSensitiveField(append(path, key), mapping) {
+			propName = key + "SecretRef"
+		}
+
+		extensionsSchema.Properties[propName] = openapi3.NewSchemaRef("", openapi3.NewSchema())
+
+		result := g.schemaPropsToJSONProps(schema, mapping, extensionsSchema.Properties[propName].Value, append(path, key)...)
 		if result == nil {
 			continue
 		}
 
-		if isSensitiveField(append(path, key), mapping) {
-			key = key + "SecretRef"
-		}
-
-		m[key] = *result
+		m[propName] = *result
 	}
 	return m
-}
-
-func castUInt64P(p *uint64) *int64 {
-	if p == nil {
-		return nil
-	}
-	val := int64(*p)
-	return &val
-}
-
-func castUInt64(v uint64) *int64 {
-	val := int64(v)
-	if val == 0 {
-		return nil
-	}
-	return &val
 }
