@@ -42,6 +42,13 @@ import (
 	mckpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/predicate"
 )
 
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasthirdpartyintegrations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasthirdpartyintegrations/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasthirdpartyintegrations/finalizers,verbs=update
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasthirdpartyintegrations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasthirdpartyintegrations/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasthirdpartyintegrations/finalizers,verbs=update
+
 type serviceBuilderFunc func(*atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService
 
 type AtlasThirdPartyIntegrationHandler struct {

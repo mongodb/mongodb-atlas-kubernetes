@@ -43,6 +43,7 @@ rules:
   - atlasstreamconnections
   - atlasstreaminstances
   - atlasteams
+  - atlasthirdpartyintegrations
   verbs:
   - create
   - delete
@@ -71,6 +72,7 @@ rules:
   - atlasstreamconnections/status
   - atlasstreaminstances/status
   - atlasteams/status
+  - atlasthirdpartyintegrations/status
   verbs:
   - get
   - patch
@@ -81,5 +83,6 @@ rules:
   - atlasipaccesslists/finalizers
   - atlasnetworkcontainers/finalizers
   - atlasnetworkpeerings/finalizers
+  - atlasthirdpartyintegrations/finalizers
   verbs:
   - update
