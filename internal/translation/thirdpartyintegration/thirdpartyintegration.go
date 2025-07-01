@@ -58,11 +58,7 @@ func (tpi *thirdPartyIntegration) Create(ctx context.Context, projectID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create integration from config %v: %w", integration, err)
 	}
-	if len(integrationPages.GetResults()) != 1 {
-		return nil, fmt.Errorf("expected an integration result reply but got %d", len(*integrationPages.Results))
-	}
-
-	newIntegration, err := fromAtlas(&integrationPages.GetResults()[0])
+	newIntegration, err := getResultOfType(integrationPages.GetResults(), integration.Type)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert integration from Atlas: %w", err)
 	}
@@ -94,15 +90,11 @@ func (tpi *thirdPartyIntegration) Update(ctx context.Context, projectID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to update integration with config %v: %w", integration, err)
 	}
-	if len(integrationPages.GetResults()) != 1 {
-		return nil, fmt.Errorf("expected an integration result reply but got %d", len(*integrationPages.Results))
-	}
-
-	newIntegration, err := fromAtlas(&integrationPages.GetResults()[0])
+	updatedIntegration, err := getResultOfType(integrationPages.GetResults(), integration.Type)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert integration from Atlas: %w", err)
 	}
-	return newIntegration, nil
+	return updatedIntegration, nil
 }
 
 func (tpi *thirdPartyIntegration) Delete(ctx context.Context, projectID, integrationType string) error {
@@ -114,4 +106,20 @@ func (tpi *thirdPartyIntegration) Delete(ctx context.Context, projectID, integra
 		return fmt.Errorf("failed to delete integration type %s: %w", integrationType, err)
 	}
 	return nil
+}
+
+func getResultOfType(integrations []admin.ThirdPartyIntegration, typeName string) (*ThirdPartyIntegration, error) {
+	if err := assertType(typeName); err != nil {
+		return nil, fmt.Errorf("wrong target type: %w", err)
+	}
+	for _, integration := range integrations {
+		tn := integration.GetType()
+		if err := assertType(tn); err != nil {
+			return nil, fmt.Errorf("wrong result type: %w", err)
+		}
+		if tn == typeName {
+			return fromAtlas(&integration)
+		}
+	}
+	return nil, fmt.Errorf("integration %q %w in API reply", typeName, ErrNotFound)
 }

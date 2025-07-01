@@ -330,6 +330,17 @@ func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) 
 	return tpi, nil
 }
 
+func assertType(typeName string) error {
+	switch typeName {
+	case "DATADOG", "MICROSOFT_TEAMS", "NEW_RELIC",
+		"OPS_GENIE", "PAGER_DUTY", "PROMETHEUS", "SLACK",
+		"VICTOR_OPS", "WEBHOOK":
+		return nil
+	default:
+		return fmt.Errorf("%w %v", ErrUnsupportedIntegrationType, typeName)
+	}
+}
+
 func isEnabled(field *string) bool {
 	if field == nil {
 		return false
