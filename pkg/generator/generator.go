@@ -29,13 +29,6 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func anyEntry[T any](source map[string]T, defaultValue T) T {
-	for _, v := range source {
-		return v
-	}
-	return defaultValue
-}
-
 type Generator struct {
 	config      v1alpha1.CRDConfig
 	definitions map[string]v1alpha1.OpenAPIDefinition
@@ -122,18 +115,6 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		if err != nil {
 			return nil, fmt.Errorf("error loading spec: %w", err)
 		}
-
-		// Fix known types (ref: https://github.com/kubernetes/kubernetes/issues/62329)
-		openApiSpec.Components.Schemas["k8s.io/apimachinery/pkg/util/intstr.IntOrString"] = openapi3.NewSchemaRef("", &openapi3.Schema{
-			AnyOf: openapi3.SchemaRefs{
-				{
-					Value: openapi3.NewStringSchema(),
-				},
-				{
-					Value: openapi3.NewIntegerSchema(),
-				},
-			},
-		})
 
 		err = g.generateProps(openApiSpec, crd, &mapping)
 		if err != nil {

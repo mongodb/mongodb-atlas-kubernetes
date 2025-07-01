@@ -104,31 +104,43 @@ metadata:
  namespace: default
 spec:
  v20231115:
-   parameters:
-     groupId: "67eba33e19737947a3db382b"
-   entry:
-     backupEnabled: false
-     clusterType: "REPLICASET"
-     encryptionAtRestProvider: "NONE"
-     mongoDBMajorVersion: "7.0"
-     name: "test-cluster"
-     paused: false
-     pitEnabled: false
-     replicationSpecs:
-       - numShards: 1
-         regionConfigs:
-           - electableSpecs:
-               ebsVolumeType: "STANDARD"
-               instanceSize: "M10"
-               nodeCount: 3
-             priority: 7
-             providerName: "AWS"
-             regionName: "US_EAST_1"
-             autoScaling:
-               compute:
-                 enabled: false
-               diskGB:
-                 enabled: false
-         zoneName: "Zone 1"
-     rootCertType: "ISRGROOTX1"
-     versionReleaseSystem: "LTS"
+   groupId: "67eba33e19737947a3db382b"
+   backupEnabled: false
+   clusterType: "REPLICASET"
+   encryptionAtRestProvider: "NONE"
+   mongoDBMajorVersion: "7.0"
+   name: "test-cluster"
+   paused: false
+   pitEnabled: false
+   replicationSpecs:
+     - numShards: 1
+       regionConfigs:
+         - electableSpecs:
+             ebsVolumeType: "STANDARD"
+             instanceSize: "M10"
+             nodeCount: 3
+           priority: 7
+           providerName: "AWS"
+           regionName: "US_EAST_1"
+           autoScaling:
+             compute:
+               enabled: false
+             diskGB:
+               enabled: false
+       zoneName: "Zone 1"
+   rootCertType: "ISRGROOTX1"
+   versionReleaseSystem: "LTS"
+---
+apiVersion: atlas.generated.mongodb.com/v1
+kind: GroupAlertsConfig
+metadata:
+  name: example-datadog-alert
+  namespace: default
+spec:
+  v20241113:
+    entry:
+      notifications:
+        - typeName: DATADOG
+          datadogApiKeyRef:
+            name: data-dog
+            key: .data.datadogApiKey

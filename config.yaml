@@ -2,6 +2,16 @@ kind: Config
 apiVersion: atlas2crd.mongodb.com/v1alpha1
 
 spec:
+  openapi:
+    - name: v20250312
+      path: atlas-api-transformed-v20250312002.0.0.yaml
+
+    - name: v20231115
+      path: atlas-api-transformed-v20231115.yaml
+
+    - name: v20241113
+      path: atlas-api-transformed-v20241113.yaml
+
   crd:
     - gvk:
         version: v1
@@ -319,13 +329,3 @@ spec:
                 - $.url
                 - $.username
                 - $.writeToken
-
-  openapi:
-    - name: v20250312
-      path: atlas-api-transformed-v20250312002.0.0.yaml
-
-    - name: v20231115
-      path: atlas-api-transformed-v20231115.yaml
-
-    - name: v20241113
-      path: atlas-api-transformed-v20241113.yaml
