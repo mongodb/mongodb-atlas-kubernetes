@@ -1992,7 +1992,7 @@ spec:
                           description: One target that MongoDB Cloud sends notifications
                             when an alert triggers.
                           properties:
-                            apiTokenRef:
+                            apiTokenSecretRef:
                               description: "SENSITIVE FIELD\n\nReference to a secret
                                 containing data for the \"apiToken\" field:\n\nSlack
                                 API token or Bot token that MongoDB Cloud needs to
@@ -2024,7 +2024,7 @@ spec:
                                 this parameter when `"notifications.[n].typeName"
                                 : "SLACK"`.'
                               type: string
-                            datadogApiKeyRef:
+                            datadogApiKeySecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2088,7 +2088,7 @@ spec:
 
                                 PagerDuty, VictorOps, and OpsGenie notifications don't return this element. Configure and manage the notification interval within each of those services.
                               type: integer
-                            microsoftTeamsWebhookUrlRef:
+                            microsoftTeamsWebhookUrlSecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2113,7 +2113,7 @@ spec:
                                 sends alert notifications. The resource requires this
                                 parameter when `"notifications.[n].typeName" : "SMS"`.'
                               type: string
-                            notificationTokenRef:
+                            notificationTokenSecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2143,7 +2143,7 @@ spec:
                                 is needed when updating third-party notifications
                                 without requiring explicit authentication credentials.
                               type: string
-                            opsGenieApiKeyRef:
+                            opsGenieApiKeySecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2196,7 +2196,7 @@ spec:
                                 this parameter when `"notifications.[n].typeName"
                                 : "HIP_CHAT"`".'
                               type: string
-                            serviceKeyRef:
+                            serviceKeySecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2251,7 +2251,7 @@ spec:
                                 this parameter when `"notifications.[n].typeName"
                                 : "USER"`.'
                               type: string
-                            victorOpsApiKeyRef:
+                            victorOpsApiKeySecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2275,7 +2275,7 @@ spec:
                                     field value.
                                   type: string
                               type: object
-                            victorOpsRoutingKeyRef:
+                            victorOpsRoutingKeySecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2293,7 +2293,7 @@ spec:
                                     field value.
                                   type: string
                               type: object
-                            webhookSecretRef:
+                            webhookSecretSecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2317,7 +2317,7 @@ spec:
                                     field value.
                                   type: string
                               type: object
-                            webhookUrlRef:
+                            webhookUrlSecretRef:
                               description: |-
                                 SENSITIVE FIELD
 
@@ -2500,7 +2500,7 @@ spec:
                         description: Unique 40-hexadecimal digit string that identifies
                           your New Relic account.
                         type: string
-                      apiKeyRef:
+                      apiKeySecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2524,7 +2524,7 @@ spec:
                               field value.
                             type: string
                         type: object
-                      apiTokenRef:
+                      apiTokenSecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2558,7 +2558,7 @@ spec:
                         description: Flag that indicates whether someone has activated
                           the Prometheus integration.
                         type: boolean
-                      licenseKeyRef:
+                      licenseKeySecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2579,7 +2579,7 @@ spec:
                               field value.
                             type: string
                         type: object
-                      microsoftTeamsWebhookUrlRef:
+                      microsoftTeamsWebhookUrlSecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2599,7 +2599,7 @@ spec:
                               field value.
                             type: string
                         type: object
-                      passwordRef:
+                      passwordSecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2617,7 +2617,7 @@ spec:
                               field value.
                             type: string
                         type: object
-                      readTokenRef:
+                      readTokenSecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2639,7 +2639,7 @@ spec:
                         description: PagerDuty region that indicates the API Uniform
                           Resource Locator (URL) to use.
                         type: string
-                      routingKeyRef:
+                      routingKeySecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2657,7 +2657,7 @@ spec:
                               field value.
                             type: string
                         type: object
-                      secretRef:
+                      secretSecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2680,7 +2680,7 @@ spec:
                       serviceDiscovery:
                         description: Desired method to discover the Prometheus service.
                         type: string
-                      serviceKeyRef:
+                      serviceKeySecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2714,7 +2714,7 @@ spec:
                           to which you want to integrate with MongoDB Cloud. The value
                           must match the third-party service integration type.
                         type: string
-                      urlRef:
+                      urlSecretRef:
                         description: |-
                           SENSITIVE FIELD
 
@@ -2738,7 +2738,7 @@ spec:
                         description: Human-readable label that identifies your Prometheus
                           incoming webhook.
                         type: string
-                      writeTokenRef:
+                      writeTokenSecretRef:
                         description: |-
                           SENSITIVE FIELD
 

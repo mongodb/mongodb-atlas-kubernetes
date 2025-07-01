@@ -313,7 +313,7 @@ func (g *Generator) schemasToJSONSchemaPropsMap(schemaMap openapi3.Schemas, mapp
 		}
 
 		if isSensitiveField(append(path, key), mapping) {
-			key = key + "Ref"
+			key = key + "SecretRef"
 		}
 
 		m[key] = *result
