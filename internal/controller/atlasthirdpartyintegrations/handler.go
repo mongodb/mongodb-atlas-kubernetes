@@ -96,7 +96,7 @@ func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentS
 	}
 	return result.NextState(
 		nextState,
-		fmt.Sprintf("%s Atlas Third Party Integration for %s", integrationSpec.Type, req.Project.ID),
+		fmt.Sprintf("Synced %s Atlas Third Party Integration for %s", integrationSpec.Type, req.Project.ID),
 	)
 }
 
@@ -123,7 +123,14 @@ func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentS
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) update(ctx context.Context, currentState state.ResourceState, req *reconcileRequest, integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (ctrlstate.Result, error) {
-	_, err := req.Service.Update(ctx, req.Project.ID, integrationSpec)
+	updatedIntegration, err := req.Service.Update(ctx, req.Project.ID, integrationSpec)
+	if req.integration.Status.ID == "" { // On imports, the ID might be unset
+		req.integration.Status.ID = updatedIntegration.ID
+		if err := h.patchNonConditionStatus(ctx, req); err != nil {
+			return result.Error(currentState, fmt.Errorf("failed to record id for %s Atlas Third Party Integration for project %s: %w",
+				integrationSpec.Type, req.Project.ID, err))
+		}
+	}
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to update %s Atlas Third Party Integration for project %s: %w",
 			integrationSpec.Type, req.Project.ID, err))

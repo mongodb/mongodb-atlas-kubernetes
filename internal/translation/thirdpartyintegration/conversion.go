@@ -134,6 +134,8 @@ func (tpi *ThirdPartyIntegration) Comparable() *ThirdPartyIntegration {
 	if comparable.AtlasThirdPartyIntegrationSpec.Webhook != nil {
 		comparable.AtlasThirdPartyIntegrationSpec.Webhook.URLSecretRef.Name = ""
 	}
+	// unset ID for comparison, as the ID changes on each update
+	comparable.ID = ""
 	return comparable
 }
 

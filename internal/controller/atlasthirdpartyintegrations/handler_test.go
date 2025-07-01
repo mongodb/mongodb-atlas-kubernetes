@@ -33,6 +33,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
@@ -40,6 +41,16 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
+)
+
+const (
+	fakeID = "fake-id"
+
+	fakeURL = "https://example.com/fake"
+
+	fakeSecret = "fake-secret"
+
+	matchingFakeHash = "5842a3ca8c9cdff1f658a278930fb49d2d5a8c493380f28e39bc7ebbbe21872c"
 )
 
 var sampleWebhookIntegration = akov2.AtlasThirdPartyIntegration{
@@ -53,11 +64,21 @@ var sampleWebhookIntegration = akov2.AtlasThirdPartyIntegration{
 			},
 		},
 	},
+	Status: status.AtlasThirdPartyIntegrationStatus{
+		ID: fakeID,
+	},
 }
 
 var sampleWebhookSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "webhook-secret",
+		Annotations: map[string]string{
+			AnnotationContentHash: matchingFakeHash,
+		},
+	},
+	Data: map[string][]byte{
+		"url":    ([]byte)(fakeURL),
+		"secret": ([]byte)(fakeSecret),
 	},
 }
 
@@ -67,6 +88,9 @@ func TestHandleUpsert(t *testing.T) {
 	require.NoError(t, akov2.AddToScheme(scheme))
 	require.NoError(t, akov2.AddToScheme(scheme))
 	ctx := context.Background()
+
+	unannotatedSampleWebhookSecret := sampleWebhookSecret.DeepCopy()
+	unannotatedSampleWebhookSecret.Annotations = nil
 
 	for _, tc := range []struct {
 		name           string
@@ -95,7 +119,7 @@ func TestHandleUpsert(t *testing.T) {
 				integrationsService.EXPECT().Create(mock.Anything, "testProjectID", mock.Anything).
 					Return(&thirdpartyintegration.ThirdPartyIntegration{
 						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             "fake-id",
+						ID:                             fakeID,
 					}, nil)
 				return integrationsService
 			},
@@ -122,17 +146,17 @@ func TestHandleUpsert(t *testing.T) {
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
 					Return(&thirdpartyintegration.ThirdPartyIntegration{
 						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             "fake-id",
+						ID:                             fakeID,
 					}, nil)
 				integrationsService.EXPECT().Update(mock.Anything, "testProjectID", mock.Anything).
 					Return(&thirdpartyintegration.ThirdPartyIntegration{
 						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             "fake-id",
+						ID:                             fakeID,
 					}, nil)
 				return integrationsService
 			},
 			input:   &sampleWebhookIntegration,
-			objects: []client.Object{sampleWebhookSecret},
+			objects: []client.Object{unannotatedSampleWebhookSecret},
 			want: ctrlstate.Result{
 				NextState: "Updated",
 				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
@@ -171,7 +195,7 @@ func TestHandleUpsert(t *testing.T) {
 				integrationsService.EXPECT().Create(mock.Anything, "testProjectID", mock.Anything).
 					Return(&thirdpartyintegration.ThirdPartyIntegration{
 						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             "fake-id",
+						ID:                             fakeID,
 					}, nil)
 				return integrationsService
 			},
@@ -191,19 +215,81 @@ func TestHandleUpsert(t *testing.T) {
 		},
 
 		{
-			name:  "updated updates",
+			name:  "updated updates due unhashed secret",
 			state: state.StateUpdated,
 			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
 					Return(&thirdpartyintegration.ThirdPartyIntegration{
 						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             "fake-id",
+						ID:                             fakeID,
 					}, nil)
 				integrationsService.EXPECT().Update(mock.Anything, "testProjectID", mock.Anything).
 					Return(&thirdpartyintegration.ThirdPartyIntegration{
 						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             "fake-id",
+						ID:                             fakeID,
+					}, nil)
+				return integrationsService
+			},
+			provider: &atlasmock.TestProvider{
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return &atlas.ClientSet{
+						SdkClient20231115008: &admin20231115008.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+					}, nil
+				},
+			},
+			input:   &sampleWebhookIntegration,
+			objects: []client.Object{unannotatedSampleWebhookSecret},
+			want: ctrlstate.Result{
+				NextState: "Updated",
+				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
+			},
+		},
+
+		{
+			name:  "imported does not update",
+			state: state.StateInitial,
+			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
+				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
+				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
+					Return(&thirdpartyintegration.ThirdPartyIntegration{
+						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
+						ID:                             fakeID,
+						WebhookSecrets: &thirdpartyintegration.WebhookSecrets{
+							URL:    fakeURL,
+							Secret: fakeSecret,
+						},
+					}, nil)
+				return integrationsService
+			},
+			provider: &atlasmock.TestProvider{
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return &atlas.ClientSet{
+						SdkClient20231115008: &admin20231115008.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+					}, nil
+				},
+			},
+			input:   &sampleWebhookIntegration,
+			objects: []client.Object{sampleWebhookSecret},
+			want: ctrlstate.Result{
+				NextState: "Created",
+				StateMsg:  "Synced WEBHOOK Atlas Third Party Integration for testProjectID.",
+			},
+		},
+
+		{
+			name:  "id diff does not update",
+			state: state.StateUpdated,
+			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
+				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
+				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
+					Return(&thirdpartyintegration.ThirdPartyIntegration{
+						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
+						ID:                             "other-fake-id",
+						WebhookSecrets: &thirdpartyintegration.WebhookSecrets{
+							URL:    fakeURL,
+							Secret: fakeSecret,
+						},
 					}, nil)
 				return integrationsService
 			},
@@ -218,7 +304,79 @@ func TestHandleUpsert(t *testing.T) {
 			objects: []client.Object{sampleWebhookSecret},
 			want: ctrlstate.Result{
 				NextState: "Updated",
-				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
+				StateMsg:  "Synced WEBHOOK Atlas Third Party Integration for testProjectID.",
+			},
+		},
+
+		{
+			name:  "different integration updates",
+			state: state.StateUpdated,
+			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
+				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
+				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "SLACK").
+					Return(&thirdpartyintegration.ThirdPartyIntegration{
+						AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+							ProjectDualReference: referenceFakeProject,
+							Type:                 "SLACK",
+							Slack: &akov2.SlackIntegration{
+								ChannelName: "other-channel",
+								TeamName:    "other-team",
+							},
+						},
+						ID: fakeID,
+						SlackSecrets: &thirdpartyintegration.SlackSecrets{
+							APIToken: "fake-token",
+						},
+					}, nil)
+				integrationsService.EXPECT().Update(mock.Anything, "testProjectID", mock.Anything).
+					Return(&thirdpartyintegration.ThirdPartyIntegration{
+						AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+							ProjectDualReference: referenceFakeProject,
+							Type:                 "SLACK",
+							Slack: &akov2.SlackIntegration{
+								ChannelName: "spec-channel",
+								TeamName:    "spec-team",
+							},
+						},
+						ID: fakeID,
+					}, nil)
+				return integrationsService
+			},
+			provider: &atlasmock.TestProvider{
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return &atlas.ClientSet{
+						SdkClient20231115008: &admin20231115008.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+					}, nil
+				},
+			},
+			input: &akov2.AtlasThirdPartyIntegration{
+				ObjectMeta: metav1.ObjectMeta{Name: "slack-integration"},
+				Spec: akov2.AtlasThirdPartyIntegrationSpec{
+					ProjectDualReference: referenceFakeProject,
+					Type:                 "SLACK",
+					Slack: &akov2.SlackIntegration{
+						APITokenSecretRef: api.LocalObjectReference{
+							Name: "slack-secret",
+						},
+						ChannelName: "spec-channel",
+						TeamName:    "spec-team",
+					},
+				},
+			},
+			objects: []client.Object{&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "slack-secret",
+					Annotations: map[string]string{
+						AnnotationContentHash: "b651a9a05aa41a0555c56f3757d1ab44ae08a7cde4d8fe4477f729e3961cebc6",
+					},
+				},
+				Data: map[string][]byte{
+					"apiToken": ([]byte)("fake-token"),
+				},
+			}},
+			want: ctrlstate.Result{
+				NextState: "Updated",
+				StateMsg:  "Updated Atlas Third Party Integration for SLACK.",
 			},
 		},
 	} {
