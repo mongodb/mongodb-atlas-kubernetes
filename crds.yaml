@@ -92,18 +92,17 @@ spec:
                     - name
                     - orgId
                     type: object
-                  parameters:
-                    description: The parameter fields of the group resource spec.
-                      These fields are used when creating groups only.
-                    properties:
-                      projectOwnerId:
-                        description: Unique 24-hexadecimal digit string that identifies
-                          the MongoDB Cloud user to whom to grant the Project Owner
-                          role on the specified project. If you set this parameter,
-                          it overrides the default value of the oldest Organization
-                          Owner.
-                        type: string
-                    type: object
+                  projectOwnerId:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the MongoDB Cloud user to whom to grant the Project Owner role
+                      on the specified project. If you set this parameter, it overrides
+                      the default value of the oldest Organization Owner.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: projectOwnerId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - projectOwnerId
                 type: object
             type: object
           status:
@@ -263,18 +262,17 @@ spec:
                           type: string
                       type: object
                     type: array
-                  parameters:
-                    description: The parameter fields of the networkpermissionentries
-                      resource spec. These fields are used when creating networkpermissionentrieses
-                      only.
-                    properties:
-                      groupId:
-                        description: |-
-                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
-                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        type: string
-                    type: object
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
                 type: object
             type: object
           status:
@@ -847,17 +845,17 @@ spec:
                           **mongoDBMajorVersion**.
                         type: string
                     type: object
-                  parameters:
-                    description: The parameter fields of the cluster resource spec.
-                      These fields are used when creating clusters only.
-                    properties:
-                      groupId:
-                        description: |-
-                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
-                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        type: string
-                    type: object
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
                 type: object
             type: object
           status:
@@ -1155,6 +1153,13 @@ spec:
               v20231115:
                 description: The spec of the searchindex resource for version v20231115.
                 properties:
+                  clusterName:
+                    description: Name of the cluster that contains the collection
+                      on which to create an Atlas Search index.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: clusterName cannot be modified after creation
+                      rule: self == oldSelf
                   entry:
                     description: The entry fields of the searchindex resource spec.
                       These fields can be set for creating and updating searchindexes.
@@ -1341,21 +1346,18 @@ spec:
                     - database
                     - name
                     type: object
-                  parameters:
-                    description: The parameter fields of the searchindex resource
-                      spec. These fields are used when creating searchindexes only.
-                    properties:
-                      clusterName:
-                        description: Name of the cluster that contains the collection
-                          on which to create an Atlas Search index.
-                        type: string
-                      groupId:
-                        description: |-
-                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
-                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        type: string
-                    type: object
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
+                - clusterName
                 type: object
             type: object
           status:
@@ -1553,18 +1555,17 @@ spec:
                     required:
                     - roleName
                     type: object
-                  parameters:
-                    description: The parameter fields of the usercustomdbrole resource
-                      spec. These fields are used when creating usercustomdbroles
-                      only.
-                    properties:
-                      groupId:
-                        description: |-
-                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
-                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        type: string
-                    type: object
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
                 type: object
             type: object
           status:
@@ -1720,17 +1721,17 @@ spec:
                     - providerSettings
                     title: Flex Cluster Description Create
                     type: object
-                  parameters:
-                    description: The parameter fields of the flexcluster resource
-                      spec. These fields are used when creating flexclusters only.
-                    properties:
-                      groupId:
-                        description: |-
-                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
-                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        type: string
-                    type: object
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
                 type: object
             type: object
           status:
@@ -2363,18 +2364,17 @@ spec:
                         title: Greater Than Raw Threshold
                         type: object
                     type: object
-                  parameters:
-                    description: The parameter fields of the groupalertsconfig resource
-                      spec. These fields are used when creating groupalertsconfigs
-                      only.
-                    properties:
-                      groupId:
-                        description: |-
-                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
-                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        type: string
-                    type: object
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
                 type: object
             type: object
           status:
@@ -2758,23 +2758,26 @@ spec:
                         type: object
                     title: Third-Party Integration
                     type: object
-                  parameters:
-                    description: The parameter fields of the thirdpartyintegration
-                      resource spec. These fields are used when creating thirdpartyintegrations
-                      only.
-                    properties:
-                      groupId:
-                        description: |-
-                          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
-                          **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-                        type: string
-                      integrationType:
-                        description: Human-readable label that identifies the service
-                          which you want to integrate with MongoDB Cloud.
-                        title: Integration Type
-                        type: string
-                    type: object
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                  integrationType:
+                    description: Human-readable label that identifies the service
+                      which you want to integrate with MongoDB Cloud.
+                    title: Integration Type
+                    type: string
+                    x-kubernetes-validations:
+                    - message: integrationType cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - integrationType
+                - groupId
                 type: object
             type: object
           status:

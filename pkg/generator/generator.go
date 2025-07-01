@@ -197,42 +197,12 @@ func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.Gro
 }
 
 func (g *Generator) generateProps(openApiSpec *openapi3.T, crd *apiextensions.CustomResourceDefinition, mapping *v1alpha1.CRDMapping) error {
-	var entrySchemaRef *openapi3.SchemaRef
-
-	if mapping.EntryMapping.Schema != "" {
-		var ok bool
-		entrySchemaRef, ok = openApiSpec.Components.Schemas[mapping.EntryMapping.Schema]
-		if !ok {
-			return fmt.Errorf("entry schema %q not found in openapi spec", mapping.EntryMapping.Schema)
-		}
-	}
-
-	if mapping.EntryMapping.Path.Name != "" {
-		entrySchemaRef = openApiSpec.Paths[mapping.EntryMapping.Path.Name].Operations()[strings.ToUpper(mapping.EntryMapping.Path.Verb)].RequestBody.Value.Content[mapping.EntryMapping.Path.RequestBody.MimeType].Schema
-	}
-
-	entryProps := g.schemaPropsToJSONProps(entrySchemaRef, &mapping.EntryMapping)
-	entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", crd.Spec.Names.Singular, crd.Spec.Names.Plural)
 	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = apiextensions.JSONSchemaProps{
 		Type:        "object",
 		Description: fmt.Sprintf("The spec of the %v resource for version %v.", crd.Spec.Names.Singular, mapping.MajorVersion),
-		Properties: map[string]apiextensions.JSONSchemaProps{
-			"entry": *entryProps,
-		},
+		Properties:  map[string]apiextensions.JSONSchemaProps{},
 	}
-
-	if mapping.StatusMapping.Schema != "" {
-		statusSchemaRef, ok := openApiSpec.Components.Schemas[mapping.StatusMapping.Schema]
-		if !ok {
-			return fmt.Errorf("status schema %q not found in openapi spec", mapping.StatusMapping.Schema)
-		}
-
-		statusProps := g.schemaPropsToJSONProps(statusSchemaRef, &mapping.StatusMapping)
-		statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", crd.Spec.Names.Singular, mapping.MajorVersion)
-		if statusProps != nil {
-			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mapping.MajorVersion] = *statusProps
-		}
-	}
+	majorVersionSpec := crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion]
 
 	if mapping.ParametersMapping.FieldPath.Name != "" {
 		var operation *openapi3.Operation
@@ -251,12 +221,6 @@ func (g *Generator) generateProps(openApiSpec *openapi3.T, crd *apiextensions.Cu
 			return fmt.Errorf("verb %q unsupported", mapping.ParametersMapping.FieldPath.Verb)
 		}
 
-		params := apiextensions.JSONSchemaProps{
-			Type:        "object",
-			Properties:  map[string]apiextensions.JSONSchemaProps{},
-			Description: fmt.Sprintf("The parameter fields of the %v resource spec. These fields are used when creating %v only.", crd.Spec.Names.Singular, crd.Spec.Names.Plural),
-		}
-
 		for _, p := range operation.Parameters {
 			switch p.Value.Name {
 			case "includeCount":
@@ -267,12 +231,49 @@ func (g *Generator) generateProps(openApiSpec *openapi3.T, crd *apiextensions.Cu
 			default:
 				props := g.schemaPropsToJSONProps(p.Value.Schema, nil)
 				props.Description = p.Value.Description
-				params.Properties[p.Value.Name] = *props
+				props.XValidations = apiextensions.ValidationRules{
+					{
+						Rule:    "self == oldSelf",
+						Message: fmt.Sprintf("%s cannot be modified after creation", p.Value.Name),
+					},
+				}
+				majorVersionSpec.Properties[p.Value.Name] = *props
+				majorVersionSpec.Required = append(majorVersionSpec.Required, p.Value.Name)
 			}
 		}
-
-		crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion].Properties["parameters"] = params
 	}
 
+	var entrySchemaRef *openapi3.SchemaRef
+
+	if mapping.EntryMapping.Schema != "" {
+		var ok bool
+		entrySchemaRef, ok = openApiSpec.Components.Schemas[mapping.EntryMapping.Schema]
+		if !ok {
+			return fmt.Errorf("entry schema %q not found in openapi spec", mapping.EntryMapping.Schema)
+		}
+	}
+
+	if mapping.EntryMapping.Path.Name != "" {
+		entrySchemaRef = openApiSpec.Paths[mapping.EntryMapping.Path.Name].Operations()[strings.ToUpper(mapping.EntryMapping.Path.Verb)].RequestBody.Value.Content[mapping.EntryMapping.Path.RequestBody.MimeType].Schema
+	}
+
+	entryProps := g.schemaPropsToJSONProps(entrySchemaRef, &mapping.EntryMapping)
+	entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", crd.Spec.Names.Singular, crd.Spec.Names.Plural)
+	majorVersionSpec.Properties["entry"] = *entryProps
+
+	if mapping.StatusMapping.Schema != "" {
+		statusSchemaRef, ok := openApiSpec.Components.Schemas[mapping.StatusMapping.Schema]
+		if !ok {
+			return fmt.Errorf("status schema %q not found in openapi spec", mapping.StatusMapping.Schema)
+		}
+
+		statusProps := g.schemaPropsToJSONProps(statusSchemaRef, &mapping.StatusMapping)
+		statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", crd.Spec.Names.Singular, mapping.MajorVersion)
+		if statusProps != nil {
+			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mapping.MajorVersion] = *statusProps
+		}
+	}
+
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = majorVersionSpec
 	return nil
 }

@@ -22,20 +22,20 @@
 #       comment: Everyone has access. For the test purpose only.
 #     - cidrBlock: 128.0.0.0/1
 #       comment: Everyone has access. For the test purpose only.
----
-apiVersion: atlas.generated.mongodb.com/v1
-kind: Group
-metadata:
-  name: project1
-  namespace: default
-spec:
-  v20231115:
-    entry:
-      name: "project1"
-      orgId: "655dfe3e401cb80283fef781"
-      regionUsageRestrictions: "NONE"
-      withDefaultAlertsSettings: true
----
+#---
+#apiVersion: atlas.generated.mongodb.com/v1
+#kind: Group
+#metadata:
+#  name: project1
+#  namespace: default
+#spec:
+#  v20231115:
+#    entry:
+#      name: "project1"
+#      orgId: "655dfe3e401cb80283fef781"
+#      regionUsageRestrictions: "NONE"
+#      withDefaultAlertsSettings: true
+#---
 # apiVersion: atlas.generated.mongodb.com/v1
 # kind: FlexCluster
 # metadata:
@@ -52,20 +52,19 @@ spec:
 #         regionName: "US_EAST_1"
 #       terminationProtectionEnabled: false
 # ---
-# apiVersion: atlas.generated.mongodb.com/v1
-# kind: NetworkPermissionEntry
-# metadata:
-#   name: foo
-#   namespace: foo
-# spec:
-#   v20231115:
-#     parameters:
-#       groupId: "67e7bdb269f4d26772d3d97b"
-#     entry:
-#     - cidrBlock: "0.0.0.0/1"
-#       comment: "Everyone has access. For the test purpose only."
-#     - cidrBlock: "128.0.0.0/1"
-#       comment: "Everyone has access. For the test purpose only."
+ apiVersion: atlas.generated.mongodb.com/v1
+ kind: NetworkPermissionEntries
+ metadata:
+   name: foo
+   namespace: default
+ spec:
+   v20250312:
+     groupId: "67e7bdb269f4d26772d3d97b"
+     entry:
+     - cidrBlock: "0.0.0.0/1"
+       comment: "Everyone has access. For the test purpose only."
+     - cidrBlock: "128.0.0.0/1"
+       comment: "Everyone has access. For the test purpose only."
 # # ---
 # # apiVersion: atlas.generated.mongodb.com/v1
 # # kind: UserCustomDBRole
@@ -105,42 +104,43 @@ metadata:
 spec:
  v20231115:
    groupId: "67eba33e19737947a3db382b"
-   backupEnabled: false
-   clusterType: "REPLICASET"
-   encryptionAtRestProvider: "NONE"
-   mongoDBMajorVersion: "7.0"
-   name: "test-cluster"
-   paused: false
-   pitEnabled: false
-   replicationSpecs:
-     - numShards: 1
-       regionConfigs:
-         - electableSpecs:
-             ebsVolumeType: "STANDARD"
-             instanceSize: "M10"
-             nodeCount: 3
-           priority: 7
-           providerName: "AWS"
-           regionName: "US_EAST_1"
-           autoScaling:
-             compute:
-               enabled: false
-             diskGB:
-               enabled: false
-       zoneName: "Zone 1"
-   rootCertType: "ISRGROOTX1"
-   versionReleaseSystem: "LTS"
----
-apiVersion: atlas.generated.mongodb.com/v1
-kind: GroupAlertsConfig
-metadata:
-  name: example-datadog-alert
-  namespace: default
-spec:
-  v20241113:
-    entry:
-      notifications:
-        - typeName: DATADOG
-          datadogApiKeyRef:
-            name: data-dog
-            key: .data.datadogApiKey
+   entry:
+     backupEnabled: false
+     clusterType: "REPLICASET"
+     encryptionAtRestProvider: "NONE"
+     mongoDBMajorVersion: "7.0"
+     name: "test-cluster"
+     paused: false
+     pitEnabled: false
+     replicationSpecs:
+       - numShards: 1
+         regionConfigs:
+           - electableSpecs:
+               ebsVolumeType: "STANDARD"
+               instanceSize: "M10"
+               nodeCount: 3
+             priority: 7
+             providerName: "AWS"
+             regionName: "US_EAST_1"
+             autoScaling:
+               compute:
+                 enabled: false
+               diskGB:
+                 enabled: false
+         zoneName: "Zone 1"
+     rootCertType: "ISRGROOTX1"
+     versionReleaseSystem: "LTS"
+#---
+#apiVersion: atlas.generated.mongodb.com/v1
+#kind: GroupAlertsConfig
+#metadata:
+#  name: example-datadog-alert
+#  namespace: default
+#spec:
+#  v20241113:
+#    entry:
+#      notifications:
+#        - typeName: DATADOG
+#          datadogApiKeyRef:
+#            name: data-dog
+#            key: .data.datadogApiKey
