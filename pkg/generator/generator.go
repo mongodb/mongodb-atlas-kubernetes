@@ -196,6 +196,30 @@ func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.Gro
 	return runtimeGVK.GroupVersion().WithResource(singularName + "s"), singular
 }
 
+func mergeProperties(source, target *apiextensions.JSONSchemaProps) *apiextensions.JSONSchemaProps {
+	if source == nil {
+		return target
+	}
+	if target == nil {
+		return source
+	}
+	merged := *source
+
+	// Merge Properties
+	if merged.Properties == nil {
+		merged.Properties = map[string]apiextensions.JSONSchemaProps{}
+	}
+	for k, v := range target.Properties {
+		if av, ok := merged.Properties[k]; ok {
+			merged.Properties[k] = *mergeProperties(&av, &v)
+		} else {
+			merged.Properties[k] = v
+		}
+	}
+
+	return &merged
+}
+
 func (g *Generator) generateProps(openApiSpec *openapi3.T, crd *apiextensions.CustomResourceDefinition, mapping *v1alpha1.CRDMapping) error {
 	var entrySchemaRef *openapi3.SchemaRef
 
@@ -213,13 +237,7 @@ func (g *Generator) generateProps(openApiSpec *openapi3.T, crd *apiextensions.Cu
 
 	entryProps := g.schemaPropsToJSONProps(entrySchemaRef, &mapping.EntryMapping)
 	entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", crd.Spec.Names.Singular, crd.Spec.Names.Plural)
-	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = apiextensions.JSONSchemaProps{
-		Type:        "object",
-		Description: fmt.Sprintf("The spec of the %v resource for version %v.", crd.Spec.Names.Singular, mapping.MajorVersion),
-		Properties: map[string]apiextensions.JSONSchemaProps{
-			"entry": *entryProps,
-		},
-	}
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = *entryProps
 
 	if mapping.StatusMapping.Schema != "" {
 		statusSchemaRef, ok := openApiSpec.Components.Schemas[mapping.StatusMapping.Schema]
