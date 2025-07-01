@@ -16,6 +16,7 @@ package generator
 
 import (
 	"context"
+	"fmt"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/validation"
 )
@@ -23,7 +24,7 @@ import (
 func ValidateCRD(ctx context.Context, crd *apiextensions.CustomResourceDefinition) error {
 	errorList := validation.ValidateCustomResourceDefinition(ctx, crd)
 	if len(errorList) > 0 {
-		return errorList.ToAggregate()
+		return fmt.Errorf("error validating CRD %v: %w", crd.ObjectMeta.Name, errorList.ToAggregate())
 	}
 	return nil
 }

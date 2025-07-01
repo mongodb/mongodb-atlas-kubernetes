@@ -17,12 +17,12 @@ package generator
 import (
 	"fmt"
 	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+	"k8s.io/utils/ptr"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stoewer/go-strcase"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"k8s.io/utils/ptr"
 )
 
 func FilterSchemaProps(key string, relaxed bool, schema *openapi3.SchemaRef, predicate func(string, *openapi3.SchemaRef) bool) *openapi3.SchemaRef {

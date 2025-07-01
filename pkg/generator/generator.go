@@ -86,6 +86,7 @@ func (g *Generator) Generate(ctx context.Context) (*apiextensions.CustomResource
 					Storage: true,
 				},
 			},
+			PreserveUnknownFields: ptr.To(false),
 			Validation: &apiextensions.CustomResourceValidation{
 				OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
 					Type:        "object",
@@ -238,19 +239,6 @@ func (g *Generator) generateProps(openApiSpec *openapi3.T, crd *apiextensions.Cu
 			"entry": *entryProps,
 		},
 	}
-
-	//if len(mapping.EntryMapping.Filters.SensitiveFields) > 0 {
-	//	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion].Properties["sensitiveDataSecret"] = apiextensions.JSONSchemaProps{
-	//		Type:        "object",
-	//		Description: fmt.Sprintf(`Reference to a secret containing sensitive data. See docs of the "name" field for more details.`),
-	//		Properties: map[string]apiextensions.JSONSchemaProps{
-	//			"name": {
-	//				Description: fmt.Sprintf("Name of a secret containing one entry named \"data\" containing a YAML or JSON document that includes the following fields:\n\n%v", strings.Join(g.sensitiveFieldsDocs, "\n")),
-	//				Type:        "string",
-	//			},
-	//		},
-	//	}
-	//}
 
 	if mapping.StatusMapping.Schema != "" {
 		statusSchemaRef, ok := openApiSpec.Components.Schemas[mapping.StatusMapping.Schema]
