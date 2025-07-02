@@ -85,7 +85,7 @@ func isSensitiveField(path []string, mapping *configv1alpha1.FieldMapping) bool 
 
 	p := jsonPath(path)
 
-	for _, sensitiveField := range mapping.Filters.SensitiveFields {
+	for _, sensitiveField := range mapping.Filters.SensitiveProperties {
 		if sensitiveField == p {
 			return true
 		}
@@ -101,7 +101,7 @@ func isSkippedField(path []string, mapping *configv1alpha1.FieldMapping) bool {
 
 	p := jsonPath(path)
 
-	for _, skippedField := range mapping.Filters.SkipFields {
+	for _, skippedField := range mapping.Filters.SkipProperties {
 		if skippedField == p {
 			return true
 		}
@@ -124,9 +124,9 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 		return nil
 	}
 
-	var skipFields []string
+	var skipProperties []string
 	if mapping != nil {
-		skipFields = mapping.Filters.SkipFields
+		skipProperties = mapping.Filters.SkipProperties
 	}
 
 	schemaProps := schemaRef.Value
@@ -154,7 +154,7 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 		//Enum:        enumJSON(schemaProps.Enum),
 		//MaxProperties:        castUInt64P(schemaProps.MaxProps),
 		//MinProperties:        castUInt64(schemaProps.MinProps),
-		Required:             filterSlice(schemaProps.Required, skipFields),
+		Required:             filterSlice(schemaProps.Required, skipProperties),
 		Items:                g.schemaToJSONSchemaPropsOrArray(schemaProps.Items, mapping, extensionsSchema, append(path, "[*]")),
 		AllOf:                g.schemasToJSONSchemaPropsArray(schemaProps.AllOf, mapping, extensionsSchema, path),
 		OneOf:                g.schemasToJSONSchemaPropsArray(schemaProps.OneOf, mapping, extensionsSchema, path),
@@ -171,14 +171,14 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 		}
 
 		extensionsSchema.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
-			"gvr":           "secrets/v1",
-			"nameSelector":  ".name",
-			"fieldSelector": ".key",
+			"gvr":              "secrets/v1",
+			"nameSelector":     ".name",
+			"propertySelector": ".key",
 		}
 
 		extensionsSchema.Extensions["x-openapi-mapping"] = map[string]interface{}{
-			"field": path[len(path)-1],
-			"type":  schemaProps.Type,
+			"property": "." + path[len(path)-1],
+			"type":     schemaProps.Type,
 		}
 
 		props.Type = "object"

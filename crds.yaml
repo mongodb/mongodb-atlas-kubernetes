@@ -1911,83 +1911,83 @@ metadata:
                         properties:
                           apiTokenSecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: apiToken
+                              property: .apiToken
                               type: string
                           datadogApiKeySecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: datadogApiKey
+                              property: .datadogApiKey
                               type: string
                           microsoftTeamsWebhookUrlSecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: microsoftTeamsWebhookUrl
+                              property: .microsoftTeamsWebhookUrl
                               type: string
                           notificationTokenSecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: notificationToken
+                              property: .notificationToken
                               type: string
                           opsGenieApiKeySecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: opsGenieApiKey
+                              property: .opsGenieApiKey
                               type: string
                           serviceKeySecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: serviceKey
+                              property: .serviceKey
                               type: string
                           victorOpsApiKeySecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: victorOpsApiKey
+                              property: .victorOpsApiKey
                               type: string
                           victorOpsRoutingKeySecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: victorOpsRoutingKey
+                              property: .victorOpsRoutingKey
                               type: string
                           webhookSecretSecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: webhookSecret
+                              property: .webhookSecret
                               type: string
                           webhookUrlSecretRef:
                             x-kubernetes-mapping:
-                              fieldSelector: .key
                               gvr: secrets/v1
                               nameSelector: .name
+                              propertySelector: .key
                             x-openapi-mapping:
-                              field: webhookUrl
+                              property: .webhookUrl
                               type: string
   creationTimestamp: null
   name: groupalertsconfigs.atlas.generated.mongodb.com
@@ -2604,91 +2604,91 @@ metadata:
                   properties:
                     apiKeySecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: apiKey
+                        property: .apiKey
                         type: string
                     apiTokenSecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: apiToken
+                        property: .apiToken
                         type: string
                     licenseKeySecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: licenseKey
+                        property: .licenseKey
                         type: string
                     microsoftTeamsWebhookUrlSecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: microsoftTeamsWebhookUrl
+                        property: .microsoftTeamsWebhookUrl
                         type: string
                     passwordSecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: password
+                        property: .password
                         type: string
                     readTokenSecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: readToken
+                        property: .readToken
                         type: string
                     routingKeySecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: routingKey
+                        property: .routingKey
                         type: string
                     secretSecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: secret
+                        property: .secret
                         type: string
                     serviceKeySecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: serviceKey
+                        property: .serviceKey
                         type: string
                     urlSecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: url
+                        property: .url
                         type: string
                     writeTokenSecretRef:
                       x-kubernetes-mapping:
-                        fieldSelector: .key
                         gvr: secrets/v1
                         nameSelector: .name
+                        propertySelector: .key
                       x-openapi-mapping:
-                        field: writeToken
+                        property: .writeToken
                         type: string
   creationTimestamp: null
   name: thirdpartyintegrations.atlas.generated.mongodb.com

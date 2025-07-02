@@ -32,7 +32,7 @@ spec:
           entry:
             schema: "Group"
             filters:
-              skipFields:
+              skipProperties:
                 - $.clusterCount
                 - $.created
                 - $.id
@@ -40,7 +40,7 @@ spec:
           status:
             schema: "Group"
             filters:
-              skipFields:
+              skipProperties:
                 - $.links
                 - $.name
                 - $.orgId
@@ -71,13 +71,13 @@ spec:
               requestBody:
                 mimeType: 'application/vnd.atlas.2023-01-01+json'
             filters:
-              skipFields:
+              skipProperties:
                 - $[*].groupId
                 - $[*].links
           status:
             schema: 'NetworkPermissionEntry'
             filters:
-              skipFields:
+              skipProperties:
                 - $.cidrBlock
                 - $.comment
                 - $.deleteAfterDate
@@ -104,7 +104,7 @@ spec:
           entry:
             schema: 'AdvancedClusterDescription'
             filters:
-              skipFields:
+              skipProperties:
                 - $.connectionStrings
                 - $.createDate
                 - $.groupId
@@ -116,7 +116,7 @@ spec:
           status:
             schema: 'AdvancedClusterDescription'
             filters:
-              skipFields:
+              skipProperties:
                 - $.acceptDataRisksAndForceReplicaSetReconfig
                 - $.backupEnabled
                 - $.biConnector
@@ -157,13 +157,13 @@ spec:
           entry:
             schema: 'ClusterSearchIndex'
             filters:
-              skipFields:
+              skipProperties:
                 - $.indexID
                 - $.status
           status:
             schema: 'ClusterSearchIndex'
             filters:
-              skipFields:
+              skipProperties:
                 - $.analyzer
                 - $.analyzers
                 - $.collectionName
@@ -214,14 +214,14 @@ spec:
           entry:
             schema: 'FlexClusterDescriptionCreate20241113'
             filters:
-              skipFields:
+              skipProperties:
                 - $.links
                 - $.providerSettings.diskSizeGB
                 - $.providerSettings.providerName
           status:
             schema: 'FlexClusterDescription20241113'
             filters:
-              skipFields:
+              skipProperties:
                 - $.links
                 - $.tags
                 - $.terminationProtectionEnabled
@@ -245,13 +245,13 @@ spec:
           entry:
             schema: 'GroupAlertsConfig'
             filters:
-              skipFields:
+              skipProperties:
                 - $.created
                 - $.groupId
                 - $.id
                 - $.links
                 - $.updated
-              sensitiveFields:
+              sensitiveProperties:
                 - $.notifications[*].webhookUrl
                 - $.notifications[*].apiToken
                 - $.notifications[*].webhookSecret
@@ -265,7 +265,7 @@ spec:
           status:
             schema: 'GroupAlertsConfig'
             filters:
-              skipFields:
+              skipProperties:
                 - $.enabled
                 - $.eventTypeName
                 - $.links
@@ -273,6 +273,19 @@ spec:
                 - $.notifications
                 - $.metricThreshold
                 - $.threshold
+          extensions:
+            - x-kubernetes-validations:
+                rule: '(.groupId != null) != (.groupRef != null)'
+                message: 'Either groupId or groupRef must be specified but not both.'
+            - property: $.spec.v20241113.groupRef
+              x-openapi-mapping:
+                property: .groupId
+                type: string
+              x-kubernetes-mapping:
+                gvr: groups.atlas.generated.mongodb.com/v1
+                nameSelector: .name
+                properties:
+                  - $.status.v20250312.groupId
 
     - gvk:
         version: v1
@@ -293,9 +306,9 @@ spec:
           entry:
             schema: "ThirdPartyIntegration"
             filters:
-              skipFields:
+              skipProperties:
                 - $.id
-              sensitiveFields:
+              sensitiveProperties:
                 - $.apiKey
                 - $.apiToken
                 - $.licenseKey
@@ -310,7 +323,7 @@ spec:
           status:
             schema: "ThirdPartyIntegration"
             filters:
-              skipFields:
+              skipProperties:
                 - $.accountId
                 - $.apiKey
                 - $.apiToken

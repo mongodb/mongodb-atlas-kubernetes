@@ -46,6 +46,7 @@ type CRDMapping struct {
 	ParametersMapping ParametersMapping    `json:"parameters,omitempty"`
 	EntryMapping      FieldMapping         `json:"entry,omitempty"`
 	StatusMapping     FieldMapping         `json:"status,omitempty"`
+	Extensions        []Extension          `json:"extensions,omitempty"`
 }
 
 type ParametersMapping struct {
@@ -56,6 +57,24 @@ type FieldMapping struct {
 	Schema  string    `json:"schema,omitempty"`
 	Path    FieldPath `json:"path,omitempty"`
 	Filters Filters   `json:"filters,omitempty"`
+}
+
+type Extension struct {
+	Property           string             `json:"property,omitempty"` // The property in the CRD spec to which this extension applies.
+	XOpenApiMapping    XOpenApiMapping    `json:"x-openapi-mapping,omitempty"`
+	XKubernetesMapping XKubernetesMapping `json:"x-kubernetes-mapping,omitempty"`
+}
+
+type XOpenApiMapping struct {
+	Property string `json:"property,omitempty"`
+	Type     string `json:"type,omitempty"`
+}
+
+type XKubernetesMapping struct {
+	GVR              string   `json:"gvr,omitempty"`
+	PropertySelector string   `json:"property-selector,omitempty"` // Selector in the referenced resource for the property to map to.
+	Properties       []string `json:"properties,omitempty"`        // List of properties to map to. First available value wins.
+	Property         string   `json:"property,omitempty"`          // Single property to map to.
 }
 
 type FieldPath struct {
@@ -69,8 +88,8 @@ type RequestBody struct {
 }
 
 type Filters struct {
-	SkipFields      []string `json:"skipFields,omitempty"`
-	SensitiveFields []string `json:"sensitiveFields,omitempty"`
+	SkipProperties      []string `json:"skipProperties,omitempty"`
+	SensitiveProperties []string `json:"sensitiveProperties,omitempty"`
 }
 
 // LocalObjectReference is a reference to an object in the same namespace as the referent
