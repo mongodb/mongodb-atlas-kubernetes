@@ -7,23 +7,23 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
-type MajorVersionPlugin struct {
+type MajorVersionSpecPlugin struct {
 	crd *apiextensions.CustomResourceDefinition
 }
 
-var _ Plugin = &MajorVersionPlugin{}
+var _ Plugin = &MajorVersionSpecPlugin{}
 
-func NewMajorVersionPlugin(crd *apiextensions.CustomResourceDefinition) *MajorVersionPlugin {
-	return &MajorVersionPlugin{
+func NewMajorVersionPlugin(crd *apiextensions.CustomResourceDefinition) *MajorVersionSpecPlugin {
+	return &MajorVersionSpecPlugin{
 		crd: crd,
 	}
 }
 
-func (s *MajorVersionPlugin) Name() string {
+func (s *MajorVersionSpecPlugin) Name() string {
 	return "string_plugin"
 }
 
-func (s *MajorVersionPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, spec *openapi3.T) error {
+func (s *MajorVersionSpecPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, spec *openapi3.T) error {
 	s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = apiextensions.JSONSchemaProps{
 		Type:        "object",
 		Description: fmt.Sprintf("The spec of the %v resource for version %v.", s.crd.Spec.Names.Singular, mapping.MajorVersion),
@@ -32,6 +32,6 @@ func (s *MajorVersionPlugin) ProcessMapping(g Generator, mapping configv1alpha1.
 	return nil
 }
 
-func (s *MajorVersionPlugin) ProcessField(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
+func (s *MajorVersionSpecPlugin) ProcessField(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
 	return nil
 }
