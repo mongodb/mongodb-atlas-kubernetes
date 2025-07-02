@@ -534,7 +534,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Database
-    createdAt: "2025-06-25T15:11:57Z"
+    createdAt: "2025-07-02T13:39:49Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -547,12 +547,12 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/mongodb/mongodb-atlas-kubernetes
     support: support@mongodb.com
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.9.0
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.9.1
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.9.0
+  name: mongodb-atlas-kubernetes.v2.9.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -720,6 +720,7 @@ spec:
                 - atlasstreamconnections
                 - atlasstreaminstances
                 - atlasteams
+                - atlasthirdpartyintegrations
               verbs:
                 - create
                 - delete
@@ -748,6 +749,7 @@ spec:
                 - atlasstreamconnections/status
                 - atlasstreaminstances/status
                 - atlasteams/status
+                - atlasthirdpartyintegrations/status
               verbs:
                 - get
                 - patch
@@ -758,6 +760,7 @@ spec:
                 - atlasipaccesslists/finalizers
                 - atlasnetworkcontainers/finalizers
                 - atlasnetworkpeerings/finalizers
+                - atlasthirdpartyintegrations/finalizers
               verbs:
                 - update
           serviceAccountName: mongodb-atlas-operator
@@ -805,7 +808,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.9.0
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.9.1
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -889,5 +892,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.9.0
-  replaces: mongodb-atlas-kubernetes.v2.8.2
+  version: 2.9.1
+  replaces: mongodb-atlas-kubernetes.v2.9.0
