@@ -120,6 +120,8 @@ jobs:
             helm-charts
 
       - name: Trigger helm post release workflow
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         if: ${{ steps.tag.outputs.release_helm == 'true' }}
         run: |
           gh workflow run post-atlas-operator-release.yaml \
