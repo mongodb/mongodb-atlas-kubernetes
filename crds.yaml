@@ -2124,7 +2124,7 @@ spec:
                               example: '**********************************************************************abcd'
                               properties:
                                 key:
-                                  default: apiToken
+                                  default: .data.apiToken
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "apiToken".
                                   type: string
@@ -2156,7 +2156,7 @@ spec:
                               example: '****************************a23c'
                               properties:
                                 key:
-                                  default: datadogApiKey
+                                  default: .data.datadogApiKey
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "datadogApiKey".
                                   type: string
@@ -2218,7 +2218,7 @@ spec:
                               example: https://webhook.com/****
                               properties:
                                 key:
-                                  default: microsoftTeamsWebhookUrl
+                                  default: .data.microsoftTeamsWebhookUrl
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "microsoftTeamsWebhookUrl".
                                   type: string
@@ -2249,7 +2249,7 @@ spec:
                               example: '************************************1234'
                               properties:
                                 key:
-                                  default: notificationToken
+                                  default: .data.notificationToken
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "notificationToken".
                                   type: string
@@ -2281,7 +2281,7 @@ spec:
                               example: '********************************a111'
                               properties:
                                 key:
-                                  default: opsGenieApiKey
+                                  default: .data.opsGenieApiKey
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "opsGenieApiKey".
                                   type: string
@@ -2336,7 +2336,7 @@ spec:
                               example: '****************************7890'
                               properties:
                                 key:
-                                  default: serviceKey
+                                  default: .data.serviceKey
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "serviceKey".
                                   type: string
@@ -2394,7 +2394,7 @@ spec:
                               example: '********************************9abc'
                               properties:
                                 key:
-                                  default: victorOpsApiKey
+                                  default: .data.victorOpsApiKey
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "victorOpsApiKey".
                                   type: string
@@ -2413,7 +2413,7 @@ spec:
                               example: test routing
                               properties:
                                 key:
-                                  default: victorOpsRoutingKey
+                                  default: .data.victorOpsRoutingKey
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "victorOpsRoutingKey".
                                   type: string
@@ -2438,7 +2438,7 @@ spec:
                               example: '******'
                               properties:
                                 key:
-                                  default: webhookSecret
+                                  default: .data.webhookSecret
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "webhookSecret".
                                   type: string
@@ -2463,7 +2463,7 @@ spec:
                               example: https://webhook.com/****
                               properties:
                                 key:
-                                  default: webhookUrl
+                                  default: .data.webhookUrl
                                   description: Key of the secret data containing the
                                     sensitive field value, defaults to "webhookUrl".
                                   type: string
@@ -2748,7 +2748,7 @@ spec:
                         example: '********************************9abc'
                         properties:
                           key:
-                            default: apiKey
+                            default: .data.apiKey
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "apiKey".
                             type: string
@@ -2775,7 +2775,7 @@ spec:
                         example: '**********************************************************************abcd'
                         properties:
                           key:
-                            default: apiToken
+                            default: .data.apiToken
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "apiToken".
                             type: string
@@ -2806,7 +2806,7 @@ spec:
                         example: bc3768f44193c282b2688ab39e00f8e4fc8d75ea
                         properties:
                           key:
-                            default: licenseKey
+                            default: .data.licenseKey
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "licenseKey".
                             type: string
@@ -2827,7 +2827,7 @@ spec:
                         example: https://webhook.com/****
                         properties:
                           key:
-                            default: microsoftTeamsWebhookUrl
+                            default: .data.microsoftTeamsWebhookUrl
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "microsoftTeamsWebhookUrl".
                             type: string
@@ -2845,7 +2845,7 @@ spec:
                           Password needed to allow MongoDB Cloud to access your Prometheus account.
                         properties:
                           key:
-                            default: password
+                            default: .data.password
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "password".
                             type: string
@@ -2864,7 +2864,7 @@ spec:
                         example: 193c96aee4a3ac640b98634562e2631f17ae0a69
                         properties:
                           key:
-                            default: readToken
+                            default: .data.readToken
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "readToken".
                             type: string
@@ -2887,7 +2887,7 @@ spec:
                         example: test routing
                         properties:
                           key:
-                            default: routingKey
+                            default: .data.routingKey
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "routingKey".
                             type: string
@@ -2908,7 +2908,7 @@ spec:
                         example: '******'
                         properties:
                           key:
-                            default: secret
+                            default: .data.secret
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "secret".
                             type: string
@@ -2936,7 +2936,7 @@ spec:
                         example: '****************************7890'
                         properties:
                           key:
-                            default: serviceKey
+                            default: .data.serviceKey
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "serviceKey".
                             type: string
@@ -2968,7 +2968,7 @@ spec:
                         example: https://webhook.com/****
                         properties:
                           key:
-                            default: url
+                            default: .data.url
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "url".
                             type: string
@@ -2992,7 +2992,7 @@ spec:
                         example: a67b10e5cd7f8fb6a34b501136c409f373edc218
                         properties:
                           key:
-                            default: writeToken
+                            default: .data.writeToken
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "writeToken".
                             type: string

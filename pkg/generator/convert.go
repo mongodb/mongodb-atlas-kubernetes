@@ -183,7 +183,7 @@ func (g *Generator) schemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mappin
 
 		props.Type = "object"
 		props.Description = fmt.Sprintf("SENSITIVE FIELD\n\nReference to a secret containing data for the %q field:\n\n%v", path[len(path)-1], schemaProps.Description)
-		defaultKey := apiextensions.JSON(path[len(path)-1])
+		defaultKey := apiextensions.JSON(".data." + path[len(path)-1])
 		props.Properties = map[string]apiextensions.JSONSchemaProps{
 			"name": {
 				Type:        "string",
