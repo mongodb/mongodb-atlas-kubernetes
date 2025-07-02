@@ -121,10 +121,10 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, resp, _ := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
-				g.Expect(resp).NotTo(BeNil())
-				// This will start failing when the Search team changes the error code to 404: CLOUDP-239015
-				g.Expect(resp.StatusCode).Should(Equal(400))
+				response, httpResponse, _ := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
+				g.Expect(httpResponse).NotTo(BeNil())
+				g.Expect(response).NotTo(BeNil())
+				g.Expect(len(response.GetSpecs())).To(Equal(0))
 			}).WithPolling(10 * time.Second).WithTimeout(15 * time.Minute).Should(Succeed())
 
 			Eventually(func(g Gomega) bool {
