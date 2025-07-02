@@ -274,9 +274,6 @@ spec:
                 - $.metricThreshold
                 - $.threshold
           extensions:
-            - x-kubernetes-validations:
-                rule: '(.groupId != null) != (.groupRef != null)'
-                message: 'Either groupId or groupRef must be specified but not both.'
             - property: $.spec.v20241113.groupRef
               x-openapi-mapping:
                 property: .groupId

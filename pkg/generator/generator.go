@@ -16,15 +16,14 @@ package generator
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"log"
-	"sigs.k8s.io/yaml"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 	"github.com/mongodb/atlas2crd/pkg/config"
+	"github.com/mongodb/atlas2crd/pkg/plugins"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,6 +33,7 @@ import (
 type Generator struct {
 	config      v1alpha1.CRDConfig
 	definitions map[string]v1alpha1.OpenAPIDefinition
+	plugins     []generator.Plugin
 }
 
 func NewGenerator(crdConfig v1alpha1.CRDConfig, definitions []v1alpha1.OpenAPIDefinition) *Generator {
@@ -104,6 +104,13 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		},
 	}
 
+	ps := []plugins.Plugin{
+		plugins.NewMajorVersionPlugin(crd),
+		plugins.NewParametersPlugin(crd),
+		plugins.NewEntryPlugin(crd),
+		plugins.NewStatusPlugin(crd),
+	}
+
 	for _, mapping := range g.config.Mappings {
 		def, ok := g.definitions[mapping.OpenAPIRef.Name]
 		if !ok {
@@ -115,9 +122,10 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 			return nil, fmt.Errorf("error loading spec: %w", err)
 		}
 
-		err = g.generateProps(openApiSpec, crd, &mapping)
-		if err != nil {
-			return nil, fmt.Errorf("error generating props: %w", err)
+		for _, p := range ps {
+			if err := p.ProcessMapping(g, mapping, openApiSpec); err != nil {
+				return nil, fmt.Errorf("error processing plugin %s: %w", p.Name(), err)
+			}
 		}
 	}
 
@@ -193,152 +201,4 @@ func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.Gro
 	}
 
 	return runtimeGVK.GroupVersion().WithResource(singularName + "s"), singular
-}
-
-func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
-	if schema == nil {
-		return false
-	}
-	hasExtensions := len(schema.Extensions) > 0
-
-	var toDelete []string
-	for k, prop := range schema.Properties {
-		if !clearPropertiesWithoutExtensions(prop.Value) {
-			toDelete = append(toDelete, k)
-		} else {
-			hasExtensions = true
-		}
-	}
-	for _, k := range toDelete {
-		delete(schema.Properties, k)
-	}
-
-	if schema.AdditionalProperties != nil && clearPropertiesWithoutExtensions(schema.AdditionalProperties.Value) {
-		hasExtensions = true
-	}
-	if schema.Items != nil && clearPropertiesWithoutExtensions(schema.Items.Value) {
-		hasExtensions = true
-	}
-	for _, ref := range schema.AllOf {
-		if clearPropertiesWithoutExtensions(ref.Value) {
-			hasExtensions = true
-		}
-	}
-	for _, ref := range schema.AnyOf {
-		if clearPropertiesWithoutExtensions(ref.Value) {
-			hasExtensions = true
-		}
-	}
-	for _, ref := range schema.OneOf {
-		if clearPropertiesWithoutExtensions(ref.Value) {
-			hasExtensions = true
-		}
-	}
-	return hasExtensions
-}
-
-func (g *Generator) generateProps(openApiSpec *openapi3.T, crd *apiextensions.CustomResourceDefinition, mapping *v1alpha1.CRDMapping) error {
-	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = apiextensions.JSONSchemaProps{
-		Type:        "object",
-		Description: fmt.Sprintf("The spec of the %v resource for version %v.", crd.Spec.Names.Singular, mapping.MajorVersion),
-		Properties:  map[string]apiextensions.JSONSchemaProps{},
-	}
-	majorVersionSpec := crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion]
-
-	if mapping.ParametersMapping.FieldPath.Name != "" {
-		var operation *openapi3.Operation
-
-		pathItem, ok := openApiSpec.Paths[mapping.ParametersMapping.FieldPath.Name]
-		if !ok {
-			return fmt.Errorf("OpenAPI path %q does not exist", mapping.ParametersMapping)
-		}
-
-		switch mapping.ParametersMapping.FieldPath.Verb {
-		case "post":
-			operation = pathItem.Post
-		case "put":
-			operation = pathItem.Put
-		default:
-			return fmt.Errorf("verb %q unsupported", mapping.ParametersMapping.FieldPath.Verb)
-		}
-
-		for _, p := range operation.Parameters {
-			switch p.Value.Name {
-			case "includeCount":
-			case "itemsPerPage":
-			case "pageNum":
-			case "envelope":
-			case "pretty":
-			default:
-				props := g.schemaPropsToJSONProps(p.Value.Schema, nil, openapi3.NewSchema())
-				props.Description = p.Value.Description
-				props.XValidations = apiextensions.ValidationRules{
-					{
-						Rule:    "self == oldSelf",
-						Message: fmt.Sprintf("%s cannot be modified after creation", p.Value.Name),
-					},
-				}
-				majorVersionSpec.Properties[p.Value.Name] = *props
-				majorVersionSpec.Required = append(majorVersionSpec.Required, p.Value.Name)
-			}
-		}
-	}
-
-	var entrySchemaRef *openapi3.SchemaRef
-	switch {
-	case mapping.EntryMapping.Schema != "":
-		var ok bool
-		entrySchemaRef, ok = openApiSpec.Components.Schemas[mapping.EntryMapping.Schema]
-		if !ok {
-			return fmt.Errorf("entry schema %q not found in openapi spec", mapping.EntryMapping.Schema)
-		}
-	case mapping.EntryMapping.Path.Name != "":
-		entrySchemaRef = openApiSpec.Paths[mapping.EntryMapping.Path.Name].Operations()[strings.ToUpper(mapping.EntryMapping.Path.Verb)].RequestBody.Value.Content[mapping.EntryMapping.Path.RequestBody.MimeType].Schema
-	default:
-		return errors.New("entry schema not found in spec")
-	}
-
-	extensionsSchema := openapi3.NewSchema()
-	extensionsSchema.Properties = map[string]*openapi3.SchemaRef{
-		"spec": {Value: &openapi3.Schema{
-			Properties: map[string]*openapi3.SchemaRef{
-				mapping.MajorVersion: {Value: &openapi3.Schema{
-					Properties: map[string]*openapi3.SchemaRef{
-						"entry": {Value: &openapi3.Schema{}},
-					},
-				}},
-			},
-		}},
-	}
-	entryProps := g.schemaPropsToJSONProps(entrySchemaRef, &mapping.EntryMapping, extensionsSchema.Properties["spec"].Value.Properties[mapping.MajorVersion].Value.Properties["entry"].Value)
-	clearPropertiesWithoutExtensions(extensionsSchema)
-	if len(extensionsSchema.Properties) > 0 {
-		d, err := yaml.Marshal(extensionsSchema)
-		if err != nil {
-			return fmt.Errorf("error marshaling extensions schema: %w", err)
-		}
-		if crd.Annotations == nil {
-			crd.Annotations = make(map[string]string)
-		}
-		crd.Annotations["api-mappings"] = string(d)
-	}
-
-	entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", crd.Spec.Names.Singular, crd.Spec.Names.Plural)
-	majorVersionSpec.Properties["entry"] = *entryProps
-
-	if mapping.StatusMapping.Schema != "" {
-		statusSchemaRef, ok := openApiSpec.Components.Schemas[mapping.StatusMapping.Schema]
-		if !ok {
-			return fmt.Errorf("status schema %q not found in openapi spec", mapping.StatusMapping.Schema)
-		}
-
-		statusProps := g.schemaPropsToJSONProps(statusSchemaRef, &mapping.StatusMapping, openapi3.NewSchema())
-		statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", crd.Spec.Names.Singular, mapping.MajorVersion)
-		if statusProps != nil {
-			crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mapping.MajorVersion] = *statusProps
-		}
-	}
-
-	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = majorVersionSpec
-	return nil
 }
