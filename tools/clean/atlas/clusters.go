@@ -19,10 +19,10 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 )
 
-func (c *Cleaner) listClusters(ctx context.Context, projectID string) []admin.AdvancedClusterDescription {
+func (c *Cleaner) listClusters(ctx context.Context, projectID string) []admin.ClusterDescription20240805 {
 	clusters, _, err := c.client.ClustersApi.
 		ListClusters(ctx, projectID).
 		Execute()
@@ -35,7 +35,7 @@ func (c *Cleaner) listClusters(ctx context.Context, projectID string) []admin.Ad
 	return *clusters.Results
 }
 
-func (c *Cleaner) deleteClusters(ctx context.Context, projectID string, clusters []admin.AdvancedClusterDescription) {
+func (c *Cleaner) deleteClusters(ctx context.Context, projectID string, clusters []admin.ClusterDescription20240805) {
 	for _, cluster := range clusters {
 		if cluster.GetStateName() == "DELETING" {
 			fmt.Println(text.FgHiBlue.Sprintf("\t\t\tCluster %s is being deleted...", cluster.GetName()))

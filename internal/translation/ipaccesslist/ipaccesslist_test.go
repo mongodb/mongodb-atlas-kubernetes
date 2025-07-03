@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -225,7 +225,6 @@ func TestIPAccessList_Delete(t *testing.T) {
 					Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().DeleteProjectIpAccessListExecute(mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).
 					Return(
-						nil,
 						&http.Response{},
 						nil,
 					)
@@ -241,7 +240,7 @@ func TestIPAccessList_Delete(t *testing.T) {
 				apiMock.EXPECT().DeleteProjectIpAccessList(context.Background(), projectID, "192.168.100.150/32").
 					Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().DeleteProjectIpAccessListExecute(mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).
-					Return(nil, &http.Response{}, apiErr)
+					Return(&http.Response{}, apiErr)
 
 				return apiMock
 			},

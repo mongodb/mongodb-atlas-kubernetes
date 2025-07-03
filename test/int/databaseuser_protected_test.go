@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -319,7 +319,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClientv20241113001.FlexClustersApi.
+				_, r, err := atlasClient.FlexClustersApi.
 					GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 					Execute()
 				if err != nil {
@@ -336,7 +336,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			projectID := testProject.ID()
 			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
-			_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+			_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 			Expect(err).To(BeNil())
 
 			Eventually(func() bool {

@@ -23,7 +23,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -66,7 +66,7 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		DeferCleanup(func(ctx context.Context) {
-			_, _, err := atlasClient.Client.ProjectsApi.DeleteProject(ctx, group.GetId()).Execute()
+			_, err := atlasClient.Client.ProjectsApi.DeleteProject(ctx, group.GetId()).Execute()
 			Expect(err).NotTo(HaveOccurred())
 		})
 

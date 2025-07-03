@@ -21,7 +21,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -831,7 +831,7 @@ func TestRoundtrip_ManagedNamespace(t *testing.T) {
 	f := fuzz.New()
 
 	for range 100 {
-		fuzzed := &admin.GeoSharding{}
+		fuzzed := &admin.GeoSharding20240805{}
 		f.Fuzz(fuzzed)
 		fuzzed.CustomZoneMapping = nil
 		t.Log(fuzzed.ManagedNamespaces)
@@ -859,7 +859,7 @@ func TestRoundtrip_CustomZone(t *testing.T) {
 	f := fuzz.New()
 
 	for range 100 {
-		fuzzed := &admin.GeoSharding{}
+		fuzzed := &admin.GeoSharding20240805{}
 		f.Fuzz(fuzzed)
 		fuzzed.ManagedNamespaces = nil
 

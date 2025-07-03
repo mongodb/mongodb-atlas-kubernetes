@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -398,11 +398,11 @@ func jsonToArrayOfAny(in *apiextensionsv1.JSON) (*[]any, error) {
 	return &result, nil
 }
 
-func jsonToMap(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
+func jsonToMap(in *apiextensionsv1.JSON) (map[string]any, error) {
 	if in == nil {
 		return nil, nil
 	}
-	result := map[string]interface{}{}
+	result := map[string]any{}
 	if err := json.Unmarshal(in.Raw, &result); err != nil {
 		return result, err
 	}
@@ -502,7 +502,7 @@ func mappingsToAtlas(in *akov2.Mappings) (*admin.SearchMappings, error) {
 	}
 	return &admin.SearchMappings{
 		Dynamic: in.Dynamic,
-		Fields:  fields,
+		Fields:  &fields,
 	}, nil
 }
 

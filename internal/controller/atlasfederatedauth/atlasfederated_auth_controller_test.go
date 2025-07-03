@@ -22,10 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
-	mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -107,12 +105,12 @@ func TestReconcile(t *testing.T) {
 			Build()
 
 		logger := zaptest.NewLogger(t).Sugar()
-		fedAuthAPI := mockadminv20241113001.NewFederatedAuthenticationApi(t)
+		fedAuthAPI := mockadmin.NewFederatedAuthenticationApi(t)
 		fedAuthAPI.EXPECT().GetFederationSettings(mock.Anything, orgID).
-			Return(adminv20241113001.GetFederationSettingsApiRequest{ApiService: fedAuthAPI})
+			Return(admin.GetFederationSettingsApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().GetFederationSettingsExecute(mock.Anything).
 			Return(
-				&adminv20241113001.OrgFederationSettings{
+				&admin.OrgFederationSettings{
 					Id:                     pointer.MakePtr(fedSettingsID),
 					IdentityProviderId:     pointer.MakePtr("0oawce8e76SR9K7Tq357"),
 					FederatedDomains:       &[]string{"qa-27092023.com", "cloud-qa.mongodb.com"},
@@ -123,11 +121,11 @@ func TestReconcile(t *testing.T) {
 				nil,
 			)
 		fedAuthAPI.EXPECT().ListIdentityProviders(mock.Anything, fedSettingsID).
-			Return(adminv20241113001.ListIdentityProvidersApiRequest{ApiService: fedAuthAPI})
+			Return(admin.ListIdentityProvidersApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().ListIdentityProvidersExecute(mock.Anything).
 			Return(
-				&adminv20241113001.PaginatedFederationIdentityProvider{
-					Results: &[]adminv20241113001.FederationIdentityProvider{
+				&admin.PaginatedFederationIdentityProvider{
+					Results: &[]admin.FederationIdentityProvider{
 						{
 							Id:        "65143bd1612f01218e885cf2",
 							OktaIdpId: "0oawce8e76SR9K7Tq357",
@@ -139,10 +137,10 @@ func TestReconcile(t *testing.T) {
 				nil,
 			)
 		fedAuthAPI.EXPECT().GetConnectedOrgConfig(mock.Anything, fedSettingsID, orgID).
-			Return(adminv20241113001.GetConnectedOrgConfigApiRequest{ApiService: fedAuthAPI})
+			Return(admin.GetConnectedOrgConfigApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().GetConnectedOrgConfigExecute(mock.Anything).
 			Return(
-				&adminv20241113001.ConnectedOrgConfig{
+				&admin.ConnectedOrgConfig{
 					OrgId:                    "616ec36209c07e743422b7cc",
 					DomainAllowList:          &[]string{"qa-27092023.com", "cloud-qa.mongodb.com"},
 					DomainRestrictionEnabled: true,
@@ -172,10 +170,8 @@ func TestReconcile(t *testing.T) {
 		atlasProvider := atlasmock.TestProvider{
 			SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 				return &atlas.ClientSet{
-					SdkClient20231115008: &admin.APIClient{
-						ProjectsApi: groupAPI,
-					},
-					SdkClient20241113001: &adminv20241113001.APIClient{
+					SdkClient20250312002: &admin.APIClient{
+						ProjectsApi:                groupAPI,
 						FederatedAuthenticationApi: fedAuthAPI,
 					},
 				}, nil

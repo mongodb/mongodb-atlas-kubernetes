@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -79,7 +79,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+				_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -121,7 +121,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+				_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})

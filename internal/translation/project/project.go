@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -73,7 +73,7 @@ func (a *ProjectAPI) CreateProject(ctx context.Context, project *Project) error 
 }
 
 func (a *ProjectAPI) DeleteProject(ctx context.Context, project *Project) error {
-	_, _, err := a.projectAPI.DeleteProject(ctx, project.ID).Execute()
+	_, err := a.projectAPI.DeleteProject(ctx, project.ID).Execute()
 	err = translateError(err)
 	if err != nil && !errors.Is(err, translation.ErrNotFound) {
 		return err

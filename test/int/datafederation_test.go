@@ -183,7 +183,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 })
 
 func deleteAtlasDataFederation(projectID, dataFederationName string) error {
-	_, _, err := atlasClient.DataFederationApi.
+	_, err := atlasClient.DataFederationApi.
 		DeleteFederatedDatabase(context.Background(), projectID, dataFederationName).
 		Execute()
 

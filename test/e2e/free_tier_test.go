@@ -17,7 +17,7 @@ package e2e_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -77,24 +77,23 @@ func freeTierDeploymentFlow(userData *model.TestDataProvider) {
 		aClient := atlas.GetClientOrFail()
 		Expect(userData.InitialDeployments).Should(HaveLen(1))
 		name := userData.InitialDeployments[0].GetDeploymentName()
-		admin.NewAdvancedClusterDescriptionWithDefaults()
 		_, _, err := aClient.Client.ClustersApi.
 			CreateCluster(
 				userData.Context,
 				userData.Project.ID(),
-				&admin.AdvancedClusterDescription{
+				&admin.ClusterDescription20240805{
 					Name:        &name,
 					ClusterType: pointer.MakePtr("REPLICASET"),
-					ReplicationSpecs: &[]admin.ReplicationSpec{
+					ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 						{
 							ZoneName: pointer.MakePtr("Zone 1"),
-							RegionConfigs: &[]admin.CloudRegionConfig{
+							RegionConfigs: &[]admin.CloudRegionConfig20240805{
 								{
 									ProviderName:        pointer.MakePtr("TENANT"),
 									BackingProviderName: pointer.MakePtr("AWS"),
 									Priority:            pointer.MakePtr(7),
 									RegionName:          pointer.MakePtr("US_EAST_1"),
-									ElectableSpecs: &admin.HardwareSpec{
+									ElectableSpecs: &admin.HardwareSpec20240805{
 										InstanceSize: pointer.MakePtr(data.InstanceSizeM0),
 										NodeCount:    pointer.MakePtr(3),
 									},

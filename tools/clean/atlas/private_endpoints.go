@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 )
 
 func (c *Cleaner) listPrivateEndpoints(ctx context.Context, projectID, cloudProvider string) []admin.EndpointService {
@@ -76,7 +76,7 @@ func (c *Cleaner) deletePrivateEndpoints(ctx context.Context, projectID, provide
 		}
 
 		for _, endpoint := range endpointIDs {
-			_, _, err := c.client.PrivateEndpointServicesApi.DeletePrivateEndpoint(ctx, projectID, provider, endpoint, endpointService.GetId()).Execute()
+			_, err := c.client.PrivateEndpointServicesApi.DeletePrivateEndpoint(ctx, projectID, provider, endpoint, endpointService.GetId()).Execute()
 			if err != nil {
 				fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of private endpoint %s: %s", endpoint, err))
 
@@ -85,7 +85,7 @@ func (c *Cleaner) deletePrivateEndpoints(ctx context.Context, projectID, provide
 		}
 
 		if len(endpointIDs) == 0 {
-			_, _, err := c.client.PrivateEndpointServicesApi.DeletePrivateEndpointService(ctx, projectID, provider, endpointService.GetId()).Execute()
+			_, err := c.client.PrivateEndpointServicesApi.DeletePrivateEndpointService(ctx, projectID, provider, endpointService.GetId()).Execute()
 			if err != nil {
 				fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of private endpoint %s: %s", endpointService.GetId(), err))
 

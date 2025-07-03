@@ -23,7 +23,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -272,7 +272,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Expect(checkAtlasProjectRemoved(createdProject.Status.ID)()).Should(BeFalse())
 			})
 			By("Manually deleting the project from Atlas", func() {
-				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), createdProject.ID()).Execute()
+				_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), createdProject.ID()).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				createdProject = nil
 			})

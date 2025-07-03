@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 )
 
 type MaintenanceWindowService interface {
@@ -46,7 +46,7 @@ func (mw *MaintenanceWindowAPI) Get(ctx context.Context, projectID string) (*Mai
 }
 
 func (mw *MaintenanceWindowAPI) Update(ctx context.Context, projectID string, maintenanceWindow *MaintenanceWindow) error {
-	_, _, err := mw.maintenanceAPI.UpdateMaintenanceWindow(ctx, projectID, toAtlas(maintenanceWindow)).Execute()
+	_, err := mw.maintenanceAPI.UpdateMaintenanceWindow(ctx, projectID, toAtlas(maintenanceWindow)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to update maintenance window in Atlas: %w", err)
 	}

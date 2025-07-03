@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
@@ -139,7 +139,7 @@ func (tm *TeamsAPI) UpdateRoles(ctx context.Context, at *AssignedTeam, projectID
 }
 
 func (tm *TeamsAPI) GetTeamUsers(ctx context.Context, orgID, teamID string) ([]TeamUser, error) {
-	atlasUsers, _, err := tm.teamsAPI.ListTeamUsers(ctx, orgID, teamID).Execute()
+	atlasUsers, _, err := tm.teamUsersAPI.ListTeamUsers(ctx, orgID, teamID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get team users from Atlas: %w", err)
 	}

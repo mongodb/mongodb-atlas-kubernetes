@@ -17,12 +17,13 @@ package v1
 import (
 	"strings"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 // AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule
@@ -108,47 +109,50 @@ type AtlasBackupSchedule struct {
 	Status status.BackupScheduleStatus `json:"status,omitempty"`
 }
 
-func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName, replicaSetID string, policy *AtlasBackupPolicy) *mongodbatlas.CloudProviderSnapshotBackupPolicy {
-	atlasPolicy := mongodbatlas.Policy{}
+func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName, zoneID string, policy *AtlasBackupPolicy) *admin.DiskBackupSnapshotSchedule20240805 {
+	atlasPolicy := admin.AdvancedDiskBackupSnapshotSchedulePolicy{}
 
+	items := make([]admin.DiskBackupApiPolicyItem, 0, len(policy.Spec.Items))
 	for _, bpItem := range policy.Spec.Items {
-		atlasPolicy.PolicyItems = append(atlasPolicy.PolicyItems, mongodbatlas.PolicyItem{
+		items = append(items, admin.DiskBackupApiPolicyItem{
 			FrequencyInterval: bpItem.FrequencyInterval,
 			FrequencyType:     strings.ToLower(bpItem.FrequencyType),
-			RetentionValue:    bpItem.RetentionValue,
 			RetentionUnit:     strings.ToLower(bpItem.RetentionUnit),
+			RetentionValue:    bpItem.RetentionValue,
 		})
 	}
+	atlasPolicy.PolicyItems = &items
 
-	result := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
-		ClusterName:                       clusterName,
-		ClusterID:                         clusterID,
-		ReferenceHourOfDay:                &in.Spec.ReferenceHourOfDay,
-		ReferenceMinuteOfHour:             &in.Spec.ReferenceMinuteOfHour,
-		RestoreWindowDays:                 &in.Spec.RestoreWindowDays,
-		UpdateSnapshots:                   &in.Spec.UpdateSnapshots,
-		Policies:                          []mongodbatlas.Policy{atlasPolicy},
-		AutoExportEnabled:                 &in.Spec.AutoExportEnabled,
-		UseOrgAndGroupNamesInExportPrefix: &in.Spec.UseOrgAndGroupNamesInExportPrefix,
-		CopySettings:                      make([]mongodbatlas.CopySetting, 0, len(in.Spec.CopySettings)),
+	result := &admin.DiskBackupSnapshotSchedule20240805{
+		ClusterName:                       pointer.MakePtrOrNil(clusterName),
+		ClusterId:                         pointer.MakePtrOrNil(clusterID),
+		ReferenceHourOfDay:                pointer.MakePtr(int(in.Spec.ReferenceHourOfDay)),
+		ReferenceMinuteOfHour:             pointer.MakePtr(int(in.Spec.ReferenceMinuteOfHour)),
+		RestoreWindowDays:                 pointer.MakePtr(int(in.Spec.RestoreWindowDays)),
+		UpdateSnapshots:                   pointer.MakePtr(in.Spec.UpdateSnapshots),
+		Policies:                          &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{atlasPolicy},
+		AutoExportEnabled:                 pointer.MakePtr(in.Spec.AutoExportEnabled),
+		UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(in.Spec.UseOrgAndGroupNamesInExportPrefix),
 	}
 
 	if in.Spec.Export != nil {
-		result.Export = &mongodbatlas.Export{
-			ExportBucketID: in.Spec.Export.ExportBucketID,
-			FrequencyType:  in.Spec.Export.FrequencyType,
+		result.Export = &admin.AutoExportPolicy{
+			ExportBucketId: pointer.MakePtr(in.Spec.Export.ExportBucketID),
+			FrequencyType:  pointer.MakePtr(in.Spec.Export.FrequencyType),
 		}
 	}
 
+	copySettings := make([]admin.DiskBackupCopySetting20240805, 0, len(in.Spec.CopySettings))
 	for _, copySetting := range in.Spec.CopySettings {
-		result.CopySettings = append(result.CopySettings, mongodbatlas.CopySetting{
-			CloudProvider:     copySetting.CloudProvider,
-			RegionName:        copySetting.RegionName,
-			ReplicationSpecID: &replicaSetID,
-			ShouldCopyOplogs:  copySetting.ShouldCopyOplogs,
-			Frequencies:       copySetting.Frequencies,
+		copySettings = append(copySettings, admin.DiskBackupCopySetting20240805{
+			CloudProvider:    copySetting.CloudProvider,
+			RegionName:       copySetting.RegionName,
+			ZoneId:           zoneID,
+			ShouldCopyOplogs: copySetting.ShouldCopyOplogs,
+			Frequencies:      &copySetting.Frequencies,
 		})
 	}
+	result.CopySettings = &copySettings
 
 	return result
 }

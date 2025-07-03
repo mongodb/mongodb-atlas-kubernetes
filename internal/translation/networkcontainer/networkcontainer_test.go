@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
@@ -618,7 +618,7 @@ func testFindNetworkContainerAPI(apiContainers []admin.CloudProviderContainer, e
 func testAPIError(code string) error {
 	err := &admin.GenericOpenAPIError{}
 	err.SetModel(admin.ApiError{
-		ErrorCode: pointer.MakePtr(code),
+		ErrorCode: code,
 	})
 	return err
 }
@@ -645,6 +645,6 @@ func testDeleteNetworkContainerAPI(err error) admin.NetworkPeeringApi {
 
 	apiMock.EXPECT().DeletePeeringContainerExecute(
 		mock.AnythingOfType("admin.DeletePeeringContainerApiRequest"),
-	).Return(nil, nil, err)
+	).Return(nil, err)
 	return &apiMock
 }

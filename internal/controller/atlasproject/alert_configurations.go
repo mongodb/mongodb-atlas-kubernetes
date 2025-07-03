@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -147,7 +147,7 @@ func readNotificationSecret(ctx context.Context, kubeClient client.Client, res c
 func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.Result {
 	logger := service.Log
 	existedAlertConfigs, err := paging.ListAll(service.Context, func(ctx context.Context, pageNum int) (paging.Response[admin.GroupAlertsConfig], *http.Response, error) {
-		return service.SdkClientSet.SdkClient20231115008.AlertConfigurationsApi.
+		return service.SdkClientSet.SdkClient20250312002.AlertConfigurationsApi.
 			ListAlertConfigurations(ctx, groupID).
 			PageNum(pageNum).
 			Execute()
@@ -189,7 +189,7 @@ func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workf
 func deleteAlertConfigs(workflowCtx *workflow.Context, groupID string, alertConfigIDs []string) error {
 	logger := workflowCtx.Log
 	for _, alertConfigID := range alertConfigIDs {
-		_, err := workflowCtx.SdkClientSet.SdkClient20231115008.AlertConfigurationsApi.
+		_, err := workflowCtx.SdkClientSet.SdkClient20250312002.AlertConfigurationsApi.
 			DeleteAlertConfiguration(workflowCtx.Context, groupID, alertConfigID).
 			Execute()
 		if err != nil {
@@ -218,7 +218,7 @@ func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec
 			continue
 		}
 
-		alertConfiguration, _, err := workflowCtx.SdkClientSet.SdkClient20231115008.AlertConfigurationsApi.
+		alertConfiguration, _, err := workflowCtx.SdkClientSet.SdkClient20250312002.AlertConfigurationsApi.
 			CreateAlertConfiguration(workflowCtx.Context, groupID, atlasAlert).
 			Execute()
 		if err != nil {

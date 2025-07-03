@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -342,7 +342,7 @@ func TestTeamsAPI_Create(t *testing.T) {
 					Return(&admin.Team{
 						Id:        &testTeamID1,
 						Name:      testTeamName,
-						Usernames: &[]string{"user@name.com"},
+						Usernames: []string{"user@name.com"},
 					}, &http.Response{}, nil)
 			},
 			expectedErr: nil,
@@ -383,21 +383,21 @@ func TestTeamsAPI_GetTeamUsers(t *testing.T) {
 
 	tests := []struct {
 		title         string
-		mock          func(mockTeamAPI *mockadmin.TeamsApi)
+		mock          func(mockUsersAPI *mockadmin.MongoDBCloudUsersApi)
 		expectedTeams []TeamUser
 		expectedErr   error
 	}{
 		{
 			title: "Should return team when team is present on Atlas",
-			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().ListTeamUsers(ctx, mock.Anything, mock.Anything).
-					Return(admin.ListTeamUsersApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
-					Return(&admin.PaginatedApiAppUser{
-						Results: &[]admin.CloudAppUser{
+			mock: func(mockUsersAPI *mockadmin.MongoDBCloudUsersApi) {
+				mockUsersAPI.EXPECT().ListTeamUsers(ctx, mock.Anything, mock.Anything).
+					Return(admin.ListTeamUsersApiRequest{ApiService: mockUsersAPI})
+				mockUsersAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
+					Return(&admin.PaginatedOrgUser{
+						Results: &[]admin.OrgUserResponse{
 							{
 								Username: "user1",
-								Id:       &testUserID,
+								Id:       testUserID,
 							},
 						},
 					}, &http.Response{}, nil)
@@ -412,11 +412,11 @@ func TestTeamsAPI_GetTeamUsers(t *testing.T) {
 		},
 		{
 			title: "Should return error when request fails",
-			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().ListTeamUsers(ctx, mock.Anything, mock.Anything).
-					Return(admin.ListTeamUsersApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
-					Return(&admin.PaginatedApiAppUser{}, &http.Response{}, admin.GenericOpenAPIError{})
+			mock: func(mockUsersAPI *mockadmin.MongoDBCloudUsersApi) {
+				mockUsersAPI.EXPECT().ListTeamUsers(ctx, mock.Anything, mock.Anything).
+					Return(admin.ListTeamUsersApiRequest{ApiService: mockUsersAPI})
+				mockUsersAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
+					Return(&admin.PaginatedOrgUser{}, &http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr:   fmt.Errorf("failed to get team users from Atlas: %w", admin.GenericOpenAPIError{}),
 			expectedTeams: nil,
@@ -425,10 +425,10 @@ func TestTeamsAPI_GetTeamUsers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			mockTeamAPI := mockadmin.NewTeamsApi(t)
-			tt.mock(mockTeamAPI)
+			mockUsersAPI := mockadmin.NewMongoDBCloudUsersApi(t)
+			tt.mock(mockUsersAPI)
 			ts := &TeamsAPI{
-				teamsAPI: mockTeamAPI,
+				teamUsersAPI: mockUsersAPI,
 			}
 			teams, err := ts.GetTeamUsers(ctx, mock.Anything, mock.Anything)
 			require.Equal(t, tt.expectedErr, err)

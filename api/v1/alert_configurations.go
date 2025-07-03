@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -61,14 +61,14 @@ func (in *AlertConfiguration) ToAtlas() (*admin.GroupAlertsConfig, error) {
 	result.SetEnabled(in.Enabled)
 	result.SetEventTypeName(in.EventTypeName)
 
-	matchers := make([]map[string]interface{}, 0, len(in.Matchers))
+	matchers := make([]admin.StreamsMatcher, 0, len(in.Matchers))
 	for _, m := range in.Matchers {
 		matchers = append(
 			matchers,
-			map[string]interface{}{
-				"fieldName": m.FieldName,
-				"operator":  m.Operator,
-				"value":     m.Value,
+			admin.StreamsMatcher{
+				FieldName: m.FieldName,
+				Operator:  m.Operator,
+				Value:     m.Value,
 			},
 		)
 	}
@@ -134,7 +134,7 @@ func (in Threshold) Key() string {
 	return in.Operator + "|" + in.Units + "|" + in.Threshold
 }
 
-func (in *Threshold) IsEqual(threshold *admin.GreaterThanRawThreshold) bool {
+func (in *Threshold) IsEqual(threshold *admin.StreamProcessorMetricThreshold) bool {
 	logger := zap.NewExample().Sugar()
 	if in == nil {
 		return threshold == nil
@@ -161,21 +161,20 @@ func (in *Threshold) IsEqual(threshold *admin.GreaterThanRawThreshold) bool {
 	return true
 }
 
-func (in *Threshold) ToAtlas() (*admin.GreaterThanRawThreshold, error) {
+func (in *Threshold) ToAtlas() (*admin.StreamProcessorMetricThreshold, error) {
 	if in == nil {
 		return nil, nil
 	}
 
-	tr64, err := strconv.ParseInt(in.Threshold, 10, 64)
+	tr64, err := strconv.ParseFloat(in.Threshold, 64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse threshold value: %w. should be float", err)
 	}
 
-	tr := int(tr64)
-	result := &admin.GreaterThanRawThreshold{
+	result := &admin.StreamProcessorMetricThreshold{
 		Operator:  &in.Operator,
 		Units:     &in.Units,
-		Threshold: &tr,
+		Threshold: &tr64,
 	}
 
 	return result, nil
@@ -367,7 +366,7 @@ func (in MetricThreshold) Key() string {
 		in.Mode
 }
 
-func (in *MetricThreshold) IsEqual(threshold *admin.ServerlessMetricThreshold) bool {
+func (in *MetricThreshold) IsEqual(threshold *admin.FlexClusterMetricThreshold) bool {
 	if in == nil {
 		return threshold == nil
 	}
@@ -388,7 +387,7 @@ func (in *MetricThreshold) IsEqual(threshold *admin.ServerlessMetricThreshold) b
 		in.Mode == threshold.GetMode()
 }
 
-func (in *MetricThreshold) ToAtlas() (*admin.ServerlessMetricThreshold, error) {
+func (in *MetricThreshold) ToAtlas() (*admin.FlexClusterMetricThreshold, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -398,7 +397,7 @@ func (in *MetricThreshold) ToAtlas() (*admin.ServerlessMetricThreshold, error) {
 		return nil, fmt.Errorf("failed to parse threshold value: %w. should be float", err)
 	}
 
-	result := &admin.ServerlessMetricThreshold{
+	result := &admin.FlexClusterMetricThreshold{
 		MetricName: in.MetricName,
 		Operator:   &in.Operator,
 		Threshold:  &tr,

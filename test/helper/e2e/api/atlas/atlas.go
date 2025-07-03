@@ -17,26 +17,25 @@ package atlas
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/debug"
 )
 
 var globalAtlas *Atlas
 
 type Atlas struct {
-	OrgID              string
-	Public             string
-	Private            string
-	Client             *admin.APIClient
-	ClientV20241113001 *adminv20241113001.APIClient
+	OrgID   string
+	Public  string
+	Private string
+	Client  *admin.APIClient
 }
 
 func AClient() (Atlas, error) {
@@ -51,15 +50,6 @@ func AClient() (Atlas, error) {
 		return Atlas{}, err
 	}
 	a.Client = c
-
-	clientV20241113001, err := adminv20241113001.NewClient(
-		adminv20241113001.UseBaseURL(os.Getenv("MCLI_OPS_MANAGER_URL")),
-		adminv20241113001.UseDigestAuth(a.Public, a.Private),
-	)
-	if err != nil {
-		return Atlas{}, err
-	}
-	a.ClientV20241113001 = clientV20241113001
 
 	return a, nil
 }
@@ -107,7 +97,7 @@ func (a *Atlas) GetDeploymentNames(projectID string) []string {
 	for _, cluster := range clusters.GetResults() {
 		names = append(names, cluster.GetName())
 	}
-	flex, _, err := a.ClientV20241113001.FlexClustersApi.ListFlexClusters(ctx, projectID).Execute()
+	flex, _, err := a.Client.FlexClustersApi.ListFlexClusters(ctx, projectID).Execute()
 	Expect(err).NotTo(HaveOccurred())
 	ginkgoPrettyPrintf(flex.GetResults(), "listing flex deployments in project %s", projectID)
 	for _, cluster := range flex.GetResults() {
@@ -116,7 +106,7 @@ func (a *Atlas) GetDeploymentNames(projectID string) []string {
 	return names
 }
 
-func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.AdvancedClusterDescription, error) {
+func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.ClusterDescription20240805, error) {
 	advancedDeployment, _, err := a.Client.ClustersApi.
 		GetCluster(context.Background(), projectId, deploymentName).
 		Execute()
@@ -126,8 +116,8 @@ func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.Advanced
 	return advancedDeployment, err
 }
 
-func (a *Atlas) GetFlexInstance(projectId, deploymentName string) (*adminv20241113001.FlexClusterDescription20241113, error) {
-	flexInstance, _, err := a.ClientV20241113001.FlexClustersApi.
+func (a *Atlas) GetFlexInstance(projectId, deploymentName string) (*admin.FlexClusterDescription20241113, error) {
+	flexInstance, _, err := a.Client.FlexClustersApi.
 		GetFlexCluster(context.Background(), projectId, deploymentName).
 		Execute()
 
@@ -173,7 +163,7 @@ func (a *Atlas) GetUserByName(database, projectID, username string) (*admin.Clou
 }
 
 func (a *Atlas) DeleteGlobalKey(key admin.ApiKeyUserDetails) error {
-	_, _, err := a.Client.ProgrammaticAPIKeysApi.DeleteApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
+	_, err := a.Client.ProgrammaticAPIKeysApi.DeleteApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
 
 	return err
 }
@@ -186,20 +176,21 @@ func (a *Atlas) GetEncryptionAtRest(projectID string) (*admin.EncryptionAtRest, 
 	return encryptionAtRest, err
 }
 
-func (a *Atlas) GetOrgUsers() ([]admin.CloudAppUser, error) {
-	users, _, err := a.Client.OrganizationsApi.ListOrganizationUsers(context.Background(), a.OrgID).Execute()
-
-	return *users.Results, err
+func (a *Atlas) GetOrgUsers() ([]admin.OrgUserResponse, error) {
+	users, err := paging.ListAll(context.Background(), func(ctx context.Context, pageNum int) (paging.Response[admin.OrgUserResponse], *http.Response, error) {
+		return a.Client.MongoDBCloudUsersApi.ListOrganizationUsers(ctx, a.OrgID).PageNum(pageNum).Execute()
+	})
+	return users, err
 }
 
-func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*admin.DiskBackupSnapshotAWSExportBucket, error) {
+func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*admin.DiskBackupSnapshotExportBucketResponse, error) {
 	r, _, err := a.Client.CloudBackupsApi.
 		CreateExportBucket(
 			context.Background(),
 			projectID,
-			&admin.DiskBackupSnapshotAWSExportBucket{
+			&admin.DiskBackupSnapshotExportBucketRequest{
 				BucketName:    &bucketName,
-				CloudProvider: pointer.MakePtr("AWS"),
+				CloudProvider: "AWS",
 				IamRoleId:     &roleID,
 			},
 		).Execute()

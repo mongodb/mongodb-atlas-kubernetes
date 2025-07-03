@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -70,7 +70,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 		return terminateX509(ctx, err)
 	}
 
-	ldapConfig, _, err := ctx.SdkClientSet.SdkClient20231115008.LDAPConfigurationApi.GetLDAPConfiguration(ctx.Context, atlasProject.ID()).Execute()
+	ldapConfig, _, err := ctx.SdkClientSet.SdkClient20250312002.LDAPConfigurationApi.GetLdapConfiguration(ctx.Context, atlasProject.ID()).Execute()
 	if err != nil {
 		return terminateX509(ctx, err)
 	}
@@ -84,7 +84,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 		}
 		r.Log.Infow("Saving new x509 cert", "projectID", atlasProject.ID())
 
-		_, _, err = ctx.SdkClientSet.SdkClient20231115008.LDAPConfigurationApi.SaveLDAPConfiguration(ctx.Context, atlasProject.ID(), &conf).Execute()
+		_, _, err = ctx.SdkClientSet.SdkClient20250312002.LDAPConfigurationApi.SaveLdapConfiguration(ctx.Context, atlasProject.ID(), &conf).Execute()
 		if err != nil {
 			return terminateX509(ctx, err)
 		}
@@ -98,7 +98,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 
 func (r *AtlasProjectReconciler) disableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.Result {
 	r.Log.Infow("Disable x509 auth", "projectID", atlasProject.ID())
-	_, _, err := ctx.SdkClientSet.SdkClient20231115008.X509AuthenticationApi.DisableCustomerManagedX509(ctx.Context, atlasProject.ID()).Execute()
+	_, _, err := ctx.SdkClientSet.SdkClient20250312002.X509AuthenticationApi.DisableCustomerManagedX509(ctx.Context, atlasProject.ID()).Execute()
 	if err != nil {
 		return terminateX509(ctx, err)
 	}

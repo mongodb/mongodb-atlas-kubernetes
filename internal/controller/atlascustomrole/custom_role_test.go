@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -757,7 +757,7 @@ func Test_handleCustomRole(t *testing.T) {
 					Log:   zap.S(),
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								cdrAPI.EXPECT().GetCustomDatabaseRole(context.Background(), "testProjectID", "testRole").
@@ -826,7 +826,7 @@ func Test_handleCustomRole(t *testing.T) {
 					Log:   zap.S(),
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								cdrAPI.EXPECT().GetCustomDatabaseRole(context.Background(), "testProjectID", "testRole").
@@ -916,14 +916,14 @@ func Test_handleCustomRole(t *testing.T) {
 					Log:   zap.S(),
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								return cdrAPI
 							}(),
 							ProjectsApi: func() admin.ProjectsApi {
 								notFound := &admin.GenericOpenAPIError{}
-								notFound.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr("RESOURCE_NOT_FOUND")})
+								notFound.SetModel(admin.ApiError{ErrorCode: "RESOURCE_NOT_FOUND"})
 
 								projectAPI := mockadmin.NewProjectsApi(t)
 								projectAPI.EXPECT().GetProjectByName(mock.Anything, "testProject").
@@ -976,7 +976,7 @@ func Test_handleCustomRole(t *testing.T) {
 					Log:   zap.S(),
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								return cdrAPI
@@ -1014,7 +1014,7 @@ func Test_handleCustomRole(t *testing.T) {
 				WithScheme(testScheme).
 				WithObjects(tt.args.k8sObjects...).
 				Build()
-			service := customroles.NewCustomRoles(tt.args.ctx.SdkClientSet.SdkClient20231115008.CustomDatabaseRolesApi)
+			service := customroles.NewCustomRoles(tt.args.ctx.SdkClientSet.SdkClient20250312002.CustomDatabaseRolesApi)
 			r := AtlasCustomRoleReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient},
 			}
@@ -1036,5 +1036,5 @@ func solveProjectID(t *testing.T, r *AtlasCustomRoleReconciler, args args) (*pro
 	if args.akoCustomRole.Spec.ProjectDualReference.ExternalProjectRef != nil {
 		return &project.Project{ID: args.akoCustomRole.Spec.ExternalProjectRef.ID}, nil
 	}
-	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClientSet.SdkClient20231115008, args.akoCustomRole)
+	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClientSet.SdkClient20250312002, args.akoCustomRole)
 }

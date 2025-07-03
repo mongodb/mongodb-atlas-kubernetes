@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
@@ -160,7 +160,7 @@ type Threshold struct {
 	Threshold string `json:"threshold,omitempty"`
 }
 
-func ThresholdFromAtlas(threshold *admin.GreaterThanRawThreshold) *Threshold {
+func ThresholdFromAtlas(threshold *admin.StreamProcessorMetricThreshold) *Threshold {
 	if threshold == nil {
 		return nil
 	}
@@ -185,7 +185,7 @@ type MetricThreshold struct {
 	Mode string `json:"mode,omitempty"`
 }
 
-func MetricThresholdFromAtlas(threshold *admin.ServerlessMetricThreshold) *MetricThreshold {
+func MetricThresholdFromAtlas(threshold *admin.FlexClusterMetricThreshold) *MetricThreshold {
 	if threshold == nil {
 		return nil
 	}

@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -638,7 +638,7 @@ func TestHandleServerlessInstance(t *testing.T) {
 			},
 			sdkMock: func() *admin.APIClient {
 				mockError := &admin.GenericOpenAPIError{}
-				model := *admin.NewApiError()
+				model := *admin.NewApiErrorWithDefaults()
 				model.SetErrorCode("NOT_SERVERLESS_TENANT_CLUSTER")
 				mockError.SetModel(model)
 
@@ -915,7 +915,7 @@ func TestHandleServerlessInstance(t *testing.T) {
 				Context: ctx,
 				Log:     logger.Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: tt.sdkMock(),
+					SdkClient20250312002: tt.sdkMock(),
 				},
 			}
 

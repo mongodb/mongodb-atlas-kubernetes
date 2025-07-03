@@ -26,10 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
-	adminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/admin"
-	mockadminv20241113001 "go.mongodb.org/atlas-sdk/v20241113001/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -400,22 +398,21 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
-					&admin.AdvancedClusterDescription{
+					&admin.ClusterDescription20240805{
 						GroupId:       pointer.MakePtr(project.ID()),
 						Name:          pointer.MakePtr(d.GetDeploymentName()),
 						ClusterType:   pointer.MakePtr(d.Spec.DeploymentSpec.ClusterType),
 						BackupEnabled: pointer.MakePtr(true),
 						StateName:     pointer.MakePtr("IDLE"),
-						ReplicationSpecs: &[]admin.ReplicationSpec{
+						ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 							{
-								ZoneName:  pointer.MakePtr("Zone 1"),
-								NumShards: pointer.MakePtr(1),
-								RegionConfigs: &[]admin.CloudRegionConfig{
+								ZoneName: pointer.MakePtr("Zone 1"),
+								RegionConfigs: &[]admin.CloudRegionConfig20240805{
 									{
 										ProviderName: pointer.MakePtr("AWS"),
 										RegionName:   pointer.MakePtr("US_EAST_1"),
 										Priority:     pointer.MakePtr(7),
-										ElectableSpecs: &admin.HardwareSpec{
+										ElectableSpecs: &admin.HardwareSpec20240805{
 											InstanceSize: pointer.MakePtr("M10"),
 											NodeCount:    pointer.MakePtr(3),
 										},
@@ -431,7 +428,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
 				Return(
-					&admin.ClusterDescriptionProcessArgs{},
+					&admin.ClusterDescriptionProcessArgs20240805{},
 					&http.Response{},
 					nil,
 				)
@@ -465,86 +462,55 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			globalAPI.EXPECT().GetManagedNamespace(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
 				Return(admin.GetManagedNamespaceApiRequest{ApiService: globalAPI})
 			globalAPI.EXPECT().GetManagedNamespaceExecute(mock.Anything).
-				Return(&admin.GeoSharding{}, nil, nil)
+				Return(&admin.GeoSharding20240805{}, nil, nil)
 
-			err := &adminv20241113001.GenericOpenAPIError{}
-			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+			err := &admin.GenericOpenAPIError{}
+			err.SetModel(admin.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
-			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersApi(t)
+
+			cloudBackupsAPI := mockadmin.NewCloudBackupsApi(t)
+			cloudBackupsAPI.EXPECT().GetBackupSchedule(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
+				Return(admin.GetBackupScheduleApiRequest{ApiService: cloudBackupsAPI})
+			cloudBackupsAPI.EXPECT().GetBackupScheduleExecute(mock.Anything).Return(&admin.DiskBackupSnapshotSchedule20240805{
+				AutoExportEnabled:     pointer.MakePtr(false),
+				ClusterId:             pointer.MakePtr("123789"),
+				ClusterName:           pointer.MakePtr(d.GetDeploymentName()),
+				ReferenceHourOfDay:    pointer.MakePtr(20),
+				ReferenceMinuteOfHour: pointer.MakePtr(30),
+				RestoreWindowDays:     pointer.MakePtr(7),
+				UpdateSnapshots:       pointer.MakePtr(false),
+				CopySettings:          &[]admin.DiskBackupCopySetting20240805{},
+				Policies: &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{
+					{
+						Id: pointer.MakePtr("456987"),
+						PolicyItems: &[]admin.DiskBackupApiPolicyItem{
+							{
+								FrequencyInterval: 1,
+								FrequencyType:     "days",
+								RetentionUnit:     "weekly",
+								RetentionValue:    1,
+							},
+						},
+					},
+				},
+				UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
+			}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
+					FlexClustersApi:        flexAPI,
 					ClustersApi:            clusterAPI,
 					AtlasSearchApi:         searchAPI,
 					ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
 					GlobalClustersApi:      globalAPI,
 					ProjectsApi:            projectAPI,
+					CloudBackupsApi:        cloudBackupsAPI,
 				},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-			return &mongodbatlas.Client{
-				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
-					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
-						return &mongodbatlas.AdvancedCluster{
-							ID:            "123789",
-							Name:          clusterName,
-							GroupID:       projectID,
-							BackupEnabled: pointer.MakePtr(true),
-							ClusterType:   "REPLICASET",
-							ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
-								{
-									ID:       "789123",
-									ZoneName: "Zone 1",
-									RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
-										{
-											ProviderName: "AWS",
-											RegionName:   "US_EAST_1",
-											ElectableSpecs: &mongodbatlas.Specs{
-												InstanceSize: "M10",
-												NodeCount:    pointer.MakePtr(3),
-											},
-											Priority: pointer.MakePtr(7),
-										},
-									},
-								},
-							},
-							StateName: "IDLE",
-						}, nil, nil
-					},
-					DeleteFunc: func(projectID string, clusterName string) (*mongodbatlas.Response, error) {
-						return nil, nil
-					},
-				},
-				CloudProviderSnapshotBackupPolicies: &atlasmock.CloudProviderSnapshotBackupPoliciesClientMock{
-					GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
-						return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
-							ClusterID:             "123789",
-							ClusterName:           d.GetDeploymentName(),
-							ReferenceHourOfDay:    pointer.MakePtr(int64(20)),
-							ReferenceMinuteOfHour: pointer.MakePtr(int64(30)),
-							RestoreWindowDays:     pointer.MakePtr(int64(7)),
-							Policies: []mongodbatlas.Policy{
-								{
-									ID: "456987",
-									PolicyItems: []mongodbatlas.PolicyItem{
-										{
-											ID:                "987654",
-											FrequencyInterval: 1,
-											FrequencyType:     "days",
-											RetentionUnit:     "weekly",
-											RetentionValue:    1,
-										},
-									},
-								},
-							},
-							AutoExportEnabled:                 pointer.MakePtr(false),
-							UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
-						}, nil, nil
-					},
-				},
-			}, nil
+			return &mongodbatlas.Client{}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
@@ -630,7 +596,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			err := &admin.GenericOpenAPIError{}
-			err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
+			err.SetModel(admin.ApiError{ErrorCode: atlas.ServerlessInstanceFromClusterAPI})
 			clusterAPI := mockadmin.NewClustersApi(t)
 
 			serverlessAPI := mockadmin.NewServerlessInstancesApi(t)
@@ -668,16 +634,16 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 			projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
-			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			return &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
+					FlexClustersApi:               flexAPI,
 					ClustersApi:                   clusterAPI,
 					ServerlessInstancesApi:        serverlessAPI,
 					ServerlessPrivateEndpointsApi: speClient,
 					ProjectsApi:                   projectAPI,
 				},
-				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -766,16 +732,16 @@ func TestFlexClusterReconciliation(t *testing.T) {
 
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			flexAPI.EXPECT().GetFlexCluster(mock.Anything, project.ID(), mock.Anything).
-				Return(adminv20241113001.GetFlexClusterApiRequest{ApiService: flexAPI})
+				Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 				Return(
-					&adminv20241113001.FlexClusterDescription20241113{
+					&admin.FlexClusterDescription20241113{
 						GroupId: pointer.MakePtr(project.ID()),
 						Name:    pointer.MakePtr(d.GetDeploymentName()),
-						ProviderSettings: adminv20241113001.FlexProviderSettings20241113{
+						ProviderSettings: admin.FlexProviderSettings20241113{
 							BackingProviderName: pointer.MakePtr("AWS"),
 							ProviderName:        pointer.MakePtr("FLEX"),
 							RegionName:          pointer.MakePtr("US_EAST_1"),
@@ -797,12 +763,12 @@ func TestFlexClusterReconciliation(t *testing.T) {
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
+					FlexClustersApi:        flexAPI,
 					ClustersApi:            clusterAPI,
 					ServerlessInstancesApi: serverlessAPI,
 					ProjectsApi:            projectAPI,
 				},
-				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -932,32 +898,31 @@ func TestDeletionReconciliation(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	atlasProvider := &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-			err := &adminv20241113001.GenericOpenAPIError{}
-			err.SetModel(adminv20241113001.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
+			err := &admin.GenericOpenAPIError{}
+			err.SetModel(admin.ApiError{ErrorCode: atlas.NonFlexInFlexAPI})
 
-			flexAPI := mockadminv20241113001.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersApi(t)
 
 			clusterAPI := mockadmin.NewClustersApi(t)
 			clusterAPI.EXPECT().GetCluster(mock.Anything, project.ID(), mock.Anything).
 				Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
-					&admin.AdvancedClusterDescription{
+					&admin.ClusterDescription20240805{
 						GroupId:       pointer.MakePtr(project.ID()),
 						Name:          pointer.MakePtr(d.GetDeploymentName()),
 						ClusterType:   pointer.MakePtr(d.Spec.DeploymentSpec.ClusterType),
 						BackupEnabled: pointer.MakePtr(true),
 						StateName:     pointer.MakePtr("IDLE"),
-						ReplicationSpecs: &[]admin.ReplicationSpec{
+						ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 							{
-								ZoneName:  pointer.MakePtr("Zone 1"),
-								NumShards: pointer.MakePtr(1),
-								RegionConfigs: &[]admin.CloudRegionConfig{
+								ZoneName: pointer.MakePtr("Zone 1"),
+								RegionConfigs: &[]admin.CloudRegionConfig20240805{
 									{
 										ProviderName: pointer.MakePtr("AWS"),
 										RegionName:   pointer.MakePtr("US_EAST_1"),
 										Priority:     pointer.MakePtr(7),
-										ElectableSpecs: &admin.HardwareSpec{
+										ElectableSpecs: &admin.HardwareSpec20240805{
 											InstanceSize: pointer.MakePtr("M10"),
 											NodeCount:    pointer.MakePtr(3),
 										},
@@ -981,12 +946,12 @@ func TestDeletionReconciliation(t *testing.T) {
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
+					FlexClustersApi:        flexAPI,
 					ClustersApi:            clusterAPI,
 					ServerlessInstancesApi: mockadmin.NewServerlessInstancesApi(t),
 					ProjectsApi:            projectAPI,
 				},
-				SdkClient20241113001: &adminv20241113001.APIClient{FlexClustersApi: flexAPI},
 			}, nil
 		},
 		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
@@ -1327,7 +1292,7 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(admin.GetServerlessInstanceApiRequest{ApiService: serverlessAPI})
 
 					err := &admin.GenericOpenAPIError{}
-					err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ClusterInstanceFromServerlessAPI)})
+					err.SetModel(admin.ApiError{ErrorCode: atlas.ClusterInstanceFromServerlessAPI})
 					err.SetError("wrong API")
 					serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.Anything).Return(nil, nil, err)
 
@@ -1338,11 +1303,10 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							ServerlessInstancesApi: serverlessAPI,
 							ProjectsApi:            projectAPI,
 						},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
 					}, nil
 				},
 			},
@@ -1385,7 +1349,7 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(admin.GetClusterApiRequest{ApiService: clusterAPI})
 
 					err := &admin.GenericOpenAPIError{}
-					err.SetModel(admin.ApiError{ErrorCode: pointer.MakePtr(atlas.ServerlessInstanceFromClusterAPI)})
+					err.SetModel(admin.ApiError{ErrorCode: atlas.ServerlessInstanceFromClusterAPI})
 					err.SetError("wrong API")
 					clusterAPI.EXPECT().GetClusterExecute(mock.Anything).Return(nil, nil, err)
 
@@ -1396,11 +1360,10 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20231115008: &admin.APIClient{
+						SdkClient20250312002: &admin.APIClient{
 							ClustersApi: clusterAPI,
 							ProjectsApi: projectAPI,
 						},
-						SdkClient20241113001: &adminv20241113001.APIClient{},
 					}, nil
 				},
 			},

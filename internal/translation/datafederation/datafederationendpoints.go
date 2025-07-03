@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
@@ -59,7 +59,7 @@ func (d *DatafederationPrivateEndpoints) Create(ctx context.Context, aep *Datafe
 }
 
 func (d *DatafederationPrivateEndpoints) Delete(ctx context.Context, aep *DatafederationPrivateEndpointEntry) error {
-	_, _, err := d.api.DeleteDataFederationPrivateEndpoint(ctx, aep.ProjectID, aep.EndpointID).Execute()
+	_, err := d.api.DeleteDataFederationPrivateEndpoint(ctx, aep.ProjectID, aep.EndpointID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete data federation private endpoint: %w", err)
 	}

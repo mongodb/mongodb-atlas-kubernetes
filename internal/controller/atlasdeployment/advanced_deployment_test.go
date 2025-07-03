@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -769,7 +769,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				Context: context.Background(),
 				Log:     logger,
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20231115008: tt.sdkMock(),
+					SdkClient20250312002: tt.sdkMock(),
 				},
 			}
 

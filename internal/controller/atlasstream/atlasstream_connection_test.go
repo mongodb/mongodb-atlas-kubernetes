@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -150,7 +150,6 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().
 			DeleteStreamConnectionExecute(mock.AnythingOfType("admin.DeleteStreamConnectionApiRequest")).
 			Return(
-				nil,
 				&http.Response{},
 				nil,
 			)
@@ -186,7 +185,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -271,7 +270,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -358,7 +357,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -456,7 +455,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -533,11 +532,11 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Return(admin.DeleteStreamConnectionApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().
 			DeleteStreamConnectionExecute(mock.AnythingOfType("admin.DeleteStreamConnectionApiRequest")).
-			Return(nil, &http.Response{}, errors.New("failed to delete connection"))
+			Return(&http.Response{}, errors.New("failed to delete connection"))
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20231115008: &admin.APIClient{
+				SdkClient20250312002: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
