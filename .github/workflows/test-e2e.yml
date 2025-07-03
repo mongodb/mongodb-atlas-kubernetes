@@ -68,6 +68,10 @@ jobs:
     needs: [prepare-e2e]
     runs-on: ubuntu-latest
     environment: test
+    env:
+      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+      AKO_DEPRECATION_WARNINGS: true
     strategy:
       fail-fast: false
       matrix:
@@ -231,3 +235,34 @@ jobs:
         with:
           name: logs
           path: output/**
+  gather-deprecations:
+    name: Gather Deprecation Warnings
+    environment: test
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    steps:
+      # Get GitHub logs for run;
+      # Get only lines with 'javaMethod';
+      # Parse the JSON within;
+      # Grab the unique fields we want;
+      # Check the length (leave no comment if there are no deprecations);
+      # Create a Markdown table from the JSON for the comment;
+      - name: Parse logs from e2e tests
+        run: |
+          LOGS=$(gh run view ${{ github.run_id }} --log | grep "javaMethod" | grep -o '{.*}' | jq '{javaMethod, type, date}' | jq -s 'unique | sort_by(.javaMethod)')
+          LOGS_LENGTH=$(echo $LOGS | jq '. | length')
+          echo "LOGS_LENGTH=$LOGS_LENGTH" >> $GITHUB_ENV
+          LOGS_TABLE=$(echo $LOGS | jq -r '"|Type|Java Method|Date|\n|------|------|------|\n" + (map("\(.type)|\(.javaMethod)|\(.date)|") | join("\n"))'))
+          echo "LOGS_TABLE=$LOGS_TABLE" >> $GITHUB_ENV
+      - name: Create comment from data
+        if: ${{ ! env.LOGS_LENGTH == 0 }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{    }} #TODO: This needs a secret in the test env to leave comments
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              issue_number: context.issue.number,
+              repo: context.repo.repo,
+              body: process.env.LOGS_TABLE
+            })
