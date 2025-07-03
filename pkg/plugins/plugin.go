@@ -9,9 +9,10 @@ import (
 type Plugin interface {
 	Name() string
 	ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error
-	ProcessField(g Generator, path []string, props *apiextensions.JSONSchemaProps) error
+	ProcessProperty(g Generator, path []string, props *apiextensions.JSONSchemaProps) error
+	ProcessPropertyName(mapping *configv1alpha1.FieldMapping, path []string) string
 }
 
 type Generator interface {
-	SchemaPropsToJSONProps(schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path ...string) *apiextensions.JSONSchemaProps
+	ConvertProperty(propertyName string, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path ...string) *apiextensions.JSONSchemaProps
 }

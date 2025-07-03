@@ -11,6 +11,7 @@ import (
 )
 
 type EntryPlugin struct {
+	NoOp
 	crd *apiextensions.CustomResourceDefinition
 }
 
@@ -23,7 +24,7 @@ func NewEntryPlugin(crd *apiextensions.CustomResourceDefinition) *EntryPlugin {
 }
 
 func (s *EntryPlugin) Name() string {
-	return "entry_plugin"
+	return "entry"
 }
 
 func (s *EntryPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
@@ -53,7 +54,7 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapp
 			},
 		}},
 	}
-	entryProps := g.SchemaPropsToJSONProps(entrySchemaRef, &mapping.EntryMapping, extensionsSchema.Properties["spec"].Value.Properties[mapping.MajorVersion].Value.Properties["entry"].Value)
+	entryProps := g.ConvertProperty("entry", entrySchemaRef, &mapping.EntryMapping, extensionsSchema.Properties["spec"].Value.Properties[mapping.MajorVersion].Value.Properties["entry"].Value)
 	clearPropertiesWithoutExtensions(extensionsSchema)
 	if len(extensionsSchema.Properties) > 0 {
 		d, err := yaml.Marshal(extensionsSchema)
@@ -68,10 +69,6 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapp
 
 	entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", s.crd.Spec.Names.Singular, s.crd.Spec.Names.Plural)
 	s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion].Properties["entry"] = *entryProps
-	return nil
-}
-
-func (s *EntryPlugin) ProcessField(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
 	return nil
 }
 

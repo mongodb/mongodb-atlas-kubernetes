@@ -8,6 +8,7 @@ import (
 )
 
 type MajorVersionSpecPlugin struct {
+	NoOp
 	crd *apiextensions.CustomResourceDefinition
 }
 
@@ -20,7 +21,7 @@ func NewMajorVersionPlugin(crd *apiextensions.CustomResourceDefinition) *MajorVe
 }
 
 func (s *MajorVersionSpecPlugin) Name() string {
-	return "string_plugin"
+	return "major_version"
 }
 
 func (s *MajorVersionSpecPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, spec *openapi3.T) error {
@@ -32,6 +33,6 @@ func (s *MajorVersionSpecPlugin) ProcessMapping(g Generator, mapping configv1alp
 	return nil
 }
 
-func (s *MajorVersionSpecPlugin) ProcessField(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
+func (s *MajorVersionSpecPlugin) ProcessProperty(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
 	return nil
 }

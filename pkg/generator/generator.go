@@ -17,7 +17,6 @@ package generator
 import (
 	"context"
 	"fmt"
-	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"log"
 	"strings"
 
@@ -33,7 +32,7 @@ import (
 type Generator struct {
 	config      v1alpha1.CRDConfig
 	definitions map[string]v1alpha1.OpenAPIDefinition
-	plugins     []generator.Plugin
+	plugins     []plugins.Plugin
 }
 
 func NewGenerator(crdConfig v1alpha1.CRDConfig, definitions []v1alpha1.OpenAPIDefinition) *Generator {
@@ -104,7 +103,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		},
 	}
 
-	ps := []plugins.Plugin{
+	g.plugins = []plugins.Plugin{
 		plugins.NewMajorVersionPlugin(crd),
 		plugins.NewParametersPlugin(crd),
 		plugins.NewEntryPlugin(crd),
@@ -122,7 +121,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 			return nil, fmt.Errorf("error loading spec: %w", err)
 		}
 
-		for _, p := range ps {
+		for _, p := range g.plugins {
 			if err := p.ProcessMapping(g, mapping, openApiSpec); err != nil {
 				return nil, fmt.Errorf("error processing plugin %s: %w", p.Name(), err)
 			}

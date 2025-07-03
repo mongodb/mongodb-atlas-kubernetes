@@ -8,6 +8,7 @@ import (
 )
 
 type ParametersPlugin struct {
+	NoOp
 	crd *apiextensions.CustomResourceDefinition
 }
 
@@ -20,7 +21,7 @@ func NewParametersPlugin(crd *apiextensions.CustomResourceDefinition) *Parameter
 }
 
 func (s *ParametersPlugin) Name() string {
-	return "parameters_plugin"
+	return "parameters"
 }
 
 func (s *ParametersPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
@@ -51,7 +52,7 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CR
 			case "envelope":
 			case "pretty":
 			default:
-				props := g.SchemaPropsToJSONProps(p.Value.Schema, nil, openapi3.NewSchema())
+				props := g.ConvertProperty(p.Value.Name, p.Value.Schema, nil, openapi3.NewSchema())
 				props.Description = p.Value.Description
 				props.XValidations = apiextensions.ValidationRules{
 					{
@@ -70,6 +71,6 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CR
 	return nil
 }
 
-func (s *ParametersPlugin) ProcessField(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
+func (s *ParametersPlugin) ProcessProperty(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
 	return nil
 }
