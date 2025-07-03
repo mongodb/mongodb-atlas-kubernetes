@@ -20,6 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/deprecation"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
 	"strings"
 
@@ -146,13 +147,15 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 }
 
 func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.SugaredLogger) http.RoundTripper {
-	var t http.RoundTripper = deprecation.NewLoggingTransport(delegate, log.Desugar())
-
-	if p.dryRun {
-		return dryrun.NewDryRunTransport(t)
+	if os.Getenv("AKO_DEPRECATION_WARNINGS") != "" {
+		return deprecation.NewLoggingTransport(delegate, log.Desugar())
 	}
 
-	return t
+	if p.dryRun {
+		return dryrun.NewDryRunTransport(delegate)
+	}
+
+	return delegate
 }
 
 func operatorUserAgent() string {
