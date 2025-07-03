@@ -26,11 +26,11 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		sunset := resp.Header.Get("Sunset")
 
 		if deprecation != "" {
-			t.logger.Warn("deprecation", zap.String("date", deprecation), zap.String("javaMethod", javaMethod), zap.String("path", req.URL.Path), zap.String("method", req.Method))
+			t.logger.Warn("deprecation", zap.String("type", "deprecation"), zap.String("date", deprecation), zap.String("javaMethod", javaMethod), zap.String("path", req.URL.Path), zap.String("method", req.Method))
 		}
 
 		if sunset != "" {
-			t.logger.Warn("sunset", zap.String("date", sunset), zap.String("javaMethod", javaMethod), zap.String("path", req.URL.Path), zap.String("method", req.Method))
+			t.logger.Warn("sunset", zap.String("type", "sunset"), zap.String("date", sunset), zap.String("javaMethod", javaMethod), zap.String("path", req.URL.Path), zap.String("method", req.Method))
 		}
 	}
 	return resp, err
