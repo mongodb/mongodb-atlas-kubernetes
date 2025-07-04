@@ -52,7 +52,7 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.C
 			case "envelope":
 			case "pretty":
 			default:
-				props := g.ConvertProperty(p.Value.Name, p.Value.Schema, nil, openapi3.NewSchemaRef("", openapi3.NewSchema()))
+				props := g.ConvertProperty(p.Value.Schema, nil, openapi3.NewSchemaRef("", openapi3.NewSchema()))
 				props.Description = p.Value.Description
 				props.XValidations = apiextensions.ValidationRules{
 					{

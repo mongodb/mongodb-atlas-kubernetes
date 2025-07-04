@@ -13,5 +13,5 @@ type Plugin interface {
 }
 
 type Generator interface {
-	ConvertProperty(propertyName string, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps
+	ConvertProperty(schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps
 }
