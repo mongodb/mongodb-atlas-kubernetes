@@ -21,22 +21,22 @@ func (s *SensitiveProperties) Name() string {
 	return "sensitive_properties"
 }
 
-func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema, extensionsSchema *openapi3.Schema, path ...string) {
+func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) {
 	if !isSensitiveField(path, mapping) {
 		return
 	}
 
-	if extensionsSchema.Extensions == nil {
-		extensionsSchema.Extensions = map[string]interface{}{}
+	if extensionsSchema.Value.Extensions == nil {
+		extensionsSchema.Value.Extensions = map[string]interface{}{}
 	}
 
-	extensionsSchema.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
+	extensionsSchema.Value.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
 		"gvr":              "secrets/v1",
 		"nameSelector":     ".name",
 		"propertySelector": ".key",
 	}
 
-	extensionsSchema.Extensions["x-openapi-mapping"] = map[string]interface{}{
+	extensionsSchema.Value.Extensions["x-openapi-mapping"] = map[string]interface{}{
 		"property": "." + path[len(path)-1],
 		"type":     propertySchema.Type,
 	}

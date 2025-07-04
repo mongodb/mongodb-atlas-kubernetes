@@ -54,7 +54,7 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMap
 			},
 		}},
 	}
-	entryProps := g.ConvertProperty("entry", entrySchemaRef, &mapping.EntryMapping, extensionsSchema.Properties["spec"].Value.Properties[mapping.MajorVersion].Value.Properties["entry"].Value)
+	entryProps := g.ConvertProperty("entry", entrySchemaRef, &mapping.EntryMapping, extensionsSchema.Properties["spec"].Value.Properties[mapping.MajorVersion].Value.Properties["entry"])
 	clearPropertiesWithoutExtensions(extensionsSchema)
 	if len(extensionsSchema.Properties) > 0 {
 		d, err := yaml.Marshal(extensionsSchema)

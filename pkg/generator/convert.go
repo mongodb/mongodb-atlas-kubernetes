@@ -77,22 +77,6 @@ func jsonPath(path []string) string {
 	return strings.ReplaceAll(result, ".[*]", "[*]")
 }
 
-func isSensitiveField(path []string, mapping *configv1alpha1.FieldMapping) bool {
-	if mapping == nil {
-		return false
-	}
-
-	p := jsonPath(path)
-
-	for _, sensitiveField := range mapping.Filters.SensitiveProperties {
-		if sensitiveField == p {
-			return true
-		}
-	}
-
-	return false
-}
-
 func isSkippedField(path []string, mapping *configv1alpha1.FieldMapping) bool {
 	if mapping == nil {
 		return false
@@ -110,7 +94,7 @@ func isSkippedField(path []string, mapping *configv1alpha1.FieldMapping) bool {
 }
 
 // SchemaPropsToJSONProps converts openapi3.Schema to a JSONProps
-func (g *Generator) ConvertProperty(propertyName string, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path ...string) *apiextensions.JSONSchemaProps {
+func (g *Generator) ConvertProperty(propertyName string, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
 	if schemaRef == nil {
 		return nil
 	}
@@ -198,7 +182,7 @@ func filterSlice(source, by []string) []string {
 	return filtered
 }
 
-func (g *Generator) transformations(propertyName string, props *apiextensions.JSONSchemaProps, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) *apiextensions.JSONSchemaProps {
+func (g *Generator) transformations(propertyName string, props *apiextensions.JSONSchemaProps, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path []string) *apiextensions.JSONSchemaProps {
 	result := props
 	result = handleAdditionalProperties(result, schemaRef.Value.AdditionalPropertiesAllowed)
 	result = removeUnknownFormats(result)
@@ -226,7 +210,7 @@ func removeUnknownFormats(props *apiextensions.JSONSchemaProps) *apiextensions.J
 }
 
 // oneOfRefsTransform transforms oneOf with a list of $ref to a list of nullable properties
-func (g *Generator) oneOfRefsTransform(propertyName string, props *apiextensions.JSONSchemaProps, oneOf openapi3.SchemaRefs, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) *apiextensions.JSONSchemaProps {
+func (g *Generator) oneOfRefsTransform(propertyName string, props *apiextensions.JSONSchemaProps, oneOf openapi3.SchemaRefs, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path []string) *apiextensions.JSONSchemaProps {
 	if props.OneOf != nil && len(props.Properties) == 0 && props.AdditionalProperties == nil {
 		result := props.DeepCopy()
 		result.Type = "object"
@@ -257,7 +241,7 @@ func (g *Generator) oneOfRefsTransform(propertyName string, props *apiextensions
 	return props
 }
 
-func (g *Generator) convertPropertySlice(propertyName string, schemas openapi3.SchemaRefs, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) []apiextensions.JSONSchemaProps {
+func (g *Generator) convertPropertySlice(propertyName string, schemas openapi3.SchemaRefs, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path []string) []apiextensions.JSONSchemaProps {
 	var s []apiextensions.JSONSchemaProps
 	for _, schema := range schemas {
 		s = append(s, *g.ConvertProperty(propertyName, schema, mapping, extensionsSchema, path...))
@@ -274,17 +258,17 @@ func enumJSON(enum []interface{}) []apiextensions.JSON {
 	return s
 }
 
-func (g *Generator) convertPropertyOrArray(propertyName string, schema *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) *apiextensions.JSONSchemaPropsOrArray {
+func (g *Generator) convertPropertyOrArray(propertyName string, schema *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path []string) *apiextensions.JSONSchemaPropsOrArray {
 	if schema == nil {
 		return nil
 	}
-	extensionsSchema.Items = openapi3.NewSchemaRef("", openapi3.NewSchema())
+	extensionsSchema.Value.Items = openapi3.NewSchemaRef("", openapi3.NewSchema())
 	return &apiextensions.JSONSchemaPropsOrArray{
-		Schema: g.ConvertProperty(propertyName, schema, mapping, extensionsSchema.Items.Value, path...),
+		Schema: g.ConvertProperty(propertyName, schema, mapping, extensionsSchema.Value.Items, path...),
 	}
 }
 
-func (g *Generator) convertPropertyOrBool(propertyName string, schema *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path []string) *apiextensions.JSONSchemaPropsOrBool {
+func (g *Generator) convertPropertyOrBool(propertyName string, schema *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path []string) *apiextensions.JSONSchemaPropsOrBool {
 	if schema == nil {
 		return nil
 	}
@@ -295,7 +279,7 @@ func (g *Generator) convertPropertyOrBool(propertyName string, schema *openapi3.
 	}
 }
 
-func (g *Generator) ConvertPropertyMap(propertyName string, schemaMap openapi3.Schemas, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.Schema, path ...string) map[string]apiextensions.JSONSchemaProps {
+func (g *Generator) ConvertPropertyMap(propertyName string, schemaMap openapi3.Schemas, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path ...string) map[string]apiextensions.JSONSchemaProps {
 	m := make(map[string]apiextensions.JSONSchemaProps)
 	for key, schema := range schemaMap {
 		currentPath := append(path, key)
@@ -305,15 +289,16 @@ func (g *Generator) ConvertPropertyMap(propertyName string, schemaMap openapi3.S
 			propName = p.ProcessPropertyName(mapping, currentPath)
 		}
 
-		if extensionsSchema.Properties == nil {
-			extensionsSchema.Properties = make(openapi3.Schemas)
-		}
-		extensionsSchema.Properties[propName] = openapi3.NewSchemaRef("", openapi3.NewSchema())
-
-		result := g.ConvertProperty(propertyName, schema, mapping, extensionsSchema.Properties[propName].Value, currentPath...)
+		ref := openapi3.NewSchemaRef("", openapi3.NewSchema())
+		result := g.ConvertProperty(propertyName, schema, mapping, ref, currentPath...)
 		if result == nil {
 			continue
 		}
+
+		if extensionsSchema.Value.Properties == nil {
+			extensionsSchema.Value.Properties = make(openapi3.Schemas)
+		}
+		extensionsSchema.Value.Properties[propName] = ref
 
 		m[propName] = *result
 	}

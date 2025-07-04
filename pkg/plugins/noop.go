@@ -6,8 +6,8 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
-// Just a standard implementation of Plugin interface that does nothing.
-// Can be embedded in plugins that do not need to implement all methods of Plugin interface.
+// NoOp is a struct that implements the Plugin interface that does nothing.
+// It can be embedded in plugins that do not need to implement all methods of Plugin interface.
 type NoOp struct {
 	Plugin
 }
@@ -16,7 +16,7 @@ func (n *NoOp) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, o
 	return nil
 }
 
-func (n *NoOp) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema, extensionsSchema *openapi3.Schema, path ...string) {
+func (n *NoOp) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) {
 	return
 }
 
