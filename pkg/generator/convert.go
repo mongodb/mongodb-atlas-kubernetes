@@ -25,74 +25,6 @@ import (
 	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 )
 
-func FilterSchemaProps(key string, relaxed bool, schema *openapi3.SchemaRef, predicate func(string, *openapi3.SchemaRef) bool) *openapi3.SchemaRef {
-	valueCopy := *schema.Value
-	schemaCopy := &openapi3.SchemaRef{
-		Ref:   schema.Ref,
-		Value: &valueCopy,
-	}
-	schemaValue := schemaCopy.Value
-	isFiltered := predicate(key, schema)
-
-	hasFilteredProps := false
-	filteredProps := make(openapi3.Schemas)
-	for key, schema := range schemaValue.Properties {
-		filtered := FilterSchemaProps(key, relaxed, schema, predicate)
-		if filtered != nil {
-			filteredProps[key] = filtered
-			hasFilteredProps = true
-		}
-	}
-	schemaValue.Properties = filteredProps
-	var required []string
-	for _, r := range schemaValue.Required {
-		if _, ok := filteredProps[r]; ok {
-			required = append(required, r)
-		}
-	}
-	schemaValue.Required = required
-
-	hasFilteredItems := false
-	if schemaValue.Items != nil {
-		filteredItems := FilterSchemaProps(key+".items", relaxed, schemaValue.Items, predicate)
-		if !isFiltered || filteredItems != nil {
-			schemaValue.Items = filteredItems
-		}
-		if filteredItems != nil {
-			hasFilteredItems = true
-		}
-	}
-
-	isRelaxed := relaxed && (hasFilteredProps || hasFilteredItems)
-
-	if isFiltered || isRelaxed {
-		return schemaCopy
-	}
-
-	return nil
-}
-
-func jsonPath(path []string) string {
-	result := strings.Join(path, ".")
-	return strings.ReplaceAll(result, ".[*]", "[*]")
-}
-
-func isSkippedField(path []string, mapping *configv1alpha1.FieldMapping) bool {
-	if mapping == nil {
-		return false
-	}
-
-	p := jsonPath(path)
-
-	for _, skippedField := range mapping.Filters.SkipProperties {
-		if skippedField == p {
-			return true
-		}
-	}
-
-	return false
-}
-
 // SchemaPropsToJSONProps converts openapi3.Schema to a JSONProps
 func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, path ...string) *apiextensions.JSONSchemaProps {
 	if schema == nil {
@@ -101,15 +33,6 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 
 	if len(path) == 0 {
 		path = []string{"$"}
-	}
-
-	if isSkippedField(path, mapping) {
-		return nil
-	}
-
-	var skipProperties []string
-	if mapping != nil {
-		skipProperties = mapping.Filters.SkipProperties
 	}
 
 	propertySchema := schema.Value
@@ -137,7 +60,7 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 		//Enum:        enumJSON(schemaProps.Enum),
 		//MaxProperties:        castUInt64P(schemaProps.MaxProps),
 		//MinProperties:        castUInt64(schemaProps.MinProps),
-		Required:             filterSlice(propertySchema.Required, skipProperties),
+		Required:             propertySchema.Required,
 		Items:                g.convertPropertyOrArray(propertySchema.Items, extensionsSchema, mapping, append(path, "[*]")),
 		AllOf:                g.convertPropertySlice(propertySchema.AllOf, mapping, extensionsSchema, path),
 		OneOf:                g.convertPropertySlice(propertySchema.OneOf, mapping, extensionsSchema, path),
@@ -149,7 +72,10 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 	}
 
 	for _, p := range g.plugins {
-		p.ProcessProperty(g, mapping, props, propertySchema, extensionsSchema, path...)
+		props = p.ProcessProperty(g, mapping, props, propertySchema, extensionsSchema, path...)
+		if props == nil {
+			return nil
+		}
 	}
 
 	if props.Type == "" && props.Items == nil && len(props.Properties) == 0 {
@@ -161,25 +87,6 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 	props = g.transformations(props, schema, mapping, extensionsSchema, path)
 
 	return props
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-	return false
-}
-
-func filterSlice(source, by []string) []string {
-	filtered := []string{}
-	for _, s := range source {
-		if !contains(by, "$."+s) {
-			filtered = append(filtered, s)
-		}
-	}
-	return filtered
 }
 
 func (g *Generator) transformations(props *apiextensions.JSONSchemaProps, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path []string) *apiextensions.JSONSchemaProps {
@@ -289,7 +196,7 @@ func (g *Generator) ConvertPropertyMap(schemaMap openapi3.Schemas, extensionsSch
 		}
 
 		propName := key
-		if result.ID != "" { // workaround for the fact that CRD props do not let us specify the name
+		if result.ID != "" { // workaround for the fact that CRD props do not let us specify its own property name
 			propName = result.ID
 			result.ID = ""
 		}

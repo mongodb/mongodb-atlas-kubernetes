@@ -16,6 +16,6 @@ func (n *NoOp) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, o
 	return nil
 }
 
-func (n *NoOp) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) {
-	return
+func (n *NoOp) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+	return props
 }

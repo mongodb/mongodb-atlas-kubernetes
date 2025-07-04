@@ -3,10 +3,8 @@ package plugins
 import (
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"strings"
-
 	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
 type SensitiveProperties struct {
@@ -21,9 +19,9 @@ func (s *SensitiveProperties) Name() string {
 	return "sensitive_properties"
 }
 
-func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) {
+func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
 	if !isSensitiveField(path, mapping) {
-		return
+		return props
 	}
 
 	props.ID = path[len(path)-1] + "SecretRef"
@@ -58,7 +56,7 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alph
 		},
 	}
 
-	return
+	return props
 }
 
 func isSensitiveField(path []string, mapping *configv1alpha1.FieldMapping) bool {
@@ -75,9 +73,4 @@ func isSensitiveField(path []string, mapping *configv1alpha1.FieldMapping) bool 
 	}
 
 	return false
-}
-
-func jsonPath(path []string) string {
-	result := strings.Join(path, ".")
-	return strings.ReplaceAll(result, ".[*]", "[*]")
 }
