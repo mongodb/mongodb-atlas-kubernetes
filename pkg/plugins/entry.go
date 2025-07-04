@@ -28,16 +28,16 @@ func (s *EntryPlugin) Name() string {
 }
 
 func (s *EntryPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
-	var entrySchemaRef *openapi3.SchemaRef
+	var entrySchema *openapi3.SchemaRef
 	switch {
 	case mapping.EntryMapping.Schema != "":
 		var ok bool
-		entrySchemaRef, ok = openApiSpec.Components.Schemas[mapping.EntryMapping.Schema]
+		entrySchema, ok = openApiSpec.Components.Schemas[mapping.EntryMapping.Schema]
 		if !ok {
 			return fmt.Errorf("entry schema %q not found in openapi spec", mapping.EntryMapping.Schema)
 		}
 	case mapping.EntryMapping.Path.Name != "":
-		entrySchemaRef = openApiSpec.Paths[mapping.EntryMapping.Path.Name].Operations()[strings.ToUpper(mapping.EntryMapping.Path.Verb)].RequestBody.Value.Content[mapping.EntryMapping.Path.RequestBody.MimeType].Schema
+		entrySchema = openApiSpec.Paths[mapping.EntryMapping.Path.Name].Operations()[strings.ToUpper(mapping.EntryMapping.Path.Verb)].RequestBody.Value.Content[mapping.EntryMapping.Path.RequestBody.MimeType].Schema
 	default:
 		return errors.New("entry schema not found in spec")
 	}
@@ -54,7 +54,7 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMap
 			},
 		}},
 	}
-	entryProps := g.ConvertProperty(entrySchemaRef, &mapping.EntryMapping, extensionsSchema.Properties["spec"].Value.Properties[mapping.MajorVersion].Value.Properties["entry"])
+	entryProps := g.ConvertProperty(entrySchema, extensionsSchema.Properties["spec"].Value.Properties[mapping.MajorVersion].Value.Properties["entry"], &mapping.EntryMapping)
 	clearPropertiesWithoutExtensions(extensionsSchema)
 	if len(extensionsSchema.Properties) > 0 {
 		d, err := yaml.Marshal(extensionsSchema)
