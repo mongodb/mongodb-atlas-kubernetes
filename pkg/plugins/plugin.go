@@ -10,7 +10,6 @@ type Plugin interface {
 	Name() string
 	ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error
 	ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string)
-	ProcessPropertyName(mapping *configv1alpha1.FieldMapping, path []string) string
 }
 
 type Generator interface {

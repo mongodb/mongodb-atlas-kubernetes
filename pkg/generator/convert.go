@@ -282,23 +282,22 @@ func (g *Generator) convertPropertyOrBool(propertyName string, schema *openapi3.
 func (g *Generator) ConvertPropertyMap(propertyName string, schemaMap openapi3.Schemas, mapping *configv1alpha1.FieldMapping, extensionsSchema *openapi3.SchemaRef, path ...string) map[string]apiextensions.JSONSchemaProps {
 	m := make(map[string]apiextensions.JSONSchemaProps)
 	for key, schema := range schemaMap {
-		currentPath := append(path, key)
-		propName := key
-
-		for _, p := range g.plugins {
-			propName = p.ProcessPropertyName(mapping, currentPath)
-		}
-
-		ref := openapi3.NewSchemaRef("", openapi3.NewSchema())
-		result := g.ConvertProperty(propertyName, schema, mapping, ref, currentPath...)
+		childExtensionsSchema := openapi3.NewSchemaRef("", openapi3.NewSchema())
+		result := g.ConvertProperty(propertyName, schema, mapping, childExtensionsSchema, append(path, key)...)
 		if result == nil {
 			continue
+		}
+
+		propName := key
+		if result.ID != "" { // workaround for the fact that CRD props do not let us specify the name
+			propName = result.ID
+			result.ID = ""
 		}
 
 		if extensionsSchema.Value.Properties == nil {
 			extensionsSchema.Value.Properties = make(openapi3.Schemas)
 		}
-		extensionsSchema.Value.Properties[propName] = ref
+		extensionsSchema.Value.Properties[propName] = childExtensionsSchema
 
 		m[propName] = *result
 	}

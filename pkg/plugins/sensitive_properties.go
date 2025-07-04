@@ -26,6 +26,8 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alph
 		return
 	}
 
+	props.ID = path[len(path)-1] + "SecretRef"
+
 	if extensionsSchema.Value.Extensions == nil {
 		extensionsSchema.Value.Extensions = map[string]interface{}{}
 	}
@@ -57,14 +59,6 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alph
 	}
 
 	return
-}
-
-func (s *SensitiveProperties) ProcessPropertyName(mapping *configv1alpha1.FieldMapping, path []string) string {
-	if isSensitiveField(path, mapping) {
-		return path[len(path)-1] + "SecretRef"
-	}
-
-	return path[len(path)-1]
 }
 
 func isSensitiveField(path []string, mapping *configv1alpha1.FieldMapping) bool {
