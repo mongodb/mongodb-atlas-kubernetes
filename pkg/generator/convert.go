@@ -15,7 +15,6 @@ limitations under the License.
 package generator
 
 import (
-	"fmt"
 	"k8s.io/utils/ptr"
 	"strings"
 
@@ -129,16 +128,16 @@ func (g *Generator) ConvertProperty(propertyName string, schemaRef *openapi3.Sch
 		skipProperties = mapping.Filters.SkipProperties
 	}
 
-	schemaProps := schemaRef.Value
-	example := apiextensions.JSON(schemaProps.Example)
+	propertySchema := schemaRef.Value
+	example := apiextensions.JSON(propertySchema.Example)
 	props := &apiextensions.JSONSchemaProps{
 		//ID:               schemaProps.ID,
 		//Schema:           apiextensions.JSONSchemaURL(string(schemaRef.Ref.)),
 		//Ref:              ref,
-		Description: schemaProps.Description,
-		Type:        schemaProps.Type,
+		Description: propertySchema.Description,
+		Type:        propertySchema.Type,
 		//Format:      schemaProps.Format,
-		Title: schemaProps.Title,
+		Title: propertySchema.Title,
 		//Maximum:          schemaProps.Max,
 		//ExclusiveMaximum: schemaProps.ExclusiveMax,
 		//Minimum:          schemaProps.Min,
@@ -150,51 +149,23 @@ func (g *Generator) ConvertProperty(propertyName string, schemaRef *openapi3.Sch
 		//MaxItems:             castUInt64P(schemaProps.MaxItems),
 		//MinItems:             castUInt64(schemaProps.MinItems),
 		UniqueItems: false, // The field uniqueItems cannot be set to true.
-		MultipleOf:  schemaProps.MultipleOf,
+		MultipleOf:  propertySchema.MultipleOf,
 		//Enum:        enumJSON(schemaProps.Enum),
 		//MaxProperties:        castUInt64P(schemaProps.MaxProps),
 		//MinProperties:        castUInt64(schemaProps.MinProps),
-		Required:             filterSlice(schemaProps.Required, skipProperties),
-		Items:                g.convertPropertyOrArray(propertyName, schemaProps.Items, mapping, extensionsSchema, append(path, "[*]")),
-		AllOf:                g.convertPropertySlice(propertyName, schemaProps.AllOf, mapping, extensionsSchema, path),
-		OneOf:                g.convertPropertySlice(propertyName, schemaProps.OneOf, mapping, extensionsSchema, path),
-		AnyOf:                g.convertPropertySlice(propertyName, schemaProps.AnyOf, mapping, extensionsSchema, path),
-		Not:                  g.ConvertProperty(propertyName, schemaProps.Not, mapping, extensionsSchema, path...),
-		Properties:           g.ConvertPropertyMap(propertyName, schemaProps.Properties, mapping, extensionsSchema, path...),
-		AdditionalProperties: g.convertPropertyOrBool(propertyName, schemaProps.AdditionalProperties, mapping, extensionsSchema, path),
+		Required:             filterSlice(propertySchema.Required, skipProperties),
+		Items:                g.convertPropertyOrArray(propertyName, propertySchema.Items, mapping, extensionsSchema, append(path, "[*]")),
+		AllOf:                g.convertPropertySlice(propertyName, propertySchema.AllOf, mapping, extensionsSchema, path),
+		OneOf:                g.convertPropertySlice(propertyName, propertySchema.OneOf, mapping, extensionsSchema, path),
+		AnyOf:                g.convertPropertySlice(propertyName, propertySchema.AnyOf, mapping, extensionsSchema, path),
+		Not:                  g.ConvertProperty(propertyName, propertySchema.Not, mapping, extensionsSchema, path...),
+		Properties:           g.ConvertPropertyMap(propertyName, propertySchema.Properties, mapping, extensionsSchema, path...),
+		AdditionalProperties: g.convertPropertyOrBool(propertyName, propertySchema.AdditionalProperties, mapping, extensionsSchema, path),
 		Example:              &example,
 	}
 
-	if isSensitiveField(path, mapping) {
-		if extensionsSchema.Extensions == nil {
-			extensionsSchema.Extensions = map[string]interface{}{}
-		}
-
-		extensionsSchema.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
-			"gvr":              "secrets/v1",
-			"nameSelector":     ".name",
-			"propertySelector": ".key",
-		}
-
-		extensionsSchema.Extensions["x-openapi-mapping"] = map[string]interface{}{
-			"property": "." + path[len(path)-1],
-			"type":     schemaProps.Type,
-		}
-
-		props.Type = "object"
-		props.Description = fmt.Sprintf("SENSITIVE FIELD\n\nReference to a secret containing data for the %q field:\n\n%v", path[len(path)-1], schemaProps.Description)
-		defaultKey := apiextensions.JSON(".data." + path[len(path)-1])
-		props.Properties = map[string]apiextensions.JSONSchemaProps{
-			"name": {
-				Type:        "string",
-				Description: fmt.Sprintf(`Name of the secret containing the sensitive field value.`),
-			},
-			"key": {
-				Type:        "string",
-				Default:     &defaultKey,
-				Description: fmt.Sprintf(`Key of the secret data containing the sensitive field value, defaults to %q.`, path[len(path)-1]),
-			},
-		}
+	for _, p := range g.plugins {
+		p.ProcessProperty(g, mapping, props, propertySchema, extensionsSchema, path...)
 	}
 
 	if props.Type == "" && props.Items == nil && len(props.Properties) == 0 {
@@ -330,8 +301,8 @@ func (g *Generator) ConvertPropertyMap(propertyName string, schemaMap openapi3.S
 		currentPath := append(path, key)
 		propName := key
 
-		if isSensitiveField(append(path, key), mapping) {
-			propName = key + "SecretRef"
+		for _, p := range g.plugins {
+			propName = p.ProcessPropertyName(mapping, currentPath)
 		}
 
 		if extensionsSchema.Properties == nil {

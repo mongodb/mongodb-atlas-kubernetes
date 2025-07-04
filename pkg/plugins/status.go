@@ -24,7 +24,7 @@ func (s *StatusPlugin) Name() string {
 	return "parameters_plugin"
 }
 
-func (s *StatusPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
+func (s *StatusPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
 	if mapping.StatusMapping.Schema == "" {
 		return nil
 	}
@@ -40,9 +40,5 @@ func (s *StatusPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMap
 		s.crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mapping.MajorVersion] = *statusProps
 	}
 
-	return nil
-}
-
-func (s *StatusPlugin) ProcessProperty(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
 	return nil
 }

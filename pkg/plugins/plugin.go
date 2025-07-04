@@ -8,8 +8,8 @@ import (
 
 type Plugin interface {
 	Name() string
-	ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error
-	ProcessProperty(g Generator, path []string, props *apiextensions.JSONSchemaProps) error
+	ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error
+	ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema, extensionsSchema *openapi3.Schema, path ...string)
 	ProcessPropertyName(mapping *configv1alpha1.FieldMapping, path []string) string
 }
 

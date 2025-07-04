@@ -27,7 +27,7 @@ func (s *EntryPlugin) Name() string {
 	return "entry"
 }
 
-func (s *EntryPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
+func (s *EntryPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
 	var entrySchemaRef *openapi3.SchemaRef
 	switch {
 	case mapping.EntryMapping.Schema != "":

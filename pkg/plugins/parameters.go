@@ -24,7 +24,7 @@ func (s *ParametersPlugin) Name() string {
 	return "parameters"
 }
 
-func (s *ParametersPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
+func (s *ParametersPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
 	majorVersionSpec := s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion]
 
 	if mapping.ParametersMapping.FieldPath.Name != "" {
@@ -68,9 +68,5 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CR
 
 	s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = majorVersionSpec
 
-	return nil
-}
-
-func (s *ParametersPlugin) ProcessProperty(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
 	return nil
 }

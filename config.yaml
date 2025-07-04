@@ -238,11 +238,11 @@ spec:
         - majorVersion: v20241113
           openAPIRef:
             name: v20241113
-          parameters:
+          parameters: # POST parameters
             path:
               name: '/api/atlas/v2/groups/{groupId}/alertConfigs'
               verb: post
-          entry:
+          entry: # POST/PATCH schema
             schema: 'GroupAlertsConfig'
             filters:
               skipProperties:
@@ -262,7 +262,7 @@ spec:
                 - $.notifications[*].datadogApiKey
                 - $.notifications[*].microsoftTeamsWebhookUrl
                 - $.notifications[*].opsGenieApiKey
-          status:
+          status: # GET schema
             schema: 'GroupAlertsConfig'
             filters:
               skipProperties:

@@ -24,15 +24,11 @@ func (s *MajorVersionSpecPlugin) Name() string {
 	return "major_version"
 }
 
-func (s *MajorVersionSpecPlugin) ProcessMapping(g Generator, mapping configv1alpha1.CRDMapping, spec *openapi3.T) error {
+func (s *MajorVersionSpecPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
 	s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = apiextensions.JSONSchemaProps{
 		Type:        "object",
 		Description: fmt.Sprintf("The spec of the %v resource for version %v.", s.crd.Spec.Names.Singular, mapping.MajorVersion),
 		Properties:  map[string]apiextensions.JSONSchemaProps{},
 	}
-	return nil
-}
-
-func (s *MajorVersionSpecPlugin) ProcessProperty(g Generator, path []string, props *apiextensions.JSONSchemaProps) error {
 	return nil
 }

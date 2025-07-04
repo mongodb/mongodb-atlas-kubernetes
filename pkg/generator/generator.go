@@ -108,6 +108,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		plugins.NewParametersPlugin(crd),
 		plugins.NewEntryPlugin(crd),
 		plugins.NewStatusPlugin(crd),
+		plugins.NewSensitivePropertiesPlugin(),
 	}
 
 	for _, mapping := range g.config.Mappings {
@@ -122,7 +123,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		}
 
 		for _, p := range g.plugins {
-			if err := p.ProcessMapping(g, mapping, openApiSpec); err != nil {
+			if err := p.ProcessMapping(g, &mapping, openApiSpec); err != nil {
 				return nil, fmt.Errorf("error processing plugin %s: %w", p.Name(), err)
 			}
 		}
