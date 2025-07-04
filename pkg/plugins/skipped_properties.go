@@ -18,7 +18,7 @@ func (s *SkippedProperties) Name() string {
 	return "skipped_properties"
 }
 
-func (n *SkippedProperties) ProcessProperty(g Generator, mapping *configv1alpha1.FieldMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+func (n *SkippedProperties) ProcessProperty(g Generator, mapping *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
 	if isSkippedField(path, mapping) {
 		return nil
 	}
@@ -32,7 +32,7 @@ func (n *SkippedProperties) ProcessProperty(g Generator, mapping *configv1alpha1
 	return props
 }
 
-func isSkippedField(path []string, mapping *configv1alpha1.FieldMapping) bool {
+func isSkippedField(path []string, mapping *configv1alpha1.PropertyMapping) bool {
 	if mapping == nil {
 		return false
 	}

@@ -44,19 +44,19 @@ type CRDMapping struct {
 	OpenAPIRef        LocalObjectReference `json:"openAPIRef,omitempty"`
 	MajorVersion      string               `json:"majorVersion,omitempty"`
 	ParametersMapping ParametersMapping    `json:"parameters,omitempty"`
-	EntryMapping      FieldMapping         `json:"entry,omitempty"`
-	StatusMapping     FieldMapping         `json:"status,omitempty"`
+	EntryMapping      PropertyMapping      `json:"entry,omitempty"`
+	StatusMapping     PropertyMapping      `json:"status,omitempty"`
 	Extensions        []Extension          `json:"extensions,omitempty"`
 }
 
 type ParametersMapping struct {
-	FieldPath FieldPath `json:"path,omitempty"`
+	FieldPath PropertyPath `json:"path,omitempty"`
 }
 
-type FieldMapping struct {
-	Schema  string    `json:"schema,omitempty"`
-	Path    FieldPath `json:"path,omitempty"`
-	Filters Filters   `json:"filters,omitempty"`
+type PropertyMapping struct {
+	Schema  string       `json:"schema,omitempty"`
+	Path    PropertyPath `json:"path,omitempty"`
+	Filters Filters      `json:"filters,omitempty"`
 }
 
 type Extension struct {
@@ -77,7 +77,7 @@ type XKubernetesMapping struct {
 	Property         string   `json:"property,omitempty"`          // Single property to map to.
 }
 
-type FieldPath struct {
+type PropertyPath struct {
 	Name        string      `json:"name,omitempty"`
 	Verb        string      `json:"verb,omitempty"`
 	RequestBody RequestBody `json:"requestBody,omitempty"`
