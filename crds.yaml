@@ -4,120 +4,185 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: customroles.atlas.generated.mongodb.com
+  name: databaseusers.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
   names:
     categories:
     - atlas
-    kind: CustomRole
-    listKind: CustomRoleList
-    plural: customroles
+    kind: DatabaseUser
+    listKind: DatabaseUserList
+    plural: databaseusers
     shortNames:
-    - acr
-    singular: customrole
+    - adu
+    singular: databaseuser
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: A customrole, managed by the MongoDB Kubernetes Atlas Operator.
+        description: A databaseuser, managed by the MongoDB Kubernetes Atlas Operator.
         properties:
           spec:
             description: |-
-              Specification of the customrole supporting the following versions:
+              Specification of the databaseuser supporting the following versions:
 
               - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               v20250312:
-                description: The spec of the customrole resource for version v20250312.
+                description: The spec of the databaseuser resource for version v20250312.
                 properties:
                   entry:
-                    description: The entry fields of the customrole resource spec.
-                      These fields can be set for creating and updating customroles.
+                    description: The entry fields of the databaseuser resource spec.
+                      These fields can be set for creating and updating databaseusers.
                     properties:
-                      actions:
-                        description: List of the individual privilege actions that
-                          the role grants.
+                      awsIAMType:
+                        description: Human-readable label that indicates whether the
+                          new database user authenticates with the Amazon Web Services
+                          (AWS) Identity and Access Management (IAM) credentials associated
+                          with the user or the user's role.
+                        type: string
+                      databaseName:
+                        description: The database against which the database user
+                          authenticates. Database users must provide both a username
+                          and authentication database to log into MongoDB. If the
+                          user authenticates with AWS IAM, x.509, LDAP, or OIDC Workload
+                          this value should be `$external`. If the user authenticates
+                          with SCRAM-SHA or OIDC Workforce, this value should be `admin`.
+                        type: string
+                      deleteAfterDate:
+                        description: Date and time when MongoDB Cloud deletes the
+                          user. This parameter expresses its value in the ISO 8601
+                          timestamp format in UTC and can include the time zone designation.
+                          You must specify a future date that falls within one week
+                          of making the Application Programming Interface (API) request.
+                        type: string
+                      description:
+                        description: Description of this database user.
+                        type: string
+                      groupId:
+                        description: Unique 24-hexadecimal digit string that identifies
+                          the project.
+                        type: string
+                      labels:
+                        description: List that contains the key-value pairs for tagging
+                          and categorizing the MongoDB database user. The labels that
+                          you define do not appear in the console.
                         items:
-                          description: Privilege action that the role grants.
+                          description: Human-readable labels applied to this MongoDB
+                            Cloud component.
                           properties:
-                            action:
-                              description: Human-readable label that identifies the
-                                privilege action.
+                            key:
+                              description: Key applied to tag and categorize this
+                                component.
                               type: string
-                            resources:
-                              description: List of resources on which you grant the
-                                action.
-                              items:
-                                description: Namespace to which this database user
-                                  has access.
-                                properties:
-                                  cluster:
-                                    description: Flag that indicates whether to grant
-                                      the action on the cluster resource. If `true`,
-                                      MongoDB Cloud ignores the **actions.resources.collection**
-                                      and **actions.resources.db** parameters.
-                                    type: boolean
-                                  collection:
-                                    description: 'Human-readable label that identifies
-                                      the collection on which you grant the action
-                                      to one MongoDB user. If you don''t set this
-                                      parameter, you grant the action to all collections
-                                      in the database specified in the **actions.resources.db**
-                                      parameter. If you set `"actions.resources.cluster"
-                                      : true`, MongoDB Cloud ignores this parameter.'
-                                    type: string
-                                  db:
-                                    description: 'Human-readable label that identifies
-                                      the database on which you grant the action to
-                                      one MongoDB user. If you set `"actions.resources.cluster"
-                                      : true`, MongoDB Cloud ignores this parameter.'
-                                    type: string
-                                required:
-                                - cluster
-                                - collection
-                                - db
-                                title: Permitted Namespace
-                                type: object
-                              type: array
-                          required:
-                          - action
-                          title: Database Privilege Action
+                            value:
+                              description: Value set to the Key applied to tag and
+                                categorize this component.
+                              type: string
+                          title: Component Label
                           type: object
                         type: array
-                      inheritedRoles:
-                        description: List of the built-in roles that this custom role
-                          inherits.
+                      ldapAuthType:
+                        description: Part of the Lightweight Directory Access Protocol
+                          (LDAP) record that the database uses to authenticate this
+                          database user on the LDAP host.
+                        type: string
+                      oidcAuthType:
+                        description: Human-readable label that indicates whether the
+                          new database user or group authenticates with OIDC federated
+                          authentication. To create a federated authentication user,
+                          specify the value of USER in this field. To create a federated
+                          authentication group, specify the value of IDP_GROUP in
+                          this field.
+                        type: string
+                      password:
+                        description: Alphanumeric string that authenticates this database
+                          user against the database specified in `databaseName`. To
+                          authenticate with SCRAM-SHA, you must specify this parameter.
+                          This parameter doesn't appear in this response.
+                        type: string
+                      roles:
+                        description: List that provides the pairings of one role with
+                          one applicable database.
                         items:
-                          description: Role inherited from another context for this
-                            database user.
+                          description: Range of resources available to this database
+                            user.
                           properties:
-                            db:
-                              description: Human-readable label that identifies the
-                                database on which someone grants the action to one
-                                MongoDB user.
+                            collectionName:
+                              description: Collection on which this role applies.
                               type: string
-                            role:
-                              description: Human-readable label that identifies the
-                                role inherited. Set this value to `admin` for every
-                                role except `read` or `readWrite`.
+                            databaseName:
+                              description: Database to which the user is granted access
+                                privileges.
+                              type: string
+                            roleName:
+                              description: Human-readable label that identifies a
+                                group of privileges assigned to a database user. This
+                                value can either be a built-in role or a custom role.
                               type: string
                           required:
-                          - db
-                          - role
-                          title: Inherited Role
+                          - databaseName
+                          - roleName
+                          title: Database User Role
                           type: object
                         type: array
-                      roleName:
-                        description: Human-readable label that identifies the role
-                          for the request. This name must be unique for this custom
-                          role in this project.
+                      scopes:
+                        description: List that contains clusters, MongoDB Atlas Data
+                          Lakes, and MongoDB Atlas Streams Instances that this database
+                          user can access. If omitted, MongoDB Cloud grants the database
+                          user access to all the clusters, MongoDB Atlas Data Lakes,
+                          and MongoDB Atlas Streams Instances in the project.
+                        items:
+                          description: Range of resources available to this database
+                            user.
+                          properties:
+                            name:
+                              description: Human-readable label that identifies the
+                                cluster or MongoDB Atlas Data Lake that this database
+                                user can access.
+                              type: string
+                            type:
+                              description: Category of resource that this database
+                                user can access.
+                              type: string
+                          required:
+                          - name
+                          - type
+                          title: Database User Scope
+                          type: object
+                        type: array
+                      username:
+                        description: |
+                          Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
+
+                          | Authentication Method | Parameter Needed | Parameter Value | username Format |
+                          |---|---|---|---|
+                          | AWS IAM | awsIAMType | ROLE | <abbr title="Amazon Resource Name">ARN</abbr> |
+                          | AWS IAM | awsIAMType | USER | <abbr title="Amazon Resource Name">ARN</abbr> |
+                          | x.509 | x509Type | CUSTOMER | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+                          | x.509 | x509Type | MANAGED | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+                          | LDAP | ldapAuthType | USER | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+                          | LDAP | ldapAuthType | GROUP | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+                          | OIDC Workforce | oidcAuthType | IDP_GROUP | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP group name |
+                          | OIDC Workload | oidcAuthType | USER | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP user name |
+                          | SCRAM-SHA | awsIAMType, x509Type, ldapAuthType, oidcAuthType | NONE | Alphanumeric string |
+                        type: string
+                      x509Type:
+                        description: |-
+                          X.509 method that MongoDB Cloud uses to authenticate the database user.
+
+                          - For application-managed X.509, specify `MANAGED`.
+                          - For self-managed X.509, specify `CUSTOMER`.
+
+                          Users created with the `CUSTOMER` method require a Common Name (CN) in the **username** parameter. You must create externally authenticated users on the `$external` database.
                         type: string
                     required:
-                    - roleName
+                    - databaseName
+                    - groupId
+                    - username
                     type: object
                   groupId:
                     description: |-
@@ -134,7 +199,7 @@ spec:
                 type: object
             type: object
           status:
-            description: 'Most recently observed read-only status of the customrole
+            description: 'Most recently observed read-only status of the databaseuser
               for the specified resource version. This data may not be up to date
               and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
@@ -3181,40 +3246,39 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: usercustomdbroles.atlas.generated.mongodb.com
+  name: customroles.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
   names:
     categories:
     - atlas
-    kind: UserCustomDBRole
-    listKind: UserCustomDBRoleList
-    plural: usercustomdbroles
+    kind: CustomRole
+    listKind: CustomRoleList
+    plural: customroles
     shortNames:
     - arole
-    singular: usercustomdbrole
+    singular: customrole
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: A usercustomdbrole, managed by the MongoDB Kubernetes Atlas Operator.
+        description: A customrole, managed by the MongoDB Kubernetes Atlas Operator.
         properties:
           spec:
             description: |-
-              Specification of the usercustomdbrole supporting the following versions:
+              Specification of the customrole supporting the following versions:
 
               - v20231115
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               v20231115:
-                description: The spec of the usercustomdbrole resource for version
-                  v20231115.
+                description: The spec of the customrole resource for version v20231115.
                 properties:
                   entry:
-                    description: The entry fields of the usercustomdbrole resource
-                      spec. These fields can be set for creating and updating usercustomdbroles.
+                    description: The entry fields of the customrole resource spec.
+                      These fields can be set for creating and updating customroles.
                     properties:
                       actions:
                         description: List of the individual privilege actions that
@@ -3312,7 +3376,7 @@ spec:
                 type: object
             type: object
           status:
-            description: 'Most recently observed read-only status of the usercustomdbrole
+            description: 'Most recently observed read-only status of the customrole
               for the specified resource version. This data may not be up to date
               and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:

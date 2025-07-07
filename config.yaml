@@ -28,22 +28,22 @@ spec:
   crd:
     - gvk:
         version: v1
-        kind: CustomRole
+        kind: DatabaseUser
         group: atlas.generated.mongodb.com
       categories:
         - atlas
       shortNames:
-        - acr
+        - adu
       mappings:
         - majorVersion: v20250312
           openAPIRef:
             name: v20250312
           parameters:
             path:
-              name: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
+              name: '/api/atlas/v2/groups/{groupId}/databaseUsers'
               verb: post
           entry:
-            schema: 'UserCustomDBRole'
+            schema: 'CloudDatabaseUser'
             filters:
               readWriteOnly: true
 
@@ -356,7 +356,7 @@ spec:
 
     - gvk:
         version: v1
-        kind: UserCustomDBRole
+        kind: CustomRole
         group: atlas.generated.mongodb.com
       categories:
         - atlas
