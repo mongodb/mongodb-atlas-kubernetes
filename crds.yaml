@@ -264,6 +264,323 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: backupschedules.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: BackupSchedule
+    listKind: BackupScheduleList
+    plural: backupschedules
+    shortNames:
+    - abs
+    singular: backupschedule
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A backupschedule, managed by the MongoDB Kubernetes Atlas Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the backupschedule supporting the following versions:
+
+              - v20250312
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20250312:
+                description: The spec of the backupschedule resource for version v20250312.
+                properties:
+                  clusterName:
+                    description: Human-readable label that identifies the cluster.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: clusterName cannot be modified after creation
+                      rule: self == oldSelf
+                  entry:
+                    description: The entry fields of the backupschedule resource spec.
+                      These fields can be set for creating and updating backupschedules.
+                    properties:
+                      autoExportEnabled:
+                        description: Flag that indicates whether MongoDB Cloud automatically
+                          exports Cloud Backup Snapshots to the Export Bucket.
+                        type: boolean
+                      copySettings:
+                        description: List that contains a document for each copy setting
+                          item in the desired backup policy.
+                        items:
+                          description: Copy setting item in the desired backup policy.
+                          properties:
+                            cloudProvider:
+                              description: Human-readable label that identifies the
+                                cloud provider that stores the snapshot copy.
+                              type: string
+                            frequencies:
+                              description: List that describes which types of snapshots
+                                to copy.
+                              items:
+                                type: string
+                              type: array
+                            regionName:
+                              description: Target region to copy snapshots belonging
+                                to zoneId. Please supply the 'Atlas Region'.
+                              type: string
+                            shouldCopyOplogs:
+                              description: Flag that indicates whether to copy the
+                                oplogs to the target region. You can use the oplogs
+                                to perform point-in-time restores.
+                              type: boolean
+                            zoneId:
+                              description: Unique 24-hexadecimal digit string that
+                                identifies the zone in a cluster. For global clusters,
+                                there can be multiple zones to choose from. For sharded
+                                clusters and replica set clusters, there is only one
+                                zone in the cluster. To find the Zone Id, do a GET
+                                request to Return One Cluster from One Project and
+                                consult the replicationSpecs array.
+                              example: 32b6e34b3d91647abb20e7b8
+                              type: string
+                          required:
+                          - zoneId
+                          type: object
+                        type: array
+                      deleteCopiedBackups:
+                        description: List that contains a document for each deleted
+                          copy setting whose backup copies you want to delete.
+                        items:
+                          description: Deleted copy setting whose backup copies need
+                            to also be deleted.
+                          properties:
+                            cloudProvider:
+                              description: Human-readable label that identifies the
+                                cloud provider for the deleted copy setting whose
+                                backup copies you want to delete.
+                              type: string
+                            regionName:
+                              description: Target region for the deleted copy setting
+                                whose backup copies you want to delete. Please supply
+                                the 'Atlas Region'.
+                              type: string
+                            zoneId:
+                              description: Unique 24-hexadecimal digit string that
+                                identifies the zone in a cluster. For global clusters,
+                                there can be multiple zones to choose from. For sharded
+                                clusters and replica set clusters, there is only one
+                                zone in the cluster. To find the Zone Id, do a GET
+                                request to Return One Cluster from One Project and
+                                consult the replicationSpecs array.
+                              example: 32b6e34b3d91647abb20e7b8
+                              type: string
+                          type: object
+                        type: array
+                      export:
+                        description: Policy for automatically exporting Cloud Backup
+                          Snapshots.
+                        properties:
+                          exportBucketId:
+                            description: Unique 24-hexadecimal character string that
+                              identifies the Export Bucket.
+                            example: 32b6e34b3d91647abb20e7b8
+                            type: string
+                          frequencyType:
+                            description: Human-readable label that indicates the rate
+                              at which the export policy item occurs.
+                            type: string
+                        title: export
+                        type: object
+                      extraRetentionSettings:
+                        description: List that contains a document for each extra
+                          retention setting item in the desired backup policy.
+                        items:
+                          description: extra retention setting item in the desired
+                            backup policy.
+                          properties:
+                            frequencyType:
+                              description: The frequency type for the extra retention
+                                settings for the cluster.
+                              type: string
+                            retentionDays:
+                              description: The number of extra retention days for
+                                the cluster.
+                              type: integer
+                          type: object
+                        type: array
+                      policies:
+                        description: Rules set for this backup schedule.
+                        items:
+                          description: List that contains a document for each backup
+                            policy item in the desired backup policy.
+                          properties:
+                            id:
+                              description: Unique 24-hexadecimal digit string that
+                                identifies this backup policy.
+                              example: 32b6e34b3d91647abb20e7b8
+                              type: string
+                            policyItems:
+                              description: List that contains the specifications for
+                                one policy.
+                              items:
+                                description: Specifications for one policy.
+                                properties:
+                                  frequencyInterval:
+                                    description: |-
+                                      Number that indicates the frequency interval for a set of Snapshots. A value of `1` specifies the first instance of the corresponding `frequencyType`.
+
+                                      - In a yearly policy item, `1` indicates that the yearly Snapshot occurs on the first day of January and `12` indicates the first day of December.
+
+                                      - In a monthly policy item, `1` indicates that the monthly Snapshot occurs on the first day of the month and `40` indicates the last day of the month.
+
+                                      - In a weekly policy item, `1` indicates that the weekly Snapshot occurs on Monday and `7` indicates Sunday.
+
+                                      - In an hourly policy item, you can set the frequency interval to `1`, `2`, `4`, `6`, `8`, or `12`. For hourly policy items for NVMe clusters, MongoDB Cloud accepts only `12` as the frequency interval value.
+
+                                       MongoDB Cloud ignores this setting for non-hourly policy items in Backup Compliance Policy settings.
+                                    type: integer
+                                  frequencyType:
+                                    description: Human-readable label that identifies
+                                      the frequency type associated with the backup
+                                      policy.
+                                    type: string
+                                  retentionUnit:
+                                    description: Unit of time in which MongoDB Cloud
+                                      measures Snapshot retention.
+                                    type: string
+                                  retentionValue:
+                                    description: |-
+                                      Duration in days, weeks, months, or years that MongoDB Cloud retains the Snapshot. For less frequent policy items, MongoDB Cloud requires that you specify a value greater than or equal to the value specified for more frequent policy items.
+
+                                      For example: If the hourly policy item specifies a retention of two days, you must specify two days or greater for the retention of the weekly policy item.
+                                    type: integer
+                                required:
+                                - frequencyInterval
+                                - frequencyType
+                                - retentionUnit
+                                - retentionValue
+                                type: object
+                              type: array
+                          type: object
+                        type: array
+                      referenceHourOfDay:
+                        description: Hour of day in Coordinated Universal Time (UTC)
+                          that represents when MongoDB Cloud takes the Snapshot.
+                        type: integer
+                      referenceMinuteOfHour:
+                        description: Minute of the **referenceHourOfDay** that represents
+                          when MongoDB Cloud takes the Snapshot.
+                        type: integer
+                      restoreWindowDays:
+                        description: Number of previous days that you can restore
+                          back to with Continuous Cloud Backup accuracy. You must
+                          specify a positive, non-zero integer. This parameter applies
+                          to continuous Cloud Backups only.
+                        type: integer
+                      updateSnapshots:
+                        description: Flag that indicates whether to apply the retention
+                          changes in the updated backup policy to Snapshots that MongoDB
+                          Cloud took previously.
+                        type: boolean
+                      useOrgAndGroupNamesInExportPrefix:
+                        description: Flag that indicates whether to use organization
+                          and project names instead of organization and project UUIDs
+                          in the path to the metadata files that MongoDB Cloud uploads
+                          to your Export Bucket.
+                        type: boolean
+                    type: object
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
+                - clusterName
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the backupschedule
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20250312:
+                description: The last observed Atlas state of the backupschedule resource
+                  for version v20250312.
+                properties:
+                  clusterId:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the cluster with the Snapshot you want to return.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                  clusterName:
+                    description: Human-readable label that identifies the cluster
+                      with the Snapshot you want to return.
+                    type: string
+                  nextSnapshot:
+                    description: Date and time when MongoDB Cloud takes the next Snapshot.
+                      This parameter expresses its value in the ISO 8601 timestamp
+                      format in UTC.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: datafederations.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com

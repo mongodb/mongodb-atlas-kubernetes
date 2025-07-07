@@ -53,6 +53,33 @@ spec:
 
     - gvk:
         version: v1
+        kind: BackupSchedule
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - abs
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup/schedule'
+              verb: patch
+          entry:
+            schema: 'DiskBackupSnapshotSchedule20240805'
+            filters:
+              readWriteOnly: true
+          status:
+            schema: 'DiskBackupSnapshotSchedule20240805'
+            filters:
+              readOnly: true
+              skipProperties:
+                - $.links
+
+    - gvk:
+        version: v1
         kind: DataFederation
         group: atlas.generated.mongodb.com
       categories:
