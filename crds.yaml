@@ -838,9 +838,6 @@ spec:
                       this team.
                     example: 32b6e34b3d91647abb20e7b8
                     type: string
-                required:
-                - name
-                - usernames
                 type: object
             type: object
         type: object

@@ -40,11 +40,7 @@ spec:
           status:
             schema: 'DataLakeTenant'
             filters:
-              skipProperties:
-                - $.cloudProviderConfig
-                - $.dataProcessRegion
-                - $.name
-                - $.storage
+              readOnly: true
 
     - gvk:
         version: v1
@@ -148,13 +144,14 @@ spec:
           status:
             schema: "Group"
             filters:
+              readOnly: true
               skipProperties:
                 - $.links
-                - $.name
-                - $.orgId
-                - $.regionUsageRestrictions
-                - $.tags
-                - $.withDefaultAlertsSettings
+#                - $.name
+#                - $.orgId
+#                - $.regionUsageRestrictions
+#                - $.tags
+#                - $.withDefaultAlertsSettings
 
     - gvk:
         version: v1
