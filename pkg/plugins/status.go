@@ -21,7 +21,7 @@ func NewStatusPlugin(crd *apiextensions.CustomResourceDefinition) *StatusPlugin 
 }
 
 func (s *StatusPlugin) Name() string {
-	return "parameters_plugin"
+	return "status"
 }
 
 func (s *StatusPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {

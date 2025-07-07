@@ -2,6 +2,19 @@ kind: Config
 apiVersion: atlas2crd.mongodb.com/v1alpha1
 
 spec:
+  pluginSets:
+    - name: atlas
+      default: true
+      plugins:
+        - major_version
+        - parameters
+        - entry
+        - status
+        - sensitive_properties
+        - skipped_properties
+        - read_only_properties
+        - read_write_only_properties
+
   openapi:
     - name: v20250312
       path: atlas-api-transformed-v20250312002.0.0.yaml
@@ -13,6 +26,31 @@ spec:
       path: atlas-api-transformed-v20241113.yaml
 
   crd:
+    - gvk:
+        version: v1
+        kind: BackupCompliancePolicy
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - abcp
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/backupCompliancePolicy'
+              verb: put
+          entry:
+            schema: 'DataProtectionSettings20231001'
+            filters:
+              readWriteOnly: true
+          status:
+            schema: 'DataProtectionSettings20231001'
+            filters:
+              readOnly: true
+
     - gvk:
         version: v1
         kind: DataFederation

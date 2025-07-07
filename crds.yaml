@@ -4,6 +4,266 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: backupcompliancepolicies.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: BackupCompliancePolicy
+    listKind: BackupCompliancePolicyList
+    plural: backupcompliancepolicies
+    shortNames:
+    - abcp
+    singular: backupcompliancepolicy
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A backupcompliancepolicy, managed by the MongoDB Kubernetes Atlas
+          Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the backupcompliancepolicy supporting the following versions:
+
+              - v20250312
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20250312:
+                description: The spec of the backupcompliancepolicy resource for version
+                  v20250312.
+                properties:
+                  entry:
+                    description: The entry fields of the backupcompliancepolicy resource
+                      spec. These fields can be set for creating and updating backupcompliancepolicies.
+                    properties:
+                      authorizedEmail:
+                        description: Email address of the user who authorized to update
+                          the Backup Compliance Policy  settings.
+                        type: string
+                      authorizedUserFirstName:
+                        description: First name of the user who authorized to updated
+                          the Backup Compliance Policy  settings.
+                        type: string
+                      authorizedUserLastName:
+                        description: Last name of the user who authorized to updated
+                          the Backup Compliance Policy  settings.
+                        type: string
+                      copyProtectionEnabled:
+                        description: Flag that indicates whether to prevent cluster
+                          users from deleting backups copied to other regions, even
+                          if those additional snapshot regions are removed. If unspecified,
+                          this value defaults to false.
+                        type: boolean
+                      encryptionAtRestEnabled:
+                        description: Flag that indicates whether Encryption at Rest
+                          using Customer Key  Management is required for all clusters
+                          with a Backup Compliance Policy. If unspecified, this value
+                          defaults to false.
+                        type: boolean
+                      onDemandPolicyItem:
+                        description: Specifications for on-demand policy.
+                        properties:
+                          frequencyInterval:
+                            description: Number that indicates the frequency interval
+                              for a set of snapshots. MongoDB Cloud ignores this setting
+                              for non-hourly policy items in Backup Compliance Policy
+                              settings.
+                            type: integer
+                          frequencyType:
+                            description: Human-readable label that identifies the
+                              frequency type associated with the backup policy.
+                            type: string
+                          retentionUnit:
+                            description: Unit of time in which MongoDB Cloud measures
+                              snapshot retention.
+                            type: string
+                          retentionValue:
+                            description: |-
+                              Duration in days, weeks, months, or years that MongoDB Cloud retains the snapshot. For less frequent policy items, MongoDB Cloud requires that you specify a value greater than or equal to the value specified for more frequent policy items.
+
+                              For example: If the hourly policy item specifies a retention of two days, you must specify two days or greater for the retention of the weekly policy item.
+                            type: integer
+                        required:
+                        - frequencyInterval
+                        - frequencyType
+                        - retentionUnit
+                        - retentionValue
+                        type: object
+                      pitEnabled:
+                        description: Flag that indicates whether the cluster uses
+                          Continuous Cloud Backups with a Backup Compliance Policy.
+                          If unspecified, this value defaults to false.
+                        type: boolean
+                      projectId:
+                        description: Unique 24-hexadecimal digit string that identifies
+                          the project for the Backup Compliance Policy.
+                        example: 32b6e34b3d91647abb20e7b8
+                        type: string
+                      restoreWindowDays:
+                        description: Number of previous days that you can restore
+                          back to with Continuous Cloud Backup with a Backup Compliance
+                          Policy. You must specify a positive, non-zero integer, and
+                          the maximum retention window can't exceed the hourly retention
+                          time. This parameter applies only to Continuous Cloud Backups
+                          with a Backup Compliance Policy.
+                        type: integer
+                      scheduledPolicyItems:
+                        description: List that contains the specifications for one
+                          scheduled policy.
+                        items:
+                          description: Specifications for scheduled policy.
+                          properties:
+                            frequencyInterval:
+                              description: |-
+                                Number that indicates the frequency interval for a set of Snapshots. A value of `1` specifies the first instance of the corresponding `frequencyType`.
+
+                                - In a yearly policy item, `1` indicates that the yearly Snapshot occurs on the first day of January and `12` indicates the first day of December.
+
+                                - In a monthly policy item, `1` indicates that the monthly Snapshot occurs on the first day of the month and `40` indicates the last day of the month.
+
+                                - In a weekly policy item, `1` indicates that the weekly Snapshot occurs on Monday and `7` indicates Sunday.
+
+                                - In an hourly policy item, you can set the frequency interval to `1`, `2`, `4`, `6`, `8`, or `12`. For hourly policy items for NVMe clusters, MongoDB Cloud accepts only `12` as the frequency interval value.
+
+                                 MongoDB Cloud ignores this setting for non-hourly policy items in Backup Compliance Policy settings.
+                              type: integer
+                            frequencyType:
+                              description: Human-readable label that identifies the
+                                frequency type associated with the backup policy.
+                              type: string
+                            retentionUnit:
+                              description: Unit of time in which MongoDB Cloud measures
+                                Snapshot retention.
+                              type: string
+                            retentionValue:
+                              description: |-
+                                Duration in days, weeks, months, or years that MongoDB Cloud retains the Snapshot. For less frequent policy items, MongoDB Cloud requires that you specify a value greater than or equal to the value specified for more frequent policy items.
+
+                                For example: If the hourly policy item specifies a retention of two days, you must specify two days or greater for the retention of the weekly policy item.
+                              type: integer
+                          required:
+                          - frequencyInterval
+                          - frequencyType
+                          - retentionUnit
+                          - retentionValue
+                          type: object
+                        type: array
+                    required:
+                    - authorizedEmail
+                    - authorizedUserFirstName
+                    - authorizedUserLastName
+                    type: object
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                  overwriteBackupPolicies:
+                    description: Flag that indicates whether to overwrite non complying
+                      backup policies with the new data protection settings or not.
+                    type: boolean
+                    x-kubernetes-validations:
+                    - message: overwriteBackupPolicies cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
+                - overwriteBackupPolicies
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the backupcompliancepolicy
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20250312:
+                description: The last observed Atlas state of the backupcompliancepolicy
+                  resource for version v20250312.
+                properties:
+                  deletable:
+                    description: Flag that indicates whether the Backup Compliance
+                      Policy is allowed to be disabled. It is default to false and
+                      a support ticket needs to be filed to request setting to true.
+                    type: boolean
+                  state:
+                    description: Label that indicates the state of the Backup Compliance
+                      Policy settings. MongoDB Cloud ignores this setting when you
+                      enable or update the Backup Compliance Policy settings.
+                    type: string
+                  updatedDate:
+                    description: ISO 8601 timestamp format in UTC that indicates when
+                      the user updated the Data Protection Policy settings. MongoDB
+                      Cloud ignores this setting when you enable or update the Backup
+                      Compliance Policy settings.
+                    type: string
+                  updatedUser:
+                    description: Email address that identifies the user who updated
+                      the Backup Compliance Policy settings. MongoDB Cloud ignores
+                      this email setting when you enable or update the Backup Compliance
+                      Policy settings.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: datafederations.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
