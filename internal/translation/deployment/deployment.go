@@ -42,6 +42,7 @@ type DeploymentService interface {
 	CreateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
 	UpdateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
 	DeleteDeployment(ctx context.Context, deployment Deployment) error
+	UpgradeToDedicated(ctx context.Context, deployment Deployment) (Deployment, error)
 	ClusterWithProcessArgs(ctx context.Context, cluster *Cluster) error
 	UpdateProcessArgs(ctx context.Context, cluster *Cluster) error
 }
@@ -333,6 +334,24 @@ func (ds *ProductionAtlasDeployments) DeleteDeployment(ctx context.Context, depl
 	}
 
 	return nil
+}
+
+func (ds *ProductionAtlasDeployments) UpgradeToDedicated(ctx context.Context, deployment Deployment) (Deployment, error) {
+	switch d := deployment.(type) {
+	case *Cluster:
+		return nil, errors.New("upgrade from shared to dedicated is not supported")
+	case *Serverless:
+		return nil, errors.New("upgrade from serverless to dedicated is not supported")
+	case *Flex:
+		flex, _, err := ds.flexAPI.UpgradeFlexCluster(ctx, deployment.GetProjectID(), flexUpgradeToAtlas(d)).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		return flexFromAtlas(flex), nil
+	}
+
+	return nil, errors.New("unable to upgrade deployment: unknown type")
 }
 
 func (ds *ProductionAtlasDeployments) ClusterWithProcessArgs(ctx context.Context, cluster *Cluster) error {

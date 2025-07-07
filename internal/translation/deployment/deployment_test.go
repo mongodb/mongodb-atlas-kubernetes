@@ -970,6 +970,100 @@ func TestUpdateProcessArgs(t *testing.T) {
 	}
 }
 
+func TestUpgradeCluster(t *testing.T) {
+	tests := map[string]struct {
+		deployment Deployment
+		apiMocker  func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi)
+		result     Deployment
+		err        error
+	}{
+		"should fail to upgrade shared cluster in atlas": {
+			deployment: &Cluster{},
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
+				return clusterAPI, serverlessInstanceAPI, flexAPI
+			},
+			err: errors.New("upgrade from shared to dedicated is not supported"),
+		},
+		"should fail to upgrade serverless instance in atlas": {
+			deployment: &Serverless{},
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
+				return clusterAPI, serverlessInstanceAPI, flexAPI
+			},
+			err: errors.New("upgrade from serverless to dedicated is not supported"),
+		},
+		"should fail to upgrade flex instance in atlas": {
+			deployment: &Flex{
+				ProjectID: "project-id",
+				customResource: &akov2.AtlasDeployment{
+					Spec: akov2.AtlasDeploymentSpec{
+						DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
+					},
+				},
+			},
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
+				flexAPI.EXPECT().UpgradeFlexCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.AtlasTenantClusterUpgradeRequest20240805")).
+					Return(admin.UpgradeFlexClusterApiRequest{ApiService: flexAPI})
+				flexAPI.EXPECT().UpgradeFlexClusterExecute(mock.AnythingOfType("admin.UpgradeFlexClusterApiRequest")).
+					Return(nil, &http.Response{}, errors.New("failed to upgrade flex cluster in atlas"))
+				return clusterAPI, serverlessInstanceAPI, flexAPI
+			},
+			err: errors.New("failed to upgrade flex cluster in atlas"),
+		},
+		"should upgrade flex instance in atlas": {
+			deployment: &Flex{
+				ProjectID: "project-id",
+				customResource: &akov2.AtlasDeployment{
+					Spec: akov2.AtlasDeploymentSpec{
+						DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
+					},
+				},
+			},
+			apiMocker: func() (admin.ClustersApi, admin.ServerlessInstancesApi, admin.FlexClustersApi) {
+				clusterAPI := mockadmin.NewClustersApi(t)
+				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
+				flexAPI := mockadmin.NewFlexClustersApi(t)
+				flexAPI.EXPECT().UpgradeFlexCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.AtlasTenantClusterUpgradeRequest20240805")).
+					Return(admin.UpgradeFlexClusterApiRequest{ApiService: flexAPI})
+				flexAPI.EXPECT().UpgradeFlexClusterExecute(mock.AnythingOfType("admin.UpgradeFlexClusterApiRequest")).
+					Return(
+						&admin.FlexClusterDescription20241113{GroupId: pointer.MakePtr("project-id")},
+						&http.Response{},
+						nil,
+					)
+				return clusterAPI, serverlessInstanceAPI, flexAPI
+			},
+			result: &Flex{
+				FlexSpec: &akov2.FlexSpec{
+					Tags:             []*akov2.TagSpec{},
+					ProviderSettings: &akov2.FlexProviderSettings{},
+				},
+				ProjectID:  "project-id",
+				Connection: &status.ConnectionStrings{},
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			clusterAPI, serverlessInstanceAPI, flexAPI := tt.apiMocker()
+			service := NewAtlasDeployments(clusterAPI, serverlessInstanceAPI, nil, flexAPI, false)
+
+			result, err := service.UpgradeToDedicated(context.Background(), tt.deployment)
+			require.Equal(t, tt.err, err)
+			assert.Equal(t, tt.result, result)
+		})
+	}
+}
+
 func atlasAPIError(code string) *admin.GenericOpenAPIError {
 	err := admin.GenericOpenAPIError{}
 	err.SetModel(admin.ApiError{ErrorCode: code})
