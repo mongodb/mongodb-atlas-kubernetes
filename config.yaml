@@ -94,10 +94,9 @@ spec:
           status:
             schema: 'Team'
             filters:
+              readOnly: true
               skipProperties:
                 - $.links
-                - $.name
-                - $.usernames
 
     - gvk:
         version: v1

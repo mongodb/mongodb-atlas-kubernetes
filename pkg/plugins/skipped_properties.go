@@ -4,6 +4,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"slices"
 )
 
 type SkippedProperties struct {
@@ -27,7 +28,23 @@ func (n *SkippedProperties) ProcessProperty(g Generator, mapping *configv1alpha1
 		return props
 	}
 
-	props.Required = filterSlice(propertySchema.Required, mapping.Filters.SkipProperties)
+	requiredPaths := make(map[string]string)
+	for _, r := range propertySchema.Required {
+		requiredPaths[jsonPath(append(path, r))] = r
+	}
+
+	for _, s := range mapping.Filters.SkipProperties {
+		if _, ok := requiredPaths[s]; ok {
+			delete(requiredPaths, s)
+		}
+	}
+
+	props.Required = make([]string, 0, len(props.Required))
+	for _, r := range requiredPaths {
+		props.Required = append(props.Required, r)
+	}
+
+	slices.Sort(props.Required)
 
 	return props
 }
@@ -48,10 +65,10 @@ func isSkippedField(path []string, mapping *configv1alpha1.PropertyMapping) bool
 	return false
 }
 
-func filterSlice(source, by []string) []string {
+func removeJsonPathEntries(source, entries []string) []string {
 	filtered := []string{}
 	for _, s := range source {
-		if !contains(by, "$."+s) {
+		if !contains(entries, "$."+s) {
 			filtered = append(filtered, s)
 		}
 	}
