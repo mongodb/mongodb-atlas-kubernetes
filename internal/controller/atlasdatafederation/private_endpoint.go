@@ -23,7 +23,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 )
 
-func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, service datafederation.DatafederationPrivateEndpointService, project *akov2.AtlasProject, dataFederation *akov2.AtlasDataFederation) workflow.DeprecatedResult {
+func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, service datafederation.DatafederationPrivateEndpointService,
+	project *akov2.AtlasProject, dataFederation *akov2.AtlasDataFederation) workflow.DeprecatedResult {
 	projectID := project.ID()
 	fromAtlas, err := service.List(ctx.Context, projectID)
 	if err != nil {

@@ -73,7 +73,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	dataFederation := &akov2.AtlasDataFederation{}
 	result := customresource.PrepareResource(context, r.Client, req, dataFederation, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(dataFederation) {
@@ -83,10 +83,10 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("failed to remove finalizer", "error", err)
-				return result.ReconcileResult(), nil
+				return result.ReconcileResult()
 			}
 		}
-		return workflow.OK().ReconcileResult(), nil
+		return workflow.OK().ReconcileResult()
 	}
 
 	conditions := akov2.InitCondition(dataFederation, api.FalseCondition(api.ReadyType))
@@ -97,49 +97,49 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, dataFederation, r.Log)
 	if !resourceVersionIsValid.IsOk() {
 		r.Log.Debugf("AtlasDataFederation validation result: %v", resourceVersionIsValid)
-		return resourceVersionIsValid.ReconcileResult(), nil
+		return resourceVersionIsValid.ReconcileResult()
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(dataFederation) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasDataFederation is not supported by Atlas for government")).
 			WithoutRetry()
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	project := &akov2.AtlasProject{}
 	if result := r.readProjectResource(context, dataFederation, project); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	connectionConfig, err := reconciler.GetConnectionConfig(ctx.Context, r.Client, project.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 	clientSet, err := r.AtlasProvider.SdkClientSet(ctx.Context, connectionConfig.Credentials, log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 	endpointService := datafederation.NewDatafederationPrivateEndpoint(clientSet.SdkClient20250312002.DataFederationApi)
 	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312002.DataFederationApi)
 
 	if result = r.ensureDataFederation(ctx, project, dataFederation, dataFederationService); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if result = r.ensurePrivateEndpoints(ctx, endpointService, project, dataFederation); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if result = r.ensureConnectionSecrets(ctx, dataFederationService, project, dataFederation); !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if dataFederation.GetDeletionTimestamp().IsZero() {
@@ -147,19 +147,19 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 			err = r.Client.Get(context, kube.ObjectKeyFromObject(dataFederation), dataFederation)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
-				return result.ReconcileResult(), nil
+				return result.ReconcileResult()
 			}
 			customresource.SetFinalizer(dataFederation, customresource.FinalizerLabel)
 			if err = r.Client.Update(context, dataFederation); err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("failed to add finalizer", "error", err)
-				return result.ReconcileResult(), nil
+				return result.ReconcileResult()
 			}
 		}
 	}
 
 	if !dataFederation.GetDeletionTimestamp().IsZero() {
-		return r.handleDelete(ctx, log, dataFederation, project, dataFederationService).ReconcileResult(), nil
+		return r.handleDelete(ctx, log, dataFederation, project, dataFederationService).ReconcileResult()
 	}
 
 	err = customresource.ApplyLastConfigApplied(context, dataFederation, r.Client)
@@ -168,12 +168,12 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		log.Error(result.GetMessage())
 
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	ctx.SetConditionTrue(api.DataFederationReadyType)
 	ctx.SetConditionTrue(api.ReadyType)
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log *zap.SugaredLogger, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject, service datafederation.DataFederationService) workflow.DeprecatedResult {
