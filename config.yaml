@@ -28,6 +28,27 @@ spec:
   crd:
     - gvk:
         version: v1
+        kind: CustomRole
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - acr
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
+              verb: post
+          entry:
+            schema: 'UserCustomDBRole'
+            filters:
+              readWriteOnly: true
+
+    - gvk:
+        version: v1
         kind: BackupCompliancePolicy
         group: atlas.generated.mongodb.com
       categories:

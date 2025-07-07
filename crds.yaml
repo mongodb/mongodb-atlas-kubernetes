@@ -4,6 +4,193 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: customroles.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: CustomRole
+    listKind: CustomRoleList
+    plural: customroles
+    shortNames:
+    - acr
+    singular: customrole
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A customrole, managed by the MongoDB Kubernetes Atlas Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the customrole supporting the following versions:
+
+              - v20250312
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20250312:
+                description: The spec of the customrole resource for version v20250312.
+                properties:
+                  entry:
+                    description: The entry fields of the customrole resource spec.
+                      These fields can be set for creating and updating customroles.
+                    properties:
+                      actions:
+                        description: List of the individual privilege actions that
+                          the role grants.
+                        items:
+                          description: Privilege action that the role grants.
+                          properties:
+                            action:
+                              description: Human-readable label that identifies the
+                                privilege action.
+                              type: string
+                            resources:
+                              description: List of resources on which you grant the
+                                action.
+                              items:
+                                description: Namespace to which this database user
+                                  has access.
+                                properties:
+                                  cluster:
+                                    description: Flag that indicates whether to grant
+                                      the action on the cluster resource. If `true`,
+                                      MongoDB Cloud ignores the **actions.resources.collection**
+                                      and **actions.resources.db** parameters.
+                                    type: boolean
+                                  collection:
+                                    description: 'Human-readable label that identifies
+                                      the collection on which you grant the action
+                                      to one MongoDB user. If you don''t set this
+                                      parameter, you grant the action to all collections
+                                      in the database specified in the **actions.resources.db**
+                                      parameter. If you set `"actions.resources.cluster"
+                                      : true`, MongoDB Cloud ignores this parameter.'
+                                    type: string
+                                  db:
+                                    description: 'Human-readable label that identifies
+                                      the database on which you grant the action to
+                                      one MongoDB user. If you set `"actions.resources.cluster"
+                                      : true`, MongoDB Cloud ignores this parameter.'
+                                    type: string
+                                required:
+                                - cluster
+                                - collection
+                                - db
+                                title: Permitted Namespace
+                                type: object
+                              type: array
+                          required:
+                          - action
+                          title: Database Privilege Action
+                          type: object
+                        type: array
+                      inheritedRoles:
+                        description: List of the built-in roles that this custom role
+                          inherits.
+                        items:
+                          description: Role inherited from another context for this
+                            database user.
+                          properties:
+                            db:
+                              description: Human-readable label that identifies the
+                                database on which someone grants the action to one
+                                MongoDB user.
+                              type: string
+                            role:
+                              description: Human-readable label that identifies the
+                                role inherited. Set this value to `admin` for every
+                                role except `read` or `readWrite`.
+                              type: string
+                          required:
+                          - db
+                          - role
+                          title: Inherited Role
+                          type: object
+                        type: array
+                      roleName:
+                        description: Human-readable label that identifies the role
+                          for the request. This name must be unique for this custom
+                          role in this project.
+                        type: string
+                    required:
+                    - roleName
+                    type: object
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the customrole
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: backupcompliancepolicies.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
