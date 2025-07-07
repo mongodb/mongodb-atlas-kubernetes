@@ -28,6 +28,31 @@ spec:
   crd:
     - gvk:
         version: v1
+        kind: NetworkPeeringConnection
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - anpc
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/peers'
+              verb: post
+          entry:
+            schema: 'BaseNetworkPeeringConnectionSettings'
+            filters:
+              readWriteOnly: true
+          status:
+            schema: 'BaseNetworkPeeringConnectionSettings'
+            filters:
+              readOnly: true
+
+    - gvk:
+        version: v1
         kind: DatabaseUser
         group: atlas.generated.mongodb.com
       categories:

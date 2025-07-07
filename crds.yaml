@@ -4,6 +4,213 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: networkpeeringconnections.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: NetworkPeeringConnection
+    listKind: NetworkPeeringConnectionList
+    plural: networkpeeringconnections
+    shortNames:
+    - anpc
+    singular: networkpeeringconnection
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A networkpeeringconnection, managed by the MongoDB Kubernetes
+          Atlas Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the networkpeeringconnection supporting the following versions:
+
+              - v20250312
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20250312:
+                description: The spec of the networkpeeringconnection resource for
+                  version v20250312.
+                properties:
+                  entry:
+                    description: The entry fields of the networkpeeringconnection
+                      resource spec. These fields can be set for creating and updating
+                      networkpeeringconnections.
+                    properties:
+                      accepterRegionName:
+                        description: Amazon Web Services (AWS) region where the Virtual
+                          Peering Connection (VPC) that you peered with the MongoDB
+                          Cloud VPC resides. The resource returns `null` if your VPC
+                          and the MongoDB Cloud VPC reside in the same region.
+                        type: string
+                      awsAccountId:
+                        description: Unique twelve-digit string that identifies the
+                          Amazon Web Services (AWS) account that owns the VPC that
+                          you peered with the MongoDB Cloud VPC.
+                        type: string
+                      azureDirectoryId:
+                        description: Unique string that identifies the Azure AD directory
+                          in which the VNet peered with the MongoDB Cloud VNet resides.
+                        type: string
+                      azureSubscriptionId:
+                        description: Unique string that identifies the Azure subscription
+                          in which the VNet you peered with the MongoDB Cloud VNet
+                          resides.
+                        type: string
+                      containerId:
+                        description: Unique 24-hexadecimal digit string that identifies
+                          the MongoDB Cloud network container that contains the specified
+                          network peering connection.
+                        example: 32b6e34b3d91647abb20e7b8
+                        type: string
+                      gcpProjectId:
+                        description: Human-readable label that identifies the GCP
+                          project that contains the network that you want to peer
+                          with the MongoDB Cloud VPC.
+                        type: string
+                      networkName:
+                        description: Human-readable label that identifies the network
+                          to peer with the MongoDB Cloud VPC.
+                        type: string
+                      providerName:
+                        description: Cloud service provider that serves the requested
+                          network peering connection.
+                        type: string
+                      resourceGroupName:
+                        description: Human-readable label that identifies the resource
+                          group in which the VNet to peer with the MongoDB Cloud VNet
+                          resides.
+                        type: string
+                      routeTableCidrBlock:
+                        description: Internet Protocol (IP) addresses expressed in
+                          Classless Inter-Domain Routing (CIDR) notation of the VPC's
+                          subnet that you want to peer with the MongoDB Cloud VPC.
+                        type: string
+                      vnetName:
+                        description: Human-readable label that identifies the VNet
+                          that you want to peer with the MongoDB Cloud VNet.
+                        type: string
+                      vpcId:
+                        description: Unique string that identifies the VPC on Amazon
+                          Web Services (AWS) that you want to peer with the MongoDB
+                          Cloud VPC.
+                        type: string
+                    required:
+                    - containerId
+                    type: object
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - groupId
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the networkpeeringconnection
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20250312:
+                description: The last observed Atlas state of the networkpeeringconnection
+                  resource for version v20250312.
+                properties:
+                  connectionId:
+                    description: Unique string that identifies the peering connection
+                      on AWS.
+                    type: string
+                  errorMessage:
+                    description: Details of the error returned when requesting a GCP
+                      network peering resource. The resource returns `null` if the
+                      request succeeded.
+                    type: string
+                  errorState:
+                    description: 'Error message returned when a requested Azure network
+                      peering resource returns `"status" : "FAILED"`. The resource
+                      returns `null` if the request succeeded.'
+                    type: string
+                  errorStateName:
+                    description: Type of error that can be returned when requesting
+                      an Amazon Web Services (AWS) peering connection. The resource
+                      returns `null` if the request succeeded.
+                    type: string
+                  id:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the network peering connection.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                  status:
+                    description: State of the network peering connection at the time
+                      you made the request.
+                    type: string
+                  statusName:
+                    description: State of the network peering connection at the time
+                      you made the request.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: databaseusers.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
