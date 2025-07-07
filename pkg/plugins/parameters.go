@@ -40,6 +40,8 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.C
 			operation = pathItem.Post
 		case "put":
 			operation = pathItem.Put
+		case "patch":
+			operation = pathItem.Patch
 		default:
 			return fmt.Errorf("verb %q unsupported", mapping.ParametersMapping.FieldPath.Verb)
 		}

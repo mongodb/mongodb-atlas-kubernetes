@@ -15,6 +15,115 @@ spec:
   crd:
     - gvk:
         version: v1
+        kind: DataFederation
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - adf
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/dataFederation'
+              verb: post
+          entry:
+            schema: 'DataLakeTenant'
+            filters:
+              skipProperties:
+                - $.groupId
+                - $.hostnames
+                - $.privateEndpointHostnames
+                - $.state
+          status:
+            schema: 'DataLakeTenant'
+            filters:
+              skipProperties:
+                - $.cloudProviderConfig
+                - $.dataProcessRegion
+                - $.name
+                - $.storage
+
+    - gvk:
+        version: v1
+        kind: OrganizationSetting
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - aos
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/orgs/{orgId}/settings'
+              verb: patch
+          entry:
+            schema: 'OrganizationSettings'
+          status:
+            path:
+              name: '/api/atlas/v2/orgs/{orgId}/settings'
+              verb: get
+
+    - gvk:
+        version: v1
+        kind: Team
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - at
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/orgs/{orgId}/teams'
+              verb: post
+          entry:
+            schema: 'Team'
+            filters:
+              skipProperties:
+                - $.id
+                - $.links
+          status:
+            schema: 'Team'
+            filters:
+              skipProperties:
+                - $.links
+                - $.name
+                - $.usernames
+
+    - gvk:
+        version: v1
+        kind: OrganizationSetting
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - aos
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/orgs/{orgId}/settings'
+              verb: patch
+          entry:
+            schema: 'OrganizationSettings'
+          status:
+            path:
+              name: '/api/atlas/v2/orgs/{orgId}/settings'
+              verb: get
+
+    - gvk:
+        version: v1
         kind: Group
         group: atlas.generated.mongodb.com
       categories:
@@ -238,11 +347,11 @@ spec:
         - majorVersion: v20241113
           openAPIRef:
             name: v20241113
-          parameters: # POST parameters
+          parameters:
             path:
               name: '/api/atlas/v2/groups/{groupId}/alertConfigs'
               verb: post
-          entry: # POST/PATCH schema
+          entry:
             schema: 'GroupAlertsConfig'
             filters:
               skipProperties:
