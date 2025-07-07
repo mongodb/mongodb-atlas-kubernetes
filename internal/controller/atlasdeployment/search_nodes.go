@@ -36,7 +36,7 @@ type searchNodeController struct {
 	projectID  string
 }
 
-func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
+func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment, projectID string) workflow.DeprecatedResult {
 	ctx.Log.Debug("starting search node processing")
 	defer ctx.Log.Debug("finished search node processing")
 
@@ -86,7 +86,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 // - update: transitions to "updating" state when search nodes are in AKO and in Atlas.
 // - delete: transitions to "deleting" state when no search nodes are in AKO but in Atlas.
 // - unmanage: transitions stays in "pending unmanaged" state unsetting "idle" status when search nodes are neither in AKO nor in Atlas.
-func (s *searchNodeController) handlePending() workflow.Result {
+func (s *searchNodeController) handlePending() workflow.DeprecatedResult {
 	atlasNodes, found, err := s.getAtlasSearchDeployment()
 	if err != nil {
 		// transition back to pending, something went wrong.
@@ -123,7 +123,7 @@ func (s *searchNodeController) handlePending() workflow.Result {
 // The following transitions can happen here:
 // - terminate: when an error occurred or when the operation has been aborted.
 // - idle: when search nodes are marked as IDLE in Atlas.
-func (s *searchNodeController) handleUpserting(state workflow.ConditionReason) workflow.Result {
+func (s *searchNodeController) handleUpserting(state workflow.ConditionReason) workflow.DeprecatedResult {
 	if len(s.deployment.Spec.DeploymentSpec.SearchNodes) == 0 {
 		return s.terminate(workflow.ErrorSearchNodesOperationAborted, errors.New("aborting update/create: no search nodes specified"))
 	}
@@ -161,7 +161,7 @@ func (s *searchNodeController) handleUpserting(state workflow.ConditionReason) w
 // The following transitions can happen here:
 // - terminate: when an error occurred or when the operation has been aborted.
 // - unmanage: when there are no search nodes anymore in Atlas.
-func (s *searchNodeController) handleDeleting() workflow.Result {
+func (s *searchNodeController) handleDeleting() workflow.DeprecatedResult {
 	if len(s.deployment.Spec.DeploymentSpec.SearchNodes) > 0 {
 		return s.terminate(workflow.ErrorSearchNodesOperationAborted, errors.New("aborting deletion: search nodes are specified"))
 	}
@@ -184,7 +184,7 @@ func (s *searchNodeController) handleDeleting() workflow.Result {
 // create executes the actual creation of search nodes in Atlas and transitions to the following states:
 // - creating: after search nodes have been created in Atlas
 // - terminated: when an error occurred.
-func (s *searchNodeController) create() workflow.Result {
+func (s *searchNodeController) create() workflow.DeprecatedResult {
 	s.ctx.Log.Debugf("creating search nodes %v", s.deployment.Spec.DeploymentSpec.SearchNodes)
 	resp, _, err := s.ctx.SdkClientSet.SdkClient20250312002.AtlasSearchApi.CreateAtlasSearchDeployment(s.ctx.Context, s.projectID, s.deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
 		Specs: s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
@@ -204,7 +204,7 @@ func (s *searchNodeController) create() workflow.Result {
 // - updating: after search nodes have been updated in Atlas.
 // - idle: if no changes are necessary.
 // - terminated: when an error occurred.
-func (s *searchNodeController) update(atlasNodes *admin.ApiSearchDeploymentResponse) workflow.Result {
+func (s *searchNodeController) update(atlasNodes *admin.ApiSearchDeploymentResponse) workflow.DeprecatedResult {
 	s.ctx.Log.Debugf("updating search nodes %v", s.deployment.Spec.DeploymentSpec.SearchNodes)
 	currentAkoNodesAsAtlas := s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
 	// We can deepequal without normalization here because there is only ever 1 spec in the array
@@ -242,7 +242,7 @@ func (s *searchNodeController) update(atlasNodes *admin.ApiSearchDeploymentRespo
 // delete deletes search nodes in Atlas. It transitions to the following states:
 // - deleting: after search nodes have been deleted in Atlas.
 // - terminated: when an error occurred.
-func (s *searchNodeController) delete() workflow.Result {
+func (s *searchNodeController) delete() workflow.DeprecatedResult {
 	s.ctx.Log.Debug("deleting search nodes")
 	_, err := s.ctx.SdkClientSet.SdkClient20250312002.AtlasSearchApi.DeleteAtlasSearchDeployment(s.ctx.Context, s.projectID, s.deployment.GetDeploymentName()).Execute()
 	if err != nil {
@@ -258,7 +258,7 @@ func (s *searchNodeController) delete() workflow.Result {
 
 // progress transitions to the given state in the "SearchNodesReady" status and sets the given fineMsg as its message.
 // further it returns a coarse grained progress state for bubbling the chain.
-func (s *searchNodeController) progress(state workflow.ConditionReason, fineMsg, coarseMsg string) workflow.Result {
+func (s *searchNodeController) progress(state workflow.ConditionReason, fineMsg, coarseMsg string) workflow.DeprecatedResult {
 	var (
 		fineProgress   = workflow.InProgress(state, fineMsg)
 		coarseProgress = workflow.InProgress(state, coarseMsg)
@@ -269,7 +269,7 @@ func (s *searchNodeController) progress(state workflow.ConditionReason, fineMsg,
 }
 
 // terminate transitions to pending state if an error occurred.
-func (s *searchNodeController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+func (s *searchNodeController) terminate(reason workflow.ConditionReason, err error) workflow.DeprecatedResult {
 	s.ctx.Log.Error(err)
 	result := workflow.Terminate(reason, err)
 	s.ctx.SetConditionFromResult(api.SearchNodesReadyType, result)
@@ -277,13 +277,13 @@ func (s *searchNodeController) terminate(reason workflow.ConditionReason, err er
 }
 
 // unmanage transitions to pending state if no search nodes are managed.
-func (s *searchNodeController) unmanage() workflow.Result {
+func (s *searchNodeController) unmanage() workflow.DeprecatedResult {
 	s.ctx.UnsetCondition(api.SearchNodesReadyType)
 	return workflow.OK()
 }
 
 // idle transitions to idle state search nodes that are ready and idle.
-func (s *searchNodeController) idle() workflow.Result {
+func (s *searchNodeController) idle() workflow.DeprecatedResult {
 	s.ctx.SetConditionTrue(api.SearchNodesReadyType)
 	return workflow.OK()
 }

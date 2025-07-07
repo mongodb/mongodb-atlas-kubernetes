@@ -180,13 +180,13 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
-func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Context, project *akov2.AtlasProject, services *AtlasProjectServices) (results []workflow.Result) {
+func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Context, project *akov2.AtlasProject, services *AtlasProjectServices) (results []workflow.DeprecatedResult) {
 	for k, v := range project.Annotations {
 		workflowCtx.Log.Debugf(k)
 		workflowCtx.Log.Debugf(v)
 	}
 
-	var result workflow.Result
+	var result workflow.DeprecatedResult
 	if result = handleIPAccessList(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.IPAccessListReadyType), "")
 	}
@@ -347,12 +347,12 @@ func newProjectsMapFunc[T any](indexName string, kubeClient client.Client, logge
 }
 
 // setCondition sets the condition from the result and logs the warnings
-func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.Result) {
+func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.DeprecatedResult) {
 	ctx.SetConditionFromResult(condition, result)
 	logIfWarning(ctx, result)
 }
 
-func logIfWarning(ctx *workflow.Context, result workflow.Result) {
+func logIfWarning(ctx *workflow.Context, result workflow.DeprecatedResult) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
 	}

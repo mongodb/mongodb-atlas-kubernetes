@@ -99,13 +99,13 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	switch {
 	case failedToRetrieve:
-		return r.fail(req, err), nil
+		return r.fail(req, err)
 	case objectNotFound:
-		return r.notFound(req), nil
+		return r.notFound(req)
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(atlasCustomRole) {
-		return r.skip(), nil
+		return r.skip()
 	}
 
 	r.Log.Infow("-> Starting AtlasCustomRole reconciliation", "spec", atlasCustomRole.Spec, "status",
@@ -120,7 +120,7 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	valid, err := customresource.ResourceVersionIsValid(atlasCustomRole)
 	if err != nil {
-		return r.terminate(workflowCtx, atlasCustomRole, api.ResourceVersionStatus, workflow.AtlasResourceVersionIsInvalid, true, err), nil
+		return r.terminate(workflowCtx, atlasCustomRole, api.ResourceVersionStatus, workflow.AtlasResourceVersionIsInvalid, true, err)
 	}
 
 	if !valid {
@@ -129,7 +129,7 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			api.ResourceVersionStatus,
 			workflow.AtlasResourceVersionMismatch,
 			true,
-			fmt.Errorf("version of the resource '%s' is higher than the operator version '%s'", atlasCustomRole.GetName(), version.Version)), nil
+			fmt.Errorf("version of the resource '%s' is higher than the operator version '%s'", atlasCustomRole.GetName(), version.Version))
 	}
 	workflowCtx.SetConditionTrue(api.ResourceVersionStatus).SetConditionTrue(api.ValidationSucceeded)
 
@@ -137,26 +137,26 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return r.terminate(workflowCtx, atlasCustomRole,
 			api.ProjectCustomRolesReadyType, workflow.AtlasGovUnsupported,
 			false,
-			fmt.Errorf("the %T is not supported by Atlas for government", atlasCustomRole)), nil
+			fmt.Errorf("the %T is not supported by Atlas for government", atlasCustomRole))
 	}
 
 	connectionConfig, err := r.ResolveConnectionConfig(ctx, atlasCustomRole)
 	if err != nil {
-		return r.fail(req, err), nil
+		return r.fail(req, err)
 	}
 	atlasSdkClientSet, err := r.AtlasProvider.SdkClientSet(workflowCtx.Context, connectionConfig.Credentials, workflowCtx.Log)
 	if err != nil {
-		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
+		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
 	service := customroles.NewCustomRoles(atlasSdkClientSet.SdkClient20250312002.CustomDatabaseRolesApi)
 	project, err := r.ResolveProject(ctx, atlasSdkClientSet.SdkClient20250312002, atlasCustomRole)
 	if err != nil {
-		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err), nil
+		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
 	if res := handleCustomRole(workflowCtx, r.Client, project, service, atlasCustomRole, r.ObjectDeletionProtection); !res.IsOk() {
-		return r.fail(req, fmt.Errorf("%s", res.GetMessage())), nil
+		return r.fail(req, fmt.Errorf("%s", res.GetMessage()))
 	}
-	return r.idle(workflowCtx), nil
+	return r.idle(workflowCtx)
 }
 
 func (r *AtlasCustomRoleReconciler) terminate(
@@ -166,7 +166,7 @@ func (r *AtlasCustomRoleReconciler) terminate(
 	reason workflow.ConditionReason,
 	retry bool,
 	err error,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	r.Log.Errorf("resource %T(%s/%s) failed on condition %s: %s", object, object.GetNamespace(), object.GetName(), condition, err)
 	result := workflow.Terminate(reason, err)
 	ctx.SetConditionFromResult(condition, result)
@@ -178,19 +178,19 @@ func (r *AtlasCustomRoleReconciler) terminate(
 	return result.ReconcileResult()
 }
 
-func (r *AtlasCustomRoleReconciler) idle(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasCustomRoleReconciler) idle(ctx *workflow.Context) (ctrl.Result, error) {
 	ctx.SetConditionTrue(api.ReadyType)
 	return workflow.OK().ReconcileResult()
 }
 
 // fail terminates the reconciliation silently(no updates on conditions)
-func (r *AtlasCustomRoleReconciler) fail(req ctrl.Request, err error) ctrl.Result {
+func (r *AtlasCustomRoleReconciler) fail(req ctrl.Request, err error) (ctrl.Result, error) {
 	r.Log.Errorf("Failed to query object %s: %s", req.NamespacedName, err)
 	return workflow.TerminateSilently(err).ReconcileResult()
 }
 
 // skip prevents the reconciliation to start and successfully return
-func (r *AtlasCustomRoleReconciler) skip() ctrl.Result {
+func (r *AtlasCustomRoleReconciler) skip() (ctrl.Result, error) {
 	r.Log.Infow(fmt.Sprintf("-> Skipping AtlasCustomRole reconciliation as annotation %s=%s",
 		customresource.ReconciliationPolicyAnnotation,
 		customresource.ReconciliationPolicySkip))
@@ -198,7 +198,7 @@ func (r *AtlasCustomRoleReconciler) skip() ctrl.Result {
 }
 
 // notFound terminates the reconciliation silently(no updates on conditions) and without retry
-func (r *AtlasCustomRoleReconciler) notFound(req ctrl.Request) ctrl.Result {
+func (r *AtlasCustomRoleReconciler) notFound(req ctrl.Request) (ctrl.Result, error) {
 	err := fmt.Errorf("object %s doesn't exist, was it deleted after reconcile request?", req.NamespacedName)
 	r.Log.Infof(err.Error())
 	return workflow.TerminateSilently(err).WithoutRetry().ReconcileResult()

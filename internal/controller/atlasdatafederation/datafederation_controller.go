@@ -176,7 +176,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log *zap.SugaredLogger, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject, service datafederation.DataFederationService) workflow.Result {
+func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log *zap.SugaredLogger, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject, service datafederation.DataFederationService) workflow.DeprecatedResult {
 	if customresource.HaveFinalizer(dataFederation, customresource.FinalizerLabel) {
 		if customresource.IsResourcePolicyKeepOrDefault(dataFederation, r.ObjectDeletionProtection) {
 			log.Info("Not removing AtlasDataFederation from Atlas as per configuration")
@@ -222,7 +222,7 @@ func (r *AtlasDataFederationReconciler) deleteDataFederationFromAtlas(ctx contex
 	return nil
 }
 
-func (r *AtlasDataFederationReconciler) readProjectResource(ctx context.Context, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject) workflow.Result {
+func (r *AtlasDataFederationReconciler) readProjectResource(ctx context.Context, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	if err := r.Client.Get(ctx, dataFederation.AtlasProjectObjectKey(), project); err != nil {
 		return workflow.Terminate(workflow.Internal, err)
 	}

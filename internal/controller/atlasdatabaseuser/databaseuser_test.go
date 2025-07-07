@@ -317,7 +317,8 @@ func TestHandleDatabaseUser(t *testing.T) {
 			}
 			version.Version = "2.4.1"
 
-			result := r.handleDatabaseUser(ctx, tt.dbUserInAKO)
+			result, err := r.handleDatabaseUser(ctx, tt.dbUserInAKO)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			logger.Infof("conditions", ctx.Conditions())
 
@@ -822,7 +823,8 @@ func TestDbuLifeCycle(t *testing.T) {
 				Log:     logger,
 			}
 
-			result := r.dbuLifeCycle(ctx, tt.dbUserService(), tt.dService(), tt.dbUserInAKO, &project.Project{})
+			result, err := r.dbuLifeCycle(ctx, tt.dbUserService(), tt.dService(), tt.dbUserInAKO, &project.Project{})
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1060,7 +1062,8 @@ func TestCreate(t *testing.T) {
 				Log:     logger,
 			}
 
-			result := r.create(ctx, tt.dbUserService(), "project-id", tt.dbUserInAKO)
+			result, err := r.create(ctx, tt.dbUserService(), "project-id", tt.dbUserInAKO)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1341,7 +1344,8 @@ func TestUpdate(t *testing.T) {
 				Log:     logger,
 			}
 
-			result := r.update(ctx, tt.dbUserService(), tt.dService(), &project.Project{}, tt.dbUserInAKO, tt.dbUserInAtlas)
+			result, err := r.update(ctx, tt.dbUserService(), tt.dService(), &project.Project{}, tt.dbUserInAKO, tt.dbUserInAtlas)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1510,7 +1514,8 @@ func TestDelete(t *testing.T) {
 				Log:     logger,
 			}
 
-			result := r.delete(ctx, tt.dbUserService(), "project-id", tt.dbUser)
+			result, err := r.delete(ctx, tt.dbUserService(), "project-id", tt.dbUser)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1725,7 +1730,8 @@ func TestReadiness(t *testing.T) {
 				Log:     logger,
 			}
 
-			result := r.readiness(ctx, tt.dService(), &project.Project{}, tt.dbUser, "999")
+			result, err := r.readiness(ctx, tt.dService(), &project.Project{}, tt.dbUser, "999")
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,

@@ -60,7 +60,7 @@ func lastAppliedNetworkPeerings(atlasProject *akov2.AtlasProject) ([]akov2.Netwo
 	return lastApplied.NetworkPeers, nil
 }
 
-func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.Result {
+func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.DeprecatedResult {
 	lastAppliedPeers, err := lastAppliedNetworkPeerings(akoProject)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
@@ -100,7 +100,7 @@ func failedPeerStatus(errMessage string, peer akov2.NetworkPeer) status.AtlasNet
 	}
 }
 
-func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer, lastAppliedPeers []akov2.NetworkPeer) (workflow.Result, api.ConditionType) {
+func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer, lastAppliedPeers []akov2.NetworkPeer) (workflow.DeprecatedResult, api.ConditionType) {
 	defer workflowCtx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
 	logger := workflowCtx.Log
 	mongoClient := workflowCtx.SdkClientSet.SdkClient20250312002
@@ -222,7 +222,7 @@ func formVPC(peer admin.BaseNetworkPeeringConnectionSettings) string {
 	}
 }
 
-func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, logger *zap.SugaredLogger) workflow.Result {
+func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, logger *zap.SugaredLogger) workflow.DeprecatedResult {
 	if len(peerStatuses) != lenOfSpec {
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("not all network peers are ready"))
 	}
@@ -601,7 +601,7 @@ func validateInitNetworkPeer(peer akov2.NetworkPeer) error {
 	return fmt.Errorf("unsupported provider: %s", peer.ProviderName)
 }
 
-func DeleteOwnedNetworkPeers(ctx context.Context, project *akov2.AtlasProject, service admin.NetworkPeeringApi, logger *zap.SugaredLogger) workflow.Result {
+func DeleteOwnedNetworkPeers(ctx context.Context, project *akov2.AtlasProject, service admin.NetworkPeeringApi, logger *zap.SugaredLogger) workflow.DeprecatedResult {
 	for _, peerStatus := range project.Status.NetworkPeers {
 		errDelete := deletePeerByID(ctx, service, project.ID(), peerStatus.ID, logger)
 		if errDelete != nil && !errors.Is(errDelete, errNortFound) {

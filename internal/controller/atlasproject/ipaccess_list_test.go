@@ -48,7 +48,7 @@ func TestIpAccessListController_reconcile(t *testing.T) {
 		service            func(serviceMock *translation.IPAccessListServiceMock) ipaccesslist.IPAccessListService
 		ipAccessList       []project.IPAccessList
 		lastApplied        ipaccesslist.IPAccessEntries
-		expectedResult     workflow.Result
+		expectedResult     workflow.DeprecatedResult
 		expectedConditions []api.Condition
 	}{
 		"should fail to convert wrongly defined ip access list": {
@@ -304,7 +304,7 @@ func TestConfigure(t *testing.T) {
 		desired            ipaccesslist.IPAccessEntries
 		lastApplied        ipaccesslist.IPAccessEntries
 		expectedCalls      func() ipaccesslist.IPAccessListService
-		expectedResult     workflow.Result
+		expectedResult     workflow.DeprecatedResult
 		expectedConditions []api.Condition
 	}{
 		"should fail to add ip access list": {
@@ -385,7 +385,7 @@ func TestHandleIPAccessList(t *testing.T) {
 		ipAccessList       []project.IPAccessList
 		annotations        map[string]string
 		expectedCalls      func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi
-		expectedResult     workflow.Result
+		expectedResult     workflow.DeprecatedResult
 		expectedConditions []api.Condition
 	}{
 		"should fail getting last applied configuration": {

@@ -126,7 +126,7 @@ func (r *AtlasPrivateEndpointReconciler) skip(ctx context.Context, akoPrivateEnd
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasPrivateEndpointReconciler) invalidate(invalid workflow.Result) ctrl.Result {
+func (r *AtlasPrivateEndpointReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasPrivateEndpoint is invalid: %v", invalid)
 	return invalid.ReconcileResult()

@@ -75,7 +75,7 @@ func convertToInternalRoles(roles []akov2.CustomRole) []customroles.CustomRole {
 	return result
 }
 
-func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	lastAppliedCustomRoles, err := getLastAppliedCustomRoles(project)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
@@ -245,7 +245,7 @@ func evaluateOperation(err error) (status.CustomRoleStatus, string) {
 	return status.CustomRoleStatusOK, ""
 }
 
-func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []customroles.CustomRole, created, updated, deleted map[string]status.CustomRole) workflow.Result {
+func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []customroles.CustomRole, created, updated, deleted map[string]status.CustomRole) workflow.DeprecatedResult {
 	statuses := make([]status.CustomRole, 0, len(desiredCustomRoles))
 	var err error
 

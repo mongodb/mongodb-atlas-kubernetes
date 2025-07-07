@@ -27,7 +27,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 )
 
-func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.Result {
+func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.DeprecatedResult {
 	if clusterType != string(akov2.TypeGeoSharded) && managedNamespace != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, errors.New("managed namespace is only supported by GeoSharded clusters"))
 	}
@@ -47,7 +47,7 @@ func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Co
 	return result
 }
 
-func (r *AtlasDeploymentReconciler) syncManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, deploymentName string, managedNamespaces []akov2.ManagedNamespace) workflow.Result {
+func (r *AtlasDeploymentReconciler) syncManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, deploymentName string, managedNamespaces []akov2.ManagedNamespace) workflow.DeprecatedResult {
 	logger := service.Log
 	existingManagedNamespaces, err := deploymentService.GetManagedNamespaces(service.Context, groupID, deploymentName)
 	logger.Debugf("Syncing managed namespaces %s", deploymentName)
@@ -71,7 +71,7 @@ func (r *AtlasDeploymentReconciler) syncManagedNamespaces(service *workflow.Cont
 	return checkManagedNamespaceStatus(nsStatuses)
 }
 
-func checkManagedNamespaceStatus(managedNamespaces []status.ManagedNamespace) workflow.Result {
+func checkManagedNamespaceStatus(managedNamespaces []status.ManagedNamespace) workflow.DeprecatedResult {
 	for _, ns := range managedNamespaces {
 		if ns.Status != status.StatusReady {
 			return workflow.Terminate(workflow.ManagedNamespacesReady, errors.New("managed namespaces are not ready"))

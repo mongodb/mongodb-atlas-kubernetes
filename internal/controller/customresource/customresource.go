@@ -42,7 +42,7 @@ const (
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
-func PrepareResource(ctx context.Context, client client.Client, request reconcile.Request, resource akov2.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
+func PrepareResource(ctx context.Context, client client.Client, request reconcile.Request, resource akov2.AtlasCustomResource, log *zap.SugaredLogger) workflow.DeprecatedResult {
 	err := client.Get(ctx, request.NamespacedName, resource)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -60,7 +60,7 @@ func PrepareResource(ctx context.Context, client client.Client, request reconcil
 	return workflow.OK()
 }
 
-func ValidateResourceVersion(ctx *workflow.Context, resource akov2.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
+func ValidateResourceVersion(ctx *workflow.Context, resource akov2.AtlasCustomResource, log *zap.SugaredLogger) workflow.DeprecatedResult {
 	valid, err := ResourceVersionIsValid(resource)
 	if err != nil {
 		log.Debugf("resource version for '%s' is invalid", resource.GetName())

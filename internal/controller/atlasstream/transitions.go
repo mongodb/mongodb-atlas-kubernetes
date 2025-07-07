@@ -209,7 +209,7 @@ func (r *AtlasStreamsInstanceReconciler) skip(ctx context.Context, log *zap.Suga
 }
 
 // transitions back to pending state setting an terminate state
-func (r *AtlasStreamsInstanceReconciler) invalidate(invalid workflow.Result) ctrl.Result {
+func (r *AtlasStreamsInstanceReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasStreamInstance is invalid: %v", invalid)
 	return invalid.ReconcileResult()

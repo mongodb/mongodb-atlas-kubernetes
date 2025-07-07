@@ -54,6 +54,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 		expected       ctrl.Result
 		isSupported    bool
 		sdkShouldError bool
+		wantErr        bool
 	}{
 		"failed to retrieve custom role": {
 			isSupported: true,
@@ -98,6 +99,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				},
 			},
 			expected: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantErr:  true,
 		},
 		"custom role is not found": {
 			isSupported: true,
@@ -179,6 +181,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				Status: status.AtlasCustomRoleStatus{},
 			},
 			expected: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantErr:  true,
 		},
 		"custom role resource unsupported": {
 			isSupported: false,
@@ -341,6 +344,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				Status: status.AtlasCustomRoleStatus{},
 			},
 			expected: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantErr:  true,
 		},
 	}
 	version.Version = "1.0.0"
@@ -418,7 +422,12 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				},
 			})
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
 			assert.Equal(t, tt.expected, result)
 		})
 	}

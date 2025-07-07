@@ -35,7 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
-func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) (ctrl.Result, error) {
 	valid, err := customresource.ResourceVersionIsValid(atlasDatabaseUser)
 	switch {
 	case err != nil:
@@ -76,7 +76,9 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 	return r.dbuLifeCycle(ctx, dbUserService, deploymentService, atlasDatabaseUser, atlasProject)
 }
 
-func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUserService dbuser.AtlasUsersService, deploymentService deployment.AtlasDeploymentsService, atlasDatabaseUser *akov2.AtlasDatabaseUser, atlasProject *project.Project) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUserService dbuser.AtlasUsersService,
+	deploymentService deployment.AtlasDeploymentsService, atlasDatabaseUser *akov2.AtlasDatabaseUser,
+	atlasProject *project.Project) (ctrl.Result, error) {
 	databaseUserInAtlas, err := dbUserService.Get(ctx.Context, atlasDatabaseUser.Spec.DatabaseName, atlasProject.ID, atlasDatabaseUser.Spec.Username)
 	if err != nil && !errors.Is(err, dbuser.ErrorNotFound) {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
@@ -119,7 +121,8 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUser
 	}
 }
 
-func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, dbUserService dbuser.AtlasUsersService, projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, dbUserService dbuser.AtlasUsersService,
+	projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) (ctrl.Result, error) {
 	userPassword, passwordVersion, err := r.readPassword(ctx.Context, atlasDatabaseUser)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
@@ -150,7 +153,9 @@ func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, dbUserServic
 	return r.inProgress(ctx, atlasDatabaseUser, passwordVersion, "Clusters are scheduled to handle database users updates")
 }
 
-func (r *AtlasDatabaseUserReconciler) update(ctx *workflow.Context, dbUserService dbuser.AtlasUsersService, deploymentService deployment.AtlasDeploymentsService, atlasProject *project.Project, atlasDatabaseUser *akov2.AtlasDatabaseUser, databaseUserInAtlas *dbuser.User) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) update(ctx *workflow.Context, dbUserService dbuser.AtlasUsersService,
+	deploymentService deployment.AtlasDeploymentsService, atlasProject *project.Project,
+	atlasDatabaseUser *akov2.AtlasDatabaseUser, databaseUserInAtlas *dbuser.User) (ctrl.Result, error) {
 	userPassword, passwordVersion, err := r.readPassword(ctx.Context, atlasDatabaseUser)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
@@ -174,7 +179,7 @@ func (r *AtlasDatabaseUserReconciler) update(ctx *workflow.Context, dbUserServic
 	return r.inProgress(ctx, atlasDatabaseUser, passwordVersion, "Clusters are scheduled to handle database users updates")
 }
 
-func (r *AtlasDatabaseUserReconciler) delete(ctx *workflow.Context, dbUserService dbuser.AtlasUsersService, projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) delete(ctx *workflow.Context, dbUserService dbuser.AtlasUsersService, projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) (ctrl.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(atlasDatabaseUser, r.ObjectDeletionProtection) {
 		r.Log.Info("Not removing Atlas database user from Atlas as per configuration")
 
@@ -193,7 +198,8 @@ func (r *AtlasDatabaseUserReconciler) delete(ctx *workflow.Context, dbUserServic
 	return r.unmanage(ctx, projectID, atlasDatabaseUser)
 }
 
-func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService, atlasProject *project.Project, atlasDatabaseUser *akov2.AtlasDatabaseUser, passwordVersion string) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService,
+	atlasProject *project.Project, atlasDatabaseUser *akov2.AtlasDatabaseUser, passwordVersion string) (ctrl.Result, error) {
 	allDeploymentNames, err := deploymentService.ListDeploymentNames(ctx.Context, atlasProject.ID)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)

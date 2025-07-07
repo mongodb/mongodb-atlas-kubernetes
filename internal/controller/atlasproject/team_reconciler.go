@@ -135,7 +135,7 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 	}
 }
 
-func (r *AtlasProjectReconciler) ensureTeamState(workflowCtx *workflow.Context, teamsService teams.TeamsService, team *akov2.AtlasTeam) (string, workflow.Result) {
+func (r *AtlasProjectReconciler) ensureTeamState(workflowCtx *workflow.Context, teamsService teams.TeamsService, team *akov2.AtlasTeam) (string, workflow.DeprecatedResult) {
 	var atlasAssignedTeam *teams.AssignedTeam
 	var err error
 
@@ -169,7 +169,7 @@ func (r *AtlasProjectReconciler) ensureTeamState(workflowCtx *workflow.Context, 
 	return atlasAssignedTeam.TeamID, workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamsService teams.TeamsService, teamID string, team *akov2.AtlasTeam) workflow.Result {
+func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamsService teams.TeamsService, teamID string, team *akov2.AtlasTeam) workflow.DeprecatedResult {
 	atlasUsers, err := teamsService.GetTeamUsers(workflowCtx.Context, workflowCtx.OrgID, teamID)
 	if err != nil {
 		return workflow.Terminate(workflow.TeamUsersNotReady, err)

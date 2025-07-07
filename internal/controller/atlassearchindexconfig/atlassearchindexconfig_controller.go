@@ -182,7 +182,7 @@ func (r *AtlasSearchIndexConfigReconciler) skip(ctx context.Context, log *zap.Su
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasSearchIndexConfigReconciler) invalidate(invalid workflow.Result) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
 	r.Log.Debugf("AtlasSearchIndexConfig is invalid: %v", invalid)
 	return invalid.ReconcileResult()
 }

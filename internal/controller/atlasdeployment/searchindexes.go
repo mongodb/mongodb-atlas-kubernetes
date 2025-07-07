@@ -66,7 +66,7 @@ type searchIndexesReconcileRequest struct {
 	searchService searchindex.AtlasSearchIdxService
 }
 
-func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, searchService searchindex.AtlasSearchIdxService, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
+func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, searchService searchindex.AtlasSearchIdxService, deployment *akov2.AtlasDeployment, projectID string) workflow.DeprecatedResult {
 	ctx.Log.Debug("starting indexes processing")
 	defer ctx.Log.Debug("finished indexes processing")
 
@@ -81,7 +81,7 @@ func handleSearchIndexes(ctx *workflow.Context, k8sClient client.Client, searchS
 	return reconciler.Handle()
 }
 
-func (sr *searchIndexesReconcileRequest) Handle() workflow.Result {
+func (sr *searchIndexesReconcileRequest) Handle() workflow.DeprecatedResult {
 	if !verifyAllIndexesNamesAreUnique(sr.deployment.Spec.DeploymentSpec.SearchIndexes) {
 		return sr.terminate(api.SearchIndexesNamesAreNotUnique, fmt.Errorf("every index 'Name' must be unique"))
 	}
@@ -120,7 +120,7 @@ func (sr *searchIndexesReconcileRequest) Handle() workflow.Result {
 		return sr.empty()
 	}
 
-	results := make([]workflow.Result, 0, len(allIndexes))
+	results := make([]workflow.DeprecatedResult, 0, len(allIndexes))
 	for indexName, val := range allIndexes {
 		results = append(results, (&searchIndexReconcileRequest{
 			ctx:           sr.ctx,
@@ -146,25 +146,25 @@ func (sr *searchIndexesReconcileRequest) Handle() workflow.Result {
 	return sr.idle()
 }
 
-func (sr *searchIndexesReconcileRequest) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+func (sr *searchIndexesReconcileRequest) terminate(reason workflow.ConditionReason, err error) workflow.DeprecatedResult {
 	sr.ctx.Log.Error(err)
 	result := workflow.Terminate(reason, err)
 	sr.ctx.SetConditionFromResult(api.SearchIndexesReadyType, result)
 	return result
 }
 
-func (sr *searchIndexesReconcileRequest) progress() workflow.Result {
+func (sr *searchIndexesReconcileRequest) progress() workflow.DeprecatedResult {
 	result := workflow.InProgress(api.SearchIndexesNotReady, "not all indexes are in READY state")
 	sr.ctx.SetConditionFromResult(status.SearchIndexStatusReady, result)
 	return result
 }
 
-func (sr *searchIndexesReconcileRequest) empty() workflow.Result {
+func (sr *searchIndexesReconcileRequest) empty() workflow.DeprecatedResult {
 	sr.ctx.UnsetCondition(api.SearchIndexesReadyType)
 	return workflow.OK()
 }
 
-func (sr *searchIndexesReconcileRequest) idle() workflow.Result {
+func (sr *searchIndexesReconcileRequest) idle() workflow.DeprecatedResult {
 	sr.ctx.SetConditionTrue(api.SearchIndexesReadyType)
 	sr.ctx.EnsureStatusOption(status.AtlasDeploymentRemoveStatusesWithEmptyIDs())
 	return workflow.OK()

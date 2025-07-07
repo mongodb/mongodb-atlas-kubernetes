@@ -202,12 +202,12 @@ func NewAtlasFederatedAuthReconciler(
 	}
 }
 
-func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.Result) {
+func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.DeprecatedResult) {
 	ctx.SetConditionFromResult(condition, result)
 	logIfWarning(ctx, result)
 }
 
-func logIfWarning(ctx *workflow.Context, result workflow.Result) {
+func logIfWarning(ctx *workflow.Context, result workflow.DeprecatedResult) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
 	}

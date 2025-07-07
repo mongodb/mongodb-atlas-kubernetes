@@ -565,7 +565,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 		result := reconciler.Handle()
-		fmt.Println("Result", result)
+		fmt.Println("DeprecatedResult", result)
 		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
 	})
@@ -664,7 +664,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 		result := reconciler.Handle()
-		fmt.Println("Result", result)
+		fmt.Println("DeprecatedResult", result)
 		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
 	})

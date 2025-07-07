@@ -26,7 +26,8 @@ const (
 	DefaultRetry = time.Second * 10
 )
 
-type Result struct {
+// Note: DeprecatedResult is a legacy type that is used to return the result of the reconciliation logic.
+type DeprecatedResult struct {
 	terminated   bool
 	requeueAfter time.Duration
 	message      string
@@ -35,18 +36,19 @@ type Result struct {
 	// an error
 	warning bool
 	deleted bool
+	err     error
 }
 
 // OK indicates that the reconciliation logic can proceed further
-func OK() Result {
-	return Result{
+func OK() DeprecatedResult {
+	return DeprecatedResult{
 		terminated:   false,
 		requeueAfter: -1,
 	}
 }
 
-func Requeue(period time.Duration) Result {
-	return Result{
+func Requeue(period time.Duration) DeprecatedResult {
+	return DeprecatedResult{
 		terminated:   false,
 		requeueAfter: period,
 	}
@@ -56,23 +58,24 @@ func Requeue(period time.Duration) Result {
 // This is not an expected termination of the reconciliation process so 'warning' flag is set to 'true'.
 // 'reason' and 'message' indicate the error state and are supposed to be reflected in the `conditions` for the
 // reconciled Custom Resource.
-func Terminate(reason ConditionReason, err error) Result {
+func Terminate(reason ConditionReason, err error) DeprecatedResult {
 	dryrun.AddTerminationError(err) // TODO: factor this in favor of controller-runtime error handling
 
-	return Result{
+	return DeprecatedResult{
 		terminated:   true,
 		requeueAfter: DefaultRetry,
 		reason:       reason,
 		message:      err.Error(),
 		warning:      true,
+		err:          err,
 	}
 }
 
 // InProgress indicates that the reconciliation logic cannot proceed and needs to be finished (and possibly requeued).
 // This is an expected termination of the reconciliation process so 'warning' flag is set to 'false'.
 // 'reason' and 'message' indicate the in-progress state and are supposed to be reflected in the 'conditions' for the reconciled Custom Resource.
-func InProgress(reason ConditionReason, message string) Result {
-	return Result{
+func InProgress(reason ConditionReason, message string) DeprecatedResult {
+	return DeprecatedResult{
 		terminated:   true,
 		requeueAfter: DefaultRetry,
 		reason:       reason,
@@ -81,62 +84,62 @@ func InProgress(reason ConditionReason, message string) Result {
 	}
 }
 
-func Deleted() Result {
-	return Result{
+func Deleted() DeprecatedResult {
+	return DeprecatedResult{
 		terminated:   false,
 		requeueAfter: -1,
 		deleted:      true,
 	}
 }
 
-func (r Result) IsDeleted() bool {
+func (r DeprecatedResult) IsDeleted() bool {
 	return r.deleted
 }
 
 // TerminateSilently indicates that the reconciliation logic cannot proceed and needs to be finished (and possibly requeued)
 // The status of the reconciled Custom Resource is not supposed to be updated.
-func TerminateSilently(err error) Result {
+func TerminateSilently(err error) DeprecatedResult {
 	dryrun.AddTerminationError(err)
 
-	return Result{terminated: true, requeueAfter: DefaultRetry}
+	return DeprecatedResult{terminated: true, requeueAfter: DefaultRetry, err: err}
 }
 
-func (r Result) WithRetry(retry time.Duration) Result {
+func (r DeprecatedResult) WithRetry(retry time.Duration) DeprecatedResult {
 	r.requeueAfter = retry
 	return r
 }
 
 // WithoutRetry indicates that no retry must happen after the reconciliation is over. This should usually be used
 // in cases when retry won't fix the situation like when the spec is incorrect and requires the user to update it.
-func (r Result) WithoutRetry() Result {
+func (r DeprecatedResult) WithoutRetry() DeprecatedResult {
 	r.requeueAfter = -1
 	return r
 }
 
-func (r Result) WithMessage(message string) Result {
+func (r DeprecatedResult) WithMessage(message string) DeprecatedResult {
 	r.message = message
 	return r
 }
 
-func (r Result) IsOk() bool {
+func (r DeprecatedResult) IsOk() bool {
 	return !r.terminated
 }
 
-func (r Result) IsWarning() bool {
+func (r DeprecatedResult) IsWarning() bool {
 	return r.warning
 }
 
-func (r Result) IsInProgress() bool {
+func (r DeprecatedResult) IsInProgress() bool {
 	return r.terminated && !r.warning
 }
 
-func (r Result) GetMessage() string {
+func (r DeprecatedResult) GetMessage() string {
 	return r.message
 }
 
-func (r Result) ReconcileResult() reconcile.Result {
+func (r DeprecatedResult) ReconcileResult() (reconcile.Result, error) {
 	if r.requeueAfter < 0 {
-		return reconcile.Result{}
+		return reconcile.Result{}, nil
 	}
-	return reconcile.Result{RequeueAfter: r.requeueAfter}
+	return reconcile.Result{RequeueAfter: r.requeueAfter}, r.err
 }

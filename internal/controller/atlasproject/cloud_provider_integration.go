@@ -28,7 +28,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
 
-func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	roleStatuses := project.Status.DeepCopy().CloudProviderIntegrations
 	roleSpecs := getCloudProviderIntegrations(project.Spec)
 

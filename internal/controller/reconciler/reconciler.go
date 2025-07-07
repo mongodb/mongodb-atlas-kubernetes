@@ -44,17 +44,17 @@ func (r *AtlasReconciler) Skip(ctx context.Context, typeName string, resource ap
 			result := workflow.Terminate(workflow.Internal, err)
 			r.Log.Errorw("Failed to remove finalizer", "terminate", err)
 
-			return result.ReconcileResult(), nil
+			return result.ReconcileResult()
 		}
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasReconciler) Invalidate(typeName string, invalid workflow.Result) (ctrl.Result, error) {
+func (r *AtlasReconciler) Invalidate(typeName string, invalid workflow.DeprecatedResult) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("%T is invalid: %v", typeName, invalid)
-	return invalid.ReconcileResult(), nil
+	return invalid.ReconcileResult()
 }
 
 func (r *AtlasReconciler) Unsupport(ctx *workflow.Context, typeName string) (ctrl.Result, error) {
@@ -63,5 +63,5 @@ func (r *AtlasReconciler) Unsupport(ctx *workflow.Context, typeName string) (ctr
 		fmt.Errorf("the %s is not supported by Atlas for government", typeName),
 	).WithoutRetry()
 	ctx.SetConditionFromResult(api.ReadyType, unsupported)
-	return unsupported.ReconcileResult(), nil
+	return unsupported.ReconcileResult()
 }

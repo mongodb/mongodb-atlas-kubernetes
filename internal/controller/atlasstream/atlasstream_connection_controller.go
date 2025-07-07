@@ -180,7 +180,7 @@ func (r *AtlasStreamsConnectionReconciler) skip(ctx context.Context, log *zap.Su
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasStreamsConnectionReconciler) invalidate(invalid workflow.Result) ctrl.Result {
+func (r *AtlasStreamsConnectionReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasStreamConnection is invalid: %v", invalid)
 	return invalid.ReconcileResult()

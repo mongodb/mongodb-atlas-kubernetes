@@ -300,7 +300,7 @@ func (r *AtlasDeploymentReconciler) transitionFromLegacy(ctx *workflow.Context, 
 	}
 }
 
-func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService, projectID string, atlasDeployment *akov2.AtlasDeployment, result workflow.Result) transitionFn {
+func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService, projectID string, atlasDeployment *akov2.AtlasDeployment, result workflow.DeprecatedResult) transitionFn {
 	if result.IsInProgress() {
 		return func(reason workflow.ConditionReason) (ctrl.Result, error) {
 			deploymentInAtlas, err := deploymentService.GetDeployment(ctx.Context, projectID, atlasDeployment)

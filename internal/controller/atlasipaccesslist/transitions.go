@@ -106,7 +106,7 @@ func (r *AtlasIPAccessListReconciler) skip(ctx context.Context, ipAccessList *ak
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasIPAccessListReconciler) invalidate(invalid workflow.Result) ctrl.Result {
+func (r *AtlasIPAccessListReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasIPAccessList is invalid: %v", invalid)
 	return invalid.ReconcileResult()
