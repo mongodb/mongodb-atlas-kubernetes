@@ -32,11 +32,7 @@ spec:
           entry:
             schema: 'DataLakeTenant'
             filters:
-              skipProperties:
-                - $.groupId
-                - $.hostnames
-                - $.privateEndpointHostnames
-                - $.state
+              readWriteOnly: true
           status:
             schema: 'DataLakeTenant'
             filters:
@@ -136,22 +132,13 @@ spec:
           entry:
             schema: "Group"
             filters:
-              skipProperties:
-                - $.clusterCount
-                - $.created
-                - $.id
-                - $.links
+              readWriteOnly: true
           status:
             schema: "Group"
             filters:
               readOnly: true
               skipProperties:
                 - $.links
-#                - $.name
-#                - $.orgId
-#                - $.regionUsageRestrictions
-#                - $.tags
-#                - $.withDefaultAlertsSettings
 
     - gvk:
         version: v1

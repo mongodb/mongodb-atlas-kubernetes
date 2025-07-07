@@ -89,7 +89,7 @@ type RequestBody struct {
 
 type Filters struct {
 	ReadOnly            bool     `json:"readOnly,omitempty"`
-	WritableOnly        bool     `json:"writeOnly,omitempty"`
+	ReadWriteOnly       bool     `json:"readWriteOnly,omitempty"`
 	SkipProperties      []string `json:"skipProperties,omitempty"`
 	SensitiveProperties []string `json:"sensitiveProperties,omitempty"`
 }

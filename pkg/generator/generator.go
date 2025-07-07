@@ -111,6 +111,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		plugins.NewSensitivePropertiesPlugin(),
 		plugins.NewSkippedPropertiesPlugin(),
 		plugins.NewReadOnlyPropertiesPlugin(),
+		plugins.NewReadWriteOnlyPropertiesPlugin(),
 	}
 
 	for _, mapping := range g.config.Mappings {
