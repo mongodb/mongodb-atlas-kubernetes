@@ -51,6 +51,12 @@ type AtlasDeploymentSpec struct {
 	// ProjectReference is the dual external or kubernetes reference with access credentials
 	ProjectDualReference `json:",inline"`
 
+	//  upgradeToDedicated, when set to true, triggers the migration from a Flex to a
+	//  Dedicated cluster. The user MUST provide the new dedicated cluster configuration.
+	//  This flag is ignored if the cluster is already dedicated.
+	// +optional
+	UpgradeToDedicated bool `json:"upgradeToDedicated,omitempty"`
+
 	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
 	// +optional
 	DeploymentSpec *AdvancedDeploymentSpec `json:"deploymentSpec,omitempty"`
