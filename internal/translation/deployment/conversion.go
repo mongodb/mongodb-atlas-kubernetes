@@ -1244,3 +1244,22 @@ func flexUpdateToAtlas(flex *Flex) *admin.FlexClusterDescriptionUpdate20241113 {
 		TerminationProtectionEnabled: &flex.TerminationProtectionEnabled,
 	}
 }
+
+func flexUpgradeToAtlas(flex *Flex) *admin.AtlasTenantClusterUpgradeRequest20240805 {
+	cluster := flex.GetCustomResource().Spec.DeploymentSpec
+	return &admin.AtlasTenantClusterUpgradeRequest20240805{
+		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
+		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),
+		VersionReleaseSystem:         pointer.MakePtrOrNil(cluster.VersionReleaseSystem),
+		BackupEnabled:                cluster.BackupEnabled,
+		BiConnector:                  biConnectToAtlas(cluster.BiConnector),
+		EncryptionAtRestProvider:     pointer.MakePtrOrNil(cluster.EncryptionAtRestProvider),
+		Labels:                       labelsToAtlas(cluster.Labels),
+		Paused:                       cluster.Paused,
+		PitEnabled:                   cluster.PitEnabled,
+		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB),
+		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
+		Tags:                         tag.ToAtlas(cluster.Tags),
+		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
+	}
+}

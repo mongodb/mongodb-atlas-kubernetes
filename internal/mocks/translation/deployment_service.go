@@ -577,6 +577,65 @@ func (_c *DeploymentServiceMock_UpdateProcessArgs_Call) RunAndReturn(run func(co
 	return _c
 }
 
+// UpgradeToDedicated provides a mock function with given fields: ctx, _a1
+func (_m *DeploymentServiceMock) UpgradeToDedicated(ctx context.Context, _a1 deployment.Deployment) (deployment.Deployment, error) {
+	ret := _m.Called(ctx, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpgradeToDedicated")
+	}
+
+	var r0 deployment.Deployment
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) (deployment.Deployment, error)); ok {
+		return rf(ctx, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) deployment.Deployment); ok {
+		r0 = rf(ctx, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(deployment.Deployment)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, deployment.Deployment) error); ok {
+		r1 = rf(ctx, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// DeploymentServiceMock_UpgradeToDedicated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpgradeToDedicated'
+type DeploymentServiceMock_UpgradeToDedicated_Call struct {
+	*mock.Call
+}
+
+// UpgradeToDedicated is a helper method to define mock.On call
+//   - ctx context.Context
+//   - _a1 deployment.Deployment
+func (_e *DeploymentServiceMock_Expecter) UpgradeToDedicated(ctx interface{}, _a1 interface{}) *DeploymentServiceMock_UpgradeToDedicated_Call {
+	return &DeploymentServiceMock_UpgradeToDedicated_Call{Call: _e.mock.On("UpgradeToDedicated", ctx, _a1)}
+}
+
+func (_c *DeploymentServiceMock_UpgradeToDedicated_Call) Run(run func(ctx context.Context, _a1 deployment.Deployment)) *DeploymentServiceMock_UpgradeToDedicated_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(deployment.Deployment))
+	})
+	return _c
+}
+
+func (_c *DeploymentServiceMock_UpgradeToDedicated_Call) Return(_a0 deployment.Deployment, _a1 error) *DeploymentServiceMock_UpgradeToDedicated_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *DeploymentServiceMock_UpgradeToDedicated_Call) RunAndReturn(run func(context.Context, deployment.Deployment) (deployment.Deployment, error)) *DeploymentServiceMock_UpgradeToDedicated_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewDeploymentServiceMock creates a new instance of DeploymentServiceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewDeploymentServiceMock(t interface {
