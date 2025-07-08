@@ -60,9 +60,11 @@ func TestHandleDatabaseUser(t *testing.T) {
 		atlasProject       *akov2.AtlasProject
 		atlasProvider      atlas.Provider
 		expectedResult     ctrl.Result
+		wantErr            bool
 		expectedConditions []api.Condition
 	}{
 		"user spec is invalid": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -88,6 +90,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 			},
 		},
 		"user spec is mismatch": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -318,7 +321,11 @@ func TestHandleDatabaseUser(t *testing.T) {
 			version.Version = "2.4.1"
 
 			result, err := r.handleDatabaseUser(ctx, tt.dbUserInAKO)
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			logger.Infof("conditions", ctx.Conditions())
 
@@ -343,9 +350,11 @@ func TestDbuLifeCycle(t *testing.T) {
 		dbUserService      func() dbuser.AtlasUsersService
 		dService           func() deployment.AtlasDeploymentsService
 		expectedResult     ctrl.Result
+		wantErr            bool
 		expectedConditions []api.Condition
 	}{
 		"failed to get user in atlas": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -824,7 +833,11 @@ func TestDbuLifeCycle(t *testing.T) {
 			}
 
 			result, err := r.dbuLifeCycle(ctx, tt.dbUserService(), tt.dService(), tt.dbUserInAKO, &project.Project{})
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -844,9 +857,11 @@ func TestCreate(t *testing.T) {
 		dbUserSecret       *corev1.Secret
 		dbUserService      func() dbuser.AtlasUsersService
 		expectedResult     ctrl.Result
+		wantErr            bool
 		expectedConditions []api.Condition
 	}{
 		"failed to read user password": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -870,6 +885,7 @@ func TestCreate(t *testing.T) {
 			},
 		},
 		"failed to convert to internal user": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -906,6 +922,7 @@ func TestCreate(t *testing.T) {
 			},
 		},
 		"failed to create user": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -1063,7 +1080,11 @@ func TestCreate(t *testing.T) {
 			}
 
 			result, err := r.create(ctx, tt.dbUserService(), "project-id", tt.dbUserInAKO)
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1085,9 +1106,11 @@ func TestUpdate(t *testing.T) {
 		dbUserService      func() dbuser.AtlasUsersService
 		dService           func() deployment.AtlasDeploymentsService
 		expectedResult     ctrl.Result
+		wantErr            bool
 		expectedConditions []api.Condition
 	}{
 		"failed to read user password": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -1114,6 +1137,7 @@ func TestUpdate(t *testing.T) {
 			},
 		},
 		"failed to convert to internal user": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -1208,6 +1232,7 @@ func TestUpdate(t *testing.T) {
 			},
 		},
 		"failed to update user": {
+			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -1345,7 +1370,11 @@ func TestUpdate(t *testing.T) {
 			}
 
 			result, err := r.update(ctx, tt.dbUserService(), tt.dService(), &project.Project{}, tt.dbUserInAKO, tt.dbUserInAtlas)
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1365,6 +1394,7 @@ func TestDelete(t *testing.T) {
 		dbUserService      func() dbuser.AtlasUsersService
 		deletionProtection bool
 		expectedResult     ctrl.Result
+		wantErr            bool
 		expectedConditions []api.Condition
 	}{
 		"don't delete resource on atlas when deletion protection is enabled": {
@@ -1411,6 +1441,7 @@ func TestDelete(t *testing.T) {
 			expectedConditions: nil,
 		},
 		"failed to delete resource": {
+			wantErr: true,
 			dbUser: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -1515,7 +1546,11 @@ func TestDelete(t *testing.T) {
 			}
 
 			result, err := r.delete(ctx, tt.dbUserService(), "project-id", tt.dbUser)
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -1534,9 +1569,11 @@ func TestReadiness(t *testing.T) {
 		dbUser             *akov2.AtlasDatabaseUser
 		dService           func() deployment.AtlasDeploymentsService
 		expectedResult     ctrl.Result
+		wantErr            bool
 		expectedConditions []api.Condition
 	}{
 		"failed to list cluster names": {
+			wantErr: true,
 			dbUser: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -1564,6 +1601,7 @@ func TestReadiness(t *testing.T) {
 			},
 		},
 		"failed to check deployment status": {
+			wantErr: true,
 			dbUser: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -1634,6 +1672,7 @@ func TestReadiness(t *testing.T) {
 			},
 		},
 		"failed to create connection secrets": {
+			wantErr: true,
 			dbUser: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user1",
@@ -1731,7 +1770,11 @@ func TestReadiness(t *testing.T) {
 			}
 
 			result, err := r.readiness(ctx, tt.dService(), &project.Project{}, tt.dbUser, "999")
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
