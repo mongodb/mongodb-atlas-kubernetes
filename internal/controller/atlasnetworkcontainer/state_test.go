@@ -476,7 +476,7 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantErr:        fmt.Errorf("failed to create container: %v", ErrTestFail),
+			wantErr:        fmt.Errorf("failed to create container: %w", ErrTestFail),
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
@@ -675,7 +675,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
-			wantErr:        fmt.Errorf("failed to update container: %v", ErrTestFail),
+			wantErr:        fmt.Errorf("failed to update container: %w", ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to update container: %v", ErrTestFail)),
@@ -763,7 +763,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
-			wantErr:        fmt.Errorf("failed to delete container: %v", ErrTestFail),
+			wantErr:        fmt.Errorf("failed to delete container: %w", ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotDeleted)).
 					WithMessageRegexp(fmt.Sprintf("failed to delete container: %v", ErrTestFail)),
@@ -795,7 +795,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
-			wantErr: fmt.Errorf("failed to find container from project %s: %v",
+			wantErr: fmt.Errorf("failed to find container from project %s: %w",
 				testProjectID, ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
@@ -830,7 +830,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
-			wantErr: fmt.Errorf("failed to get container %s from project %s: %v",
+			wantErr: fmt.Errorf("failed to get container %s from project %s: %w",
 				testContainerID, testProjectID, ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
@@ -868,7 +868,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
-			wantErr: fmt.Errorf("failed to get container %s from project %s: %v",
+			wantErr: fmt.Errorf("failed to get container %s from project %s: %w",
 				testContainerID, testProjectID, networkcontainer.ErrNotFound),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).

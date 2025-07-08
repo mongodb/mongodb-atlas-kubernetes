@@ -416,7 +416,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
-			wantErr:        fmt.Errorf("failed to create peering connection: %v", ErrTestFail),
+			wantErr:        fmt.Errorf("failed to create peering connection: %w", ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkPeeringNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to create peering connection: %v", ErrTestFail)),
@@ -674,7 +674,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
-			wantErr:        fmt.Errorf("failed to update peering connection: %v", ErrTestFail),
+			wantErr:        fmt.Errorf("failed to update peering connection: %w", ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.Internal)).
 					WithMessageRegexp(fmt.Sprintf("failed to update peering connection: %v", ErrTestFail)),
