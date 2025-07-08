@@ -28,6 +28,34 @@ spec:
   crd:
     - gvk:
         version: v1
+        kind: Group
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - ag
+      mappings:
+        - majorVersion: v20231115
+          openAPIRef:
+            name: v20231115
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups'
+              verb: post
+          entry:
+            schema: "Group"
+            filters:
+              readWriteOnly: true
+          status:
+            schema: "Group"
+            filters:
+              readOnly: true
+              skipProperties:
+                - $.links
+
+
+    - gvk:
+        version: v1
         kind: NetworkPeeringConnection
         group: atlas.generated.mongodb.com
       categories:
@@ -239,33 +267,6 @@ spec:
             path:
               name: '/api/atlas/v2/orgs/{orgId}/settings'
               verb: get
-
-    - gvk:
-        version: v1
-        kind: Group
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - ag
-      mappings:
-        - majorVersion: v20231115
-          openAPIRef:
-            name: v20231115
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups'
-              verb: post
-          entry:
-            schema: "Group"
-            filters:
-              readWriteOnly: true
-          status:
-            schema: "Group"
-            filters:
-              readOnly: true
-              skipProperties:
-                - $.links
 
     - gvk:
         version: v1
