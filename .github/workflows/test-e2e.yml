@@ -17,7 +17,6 @@ jobs:
       test_matrix: ${{ steps.test.outputs.matrix }}
     steps:
       - id: test
-        name: Compute k8s matrix
         run: |
           matrix='["v1.30.10-kind"]'
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
@@ -25,15 +24,9 @@ jobs:
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 
-  e2e:
-    needs: compute
+  prepare-e2e:
     runs-on: ubuntu-latest
-    environment: test
-    strategy:
-      fail-fast: false
-      matrix:
-        k8s: ${{ fromJson(needs.compute.outputs.test_matrix) }}
-        test: ["free-tier"]
+    needs: compute
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,48 +38,13 @@ jobs:
         with:
           enable-cache: 'true'
 
-      - id: properties
-        run: |
-          version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
-          platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
-          echo "k8s_version=$version" >> $GITHUB_OUTPUT
-          echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
-
-      - uses: ./.github/actions/gen-install-scripts
+      - name: Cache devbox dependencies
+        uses: actions/cache@v4
         with:
-          VERSION: dev
-          ENV: dev
-
-      - if: ${{ steps.properties.outputs.k8s_platform == 'kind' }}
-        uses: helm/kind-action@v1.12.0
-        with:
-          version: v0.26.0
-          config: test/helper/e2e/config/kind.yaml
-          node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
-          cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
-          wait: 180s
-
-      - run: devbox run -- kubectl version
-      - run: devbox run -- kubectl apply -f deploy/crds
-      - run: devbox run -- ./scripts/launch-ci-e2e.sh
-        env:
-          TEST_NAME: ${{ matrix.test }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
-          DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
-          PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
-
-      - if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs
-          path: output/**
+          path: |
+            ~/.devbox
+            ~/.cache/devbox
+          key: devbox-${{ runner.os }}-${{ hashFiles('**/devbox.json') }}
 
   prepare-e2e-image:
     runs-on: ubuntu-latest
@@ -124,8 +82,79 @@ jobs:
           platforms: linux/amd64
           push_to_docker: false
 
+  e2e:
+    needs: [compute, prepare-e2e]
+    runs-on: ubuntu-latest
+    environment: test
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s: ${{ fromJson(needs.compute.outputs.test_matrix) }}
+        test: ["free-tier"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: true
+          fetch-depth: 0
+
+      - name: Restore devbox cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.devbox
+            ~/.cache/devbox
+          key: devbox-${{ runner.os }}-${{ hashFiles('**/devbox.json') }}
+
+      - uses: jetify-com/devbox-install-action@v0.13.0
+        with:
+          enable-cache: 'true'
+
+      - uses: ./.github/actions/gen-install-scripts
+        with:
+          VERSION: dev
+          ENV: dev
+
+      - name: Extract k8s version/platform
+        id: extract
+        run: |
+          echo "k8s_version=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $1}')" >> $GITHUB_OUTPUT
+          echo "k8s_platform=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Setup kind cluster if needed
+        if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
+        uses: helm/kind-action@v1.12.0
+        with:
+          version: v0.26.0
+          config: test/helper/e2e/config/kind.yaml
+          node_image: kindest/node:${{ steps.extract.outputs.k8s_version }}
+          cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
+          wait: 180s
+
+      - run: devbox run -- kubectl version
+      - run: devbox run -- kubectl apply -f deploy/crds
+      - run: devbox run -- ./scripts/launch-ci-e2e.sh
+        env:
+          TEST_NAME: ${{ matrix.test }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
+          DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
+          PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
+
+      - if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: output/**
+
   helm-e2e:
-    needs: [compute, prepare-e2e-image]
+    needs: [compute, prepare-e2e-image, prepare-e2e]
     runs-on: ubuntu-latest
     environment: test
     strategy:
@@ -140,16 +169,17 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Restore devbox cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.devbox
+            ~/.cache/devbox
+          key: devbox-${{ runner.os }}-${{ hashFiles('**/devbox.json') }}
+
       - uses: jetify-com/devbox-install-action@v0.13.0
         with:
           enable-cache: 'true'
-
-      - id: properties
-        run: |
-          version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
-          platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
-          echo "k8s_version=$version" >> $GITHUB_OUTPUT
-          echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
 
       - uses: ./.github/actions/gen-install-scripts
         with:
@@ -157,12 +187,19 @@ jobs:
           VERSION: ${{ needs.prepare-e2e-image.outputs.tag }}
           ENV: dev
 
-      - if: ${{ steps.properties.outputs.k8s_platform == 'kind' }}
+      - name: Extract k8s version/platform
+        id: extract
+        run: |
+          echo "k8s_version=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $1}')" >> $GITHUB_OUTPUT
+          echo "k8s_platform=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Setup kind cluster if needed
+        if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
         uses: helm/kind-action@v1.12.0
         with:
           version: v0.26.0
           config: test/helper/e2e/config/kind.yaml
-          node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
+          node_image: kindest/node:${{ steps.extract.outputs.k8s_version }}
           cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
           wait: 180s
 
