@@ -28,6 +28,27 @@ spec:
   crd:
     - gvk:
         version: v1
+        kind: Organization
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - aorg
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          entry:
+            schema: "CreateOrganizationRequest"
+          status:
+            schema: "CreateOrganizationResponse"
+            filters:
+              skipProperties:
+                - $.apiKey
+                - $.organization.links
+
+    - gvk:
+        version: v1
         kind: Group
         group: atlas.generated.mongodb.com
       categories:
@@ -52,7 +73,6 @@ spec:
               readOnly: true
               skipProperties:
                 - $.links
-
 
     - gvk:
         version: v1

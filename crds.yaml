@@ -4,6 +4,190 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: organizations.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: Organization
+    listKind: OrganizationList
+    plural: organizations
+    shortNames:
+    - aorg
+    singular: organization
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A organization, managed by the MongoDB Kubernetes Atlas Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the organization supporting the following versions:
+
+              - v20250312
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20250312:
+                description: The spec of the organization resource for version v20250312.
+                properties:
+                  entry:
+                    description: The entry fields of the organization resource spec.
+                      These fields can be set for creating and updating organizations.
+                    properties:
+                      apiKey:
+                        description: Details of the programmatic API key to be created.
+                        properties:
+                          desc:
+                            description: Purpose or explanation provided when someone
+                              created this organization API key.
+                            type: string
+                          roles:
+                            description: List of roles to grant this API key. If you
+                              provide this list, provide a minimum of one role and
+                              ensure each role applies to this organization.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - desc
+                        - roles
+                        type: object
+                      federationSettingsId:
+                        description: Unique 24-hexadecimal digit string that identifies
+                          the federation to link the newly created organization to.
+                          If specified, the proposed Organization Owner of the new
+                          organization must have the Organization Owner role in an
+                          organization associated with the federation.
+                        example: 32b6e34b3d91647abb20e7b8
+                        type: string
+                      name:
+                        description: Human-readable label that identifies the organization.
+                        type: string
+                      orgOwnerId:
+                        description: Unique 24-hexadecimal digit string that identifies
+                          the MongoDB Cloud user that you want to assign the Organization
+                          Owner role. This user must be a member of the same organization
+                          as the calling API key. If you provide `federationSettingsId`,  this
+                          user must instead have the Organization Owner role on an
+                          organization in the specified federation. This parameter
+                          is required only when you authenticate with Programmatic
+                          API Keys.
+                        example: 32b6e34b3d91647abb20e7b8
+                        type: string
+                      skipDefaultAlertsSettings:
+                        description: Disables automatic alert creation. When set to
+                          true, no organization level alerts will be created automatically.
+                        type: boolean
+                    required:
+                    - name
+                    type: object
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the organization
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20250312:
+                description: The last observed Atlas state of the organization resource
+                  for version v20250312.
+                properties:
+                  federationSettingsId:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the federation that you linked the newly created organization
+                      to.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                  orgOwnerId:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the MongoDB Cloud user that you assigned the Organization Owner
+                      role in the new organization.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                  organization:
+                    description: Details that describe the organization.
+                    properties:
+                      id:
+                        description: Unique 24-hexadecimal digit string that identifies
+                          the organization.
+                        example: 32b6e34b3d91647abb20e7b8
+                        type: string
+                      isDeleted:
+                        description: Flag that indicates whether this organization
+                          has been deleted.
+                        type: boolean
+                      name:
+                        description: Human-readable label that identifies the organization.
+                        type: string
+                      skipDefaultAlertsSettings:
+                        description: Disables automatic alert creation. When set to
+                          true, no organization level alerts will be created automatically.
+                        type: boolean
+                    required:
+                    - name
+                    type: object
+                  skipDefaultAlertsSettings:
+                    description: Disables automatic alert creation. When set to true,
+                      no organization level alerts will be created automatically.
+                    type: boolean
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: groups.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
