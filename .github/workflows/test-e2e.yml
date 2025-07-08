@@ -171,7 +171,7 @@ jobs:
           TEST_NAME: ${{ matrix.test }}
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
           IMAGE_URL: ${{ needs.prepare-e2e-image.outputs.image_url }}
-          IMAGE_PULL_SECRET_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          IMAGE_PULL_SECRET_USERNAME: ${{ github.actor }}
           IMAGE_PULL_SECRET_PASSWORD: "${{ secrets.GITHUB_TOKEN }}"
 
       - if: ${{ failure() }}
