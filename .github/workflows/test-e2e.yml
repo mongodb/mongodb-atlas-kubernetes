@@ -4,6 +4,12 @@ on:
   workflow_call:
   workflow_dispatch:
 
+env:
+  MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
+  MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+  MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+  MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
+
 jobs:
   compute:
     runs-on: ubuntu-latest
@@ -11,6 +17,7 @@ jobs:
       test_matrix: ${{ steps.test.outputs.matrix }}
     steps:
       - id: test
+        name: Compute k8s matrix
         run: |
           matrix='["v1.30.10-kind"]'
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
@@ -56,22 +63,24 @@ jobs:
           version: v0.26.0
           config: test/helper/e2e/config/kind.yaml
           node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
-          cluster_name: ${{ matrix.test }}
+          cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
           wait: 180s
 
       - run: devbox run -- kubectl version
       - run: devbox run -- kubectl apply -f deploy/crds
-
-      - name: Setup cloud env
-        uses: ./.github/actions/setup-cloud-env
-
       - run: devbox run -- ./scripts/launch-ci-e2e.sh
         env:
           TEST_NAME: ${{ matrix.test }}
-          K8S_PLATFORM: ${{ steps.properties.outputs.k8s_platform }}
-          K8S_VERSION: ${{ steps.properties.outputs.k8s_version }}
-          IMAGE_URL: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease:dev
-          BUNDLE_IMAGE: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-bundles-prerelease:dev
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
+          DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
+          PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
 
       - if: ${{ failure() }}
         uses: actions/upload-artifact@v4
@@ -79,13 +88,46 @@ jobs:
           name: logs
           path: output/**
 
-  helm-e2e:
+  prepare-e2e-image:
+    runs-on: ubuntu-latest
     needs: compute
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
+      image_url: ${{ steps.set_vars.outputs.image_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: true
+          fetch-depth: 0
+
+      - id: set_tag
+        uses: ./.github/actions/set-tag
+
+      - id: set_vars
+        run: |
+          TAG=${{ steps.set_tag.outputs.tag }}
+          echo "image_url=$(printf '%s' \
+            "ghcr.io/${{ github.repository_owner }}/" \
+            "mongodb-atlas-kubernetes-operator-prerelease:" \
+            "${TAG}" \
+          )" >> $GITHUB_OUTPUT
+
+      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - uses: ./.github/actions/build-push-image
+        with:
+          file: fast.Dockerfile
+          repository: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
+          version: ${{ steps.set_tag.outputs.tag }}
+          tags: ${{ steps.set_vars.outputs.image_url }}
+          platforms: linux/amd64
+          push_to_docker: false
+
+  helm-e2e:
+    needs: [compute, prepare-e2e-image]
     runs-on: ubuntu-latest
     environment: test
-    env:
-      GHCR_REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
-      GHCR_BUNDLES_REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-bundles-prerelease
     strategy:
       fail-fast: false
       matrix:
@@ -97,20 +139,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           submodules: true
           fetch-depth: 0
-
-      - id: prepare
-        uses: ./.github/actions/set-tag
-
-      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-
-      - uses: ./.github/actions/build-push-image
-        with:
-          file: fast.Dockerfile
-          repository: ${{ env.GHCR_REPO }}
-          version: ${{ steps.prepare.outputs.tag }}
-          tags: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
-          platforms: linux/amd64
-          push_to_docker: false
 
       - uses: jetify-com/devbox-install-action@v0.13.0
         with:
@@ -125,31 +153,27 @@ jobs:
 
       - uses: ./.github/actions/gen-install-scripts
         with:
-          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
-          VERSION: ${{ steps.prepare.outputs.tag }}
+          IMAGE_URL: ${{ needs.prepare-e2e-image.outputs.image_url }}
+          VERSION: ${{ needs.prepare-e2e-image.outputs.tag }}
           ENV: dev
 
-      - if: ${{ steps.properties.outputs.k8s_platform == 'kind' && env.ACT != 'true' }}
+      - if: ${{ steps.properties.outputs.k8s_platform == 'kind' }}
         uses: helm/kind-action@v1.12.0
         with:
           version: v0.26.0
           config: test/helper/e2e/config/kind.yaml
           node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
-          cluster_name: ${{ matrix.test }}
+          cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
           wait: 180s
 
       - run: devbox run -- kubectl version
-
-      - name: Setup cloud env
-        uses: ./.github/actions/setup-cloud-env
-
       - run: devbox run -- ./scripts/launch-ci-e2e.sh
         env:
           TEST_NAME: ${{ matrix.test }}
-          K8S_PLATFORM: ${{ steps.properties.outputs.k8s_platform }}
-          K8S_VERSION: ${{ steps.properties.outputs.k8s_version }}
-          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
-          BUNDLE_IMAGE: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
+          IMAGE_PULL_SECRET_REGISTRY: ghcr.io
+          IMAGE_URL: ${{ needs.prepare-e2e-image.outputs.image_url }}
+          IMAGE_PULL_SECRET_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          IMAGE_PULL_SECRET_PASSWORD: "${{ secrets.GITHUB_TOKEN }}"
 
       - if: ${{ failure() }}
         uses: actions/upload-artifact@v4
