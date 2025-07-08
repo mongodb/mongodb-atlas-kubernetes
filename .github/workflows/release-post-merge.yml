@@ -72,6 +72,7 @@ jobs:
           sudo apt clean
           docker rmi $(docker image ls -aq) &> /dev/null || true
           df -h
+
       - name: Compute release tag and options
         id: tag
         run: |
@@ -94,22 +95,40 @@ jobs:
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "certified_version=${version}-certified" >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
+
       - name: Check out code
         uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 0
           ref: ${{ env.TAG }}
+
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.13.0
         with:
           enable-cache: 'true'
+
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
+          private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            mongodb-atlas-kubernetes
+            helm-charts
+
       - name: Trigger helm post release workflow
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         if: ${{ steps.tag.outputs.release_helm == 'true' }}
         run: |
-          devbox run -- 'make release-helm JWT_RSA_PEM_KEY_BASE64="${{ secrets.AKO_RELEASER_RSA_KEY_BASE64 }}" \
-            JWT_APP_ID="${{ secrets.AKO_RELEASER_APP_ID }}" \
-            VERSION="${{ steps.tag.outputs.version }}"'
+          gh workflow run post-atlas-operator-release.yaml \
+            --repo mongodb/helm-charts \
+            --ref main \
+            --fields version="${{ steps.tag.outputs.version }}" \
+
       - name: Choose Dockerfile
         id: pick-dockerfile
         run: |
@@ -118,6 +137,7 @@ jobs:
           else
             echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
           fi
+
       - name: Check signing supported
         id: check-signing-support
         run: |
@@ -126,6 +146,7 @@ jobs:
             else
               echo "sign=false" >> $GITHUB_OUTPUT
             fi
+
       - name: Build all platforms & check version
         if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
         run: |
@@ -137,6 +158,7 @@ jobs:
             else
               echo "Skipped version check"
             fi'
+
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
@@ -154,6 +176,7 @@ jobs:
             ${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
             quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
             quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}-certified
+
       - name: Certify Openshift images
         if: ${{ steps.tag.outputs.certify == 'true' }}
         uses: ./.github/actions/certify-openshift-images
@@ -165,6 +188,7 @@ jobs:
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
           submit: true
+
       - name: Login to artifactory.corp.mongodb.com
         if: steps.check-signing-support.outputs.sign == 'true'
         uses: docker/login-action@v3
@@ -172,6 +196,7 @@ jobs:
           registry: artifactory.corp.mongodb.com
           username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
           password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
+
       - name: Sign images
         if: steps.check-signing-support.outputs.sign == 'true'
         env:
@@ -185,6 +210,7 @@ jobs:
           devbox run -- 'make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
           devbox run -- 'make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=mongodb/signatures'
           devbox run -- 'make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=mongodb/signatures'
+
       - name: Self-verify images
         if: steps.check-signing-support.outputs.sign == 'true'
         env:
@@ -198,10 +224,12 @@ jobs:
           devbox run -- 'make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}'
           devbox run -- 'make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=mongodb/signatures'
           devbox run -- 'make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=mongodb/signatures'
+
       - name: Create configuration package
         run: |
           devbox run -- 'set -x'
           devbox run -- 'tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml'
+
       - name: Create Release
         if: steps.tag.outputs.release_to_github == 'true'
         id: create_release
@@ -214,6 +242,7 @@ jobs:
           body_path: docs/release-notes/release-notes-template.md
           draft: true
           prerelease: false
+
       - name: Upload Release Asset
         if: steps.tag.outputs.release_to_github == 'true'
         id: upload-release-asset
