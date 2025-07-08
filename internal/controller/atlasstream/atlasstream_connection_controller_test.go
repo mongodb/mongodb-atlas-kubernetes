@@ -195,7 +195,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 	})
 
@@ -236,7 +236,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(
 			t,
 			ctrl.Result{
@@ -359,7 +359,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(
 			t,
 			ctrl.Result{
@@ -628,7 +628,7 @@ func TestLock(t *testing.T) {
 		}
 
 		result, err := reconciler.lock(ctx, connection)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(connection), connection))
@@ -721,7 +721,7 @@ func TestRelease(t *testing.T) {
 		}
 
 		result, err := reconciler.release(ctx, connection)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(connection), connection))

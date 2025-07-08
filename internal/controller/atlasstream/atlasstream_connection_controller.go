@@ -67,15 +67,16 @@ func (r *AtlasStreamsConnectionReconciler) Reconcile(ctx context.Context, req ct
 	akoStreamConnection := akov2.AtlasStreamConnection{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &akoStreamConnection, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	return r.ensureAtlasStreamConnection(ctx, log, &akoStreamConnection)
 }
 
-func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx context.Context, log *zap.SugaredLogger, akoStreamConnection *akov2.AtlasStreamConnection) (ctrl.Result, error) {
+func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx context.Context, log *zap.SugaredLogger,
+	akoStreamConnection *akov2.AtlasStreamConnection) (ctrl.Result, error) {
 	if customresource.ReconciliationShouldBeSkipped(akoStreamConnection) {
-		return r.skip(ctx, log, akoStreamConnection), nil
+		return r.skip(ctx, log, akoStreamConnection)
 	}
 
 	conditions := api.InitCondition(akoStreamConnection, api.FalseCondition(api.ReadyType))
@@ -84,11 +85,11 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, akoStreamConnection, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid), nil
+		return r.invalidate(isValid)
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(akoStreamConnection) {
-		return r.unsupport(workflowCtx), nil
+		return r.unsupport(workflowCtx)
 	}
 
 	streamInstances := &akov2.AtlasStreamInstanceList{}
@@ -166,7 +167,7 @@ func (r *AtlasStreamsConnectionReconciler) findStreamConnectionsForStreamInstanc
 	return requests
 }
 
-func (r *AtlasStreamsConnectionReconciler) skip(ctx context.Context, log *zap.SugaredLogger, streamConnection *akov2.AtlasStreamConnection) ctrl.Result {
+func (r *AtlasStreamsConnectionReconciler) skip(ctx context.Context, log *zap.SugaredLogger, streamConnection *akov2.AtlasStreamConnection) (ctrl.Result, error) {
 	log.Infow(fmt.Sprintf("-> Skipping AtlasStreamConnection reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", streamConnection.Spec)
 	if !streamConnection.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, streamConnection, customresource.UnsetFinalizer); err != nil {
@@ -180,13 +181,13 @@ func (r *AtlasStreamsConnectionReconciler) skip(ctx context.Context, log *zap.Su
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasStreamsConnectionReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
+func (r *AtlasStreamsConnectionReconciler) invalidate(invalid workflow.DeprecatedResult) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasStreamConnection is invalid: %v", invalid)
 	return invalid.ReconcileResult()
 }
 
-func (r *AtlasStreamsConnectionReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasStreamsConnectionReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, errors.New("the AtlasStreamConnection is not supported by Atlas for government")).
 		WithoutRetry()
@@ -198,13 +199,13 @@ func (r *AtlasStreamsConnectionReconciler) terminate(ctx *workflow.Context, erro
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ReadyType, terminated)
-	return terminated.ReconcileResult(), nil
+	return terminated.ReconcileResult()
 }
 
 func (r *AtlasStreamsConnectionReconciler) ready(ctx *workflow.Context) (ctrl.Result, error) {
 	result := workflow.OK()
 	ctx.SetConditionFromResult(api.ReadyType, result)
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasStreamsConnectionReconciler) lock(ctx *workflow.Context, streamConnection *akov2.AtlasStreamConnection) (ctrl.Result, error) {

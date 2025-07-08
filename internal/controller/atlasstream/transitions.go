@@ -86,7 +86,7 @@ func (r *AtlasStreamsInstanceReconciler) delete(ctx *workflow.Context, project *
 		return r.terminate(ctx, workflow.AtlasFinalizerNotRemoved, err)
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func deleteStreamInstance(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) error {
@@ -194,7 +194,8 @@ func deleteConnections(
 
 // transitions back to pending state
 // also terminates if a "terminate" occurred
-func (r *AtlasStreamsInstanceReconciler) skip(ctx context.Context, log *zap.SugaredLogger, streamInstance *akov2.AtlasStreamInstance) ctrl.Result {
+func (r *AtlasStreamsInstanceReconciler) skip(ctx context.Context, log *zap.SugaredLogger,
+	streamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
 	log.Infow(fmt.Sprintf("-> Skipping AtlasStreamInstance reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", streamInstance.Spec)
 	if !streamInstance.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, streamInstance, customresource.UnsetFinalizer); err != nil {
@@ -209,14 +210,14 @@ func (r *AtlasStreamsInstanceReconciler) skip(ctx context.Context, log *zap.Suga
 }
 
 // transitions back to pending state setting an terminate state
-func (r *AtlasStreamsInstanceReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
+func (r *AtlasStreamsInstanceReconciler) invalidate(invalid workflow.DeprecatedResult) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasStreamInstance is invalid: %v", invalid)
 	return invalid.ReconcileResult()
 }
 
 // transitions back to pending setting unsupported state
-func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, errors.New("the AtlasStreamInstance is not supported by Atlas for government")).
 		WithoutRetry()
@@ -229,7 +230,7 @@ func (r *AtlasStreamsInstanceReconciler) terminate(ctx *workflow.Context, errorC
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.StreamInstanceReadyType, terminated)
-	return terminated.ReconcileResult(), nil
+	return terminated.ReconcileResult()
 }
 
 func (r *AtlasStreamsInstanceReconciler) ready(ctx *workflow.Context, streamInstance *admin.StreamsTenant) (ctrl.Result, error) {
@@ -237,12 +238,12 @@ func (r *AtlasStreamsInstanceReconciler) ready(ctx *workflow.Context, streamInst
 	result := workflow.OK()
 	ctx.SetConditionFromResult(api.ReadyType, result)
 	ctx.SetConditionFromResult(api.StreamInstanceReadyType, result)
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasStreamsInstanceReconciler) inProgress(ctx *workflow.Context, streamInstance *admin.StreamsTenant) (ctrl.Result, error) {
 	ctx.EnsureStatusOption(status.AtlasStreamInstanceDetails(streamInstance.GetId(), streamInstance.GetHostnames()))
 	result := workflow.InProgress(workflow.StreamInstanceSetupInProgress, "configuring stream instance in Atlas")
 	ctx.SetConditionFromResult(api.StreamInstanceReadyType, result)
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }

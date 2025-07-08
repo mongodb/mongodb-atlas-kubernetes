@@ -280,7 +280,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
@@ -368,7 +368,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
@@ -465,7 +465,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
@@ -546,7 +546,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)

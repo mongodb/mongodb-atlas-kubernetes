@@ -234,18 +234,6 @@ func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *C
 	}
 }
 
-func GetAllServerless(ctx *workflow.Context, projectID string) ([]*mongodbatlas.Cluster, error) {
-	serverless, _, err := ctx.Client.ServerlessInstances.List(ctx.Context, projectID, nil)
-	if err != nil {
-		if !IsCloudGovDomain(ctx) {
-			return nil, fmt.Errorf("error getting serverless: %w", err)
-		} else {
-			return make([]*mongodbatlas.Cluster, 0), nil
-		}
-	}
-	return serverless.Results, nil
-}
-
 func IsCloudGovDomain(ctx *workflow.Context) bool {
 	domains := []string{
 		"cloudgov.mongodb.com",
