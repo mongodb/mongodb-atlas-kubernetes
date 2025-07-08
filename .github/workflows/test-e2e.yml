@@ -24,28 +24,6 @@ jobs:
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 
-  prepare-e2e:
-    runs-on: ubuntu-latest
-    needs: compute
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          submodules: true
-          fetch-depth: 0
-
-      - uses: jetify-com/devbox-install-action@v0.13.0
-        with:
-          enable-cache: 'true'
-
-      - name: Cache devbox dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.devbox
-            ~/.cache/devbox
-          key: devbox-${{ runner.os }}-${{ hashFiles('**/devbox.json') }}
-
   prepare-e2e-image:
     runs-on: ubuntu-latest
     needs: compute
@@ -83,7 +61,7 @@ jobs:
           push_to_docker: false
 
   e2e:
-    needs: [compute, prepare-e2e]
+    needs: [compute]
     runs-on: ubuntu-latest
     environment: test
     strategy:
@@ -97,14 +75,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           submodules: true
           fetch-depth: 0
-
-      - name: Restore devbox cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.devbox
-            ~/.cache/devbox
-          key: devbox-${{ runner.os }}-${{ hashFiles('**/devbox.json') }}
 
       - uses: jetify-com/devbox-install-action@v0.13.0
         with:
@@ -154,7 +124,7 @@ jobs:
           path: output/**
 
   helm-e2e:
-    needs: [compute, prepare-e2e-image, prepare-e2e]
+    needs: [compute, prepare-e2e-image]
     runs-on: ubuntu-latest
     environment: test
     strategy:
@@ -168,14 +138,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           submodules: true
           fetch-depth: 0
-
-      - name: Restore devbox cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.devbox
-            ~/.cache/devbox
-          key: devbox-${{ runner.os }}-${{ hashFiles('**/devbox.json') }}
 
       - uses: jetify-com/devbox-install-action@v0.13.0
         with:
