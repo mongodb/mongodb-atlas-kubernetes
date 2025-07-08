@@ -1,4 +1,4 @@
-name: E2E tests.
+name: E2E tests
 
 on:
   workflow_call:
@@ -14,188 +14,39 @@ jobs:
       - id: test
         name: Compute Test Matrix
         run: |
-          # Note the use of external single quotes to allow for double quotes at inline YAML array
           matrix='["v1.30.10-kind"]'
-          if [ "${{ github.ref }}" == "refs/heads/main" ];then
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             matrix='["v1.30.10-kind", "v1.32.2-kind"]'
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
 
-  prepare-e2e:
-    name: Prepare E2E configuration and image
-    environment: release
-    runs-on: ubuntu-latest
-    env:
-      REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
-    outputs:
-        tag: ${{ steps.prepare.outputs.tag }}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{github.event.pull_request.head.sha}}
-          submodules: true
-          fetch-depth: 0
-
-      - name: Prepare tag
-        id: prepare
-        uses: ./.github/actions/set-tag
-      - name: Log in to ghcr.io registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-
-      - name: Build and Push image
-        uses: ./.github/actions/build-push-image
-        with:
-          file: fast.Dockerfile
-          repository: ghcr.io/${{ env.REPOSITORY }}
-          version: ${{ steps.prepare.outputs.tag }}
-          tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
-          platforms: linux/amd64
-          push_to_docker: false
-
-      - name: Do preflight-check on test image
-        uses: ./.github/actions/certify-openshift-images
-        with:
-          registry: ghcr.io
-          registry_password: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ env.REPOSITORY }}
-          version: ${{ steps.prepare.outputs.tag }}
-          rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
-          rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
-          submit: false
-
-  prepare-e2e-bundle:
-    name: Prepare E2E Bundle configuration and image
-    runs-on: ubuntu-latest
-    env:
-      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{github.event.pull_request.head.sha}}
-          submodules: true
-          fetch-depth: 0
-
-      - name: Prepare tag
-        id: prepare
-        uses: ./.github/actions/set-tag
-
-      - name: Generate configuration for the tests
-        uses: ./.github/actions/gen-install-scripts
-        with:
-          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
-          VERSION: ${{ steps.prepare.outputs.tag }}
-          ENV: dev
-
-      - name: Change path for the test
-        run: |
-          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-
-      - name: Cache repo files
-        uses: actions/cache@v4
-        with:
-          path: |
-            ./*
-          key: ${{ github.sha }}
-
-      - name: Prepare docker tag
-        id: prepare-docker-bundle-tag
-        run: |
-          REPOSITORY=${{ env.GHCR_BUNDLES_REPO }}
-          TAG=${{ steps.prepare.outputs.tag }}
-          TAGS="${REPOSITORY}:${TAG}"
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-
-      - name: Log in to ghcr.io registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-
-      - name: Build and Push image
-        uses: ./.github/actions/build-push-image
-        with:
-          file: fast.Dockerfile
-          repository: ${{ env.GHCR_BUNDLES_REPO }}
-          version: ${{ steps.prepare.outputs.tag }}
-          tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
-          platforms: linux/amd64
-          push_to_docker: false
   e2e:
-    name: E2E tests
+    name: E2E tests (non-Helm)
+    needs: compute
     environment: test
-    needs: [compute, prepare-e2e, prepare-e2e-bundle]
     runs-on: ubuntu-latest
-    env:
-      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     strategy:
       fail-fast: false
       matrix:
-        k8s: ${{fromJson(needs.compute.outputs.test_matrix)}}
+        k8s: ${{ fromJson(needs.compute.outputs.test_matrix) }}
         test:
           [
-            "alert-config",
-            "auditing",
-            # "bundle-test",
-            "cloud-access-role",
-            "deployment-annotations-ns",
-            "deployment-ns",
-            "users",
-            "users-oidc",
-            "deployment-wide",
-            "encryption-at-rest",
             "free-tier",
-            "global-deployment",
-            "helm-ns",
-            "helm-update",
-            "helm-wide",
-            "integration-ns",
-            "long-run",
-            "multinamespaced",
-            "networkpeering",
-            "privatelink",
-            "private-endpoint",
-            "project-settings",
-            "x509auth",
-            "custom-roles",
-            "teams",
-            "backup-config",
-            "datafederation",
-            "atlas-search-nodes",
-            "atlas-search-index",
-            "cache-watch",
-            "reconcile-all",
-            "reconcile-one",
-            "reconcile-two",
-            "backup-compliance",
-            "flex",
-            "ip-access-list",
-            "dry-run",
-            "networkcontainer-controller",
-            "networkpeering-controller",
           ]
     steps:
-      - name: Get repo files from cache
-        id: get-repo-files-from-cache
-        uses: actions/cache@v4
-        with:
-          path: ./*
-          key: ${{ github.sha }}
-
-      - name: Checkout if cache repo files missed
-        if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
+      - name: Check out code
         uses: actions/checkout@v4
         with:
-          ref: ${{github.event.pull_request.head.sha}}
+          ref: ${{ github.event.pull_request.head.sha }}
           submodules: true
           fetch-depth: 0
-
+      
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.13.0
         with:
           enable-cache: 'true'
-          
+
       - name: Set properties
         id: properties
         run: |
@@ -207,16 +58,11 @@ jobs:
       - name: Generate configuration for the tests
         uses: ./.github/actions/gen-install-scripts
         with:
-          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ needs.prepare-e2e.outputs.tag }}
-          VERSION: ${{ needs.prepare-e2e.outputs.tag }}
+          VERSION: dev
           ENV: dev
 
-      - name: Change path for the test
-        run: |
-          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-
       - name: Create k8s Kind Cluster
-        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
+        if: ${{ steps.properties.outputs.k8s_platform == 'kind' }}
         uses: helm/kind-action@v1.12.0
         with:
           version: v0.26.0
@@ -226,32 +72,25 @@ jobs:
           wait: 180s
 
       - name: Print kubectl version
-        run: |
-          devbox run -- 'kubectl version'
+        run: devbox run -- 'kubectl version'
 
-      - name: Print kubectl version
-        run: |
-          devbox run -- 'kubectl version'
-
-      - name: Install CRDs if needed
-        if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'helm-ns' || matrix.test == 'bundle-test' ) }}
-        run: |
-          devbox run -- 'kubectl apply -f deploy/crds'
+      - name: Install CRDs
+        run: devbox run -- 'kubectl apply -f deploy/crds'
 
       - name: Run e2e test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
+          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
           MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
-          IMAGE_URL: "${{ env.GHCR_REPO }}:${{ needs.prepare-e2e.outputs.tag }}"
+          IMAGE_URL: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease:dev
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
           IMAGE_PULL_SECRET_USERNAME: $
-          IMAGE_PULL_SECRET_PASSWORD: "${{ secrets.GITHUB_TOKEN }}"
-          BUNDLE_IMAGE: "${{ env.GHCR_BUNDLES_REPO}}:${{ needs.prepare-e2e.outputs.tag }}"
-          K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
-          K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
-          TEST_NAME: "${{ matrix.test }}"
+          IMAGE_PULL_SECRET_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          BUNDLE_IMAGE: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-bundles-prerelease:dev
+          K8S_PLATFORM: ${{ steps.properties.outputs.k8s_platform }}
+          K8S_VERSION: ${{ steps.properties.outputs.k8s_version }}
+          TEST_NAME: ${{ matrix.test }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -263,6 +102,117 @@ jobs:
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
         run: devbox run -- ./scripts/launch-ci-e2e.sh
+
+      - name: Upload operator logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: output/**
+
+  helm-e2e:
+    name: Helm E2E tests
+    needs: compute
+    environment: test
+    runs-on: ubuntu-latest
+    env:
+      GHCR_REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
+      GHCR_BUNDLES_REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-bundles-prerelease
+
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s: ${{ fromJson(needs.compute.outputs.test_matrix) }}
+        test:
+          [
+            "helm-ns",
+            "helm-update",
+            "helm-wide"
+          ]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: true
+          fetch-depth: 0
+
+      - name: Prepare tag
+        id: prepare
+        uses: ./.github/actions/set-tag
+
+      - name: Log in to ghcr.io registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+      - name: Build and Push image
+        uses: ./.github/actions/build-push-image
+        with:
+          file: fast.Dockerfile
+          repository: ${{ env.GHCR_REPO }}
+          version: ${{ steps.prepare.outputs.tag }}
+          tags: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
+          platforms: linux/amd64
+          push_to_docker: false
+      
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.13.0
+        with:
+          enable-cache: 'true'
+
+      - name: Set properties
+        id: properties
+        run: |
+          version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
+          platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
+          echo "k8s_version=$version" >> $GITHUB_OUTPUT
+          echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
+
+      - name: Generate configuration for the tests
+        uses: ./.github/actions/gen-install-scripts
+        with:
+          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
+          VERSION: ${{ steps.prepare.outputs.tag }}
+          ENV: dev
+
+      - name: Create k8s Kind Cluster
+        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && env.ACT != 'true' }}
+        uses: helm/kind-action@v1.12.0
+        with:
+          version: v0.26.0
+          config: test/helper/e2e/config/kind.yaml
+          node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
+          cluster_name: ${{ matrix.test }}
+          wait: 180s
+
+      - name: Print kubectl version
+        run: devbox run -- 'kubectl version'
+
+      - name: Run e2e test
+        env:
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
+          MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
+          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
+          IMAGE_PULL_SECRET_REGISTRY: ghcr.io
+          IMAGE_PULL_SECRET_USERNAME: $
+          IMAGE_PULL_SECRET_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          BUNDLE_IMAGE: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
+          K8S_PLATFORM: ${{ steps.properties.outputs.k8s_platform }}
+          K8S_VERSION: ${{ steps.properties.outputs.k8s_version }}
+          TEST_NAME: ${{ matrix.test }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
+          DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
+          PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
+        run: devbox run -- ./scripts/launch-ci-e2e.sh
+
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
