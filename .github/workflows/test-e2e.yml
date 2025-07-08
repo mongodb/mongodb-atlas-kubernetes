@@ -62,15 +62,16 @@ jobs:
       - run: devbox run -- kubectl version
       - run: devbox run -- kubectl apply -f deploy/crds
 
-      - name: Load shared env
+      - name: Setup cloud env
         uses: ./.github/actions/setup-cloud-env
 
-      - name: Run E2E test
+      - run: devbox run -- ./scripts/launch-ci-e2e.sh
         env:
           TEST_NAME: ${{ matrix.test }}
           K8S_PLATFORM: ${{ steps.properties.outputs.k8s_platform }}
           K8S_VERSION: ${{ steps.properties.outputs.k8s_version }}
-        run: devbox run -- ./scripts/launch-ci-e2e.sh
+          IMAGE_URL: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease:dev
+          BUNDLE_IMAGE: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-bundles-prerelease:dev
 
       - if: ${{ failure() }}
         uses: actions/upload-artifact@v4
@@ -139,16 +140,16 @@ jobs:
 
       - run: devbox run -- kubectl version
 
-      - name: Load shared env
+      - name: Setup cloud env
         uses: ./.github/actions/setup-cloud-env
 
-      - name: Run Helm E2E test
+      - run: devbox run -- ./scripts/launch-ci-e2e.sh
         env:
           TEST_NAME: ${{ matrix.test }}
           K8S_PLATFORM: ${{ steps.properties.outputs.k8s_platform }}
           K8S_VERSION: ${{ steps.properties.outputs.k8s_version }}
           IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
-        run: devbox run -- ./scripts/launch-ci-e2e.sh
+          BUNDLE_IMAGE: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
 
       - if: ${{ failure() }}
         uses: actions/upload-artifact@v4
