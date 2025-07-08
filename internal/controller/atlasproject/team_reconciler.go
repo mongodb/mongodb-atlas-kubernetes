@@ -41,12 +41,12 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 
 		result := customresource.PrepareResource(ctx, r.Client, req, team, log)
 		if !result.IsOk() {
-			return result.ReconcileResult(), nil
+			return result.ReconcileResult()
 		}
 
 		if customresource.ReconciliationShouldBeSkipped(team) {
 			log.Infow(fmt.Sprintf("-> Skipping AtlasTeam reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", team.Spec)
-			return workflow.OK().ReconcileResult(), nil
+			return workflow.OK().ReconcileResult()
 		}
 
 		conditions := akov2.InitCondition(team, api.FalseCondition(api.ReadyType))
@@ -57,14 +57,14 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 		resourceVersionIsValid := customresource.ValidateResourceVersion(teamCtx, team, r.Log)
 		if !resourceVersionIsValid.IsOk() {
 			r.Log.Debugf("team validation result: %v", resourceVersionIsValid)
-			return resourceVersionIsValid.ReconcileResult(), nil
+			return resourceVersionIsValid.ReconcileResult()
 		}
 
 		if !r.AtlasProvider.IsResourceSupported(team) {
 			result := workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasTeam is not supported by Atlas for government")).
 				WithoutRetry()
 			setCondition(teamCtx, api.ReadyType, result)
-			return result.ReconcileResult(), nil
+			return result.ReconcileResult()
 		}
 
 		teamCtx.OrgID = workflowCtx.OrgID
@@ -77,7 +77,7 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 				teamCtx.Log.Warnf("failed to ensure team state %v: %s", team.Spec, result.GetMessage())
 			}
 
-			return result.ReconcileResult(), nil
+			return result.ReconcileResult()
 		}
 
 		teamCtx.EnsureStatusOption(status.AtlasTeamSetID(teamID))
@@ -85,7 +85,7 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 		result = r.ensureTeamUsersAreInSync(teamCtx, teamsService, teamID, team)
 		if !result.IsOk() {
 			teamCtx.SetConditionFromResult(api.ReadyType, result)
-			return result.ReconcileResult(), nil
+			return result.ReconcileResult()
 		}
 
 		if team.GetDeletionTimestamp().IsZero() {
@@ -100,7 +100,7 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 			if err := r.Client.Update(teamCtx.Context, team); err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("Failed to update finalizer", "error", err)
-				return result.ReconcileResult(), nil
+				return result.ReconcileResult()
 			}
 		}
 
@@ -109,14 +109,14 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 				log.Warnf("team %s is assigned to a project. Remove it from all projects before delete", team.Name)
 			} else if customresource.IsResourcePolicyKeepOrDefault(team, r.ObjectDeletionProtection) {
 				log.Info("Not removing Team from Atlas as per configuration")
-				return workflow.OK().ReconcileResult(), nil
+				return workflow.OK().ReconcileResult()
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
 				_, err := teamCtx.SdkClientSet.SdkClient20250312002.TeamsApi.DeleteTeam(teamCtx.Context, teamCtx.OrgID, team.Status.ID).Execute()
 				var apiError *mongodbatlas.ErrorResponse
 				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
-					return workflow.Terminate(workflow.TeamDoesNotExist, err).ReconcileResult(), nil
+					return workflow.Terminate(workflow.TeamDoesNotExist, err).ReconcileResult()
 				}
 			}
 		}
@@ -127,11 +127,11 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			log.Error(result.GetMessage())
 
-			return result.ReconcileResult(), nil
+			return result.ReconcileResult()
 		}
 
 		teamCtx.SetConditionTrue(api.ReadyType)
-		return workflow.OK().ReconcileResult(), nil
+		return workflow.OK().ReconcileResult()
 	}
 }
 

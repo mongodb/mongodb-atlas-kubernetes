@@ -135,7 +135,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(
 			t,
 			ctrl.Result{
@@ -250,7 +250,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(
 			t,
 			ctrl.Result{
@@ -416,7 +416,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result := reconciler.lock(ctx, searchIndexConfig)
+		result, err := reconciler.lock(ctx, searchIndexConfig)
+		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{}, result)
 		assert.NotEmpty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
@@ -450,9 +451,9 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result := reconciler.lock(ctx, searchIndexConfig)
+		result, err := reconciler.lock(ctx, searchIndexConfig)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.Empty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
@@ -483,7 +484,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result := reconciler.lock(ctx, searchIndexConfig)
+		result, err := reconciler.lock(ctx, searchIndexConfig)
+		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{}, result)
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.NotEmpty(t, searchIndexConfig.Finalizers)
@@ -506,7 +508,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result := reconciler.release(ctx, searchIndexConfig)
+		result, err := reconciler.release(ctx, searchIndexConfig)
+		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{}, result)
 		assert.Empty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
@@ -541,9 +544,9 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result := reconciler.release(ctx, searchIndexConfig)
+		result, err := reconciler.release(ctx, searchIndexConfig)
+		assert.Error(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.NotEmpty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
@@ -575,9 +578,9 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result := reconciler.release(ctx, searchIndexConfig)
+		result, err := reconciler.release(ctx, searchIndexConfig)
+		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{}, result)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.Empty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)

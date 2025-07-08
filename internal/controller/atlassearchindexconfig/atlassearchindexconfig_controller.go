@@ -69,11 +69,11 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 	atlasSearchIndexConfig := &akov2.AtlasSearchIndexConfig{}
 	result := customresource.PrepareResource(ctx, r.Client, req, atlasSearchIndexConfig, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(atlasSearchIndexConfig) {
-		return r.skip(ctx, log, atlasSearchIndexConfig), nil
+		return r.skip(ctx, log, atlasSearchIndexConfig)
 	}
 
 	conditions := api.InitCondition(atlasSearchIndexConfig, api.FalseCondition(api.ReadyType))
@@ -82,11 +82,11 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, atlasSearchIndexConfig, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid), nil
+		return r.invalidate(isValid)
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(atlasSearchIndexConfig) {
-		return r.unsupport(workflowCtx), nil
+		return r.unsupport(workflowCtx)
 	}
 
 	deployments := &akov2.AtlasDeploymentList{}
@@ -98,16 +98,16 @@ func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ct
 	}
 	err := r.Client.List(ctx, deployments, listOps)
 	if err != nil {
-		return r.terminate(workflowCtx, workflow.Internal, err), nil
+		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
 
 	if len(deployments.Items) > 0 {
 		// set finalizer
-		return r.lock(workflowCtx, atlasSearchIndexConfig), nil
+		return r.lock(workflowCtx, atlasSearchIndexConfig)
 	}
 
 	// unset finalizer
-	return r.release(workflowCtx, atlasSearchIndexConfig), nil
+	return r.release(workflowCtx, atlasSearchIndexConfig)
 }
 
 func (r *AtlasSearchIndexConfigReconciler) For() (client.Object, builder.Predicates) {
@@ -168,7 +168,7 @@ func (r *AtlasSearchIndexConfigReconciler) findReferencesInAtlasDeployments(ctx 
 	return requests
 }
 
-func (r *AtlasSearchIndexConfigReconciler) skip(ctx context.Context, log *zap.SugaredLogger, searchIndexConfig *akov2.AtlasSearchIndexConfig) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) skip(ctx context.Context, log *zap.SugaredLogger, searchIndexConfig *akov2.AtlasSearchIndexConfig) (ctrl.Result, error) {
 	log.Infow(fmt.Sprintf("-> Skipping AtlasSearchIndexConfig reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", searchIndexConfig.Spec)
 	if !searchIndexConfig.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, searchIndexConfig, customresource.UnsetFinalizer); err != nil {
@@ -182,13 +182,13 @@ func (r *AtlasSearchIndexConfigReconciler) skip(ctx context.Context, log *zap.Su
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasSearchIndexConfigReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) invalidate(invalid workflow.DeprecatedResult) (ctrl.Result, error) {
 	r.Log.Debugf("AtlasSearchIndexConfig is invalid: %v", invalid)
 	return invalid.ReconcileResult()
 }
 
 // In case it is not going to be supported
-func (r *AtlasSearchIndexConfigReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, errors.New("the AtlasSearchIndexConfig is not supported by Atlas for government")).
 		WithoutRetry()
@@ -196,20 +196,20 @@ func (r *AtlasSearchIndexConfigReconciler) unsupport(ctx *workflow.Context) ctrl
 	return unsupported.ReconcileResult()
 }
 
-func (r *AtlasSearchIndexConfigReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ReadyType, terminated)
 	return terminated.ReconcileResult()
 }
 
-func (r *AtlasSearchIndexConfigReconciler) ready(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) ready(ctx *workflow.Context) (ctrl.Result, error) {
 	result := workflow.OK()
 	ctx.SetConditionFromResult(api.ReadyType, result)
 	return result.ReconcileResult()
 }
 
-func (r *AtlasSearchIndexConfigReconciler) lock(ctx *workflow.Context, searchIndexConfig *akov2.AtlasSearchIndexConfig) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) lock(ctx *workflow.Context, searchIndexConfig *akov2.AtlasSearchIndexConfig) (ctrl.Result, error) {
 	if customresource.HaveFinalizer(searchIndexConfig, customresource.FinalizerLabel) {
 		return r.ready(ctx)
 	}
@@ -221,7 +221,7 @@ func (r *AtlasSearchIndexConfigReconciler) lock(ctx *workflow.Context, searchInd
 	return r.ready(ctx)
 }
 
-func (r *AtlasSearchIndexConfigReconciler) release(ctx *workflow.Context, searchIndexConfig *akov2.AtlasSearchIndexConfig) ctrl.Result {
+func (r *AtlasSearchIndexConfigReconciler) release(ctx *workflow.Context, searchIndexConfig *akov2.AtlasSearchIndexConfig) (ctrl.Result, error) {
 	if !customresource.HaveFinalizer(searchIndexConfig, customresource.FinalizerLabel) {
 		return r.ready(ctx)
 	}

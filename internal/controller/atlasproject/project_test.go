@@ -69,8 +69,10 @@ func TestHandleProject(t *testing.T) {
 		result                 reconcile.Result
 		conditions             []api.Condition
 		finalizers             []string
+		wantErr                bool
 	}{
 		"should fail to get project from atlas": {
+			wantErr: true,
 			atlasClientMocker: func() *mongodbatlas.Client {
 				return nil
 			},
@@ -234,6 +236,7 @@ func TestHandleProject(t *testing.T) {
 			result: reconcile.Result{},
 		},
 		"should fail to remove finalizer from project when it's was already deleted in atlas": {
+			wantErr: true,
 			atlasClientMocker: func() *mongodbatlas.Client {
 				return nil
 			},
@@ -278,6 +281,7 @@ func TestHandleProject(t *testing.T) {
 			finalizers: []string{customresource.FinalizerLabel},
 		},
 		"should fail to configure authentication modes": {
+			wantErr: true,
 			atlasClientMocker: func() *mongodbatlas.Client {
 				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
 					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
@@ -501,6 +505,7 @@ func TestHandleProject(t *testing.T) {
 			finalizers: []string{customresource.FinalizerLabel},
 		},
 		"should fail to configure project resources": {
+			wantErr: true,
 			atlasClientMocker: func() *mongodbatlas.Client {
 				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
 					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
@@ -618,6 +623,7 @@ func TestHandleProject(t *testing.T) {
 			finalizers: []string{customresource.FinalizerLabel},
 		},
 		"should fail to save last applied config": {
+			wantErr: true,
 			atlasClientMocker: func() *mongodbatlas.Client {
 				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
 					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
@@ -779,7 +785,11 @@ func TestHandleProject(t *testing.T) {
 			}
 
 			result, err := reconciler.handleProject(ctx, "my-org-id", tt.project, services)
-			require.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Equal(t, tt.result, result)
 			assert.True(
 				t,
@@ -802,8 +812,10 @@ func TestCreate(t *testing.T) {
 		result               reconcile.Result
 		conditions           []api.Condition
 		finalizers           []string
+		wantErr              bool
 	}{
 		"should fail to create project": {
+			wantErr: true,
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
 				service.EXPECT().CreateProject(context.Background(), mock.AnythingOfType("*project.Project")).
@@ -825,6 +837,7 @@ func TestCreate(t *testing.T) {
 			},
 		},
 		"should fail to add finalizer when creating a project": {
+			wantErr: true,
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
 				service.EXPECT().CreateProject(context.Background(), mock.AnythingOfType("*project.Project")).
@@ -853,6 +866,7 @@ func TestCreate(t *testing.T) {
 			},
 		},
 		"should fail to add last applied config when creating a project": {
+			wantErr: true,
 			projectServiceMocker: func() project.ProjectService {
 				service := translation.NewProjectServiceMock(t)
 				service.EXPECT().CreateProject(context.Background(), mock.AnythingOfType("*project.Project")).
@@ -933,7 +947,11 @@ func TestCreate(t *testing.T) {
 			}
 
 			result, err := reconciler.create(ctx, "my-org-id", tt.project, services.projectService)
-			require.NoError(t, err)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Equal(t, tt.result, result)
 			assert.True(
 				t,
@@ -964,8 +982,10 @@ func TestDelete(t *testing.T) {
 		result               reconcile.Result
 		conditions           []api.Condition
 		finalizers           []string
+		wantErr              bool
 	}{
 		"should fail when unable to check project dependencies": {
+			wantErr: true,
 			atlasClientMocker: func() *mongodbatlas.Client {
 				return nil
 			},
@@ -1002,6 +1022,7 @@ func TestDelete(t *testing.T) {
 			finalizers: []string{customresource.FinalizerLabel},
 		},
 		"should fail when project was deleted but it has dependencies": {
+			wantErr: true,
 			atlasClientMocker: func() *mongodbatlas.Client {
 				return nil
 			},
@@ -1245,7 +1266,11 @@ func TestDelete(t *testing.T) {
 				teamsService:   tt.teamServiceMocker(),
 			}
 			result, err := reconciler.delete(ctx, services, "my-org-id", atlasProject)
-			require.NoError(t, err)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Equal(t, tt.result, result)
 			assert.True(
 				t,

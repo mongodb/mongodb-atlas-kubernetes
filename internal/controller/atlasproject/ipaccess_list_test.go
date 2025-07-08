@@ -496,7 +496,12 @@ func TestHandleIPAccessList(t *testing.T) {
 			p.WithAnnotations(tt.annotations)
 
 			result := handleIPAccessList(ctx, p)
-			assert.Equal(t, tt.expectedResult, result)
+			if tt.expectedResult.GetError() != nil {
+				assert.ErrorContains(t, result.GetError(), tt.expectedResult.GetError().Error())
+			} else {
+				assert.NoError(t, result.GetError())
+			}
+			assert.Equal(t, tt.expectedResult.CloneWithoutError(), result.CloneWithoutError())
 			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
 		})
 	}
