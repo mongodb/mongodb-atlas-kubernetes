@@ -42,6 +42,14 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/peers'
               verb: post
+            references:
+              - &groupRef
+                name: groupRef
+                property: $.groupId
+                target:
+                  gvr: groups.atlas.generated.mongodb.com/v1
+                  properties:
+                    - $.status.v20250312.groupId
           entry:
             schema: 'BaseNetworkPeeringConnectionSettings'
             filters:
@@ -67,6 +75,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/databaseUsers'
               verb: post
+            references:
+              - *groupRef
           entry:
             schema: 'CloudDatabaseUser'
             filters:
@@ -88,6 +98,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/backupCompliancePolicy'
               verb: put
+            references:
+              - *groupRef
           entry:
             schema: 'DataProtectionSettings20231001'
             filters:
@@ -113,6 +125,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup/schedule'
               verb: patch
+            references:
+            - *groupRef
           entry:
             schema: 'DiskBackupSnapshotSchedule20240805'
             filters:
@@ -140,6 +154,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/dataFederation'
               verb: post
+            references:
+              - *groupRef
           entry:
             schema: 'DataLakeTenant'
             filters:
@@ -267,6 +283,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/accessList'
               verb: post
+            references:
+              - *groupRef
           entry:
             path:
               name: '/api/atlas/v2/groups/{groupId}/accessList'
@@ -304,6 +322,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/clusters'
               verb: post
+            references:
+              - *groupRef
           entry:
             schema: 'AdvancedClusterDescription'
             filters:
@@ -357,6 +377,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/fts/indexes'
               verb: post
+            references:
+              - *groupRef
           entry:
             schema: 'ClusterSearchIndex'
             filters:
@@ -395,6 +417,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
               verb: post
+            references:
+              - *groupRef
           entry:
             schema: 'UserCustomDBRole'
 
@@ -414,6 +438,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/flexClusters'
               verb: post
+            references:
+              - *groupRef
           entry:
             schema: 'FlexClusterDescriptionCreate20241113'
             filters:
@@ -445,15 +471,12 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/alertConfigs'
               verb: post
+            references:
+              - *groupRef
           entry:
             schema: 'GroupAlertsConfig'
             filters:
-              skipProperties:
-                - $.created
-                - $.groupId
-                - $.id
-                - $.links
-                - $.updated
+              readWriteOnly: true
               sensitiveProperties:
                 - $.notifications[*].webhookUrl
                 - $.notifications[*].apiToken
@@ -465,27 +488,12 @@ spec:
                 - $.notifications[*].datadogApiKey
                 - $.notifications[*].microsoftTeamsWebhookUrl
                 - $.notifications[*].opsGenieApiKey
-          status: # GET schema
+          status:
             schema: 'GroupAlertsConfig'
             filters:
+              readOnly: true
               skipProperties:
-                - $.enabled
-                - $.eventTypeName
                 - $.links
-                - $.matchers
-                - $.notifications
-                - $.metricThreshold
-                - $.threshold
-          extensions:
-            - property: $.spec.v20241113.groupRef
-              x-openapi-mapping:
-                property: .groupId
-                type: string
-              x-kubernetes-mapping:
-                gvr: groups.atlas.generated.mongodb.com/v1
-                nameSelector: .name
-                properties:
-                  - $.status.v20250312.groupId
 
     - gvk:
         version: v1
@@ -503,6 +511,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/integrations/{integrationType}'
               verb: post
+            references:
+              - *groupRef
           entry:
             schema: "ThirdPartyIntegration"
             filters:

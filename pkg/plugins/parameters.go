@@ -27,15 +27,15 @@ func (s *ParametersPlugin) Name() string {
 func (s *ParametersPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
 	majorVersionSpec := s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion]
 
-	if mapping.ParametersMapping.FieldPath.Name != "" {
+	if mapping.ParametersMapping.Path.Name != "" {
 		var operation *openapi3.Operation
 
-		pathItem, ok := openApiSpec.Paths[mapping.ParametersMapping.FieldPath.Name]
+		pathItem, ok := openApiSpec.Paths[mapping.ParametersMapping.Path.Name]
 		if !ok {
 			return fmt.Errorf("OpenAPI path %q does not exist", mapping.ParametersMapping)
 		}
 
-		switch mapping.ParametersMapping.FieldPath.Verb {
+		switch mapping.ParametersMapping.Path.Verb {
 		case "post":
 			operation = pathItem.Post
 		case "put":
@@ -43,7 +43,7 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.C
 		case "patch":
 			operation = pathItem.Patch
 		default:
-			return fmt.Errorf("verb %q unsupported", mapping.ParametersMapping.FieldPath.Verb)
+			return fmt.Errorf("verb %q unsupported", mapping.ParametersMapping.Path.Verb)
 		}
 
 		for _, p := range operation.Parameters {
@@ -54,7 +54,7 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.C
 			case "envelope":
 			case "pretty":
 			default:
-				props := g.ConvertProperty(p.Value.Schema, openapi3.NewSchemaRef("", openapi3.NewSchema()), nil)
+				props := g.ConvertProperty(p.Value.Schema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mapping.ParametersMapping, "$", p.Value.Name)
 				props.Description = p.Value.Description
 				props.XValidations = apiextensions.ValidationRules{
 					{

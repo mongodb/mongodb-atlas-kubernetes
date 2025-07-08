@@ -15,12 +15,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Config struct {
-	v1.TypeMeta `json:",inline"`
-	Spec        Spec `json:"spec"`
+	metav1.TypeMeta `json:",inline"`
+	Spec            Spec `json:"spec"`
 }
 
 type Spec struct {
@@ -34,35 +35,42 @@ type OpenAPIDefinition struct {
 }
 
 type CRDConfig struct {
-	GVK        v1.GroupVersionKind `json:"gvk,omitempty"`
-	Categories []string            `json:"categories,omitempty"`
-	Mappings   []CRDMapping        `json:"mappings,omitempty"`
-	ShortNames []string            `json:"shortNames,omitempty"`
+	GVK        metav1.GroupVersionKind `json:"gvk,omitempty"`
+	Categories []string                `json:"categories,omitempty"`
+	Mappings   []CRDMapping            `json:"mappings,omitempty"`
+	ShortNames []string                `json:"shortNames,omitempty"`
 }
 
 type CRDMapping struct {
 	OpenAPIRef        LocalObjectReference `json:"openAPIRef,omitempty"`
 	MajorVersion      string               `json:"majorVersion,omitempty"`
-	ParametersMapping ParametersMapping    `json:"parameters,omitempty"`
+	ParametersMapping PropertyMapping      `json:"parameters,omitempty"`
 	EntryMapping      PropertyMapping      `json:"entry,omitempty"`
 	StatusMapping     PropertyMapping      `json:"status,omitempty"`
 	Extensions        []Extension          `json:"extensions,omitempty"`
 }
 
-type ParametersMapping struct {
-	FieldPath PropertyPath `json:"path,omitempty"`
+type Reference struct {
+	Name     string `json:"name,omitempty"`     // Name of the reference
+	Property string `json:"property,omitempty"` // The OpenAPI property to map to
+	Target   Target `json:"target,omitempty"`   // The target CRD to map to
+}
+
+type Target struct {
+	GVR        string   `json:"gvr,omitempty"`        // The GroupVersionResource of the target CRD.
+	Properties []string `json:"properties,omitempty"` // The target CRD properties to map to.
 }
 
 type PropertyMapping struct {
-	Schema  string       `json:"schema,omitempty"`
-	Path    PropertyPath `json:"path,omitempty"`
-	Filters Filters      `json:"filters,omitempty"`
+	Schema     string       `json:"schema,omitempty"`
+	Path       PropertyPath `json:"path,omitempty"`
+	Filters    Filters      `json:"filters,omitempty"`
+	References []Reference  `json:"references,omitempty"`
 }
 
 type Extension struct {
-	Property           string             `json:"property,omitempty"` // The property in the CRD spec to which this extension applies.
-	XOpenApiMapping    XOpenApiMapping    `json:"x-openapi-mapping,omitempty"`
-	XKubernetesMapping XKubernetesMapping `json:"x-kubernetes-mapping,omitempty"`
+	Property               string                          `json:"property,omitempty"`
+	XKubernetesValidations apiextensionsv1.ValidationRules `json:"x-kubernetes-validations,omitempty"`
 }
 
 type XOpenApiMapping struct {

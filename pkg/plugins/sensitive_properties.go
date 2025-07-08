@@ -47,7 +47,7 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alph
 	props.Properties = map[string]apiextensions.JSONSchemaProps{
 		"name": {
 			Type:        "string",
-			Description: fmt.Sprintf(`Name of the secret containing the sensitive field value.`),
+			Description: `Name of the secret containing the sensitive field value.`,
 		},
 		"key": {
 			Type:        "string",
