@@ -1,0 +1,7 @@
+name: "Setup Cloud Env"
+description: "Sources shared cloud environment variables for use in tests"
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: source scripts/github-actions/setup_cloud_env.sh
