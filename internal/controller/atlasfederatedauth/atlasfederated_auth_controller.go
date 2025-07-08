@@ -71,7 +71,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	fedauth := &akov2.AtlasFederatedAuth{}
 	result := customresource.PrepareResource(ctx, r.Client, req, fedauth, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(fedauth) {
@@ -80,10 +80,10 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 			if err := customresource.ManageFinalizer(ctx, r.Client, fedauth, customresource.UnsetFinalizer); err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("Failed to remove finalizer", "error", err)
-				return result.ReconcileResult(), nil
+				return result.ReconcileResult()
 			}
 		}
-		return workflow.OK().ReconcileResult(), nil
+		return workflow.OK().ReconcileResult()
 	}
 
 	conditions := akov2.InitCondition(fedauth, api.FalseCondition(api.ReadyType))
@@ -95,28 +95,28 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, fedauth, r.Log)
 	if !resourceVersionIsValid.IsOk() {
 		r.Log.Debugf("federated auth validation result: %v", resourceVersionIsValid)
-		return resourceVersionIsValid.ReconcileResult(), nil
+		return resourceVersionIsValid.ReconcileResult()
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(fedauth) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasFederatedAuth is not supported by Atlas for government")).
 			WithoutRetry()
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, fedauth.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	atlasClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.FederatedAuthReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	workflowCtx.SdkClientSet = atlasClientSet
@@ -126,7 +126,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)
 	workflowCtx.SetConditionFromResult(api.ReadyType, result)
 
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasFederatedAuthReconciler) For() (client.Object, builder.Predicates) {

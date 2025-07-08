@@ -47,12 +47,16 @@ import (
 )
 
 func TestHandleServerlessInstance(t *testing.T) {
+	type workflowRes struct {
+		res ctrl.Result
+		err error
+	}
 	tests := map[string]struct {
 		atlasDeployment    *akov2.AtlasDeployment
 		deploymentInAtlas  *deployment.Serverless
 		deploymentService  func() deployment.AtlasDeploymentsService
 		sdkMock            func() *admin.APIClient
-		expectedResult     ctrl.Result
+		expectedResult     workflowRes
 		expectedConditions []api.Condition
 	}{
 		"fail to create a new serverless instance in atlas": {
@@ -93,7 +97,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("failed to create serverless instance"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentNotCreatedInAtlas)).
@@ -162,7 +169,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentCreating)).
@@ -228,7 +238,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("failed to update serverless instance"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
@@ -318,7 +331,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
@@ -382,7 +398,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
@@ -480,7 +499,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
@@ -561,7 +583,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 
 				return &admin.APIClient{ServerlessPrivateEndpointsApi: speClient}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("unable to retrieve list of serverless private endpoints from Atlas: failed to list private endpoints"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ServerlessPrivateEndpointReadyType).
 					WithReason(string(workflow.ServerlessPrivateEndpointFailed)).
@@ -650,7 +675,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 
 				return &admin.APIClient{ServerlessPrivateEndpointsApi: speClient}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("serverless private endpoints are not supported: "),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ServerlessPrivateEndpointReadyType).
 					WithReason(string(workflow.ServerlessPrivateEndpointFailed)).
@@ -739,7 +767,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 
 				return &admin.APIClient{ServerlessPrivateEndpointsApi: speClient}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ServerlessPrivateEndpointReadyType).
 					WithReason(string(workflow.ServerlessPrivateEndpointInProgress)).
@@ -817,7 +848,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 
 				return &admin.APIClient{ServerlessPrivateEndpointsApi: speClient}
 			},
-			expectedResult: ctrl.Result{},
+			expectedResult: workflowRes{
+				res: ctrl.Result{},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.TrueCondition(api.DeploymentReadyType),
 				api.TrueCondition(api.ReadyType).
@@ -884,7 +918,10 @@ func TestHandleServerlessInstance(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("unknown deployment state: NEW_UNKNOWN_STATE"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.Internal)).
@@ -922,8 +959,11 @@ func TestHandleServerlessInstance(t *testing.T) {
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Serverless)
 			var projectService project.ProjectService
 			result, err := reconciler.handleServerlessInstance(workflowCtx, projectService, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expectedResult, result)
+			//require.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, workflowRes{
+				res: result,
+				err: err,
+			})
 			assert.True(
 				t,
 				cmp.Equal(

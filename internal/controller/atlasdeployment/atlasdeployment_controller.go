@@ -93,7 +93,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	atlasDeployment := &akov2.AtlasDeployment{}
 	result := customresource.PrepareResource(ctx, r.Client, req, atlasDeployment, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if shouldSkip := customresource.ReconciliationShouldBeSkipped(atlasDeployment); shouldSkip {
@@ -103,10 +103,10 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("failed to remove finalizer", "error", err)
-				return result.ReconcileResult(), nil
+				return result.ReconcileResult()
 			}
 		}
-		return workflow.OK().ReconcileResult(), nil
+		return workflow.OK().ReconcileResult()
 	}
 
 	conditions := akov2.InitCondition(atlasDeployment, api.FalseCondition(api.ReadyType))
@@ -119,14 +119,14 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, atlasDeployment, r.Log)
 	if !resourceVersionIsValid.IsOk() {
 		r.Log.Debugf("deployment validation result: %v", resourceVersionIsValid)
-		return resourceVersionIsValid.ReconcileResult(), nil
+		return resourceVersionIsValid.ReconcileResult()
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(atlasDeployment) {
 		result = workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasDeployment is not supported by Atlas for government")).
 			WithoutRetry()
 		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	connectionConfig, err := r.ResolveConnectionConfig(workflowCtx.Context, atlasDeployment)
@@ -152,7 +152,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err := validate.AtlasDeployment(atlasDeployment); err != nil {
 		result = workflow.Terminate(workflow.Internal, err)
 		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
@@ -188,7 +188,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return r.handleAdvancedDeployment(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasDeploymentReconciler) delete(
@@ -219,7 +219,7 @@ func (r *AtlasDeploymentReconciler) delete(
 		return r.terminate(ctx, workflow.Internal, fmt.Errorf("failed to remove finalizer: %w", err))
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasDeploymentReconciler) cleanupBindings(context context.Context, deployment deployment.Deployment) error {
@@ -326,7 +326,7 @@ func (r *AtlasDeploymentReconciler) terminate(ctx *workflow.Context, errorCondit
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.DeploymentReadyType, terminated)
 
-	return terminated.ReconcileResult(), nil
+	return terminated.ReconcileResult()
 }
 
 func (r *AtlasDeploymentReconciler) inProgress(ctx *workflow.Context, atlasDeployment *akov2.AtlasDeployment, deploymentInAtlas deployment.Deployment, reason workflow.ConditionReason, msg string) (ctrl.Result, error) {
@@ -340,7 +340,7 @@ func (r *AtlasDeploymentReconciler) inProgress(ctx *workflow.Context, atlasDeplo
 		EnsureStatusOption(status.AtlasDeploymentReplicaSet(deploymentInAtlas.GetReplicaSet())).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion()))
 
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, deploymentInAKO, deploymentInAtlas deployment.Deployment) (ctrl.Result, error) {
@@ -358,10 +358,10 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, deploymentInAKO
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
 
 	if deploymentInAKO.GetCustomResource().Spec.ExternalProjectRef != nil {
-		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
+		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult()
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasDeploymentReconciler) unmanage(ctx *workflow.Context, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
@@ -370,7 +370,7 @@ func (r *AtlasDeploymentReconciler) unmanage(ctx *workflow.Context, atlasDeploym
 		return r.terminate(ctx, workflow.AtlasFinalizerNotRemoved, err)
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasDeploymentReconciler) For() (client.Object, builder.Predicates) {
@@ -552,5 +552,5 @@ func (r *AtlasDeploymentReconciler) deploymentsForCredentialMapFunc() handler.Ma
 }
 
 func (r *AtlasDeploymentReconciler) handleDeleted() (ctrl.Result, error) {
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }

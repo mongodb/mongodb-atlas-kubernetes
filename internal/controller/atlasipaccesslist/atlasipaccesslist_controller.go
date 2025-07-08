@@ -65,10 +65,10 @@ func (r *AtlasIPAccessListReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	ipAccessList := akov2.AtlasIPAccessList{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &ipAccessList, r.Log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
-	return r.handleCustomResource(ctx, &ipAccessList), nil
+	return r.handleCustomResource(ctx, &ipAccessList)
 }
 
 func (r *AtlasIPAccessListReconciler) For() (client.Object, builder.Predicates) {

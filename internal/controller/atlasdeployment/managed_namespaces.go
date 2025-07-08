@@ -27,7 +27,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 )
 
-func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.DeprecatedResult {
+func (r *AtlasDeploymentReconciler) ensureManagedNamespaces(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService,
+	groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.DeprecatedResult {
 	if clusterType != string(akov2.TypeGeoSharded) && managedNamespace != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, errors.New("managed namespace is only supported by GeoSharded clusters"))
 	}

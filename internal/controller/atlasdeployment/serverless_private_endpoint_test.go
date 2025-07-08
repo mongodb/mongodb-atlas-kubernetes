@@ -17,6 +17,7 @@ package atlasdeployment
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -164,11 +165,9 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 		}
 		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
 
-		assert.Equal(
-			t,
-			workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, errors.New("unable to retrieve list of serverless private endpoints from Atlas: connection failed")),
-			result,
-		)
+		assert.Equal(t, result.GetError().Error(), "unable to retrieve list of serverless private endpoints from Atlas: connection failed")
+		expected := workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, fmt.Errorf("unable to retrieve list of serverless private endpoints from Atlas: connection failed"))
+		assert.Equal(t, result.CloneWithoutError(), expected.CloneWithoutError())
 	})
 
 	t.Run("should succeed when syncing private endpoints still in progress", func(t *testing.T) {

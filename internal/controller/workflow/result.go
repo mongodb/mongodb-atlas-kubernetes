@@ -137,6 +137,20 @@ func (r DeprecatedResult) GetMessage() string {
 	return r.message
 }
 
+func (r DeprecatedResult) GetError() error { return r.err }
+
+func (r DeprecatedResult) CloneWithoutError() DeprecatedResult {
+	return DeprecatedResult{
+		terminated:   r.terminated,
+		requeueAfter: r.requeueAfter,
+		message:      r.message,
+		reason:       r.reason,
+		warning:      r.warning,
+		deleted:      r.deleted,
+		err:          nil,
+	}
+}
+
 func (r DeprecatedResult) ReconcileResult() (reconcile.Result, error) {
 	if r.requeueAfter < 0 {
 		return reconcile.Result{}, nil

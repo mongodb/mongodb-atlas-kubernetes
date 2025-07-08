@@ -28,7 +28,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
-func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, projectService project.ProjectService,
+	deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
 	akoFlex, ok := akoDeployment.(*deployment.Flex)
 	if !ok {
 		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not a serverless cluster"))
