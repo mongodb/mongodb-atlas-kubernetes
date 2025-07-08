@@ -60,7 +60,7 @@ func (r *AtlasNetworkContainerReconciler) Reconcile(ctx context.Context, req ctr
 	networkContainer := akov2.AtlasNetworkContainer{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &networkContainer, r.Log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 	return r.handleCustomResource(ctx, &networkContainer)
 }
