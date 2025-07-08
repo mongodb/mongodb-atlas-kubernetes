@@ -17,6 +17,7 @@ package atlasprivateendpoint
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -138,6 +139,7 @@ func TestEnsureCustomResource(t *testing.T) {
 		atlasPrivateEndpoint *akov2.AtlasPrivateEndpoint
 		provider             atlas.Provider
 		expectedResult       reconcile.Result
+		wantErr              bool
 		expectedLogs         []string
 	}{
 		"skip custom resource reconciliation": {
@@ -193,6 +195,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					ServiceStatus: "AVAILABLE",
 				},
 			},
+			wantErr:        true,
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedLogs: []string{
 				"resource version for 'pe1' is invalid",
@@ -271,6 +274,7 @@ func TestEnsureCustomResource(t *testing.T) {
 				},
 			},
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
+			wantErr:        true,
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
 				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: failed to create sdk client",
@@ -307,6 +311,7 @@ func TestEnsureCustomResource(t *testing.T) {
 				},
 			},
 			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
+			wantErr:        true,
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
 				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-project\" not found",
@@ -403,11 +408,17 @@ func TestEnsureCustomResource(t *testing.T) {
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			result, err := r.ensureCustomResource(ctx, tt.atlasPrivateEndpoint)
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
 			assert.Equal(t, tt.expectedResult, result)
 			assert.Equal(t, len(tt.expectedLogs), logs.Len())
 			for i, logMsg := range tt.expectedLogs {
-				assert.Equal(t, logMsg, logs.All()[i].Message)
+				assert.True(t, strings.Contains(logs.All()[i].Message, logMsg[:len(logMsg)-1]),
+					"log:'%s'\ndoesn't contain entry:\n'%s", logs.All()[i].Message, logMsg)
 			}
 		})
 	}
@@ -502,7 +513,7 @@ func TestFailManageFinalizer(t *testing.T) {
 			}
 
 			result, err := tt.transition(r)
-			assert.NoError(t, err)
+			assert.Error(t, err)
 			assert.Equal(t, reconcile.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		})
 	}

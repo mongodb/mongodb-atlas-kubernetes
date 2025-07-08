@@ -71,7 +71,7 @@ func (r *AtlasPrivateEndpointReconciler) Reconcile(ctx context.Context, req ctrl
 	akoPrivateEndpoint := akov2.AtlasPrivateEndpoint{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &akoPrivateEndpoint, r.Log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	return r.ensureCustomResource(ctx, &akoPrivateEndpoint)
@@ -79,7 +79,7 @@ func (r *AtlasPrivateEndpointReconciler) Reconcile(ctx context.Context, req ctrl
 
 func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) (ctrl.Result, error) {
 	if customresource.ReconciliationShouldBeSkipped(akoPrivateEndpoint) {
-		return r.skip(ctx, akoPrivateEndpoint), nil
+		return r.skip(ctx, akoPrivateEndpoint)
 	}
 
 	conditions := api.InitCondition(akoPrivateEndpoint, api.FalseCondition(api.ReadyType))
@@ -88,11 +88,11 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, akoPrivateEndpoint, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid), nil
+		return r.invalidate(isValid)
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(akoPrivateEndpoint) {
-		return r.unsupport(workflowCtx), nil
+		return r.unsupport(workflowCtx)
 	}
 
 	connectionConfig, err := r.ResolveConnectionConfig(ctx, akoPrivateEndpoint)
@@ -112,7 +112,7 @@ func (r *AtlasPrivateEndpointReconciler) ensureCustomResource(ctx context.Contex
 	return r.handlePrivateEndpointService(workflowCtx, privateEndpointService, atlasProject.ID, akoPrivateEndpoint)
 }
 
-func (r *AtlasPrivateEndpointReconciler) skip(ctx context.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) ctrl.Result {
+func (r *AtlasPrivateEndpointReconciler) skip(ctx context.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) (ctrl.Result, error) {
 	r.Log.Infow(fmt.Sprintf("-> Skipping AtlasPrivateEndpoint reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", akoPrivateEndpoint.Spec)
 	if !akoPrivateEndpoint.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, akoPrivateEndpoint, customresource.UnsetFinalizer); err != nil {
@@ -126,13 +126,13 @@ func (r *AtlasPrivateEndpointReconciler) skip(ctx context.Context, akoPrivateEnd
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasPrivateEndpointReconciler) invalidate(invalid workflow.DeprecatedResult) ctrl.Result {
+func (r *AtlasPrivateEndpointReconciler) invalidate(invalid workflow.DeprecatedResult) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasPrivateEndpoint is invalid: %v", invalid)
 	return invalid.ReconcileResult()
 }
 
-func (r *AtlasPrivateEndpointReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasPrivateEndpointReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, errors.New("the AtlasPrivateEndpoint is not supported by Atlas for government")).
 		WithoutRetry()
@@ -157,7 +157,7 @@ func (r *AtlasPrivateEndpointReconciler) terminate(
 		ctx.EnsureStatusOption(privateendpoint.NewPrivateEndpointStatus(atlasPEService))
 	}
 
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasPrivateEndpointReconciler) inProgress(
@@ -177,7 +177,7 @@ func (r *AtlasPrivateEndpointReconciler) inProgress(
 		SetConditionFromResult(condition, result).
 		EnsureStatusOption(privateendpoint.NewPrivateEndpointStatus(atlasPEService))
 
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasPrivateEndpointReconciler) ready(ctx *workflow.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint, atlasPEService privateendpoint.EndpointService) (ctrl.Result, error) {
@@ -191,10 +191,10 @@ func (r *AtlasPrivateEndpointReconciler) ready(ctx *workflow.Context, akoPrivate
 		EnsureStatusOption(privateendpoint.NewPrivateEndpointStatus(atlasPEService))
 
 	if akoPrivateEndpoint.Spec.ExternalProjectRef != nil {
-		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
+		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult()
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasPrivateEndpointReconciler) waitForConfiguration(ctx *workflow.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint, atlasPEService privateendpoint.EndpointService) (ctrl.Result, error) {
@@ -209,7 +209,7 @@ func (r *AtlasPrivateEndpointReconciler) waitForConfiguration(ctx *workflow.Cont
 		SetConditionFromResult(api.PrivateEndpointReady, result).
 		EnsureStatusOption(privateendpoint.NewPrivateEndpointStatus(atlasPEService))
 
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasPrivateEndpointReconciler) unmanage(ctx *workflow.Context, akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) (ctrl.Result, error) {
@@ -217,7 +217,7 @@ func (r *AtlasPrivateEndpointReconciler) unmanage(ctx *workflow.Context, akoPriv
 		return r.terminate(ctx, akoPrivateEndpoint, nil, api.ReadyType, workflow.AtlasFinalizerNotRemoved, err)
 	}
 
-	return workflow.Deleted().ReconcileResult(), nil
+	return workflow.Deleted().ReconcileResult()
 }
 
 func (r *AtlasPrivateEndpointReconciler) For() (client.Object, builder.Predicates) {
