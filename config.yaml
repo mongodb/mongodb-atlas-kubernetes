@@ -17,13 +17,14 @@ spec:
 
   openapi:
     - name: v20250312
-      path: atlas-api-transformed-v20250312002.0.0.yaml
+      path: atlas-api-transformed-v20250312.yaml
 
     - name: v20231115
       path: atlas-api-transformed-v20231115.yaml
 
     - name: v20241113
       path: atlas-api-transformed-v20241113.yaml
+      package: go.mongodb.org/atlas-sdk/v20250312005/admin
 
   crd:
     - gvk:
@@ -264,29 +265,6 @@ spec:
               readOnly: true
               skipProperties:
                 - $.links
-
-    - gvk:
-        version: v1
-        kind: OrganizationSetting
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - aos
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/orgs/{orgId}/settings'
-              verb: patch
-          entry:
-            schema: 'OrganizationSettings'
-          status:
-            path:
-              name: '/api/atlas/v2/orgs/{orgId}/settings'
-              verb: get
 
     - gvk:
         version: v1
@@ -532,8 +510,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/integrations/{integrationType}'
               verb: post
-            references:
-              - *groupRef
+#            references:
+#              - *groupRef
           entry:
             schema: "ThirdPartyIntegration"
             filters:

@@ -2067,6 +2067,11 @@ spec:
                           or approvals. An empty string is valid and clears the existing
                           security contact (if any).
                         type: string
+                      streamsCrossGroupEnabled:
+                        description: Flag that indicates whether a group's Atlas Stream
+                          Processing instances in this organization can create connections
+                          to other group's clusters in the same organization.
+                        type: boolean
                     type: object
                   orgId:
                     description: Unique 24-hexadecimal digit string that identifies
@@ -2251,155 +2256,6 @@ spec:
                     example: 32b6e34b3d91647abb20e7b8
                     type: string
                 type: object
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources:
-      status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: null
-  storedVersions:
-  - v1
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: null
-  name: organizationsettings.atlas.generated.mongodb.com
-spec:
-  group: atlas.generated.mongodb.com
-  names:
-    categories:
-    - atlas
-    kind: OrganizationSetting
-    listKind: OrganizationSettingList
-    plural: organizationsettings
-    shortNames:
-    - aos
-    singular: organizationsetting
-  scope: Namespaced
-  versions:
-  - name: v1
-    schema:
-      openAPIV3Schema:
-        description: A organizationsetting, managed by the MongoDB Kubernetes Atlas
-          Operator.
-        properties:
-          spec:
-            description: |-
-              Specification of the organizationsetting supporting the following versions:
-
-              - v20250312
-
-              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-            properties:
-              v20250312:
-                description: The spec of the organizationsetting resource for version
-                  v20250312.
-                properties:
-                  entry:
-                    description: The entry fields of the organizationsetting resource
-                      spec. These fields can be set for creating and updating organizationsettings.
-                    properties:
-                      apiAccessListRequired:
-                        description: Flag that indicates whether to require API operations
-                          to originate from an IP Address added to the API access
-                          list for the specified organization.
-                        type: boolean
-                      genAIFeaturesEnabled:
-                        description: Flag that indicates whether this organization
-                          has access to generative AI features. This setting only
-                          applies to Atlas Commercial and is enabled by default. Once
-                          this setting is turned on, Project Owners may be able to
-                          enable or disable individual AI features at the project
-                          level.
-                        type: boolean
-                      maxServiceAccountSecretValidityInHours:
-                        description: Number that represents the maximum period before
-                          expiry in hours for new Atlas Admin API Service Account
-                          secrets within the specified organization.
-                        type: integer
-                      multiFactorAuthRequired:
-                        description: 'Flag that indicates whether to require users
-                          to set up Multi-Factor Authentication (MFA) before accessing
-                          the specified organization. To learn more, see: https://www.mongodb.com/docs/atlas/security-multi-factor-authentication/.'
-                        type: boolean
-                      restrictEmployeeAccess:
-                        description: 'Flag that indicates whether to block MongoDB
-                          Support from accessing Atlas infrastructure and cluster
-                          logs for any deployment in the specified organization without
-                          explicit permission. Once this setting is turned on, you
-                          can grant MongoDB Support a 24-hour bypass access to the
-                          Atlas deployment to resolve support issues. To learn more,
-                          see: https://www.mongodb.com/docs/atlas/security-restrict-support-access/.'
-                        type: boolean
-                      securityContact:
-                        description: String that specifies a single email address
-                          for the specified organization to receive security-related
-                          notifications. Specifying a security contact does not grant
-                          them authorization or access to Atlas for security decisions
-                          or approvals. An empty string is valid and clears the existing
-                          security contact (if any).
-                        type: string
-                    type: object
-                  orgId:
-                    description: Unique 24-hexadecimal digit string that identifies
-                      the organization that contains your projects. Use the [/orgs](#tag/Organizations/operation/listOrganizations)
-                      endpoint to retrieve all organizations to which the authenticated
-                      user has access.
-                    example: 4888442a3354817a7320eb61
-                    type: string
-                    x-kubernetes-validations:
-                    - message: orgId cannot be modified after creation
-                      rule: self == oldSelf
-                required:
-                - orgId
-                type: object
-            type: object
-          status:
-            description: 'Most recently observed read-only status of the organizationsetting
-              for the specified resource version. This data may not be up to date
-              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
-            properties:
-              conditions:
-                description: Represents the latest available observations of a resource's
-                  current state.
-                items:
-                  properties:
-                    lastTransitionTime:
-                      description: Last time the condition transitioned from one status
-                        to another.
-                      format: date-time
-                      type: string
-                    message:
-                      description: A human readable message indicating details about
-                        the transition.
-                      type: string
-                    observedGeneration:
-                      description: observedGeneration represents the .metadata.generation
-                        that the condition was set based upon.
-                      type: integer
-                    reason:
-                      description: The reason for the condition's last transition.
-                      type: string
-                    status:
-                      description: Status of the condition, one of True, False, Unknown.
-                      type: string
-                    type:
-                      description: Type of condition.
-                      type: string
-                  required:
-                  - type
-                  - status
-                  type: object
-                type: array
-                x-kubernetes-list-map-keys:
-                - type
-                x-kubernetes-list-type: map
             type: object
         type: object
     served: true
@@ -5299,17 +5155,6 @@ spec:
                     x-kubernetes-validations:
                     - message: groupId cannot be modified after creation
                       rule: self == oldSelf
-                  groupRef:
-                    description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
-                      Mutually exclusive with the "groupId" property.
-                    properties:
-                      name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
-                        type: string
-                    type: object
                   integrationType:
                     description: Human-readable label that identifies the service
                       which you want to integrate with MongoDB Cloud.
@@ -5320,6 +5165,7 @@ spec:
                       rule: self == oldSelf
                 required:
                 - integrationType
+                - groupId
                 type: object
             type: object
           status:
