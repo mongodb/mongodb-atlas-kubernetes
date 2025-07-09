@@ -18,12 +18,27 @@
 
 git config --global --add safe.directory /github/workspace
 
-# Setup tag name
-commit_id=$(git rev-parse --short HEAD)
-branch_name=${GITHUB_HEAD_REF-}
-if [ -z "${branch_name}" ]; then
-    branch_name=$(echo "$GITHUB_REF" | awk -F'/' '{print $3}')
+# Get the full commit hash and shorten to 6 characters
+full_commit_sha="${COMMIT_SHA:-}"
+if [ -z "$full_commit_sha" ]; then
+  full_commit_sha=$(git rev-parse HEAD)
 fi
-branch_name=$(echo "${branch_name}" | awk '{print substr($0, 1, 15)}' | sed 's/\//-/g; s/\./-/g')
+commit_id=$(echo "$full_commit_sha" | cut -c1-6)
+
+# Get the full branch name
+branch_name="${BRANCH_NAME:-}"
+if [ -z "$branch_name" ]; then
+  if [ -n "$GITHUB_HEAD_REF" ]; then
+    branch_name="$GITHUB_HEAD_REF"
+  else
+    branch_name="${GITHUB_REF#refs/heads/}"
+  fi
+fi
+
+# Replace / and . with -
+# Then truncate to 15 characters
+branch_name=$(echo "$branch_name" | sed 's/[\/\.]/-/g' | awk '{print substr($0, 1, 15)}')
+
+# Create tag as {branch_name}-{6-digit-commit} 
 tag="${branch_name}-${commit_id}"
-echo "tag=$tag" >> "$GITHUB_OUTPUT"
+echo "tag=${tag}" >> "$GITHUB_OUTPUT"

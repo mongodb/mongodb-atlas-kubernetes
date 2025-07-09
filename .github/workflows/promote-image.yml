@@ -26,6 +26,10 @@ jobs:
 
       - id: set_tag
         uses: ./.github/actions/set-tag
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name || github.event.workflow_run.head_branch }}
+          COMMIT_NAME: ${{ github.event.workflow_run.head_sha || github.sha }}
+
 
       - id: set_image_url
         run: |
