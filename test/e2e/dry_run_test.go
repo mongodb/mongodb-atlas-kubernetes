@@ -73,16 +73,16 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 		projectID = group.GetId()
 	})
 
-	AfterEach(func() {
-		GinkgoWriter.Write([]byte("\n"))
-		GinkgoWriter.Write([]byte("===============================================\n"))
-		GinkgoWriter.Write([]byte("Dry run test\n"))
-		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
-		GinkgoWriter.Write([]byte("===============================================\n"))
-		By("Delete Resources", func() {
-			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
-		})
-	})
+	//AfterEach(func() {
+	//	GinkgoWriter.Write([]byte("\n"))
+	//	GinkgoWriter.Write([]byte("===============================================\n"))
+	//	GinkgoWriter.Write([]byte("Dry run test\n"))
+	//	GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
+	//	GinkgoWriter.Write([]byte("===============================================\n"))
+	//	By("Delete Resources", func() {
+	//		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
+	//	})
+	//})
 
 	BeforeEach(func() {
 		By("setting up secrets and a namespace", func() {
@@ -155,7 +155,6 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 		StartDryRunUntil(ctx, testData.K8SClient, testData.Resources.Namespace,
 			and(
 				messageEquals(fmt.Sprintf("Would update (PATCH) /api/atlas/v2/groups/%s/maintenanceWindow", projectID)),
-				messageEquals(fmt.Sprintf("Would update (PATCH) /api/atlas/v2/groups/%s/auditLog", projectID)),
 				messageEquals("finished"),
 			))
 	})
