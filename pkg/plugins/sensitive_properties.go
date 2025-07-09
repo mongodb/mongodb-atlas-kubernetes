@@ -19,8 +19,8 @@ func (s *SensitiveProperties) Name() string {
 	return "sensitive_properties"
 }
 
-func (n *SensitiveProperties) ProcessProperty(g Generator, mapping *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
-	if !isSensitiveField(path, mapping) {
+func (n *SensitiveProperties) ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+	if !isSensitiveField(path, propertyConfig) {
 		return props
 	}
 

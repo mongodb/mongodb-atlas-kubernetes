@@ -22,8 +22,8 @@ func (s *ReadWriteOnlyProperties) Name() string {
 	return "read_write_only_properties"
 }
 
-func (n *ReadWriteOnlyProperties) ProcessProperty(g Generator, mapping *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
-	if mapping == nil || !mapping.Filters.ReadWriteOnly {
+func (n *ReadWriteOnlyProperties) ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+	if propertyConfig == nil || !propertyConfig.Filters.ReadWriteOnly {
 		return props
 	}
 

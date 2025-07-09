@@ -19,12 +19,12 @@ func (s *SkippedProperties) Name() string {
 	return "skipped_properties"
 }
 
-func (n *SkippedProperties) ProcessProperty(g Generator, mapping *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
-	if isSkippedField(path, mapping) {
+func (n *SkippedProperties) ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+	if isSkippedField(path, propertyConfig) {
 		return nil
 	}
 
-	if mapping == nil || len(mapping.Filters.SkipProperties) == 0 {
+	if propertyConfig == nil || len(propertyConfig.Filters.SkipProperties) == 0 {
 		return props
 	}
 
@@ -33,7 +33,7 @@ func (n *SkippedProperties) ProcessProperty(g Generator, mapping *configv1alpha1
 		requiredPaths[jsonPath(append(path, r))] = r
 	}
 
-	for _, s := range mapping.Filters.SkipProperties {
+	for _, s := range propertyConfig.Filters.SkipProperties {
 		if _, ok := requiredPaths[s]; ok {
 			delete(requiredPaths, s)
 		}

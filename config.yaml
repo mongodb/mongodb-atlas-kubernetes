@@ -510,8 +510,8 @@ spec:
             path:
               name: '/api/atlas/v2/groups/{groupId}/integrations/{integrationType}'
               verb: post
-#            references:
-#              - *groupRef
+            references:
+              - *groupRef
           entry:
             schema: "ThirdPartyIntegration"
             filters:

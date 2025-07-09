@@ -17,6 +17,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"github.com/getkin/kin-openapi/openapi3"
 	"log"
 	"strings"
 
@@ -115,6 +116,11 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		plugins.NewReferencesPlugin(crd),
 	}
 
+	extensionsSchema := openapi3.NewSchema()
+	extensionsSchema.Properties = map[string]*openapi3.SchemaRef{
+		"spec": {Value: &openapi3.Schema{Properties: map[string]*openapi3.SchemaRef{}}},
+	}
+
 	for _, mapping := range g.config.Mappings {
 		def, ok := g.definitions[mapping.OpenAPIRef.Name]
 		if !ok {
@@ -127,7 +133,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		}
 
 		for _, p := range g.plugins {
-			if err := p.ProcessMapping(g, &mapping, openApiSpec); err != nil {
+			if err := p.ProcessMapping(g, &mapping, openApiSpec, extensionsSchema); err != nil {
 				return nil, fmt.Errorf("error processing plugin %s: %w", p.Name(), err)
 			}
 		}

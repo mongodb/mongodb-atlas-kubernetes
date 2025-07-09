@@ -28,10 +28,10 @@ func (r *References) Name() string {
 	return "references"
 }
 
-func (r *References) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
-	majorVersionSpec := r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion]
+func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
+	majorVersionSpec := r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion]
 
-	for _, ref := range mapping.ParametersMapping.References {
+	for _, ref := range mappingConfig.ParametersMapping.References {
 		var refProp apiextensions.JSONSchemaProps
 
 		openApiPropertyPath := strings.Split(ref.Property, ".")
@@ -61,7 +61,7 @@ func (r *References) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapp
 		slices.Sort(majorVersionSpec.Required)
 
 		majorVersionSpec.Properties[ref.Name] = refProp
-		r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion] = majorVersionSpec
+		r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion] = majorVersionSpec
 	}
 
 	return nil

@@ -27,34 +27,30 @@ func (s *EntryPlugin) Name() string {
 	return "entry"
 }
 
-func (s *EntryPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMapping, openApiSpec *openapi3.T) error {
+func (s *EntryPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
 	var entrySchema *openapi3.SchemaRef
 	switch {
-	case mapping.EntryMapping.Schema != "":
+	case mappingConfig.EntryMapping.Schema != "":
 		var ok bool
-		entrySchema, ok = openApiSpec.Components.Schemas[mapping.EntryMapping.Schema]
+		entrySchema, ok = openApiSpec.Components.Schemas[mappingConfig.EntryMapping.Schema]
 		if !ok {
-			return fmt.Errorf("entry schema %q not found in openapi spec", mapping.EntryMapping.Schema)
+			return fmt.Errorf("entry schema %q not found in openapi spec", mappingConfig.EntryMapping.Schema)
 		}
-	case mapping.EntryMapping.Path.Name != "":
-		entrySchema = openApiSpec.Paths[mapping.EntryMapping.Path.Name].Operations()[strings.ToUpper(mapping.EntryMapping.Path.Verb)].RequestBody.Value.Content[mapping.EntryMapping.Path.RequestBody.MimeType].Schema
+	case mappingConfig.EntryMapping.Path.Name != "":
+		entrySchema = openApiSpec.Paths[mappingConfig.EntryMapping.Path.Name].Operations()[strings.ToUpper(mappingConfig.EntryMapping.Path.Verb)].RequestBody.Value.Content[mappingConfig.EntryMapping.Path.RequestBody.MimeType].Schema
 	default:
 		return errors.New("entry schema not found in spec")
 	}
 
-	extensionsSchema := openapi3.NewSchema()
-	extensionsSchema.Properties = map[string]*openapi3.SchemaRef{
-		"spec": {Value: &openapi3.Schema{
+	extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion] = &openapi3.SchemaRef{
+		Value: &openapi3.Schema{
 			Properties: map[string]*openapi3.SchemaRef{
-				mapping.MajorVersion: {Value: &openapi3.Schema{
-					Properties: map[string]*openapi3.SchemaRef{
-						"entry": {Value: &openapi3.Schema{}},
-					},
-				}},
+				"entry": {Value: &openapi3.Schema{}},
 			},
-		}},
+		},
 	}
-	entryProps := g.ConvertProperty(entrySchema, extensionsSchema.Properties["spec"].Value.Properties[mapping.MajorVersion].Value.Properties["entry"], &mapping.EntryMapping)
+
+	entryProps := g.ConvertProperty(entrySchema, extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion].Value.Properties["entry"], &mappingConfig.EntryMapping)
 	clearPropertiesWithoutExtensions(extensionsSchema)
 	if len(extensionsSchema.Properties) > 0 {
 		d, err := yaml.Marshal(extensionsSchema)
@@ -68,7 +64,7 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mapping *configv1alpha1.CRDMap
 	}
 
 	entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", s.crd.Spec.Names.Singular, s.crd.Spec.Names.Plural)
-	s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mapping.MajorVersion].Properties["entry"] = *entryProps
+	s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion].Properties["entry"] = *entryProps
 	return nil
 }
 
@@ -86,6 +82,7 @@ func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
 			hasExtensions = true
 		}
 	}
+
 	for _, k := range toDelete {
 		delete(schema.Properties, k)
 	}
@@ -93,23 +90,28 @@ func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
 	if schema.AdditionalProperties != nil && clearPropertiesWithoutExtensions(schema.AdditionalProperties.Value) {
 		hasExtensions = true
 	}
+
 	if schema.Items != nil && clearPropertiesWithoutExtensions(schema.Items.Value) {
 		hasExtensions = true
 	}
+
 	for _, ref := range schema.AllOf {
 		if clearPropertiesWithoutExtensions(ref.Value) {
 			hasExtensions = true
 		}
 	}
+
 	for _, ref := range schema.AnyOf {
 		if clearPropertiesWithoutExtensions(ref.Value) {
 			hasExtensions = true
 		}
 	}
+
 	for _, ref := range schema.OneOf {
 		if clearPropertiesWithoutExtensions(ref.Value) {
 			hasExtensions = true
 		}
 	}
+
 	return hasExtensions
 }

@@ -26,7 +26,7 @@ import (
 )
 
 // SchemaPropsToJSONProps converts openapi3.Schema to a JSONProps
-func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef, mapping *configv1alpha1.PropertyMapping, path ...string) *apiextensions.JSONSchemaProps {
+func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef, propertyConfig *configv1alpha1.PropertyMapping, path ...string) *apiextensions.JSONSchemaProps {
 	if schema == nil {
 		return nil
 	}
@@ -61,18 +61,18 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 		//MaxProperties:        castUInt64P(schemaProps.MaxProps),
 		//MinProperties:        castUInt64(schemaProps.MinProps),
 		Required:             propertySchema.Required,
-		Items:                g.convertPropertyOrArray(propertySchema.Items, extensionsSchema, mapping, append(path, "[*]")),
-		AllOf:                g.convertPropertySlice(propertySchema.AllOf, mapping, extensionsSchema, path),
-		OneOf:                g.convertPropertySlice(propertySchema.OneOf, mapping, extensionsSchema, path),
-		AnyOf:                g.convertPropertySlice(propertySchema.AnyOf, mapping, extensionsSchema, path),
-		Not:                  g.ConvertProperty(propertySchema.Not, extensionsSchema, mapping, path...),
-		Properties:           g.ConvertPropertyMap(propertySchema.Properties, extensionsSchema, mapping, path...),
-		AdditionalProperties: g.convertPropertyOrBool(propertySchema.AdditionalProperties, extensionsSchema, mapping, path),
+		Items:                g.convertPropertyOrArray(propertySchema.Items, extensionsSchema, propertyConfig, append(path, "[*]")),
+		AllOf:                g.convertPropertySlice(propertySchema.AllOf, propertyConfig, extensionsSchema, path),
+		OneOf:                g.convertPropertySlice(propertySchema.OneOf, propertyConfig, extensionsSchema, path),
+		AnyOf:                g.convertPropertySlice(propertySchema.AnyOf, propertyConfig, extensionsSchema, path),
+		Not:                  g.ConvertProperty(propertySchema.Not, extensionsSchema, propertyConfig, path...),
+		Properties:           g.ConvertPropertyMap(propertySchema.Properties, extensionsSchema, propertyConfig, path...),
+		AdditionalProperties: g.convertPropertyOrBool(propertySchema.AdditionalProperties, extensionsSchema, propertyConfig, path),
 		Example:              &example,
 	}
 
 	for _, p := range g.plugins {
-		props = p.ProcessProperty(g, mapping, props, propertySchema, extensionsSchema, path...)
+		props = p.ProcessProperty(g, propertyConfig, props, propertySchema, extensionsSchema, path...)
 		if props == nil {
 			return nil
 		}
@@ -84,7 +84,7 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 	}
 
 	// Apply custom transformations
-	props = g.transformations(props, schema, mapping, extensionsSchema, path)
+	props = g.transformations(props, schema, propertyConfig, extensionsSchema, path)
 
 	return props
 }

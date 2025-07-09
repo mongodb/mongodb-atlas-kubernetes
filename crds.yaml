@@ -5155,6 +5155,17 @@ spec:
                     x-kubernetes-validations:
                     - message: groupId cannot be modified after creation
                       rule: self == oldSelf
+                  groupRef:
+                    description: |-
+                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      Mutually exclusive with the "groupId" property.
+                    properties:
+                      name:
+                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
+                          resource.
+                        type: string
+                    type: object
                   integrationType:
                     description: Human-readable label that identifies the service
                       which you want to integrate with MongoDB Cloud.
@@ -5165,7 +5176,6 @@ spec:
                       rule: self == oldSelf
                 required:
                 - integrationType
-                - groupId
                 type: object
             type: object
           status:
