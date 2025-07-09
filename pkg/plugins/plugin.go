@@ -8,6 +8,7 @@ import (
 
 type Plugin interface {
 	Name() string
+	ProcessCRD(g Generator, crdConfig *configv1alpha1.CRDConfig) error
 	ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error
 	ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps
 }

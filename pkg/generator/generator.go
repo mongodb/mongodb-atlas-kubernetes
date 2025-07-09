@@ -162,9 +162,6 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		XListType: ptr.To("map"),
 	}
 
-	// TODO: yaml.Marshal creates an empty status field that we should remove
-	// StoredVersions is set to empty array instead of nil to bypass the following issue:
-	// https://github.com/fybrik/openapi2crd/issues/1
 	crd.Status.StoredVersions = []string{}
 
 	// enable status subresource
@@ -178,6 +175,12 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 	for _, version := range crd.Spec.Versions {
 		if version.Storage {
 			crd.Status.StoredVersions = append(crd.Status.StoredVersions, version.Name)
+		}
+	}
+
+	for _, p := range g.plugins {
+		if err := p.ProcessCRD(g, &g.config); err != nil {
+			return nil, fmt.Errorf("error processing CRD in plugin %q: %w", p.Name(), err)
 		}
 	}
 

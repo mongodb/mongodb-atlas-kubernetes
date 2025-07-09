@@ -19,3 +19,7 @@ func (n *NoOp) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapp
 func (n *NoOp) ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
 	return props
 }
+
+func (n *NoOp) ProcessCRD(g Generator, crdConfig *configv1alpha1.CRDConfig) error {
+	return nil
+}
