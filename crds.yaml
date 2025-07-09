@@ -4196,7 +4196,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .apiToken
                               type: string
@@ -4204,7 +4205,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .datadogApiKey
                               type: string
@@ -4212,7 +4214,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .microsoftTeamsWebhookUrl
                               type: string
@@ -4220,7 +4223,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .notificationToken
                               type: string
@@ -4228,7 +4232,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .opsGenieApiKey
                               type: string
@@ -4236,7 +4241,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .serviceKey
                               type: string
@@ -4244,7 +4250,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .victorOpsApiKey
                               type: string
@@ -4252,7 +4259,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .victorOpsRoutingKey
                               type: string
@@ -4260,7 +4268,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .webhookSecret
                               type: string
@@ -4268,7 +4277,8 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: $.key
+                              propertySelectors:
+                              - $.data.key
                             x-openapi-mapping:
                               property: .webhookUrl
                               type: string
@@ -4906,7 +4916,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .apiKey
                         type: string
@@ -4914,7 +4925,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .apiToken
                         type: string
@@ -4922,7 +4934,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .licenseKey
                         type: string
@@ -4930,7 +4943,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .microsoftTeamsWebhookUrl
                         type: string
@@ -4938,7 +4952,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .password
                         type: string
@@ -4946,7 +4961,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .readToken
                         type: string
@@ -4954,7 +4970,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .routingKey
                         type: string
@@ -4962,7 +4979,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .secret
                         type: string
@@ -4970,7 +4988,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .serviceKey
                         type: string
@@ -4978,7 +4997,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .url
                         type: string
@@ -4986,7 +5006,8 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: $.key
+                        propertySelectors:
+                        - $.data.key
                       x-openapi-mapping:
                         property: .writeToken
                         type: string

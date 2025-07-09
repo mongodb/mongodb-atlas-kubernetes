@@ -160,12 +160,12 @@ spec:
         key: url
       enabled: true
 
-  v20241113:
-    integrationType: WEBHOOK
-    groupId: 32b6e34b3d91647abb20e7b8
-    entry:
-      type: WEBHOOK
-      urlSecretRef:
-        name: webhook-secret
-        key: url
-      enabled: true
+#  v20241113:
+#    integrationType: WEBHOOK
+#    groupId: 32b6e34b3d91647abb20e7b8
+#    entry:
+#      type: WEBHOOK
+#      urlSecretRef:
+#        name: webhook-secret
+#        key: url
+#      enabled: true
