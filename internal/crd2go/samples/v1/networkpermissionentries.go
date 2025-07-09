@@ -30,9 +30,12 @@ type NetworkPermissionEntriesSpecV20250312 struct {
 	// fields can be set for creating and updating networkpermissionentrieses.
 	Entry *[]NetworkPermissionEntriesSpecV20250312Entry `json:"entry,omitempty"`
 
-	// Parameters The parameter fields of the networkpermissionentries resource spec.
-	// These fields are used when creating networkpermissionentrieses only.
-	Parameters *NetworkPermissionEntriesSpecV20250312Parameters `json:"parameters,omitempty"`
+	/*
+	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+	*/
+	GroupId string `json:"groupId"`
 }
 
 type NetworkPermissionEntriesSpecV20250312Entry struct {
@@ -70,15 +73,6 @@ type NetworkPermissionEntriesSpecV20250312Entry struct {
 	IpAddress *string `json:"ipAddress,omitempty"`
 }
 
-type NetworkPermissionEntriesSpecV20250312Parameters struct {
-	/*
-	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
-
-	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-	*/
-	GroupId *string `json:"groupId,omitempty"`
-}
-
 type NetworkPermissionEntriesStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
@@ -86,5 +80,11 @@ type NetworkPermissionEntriesStatus struct {
 
 	// V20250312 The last observed Atlas state of the networkpermissionentries resource
 	// for version v20250312.
-	V20250312 *NetworkPermissionEntriesSpecV20250312Parameters `json:"v20250312,omitempty"`
+	V20250312 *NetworkPermissionEntriesStatusV20250312 `json:"v20250312,omitempty"`
+}
+
+type NetworkPermissionEntriesStatusV20250312 struct {
+	// GroupId Unique 24-hexadecimal digit string that identifies the project that
+	// contains the IP access list to which you want to add one or more entries.
+	GroupId *string `json:"groupId,omitempty"`
 }

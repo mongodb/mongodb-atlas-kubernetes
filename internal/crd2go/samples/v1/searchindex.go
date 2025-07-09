@@ -25,13 +25,20 @@ type SearchIndexSpec struct {
 }
 
 type SearchIndexSpecV20231115 struct {
+	// ClusterName Name of the cluster that contains the collection on which to create
+	// an Atlas Search index.
+	ClusterName string `json:"clusterName"`
+
 	// Entry The entry fields of the searchindex resource spec. These fields can be set
 	// for creating and updating searchindexes.
 	Entry *SearchIndexSpecV20231115Entry `json:"entry,omitempty"`
 
-	// Parameters The parameter fields of the searchindex resource spec. These fields
-	// are used when creating searchindexes only.
-	Parameters *SearchIndexSpecV20231115Parameters `json:"parameters,omitempty"`
+	/*
+	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+	*/
+	GroupId string `json:"groupId"`
 }
 
 type SearchIndexSpecV20231115Entry struct {
@@ -167,19 +174,6 @@ type Source struct {
 	// Collection Human-readable label that identifies the MongoDB collection that
 	// stores words and their applicable synonyms.
 	Collection string `json:"collection"`
-}
-
-type SearchIndexSpecV20231115Parameters struct {
-	// ClusterName Name of the cluster that contains the collection on which to create
-	// an Atlas Search index.
-	ClusterName *string `json:"clusterName,omitempty"`
-
-	/*
-	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
-
-	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-	*/
-	GroupId *string `json:"groupId,omitempty"`
 }
 
 type SearchIndexStatus struct {

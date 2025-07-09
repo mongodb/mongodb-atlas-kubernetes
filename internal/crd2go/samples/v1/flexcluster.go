@@ -29,9 +29,12 @@ type FlexClusterSpecV20241113 struct {
 	// for creating and updating flexclusters.
 	Entry *FlexClusterSpecV20241113Entry `json:"entry,omitempty"`
 
-	// Parameters The parameter fields of the flexcluster resource spec. These fields
-	// are used when creating flexclusters only.
-	Parameters *NetworkPermissionEntriesSpecV20250312Parameters `json:"parameters,omitempty"`
+	/*
+	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+	*/
+	GroupId string `json:"groupId"`
 }
 
 type FlexClusterSpecV20241113Entry struct {
