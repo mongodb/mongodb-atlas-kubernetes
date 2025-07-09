@@ -3,6 +3,13 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: organizations.atlas.generated.mongodb.com
 spec:
@@ -187,6 +194,13 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: groups.atlas.generated.mongodb.com
 spec:
@@ -383,6 +397,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: networkpeeringconnections.atlas.generated.mongodb.com
 spec:
@@ -614,6 +629,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: databaseusers.atlas.generated.mongodb.com
 spec:
@@ -890,6 +906,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: backupcompliancepolicies.atlas.generated.mongodb.com
 spec:
@@ -1175,6 +1192,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: backupschedules.atlas.generated.mongodb.com
 spec:
@@ -1517,6 +1535,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: datafederations.atlas.generated.mongodb.com
 spec:
@@ -2064,6 +2083,13 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: organizationsettings.atlas.generated.mongodb.com
 spec:
@@ -2218,6 +2244,13 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: teams.atlas.generated.mongodb.com
 spec:
@@ -2362,6 +2395,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: networkpermissionentrieses.atlas.generated.mongodb.com
 spec:
@@ -2547,6 +2581,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: clusters.atlas.generated.mongodb.com
 spec:
@@ -3657,6 +3692,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: searchindexes.atlas.generated.mongodb.com
 spec:
@@ -3999,6 +4035,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: customroles.atlas.generated.mongodb.com
 spec:
@@ -4210,6 +4247,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: flexclusters.atlas.generated.mongodb.com
 spec:
@@ -4586,6 +4624,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: groupalertsconfigs.atlas.generated.mongodb.com
 spec:
@@ -5325,6 +5364,7 @@ metadata:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
   name: thirdpartyintegrations.atlas.generated.mongodb.com
 spec:
