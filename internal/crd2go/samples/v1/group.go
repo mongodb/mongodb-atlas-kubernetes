@@ -29,9 +29,11 @@ type GroupSpecV20231115 struct {
 	// creating and updating groups.
 	Entry *GroupSpecV20231115Entry `json:"entry,omitempty"`
 
-	// Parameters The parameter fields of the group resource spec. These fields are
-	// used when creating groups only.
-	Parameters *GroupSpecV20231115Parameters `json:"parameters,omitempty"`
+	// ProjectOwnerId Unique 24-hexadecimal digit string that identifies the MongoDB
+	// Cloud user to whom to grant the Project Owner role on the specified project. If
+	// you set this parameter, it overrides the default value of the oldest
+	// Organization Owner.
+	ProjectOwnerId string `json:"projectOwnerId"`
 }
 
 type GroupSpecV20231115Entry struct {
@@ -74,14 +76,6 @@ type Tags struct {
 	// Value Variable that belongs to the set of the tag. For example, `production` in
 	// the `environment : production` tag.
 	Value string `json:"value"`
-}
-
-type GroupSpecV20231115Parameters struct {
-	// ProjectOwnerId Unique 24-hexadecimal digit string that identifies the MongoDB
-	// Cloud user to whom to grant the Project Owner role on the specified project. If
-	// you set this parameter, it overrides the default value of the oldest
-	// Organization Owner.
-	ProjectOwnerId *string `json:"projectOwnerId,omitempty"`
 }
 
 type GroupStatus struct {
