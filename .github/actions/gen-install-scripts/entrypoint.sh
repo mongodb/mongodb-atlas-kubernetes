@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 set -xeou pipefail
 
 target_dir="deploy"
@@ -29,30 +28,30 @@ mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
 controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
-cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
+cd config/manager && kubectl -k edit set image controller="${INPUT_IMAGE_URL}"
 cd -
 ./scripts/split_roles_yaml.sh
 
-which kustomize
-kustomize version
+which kubectl
+kubectl version
 
 # all-in-one
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" >"${target_dir}/all-in-one.yaml"
+kubectl -k build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" >"${target_dir}/all-in-one.yaml"
 echo "Created all-in-one config"
 
 # clusterwide
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/clusterwide" >"${clusterwide_dir}/clusterwide-config.yaml"
-kustomize build "config/crd" >"${clusterwide_dir}/crds.yaml"
+kubectl -k build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/clusterwide" >"${clusterwide_dir}/clusterwide-config.yaml"
+kubectl -k build "config/crd" >"${clusterwide_dir}/crds.yaml"
 echo "Created clusterwide config"
 
 # base-openshift-namespace-scoped
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/openshift" >"${openshift}/openshift.yaml"
-kustomize build "config/crd" >"${openshift}/crds.yaml"
+kubectl -k build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/openshift" >"${openshift}/openshift.yaml"
+kubectl -k build "config/crd" >"${openshift}/crds.yaml"
 echo "Created openshift namespaced config"
 
 # namespaced
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/namespaced" >"${namespaced_dir}/namespaced-config.yaml"
-kustomize build "config/crd" >"${namespaced_dir}/crds.yaml"
+kubectl -k build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/namespaced" >"${namespaced_dir}/namespaced-config.yaml"
+kubectl -k build "config/crd" >"${namespaced_dir}/crds.yaml"
 echo "Created namespaced config"
 
 # crds
@@ -67,12 +66,12 @@ current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernet
 channel="stable"
 if [[ "${INPUT_ENV}" == "dev" ]]; then
   echo "build dev purpose"
-  kustomize build --load-restrictor LoadRestrictionsNone config/manifests |
+  kubectl -k build --load-restrictor LoadRestrictionsNone config/manifests |
     operator-sdk generate bundle -q --overwrite --default-channel="${channel}" --channels="${channel}"
 else
   echo "build release version"
   echo "${INPUT_IMAGE_URL}"
-  kustomize build --load-restrictor LoadRestrictionsNone config/manifests |
+  kubectl -k build --load-restrictor LoadRestrictionsNone config/manifests |
     operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
   # add replaces
   awk '!/replaces:/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml >tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml

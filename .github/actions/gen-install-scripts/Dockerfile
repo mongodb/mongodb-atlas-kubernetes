@@ -1,20 +1,11 @@
 FROM golang:1.24
 
-ENV KUBECTL_VERSION 1.18.12
-ENV KUSTOMIZE_VERSION 5.7.0
-ENV GO111MODULE on
-
-RUN go install github.com/mikefarah/yq/v4@latest
+ENV KUBECTL_VERSION=1.33.2
+ENV GO111MODULE=on
 
 # Install kubectl
-RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o /usr/bin/kubectl && \
+RUN curl -L "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" -o /usr/bin/kubectl && \
     chmod +x /usr/bin/kubectl
-
-# Install kustomize (safe, pinned, prebuilt binary)
-RUN curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz \
-    -o /tmp/kustomize.tar.gz && \
-    tar -xzvf /tmp/kustomize.tar.gz -C /usr/local/bin && \
-    chmod +x /usr/local/bin/kustomize
 
 # Install controller-gen
 RUN CONTROLLER_GEN_TMP_DIR=$(mktemp -d) && \
