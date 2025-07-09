@@ -62,6 +62,20 @@ func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.C
 
 		majorVersionSpec.Properties[ref.Name] = refProp
 		r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion] = majorVersionSpec
+
+		//if extensionsSchema.Extensions == nil {
+		//	extensionsSchema.Extensions = map[string]interface{}{}
+		//}
+		//
+		//extensionsSchema.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
+		//	"gvr":               ref.Target.GVR,
+		//	"nameSelector":      ".name",
+		//	"propertySelectors": ref.Target.Properties,
+		//}
+		//
+		//extensionsSchema.Extensions["x-openapi-mapping"] = map[string]interface{}{
+		//	"property": ref.Property
+		//}
 	}
 
 	return nil

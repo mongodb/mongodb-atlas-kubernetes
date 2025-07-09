@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
 	"log"
+	"sigs.k8s.io/yaml"
 	"strings"
 
 	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
@@ -140,6 +141,18 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		}
 	}
 
+	clearPropertiesWithoutExtensions(extensionsSchema)
+	if len(extensionsSchema.Properties) > 0 {
+		d, err := yaml.Marshal(extensionsSchema)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling extensions schema: %w", err)
+		}
+		if crd.Annotations == nil {
+			crd.Annotations = make(map[string]string)
+		}
+		crd.Annotations["api-mappings"] = string(d)
+	}
+
 	crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties["conditions"] = apiextensions.JSONSchemaProps{
 		Type:        "array",
 		Description: "Represents the latest available observations of a resource's current state.",
@@ -215,4 +228,52 @@ func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.Gro
 	}
 
 	return runtimeGVK.GroupVersion().WithResource(singularName + "s"), singular
+}
+
+func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
+	if schema == nil {
+		return false
+	}
+	hasExtensions := len(schema.Extensions) > 0
+
+	var toDelete []string
+	for k, prop := range schema.Properties {
+		if !clearPropertiesWithoutExtensions(prop.Value) {
+			toDelete = append(toDelete, k)
+		} else {
+			hasExtensions = true
+		}
+	}
+
+	for _, k := range toDelete {
+		delete(schema.Properties, k)
+	}
+
+	if schema.AdditionalProperties != nil && clearPropertiesWithoutExtensions(schema.AdditionalProperties.Value) {
+		hasExtensions = true
+	}
+
+	if schema.Items != nil && clearPropertiesWithoutExtensions(schema.Items.Value) {
+		hasExtensions = true
+	}
+
+	for _, ref := range schema.AllOf {
+		if clearPropertiesWithoutExtensions(ref.Value) {
+			hasExtensions = true
+		}
+	}
+
+	for _, ref := range schema.AnyOf {
+		if clearPropertiesWithoutExtensions(ref.Value) {
+			hasExtensions = true
+		}
+	}
+
+	for _, ref := range schema.OneOf {
+		if clearPropertiesWithoutExtensions(ref.Value) {
+			hasExtensions = true
+		}
+	}
+
+	return hasExtensions
 }
