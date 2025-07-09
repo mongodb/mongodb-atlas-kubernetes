@@ -114,6 +114,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		plugins.NewReadOnlyPropertiesPlugin(),
 		plugins.NewReadWriteOnlyPropertiesPlugin(),
 		plugins.NewReferencesPlugin(crd),
+		plugins.NewMutualExclusiveMajorVersions(crd),
 	}
 
 	extensionsSchema := openapi3.NewSchema()

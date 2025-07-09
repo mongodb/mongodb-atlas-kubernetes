@@ -52,19 +52,19 @@
 #         regionName: "US_EAST_1"
 #       terminationProtectionEnabled: false
 # ---
- apiVersion: atlas.generated.mongodb.com/v1
- kind: NetworkPermissionEntries
- metadata:
-   name: foo
-   namespace: default
- spec:
-   v20250312:
-     groupId: "67e7bdb269f4d26772d3d97b"
-     entry:
-     - cidrBlock: "0.0.0.0/1"
-       comment: "Everyone has access. For the test purpose only."
-     - cidrBlock: "128.0.0.0/1"
-       comment: "Everyone has access. For the test purpose only."
+# apiVersion: atlas.generated.mongodb.com/v1
+# kind: NetworkPermissionEntries
+# metadata:
+#   name: foo
+#   namespace: default
+# spec:
+#   v20250312:
+#     groupId: "67e7bdb269f4d26772d3d97b"
+#     entry:
+#     - cidrBlock: "0.0.0.0/1"
+#       comment: "Everyone has access. For the test purpose only."
+#     - cidrBlock: "128.0.0.0/1"
+#       comment: "Everyone has access. For the test purpose only."
 # # ---
 # # apiVersion: atlas.generated.mongodb.com/v1
 # # kind: UserCustomDBRole
@@ -96,40 +96,40 @@
 # #           role: "backup"
 # #       roleName: "BackupAdmin"
 # ---
-apiVersion: atlas.generated.mongodb.com/v1
-kind: Cluster
-metadata:
- name: test-clusters
- namespace: default
-spec:
- v20231115:
-   groupId: "67eba33e19737947a3db382b"
-   entry:
-     backupEnabled: false
-     clusterType: "REPLICASET"
-     encryptionAtRestProvider: "NONE"
-     mongoDBMajorVersion: "7.0"
-     name: "test-cluster"
-     paused: false
-     pitEnabled: false
-     replicationSpecs:
-       - numShards: 1
-         regionConfigs:
-           - electableSpecs:
-               ebsVolumeType: "STANDARD"
-               instanceSize: "M10"
-               nodeCount: 3
-             priority: 7
-             providerName: "AWS"
-             regionName: "US_EAST_1"
-             autoScaling:
-               compute:
-                 enabled: false
-               diskGB:
-                 enabled: false
-         zoneName: "Zone 1"
-     rootCertType: "ISRGROOTX1"
-     versionReleaseSystem: "LTS"
+#apiVersion: atlas.generated.mongodb.com/v1
+#kind: Cluster
+#metadata:
+# name: test-clusters
+# namespace: default
+#spec:
+# v20231115:
+#   groupId: "67eba33e19737947a3db382b"
+#   entry:
+#     backupEnabled: false
+#     clusterType: "REPLICASET"
+#     encryptionAtRestProvider: "NONE"
+#     mongoDBMajorVersion: "7.0"
+#     name: "test-cluster"
+#     paused: false
+#     pitEnabled: false
+#     replicationSpecs:
+#       - numShards: 1
+#         regionConfigs:
+#           - electableSpecs:
+#               ebsVolumeType: "STANDARD"
+#               instanceSize: "M10"
+#               nodeCount: 3
+#             priority: 7
+#             providerName: "AWS"
+#             regionName: "US_EAST_1"
+#             autoScaling:
+#               compute:
+#                 enabled: false
+#               diskGB:
+#                 enabled: false
+#         zoneName: "Zone 1"
+#     rootCertType: "ISRGROOTX1"
+#     versionReleaseSystem: "LTS"
 #---
 #apiVersion: atlas.generated.mongodb.com/v1
 #kind: GroupAlertsConfig
@@ -144,3 +144,28 @@ spec:
 #          datadogApiKeyRef:
 #            name: data-dog
 #            key: .data.datadogApiKey
+
+apiVersion: atlas.generated.mongodb.com/v1
+kind: ThirdPartyIntegration
+metadata:
+  name: sample-webhook-integration
+spec:
+  v20250312:
+    integrationType: WEBHOOK
+    groupId: 32b6e34b3d91647abb20e7b8
+    entry:
+      type: WEBHOOK
+      urlSecretRef:
+        name: webhook-secret
+        key: url
+      enabled: true
+
+  v20241113:
+    integrationType: WEBHOOK
+    groupId: 32b6e34b3d91647abb20e7b8
+    entry:
+      type: WEBHOOK
+      urlSecretRef:
+        name: webhook-secret
+        key: url
+      enabled: true
