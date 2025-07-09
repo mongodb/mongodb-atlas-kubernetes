@@ -13,20 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-#set -eou pipefail
+set -eou pipefail
 
 git config --global --add safe.directory /github/workspace
 
 # Get the full commit hash and shorten to 6 characters
-full_commit_sha="${COMMIT_SHA:-}"
+full_commit_sha="${INPUT_COMMIT_SHA:-}"
 if [ -z "$full_commit_sha" ]; then
   full_commit_sha=$(git rev-parse HEAD)
 fi
 commit_id=$(echo "$full_commit_sha" | cut -c1-6)
 
 # Get the full branch name
-branch_name="${BRANCH_NAME:-}"
+branch_name="${INPUT_BRANCH_NAME:-}"
 if [ -z "$branch_name" ]; then
   if [ -n "$GITHUB_HEAD_REF" ]; then
     branch_name="$GITHUB_HEAD_REF"

@@ -14,22 +14,23 @@ on:
 jobs:
   fetch-e2e-image:
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'push' ||
-      (github.event.workflow_run.conclusion == 'success' && 
-      github.event.workflow_run.head_branch == 'main')
     env:
       REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Checkout PR commit
         uses: actions/checkout@v4
-
+      
+      # Note, we have to be careful how we retrive the image. The event that pushed 
+      # the image to the ghcr.io repo was mainly a push/schedule that passed all the tests. 
+      # This event has access to github.ref_name. However, the workflow_run event
+      # does not have access github.ref_name set up. 
+      # 
+      # Therefore, we manually specify the branch (github.event.workflow_run.head_branch == main)
       - id: set_tag
         uses: ./.github/actions/set-tag
-        env:
-          BRANCH_NAME: ${{ github.head_ref || github.ref_name || github.event.workflow_run.head_branch }}
-          COMMIT_NAME: ${{ github.event.workflow_run.head_sha || github.sha }}
-
+        with:
+          branch_name: ${{ github.head_ref || github.ref_name || github.event.workflow_run.head_branch }}
+          commit_sha: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - id: set_image_url
         run: |

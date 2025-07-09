@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       test_matrix: ${{ steps.compute.outputs.matrix }}
-      tag: ${{ steps.set_tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,26 +27,23 @@ jobs:
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 
-      - id: set_tag
-        uses: ./.github/actions/set-tag
-
   prepare-e2e-image:
     runs-on: ubuntu-latest
-    needs: [prepare-e2e]
     outputs:
-      image_url: ${{ steps.set_vars.outputs.image_url }}
+      image_url: ${{ steps.set_image_url.outputs.image_url }}
     env:
       REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          submodules: true
-          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - id: set_vars
+      - id: set_tag
+        uses: ./.github/actions/set-tag
+
+      - id: set_image_url
         run: |
-          echo "image_url=${REPO}:${{ needs.prepare-e2e.outputs.tag }}" >> "$GITHUB_OUTPUT"
+          echo "image_url=${REPO}:${{ steps.set_tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
 
       - run: |
           echo "${{ secrets.GITHUB_TOKEN }}" \
@@ -59,8 +55,8 @@ jobs:
         with:
           file: fast.Dockerfile
           repository: ${{ env.REPO }}
-          version: ${{ needs.prepare-e2e.outputs.tag }}
-          tags: ${{ steps.set_vars.outputs.image_url }}
+          version: ${{ steps.set_tag.outputs.tag }}
+          tags: ${{ steps.set_image_url.outputs.image_url }}
           platforms: linux/amd64
           push_to_docker: false
 
@@ -88,7 +84,7 @@ jobs:
       - uses: ./.github/actions/gen-install-scripts
         with:
           ENV: dev
-          VERSION: ${{ needs.prepare-e2e.outputs.tag }}
+          VERSION: dev
 
       - name: Extract k8s version/platform
         id: extract
@@ -149,7 +145,7 @@ jobs:
       - uses: ./.github/actions/gen-install-scripts
         with:
           ENV: dev
-          VERSION: ${{ needs.prepare-e2e.outputs.tag }}
+          VERSION: dev
           IMAGE_URL: ${{ needs.prepare-e2e-image.outputs.image_url }}
 
       - name: Extract k8s version/platform
