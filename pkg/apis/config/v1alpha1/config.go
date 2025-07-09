@@ -30,8 +30,9 @@ type Spec struct {
 }
 
 type OpenAPIDefinition struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	Package string `json:"package"`
 }
 
 type CRDConfig struct {

@@ -17,13 +17,6 @@ spec:
 
   openapi:
     - name: v20250312
-      path: atlas-api-transformed-v20250312.yaml
-
-    - name: v20231115
-      path: atlas-api-transformed-v20231115.yaml
-
-    - name: v20241113
-      path: atlas-api-transformed-v20241113.yaml
       package: go.mongodb.org/atlas-sdk/v20250312005/admin
 
   crd:
@@ -57,9 +50,9 @@ spec:
       shortNames:
         - ag
       mappings:
-        - majorVersion: v20231115
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20231115
+            name: v20250312
           parameters:
             path:
               name: '/api/atlas/v2/groups'
@@ -314,9 +307,9 @@ spec:
       shortNames:
         - ac
       mappings:
-        - majorVersion: v20231115
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20231115
+            name: v20250312
           parameters:
             path:
               name: '/api/atlas/v2/groups/{groupId}/clusters'
@@ -324,7 +317,7 @@ spec:
             references:
               - *groupRef
           entry:
-            schema: 'AdvancedClusterDescription'
+            schema: 'ClusterDescription20240805'
             filters:
               skipProperties:
                 - $.connectionStrings
@@ -336,7 +329,7 @@ spec:
                 - $.replicationSpecs[*].id
                 - $.stateName
           status:
-            schema: 'AdvancedClusterDescription'
+            schema: 'ClusterDescription20240805'
             filters:
               skipProperties:
                 - $.acceptDataRisksAndForceReplicaSetReconfig
@@ -369,9 +362,9 @@ spec:
       shortNames:
         - asi
       mappings:
-        - majorVersion: v20231115
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20231115
+            name: v20250312
           parameters:
             path:
               name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/fts/indexes'
@@ -409,9 +402,9 @@ spec:
       shortNames:
         - arole
       mappings:
-        - majorVersion: v20231115
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20231115
+            name: v20250312
           parameters:
             path:
               name: '/api/atlas/v2/groups/{groupId}/customDBRoles/roles'
@@ -430,9 +423,9 @@ spec:
       shortNames:
         - afc
       mappings:
-        - majorVersion: v20241113
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20241113
+            name: v20250312
           parameters:
             path:
               name: '/api/atlas/v2/groups/{groupId}/flexClusters'
@@ -463,9 +456,9 @@ spec:
       shortNames:
         - aga
       mappings:
-        - majorVersion: v20241113
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20241113
+            name: v20250312
           parameters:
             path:
               name: '/api/atlas/v2/groups/{groupId}/alertConfigs'
@@ -503,9 +496,9 @@ spec:
       shortNames:
         - atpi
       mappings:
-        - majorVersion: v20241113
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20241113
+            name: v20250312
           parameters:
             path:
               name: '/api/atlas/v2/groups/{groupId}/integrations/{integrationType}'

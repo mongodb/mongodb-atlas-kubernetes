@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/mongodb/atlas2crd/pkg/atlas"
 	"log"
 	"sigs.k8s.io/yaml"
 	"strings"
@@ -129,11 +130,21 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 			return nil, fmt.Errorf("no OpenAPI definition named %q found", mapping.OpenAPIRef.Name)
 		}
 
-		openApiSpec, err := config.LoadOpenAPI(def.Path)
+		var openApiSpec *openapi3.T
+
+		path := def.Path
+		if path == "" {
+			var err error
+			path, err = atlas.LoadOpenAPIPath(def.Package)
+			if err != nil {
+				return nil, fmt.Errorf("error loading OpenAPI package %q: %w", def.Package, err)
+			}
+		}
+
+		openApiSpec, err := config.LoadOpenAPI(path)
 		if err != nil {
 			return nil, fmt.Errorf("error loading spec: %w", err)
 		}
-
 		for _, p := range g.plugins {
 			if err := p.ProcessMapping(g, &mapping, openApiSpec, extensionsSchema); err != nil {
 				return nil, fmt.Errorf("error processing plugin %s: %w", p.Name(), err)

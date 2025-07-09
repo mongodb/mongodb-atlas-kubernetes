@@ -211,12 +211,12 @@ spec:
             description: |-
               Specification of the group supporting the following versions:
 
-              - v20231115
+              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              v20231115:
-                description: The spec of the group resource for version v20231115.
+              v20250312:
+                description: The spec of the group resource for version v20250312.
                 properties:
                   entry:
                     description: The entry fields of the group resource spec. These
@@ -239,10 +239,9 @@ spec:
 
                           This field sets restrictions on available regions in the project.
 
-                          | Value                             | Available Regions |
-                          |-----------------------------------|------------|
-                          | `COMMERCIAL_FEDRAMP_REGIONS_ONLY` | Only allows deployments in FedRAMP Moderate regions.|
-                          | `GOV_REGIONS_ONLY`                | Only allows deployments in GovCloud regions.|
+                          `COMMERCIAL_FEDRAMP_REGIONS_ONLY`: Only allows deployments in FedRAMP Moderate regions.
+
+                          `GOV_REGIONS_ONLY`: Only allows deployments in GovCloud regions.
                         type: string
                       tags:
                         description: List that contains key-value pairs between 1
@@ -330,9 +329,9 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              v20231115:
+              v20250312:
                 description: The last observed Atlas state of the group resource for
-                  version v20231115.
+                  version v20250312.
                 properties:
                   clusterCount:
                     description: Quantity of MongoDB Cloud clusters deployed in this
@@ -2538,7 +2537,7 @@ metadata:
       properties:
         spec:
           properties:
-            v20231115:
+            v20250312:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
@@ -2572,12 +2571,12 @@ spec:
             description: |-
               Specification of the cluster supporting the following versions:
 
-              - v20231115
+              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              v20231115:
-                description: The spec of the cluster resource for version v20231115.
+              v20250312:
+                description: The spec of the cluster resource for version v20250312.
                 properties:
                   entry:
                     description: The entry fields of the cluster resource spec. These
@@ -2593,14 +2592,39 @@ spec:
                           have not been replicated to the new primary node. MongoDB
                           Atlas docs contain more information. To proceed with an
                           operation which carries that risk, set **acceptDataRisksAndForceReplicaSetReconfig**
-                          to the current date.
+                          to the current date. This parameter expresses its value
+                          in the ISO 8601 timestamp format in UTC.
                         type: string
+                      advancedConfiguration:
+                        description: Group of settings that configures a subset of
+                          the advanced configuration details.
+                        properties:
+                          customOpensslCipherConfigTls12:
+                            description: The custom OpenSSL cipher suite list for
+                              TLS 1.2. This field is only valid when `tlsCipherConfigMode`
+                              is set to `CUSTOM`.
+                            items:
+                              type: string
+                            type: array
+                          minimumEnabledTlsProtocol:
+                            description: Minimum Transport Layer Security (TLS) version
+                              that the cluster accepts for incoming connections. Clusters
+                              using TLS 1.0 or 1.1 should consider setting TLS 1.2
+                              as the minimum TLS protocol version.
+                            type: string
+                          tlsCipherConfigMode:
+                            description: The TLS cipher suite configuration mode.
+                              The default mode uses the default cipher suites. The
+                              custom mode allows you to specify custom cipher suites
+                              for both TLS 1.2 and TLS 1.3.
+                            type: string
+                        type: object
                       backupEnabled:
                         description: Flag that indicates whether the cluster can perform
                           backups. If set to `true`, the cluster can perform backups.
                           You must set this value to `true` for NVMe clusters. Backup
-                          uses [Cloud Backups](https://docs.atlas.mongodb.com/backup/cloud-backup/overview/)
-                          for dedicated clusters and [Shared Cluster Backups](https://docs.atlas.mongodb.com/backup/shared-tier/overview/)
+                          uses Cloud Backups for dedicated clusters and [Shared Cluster
+                          Backups](https://docs.atlas.mongodb.com/backup/shared-tier/overview/)
                           for tenant clusters. If set to `false`, the cluster doesn't
                           use backups.
                         type: boolean
@@ -2626,18 +2650,17 @@ spec:
                       clusterType:
                         description: Configuration of nodes that comprise the cluster.
                         type: string
-                      diskSizeGB:
-                        description: Storage capacity that the host's root volume
-                          possesses expressed in gigabytes. Increase this number to
-                          add capacity. MongoDB Cloud requires this parameter if you
-                          set **replicationSpecs**. If you specify a disk size below
-                          the minimum (10 GB), this parameter defaults to the minimum
-                          disk size value. Storage charge calculations depend on whether
-                          you choose the default value or a custom value.  The maximum
-                          value for disk storage cannot exceed 50 times the maximum
-                          RAM for the selected cluster. If you require more storage
-                          space, consider upgrading your cluster to a higher tier.
-                        type: number
+                      configServerManagementMode:
+                        description: |-
+                          Config Server Management Mode for creating or updating a sharded cluster.
+
+                          When configured as ATLAS_MANAGED, atlas may automatically switch the cluster's config server type for optimal performance and savings.
+
+                          When configured as FIXED_TO_DEDICATED, the cluster will always use a dedicated config server.
+                        type: string
+                      configServerType:
+                        description: Describes a sharded cluster's config server type.
+                        type: string
                       diskWarmingMode:
                         description: Disk warming mode selection.
                         type: string
@@ -2649,11 +2672,30 @@ spec:
                           setting must be `M10` or higher and `"backupEnabled" : false`
                           or omitted entirely.'
                         type: string
+                      featureCompatibilityVersion:
+                        description: Feature compatibility version of the cluster.
+                          This will always appear regardless of whether FCV is pinned.
+                        type: string
+                      featureCompatibilityVersionExpirationDate:
+                        description: Feature compatibility version expiration date.
+                          Will only appear if FCV is pinned. This parameter expresses
+                          its value in the ISO 8601 timestamp format in UTC.
+                        type: string
+                      globalClusterSelfManagedSharding:
+                        description: |-
+                          Set this field to configure the Sharding Management Mode when creating a new Global Cluster.
+
+                          When set to false, the management mode is set to Atlas-Managed Sharding. This mode fully manages the sharding of your Global Cluster and is built to provide a seamless deployment experience.
+
+                          When set to true, the management mode is set to Self-Managed Sharding. This mode leaves the management of shards in your hands and is built to provide an advanced and flexible deployment experience.
+
+                          This setting cannot be changed once the cluster is deployed.
+                        type: boolean
                       labels:
                         description: |-
                           Collection of key-value pairs between 1 to 255 characters in length that tag and categorize the cluster. The MongoDB Cloud console doesn't display your labels.
 
-                          Cluster labels are deprecated and will be removed in a future release. We strongly recommend that you use [resource tags](https://dochub.mongodb.org/core/add-cluster-tag-atlas) instead.
+                          Cluster labels are deprecated and will be removed in a future release. We strongly recommend that you use Resource Tags instead.
                         items:
                           description: Human-readable labels applied to this MongoDB
                             Cloud component.
@@ -2669,14 +2711,62 @@ spec:
                           title: Component Label
                           type: object
                         type: array
+                      mongoDBEmployeeAccessGrant:
+                        description: MongoDB employee granted access level and expiration
+                          for a cluster.
+                        properties:
+                          expirationTime:
+                            description: Expiration date for the employee access grant.
+                              This parameter expresses its value in the ISO 8601 timestamp
+                              format in UTC.
+                            type: string
+                          grantType:
+                            description: Level of access to grant to MongoDB Employees.
+                            type: string
+                          links:
+                            description: List of one or more Uniform Resource Locators
+                              (URLs) that point to API sub-resources, related API
+                              resources, or both. RFC 5988 outlines these relationships.
+                            items:
+                              properties:
+                                href:
+                                  description: Uniform Resource Locator (URL) that
+                                    points another API resource to which this response
+                                    has some relationship. This URL often begins with
+                                    `https://cloud.mongodb.com/api/atlas`.
+                                  example: https://cloud.mongodb.com/api/atlas
+                                  type: string
+                                rel:
+                                  description: Uniform Resource Locator (URL) that
+                                    defines the semantic relationship between this
+                                    resource and another API resource. This URL often
+                                    begins with `https://cloud.mongodb.com/api/atlas`.
+                                  example: self
+                                  type: string
+                              type: object
+                            type: array
+                        required:
+                        - expirationTime
+                        - grantType
+                        type: object
                       mongoDBMajorVersion:
-                        description: Major MongoDB version of the cluster. MongoDB
-                          Cloud deploys the cluster with the latest stable release
-                          of the specified version.
+                        description: "MongoDB major version of the cluster. Set to
+                          the binary major version. \n\nOn creation: Choose from the
+                          available versions of MongoDB, or leave unspecified for
+                          the current recommended default in the MongoDB Cloud platform.
+                          The recommended version is a recent Long Term Support version.
+                          The default is not guaranteed to be the most recently released
+                          version throughout the entire release cycle. For versions
+                          available in a specific project, see the linked documentation
+                          or use the API endpoint for [project LTS versions endpoint](#tag/Projects/operation/getProjectLtsVersions).\n\n
+                          On update: Increase version only by 1 major version at a
+                          time. If the cluster is pinned to a MongoDB feature compatibility
+                          version exactly one major version below the current MongoDB
+                          version, the MongoDB version can be downgraded to the previous
+                          major version."
                         type: string
                       name:
-                        description: Human-readable label that identifies the advanced
-                          cluster.
+                        description: Human-readable label that identifies the cluster.
                         type: string
                       paused:
                         description: Flag that indicates whether the cluster is paused.
@@ -2685,25 +2775,38 @@ spec:
                         description: Flag that indicates whether the cluster uses
                           continuous cloud backups.
                         type: boolean
+                      redactClientLogData:
+                        description: |-
+                          Enable or disable log redaction.
+
+                          This setting configures the ``mongod`` or ``mongos`` to redact any document field contents from a message accompanying a given log event before logging. This prevents the program from writing potentially sensitive data stored on the database to the diagnostic log. Metadata such as error or operation codes, line numbers, and source file names are still visible in the logs.
+
+                          Use ``redactClientLogData`` in conjunction with Encryption at Rest and TLS/SSL (Transport Encryption) to assist compliance with regulatory requirements.
+
+                          *Note*: changing this setting on a cluster will trigger a rolling restart as soon as the cluster is updated.
+                        type: boolean
+                      replicaSetScalingStrategy:
+                        description: |-
+                          Set this field to configure the replica set scaling mode for your cluster.
+
+                          By default, Atlas scales under WORKLOAD_TYPE. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
+
+                          When configured as SEQUENTIAL, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
+
+                          When configured as NODE_TYPE, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
+                        type: string
                       replicationSpecs:
                         description: List of settings that configure your cluster
-                          regions. For Global Clusters, each object in the array represents
-                          a zone where your clusters nodes deploy. For non-Global
-                          sharded clusters and replica sets, this array has one object
-                          representing where your clusters nodes deploy.
+                          regions. This array has one object per shard representing
+                          node configurations in each shard. For replica sets there
+                          is only one object representing node configurations.
                         items:
                           description: Details that explain how MongoDB Cloud replicates
                             data on the specified MongoDB database.
                           properties:
-                            numShards:
-                              description: |-
-                                Positive integer that specifies the number of shards to deploy in each specified zone. If you set this value to `1` and **clusterType** is `SHARDED`, MongoDB Cloud deploys a single-shard sharded cluster. Don't create a sharded cluster with a single shard for production environments. Single-shard sharded clusters don't provide the same benefits as multi-shard configurations.
-
-                                 If you are upgrading a replica set to a sharded cluster, you cannot increase the number of shards in the same update request.  You should wait until after the cluster has completed upgrading to sharded and you have reconnected all application clients to the MongoDB router before adding additional shards. Otherwise, your data might become inconsistent once MongoDB Cloud begins distributing data across shards.
-                              type: integer
                             regionConfigs:
                               description: |-
-                                Hardware specifications for nodes set for a given region. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**. Every hardware specification must use the same **instanceSize**.
+                                Hardware specifications for nodes set for a given region. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
 
                                 **Example:**
 
@@ -2722,31 +2825,35 @@ spec:
                                         properties:
                                           enabled:
                                             description: |-
-                                              Flag that indicates whether someone enabled instance size auto-scaling.
+                                              Flag that indicates whether instance size reactive auto-scaling is enabled.
 
-                                              - Set to `true` to enable instance size auto-scaling. If enabled, you must specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize**.
-                                              - Set to `false` to disable instance size automatic scaling.
+                                              - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize**.
+                                              - Set to `false` to disable instance size reactive auto-scaling.
                                             type: boolean
                                           maxInstanceSize:
-                                            description: 'Minimum instance size to
+                                            description: Instance size boundary to
                                               which your cluster can automatically
-                                              scale. MongoDB Cloud requires this parameter
-                                              if `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.scaleDownEnabled"
-                                              : true`.'
+                                              scale.
                                             type: string
                                           minInstanceSize:
-                                            description: 'Minimum instance size to
+                                            description: Instance size boundary to
                                               which your cluster can automatically
-                                              scale. MongoDB Cloud requires this parameter
-                                              if `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.scaleDownEnabled"
-                                              : true`.'
+                                              scale.
                                             type: string
+                                          predictiveEnabled:
+                                            description: |-
+                                              Flag that indicates whether predictive instance size auto-scaling is enabled.
+
+                                              - Set to `true` to enable predictive instance size auto-scaling. MongoDB Cloud requires **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled** to be `true` in order to enable this feature.
+                                              - Set to `false` to disable predictive instance size auto-scaling.
+                                            type: boolean
                                           scaleDownEnabled:
-                                            description: 'Flag that indicates whether
-                                              the instance size may scale down. MongoDB
-                                              Cloud requires this parameter if `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled"
-                                              : true`. If you enable this option,
-                                              specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize**.'
+                                            description: Flag that indicates whether
+                                              the instance size may scale down via
+                                              reactive auto-scaling. MongoDB Cloud
+                                              requires this parameter if **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled**
+                                              is `true`. If you enable this option,
+                                              specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize**.
                                             type: boolean
                                         title: Automatic Compute Scaling Settings
                                         type: object
@@ -2767,24 +2874,39 @@ spec:
                                     description: Hardware specifications for read-only
                                       nodes in the region. Read-only nodes can never
                                       become the primary member, but can enable local
-                                      reads.If you don't specify this parameter, no
-                                      read-only nodes are deployed to the region.
+                                      reads. If you don't specify this parameter,
+                                      no read-only nodes are deployed to the region.
                                     properties:
                                       diskIOPS:
                                         description: |-
-                                          Target throughput desired for storage attached to your AWS-provisioned cluster. Change this parameter only if you:
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "AWS"`.
-                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M30"` or greater not including `Mxx_NVME` tiers.
+                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
+                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
 
                                           The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
                                           This parameter defaults to the cluster tier's standard IOPS value.
                                           Changing this value impacts cluster cost.
-                                          MongoDB Cloud enforces minimum ratios of storage capacity to system memory for given cluster tiers. This keeps cluster performance consistent with large datasets.
-
-                                          - Instance sizes `M10` to `M40` have a ratio of disk capacity to system memory of 60:1.
-                                          - Instance sizes greater than `M40` have a ratio of 120:1.
                                         type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set **replicationSpecs**.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
                                       ebsVolumeType:
                                         description: "Type of storage you want to
                                           attach to your AWS-provisioned cluster.\n\n-
@@ -2798,11 +2920,16 @@ spec:
                                         type: string
                                       instanceSize:
                                         description: Hardware specification for the
-                                          instance sizes in this region. Each instance
-                                          size has a default storage and memory capacity.
-                                          The instance size you select applies to
-                                          all the data-bearing hosts in your instance
-                                          size.
+                                          instance sizes in this region in this shard.
+                                          Each instance size has a default storage
+                                          and memory capacity. Electable nodes and
+                                          read-only nodes (known as "base nodes")
+                                          within a single shard must use the same
+                                          instance size. Analytics nodes can scale
+                                          independently from base nodes within a shard.
+                                          Both base nodes and analytics nodes can
+                                          scale independently from their equivalents
+                                          in other shards.
                                         title: GCP Instance Sizes
                                         type: string
                                       nodeCount:
@@ -2821,31 +2948,35 @@ spec:
                                         properties:
                                           enabled:
                                             description: |-
-                                              Flag that indicates whether someone enabled instance size auto-scaling.
+                                              Flag that indicates whether instance size reactive auto-scaling is enabled.
 
-                                              - Set to `true` to enable instance size auto-scaling. If enabled, you must specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize**.
-                                              - Set to `false` to disable instance size automatic scaling.
+                                              - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize**.
+                                              - Set to `false` to disable instance size reactive auto-scaling.
                                             type: boolean
                                           maxInstanceSize:
-                                            description: 'Minimum instance size to
+                                            description: Instance size boundary to
                                               which your cluster can automatically
-                                              scale. MongoDB Cloud requires this parameter
-                                              if `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.scaleDownEnabled"
-                                              : true`.'
+                                              scale.
                                             type: string
                                           minInstanceSize:
-                                            description: 'Minimum instance size to
+                                            description: Instance size boundary to
                                               which your cluster can automatically
-                                              scale. MongoDB Cloud requires this parameter
-                                              if `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.scaleDownEnabled"
-                                              : true`.'
+                                              scale.
                                             type: string
+                                          predictiveEnabled:
+                                            description: |-
+                                              Flag that indicates whether predictive instance size auto-scaling is enabled.
+
+                                              - Set to `true` to enable predictive instance size auto-scaling. MongoDB Cloud requires **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled** to be `true` in order to enable this feature.
+                                              - Set to `false` to disable predictive instance size auto-scaling.
+                                            type: boolean
                                           scaleDownEnabled:
-                                            description: 'Flag that indicates whether
-                                              the instance size may scale down. MongoDB
-                                              Cloud requires this parameter if `"replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled"
-                                              : true`. If you enable this option,
-                                              specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize**.'
+                                            description: Flag that indicates whether
+                                              the instance size may scale down via
+                                              reactive auto-scaling. MongoDB Cloud
+                                              requires this parameter if **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled**
+                                              is `true`. If you enable this option,
+                                              specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize**.
                                             type: boolean
                                         title: Automatic Compute Scaling Settings
                                         type: object
@@ -2863,11 +2994,16 @@ spec:
                                     title: Automatic Scaling Settings
                                     type: object
                                   backingProviderName:
-                                    description: Cloud service provider on which MongoDB
-                                      Cloud provisioned the multi-tenant cluster.
+                                    description: "Cloud service provider on which
+                                      MongoDB Cloud provisioned the multi-tenant cluster.
                                       The resource returns this parameter when **providerName**
                                       is `TENANT` and **electableSpecs.instanceSize**
-                                      is `M0`, `M2` or `M5`.
+                                      is `M0`, `M2` or `M5`. \n\nPlease note that
+                                      \ using an instanceSize of M2 or M5 will create
+                                      a Flex cluster instead. Support for the instanceSize
+                                      of M2 or M5 will be discontinued in January
+                                      2026. We recommend using the createFlexCluster
+                                      API for such configurations moving forward."
                                     type: string
                                   electableSpecs:
                                     description: Hardware specifications for all electable
@@ -2878,19 +3014,34 @@ spec:
                                     properties:
                                       diskIOPS:
                                         description: |-
-                                          Target throughput desired for storage attached to your AWS-provisioned cluster. Change this parameter only if you:
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "AWS"`.
-                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M30"` or greater not including `Mxx_NVME` tiers.
+                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
+                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
 
                                           The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
                                           This parameter defaults to the cluster tier's standard IOPS value.
                                           Changing this value impacts cluster cost.
-                                          MongoDB Cloud enforces minimum ratios of storage capacity to system memory for given cluster tiers. This keeps cluster performance consistent with large datasets.
-
-                                          - Instance sizes `M10` to `M40` have a ratio of disk capacity to system memory of 60:1.
-                                          - Instance sizes greater than `M40` have a ratio of 120:1.
                                         type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set **replicationSpecs**.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
                                       ebsVolumeType:
                                         description: "Type of storage you want to
                                           attach to your AWS-provisioned cluster.\n\n-
@@ -2902,13 +3053,15 @@ spec:
                                           selected volume size. You must set this
                                           value to (`PROVISIONED`) for NVMe clusters."
                                         type: string
+                                      effectiveInstanceSize:
+                                        description: The true tenant instance size.
+                                          This is present to support backwards compatibility
+                                          for deprecated provider types and/or instance
+                                          sizes.
+                                        type: string
                                       instanceSize:
                                         description: Hardware specification for the
-                                          instance sizes in this region. Each instance
-                                          size has a default storage and memory capacity.
-                                          The instance size you select applies to
-                                          all the data-bearing hosts in your instance
-                                          size.
+                                          instances in this M0/M2/M5 tier cluster.
                                         title: Tenant Instance Sizes
                                         type: string
                                       nodeCount:
@@ -2932,24 +3085,39 @@ spec:
                                     description: Hardware specifications for read-only
                                       nodes in the region. Read-only nodes can never
                                       become the primary member, but can enable local
-                                      reads.If you don't specify this parameter, no
-                                      read-only nodes are deployed to the region.
+                                      reads. If you don't specify this parameter,
+                                      no read-only nodes are deployed to the region.
                                     properties:
                                       diskIOPS:
                                         description: |-
-                                          Target throughput desired for storage attached to your AWS-provisioned cluster. Change this parameter only if you:
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "AWS"`.
-                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M30"` or greater not including `Mxx_NVME` tiers.
+                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
+                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
 
                                           The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
                                           This parameter defaults to the cluster tier's standard IOPS value.
                                           Changing this value impacts cluster cost.
-                                          MongoDB Cloud enforces minimum ratios of storage capacity to system memory for given cluster tiers. This keeps cluster performance consistent with large datasets.
-
-                                          - Instance sizes `M10` to `M40` have a ratio of disk capacity to system memory of 60:1.
-                                          - Instance sizes greater than `M40` have a ratio of 120:1.
                                         type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set **replicationSpecs**.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
                                       ebsVolumeType:
                                         description: "Type of storage you want to
                                           attach to your AWS-provisioned cluster.\n\n-
@@ -2963,11 +3131,16 @@ spec:
                                         type: string
                                       instanceSize:
                                         description: Hardware specification for the
-                                          instance sizes in this region. Each instance
-                                          size has a default storage and memory capacity.
-                                          The instance size you select applies to
-                                          all the data-bearing hosts in your instance
-                                          size.
+                                          instance sizes in this region in this shard.
+                                          Each instance size has a default storage
+                                          and memory capacity. Electable nodes and
+                                          read-only nodes (known as "base nodes")
+                                          within a single shard must use the same
+                                          instance size. Analytics nodes can scale
+                                          independently from base nodes within a shard.
+                                          Both base nodes and analytics nodes can
+                                          scale independently from their equivalents
+                                          in other shards.
                                         title: GCP Instance Sizes
                                         type: string
                                       nodeCount:
@@ -2997,20 +3170,26 @@ spec:
                                       resides in the same region as the nodes to communicate
                                       with the peered VPC.
                                     type: string
-                                title: Cloud Service Provider Settings for Multi-Cloud
-                                  Clusters
+                                title: Cloud Service Provider Settings
                                 type: object
                               type: array
+                            zoneId:
+                              description: Unique 24-hexadecimal digit string that
+                                identifies the zone in a Global Cluster. This value
+                                can be used to configure Global Cluster backup policies.
+                              example: 32b6e34b3d91647abb20e7b8
+                              type: string
                             zoneName:
-                              description: 'Human-readable label that identifies the
-                                zone in a Global Cluster. Provide this value only
-                                if `"clusterType" : "GEOSHARDED"`.'
+                              description: 'Human-readable label that describes the
+                                zone this shard belongs to in a Global Cluster. Provide
+                                this value only if "clusterType" : "GEOSHARDED" but
+                                not "selfManagedSharding" : true.'
                               type: string
                           title: Replication Specifications
                           type: object
                         type: array
                       rootCertType:
-                        description: Root Certificate Authority that MongoDB Cloud
+                        description: Root Certificate Authority that MongoDB Atlas
                           cluster uses. MongoDB Cloud supports Internet Security Research
                           Group.
                         type: string
@@ -3114,10 +3293,45 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              v20231115:
+              v20250312:
                 description: The last observed Atlas state of the cluster resource
-                  for version v20231115.
+                  for version v20250312.
                 properties:
+                  advancedConfiguration:
+                    description: Group of settings that configures a subset of the
+                      advanced configuration details.
+                    properties:
+                      customOpensslCipherConfigTls12:
+                        description: The custom OpenSSL cipher suite list for TLS
+                          1.2. This field is only valid when `tlsCipherConfigMode`
+                          is set to `CUSTOM`.
+                        items:
+                          type: string
+                        type: array
+                      minimumEnabledTlsProtocol:
+                        description: Minimum Transport Layer Security (TLS) version
+                          that the cluster accepts for incoming connections. Clusters
+                          using TLS 1.0 or 1.1 should consider setting TLS 1.2 as
+                          the minimum TLS protocol version.
+                        type: string
+                      tlsCipherConfigMode:
+                        description: The TLS cipher suite configuration mode. The
+                          default mode uses the default cipher suites. The custom
+                          mode allows you to specify custom cipher suites for both
+                          TLS 1.2 and TLS 1.3.
+                        type: string
+                    type: object
+                  configServerManagementMode:
+                    description: |-
+                      Config Server Management Mode for creating or updating a sharded cluster.
+
+                      When configured as ATLAS_MANAGED, atlas may automatically switch the cluster's config server type for optimal performance and savings.
+
+                      When configured as FIXED_TO_DEDICATED, the cluster will always use a dedicated config server.
+                    type: string
+                  configServerType:
+                    description: Describes a sharded cluster's config server type.
+                    type: string
                   connectionStrings:
                     description: Collection of Uniform Resource Locators that point
                       to the MongoDB database.
@@ -3147,13 +3361,23 @@ spec:
                             (AWS) interface endpoint. Each value identifies the related
                             `mongodb://` connection string that you use to connect
                             to Atlas through the interface endpoint that the key names.
+                            If the cluster uses an optimized connection string, `awsPrivateLinkSrv`
+                            contains the optimized connection string. If the cluster
+                            has the non-optimized (legacy) connection string, `awsPrivateLinkSrv`
+                            contains the non-optimized connection string even if an
+                            optimized connection string is also present.
                           type: string
                         description: Private endpoint-aware connection strings that
                           use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink.
                           Each key identifies an Amazon Web Services (AWS) interface
                           endpoint. Each value identifies the related `mongodb://`
                           connection string that you use to connect to Atlas through
-                          the interface endpoint that the key names.
+                          the interface endpoint that the key names. If the cluster
+                          uses an optimized connection string, `awsPrivateLinkSrv`
+                          contains the optimized connection string. If the cluster
+                          has the non-optimized (legacy) connection string, `awsPrivateLinkSrv`
+                          contains the non-optimized connection string even if an
+                          optimized connection string is also present.
                         type: object
                       private:
                         description: Network peering connection strings for each interface
@@ -3279,6 +3503,25 @@ spec:
                     description: Date and time when MongoDB Cloud created this cluster.
                       This parameter expresses its value in ISO 8601 format in UTC.
                     type: string
+                  featureCompatibilityVersion:
+                    description: Feature compatibility version of the cluster. This
+                      will always appear regardless of whether FCV is pinned.
+                    type: string
+                  featureCompatibilityVersionExpirationDate:
+                    description: Feature compatibility version expiration date. Will
+                      only appear if FCV is pinned. This parameter expresses its value
+                      in the ISO 8601 timestamp format in UTC.
+                    type: string
+                  globalClusterSelfManagedSharding:
+                    description: |-
+                      Set this field to configure the Sharding Management Mode when creating a new Global Cluster.
+
+                      When set to false, the management mode is set to Atlas-Managed Sharding. This mode fully manages the sharding of your Global Cluster and is built to provide a seamless deployment experience.
+
+                      When set to true, the management mode is set to Self-Managed Sharding. This mode leaves the management of shards in your hands and is built to provide an advanced and flexible deployment experience.
+
+                      This setting cannot be changed once the cluster is deployed.
+                    type: boolean
                   groupId:
                     description: Unique 24-hexadecimal character string that identifies
                       the project.
@@ -3286,34 +3529,92 @@ spec:
                     type: string
                   id:
                     description: Unique 24-hexadecimal digit string that identifies
-                      the replication object for a zone in a Global Cluster. If you
-                      include existing zones in the request, you must specify this
-                      parameter. If you add a new zone to an existing Global Cluster,
-                      you may specify this parameter. The request deletes any existing
-                      zones in a Global Cluster that you exclude from the request.
+                      the cluster.
                     example: 32b6e34b3d91647abb20e7b8
                     type: string
+                  mongoDBEmployeeAccessGrant:
+                    description: MongoDB employee granted access level and expiration
+                      for a cluster.
+                    properties:
+                      expirationTime:
+                        description: Expiration date for the employee access grant.
+                          This parameter expresses its value in the ISO 8601 timestamp
+                          format in UTC.
+                        type: string
+                      grantType:
+                        description: Level of access to grant to MongoDB Employees.
+                        type: string
+                      links:
+                        description: List of one or more Uniform Resource Locators
+                          (URLs) that point to API sub-resources, related API resources,
+                          or both. RFC 5988 outlines these relationships.
+                        items:
+                          properties:
+                            href:
+                              description: Uniform Resource Locator (URL) that points
+                                another API resource to which this response has some
+                                relationship. This URL often begins with `https://cloud.mongodb.com/api/atlas`.
+                              example: https://cloud.mongodb.com/api/atlas
+                              type: string
+                            rel:
+                              description: Uniform Resource Locator (URL) that defines
+                                the semantic relationship between this resource and
+                                another API resource. This URL often begins with `https://cloud.mongodb.com/api/atlas`.
+                              example: self
+                              type: string
+                          type: object
+                        type: array
+                    required:
+                    - expirationTime
+                    - grantType
+                    type: object
                   mongoDBVersion:
                     description: Version of MongoDB that the cluster runs.
                     type: string
+                  redactClientLogData:
+                    description: |-
+                      Enable or disable log redaction.
+
+                      This setting configures the ``mongod`` or ``mongos`` to redact any document field contents from a message accompanying a given log event before logging. This prevents the program from writing potentially sensitive data stored on the database to the diagnostic log. Metadata such as error or operation codes, line numbers, and source file names are still visible in the logs.
+
+                      Use ``redactClientLogData`` in conjunction with Encryption at Rest and TLS/SSL (Transport Encryption) to assist compliance with regulatory requirements.
+
+                      *Note*: changing this setting on a cluster will trigger a rolling restart as soon as the cluster is updated.
+                    type: boolean
+                  replicaSetScalingStrategy:
+                    description: |-
+                      Set this field to configure the replica set scaling mode for your cluster.
+
+                      By default, Atlas scales under WORKLOAD_TYPE. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
+
+                      When configured as SEQUENTIAL, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
+
+                      When configured as NODE_TYPE, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
+                    type: string
                   replicationSpecs:
                     description: List of settings that configure your cluster regions.
-                      For Global Clusters, each object in the array represents a zone
-                      where your clusters nodes deploy. For non-Global sharded clusters
-                      and replica sets, this array has one object representing where
-                      your clusters nodes deploy.
+                      This array has one object per shard representing node configurations
+                      in each shard. For replica sets there is only one object representing
+                      node configurations.
                     items:
                       description: Details that explain how MongoDB Cloud replicates
                         data on the specified MongoDB database.
                       properties:
                         id:
                           description: Unique 24-hexadecimal digit string that identifies
-                            the replication object for a zone in a Multi-Cloud Cluster.
-                            If you include existing zones in the request, you must
-                            specify this parameter. If you add a new zone to an existing
-                            Multi-Cloud Cluster, you may specify this parameter. The
-                            request deletes any existing zones in the Multi-Cloud
-                            Cluster that you exclude from the request.
+                            the replication object for a shard in a Cluster. If you
+                            include existing shard replication configurations in the
+                            request, you must specify this parameter. If you add a
+                            new shard to an existing Cluster, you may specify this
+                            parameter. The request deletes any existing shards  in
+                            the Cluster that you exclude from the request. This corresponds
+                            to Shard ID displayed in the UI.
+                          example: 32b6e34b3d91647abb20e7b8
+                          type: string
+                        zoneId:
+                          description: Unique 24-hexadecimal digit string that identifies
+                            the zone in a Global Cluster. This value can be used to
+                            configure Global Cluster backup policies.
                           example: 32b6e34b3d91647abb20e7b8
                           type: string
                       title: Replication Specifications
@@ -3346,7 +3647,7 @@ metadata:
       properties:
         spec:
           properties:
-            v20231115:
+            v20250312:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
@@ -3380,12 +3681,12 @@ spec:
             description: |-
               Specification of the searchindex supporting the following versions:
 
-              - v20231115
+              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              v20231115:
-                description: The spec of the searchindex resource for version v20231115.
+              v20250312:
+                description: The spec of the searchindex resource for version v20250312.
                 properties:
                   clusterName:
                     description: Name of the cluster that contains the collection
@@ -3494,13 +3795,6 @@ spec:
                           to index. You must define at least one "vector" type field.
                           You can optionally define "filter" type fields also.
                         items:
-                          additionalProperties:
-                            description: Fields to index for vector search.
-                            title: Field
-                            type: object
-                            x-kubernetes-preserve-unknown-fields: true
-                          description: Fields to index for vector search.
-                          title: Field
                           type: object
                         type: array
                       mappings:
@@ -3512,9 +3806,6 @@ spec:
                               is omitted.
                             type: boolean
                           fields:
-                            additionalProperties:
-                              type: object
-                              x-kubernetes-preserve-unknown-fields: true
                             description: One or more field specifications for the
                               Atlas Search index. Required if **mappings.dynamic**
                               is omitted or set to **false**.
@@ -3526,6 +3817,10 @@ spec:
                           Within each namespace, names of all indexes in the namespace
                           must be unique.
                         type: string
+                      numPartitions:
+                        description: Number of index partitions. Allowed values are
+                          [1, 2, 4].
+                        type: integer
                       searchAnalyzer:
                         description: Method applied to identify words when searching
                           this index.
@@ -3553,18 +3848,17 @@ spec:
                                 to the synonyms to be searched.
                               type: string
                             name:
-                              description: Human-readable label that identifies the
-                                synonym definition. Each **synonym.name** must be
-                                unique within the same index definition.
+                              description: Label that identifies the synonym definition.
+                                Each **synonym.name** must be unique within the same
+                                index definition.
                               type: string
                             source:
-                              description: Data set that stores the mapping one or
-                                more words map to one or more synonyms of those words.
+                              description: Data set that stores words and their applicable
+                                synonyms.
                               properties:
                                 collection:
-                                  description: Human-readable label that identifies
-                                    the MongoDB collection that stores words and their
-                                    applicable synonyms.
+                                  description: Label that identifies the MongoDB collection
+                                    that stores words and their applicable synonyms.
                                   type: string
                               required:
                               - collection
@@ -3649,26 +3943,28 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              v20231115:
+              v20250312:
                 description: The last observed Atlas state of the searchindex resource
-                  for version v20231115.
+                  for version v20250312.
                 properties:
                   indexID:
                     description: Unique 24-hexadecimal digit string that identifies
                       this Atlas Search index.
                     example: 32b6e34b3d91647abb20e7b8
                     type: string
+                  numPartitions:
+                    description: Number of index partitions. Allowed values are [1,
+                      2, 4].
+                    type: integer
                   status:
-                    description: |
+                    description: |-
                       Condition of the search index when you made this request.
 
-                      | Status | Index Condition |
-                       |---|---|
-                       | IN_PROGRESS | Atlas is building or re-building the index after an edit. |
-                       | STEADY | You can use this search index. |
-                       | FAILED | Atlas could not build the index. |
-                       | MIGRATING | Atlas is upgrading the underlying cluster tier and migrating indexes. |
-                       | PAUSED | The cluster is paused. |
+                      - `IN_PROGRESS`: Atlas is building or re-building the index after an edit.
+                      - `STEADY`: You can use this search index.
+                      - `FAILED`: Atlas could not build the index.
+                      - `MIGRATING`: Atlas is upgrading the underlying cluster tier and migrating indexes.
+                      - `PAUSED`: The cluster is paused.
                     type: string
                 type: object
             type: object
@@ -3693,7 +3989,7 @@ metadata:
       properties:
         spec:
           properties:
-            v20231115:
+            v20250312:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
@@ -3727,12 +4023,12 @@ spec:
             description: |-
               Specification of the customrole supporting the following versions:
 
-              - v20231115
+              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              v20231115:
-                description: The spec of the customrole resource for version v20231115.
+              v20250312:
+                description: The spec of the customrole resource for version v20250312.
                 properties:
                   entry:
                     description: The entry fields of the customrole resource spec.
@@ -3904,7 +4200,7 @@ metadata:
       properties:
         spec:
           properties:
-            v20241113:
+            v20250312:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
@@ -3938,12 +4234,12 @@ spec:
             description: |-
               Specification of the flexcluster supporting the following versions:
 
-              - v20241113
+              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              v20241113:
-                description: The spec of the flexcluster resource for version v20241113.
+              v20250312:
+                description: The spec of the flexcluster resource for version v20250312.
                 properties:
                   entry:
                     description: The entry fields of the flexcluster resource spec.
@@ -4073,12 +4369,12 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              v20241113:
+              v20250312:
                 description: The last observed Atlas state of the flexcluster resource
-                  for version v20241113.
+                  for version v20250312.
                 properties:
                   backupSettings:
-                    description: Flex backup configuration
+                    description: Flex backup configuration.
                     properties:
                       enabled:
                         description: Flag that indicates whether backups are performed
@@ -4185,7 +4481,7 @@ metadata:
       properties:
         spec:
           properties:
-            v20241113:
+            v20250312:
               properties:
                 entry:
                   properties:
@@ -4315,13 +4611,13 @@ spec:
             description: |-
               Specification of the groupalertsconfig supporting the following versions:
 
-              - v20241113
+              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              v20241113:
+              v20250312:
                 description: The spec of the groupalertsconfig resource for version
-                  v20241113.
+                  v20250312.
                 properties:
                   entry:
                     description: The entry fields of the groupalertsconfig resource
@@ -4333,7 +4629,7 @@ spec:
                         type: boolean
                       eventTypeName:
                         description: Event type that triggers an alert.
-                        example: STREAM_PROCESSOR_STATE_IS_FAILED
+                        example: OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD
                         title: Stream Processor Event Types
                         type: string
                       matchers:
@@ -4393,12 +4689,12 @@ spec:
                             description: Element used to express the quantity. This
                               can be an element of time, storage capacity, and the
                               like.
-                            example: RPU
-                            title: Serverless Metric Units
+                            example: BYTES
+                            title: Data Metric Units
                             type: string
                         required:
                         - metricName
-                        title: Serverless Metric Threshold
+                        title: Flex Cluster Metric Threshold
                         type: object
                       notifications:
                         description: List that contains the targets that MongoDB Cloud
@@ -4467,10 +4763,10 @@ spec:
                                   type: string
                               type: object
                             datadogRegion:
-                              description: |-
-                                Datadog region that indicates which API Uniform Resource Locator (URL) to use. The resource requires this parameter when `"notifications.[n].typeName" : "DATADOG"`.
-
-                                To learn more about Datadog's regions, see <a href="https://docs.datadoghq.com/getting_started/site/" target="_blank" rel="noopener noreferrer">Datadog Sites</a>.
+                              description: 'Datadog region that indicates which API
+                                Uniform Resource Locator (URL) to use. The resource
+                                requires this parameter when `"notifications.[n].typeName"
+                                : "DATADOG"`.'
                               type: string
                             delayMin:
                               description: Number of minutes that MongoDB Cloud waits
@@ -4600,18 +4896,17 @@ spec:
                                 Uniform Resource Locator (URL) to use.
                               type: string
                             roles:
-                              description: 'List that contains the one or more [organization](https://dochub.mongodb.org/core/atlas-org-roles)
-                                or [project roles](https://dochub.mongodb.org/core/atlas-proj-roles)
-                                that receive the configured alert. The resource requires
-                                this parameter when `"notifications.[n].typeName"
-                                : "GROUP"` or `"notifications.[n].typeName" : "ORG"`.
+                              description: 'List that contains the one or more organization
+                                roles that receive the configured alert. This parameter
+                                is available when `"notifications.[n].typeName" :
+                                "GROUP"` or `"notifications.[n].typeName" : "ORG"`.
                                 If you include this parameter, MongoDB Cloud sends
                                 alerts only to users assigned the roles you specify
                                 in the array. If you omit this parameter, MongoDB
                                 Cloud sends alerts to users assigned any role.'
                               items:
-                                description: One organization or project role that
-                                  receive the configured alert.
+                                description: One or more organization roles that receive
+                                  the configured alert.
                                 type: string
                               type: array
                             roomName:
@@ -4733,10 +5028,9 @@ spec:
 
                                 Atlas returns this value if you set `"notifications.[n].typeName" :"WEBHOOK"` and either:
                                 * You set `notification.[n].webhookSecret` to a non-empty string
-                                * You set a default webhookSecret either on the [Integrations](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/#std-label-third-party-integrations) page, or with the [Integrations API](#tag/Third-Party-Service-Integrations/operation/createIntegration)
+                                * You set a default webhookSecret either on the Integrations page, or with the [Integrations API](#tag/Third-Party-Service-Integrations/operation/createIntegration)
 
                                 **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
-                              example: '******'
                               properties:
                                 key:
                                   default: .data.webhookSecret
@@ -4775,10 +5069,24 @@ spec:
                               type: object
                           type: object
                         type: array
+                      severityOverride:
+                        description: Severity of the event.
+                        type: string
                       threshold:
-                        description: A Limit that triggers an alert when greater than
-                          a number.
+                        description: Threshold for the metric that, when exceeded,
+                          triggers an alert. The metric threshold pertains to event
+                          types which reflects changes of measurements and metrics
+                          in stream processors.
                         properties:
+                          metricName:
+                            description: Human-readable label that identifies the
+                              metric against which MongoDB Cloud checks the configured
+                              **metricThreshold.threshold**.
+                            type: string
+                          mode:
+                            description: MongoDB Cloud computes the current metric
+                              value as an average.
+                            type: string
                           operator:
                             description: Comparison operator to apply when checking
                               the current metric value.
@@ -4786,14 +5094,14 @@ spec:
                           threshold:
                             description: Value of metric that, when exceeded, triggers
                               an alert.
-                            type: integer
+                            type: number
                           units:
                             description: Element used to express the quantity. This
                               can be an element of time, storage capacity, and the
                               like.
                             title: Raw Metric Units
                             type: string
-                        title: Greater Than Raw Threshold
+                        title: Stream Processor Metric Threshold
                         type: object
                     type: object
                   groupId:
@@ -4859,15 +5167,14 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              v20241113:
+              v20250312:
                 description: The last observed Atlas state of the groupalertsconfig
-                  resource for version v20241113.
+                  resource for version v20250312.
                 properties:
                   created:
                     description: Date and time when MongoDB Cloud created the alert
-                      configuration. This parameter expresses its value in the <a
-                      href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank"
-                      rel="noopener noreferrer">ISO 8601</a> timestamp format in UTC.
+                      configuration. This parameter expresses its value in the ISO
+                      8601 timestamp format in UTC.
                     type: string
                   groupId:
                     description: Unique 24-hexadecimal digit string that identifies
@@ -4881,9 +5188,8 @@ spec:
                     type: string
                   updated:
                     description: Date and time when someone last updated this alert
-                      configuration. This parameter expresses its value in the <a
-                      href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank"
-                      rel="noopener noreferrer">ISO 8601</a> timestamp format in UTC.
+                      configuration. This parameter expresses its value in the ISO
+                      8601 timestamp format in UTC.
                     type: string
                 type: object
             type: object
@@ -4908,7 +5214,7 @@ metadata:
       properties:
         spec:
           properties:
-            v20241113:
+            v20250312:
               properties:
                 entry:
                   properties:
@@ -5044,13 +5350,13 @@ spec:
             description: |-
               Specification of the thirdpartyintegration supporting the following versions:
 
-              - v20241113
+              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              v20241113:
+              v20250312:
                 description: The spec of the thirdpartyintegration resource for version
-                  v20241113.
+                  v20250312.
                 properties:
                   entry:
                     description: The entry fields of the thirdpartyintegration resource
@@ -5131,7 +5437,7 @@ spec:
                           Unique 40-hexadecimal digit string that identifies your New Relic license.
 
                           **IMPORTANT**: Effective Wednesday, June 16th, 2021, New Relic no longer supports the plugin-based integration with MongoDB. We do not recommend that you sign up for the plugin-based integration.
-                          To learn more, see the <a href="https://discuss.newrelic.com/t/new-relic-plugin-eol-wednesday-june-16th-2021/127267" target="_blank">New Relic Plugin EOL Statement</a> Consider configuring an alternative monitoring integration before June 16th to maintain visibility into your MongoDB deployments.
+                          Consider configuring an alternative monitoring integration before June 16th to maintain visibility into your MongoDB deployments.
                         example: bc3768f44193c282b2688ab39e00f8e4fc8d75ea
                         properties:
                           key:
@@ -5234,7 +5540,6 @@ spec:
                           An optional field returned if your webhook is configured with a secret.
 
                           **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
-                        example: '******'
                         properties:
                           key:
                             default: .data.secret
@@ -5246,6 +5551,20 @@ spec:
                               field value.
                             type: string
                         type: object
+                      sendCollectionLatencyMetrics:
+                        description: Toggle sending collection latency metrics that
+                          includes database names and collection namesand latency
+                          metrics on reads, writes, commands, and transactions.
+                        type: boolean
+                      sendDatabaseMetrics:
+                        description: Toggle sending database metrics that includes
+                          database names and metrics on the number of collections,
+                          storage size, and index size.
+                        type: boolean
+                      sendUserProvidedResourceTags:
+                        description: Toggle sending user provided group and cluster
+                          resource tags with the datadog metrics.
+                        type: boolean
                       serviceDiscovery:
                         description: Desired method to discover the Prometheus service.
                         type: string
@@ -5405,13 +5724,27 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              v20241113:
+              v20250312:
                 description: The last observed Atlas state of the thirdpartyintegration
-                  resource for version v20241113.
+                  resource for version v20250312.
                 properties:
                   id:
                     description: Integration id.
                     type: string
+                  sendCollectionLatencyMetrics:
+                    description: Toggle sending collection latency metrics that includes
+                      database names and collection namesand latency metrics on reads,
+                      writes, commands, and transactions.
+                    type: boolean
+                  sendDatabaseMetrics:
+                    description: Toggle sending database metrics that includes database
+                      names and metrics on the number of collections, storage size,
+                      and index size.
+                    type: boolean
+                  sendUserProvidedResourceTags:
+                    description: Toggle sending user provided group and cluster resource
+                      tags with the datadog metrics.
+                    type: boolean
                   type:
                     description: Human-readable label that identifies the service
                       to which you want to integrate with MongoDB Cloud. The value
