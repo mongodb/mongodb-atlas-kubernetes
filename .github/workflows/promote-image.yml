@@ -1,0 +1,55 @@
+name: Promote Image
+
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
+  # to remove once done testing
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  fetch-e2e-image:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      (github.event.workflow_run.conclusion == 'success' && 
+      github.event.workflow_run.head_branch == 'main')
+    env:
+      REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
+    steps:
+      - name: Checkout PR commit
+        uses: actions/checkout@v4
+
+      - id: set_tag
+        uses: ./.github/actions/set-tag
+
+      - id: set_image_url
+        run: |
+          echo "image_url=${REPO}:${{ steps.set_tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+          | docker login ghcr.io \
+              -u ${{ github.actor }} \
+              --password-stdin
+
+      - name: Pull image
+        run: |
+          echo "Pulling image: ${{ steps.set_image_url.outputs.image_url }}"
+          docker pull ${{ steps.set_image_url.outputs.image_url }}
+
+  promote-image:
+    runs-on: ubuntu-latest
+    needs: [fetch-e2e-image]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Promote
+        run: |
+          echo "All tests passed. Preparing release image..."
