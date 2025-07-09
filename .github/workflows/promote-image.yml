@@ -5,15 +5,15 @@ on:
     workflows: ["Test"]
     types:
       - completed
-  # to remove once done testing
-  workflow_dispatch:
-  push:
-    branches:
-      - '**'
 
 jobs:
   fetch-e2e-image:
     runs-on: ubuntu-latest
+    if: |
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.event == 'push' || 
+      github.event.workflow_run.event == 'schedule')
     env:
       REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
