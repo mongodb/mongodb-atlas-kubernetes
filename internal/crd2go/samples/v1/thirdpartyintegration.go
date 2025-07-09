@@ -29,9 +29,16 @@ type ThirdPartyIntegrationSpecV20241113 struct {
 	// can be set for creating and updating thirdpartyintegrations.
 	Entry *ThirdPartyIntegrationSpecV20241113Entry `json:"entry,omitempty"`
 
-	// Parameters The parameter fields of the thirdpartyintegration resource spec.
-	// These fields are used when creating thirdpartyintegrations only.
-	Parameters *ThirdPartyIntegrationSpecV20241113Parameters `json:"parameters,omitempty"`
+	/*
+	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+	*/
+	GroupId string `json:"groupId"`
+
+	// IntegrationType Human-readable label that identifies the service which you want
+	// to integrate with MongoDB Cloud.
+	IntegrationType string `json:"integrationType"`
 }
 
 type ThirdPartyIntegrationSpecV20241113Entry struct {
@@ -40,7 +47,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 	AccountId *string `json:"accountId,omitempty"`
 
 	/*
-	   ApiKeyRef SENSITIVE FIELD
+	   ApiKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "apiKey" field:
 
@@ -52,10 +59,10 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ApiKeyRef *ApiTokenRef `json:"apiKeyRef,omitempty"`
+	ApiKeySecretRef *ApiTokenSecretRef `json:"apiKeySecretRef,omitempty"`
 
 	/*
-	   ApiTokenRef SENSITIVE FIELD
+	   ApiTokenSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "apiToken" field:
 
@@ -69,7 +76,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   **IMPORTANT**: Slack integrations now use the OAuth2 verification method and must  be initially configured, or updated from a legacy integration, through the Atlas  third-party service integrations page. Legacy tokens will soon no longer be  supported.
 	*/
-	ApiTokenRef *ApiTokenRef `json:"apiTokenRef,omitempty"`
+	ApiTokenSecretRef *ApiTokenSecretRef `json:"apiTokenSecretRef,omitempty"`
 
 	// ChannelName Name of the Slack channel to which MongoDB Cloud sends alert
 	// notifications.
@@ -80,7 +87,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 	Enabled *bool `json:"enabled,omitempty"`
 
 	/*
-	   LicenseKeyRef SENSITIVE FIELD
+	   LicenseKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "licenseKey" field:
 
@@ -89,10 +96,10 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 	   **IMPORTANT**: Effective Wednesday, June 16th, 2021, New Relic no longer supports the plugin-based integration with MongoDB. We do not recommend that you sign up for the plugin-based integration.
 	   To learn more, see the <a href="https://discuss.newrelic.com/t/new-relic-plugin-eol-wednesday-june-16th-2021/127267" target="_blank">New Relic Plugin EOL Statement</a> Consider configuring an alternative monitoring integration before June 16th to maintain visibility into your MongoDB deployments.
 	*/
-	LicenseKeyRef *ApiTokenRef `json:"licenseKeyRef,omitempty"`
+	LicenseKeySecretRef *ApiTokenSecretRef `json:"licenseKeySecretRef,omitempty"`
 
 	/*
-	   MicrosoftTeamsWebhookUrlRef SENSITIVE FIELD
+	   MicrosoftTeamsWebhookUrlSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "microsoftTeamsWebhookUrl" field:
 
@@ -100,41 +107,41 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a Microsoft Teams notification, the URL appears partially redacted.
 	*/
-	MicrosoftTeamsWebhookUrlRef *ApiTokenRef `json:"microsoftTeamsWebhookUrlRef,omitempty"`
+	MicrosoftTeamsWebhookUrlSecretRef *ApiTokenSecretRef `json:"microsoftTeamsWebhookUrlSecretRef,omitempty"`
 
 	/*
-	   PasswordRef SENSITIVE FIELD
+	   PasswordSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "password" field:
 
 	   Password needed to allow MongoDB Cloud to access your Prometheus account.
 	*/
-	PasswordRef *ApiTokenRef `json:"passwordRef,omitempty"`
+	PasswordSecretRef *ApiTokenSecretRef `json:"passwordSecretRef,omitempty"`
 
 	/*
-	   ReadTokenRef SENSITIVE FIELD
+	   ReadTokenSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "readToken" field:
 
 	   Query key used to access your New Relic account.
 	*/
-	ReadTokenRef *ApiTokenRef `json:"readTokenRef,omitempty"`
+	ReadTokenSecretRef *ApiTokenSecretRef `json:"readTokenSecretRef,omitempty"`
 
 	// Region PagerDuty region that indicates the API Uniform Resource Locator (URL) to
 	// use.
 	Region *string `json:"region,omitempty"`
 
 	/*
-	   RoutingKeyRef SENSITIVE FIELD
+	   RoutingKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "routingKey" field:
 
 	   Routing key associated with your Splunk On-Call account.
 	*/
-	RoutingKeyRef *ApiTokenRef `json:"routingKeyRef,omitempty"`
+	RoutingKeySecretRef *ApiTokenSecretRef `json:"routingKeySecretRef,omitempty"`
 
 	/*
-	   SecretRef SENSITIVE FIELD
+	   SecretSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "secret" field:
 
@@ -142,13 +149,13 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
 	*/
-	SecretRef *ApiTokenRef `json:"secretRef,omitempty"`
+	SecretSecretRef *ApiTokenSecretRef `json:"secretSecretRef,omitempty"`
 
 	// ServiceDiscovery Desired method to discover the Prometheus service.
 	ServiceDiscovery *string `json:"serviceDiscovery,omitempty"`
 
 	/*
-	   ServiceKeyRef SENSITIVE FIELD
+	   ServiceKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "serviceKey" field:
 
@@ -160,7 +167,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ServiceKeyRef *ApiTokenRef `json:"serviceKeyRef,omitempty"`
+	ServiceKeySecretRef *ApiTokenSecretRef `json:"serviceKeySecretRef,omitempty"`
 
 	// TeamName Human-readable label that identifies your Slack team. Set this
 	// parameter when you configure a legacy Slack integration.
@@ -172,7 +179,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 	Type *string `json:"type,omitempty"`
 
 	/*
-	   UrlRef SENSITIVE FIELD
+	   UrlSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "url" field:
 
@@ -180,32 +187,19 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the URL appears partially redacted.
 	*/
-	UrlRef *ApiTokenRef `json:"urlRef,omitempty"`
+	UrlSecretRef *ApiTokenSecretRef `json:"urlSecretRef,omitempty"`
 
 	// Username Human-readable label that identifies your Prometheus incoming webhook.
 	Username *string `json:"username,omitempty"`
 
 	/*
-	   WriteTokenRef SENSITIVE FIELD
+	   WriteTokenSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "writeToken" field:
 
 	   Insert key associated with your New Relic account.
 	*/
-	WriteTokenRef *ApiTokenRef `json:"writeTokenRef,omitempty"`
-}
-
-type ThirdPartyIntegrationSpecV20241113Parameters struct {
-	/*
-	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
-
-	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
-	*/
-	GroupId *string `json:"groupId,omitempty"`
-
-	// IntegrationType Human-readable label that identifies the service which you want
-	// to integrate with MongoDB Cloud.
-	IntegrationType *string `json:"integrationType,omitempty"`
+	WriteTokenSecretRef *ApiTokenSecretRef `json:"writeTokenSecretRef,omitempty"`
 }
 
 type ThirdPartyIntegrationStatus struct {

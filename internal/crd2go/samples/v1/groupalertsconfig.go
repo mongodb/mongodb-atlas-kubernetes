@@ -29,9 +29,12 @@ type GroupAlertsConfigSpecV20241113 struct {
 	// be set for creating and updating groupalertsconfigs.
 	Entry *GroupAlertsConfigSpecV20241113Entry `json:"entry,omitempty"`
 
-	// Parameters The parameter fields of the groupalertsconfig resource spec. These
-	// fields are used when creating groupalertsconfigs only.
-	Parameters *NetworkPermissionEntriesSpecV20250312Parameters `json:"parameters,omitempty"`
+	/*
+	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+	*/
+	GroupId string `json:"groupId"`
 }
 
 type GroupAlertsConfigSpecV20241113Entry struct {
@@ -94,7 +97,7 @@ type MetricThreshold struct {
 
 type Notifications struct {
 	/*
-	   ApiTokenRef SENSITIVE FIELD
+	   ApiTokenSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "apiToken" field:
 
@@ -106,7 +109,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ApiTokenRef *ApiTokenRef `json:"apiTokenRef,omitempty"`
+	ApiTokenSecretRef *ApiTokenSecretRef `json:"apiTokenSecretRef,omitempty"`
 
 	// ChannelName Name of the Slack channel to which MongoDB Cloud sends alert
 	// notifications. The resource requires this parameter when
@@ -114,7 +117,7 @@ type Notifications struct {
 	ChannelName *string `json:"channelName,omitempty"`
 
 	/*
-	   DatadogApiKeyRef SENSITIVE FIELD
+	   DatadogApiKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "datadogApiKey" field:
 
@@ -126,7 +129,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	DatadogApiKeyRef *ApiTokenRef `json:"datadogApiKeyRef,omitempty"`
+	DatadogApiKeySecretRef *ApiTokenSecretRef `json:"datadogApiKeySecretRef,omitempty"`
 
 	/*
 	   DatadogRegion Datadog region that indicates which API Uniform Resource Locator (URL) to use. The resource requires this parameter when `"notifications.[n].typeName" : "DATADOG"`.
@@ -172,7 +175,7 @@ type Notifications struct {
 	IntervalMin *int `json:"intervalMin,omitempty"`
 
 	/*
-	   MicrosoftTeamsWebhookUrlRef SENSITIVE FIELD
+	   MicrosoftTeamsWebhookUrlSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "microsoftTeamsWebhookUrl" field:
 
@@ -180,7 +183,7 @@ type Notifications struct {
 
 	   **NOTE**: When you view or edit the alert for a Microsoft Teams notification, the URL appears partially redacted.
 	*/
-	MicrosoftTeamsWebhookUrlRef *ApiTokenRef `json:"microsoftTeamsWebhookUrlRef,omitempty"`
+	MicrosoftTeamsWebhookUrlSecretRef *ApiTokenSecretRef `json:"microsoftTeamsWebhookUrlSecretRef,omitempty"`
 
 	// MobileNumber Mobile phone number to which MongoDB Cloud sends alert
 	// notifications. The resource requires this parameter when
@@ -188,7 +191,7 @@ type Notifications struct {
 	MobileNumber *string `json:"mobileNumber,omitempty"`
 
 	/*
-	   NotificationTokenRef SENSITIVE FIELD
+	   NotificationTokenSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "notificationToken" field:
 
@@ -200,7 +203,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	NotificationTokenRef *ApiTokenRef `json:"notificationTokenRef,omitempty"`
+	NotificationTokenSecretRef *ApiTokenSecretRef `json:"notificationTokenSecretRef,omitempty"`
 
 	// NotifierId The notifierId is a system-generated unique identifier assigned to
 	// each notification method. This is needed when updating third-party notifications
@@ -208,7 +211,7 @@ type Notifications struct {
 	NotifierId *string `json:"notifierId,omitempty"`
 
 	/*
-	   OpsGenieApiKeyRef SENSITIVE FIELD
+	   OpsGenieApiKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "opsGenieApiKey" field:
 
@@ -220,7 +223,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	OpsGenieApiKeyRef *ApiTokenRef `json:"opsGenieApiKeyRef,omitempty"`
+	OpsGenieApiKeySecretRef *ApiTokenSecretRef `json:"opsGenieApiKeySecretRef,omitempty"`
 
 	// OpsGenieRegion Opsgenie region that indicates which API Uniform Resource Locator
 	// (URL) to use.
@@ -246,7 +249,7 @@ type Notifications struct {
 	RoomName *string `json:"roomName,omitempty"`
 
 	/*
-	   ServiceKeyRef SENSITIVE FIELD
+	   ServiceKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "serviceKey" field:
 
@@ -258,7 +261,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ServiceKeyRef *ApiTokenRef `json:"serviceKeyRef,omitempty"`
+	ServiceKeySecretRef *ApiTokenSecretRef `json:"serviceKeySecretRef,omitempty"`
 
 	/*
 	   SmsEnabled Flag that indicates whether MongoDB Cloud should send text message notifications. The resource requires this parameter when one of the following values have been set:
@@ -288,7 +291,7 @@ type Notifications struct {
 	Username *string `json:"username,omitempty"`
 
 	/*
-	   VictorOpsApiKeyRef SENSITIVE FIELD
+	   VictorOpsApiKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "victorOpsApiKey" field:
 
@@ -300,19 +303,19 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	VictorOpsApiKeyRef *ApiTokenRef `json:"victorOpsApiKeyRef,omitempty"`
+	VictorOpsApiKeySecretRef *ApiTokenSecretRef `json:"victorOpsApiKeySecretRef,omitempty"`
 
 	/*
-	   VictorOpsRoutingKeyRef SENSITIVE FIELD
+	   VictorOpsRoutingKeySecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "victorOpsRoutingKey" field:
 
 	   Routing key that MongoDB Cloud needs to send alert notifications to Splunk On-Call. The resource requires this parameter when `"notifications.[n].typeName" : "VICTOR_OPS"`. If the key later becomes invalid, MongoDB Cloud sends an email to the project owners. If the key remains invalid, MongoDB Cloud removes it.
 	*/
-	VictorOpsRoutingKeyRef *ApiTokenRef `json:"victorOpsRoutingKeyRef,omitempty"`
+	VictorOpsRoutingKeySecretRef *ApiTokenSecretRef `json:"victorOpsRoutingKeySecretRef,omitempty"`
 
 	/*
-	   WebhookSecretRef SENSITIVE FIELD
+	   WebhookSecretSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "webhookSecret" field:
 
@@ -324,10 +327,10 @@ type Notifications struct {
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
 	*/
-	WebhookSecretRef *ApiTokenRef `json:"webhookSecretRef,omitempty"`
+	WebhookSecretSecretRef *ApiTokenSecretRef `json:"webhookSecretSecretRef,omitempty"`
 
 	/*
-	   WebhookUrlRef SENSITIVE FIELD
+	   WebhookUrlSecretRef SENSITIVE FIELD
 
 	   Reference to a secret containing data for the "webhookUrl" field:
 
@@ -339,10 +342,10 @@ type Notifications struct {
 
 	   **NOTE**: When you view or edit the alert for a Webhook URL notification, the URL appears partially redacted.
 	*/
-	WebhookUrlRef *ApiTokenRef `json:"webhookUrlRef,omitempty"`
+	WebhookUrlSecretRef *ApiTokenSecretRef `json:"webhookUrlSecretRef,omitempty"`
 }
 
-type ApiTokenRef struct {
+type ApiTokenSecretRef struct {
 	// Key Key of the secret data containing the sensitive field value, defaults to
 	// "apiToken".
 	Key *string `json:"key,omitempty"`
