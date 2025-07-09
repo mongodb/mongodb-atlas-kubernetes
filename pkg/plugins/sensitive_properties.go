@@ -33,7 +33,7 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, propertyConfig *confi
 	extensionsSchema.Value.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
 		"gvr":              "secrets/v1",
 		"nameSelector":     ".name",
-		"propertySelector": ".key",
+		"propertySelector": "$.key",
 	}
 
 	extensionsSchema.Value.Extensions["x-openapi-mapping"] = map[string]interface{}{

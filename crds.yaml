@@ -369,6 +369,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: networkpeeringconnections.atlas.generated.mongodb.com
 spec:
@@ -585,6 +600,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: databaseusers.atlas.generated.mongodb.com
 spec:
@@ -846,6 +876,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: backupcompliancepolicies.atlas.generated.mongodb.com
 spec:
@@ -1116,6 +1161,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: backupschedules.atlas.generated.mongodb.com
 spec:
@@ -1443,6 +1503,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: datafederations.atlas.generated.mongodb.com
 spec:
@@ -2273,6 +2348,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: networkpermissionentrieses.atlas.generated.mongodb.com
 spec:
@@ -2443,6 +2533,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20231115:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: clusters.atlas.generated.mongodb.com
 spec:
@@ -3236,6 +3341,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20231115:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: searchindexes.atlas.generated.mongodb.com
 spec:
@@ -3568,6 +3688,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20231115:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: customroles.atlas.generated.mongodb.com
 spec:
@@ -3764,6 +3899,21 @@ status:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20241113:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: flexclusters.atlas.generated.mongodb.com
 spec:
@@ -4046,7 +4196,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .apiToken
                               type: string
@@ -4054,7 +4204,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .datadogApiKey
                               type: string
@@ -4062,7 +4212,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .microsoftTeamsWebhookUrl
                               type: string
@@ -4070,7 +4220,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .notificationToken
                               type: string
@@ -4078,7 +4228,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .opsGenieApiKey
                               type: string
@@ -4086,7 +4236,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .serviceKey
                               type: string
@@ -4094,7 +4244,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .victorOpsApiKey
                               type: string
@@ -4102,7 +4252,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .victorOpsRoutingKey
                               type: string
@@ -4110,7 +4260,7 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .webhookSecret
                               type: string
@@ -4118,10 +4268,18 @@ metadata:
                             x-kubernetes-mapping:
                               gvr: secrets/v1
                               nameSelector: .name
-                              propertySelector: .key
+                              propertySelector: $.key
                             x-openapi-mapping:
                               property: .webhookUrl
                               type: string
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: groupalertsconfigs.atlas.generated.mongodb.com
 spec:
@@ -4748,7 +4906,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .apiKey
                         type: string
@@ -4756,7 +4914,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .apiToken
                         type: string
@@ -4764,7 +4922,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .licenseKey
                         type: string
@@ -4772,7 +4930,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .microsoftTeamsWebhookUrl
                         type: string
@@ -4780,7 +4938,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .password
                         type: string
@@ -4788,7 +4946,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .readToken
                         type: string
@@ -4796,7 +4954,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .routingKey
                         type: string
@@ -4804,7 +4962,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .secret
                         type: string
@@ -4812,7 +4970,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .serviceKey
                         type: string
@@ -4820,7 +4978,7 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .url
                         type: string
@@ -4828,10 +4986,18 @@ metadata:
                       x-kubernetes-mapping:
                         gvr: secrets/v1
                         nameSelector: .name
-                        propertySelector: .key
+                        propertySelector: $.key
                       x-openapi-mapping:
                         property: .writeToken
                         type: string
+                groupRef:
+                  x-kubernetes-mapping:
+                    gvr: groups.atlas.generated.mongodb.com/v1
+                    nameSelector: .name
+                    propertySelectors:
+                    - $.status.v20250312.groupId
+                  x-openapi-mapping:
+                    property: $.groupId
   creationTimestamp: null
   name: thirdpartyintegrations.atlas.generated.mongodb.com
 spec:
