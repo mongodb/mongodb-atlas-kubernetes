@@ -115,6 +115,7 @@ func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomRe
 		jen.Id("Spec").Id(specType).Tag(map[string]string{"json": "spec,omitempty"}),
 		jen.Id("Status").Id(statusType).Tag(map[string]string{"json": "status,omitempty"}),
 	)
+	td.Add(NewStruct(crd.Spec.Names.Kind, nil)) // reserve the name of the root type not to be taken
 
 	specSchema := v.Schema.OpenAPIV3Schema.Properties["spec"]
 	spec, err := FromOpenAPIType(td, specType, []string{crd.Spec.Names.Kind}, &specSchema)
