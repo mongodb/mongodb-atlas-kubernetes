@@ -17,7 +17,6 @@ package atlas
 import (
 	"context"
 	"fmt"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/deprecation"
 	"net/http"
 	"net/url"
 	"os"
@@ -30,6 +29,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/deprecation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
