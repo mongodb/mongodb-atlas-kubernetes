@@ -57,7 +57,7 @@ jobs:
           repository: ${{ env.REPO }}
           version: ${{ steps.set_tag.outputs.tag }}
           tags: ${{ steps.set_image_url.outputs.image_url }}
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push_to_docker: false
 
   e2e:

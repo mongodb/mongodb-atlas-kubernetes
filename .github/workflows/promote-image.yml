@@ -43,7 +43,7 @@ jobs:
 
       - name: Pull unofficial image from GitHub Container Registry
         run: |
-          docker pull ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }}
+          docker pull ${{ env.GHCR_REPO }}:${{ steps.set_tag.outputs.tag }}
 
       - name: Login to Docker registry
         uses: docker/login-action@v3
@@ -58,31 +58,26 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
-
-      - name: Retag and conditionally push to Docker and Quay registry
+      
+      - name: Prepare tag for promoted image
+        id: promoted_tag
         run: |
-          set -e
+          RAW_TAG="${{ steps.set_tag.outputs.tag }}"
+          COMMIT_SHA="${RAW_TAG##*-}"
+          echo "tag=promoted-${COMMIT_SHA}" >> $GITHUB_OUTPUT
 
-          IMAGE_TAG=promoted-${{ steps.set_tag.outputs.tag }}
+      - name: Move image to Docker Hub
+        run: ./scripts/move-image.sh
+        env:
+          IMAGE_SRC_REPO: ${{ env.GHCR_REPO }}
+          IMAGE_DEST_REPO: ${{ env.DOCKER_REPO }}
+          IMAGE_SRC_TAG: ${{ steps.set_tag.outputs.tag }}
+          IMAGE_DEST_TAG: ${{ steps.promoted_tag.outputs.tag }}
 
-          if docker manifest inspect ${DOCKER_REPO}:${IMAGE_TAG} > /dev/null 2>&1; then
-            echo "Image ${DOCKER_REPO}:${IMAGE_TAG} already exists. Skipping push."
-          else
-            echo "Tagging and pushing to AKO-prerelease Docker Hub..."
-            docker tag ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }} ${DOCKER_REPO}:${IMAGE_TAG}
-            docker push ${DOCKER_REPO}:${IMAGE_TAG}
-
-            docker tag ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }} ${DOCKER_REPO}:promoted-latest
-            docker push ${DOCKER_REPO}:promoted-latest
-          fi
-
-          if docker manifest inspect ${QUAY_REPO}:${IMAGE_TAG} > /dev/null 2>&1; then
-            echo "Image ${QUAY_REPO}:${IMAGE_TAG} already exists. Skipping push."
-          else
-            echo "Tagging and pushing to AKO-prerelease Quay..."
-            docker tag ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }} ${QUAY_REPO}:${IMAGE_TAG}
-            docker push ${QUAY_REPO}:${IMAGE_TAG}
-
-            docker tag ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }} ${QUAY_REPO}:promoted-latest
-            docker push ${QUAY_REPO}:promoted-latest
-          fi
+      - name: Move image to Quay
+        run: ./scripts/move-image.sh
+        env:
+          IMAGE_SRC_REPO: ${{ env.GHCR_REPO }}
+          IMAGE_DEST_REPO: ${{ env.QUAY_REPO }}
+          IMAGE_SRC_TAG: ${{ steps.set_tag.outputs.tag }}
+          IMAGE_DEST_TAG: ${{ steps.promoted_tag.outputs.tag }}

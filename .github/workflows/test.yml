@@ -2,12 +2,7 @@ name: Test
 
 on:
   schedule:
-    - cron: '*/20 * * * 1-5'  # Run a nightly test 
-  push:
-    branches:
-      - 'main'
-    paths-ignore:
-      - 'docs/**'
+    - cron: '*/55 * * * 1-5' # Run a nightly test 
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
     branches:
@@ -34,15 +29,17 @@ jobs:
     steps:
       - name: allowed message
         run: echo "Allowed to run tests"
-        
+  
   cloud-tests-filter:
     if: github.event.pull_request.head.repo.fork == false
     needs:
       - run-tests
     uses: ./.github/workflows/cloud-tests-filter.yml
-      
+
   cloud-tests:
+    needs:
+      - cloud-tests-filter
     if: |
-      github.event_name == 'push' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true'
+      github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true'
     uses: ./.github/workflows/cloud-tests.yml
     secrets: inherit
