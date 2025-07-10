@@ -24,14 +24,8 @@ func main() {
 	}
 	log := l.Sugar()
 
-	// Take file from GH CLI tool (which has already aggregated logs)
-	file, err := os.Open("/Users/roo.thorp/test/log.out") // TODO: This is a local test file currently :)
-	if err != nil {
-		log.Fatal("failed to open log file", zap.Error(err))
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+	// Take input from stdin (pipe from GitHub CLI)
+	scanner := bufio.NewScanner(os.Stdin)
 	var responses []DeprecationResponse
 	var out strings.Builder
 	// Markdown table header for GH Comment
@@ -52,6 +46,11 @@ func main() {
 			continue
 		}
 		responses = append(responses, res)
+	}
+
+	// Quit out if there is no deprecations logged
+	if len(responses) == 0 {
+		os.Exit(0)
 	}
 
 	// Sort & Compact to remove duplicates
