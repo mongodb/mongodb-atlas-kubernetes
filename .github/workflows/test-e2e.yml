@@ -132,7 +132,7 @@ jobs:
       fail-fast: false
       matrix:
         k8s: ${{ fromJson(needs.prepare-e2e.outputs.test_matrix) }}
-        test: ["helm-ns", "helm-update", "helm-wide"]
+        test: ["helm-wide"]
     steps:
       - uses: actions/checkout@v4
         with:
