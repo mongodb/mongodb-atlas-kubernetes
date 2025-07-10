@@ -70,10 +70,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name:       "group alert config with project and credential references",
 			crd:        "GroupAlertsConfig",
-			sdkVersion: "V20241113",
+			sdkVersion: "V20250312",
 			spec: v1.GroupAlertsConfigSpec{
-				V20241113: &v1.GroupAlertsConfigSpecV20241113{
-					Entry: &v1.GroupAlertsConfigSpecV20241113Entry{
+				V20250312: &v1.GroupAlertsConfigSpecV20250312{
+					Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
 						Enabled:       pointer.Get(true),
 						EventTypeName: pointer.Get("event-type"),
 						Matchers: &[]v1.Matchers{
@@ -95,10 +95,12 @@ func TestToAPI(t *testing.T) {
 							Threshold:  pointer.Get(1.1),
 							Units:      pointer.Get("units"),
 						},
-						Threshold: &v1.Threshold{
-							Operator:  pointer.Get("operator0"),
-							Units:     pointer.Get("units0"),
-							Threshold: pointer.Get(2),
+						Threshold: &v1.MetricThreshold{
+							MetricName: "metric-t",
+							Mode:       pointer.Get("mode-t"),
+							Operator:   pointer.Get("operator-t"),
+							Threshold:  pointer.Get(2.3),
+							Units:      pointer.Get("units-t"),
 						},
 						Notifications: &[]v1.Notifications{
 							{

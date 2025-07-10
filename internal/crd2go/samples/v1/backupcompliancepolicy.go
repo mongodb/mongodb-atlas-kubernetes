@@ -121,7 +121,7 @@ type OnDemandPolicyItem struct {
 type BackupCompliancePolicyStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]Conditions `json:"conditions,omitempty"`
+	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
 
 	// V20250312 The last observed Atlas state of the backupcompliancepolicy resource
 	// for version v20250312.
