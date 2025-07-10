@@ -2,7 +2,10 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/josvazg/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&GroupAlertsConfig{})
@@ -20,24 +23,31 @@ type GroupAlertsConfig struct {
 }
 
 type GroupAlertsConfigSpec struct {
-	// V20241113 The spec of the groupalertsconfig resource for version v20241113.
-	V20241113 *GroupAlertsConfigSpecV20241113 `json:"v20241113,omitempty"`
+	// V20250312 The spec of the groupalertsconfig resource for version v20250312.
+	V20250312 *GroupAlertsConfigSpecV20250312 `json:"v20250312,omitempty"`
 }
 
-type GroupAlertsConfigSpecV20241113 struct {
+type GroupAlertsConfigSpecV20250312 struct {
 	// Entry The entry fields of the groupalertsconfig resource spec. These fields can
 	// be set for creating and updating groupalertsconfigs.
-	Entry *GroupAlertsConfigSpecV20241113Entry `json:"entry,omitempty"`
+	Entry *GroupAlertsConfigSpecV20250312Entry `json:"entry,omitempty"`
 
 	/*
 	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
 	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
 	*/
-	GroupId string `json:"groupId"`
+	GroupId *string `json:"groupId,omitempty"`
+
+	/*
+	   GroupRef A reference to a "Group" resource.
+	   The value of "$.status.v20250312.groupId" will be used to set "groupId".
+	   Mutually exclusive with the "groupId" property.
+	*/
+	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 }
 
-type GroupAlertsConfigSpecV20241113Entry struct {
+type GroupAlertsConfigSpecV20250312Entry struct {
 	// Enabled Flag that indicates whether someone enabled this alert configuration for
 	// the specified project.
 	Enabled *bool `json:"enabled,omitempty"`
@@ -58,8 +68,13 @@ type GroupAlertsConfigSpecV20241113Entry struct {
 	// notifications.
 	Notifications *[]Notifications `json:"notifications,omitempty"`
 
-	// Threshold A Limit that triggers an alert when greater than a number.
-	Threshold *Threshold `json:"threshold,omitempty"`
+	// SeverityOverride Severity of the event.
+	SeverityOverride *string `json:"severityOverride,omitempty"`
+
+	// Threshold Threshold for the metric that, when exceeded, triggers an alert. The
+	// metric threshold pertains to event types which reflects changes of measurements
+	// and metrics in stream processors.
+	Threshold *MetricThreshold `json:"threshold,omitempty"`
 }
 
 type Matchers struct {
@@ -131,11 +146,9 @@ type Notifications struct {
 	*/
 	DatadogApiKeySecretRef *ApiTokenSecretRef `json:"datadogApiKeySecretRef,omitempty"`
 
-	/*
-	   DatadogRegion Datadog region that indicates which API Uniform Resource Locator (URL) to use. The resource requires this parameter when `"notifications.[n].typeName" : "DATADOG"`.
-
-	   To learn more about Datadog's regions, see <a href="https://docs.datadoghq.com/getting_started/site/" target="_blank" rel="noopener noreferrer">Datadog Sites</a>.
-	*/
+	// DatadogRegion Datadog region that indicates which API Uniform Resource Locator
+	// (URL) to use. The resource requires this parameter when
+	// `"notifications.[n].typeName" : "DATADOG"`.
 	DatadogRegion *string `json:"datadogRegion,omitempty"`
 
 	// DelayMin Number of minutes that MongoDB Cloud waits after detecting an alert
@@ -233,14 +246,12 @@ type Notifications struct {
 	// to use.
 	Region *string `json:"region,omitempty"`
 
-	// Roles List that contains the one or more
-	// [organization](https://dochub.mongodb.org/core/atlas-org-roles) or [project
-	// roles](https://dochub.mongodb.org/core/atlas-proj-roles) that receive the
-	// configured alert. The resource requires this parameter when
-	// `"notifications.[n].typeName" : "GROUP"` or `"notifications.[n].typeName" :
-	// "ORG"`. If you include this parameter, MongoDB Cloud sends alerts only to users
-	// assigned the roles you specify in the array. If you omit this parameter, MongoDB
-	// Cloud sends alerts to users assigned any role.
+	// Roles List that contains the one or more organization roles that receive the
+	// configured alert. This parameter is available when `"notifications.[n].typeName"
+	// : "GROUP"` or `"notifications.[n].typeName" : "ORG"`. If you include this
+	// parameter, MongoDB Cloud sends alerts only to users assigned the roles you
+	// specify in the array. If you omit this parameter, MongoDB Cloud sends alerts to
+	// users assigned any role.
 	Roles *[]string `json:"roles,omitempty"`
 
 	// RoomName HipChat API room name to which MongoDB Cloud sends alert notifications.
@@ -323,7 +334,7 @@ type Notifications struct {
 
 	   Atlas returns this value if you set `"notifications.[n].typeName" :"WEBHOOK"` and either:
 	   * You set `notification.[n].webhookSecret` to a non-empty string
-	   * You set a default webhookSecret either on the [Integrations](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/#std-label-third-party-integrations) page, or with the [Integrations API](#tag/Third-Party-Service-Integrations/operation/createIntegration)
+	   * You set a default webhookSecret either on the Integrations page, or with the [Integrations API](#tag/Third-Party-Service-Integrations/operation/createIntegration)
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
 	*/
@@ -354,33 +365,19 @@ type ApiTokenSecretRef struct {
 	Name *string `json:"name,omitempty"`
 }
 
-type Threshold struct {
-	// Operator Comparison operator to apply when checking the current metric value.
-	Operator *string `json:"operator,omitempty"`
-
-	// Threshold Value of metric that, when exceeded, triggers an alert.
-	Threshold *int `json:"threshold,omitempty"`
-
-	// Units Element used to express the quantity. This can be an element of time,
-	// storage capacity, and the like.
-	Units *string `json:"units,omitempty"`
-}
-
 type GroupAlertsConfigStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]Conditions `json:"conditions,omitempty"`
+	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
 
-	// V20241113 The last observed Atlas state of the groupalertsconfig resource for
-	// version v20241113.
-	V20241113 *GroupAlertsConfigStatusV20241113 `json:"v20241113,omitempty"`
+	// V20250312 The last observed Atlas state of the groupalertsconfig resource for
+	// version v20250312.
+	V20250312 *GroupAlertsConfigStatusV20250312 `json:"v20250312,omitempty"`
 }
 
-type GroupAlertsConfigStatusV20241113 struct {
+type GroupAlertsConfigStatusV20250312 struct {
 	// Created Date and time when MongoDB Cloud created the alert configuration. This
-	// parameter expresses its value in the <a
-	// href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener
-	// noreferrer">ISO 8601</a> timestamp format in UTC.
+	// parameter expresses its value in the ISO 8601 timestamp format in UTC.
 	Created *string `json:"created,omitempty"`
 
 	// GroupId Unique 24-hexadecimal digit string that identifies the project that owns
@@ -391,8 +388,6 @@ type GroupAlertsConfigStatusV20241113 struct {
 	Id *string `json:"id,omitempty"`
 
 	// Updated Date and time when someone last updated this alert configuration. This
-	// parameter expresses its value in the <a
-	// href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener
-	// noreferrer">ISO 8601</a> timestamp format in UTC.
+	// parameter expresses its value in the ISO 8601 timestamp format in UTC.
 	Updated *string `json:"updated,omitempty"`
 }
