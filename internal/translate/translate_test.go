@@ -40,10 +40,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name:       "simple group",
 			crd:        "Group",
-			sdkVersion: "V20250312",
+			sdkVersion: "V20231115",
 			spec: v1.GroupSpec{
-				V20250312: &v1.GroupSpecV20250312{
-					Entry: &v1.GroupSpecV20250312Entry{
+				V20231115: &v1.GroupSpecV20231115{
+					Entry: &v1.GroupSpecV20231115Entry{
 						Name:                      "project-name",
 						OrgId:                     "60987654321654321",
 						RegionUsageRestrictions:   pointer.Get("fake-restriction"),
@@ -70,10 +70,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name:       "group alert config with project and credential references",
 			crd:        "GroupAlertsConfig",
-			sdkVersion: "V20250312",
+			sdkVersion: "V20241113",
 			spec: v1.GroupAlertsConfigSpec{
-				V20250312: &v1.GroupAlertsConfigSpecV20250312{
-					Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+				V20241113: &v1.GroupAlertsConfigSpecV20241113{
+					Entry: &v1.GroupAlertsConfigSpecV20241113Entry{
 						Enabled:       pointer.Get(true),
 						EventTypeName: pointer.Get("event-type"),
 						Matchers: &[]v1.Matchers{
@@ -95,11 +95,10 @@ func TestToAPI(t *testing.T) {
 							Threshold:  pointer.Get(1.1),
 							Units:      pointer.Get("units"),
 						},
-						Threshold: &v1.MetricThreshold{
-							Mode:      pointer.Get("mode0"),
+						Threshold: &v1.Threshold{
 							Operator:  pointer.Get("operator0"),
-							Threshold: pointer.Get(2.2),
 							Units:     pointer.Get("units0"),
+							Threshold: pointer.Get(2),
 						},
 						Notifications: &[]v1.Notifications{
 							{

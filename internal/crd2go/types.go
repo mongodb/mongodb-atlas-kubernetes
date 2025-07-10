@@ -8,8 +8,10 @@ import (
 	"sort"
 	"strings"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/josvazg/crd2go/k8s"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 const (
@@ -18,6 +20,7 @@ const (
 	ArrayKind       = "array"
 	StringKind      = "string"
 	IntKind         = "int"
+	Uint64Kind      = "uint64"
 	FloatKind       = "float64"
 	BoolKind        = "bool"
 )
@@ -49,6 +52,19 @@ type ImportInfo struct {
 	Path  string
 }
 
+var builtInTypes = map[string]*GoType{
+	"k8s.io/apimachinery/pkg/apis/meta/v1.Time": builtInType("Time", "struct", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1"),
+}
+
+var format2BuiltinGoType = map[string]*GoType{
+	"datetime": builtInTypes["k8s.io/apimachinery/pkg/apis/meta/v1.Time"],
+}
+
+var formatAliases = map[string]string{
+	"date-time": "datetime",
+	"datetime":  "datetime",
+}
+
 // isPrimitive checks if the GoType is a primitive type
 func (g *GoType) isPrimitive() bool {
 	switch g.Kind {
@@ -75,7 +91,7 @@ func (gt *GoType) signature() string {
 	if gt.Kind == ArrayKind {
 		return fmt.Sprintf("[%s]", gt.Element.signature())
 	}
-	return fmt.Sprintf("%s(%s)", gt.Name, gt.Kind)
+	return fmt.Sprintf("%s", gt.Kind)
 }
 
 // baseType returns the base type of the GoType.
@@ -123,14 +139,24 @@ func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 	if f.GoType == nil {
 		return fmt.Errorf("failed to rename type for field %s: GoType is nil", f.Name)
 	}
-	goType := f.GoType.baseType()
+	if err := RenameType(td, parentNames, f.GoType); err != nil {
+		return fmt.Errorf("failed to rename field type: %w", err)
+	}
+	return nil
+}
+
+// RenameType renames the given GoType to ensure it is unique within the
+// TypeDict. It uses the parent names as needed to create a unique name for the
+// type, if the type is not a primitive and its name is already taken.
+func RenameType(td TypeDict, parentNames []string, gt *GoType) error {
+	goType := gt.baseType()
 	if goType.isPrimitive() {
 		return nil // primitive types are not to be renamed
 	}
 	if td.Has(goType) {
 		existingType := td.bySignature[goType.signature()]
 		if existingType == nil {
-			return fmt.Errorf("failed to find existing type for %v", f)
+			return fmt.Errorf("failed to find existing type for %v", gt)
 		}
 		goType.Name = existingType.Name
 		goType.Import = existingType.Import
@@ -148,7 +174,7 @@ func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 
 	_, used := td.Get(typeName)
 	if used {
-		return fmt.Errorf("failed to find a free type name for type %v", f)
+		return fmt.Errorf("failed to find a free type name for type %v", gt)
 	}
 	goType.Name = typeName
 	td.Add(goType)
@@ -259,21 +285,21 @@ func orderFieldsByName(fields []*GoField) []*GoField {
 }
 
 // FromOpenAPIType converts an OpenAPI schema to a GoType
-func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *apiextensions.JSONSchemaProps) (*GoType, error) {
+func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
 	switch schema.Type {
 	case OpenAPIObject:
 		return fromOpenAPIStruct(td, typeName, parents, schema)
 	case OpenAPIArray:
-		return fromOpenAPIArray(td, typeName, schema)
+		return fromOpenAPIArray(td, typeName, parents, schema)
 	case OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean:
-		return fromOpenAPIPrimitive(schema.Type)
+		return fromOpenAPIFormattedType(schema)
 	default:
 		return nil, fmt.Errorf("unsupported Open API type %q", schema.Type)
 	}
 }
 
 // fromOpenAPIStruct converts an OpenAPI object schema to a GoType struct
-func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *apiextensions.JSONSchemaProps) (*GoType, error) {
+func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
 	fields := []*GoField{}
 	fieldsParents := append(parents, typeName)
 	for _, key := range orderedkeys(schema.Properties) {
@@ -294,7 +320,7 @@ func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *a
 }
 
 // fromOpenAPIArray converts an OpenAPI array schema to a GoType array
-func fromOpenAPIArray(td TypeDict, typeName string, schema *apiextensions.JSONSchemaProps) (*GoType, error) {
+func fromOpenAPIArray(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
 	if schema.Items == nil {
 		return nil, fmt.Errorf("array %s has no items", typeName)
 	}
@@ -305,7 +331,44 @@ func fromOpenAPIArray(td TypeDict, typeName string, schema *apiextensions.JSONSc
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse array %s element type: %w", typeName, err)
 	}
+	if err := RenameType(td, parents, elementType); err != nil {
+		return nil, fmt.Errorf("failed to rename element type under %s: %w", typeName, err)
+	}
 	return NewArray(elementType), nil
+}
+
+// fromOpenAPIFormattedType converts some OpenAPI formatted primitives to a hardwired GoType,
+// or just fallsback to fromOpenAPIPrimitive
+func fromOpenAPIFormattedType(schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
+	// - bsonobjectid: a bson object ID, i.e. a 24 characters hex string
+	// - uri: an URI as parsed by Golang net/url.ParseRequestURI
+	// - email: an email address as parsed by Golang net/mail.ParseAddress
+	// - hostname: a valid representation for an Internet host name, as defined by RFC 1034, section 3.1 [RFC1034].
+	// - ipv4: an IPv4 IP as parsed by Golang net.ParseIP
+	// - ipv6: an IPv6 IP as parsed by Golang net.ParseIP
+	// - cidr: a CIDR as parsed by Golang net.ParseCIDR
+	// - mac: a MAC address as parsed by Golang net.ParseMAC
+	// - uuid: an UUID that allows uppercase defined by the regex (?i)^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$
+	// - uuid3: an UUID3 that allows uppercase defined by the regex (?i)^[0-9a-f]{8}-?[0-9a-f]{4}-?3[0-9a-f]{3}-?[0-9a-f]{4}-?[0-9a-f]{12}$
+	// - uuid4: an UUID4 that allows uppercase defined by the regex (?i)^[0-9a-f]{8}-?[0-9a-f]{4}-?4[0-9a-f]{3}-?[89ab][0-9a-f]{3}-?[0-9a-f]{12}$
+	// - uuid5: an UUID5 that allows uppercase defined by the regex (?i)^[0-9a-f]{8}-?[0-9a-f]{4}-?5[0-9a-f]{3}-?[89ab][0-9a-f]{3}-?[0-9a-f]{12}$
+	// - isbn: an ISBN10 or ISBN13 number string like "0321751043" or "978-0321751041"
+	// - isbn10: an ISBN10 number string like "0321751043"
+	// - isbn13: an ISBN13 number string like "978-0321751041"
+	// - creditcard: a credit card number defined by the regex ^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\\d{3})\\d{11})$ with any non digit characters mixed in
+	// - ssn: a U.S. social security number following the regex ^\\d{3}[- ]?\\d{2}[- ]?\\d{4}$
+	// - hexcolor: an hexadecimal color code like "#FFFFFF: following the regex ^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$
+	// - rgbcolor: an RGB color code like rgb like "rgb(255,255,2559"
+	// - byte: base64 encoded binary data
+	// - password: any kind of string
+	// - date: a date string like "2006-01-02" as defined by full-date in RFC3339
+	// - duration: a duration string like "22 ns" as parsed by Golang time.ParseDuration or compatible with Scala duration format
+	// - datetime: a date time string like "2014-12-15T19:30:20.000Z" as defined by date-time in RFC3339.
+	gt, ok := format2BuiltinGoType[formatAliases[schema.Format]]
+	if ok {
+		return gt, nil
+	}
+	return fromOpenAPIPrimitive(schema.Type)
 }
 
 // fromOpenAPIPrimitive converts an OpenAPI primitive type to a GoType
@@ -345,8 +408,10 @@ func orderedkeys[T any](m map[string]T) []string {
 
 func KnownTypes() []*GoType {
 	return []*GoType{
+
 		MustTypeFrom(reflect.TypeOf(k8s.LocalReference{})),
 		MustTypeFrom(reflect.TypeOf(k8s.Reference{})),
+		MustTypeFrom(reflect.TypeOf(metav1.Condition{})),
 	}
 }
 
@@ -359,13 +424,17 @@ func MustTypeFrom(t reflect.Type) *GoType {
 }
 
 func TypeFrom(t reflect.Type) (*GoType, error) {
+	builtInType := toBuiltInType(t)
+	if builtInType != nil {
+		return builtInType, nil
+	}
 	kind := GoKind(t.Kind())
 	switch kind {
 	case StructKind:
 		return StructTypeFrom(t)
 	case ArrayKind:
 		return ArrayTypeFrom(t)
-	case StringKind, IntKind, FloatKind, BoolKind:
+	case StringKind, IntKind, Uint64Kind, FloatKind, BoolKind:
 		return NewPrimitive(t.Name(), kind), nil
 	default:
 		return nil, fmt.Errorf("unsupported kind %v", kind)
@@ -413,4 +482,24 @@ func GoKind(k reflect.Kind) string {
 		panic(fmt.Sprintf("%s reflect.Kind: %#v", UnsupportedKind, k))
 	}
 	return ""
+}
+
+func builtInType(name, kind string, alias, path string) *GoType {
+	return &GoType{
+		Name: name,
+		Kind: kind,
+		Import: &ImportInfo{
+			Alias: alias,
+			Path:  path,
+		},
+	}
+}
+
+func toBuiltInType(t reflect.Type) *GoType {
+	builtInKey := fmt.Sprintf("%s.%s", t.PkgPath(), t.Name())
+	gt, ok := builtInTypes[builtInKey]
+	if ok {
+		return gt
+	}
+	return nil
 }

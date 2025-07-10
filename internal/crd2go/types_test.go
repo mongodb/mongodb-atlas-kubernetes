@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func TestRenameType(t *testing.T) {
@@ -228,6 +229,122 @@ func TestBuildOpenAPIType(t *testing.T) {
 	fmt.Printf("Expected GoType: %s\n", jsonize(expectedType))
 
 	assert.Equal(t, expectedType, goType)
+}
+
+func TestBuiltInFormat2Type(t *testing.T) {
+	td := crd2go.NewTypeDict(crd2go.KnownTypes()...)
+	timeSchema := &apiextensionsv1.JSONSchemaProps{
+		Type:   "string",
+		Format: "date-time",
+	}
+	got, err := crd2go.FromOpenAPIType(td, "time", []string{}, timeSchema)
+	require.NoError(t, err)
+	want := &crd2go.GoType{
+		Name: "Time",
+		Kind: "struct",
+		Import: &crd2go.ImportInfo{
+			"metav1",
+			"k8s.io/apimachinery/pkg/apis/meta/v1",
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestConditionsKnownTypeMatch(t *testing.T) {
+	td := crd2go.NewTypeDict(crd2go.KnownTypes()...)
+	input := &crd2go.GoType{
+		Name: "Cond",
+		Kind: "struct",
+		Fields: []*crd2go.GoField{
+			{
+				Comment: "Last time the condition transitioned from one status to another.",
+				Name:    "LastTransitionTime",
+				GoType: &crd2go.GoType{
+					Name: "Time",
+					Kind: "struct",
+					Import: &crd2go.ImportInfo{
+						"metav1",
+						"k8s.io/apimachinery/pkg/apis/meta/v1",
+					},
+				},
+			},
+			{
+				Comment: "A human readable message indicating details about the transition.",
+				Name:    "Message",
+				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+			},
+			{
+				Comment: "observedGeneration represents the .metadata.generation that the condition was set based upon.",
+				Name:    "ObservedGeneration",
+				GoType:  &crd2go.GoType{Name: "int64", Kind: crd2go.IntKind},
+			},
+			{
+				Comment: "The reason for the condition's last transition.",
+				Name:    "Reason",
+				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+			},
+			{
+				Comment: "Status of the condition, one of True, False, Unknown.",
+				Name:    "Status",
+				GoType:  &crd2go.GoType{Name: "ConditionStatus", Kind: crd2go.StringKind},
+			},
+			{
+				Comment: "Type of condition.",
+				Name:    "Type",
+				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+			},
+		},
+		Import: &crd2go.ImportInfo{},
+	}
+	require.NoError(t, crd2go.RenameType(td, []string{"conditions"}, input))
+	want := &crd2go.GoType{
+		Name: "Condition",
+		Kind: "struct",
+		Fields: []*crd2go.GoField{
+			{
+				Comment: "Last time the condition transitioned from one status to another.",
+				Name:    "LastTransitionTime",
+				GoType: &crd2go.GoType{
+					Name: "Time",
+					Kind: "struct",
+					Import: &crd2go.ImportInfo{
+						"metav1",
+						"k8s.io/apimachinery/pkg/apis/meta/v1",
+					},
+				},
+			},
+			{
+				Comment: "A human readable message indicating details about the transition.",
+				Name:    "Message",
+				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+			},
+			{
+				Comment: "observedGeneration represents the .metadata.generation that the condition was set based upon.",
+				Name:    "ObservedGeneration",
+				GoType:  &crd2go.GoType{Name: "int64", Kind: crd2go.IntKind},
+			},
+			{
+				Comment: "The reason for the condition's last transition.",
+				Name:    "Reason",
+				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+			},
+			{
+				Comment: "Status of the condition, one of True, False, Unknown.",
+				Name:    "Status",
+				GoType:  &crd2go.GoType{Name: "ConditionStatus", Kind: crd2go.StringKind},
+			},
+			{
+				Comment: "Type of condition.",
+				Name:    "Type",
+				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+			},
+		},
+		Import: &crd2go.ImportInfo{
+			"v1",
+			"k8s.io/apimachinery/pkg/apis/meta/v1",
+		},
+	}
+	assert.Equal(t, want, input)
 }
 
 func jsonize(obj any) string {

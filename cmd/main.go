@@ -32,7 +32,7 @@ func generate(output, input string, reservations []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open input file %s: %w", input, err)
 	}
-	preloaded := []*crd2go.GoType{}
+	preloaded := crd2go.KnownTypes()
 	for _, name := range reservations {
 		preloaded = append(preloaded, crd2go.NewStruct(name, nil))
 	}

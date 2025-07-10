@@ -22,7 +22,7 @@ var samples embed.FS
 func TestGenerateFromCRDStream(t *testing.T) {
 	buffers := make(map[string]*bytes.Buffer)
 
-	in, err := samples.Open("samples/crds.yml")
+	in, err := samples.Open("samples/crds.yaml")
 	require.NoError(t, err)
 	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, crd2go.FirstVersion, preloadedTypes()...))
 

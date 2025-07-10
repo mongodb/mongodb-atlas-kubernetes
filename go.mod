@@ -5,8 +5,7 @@ go 1.24.3
 require (
 	github.com/dave/jennifer v1.7.1
 	github.com/stretchr/testify v1.10.0
-	go.mongodb.org/atlas-sdk/v20231115014 v20231115014.0.1
-	go.mongodb.org/atlas-sdk/v20241113005 v20241113005.0.0
+	go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0
 	golang.org/x/text v0.24.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.2
@@ -44,7 +43,7 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/oauth2 v0.25.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
