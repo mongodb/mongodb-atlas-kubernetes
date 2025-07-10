@@ -237,32 +237,33 @@ jobs:
           path: output/**
   gather-deprecations:
     name: Gather Deprecation Warnings
-    environment: test
+    environment: release
     needs: [e2e]
     runs-on: ubuntu-latest
     steps:
-      # Get GitHub logs for run;
-      # Get only lines with 'javaMethod';
-      # Parse the JSON within;
-      # Grab the unique fields we want;
-      # Check the length (leave no comment if there are no deprecations);
-      # Create a Markdown table from the JSON for the comment;
       - name: Parse logs from e2e tests
         run: |
-          LOGS=$(gh run view ${{ github.run_id }} --log | grep "javaMethod" | grep -o '{.*}' | jq '{javaMethod, type, date}' | jq -s 'unique | sort_by(.javaMethod)')
-          LOGS_LENGTH=$(echo $LOGS | jq '. | length')
-          echo "LOGS_LENGTH=$LOGS_LENGTH" >> $GITHUB_ENV
-          LOGS_TABLE=$(echo $LOGS | jq -r '"|Type|Java Method|Date|\n|------|------|------|\n" + (map("\(.type)|\(.javaMethod)|\(.date)|") | join("\n"))'))
-          echo "LOGS_TABLE=$LOGS_TABLE" >> $GITHUB_ENV
+          devbox run -- 'make tools/scandeprecation/scandeprecation'
+          LOGS=$(gh run view ${{ github.run_id }} --log | grep "javaMethod" | ./tools/scandeprecation/scandeprecations)
+          echo "LOGS=$LOGS" >> $GITHUB_ENV`
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
+          private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            mongodb-atlas-kubernetes
       - name: Create comment from data
-        if: ${{ ! env.LOGS_LENGTH == 0 }}
+        if: ${{ ! env.LOGS == '' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{    }} #TODO: This needs a secret in the test env to leave comments
+          github-token: ${{  steps.generate_token.outputs.token  }}
           script: |
             github.rest.issues.createComment({
               owner: context.repo.owner,
               issue_number: context.issue.number,
               repo: context.repo.repo,
-              body: process.env.LOGS_TABLE
+              body: process.env.LOGS
             })

@@ -635,3 +635,6 @@ install-ako-helm:
 	--set subobjectDeletionProtection=false \
 	--namespace=$(HELM_AKO_NAMESPACE) --create-namespace
 	kubectl get crds
+
+tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
+	cd tools/scandeprecation && go build .
