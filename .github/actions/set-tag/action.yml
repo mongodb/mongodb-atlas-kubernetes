@@ -1,8 +1,18 @@
 name: 'Setup tag for docker image'
-description: 'Setup tag for docker image: branch name with commit ID'
+description: 'Generates a Docker image tag using branch name and short commit SHA.'
+inputs:
+  branch_name:
+    description: 'Branch name to use for the tag (e.g., main, feature-xyz). Optional.'
+    required: false
+  commit_sha:
+    description: 'Full commit SHA to extract the short commit ID from. Optional.'
+    required: false
+
 outputs:
   tag:
-    description: 'tag for the image'
+    description: 'Generated image tag in the format {branch-name}-{6-char-sha}'
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
+  args: []
