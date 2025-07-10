@@ -4531,7 +4531,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .apiToken
                               type: string
@@ -4540,7 +4540,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .datadogApiKey
                               type: string
@@ -4549,7 +4549,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .microsoftTeamsWebhookUrl
                               type: string
@@ -4558,7 +4558,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .notificationToken
                               type: string
@@ -4567,7 +4567,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .opsGenieApiKey
                               type: string
@@ -4576,7 +4576,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .serviceKey
                               type: string
@@ -4585,7 +4585,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .victorOpsApiKey
                               type: string
@@ -4594,7 +4594,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .victorOpsRoutingKey
                               type: string
@@ -4603,7 +4603,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .webhookSecret
                               type: string
@@ -4612,7 +4612,7 @@ metadata:
                               gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
-                              - $.data.key
+                              - $.data.#
                             x-openapi-mapping:
                               property: .webhookUrl
                               type: string
@@ -5262,7 +5262,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .apiKey
                         type: string
@@ -5271,7 +5271,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .apiToken
                         type: string
@@ -5280,7 +5280,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .licenseKey
                         type: string
@@ -5289,7 +5289,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .microsoftTeamsWebhookUrl
                         type: string
@@ -5298,7 +5298,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .password
                         type: string
@@ -5307,7 +5307,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .readToken
                         type: string
@@ -5316,7 +5316,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .routingKey
                         type: string
@@ -5325,7 +5325,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .secret
                         type: string
@@ -5334,7 +5334,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .serviceKey
                         type: string
@@ -5343,7 +5343,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .url
                         type: string
@@ -5352,7 +5352,7 @@ metadata:
                         gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
-                        - $.data.key
+                        - $.data.#
                       x-openapi-mapping:
                         property: .writeToken
                         type: string
