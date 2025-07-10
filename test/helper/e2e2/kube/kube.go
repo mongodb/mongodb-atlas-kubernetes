@@ -40,28 +40,20 @@ type ObjectWithStatus interface {
 	GetConditions() []metav1.Condition
 }
 
-// NewK8sTest initializes a test environment on Kubernetes.
-// It requires:
-// - A running Kubernetes cluster with a local configuration bound to it.
-// - The given set CRDs installed in that cluster
-func NewK8sTest(ctx context.Context, crds ...*apiextensionsv1.CustomResourceDefinition) (client.Client, error) {
-	kubeClient, err := TestKubeClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup Kubernetes test env client: %w", err)
-	}
-
+// AssertCRDs check that the given CRDs are installed in the accesible cluster
+func AssertCRDs(ctx context.Context, kubeClient client.Client, crds ...*apiextensionsv1.CustomResourceDefinition) error {
 	for _, targetCRD := range crds {
 		if err := assertCRD(ctx, kubeClient, targetCRD); err != nil {
-			return nil, fmt.Errorf("failed to asert for test-required CRD: %w", err)
+			return fmt.Errorf("failed to asert for test-required CRD: %w", err)
 		}
 	}
-	return kubeClient, nil
+	return nil
 }
 
-// TestKubeClient returns a Kubernetes client for tests.
+// NewTestClient returns a Kubernetes client for tests.
 // It requires a running Kubernetes cluster and a local configuration to it.
 // It supports core Kubernetes types, production and experimental CRDs.
-func TestKubeClient() (client.Client, error) {
+func NewTestClient() (client.Client, error) {
 	testScheme := runtime.NewScheme()
 	utilruntime.Must(corev1.AddToScheme(testScheme))
 	utilruntime.Must(apiextensionsv1.AddToScheme(testScheme))
