@@ -1,17 +1,22 @@
 FROM golang:1.24
 
 ENV KUBECTL_VERSION 1.18.12
+ENV KUSTOMIZE_VERSION 5.7.0
 ENV GO111MODULE on
 
 RUN go install github.com/mikefarah/yq/v4@latest
 
-# Install
+# Install kubectl
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o /usr/bin/kubectl && \
     chmod +x /usr/bin/kubectl
 
-RUN cd /usr/local/bin &&\
-    curl -L https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
+# Install kustomize (safe, pinned, prebuilt binary)
+RUN curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz \
+    -o /tmp/kustomize.tar.gz && \
+    tar -xzvf /tmp/kustomize.tar.gz -C /usr/local/bin && \
+    chmod +x /usr/local/bin/kustomize
 
+# Install controller-gen
 RUN CONTROLLER_GEN_TMP_DIR=$(mktemp -d) && \
     cd $CONTROLLER_GEN_TMP_DIR && \
     go mod init tmp && \
@@ -19,12 +24,12 @@ RUN CONTROLLER_GEN_TMP_DIR=$(mktemp -d) && \
     rm -rf $CONTROLLER_GEN_TMP_DIR && \
     CONTROLLER_GEN=${GOBIN}/controller-gen
 
+# Install operator-sdk
 RUN curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.34.1/operator-sdk_linux_amd64 && \
     chmod +x operator-sdk_linux_amd64 && \
     mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
 
-# Copies your code file from your action repository to the filesystem path `/` of the container
 COPY entrypoint.sh /home/entrypoint.sh
 RUN chmod +x /home/entrypoint.sh
-# Code file to execute when the docker container starts up (`entrypoint.sh`)
+
 ENTRYPOINT ["/home/entrypoint.sh"]

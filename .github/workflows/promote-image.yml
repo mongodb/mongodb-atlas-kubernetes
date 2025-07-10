@@ -1,0 +1,31 @@
+name: Delete Release Images
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  delete-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Docker Hub tag (a6ffaa)
+        run: |
+          echo "Deleting Docker Hub tag: a6ffaa"
+          curl -s -X DELETE -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
+            "https://hub.docker.com/v2/repositories/mongodb/mongodb-atlas-kubernetes-operator/tags/ready-to-release-CLOUDP-329235-n-a6ffaa/" \
+            -w "\nHTTP status: %{http_code}\n"
+
+      - name: Delete Docker Hub tag (27f2ea)
+        run: |
+          echo "Deleting Docker Hub tag: 27f2ea"
+          curl -s -X DELETE -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
+            "https://hub.docker.com/v2/repositories/mongodb/mongodb-atlas-kubernetes-operator/tags/ready-to-release-CLOUDP-329235-n-27f2ea/" \
+            -w "\nHTTP status: %{http_code}\n"
+
+      - name: Delete Quay.io tag (a6ffaa)
+        run: |
+          echo "Deleting Quay.io tag: a6ffaa"
+          curl -s -X DELETE -u "${{ secrets.QUAY_USERNAME }}:${{ secrets.QUAY_PASSWORD }}" \
+            "https://quay.io/api/v1/repository/mongodb/mongodb-atlas-kubernetes-operator/tag/ready-to-release-CLOUDP-329235-n-a6ffaa" \
+            -w "\nHTTP status: %{http_code}\n"
