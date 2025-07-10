@@ -391,10 +391,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -509,13 +513,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 type: object
@@ -623,10 +626,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -823,13 +830,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 type: object
@@ -900,10 +906,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -1073,13 +1083,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                   overwriteBackupPolicies:
@@ -1186,10 +1195,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -1431,13 +1444,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 required:
@@ -1529,10 +1541,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -1966,13 +1982,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                   skipRoleValidation:
@@ -2389,10 +2404,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -2487,13 +2506,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 type: object
@@ -2575,10 +2593,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -3277,13 +3299,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 type: object
@@ -3686,10 +3707,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -3926,13 +3951,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 required:
@@ -4029,10 +4053,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -4164,13 +4192,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 type: object
@@ -4241,10 +4268,14 @@ metadata:
               properties:
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -4356,13 +4387,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 type: object
@@ -4528,100 +4558,134 @@ metadata:
                         properties:
                           apiTokenSecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .apiToken
                               type: string
                           datadogApiKeySecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .datadogApiKey
                               type: string
                           microsoftTeamsWebhookUrlSecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .microsoftTeamsWebhookUrl
                               type: string
                           notificationTokenSecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .notificationToken
                               type: string
                           opsGenieApiKeySecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .opsGenieApiKey
                               type: string
                           serviceKeySecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .serviceKey
                               type: string
                           victorOpsApiKeySecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .victorOpsApiKey
                               type: string
                           victorOpsRoutingKeySecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .victorOpsRoutingKey
                               type: string
                           webhookSecretSecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .webhookSecret
                               type: string
                           webhookUrlSecretRef:
                             x-kubernetes-mapping:
-                              gvr: secrets/v1
                               nameSelector: .name
                               propertySelectors:
                               - $.data.#
+                              type:
+                                kind: Secret
+                                resource: secrets
+                                version: v1
                             x-openapi-mapping:
                               property: .webhookUrl
                               type: string
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -5155,13 +5219,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                 type: object
@@ -5259,109 +5322,146 @@ metadata:
                   properties:
                     apiKeySecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .apiKey
                         type: string
                     apiTokenSecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .apiToken
                         type: string
                     licenseKeySecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .licenseKey
                         type: string
                     microsoftTeamsWebhookUrlSecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .microsoftTeamsWebhookUrl
                         type: string
                     passwordSecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .password
                         type: string
                     readTokenSecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .readToken
                         type: string
                     routingKeySecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .routingKey
                         type: string
                     secretSecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .secret
                         type: string
                     serviceKeySecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .serviceKey
                         type: string
                     urlSecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .url
                         type: string
                     writeTokenSecretRef:
                       x-kubernetes-mapping:
-                        gvr: secrets/v1
                         nameSelector: .name
                         propertySelectors:
                         - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
                       x-openapi-mapping:
                         property: .writeToken
                         type: string
                 groupRef:
                   x-kubernetes-mapping:
-                    gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
                     properties:
                     - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
                   x-openapi-mapping:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
@@ -5703,13 +5803,12 @@ spec:
                       rule: self == oldSelf
                   groupRef:
                     description: |-
-                      A reference to a "groups.atlas.generated.mongodb.com/v1" resource.
+                      A reference to a "Group" resource.
                       The value of "$.status.v20250312.groupId" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
-                        description: Name of the "groups.atlas.generated.mongodb.com/v1"
-                          resource.
+                        description: Name of the "Group" resource.
                         type: string
                     type: object
                   integrationType:

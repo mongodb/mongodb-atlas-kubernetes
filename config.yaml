@@ -89,7 +89,11 @@ spec:
                 name: groupRef
                 property: $.groupId
                 target:
-                  gvr: groups.atlas.generated.mongodb.com/v1
+                  type:
+                    kind: Group
+                    resource: groups
+                    group: atlas.generated.mongodb.com
+                    version: v1
                   properties:
                     - $.status.v20250312.groupId
           entry:

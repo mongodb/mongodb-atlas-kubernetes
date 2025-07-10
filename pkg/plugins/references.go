@@ -42,16 +42,16 @@ func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.C
 		case 0:
 			return errors.New("reference target must have at least one property defined")
 		case 1:
-			refProp.Description = fmt.Sprintf("A reference to a %q resource.\nThe value of %q will be used to set %q.\nMutually exclusive with the %q property.", ref.Target.GVR, ref.Target.Properties[0], openApiProperty, openApiProperty)
+			refProp.Description = fmt.Sprintf("A reference to a %q resource.\nThe value of %q will be used to set %q.\nMutually exclusive with the %q property.", ref.Target.Type.Kind, ref.Target.Properties[0], openApiProperty, openApiProperty)
 		default:
 			bulleted := "- " + strings.Join(ref.Target.Properties, "\n- ")
-			refProp.Description = fmt.Sprintf("A reference to a %q resource.\nOne of the following mutually exclusive values will be used to retrieve the %q value:\n\n%s\n\nMutually exclusive with the %q property.", ref.Target.GVR, openApiProperty, bulleted, openApiProperty)
+			refProp.Description = fmt.Sprintf("A reference to a %q resource.\nOne of the following mutually exclusive values will be used to retrieve the %q value:\n\n%s\n\nMutually exclusive with the %q property.", ref.Target.Type.Kind, openApiProperty, bulleted, openApiProperty)
 		}
 
 		refProp.Properties = map[string]apiextensions.JSONSchemaProps{
 			"name": {
 				Type:        "string",
-				Description: fmt.Sprintf(`Name of the %q resource.`, ref.Target.GVR),
+				Description: fmt.Sprintf(`Name of the %q resource.`, ref.Target.Type.Kind),
 			},
 		}
 
@@ -66,7 +66,7 @@ func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.C
 		schema := openapi3.NewSchema()
 		schema.Extensions = map[string]interface{}{}
 		schema.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
-			"gvr":          ref.Target.GVR,
+			"type":         map[string]interface{}{"kind": ref.Target.Type.Kind, "group": ref.Target.Type.Group, "version": ref.Target.Type.Version, "resource": ref.Target.Type.Resource},
 			"nameSelector": ".name",
 			"properties":   ref.Target.Properties,
 		}

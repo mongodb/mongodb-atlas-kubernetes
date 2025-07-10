@@ -58,8 +58,15 @@ type Reference struct {
 }
 
 type Target struct {
-	GVR        string   `json:"gvr,omitempty"`        // The GroupVersionResource of the target CRD.
+	Type       Type     `json:"type,omitempty"`       // The GroupVersionResource of the target CRD.
 	Properties []string `json:"properties,omitempty"` // The target CRD properties to map to.
+}
+
+type Type struct {
+	Group    string `json:"group,omitempty"`
+	Version  string `json:"version,omitempty"`
+	Kind     string `json:"kind,omitempty"`
+	Resource string `json:"resource,omitempty"`
 }
 
 type PropertyMapping struct {

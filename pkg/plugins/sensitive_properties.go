@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
 	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
@@ -31,7 +32,11 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, propertyConfig *confi
 	}
 
 	extensionsSchema.Value.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
-		"gvr":               "secrets/v1",
+		"type": map[string]interface{}{
+			"kind":     "Secret",
+			"resource": v1.ResourceSecrets,
+			"version":  "v1",
+		},
 		"nameSelector":      ".name",
 		"propertySelectors": []string{"$.data.#"},
 	}
