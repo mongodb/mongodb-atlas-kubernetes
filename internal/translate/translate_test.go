@@ -8,8 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2023 "go.mongodb.org/atlas-sdk/v20231115014/admin"
-	admin2024 "go.mongodb.org/atlas-sdk/v20241113005/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312005/admin"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,10 +40,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name:       "simple group",
 			crd:        "Group",
-			sdkVersion: "v20231115",
+			sdkVersion: "V20250312",
 			spec: v1.GroupSpec{
-				V20231115: &v1.GroupSpecV20231115{
-					Entry: &v1.GroupSpecV20231115Entry{
+				V20250312: &v1.GroupSpecV20250312{
+					Entry: &v1.GroupSpecV20250312Entry{
 						Name:                      "project-name",
 						OrgId:                     "60987654321654321",
 						RegionUsageRestrictions:   pointer.Get("fake-restriction"),
@@ -57,13 +56,13 @@ func TestToAPI(t *testing.T) {
 					ProjectOwnerId: "61234567890123456",
 				},
 			},
-			target: &admin2023.Group{},
-			want: &admin2023.Group{
+			target: &admin2025.Group{},
+			want: &admin2025.Group{
 				Name:                      "project-name",
 				OrgId:                     "60987654321654321",
 				RegionUsageRestrictions:   pointer.Get("fake-restriction"),
 				WithDefaultAlertsSettings: pointer.Get(true),
-				Tags: &[]admin2023.ResourceTag{
+				Tags: &[]admin2025.ResourceTag{
 					{Key: "key", Value: "value"},
 				},
 			},
@@ -71,10 +70,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name:       "group alert config with project and credential references",
 			crd:        "GroupAlertsConfig",
-			sdkVersion: "v20241113",
+			sdkVersion: "V20250312",
 			spec: v1.GroupAlertsConfigSpec{
-				V20241113: &v1.GroupAlertsConfigSpecV20241113{
-					Entry: &v1.GroupAlertsConfigSpecV20241113Entry{
+				V20250312: &v1.GroupAlertsConfigSpecV20250312{
+					Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
 						Enabled:       pointer.Get(true),
 						EventTypeName: pointer.Get("event-type"),
 						Matchers: &[]v1.Matchers{
@@ -96,10 +95,11 @@ func TestToAPI(t *testing.T) {
 							Threshold:  pointer.Get(1.1),
 							Units:      pointer.Get("units"),
 						},
-						Threshold: &v1.Threshold{
-							Operator:  pointer.Get("op"),
-							Threshold: pointer.Get(1),
-							Units:     pointer.Get("units"),
+						Threshold: &v1.MetricThreshold{
+							Mode:      pointer.Get("mode0"),
+							Operator:  pointer.Get("operator0"),
+							Threshold: pointer.Get(2.2),
+							Units:     pointer.Get("units0"),
 						},
 						Notifications: &[]v1.Notifications{
 							{
@@ -110,7 +110,7 @@ func TestToAPI(t *testing.T) {
 							},
 						},
 					},
-					GroupId: "60965432187654321",
+					//GroupId: "60965432187654321",
 				},
 			},
 			deps: []client.Object{
@@ -124,15 +124,15 @@ func TestToAPI(t *testing.T) {
 						Namespace: "ns",
 					},
 					Data: map[string][]byte{
-						"key": ([]byte)("sample-password"), // should be apiKey, not key
+						"datadogApiKey": ([]byte)("sample-password"),
 					},
 				},
 			},
-			target: &admin2024.GroupAlertsConfig{},
-			want: &admin2024.GroupAlertsConfig{
+			target: &admin2025.GroupAlertsConfig{},
+			want: &admin2025.GroupAlertsConfig{
 				Enabled:       pointer.Get(true),
 				EventTypeName: pointer.Get("event-type"),
-				Matchers: &[]admin2024.StreamsMatcher{
+				Matchers: &[]admin2025.StreamsMatcher{
 					{
 						FieldName: "field-name-1",
 						Operator:  "operator-1",
@@ -144,30 +144,32 @@ func TestToAPI(t *testing.T) {
 						Value:     "value-2",
 					},
 				},
-				MetricThreshold: &admin2024.FlexClusterMetricThreshold{
+				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
 					MetricName: "metric-1",
 					Mode:       pointer.Get("mode"),
 					Operator:   pointer.Get("operator"),
 					Threshold:  pointer.Get(1.1),
 					Units:      pointer.Get("units"),
 				},
-				Threshold: &admin2024.GreaterThanRawThreshold{
-					Operator:  pointer.Get("op"),
-					Threshold: pointer.Get(1),
-					Units:     pointer.Get("units"),
+				Threshold: &admin2025.StreamProcessorMetricThreshold{
+					Operator:   pointer.Get("op"),
+					Units:      pointer.Get("units"),
+					MetricName: pointer.Get("metric"),
+					Mode:       pointer.Get("mode"),
 				},
-				Notifications: &[]admin2024.AlertsNotificationRootForGroup{
+				Notifications: &[]admin2025.AlertsNotificationRootForGroup{
 					{
 						DatadogApiKey: pointer.Get("sample-password"),
 						DatadogRegion: pointer.Get("US"),
 					},
 				},
-				GroupId: pointer.Get("60965432187654321"),
+				GroupId:          pointer.Get("60965432187654321"),
+				SeverityOverride: pointer.Get("some-severity-override"),
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			crdsYML, err := samples.Open("samples/crds.yml")
+			crdsYML, err := samples.Open("samples/crds.yaml")
 			require.NoError(t, err)
 			defer crdsYML.Close()
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
