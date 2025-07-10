@@ -46,6 +46,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 // AtlasDataFederationReconciler reconciles an DataFederation object
@@ -242,7 +243,9 @@ func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager, skipN
 			handler.EnqueueRequestsFromMapFunc(r.findAtlasDataFederationForProjects),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 

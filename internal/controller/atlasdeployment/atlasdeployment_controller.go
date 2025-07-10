@@ -52,6 +52,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 // AtlasDeploymentReconciler reconciles an AtlasDeployment object
@@ -401,7 +402,9 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 			handler.EnqueueRequestsFromMapFunc(r.deploymentsForCredentialMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 

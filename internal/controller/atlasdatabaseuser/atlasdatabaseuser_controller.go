@@ -47,6 +47,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authentication is disabled")
@@ -220,7 +221,9 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager, skipNam
 			handler.EnqueueRequestsFromMapFunc(r.databaseUsersForCredentialMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 

@@ -44,6 +44,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 type AtlasCustomRoleReconciler struct {
@@ -216,7 +217,9 @@ func (r *AtlasCustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.customRolesCredentials()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 
