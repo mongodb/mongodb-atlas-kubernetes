@@ -393,7 +393,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -625,7 +625,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -902,7 +902,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -1188,7 +1188,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -1531,7 +1531,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -2391,7 +2391,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -2577,7 +2577,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -3688,7 +3688,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -4031,7 +4031,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -4243,7 +4243,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -4620,7 +4620,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId
@@ -5360,7 +5360,7 @@ metadata:
                   x-kubernetes-mapping:
                     gvr: groups.atlas.generated.mongodb.com/v1
                     nameSelector: .name
-                    propertySelectors:
+                    properties:
                     - $.status.v20250312.groupId
                   x-openapi-mapping:
                     property: $.groupId

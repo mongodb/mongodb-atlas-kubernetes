@@ -66,9 +66,9 @@ func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.C
 		schema := openapi3.NewSchema()
 		schema.Extensions = map[string]interface{}{}
 		schema.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
-			"gvr":               ref.Target.GVR,
-			"nameSelector":      ".name",
-			"propertySelectors": ref.Target.Properties,
+			"gvr":          ref.Target.GVR,
+			"nameSelector": ".name",
+			"properties":   ref.Target.Properties,
 		}
 
 		schema.Extensions["x-openapi-mapping"] = map[string]interface{}{
