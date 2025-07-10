@@ -2,7 +2,10 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/josvazg/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&SearchIndex{})
@@ -20,28 +23,35 @@ type SearchIndex struct {
 }
 
 type SearchIndexSpec struct {
-	// V20231115 The spec of the searchindex resource for version v20231115.
-	V20231115 *SearchIndexSpecV20231115 `json:"v20231115,omitempty"`
+	// V20250312 The spec of the searchindex resource for version v20250312.
+	V20250312 *SearchIndexSpecV20250312 `json:"v20250312,omitempty"`
 }
 
-type SearchIndexSpecV20231115 struct {
+type SearchIndexSpecV20250312 struct {
 	// ClusterName Name of the cluster that contains the collection on which to create
 	// an Atlas Search index.
 	ClusterName string `json:"clusterName"`
 
 	// Entry The entry fields of the searchindex resource spec. These fields can be set
 	// for creating and updating searchindexes.
-	Entry *SearchIndexSpecV20231115Entry `json:"entry,omitempty"`
+	Entry *SearchIndexSpecV20250312Entry `json:"entry,omitempty"`
 
 	/*
 	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
 	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
 	*/
-	GroupId string `json:"groupId"`
+	GroupId *string `json:"groupId,omitempty"`
+
+	/*
+	   GroupRef A reference to a "Group" resource.
+	   The value of "$.status.v20250312.groupId" will be used to set "groupId".
+	   Mutually exclusive with the "groupId" property.
+	*/
+	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 }
 
-type SearchIndexSpecV20231115Entry struct {
+type SearchIndexSpecV20250312Entry struct {
 	/*
 	   Analyzer Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a **term** or **token**. This process, known as tokenization, involves a variety of changes made to the text in fields:
 
@@ -71,7 +81,7 @@ type SearchIndexSpecV20231115Entry struct {
 	// Fields Settings that configure the fields, one per object, to index. You must
 	// define at least one "vector" type field. You can optionally define "filter" type
 	// fields also.
-	Fields *[]V20250312Parameters `json:"fields,omitempty"`
+	Fields *[]metav1.Time `json:"fields,omitempty"`
 
 	// Mappings Index specifications for the collection's fields.
 	Mappings *Mappings `json:"mappings,omitempty"`
@@ -79,6 +89,9 @@ type SearchIndexSpecV20231115Entry struct {
 	// Name Human-readable label that identifies this index. Within each namespace,
 	// names of all indexes in the namespace must be unique.
 	Name string `json:"name"`
+
+	// NumPartitions Number of index partitions. Allowed values are [1, 2, 4].
+	NumPartitions *int `json:"numPartitions,omitempty"`
 
 	// SearchAnalyzer Method applied to identify words when searching this index.
 	SearchAnalyzer *string `json:"searchAnalyzer,omitempty"`
@@ -88,7 +101,7 @@ type SearchIndexSpecV20231115Entry struct {
 	// Alternatively, you can specify an object that only contains the list of fields
 	// to store (include) or not store (exclude) on Atlas Search. To learn more, see
 	// documentation.
-	StoredSource *V20250312Parameters `json:"storedSource,omitempty"`
+	StoredSource *metav1.Time `json:"storedSource,omitempty"`
 
 	// Synonyms Rule sets that map words to their synonyms in this index.
 	Synonyms *[]Synonyms `json:"synonyms,omitempty"`
@@ -100,7 +113,7 @@ type SearchIndexSpecV20231115Entry struct {
 type Analyzers struct {
 	// CharFilters Filters that examine text one character at a time and perform
 	// filtering operations.
-	CharFilters *[]V20250312Parameters `json:"charFilters,omitempty"`
+	CharFilters *[]metav1.Time `json:"charFilters,omitempty"`
 
 	/*
 	   Name Human-readable name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
@@ -117,7 +130,7 @@ type Analyzers struct {
 
 	   - Redaction, the removal of sensitive information from public documents.
 	*/
-	TokenFilters *[]V20250312Parameters `json:"tokenFilters,omitempty"`
+	TokenFilters *[]metav1.Time `json:"tokenFilters,omitempty"`
 
 	// Tokenizer Tokenizer that you want to use to create tokens. Tokens determine how
 	// Atlas Search splits up text into discrete chunks for indexing.
@@ -153,7 +166,7 @@ type Mappings struct {
 
 	// Fields One or more field specifications for the Atlas Search index. Required if
 	// **mappings.dynamic** is omitted or set to **false**.
-	Fields *V20250312Parameters `json:"fields,omitempty"`
+	Fields *metav1.Time `json:"fields,omitempty"`
 }
 
 type Synonyms struct {
@@ -161,46 +174,46 @@ type Synonyms struct {
 	// searched.
 	Analyzer string `json:"analyzer"`
 
-	// Name Human-readable label that identifies the synonym definition. Each
-	// **synonym.name** must be unique within the same index definition.
+	// Name Label that identifies the synonym definition. Each **synonym.name** must be
+	// unique within the same index definition.
 	Name string `json:"name"`
 
-	// Source Data set that stores the mapping one or more words map to one or more
-	// synonyms of those words.
+	// Source Data set that stores words and their applicable synonyms.
 	Source Source `json:"source"`
 }
 
 type Source struct {
-	// Collection Human-readable label that identifies the MongoDB collection that
-	// stores words and their applicable synonyms.
+	// Collection Label that identifies the MongoDB collection that stores words and
+	// their applicable synonyms.
 	Collection string `json:"collection"`
 }
 
 type SearchIndexStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]Conditions `json:"conditions,omitempty"`
+	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
 
-	// V20231115 The last observed Atlas state of the searchindex resource for version
-	// v20231115.
-	V20231115 *SearchIndexStatusV20231115 `json:"v20231115,omitempty"`
+	// V20250312 The last observed Atlas state of the searchindex resource for version
+	// v20250312.
+	V20250312 *SearchIndexStatusV20250312 `json:"v20250312,omitempty"`
 }
 
-type SearchIndexStatusV20231115 struct {
+type SearchIndexStatusV20250312 struct {
 	// IndexID Unique 24-hexadecimal digit string that identifies this Atlas Search
 	// index.
 	IndexID *string `json:"indexID,omitempty"`
 
+	// NumPartitions Number of index partitions. Allowed values are [1, 2, 4].
+	NumPartitions *int `json:"numPartitions,omitempty"`
+
 	/*
 	   Status Condition of the search index when you made this request.
 
-	   | Status | Index Condition |
-	    |---|---|
-	    | IN_PROGRESS | Atlas is building or re-building the index after an edit. |
-	    | STEADY | You can use this search index. |
-	    | FAILED | Atlas could not build the index. |
-	    | MIGRATING | Atlas is upgrading the underlying cluster tier and migrating indexes. |
-	    | PAUSED | The cluster is paused. |
+	   - `IN_PROGRESS`: Atlas is building or re-building the index after an edit.
+	   - `STEADY`: You can use this search index.
+	   - `FAILED`: Atlas could not build the index.
+	   - `MIGRATING`: Atlas is upgrading the underlying cluster tier and migrating indexes.
+	   - `PAUSED`: The cluster is paused.
 	*/
 	Status *string `json:"status,omitempty"`
 }

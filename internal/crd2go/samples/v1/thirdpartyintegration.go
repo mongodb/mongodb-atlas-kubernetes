@@ -2,7 +2,10 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/josvazg/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&ThirdPartyIntegration{})
@@ -20,28 +23,35 @@ type ThirdPartyIntegration struct {
 }
 
 type ThirdPartyIntegrationSpec struct {
-	// V20241113 The spec of the thirdpartyintegration resource for version v20241113.
-	V20241113 *ThirdPartyIntegrationSpecV20241113 `json:"v20241113,omitempty"`
+	// V20250312 The spec of the thirdpartyintegration resource for version v20250312.
+	V20250312 *ThirdPartyIntegrationSpecV20250312 `json:"v20250312,omitempty"`
 }
 
-type ThirdPartyIntegrationSpecV20241113 struct {
+type ThirdPartyIntegrationSpecV20250312 struct {
 	// Entry The entry fields of the thirdpartyintegration resource spec. These fields
 	// can be set for creating and updating thirdpartyintegrations.
-	Entry *ThirdPartyIntegrationSpecV20241113Entry `json:"entry,omitempty"`
+	Entry *ThirdPartyIntegrationSpecV20250312Entry `json:"entry,omitempty"`
 
 	/*
 	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
 	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
 	*/
-	GroupId string `json:"groupId"`
+	GroupId *string `json:"groupId,omitempty"`
+
+	/*
+	   GroupRef A reference to a "Group" resource.
+	   The value of "$.status.v20250312.groupId" will be used to set "groupId".
+	   Mutually exclusive with the "groupId" property.
+	*/
+	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 
 	// IntegrationType Human-readable label that identifies the service which you want
 	// to integrate with MongoDB Cloud.
 	IntegrationType string `json:"integrationType"`
 }
 
-type ThirdPartyIntegrationSpecV20241113Entry struct {
+type ThirdPartyIntegrationSpecV20250312Entry struct {
 	// AccountId Unique 40-hexadecimal digit string that identifies your New Relic
 	// account.
 	AccountId *string `json:"accountId,omitempty"`
@@ -94,7 +104,7 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 	   Unique 40-hexadecimal digit string that identifies your New Relic license.
 
 	   **IMPORTANT**: Effective Wednesday, June 16th, 2021, New Relic no longer supports the plugin-based integration with MongoDB. We do not recommend that you sign up for the plugin-based integration.
-	   To learn more, see the <a href="https://discuss.newrelic.com/t/new-relic-plugin-eol-wednesday-june-16th-2021/127267" target="_blank">New Relic Plugin EOL Statement</a> Consider configuring an alternative monitoring integration before June 16th to maintain visibility into your MongoDB deployments.
+	   Consider configuring an alternative monitoring integration before June 16th to maintain visibility into your MongoDB deployments.
 	*/
 	LicenseKeySecretRef *ApiTokenSecretRef `json:"licenseKeySecretRef,omitempty"`
 
@@ -151,6 +161,19 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 	*/
 	SecretSecretRef *ApiTokenSecretRef `json:"secretSecretRef,omitempty"`
 
+	// SendCollectionLatencyMetrics Toggle sending collection latency metrics that
+	// includes database names and collection namesand latency metrics on reads,
+	// writes, commands, and transactions.
+	SendCollectionLatencyMetrics *bool `json:"sendCollectionLatencyMetrics,omitempty"`
+
+	// SendDatabaseMetrics Toggle sending database metrics that includes database names
+	// and metrics on the number of collections, storage size, and index size.
+	SendDatabaseMetrics *bool `json:"sendDatabaseMetrics,omitempty"`
+
+	// SendUserProvidedResourceTags Toggle sending user provided group and cluster
+	// resource tags with the datadog metrics.
+	SendUserProvidedResourceTags *bool `json:"sendUserProvidedResourceTags,omitempty"`
+
 	// ServiceDiscovery Desired method to discover the Prometheus service.
 	ServiceDiscovery *string `json:"serviceDiscovery,omitempty"`
 
@@ -205,16 +228,29 @@ type ThirdPartyIntegrationSpecV20241113Entry struct {
 type ThirdPartyIntegrationStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]Conditions `json:"conditions,omitempty"`
+	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
 
-	// V20241113 The last observed Atlas state of the thirdpartyintegration resource
-	// for version v20241113.
-	V20241113 *ThirdPartyIntegrationStatusV20241113 `json:"v20241113,omitempty"`
+	// V20250312 The last observed Atlas state of the thirdpartyintegration resource
+	// for version v20250312.
+	V20250312 *ThirdPartyIntegrationStatusV20250312 `json:"v20250312,omitempty"`
 }
 
-type ThirdPartyIntegrationStatusV20241113 struct {
+type ThirdPartyIntegrationStatusV20250312 struct {
 	// Id Integration id.
 	Id *string `json:"id,omitempty"`
+
+	// SendCollectionLatencyMetrics Toggle sending collection latency metrics that
+	// includes database names and collection namesand latency metrics on reads,
+	// writes, commands, and transactions.
+	SendCollectionLatencyMetrics *bool `json:"sendCollectionLatencyMetrics,omitempty"`
+
+	// SendDatabaseMetrics Toggle sending database metrics that includes database names
+	// and metrics on the number of collections, storage size, and index size.
+	SendDatabaseMetrics *bool `json:"sendDatabaseMetrics,omitempty"`
+
+	// SendUserProvidedResourceTags Toggle sending user provided group and cluster
+	// resource tags with the datadog metrics.
+	SendUserProvidedResourceTags *bool `json:"sendUserProvidedResourceTags,omitempty"`
 
 	// Type Human-readable label that identifies the service to which you want to
 	// integrate with MongoDB Cloud. The value must match the third-party service

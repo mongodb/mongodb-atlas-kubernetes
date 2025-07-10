@@ -2,7 +2,10 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/josvazg/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&NetworkPermissionEntries{})
@@ -35,7 +38,14 @@ type NetworkPermissionEntriesSpecV20250312 struct {
 
 	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
 	*/
-	GroupId string `json:"groupId"`
+	GroupId *string `json:"groupId,omitempty"`
+
+	/*
+	   GroupRef A reference to a "Group" resource.
+	   The value of "$.status.v20250312.groupId" will be used to set "groupId".
+	   Mutually exclusive with the "groupId" property.
+	*/
+	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 }
 
 type NetworkPermissionEntriesSpecV20250312Entry struct {
@@ -76,7 +86,7 @@ type NetworkPermissionEntriesSpecV20250312Entry struct {
 type NetworkPermissionEntriesStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]Conditions `json:"conditions,omitempty"`
+	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
 
 	// V20250312 The last observed Atlas state of the networkpermissionentries resource
 	// for version v20250312.

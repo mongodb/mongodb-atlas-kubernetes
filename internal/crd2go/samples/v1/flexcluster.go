@@ -2,7 +2,10 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/josvazg/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&FlexCluster{})
@@ -20,24 +23,31 @@ type FlexCluster struct {
 }
 
 type FlexClusterSpec struct {
-	// V20241113 The spec of the flexcluster resource for version v20241113.
-	V20241113 *FlexClusterSpecV20241113 `json:"v20241113,omitempty"`
+	// V20250312 The spec of the flexcluster resource for version v20250312.
+	V20250312 *FlexClusterSpecV20250312 `json:"v20250312,omitempty"`
 }
 
-type FlexClusterSpecV20241113 struct {
+type FlexClusterSpecV20250312 struct {
 	// Entry The entry fields of the flexcluster resource spec. These fields can be set
 	// for creating and updating flexclusters.
-	Entry *FlexClusterSpecV20241113Entry `json:"entry,omitempty"`
+	Entry *FlexClusterSpecV20250312Entry `json:"entry,omitempty"`
 
 	/*
 	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
 	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
 	*/
-	GroupId string `json:"groupId"`
+	GroupId *string `json:"groupId,omitempty"`
+
+	/*
+	   GroupRef A reference to a "Group" resource.
+	   The value of "$.status.v20250312.groupId" will be used to set "groupId".
+	   Mutually exclusive with the "groupId" property.
+	*/
+	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 }
 
-type FlexClusterSpecV20241113Entry struct {
+type FlexClusterSpecV20250312Entry struct {
 	// Name Human-readable label that identifies the instance.
 	Name string `json:"name"`
 
@@ -72,15 +82,15 @@ type ProviderSettings struct {
 type FlexClusterStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]Conditions `json:"conditions,omitempty"`
+	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
 
-	// V20241113 The last observed Atlas state of the flexcluster resource for version
-	// v20241113.
-	V20241113 *FlexClusterStatusV20241113 `json:"v20241113,omitempty"`
+	// V20250312 The last observed Atlas state of the flexcluster resource for version
+	// v20250312.
+	V20250312 *FlexClusterStatusV20250312 `json:"v20250312,omitempty"`
 }
 
-type FlexClusterStatusV20241113 struct {
-	// BackupSettings Flex backup configuration
+type FlexClusterStatusV20250312 struct {
+	// BackupSettings Flex backup configuration.
 	BackupSettings *DiskGB `json:"backupSettings,omitempty"`
 
 	// ClusterType Flex cluster topology.
@@ -88,7 +98,7 @@ type FlexClusterStatusV20241113 struct {
 
 	// ConnectionStrings Collection of Uniform Resource Locators that point to the
 	// MongoDB database.
-	ConnectionStrings *V20241113ConnectionStrings `json:"connectionStrings,omitempty"`
+	ConnectionStrings *V20250312ConnectionStrings `json:"connectionStrings,omitempty"`
 
 	// CreateDate Date and time when MongoDB Cloud created this instance. This
 	// parameter expresses its value in ISO 8601 format in UTC.
@@ -108,7 +118,7 @@ type FlexClusterStatusV20241113 struct {
 
 	// ProviderSettings Group of cloud provider settings that configure the provisioned
 	// MongoDB flex cluster.
-	ProviderSettings V20241113ProviderSettings `json:"providerSettings"`
+	ProviderSettings V20250312ProviderSettings `json:"providerSettings"`
 
 	// StateName Human-readable label that indicates the current operating condition of
 	// this instance.
@@ -118,7 +128,7 @@ type FlexClusterStatusV20241113 struct {
 	VersionReleaseSystem *string `json:"versionReleaseSystem,omitempty"`
 }
 
-type V20241113ConnectionStrings struct {
+type V20250312ConnectionStrings struct {
 	// Standard Public connection string that you can use to connect to this cluster.
 	// This connection string uses the mongodb:// protocol.
 	Standard *string `json:"standard,omitempty"`
@@ -128,7 +138,7 @@ type V20241113ConnectionStrings struct {
 	StandardSrv *string `json:"standardSrv,omitempty"`
 }
 
-type V20241113ProviderSettings struct {
+type V20250312ProviderSettings struct {
 	// BackingProviderName Cloud service provider on which MongoDB Cloud provisioned
 	// the flex cluster.
 	BackingProviderName *string `json:"backingProviderName,omitempty"`
