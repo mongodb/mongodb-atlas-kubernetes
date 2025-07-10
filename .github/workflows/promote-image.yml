@@ -71,6 +71,9 @@ jobs:
             echo "Tagging and pushing to AKO-prerelease Docker Hub..."
             docker tag ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }} ${DOCKER_REPO}:${IMAGE_TAG}
             docker push ${DOCKER_REPO}:${IMAGE_TAG}
+
+            docker tag ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }} ${DOCKER_REPO}:promoted-latest
+            docker push ${DOCKER_REPO}:promoted-latest
           fi
 
           if docker manifest inspect ${QUAY_REPO}:${IMAGE_TAG} > /dev/null 2>&1; then
@@ -79,4 +82,7 @@ jobs:
             echo "Tagging and pushing to AKO-prerelease Quay..."
             docker tag ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }} ${QUAY_REPO}:${IMAGE_TAG}
             docker push ${QUAY_REPO}:${IMAGE_TAG}
+
+            docker tag ${GHCR_REPO}:${{ steps.set_tag.outputs.tag }} ${QUAY_REPO}:promoted-latest
+            docker push ${QUAY_REPO}:promoted-latest
           fi
