@@ -1,0 +1,83 @@
+name: Promote Image
+
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types: [completed]
+
+jobs:
+  promote-image:
+    runs-on: ubuntu-latest
+    environment: release
+    if: |
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'schedule'
+    env:
+      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      DOCKER_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      QUAY_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+    steps:
+      - name: Checkout PR commit
+        uses: actions/checkout@v4
+      
+      # Note, we have to be careful how we retrive the image. The event that pushed 
+      # the image to the ghcr.io repo was mainly a push/schedule that passed all the
+      # tests. This event has access to github.ref_name. However, the workflow_run
+      # event does not have access github.ref_name set up. 
+      # 
+      # Therefore, we need to manually specify the branch as main
+      - name: Prepare image tag
+        id: set_tag
+        uses: ./.github/actions/set-tag
+        with:
+          branch_name: ${{ github.event.workflow_run.head_branch }}
+          commit_sha: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Log in to the GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull unofficial image from GitHub Container Registry
+        run: |
+          docker pull ${{ env.GHCR_REPO }}:${{ steps.set_tag.outputs.tag }}
+
+      - name: Login to Docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+            
+      - name: Log in to Quay registry
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      
+      - name: Prepare tag for promoted image
+        id: promoted_tag
+        run: |
+          RAW_TAG="${{ steps.set_tag.outputs.tag }}"
+          COMMIT_SHA="${RAW_TAG##*-}"
+          echo "tag=promoted-${COMMIT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Move image to Docker Hub
+        run: ./scripts/move-image.sh
+        env:
+          IMAGE_SRC_REPO: ${{ env.GHCR_REPO }}
+          IMAGE_DEST_REPO: ${{ env.DOCKER_REPO }}
+          IMAGE_SRC_TAG: ${{ steps.set_tag.outputs.tag }}
+          IMAGE_DEST_TAG: ${{ steps.promoted_tag.outputs.tag }}
+
+      - name: Move image to Quay
+        run: ./scripts/move-image.sh
+        env:
+          IMAGE_SRC_REPO: ${{ env.GHCR_REPO }}
+          IMAGE_DEST_REPO: ${{ env.QUAY_REPO }}
+          IMAGE_SRC_TAG: ${{ steps.set_tag.outputs.tag }}
+          IMAGE_DEST_TAG: ${{ steps.promoted_tag.outputs.tag }}
