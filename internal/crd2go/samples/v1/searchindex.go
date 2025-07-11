@@ -4,6 +4,7 @@ package v1
 
 import (
 	k8s "github.com/josvazg/crd2go/k8s"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -81,7 +82,7 @@ type SearchIndexSpecV20250312Entry struct {
 	// Fields Settings that configure the fields, one per object, to index. You must
 	// define at least one "vector" type field. You can optionally define "filter" type
 	// fields also.
-	Fields *[]Fields `json:"fields,omitempty"`
+	Fields *[]apiextensionsv1.JSON `json:"fields,omitempty"`
 
 	// Mappings Index specifications for the collection's fields.
 	Mappings *Mappings `json:"mappings,omitempty"`
@@ -101,7 +102,7 @@ type SearchIndexSpecV20250312Entry struct {
 	// Alternatively, you can specify an object that only contains the list of fields
 	// to store (include) or not store (exclude) on Atlas Search. To learn more, see
 	// documentation.
-	StoredSource *StoredSource `json:"storedSource,omitempty"`
+	StoredSource *apiextensionsv1.JSON `json:"storedSource,omitempty"`
 
 	// Synonyms Rule sets that map words to their synonyms in this index.
 	Synonyms *[]Synonyms `json:"synonyms,omitempty"`
@@ -113,7 +114,7 @@ type SearchIndexSpecV20250312Entry struct {
 type Analyzers struct {
 	// CharFilters Filters that examine text one character at a time and perform
 	// filtering operations.
-	CharFilters *[]CharFilters `json:"charFilters,omitempty"`
+	CharFilters *[]apiextensionsv1.JSON `json:"charFilters,omitempty"`
 
 	/*
 	   Name Human-readable name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
@@ -130,16 +131,12 @@ type Analyzers struct {
 
 	   - Redaction, the removal of sensitive information from public documents.
 	*/
-	TokenFilters *[]TokenFilters `json:"tokenFilters,omitempty"`
+	TokenFilters *[]apiextensionsv1.JSON `json:"tokenFilters,omitempty"`
 
 	// Tokenizer Tokenizer that you want to use to create tokens. Tokens determine how
 	// Atlas Search splits up text into discrete chunks for indexing.
 	Tokenizer Tokenizer `json:"tokenizer"`
 }
-
-type CharFilters struct{}
-
-type TokenFilters struct{}
 
 type Tokenizer struct {
 	// Group Index of the character group within the matching expression to extract
@@ -163,8 +160,6 @@ type Tokenizer struct {
 	Type *string `json:"type,omitempty"`
 }
 
-type Fields struct{}
-
 type Mappings struct {
 	// Dynamic Flag that indicates whether the index uses dynamic or static mappings.
 	// Required if **mappings.fields** is omitted.
@@ -172,10 +167,8 @@ type Mappings struct {
 
 	// Fields One or more field specifications for the Atlas Search index. Required if
 	// **mappings.dynamic** is omitted or set to **false**.
-	Fields *Fields `json:"fields,omitempty"`
+	Fields *apiextensionsv1.JSON `json:"fields,omitempty"`
 }
-
-type StoredSource struct{}
 
 type Synonyms struct {
 	// Analyzer Specific pre-defined method chosen to apply to the synonyms to be
