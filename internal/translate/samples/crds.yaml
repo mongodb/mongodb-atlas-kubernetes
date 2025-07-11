@@ -3857,6 +3857,7 @@ spec:
                           You can optionally define "filter" type fields also.
                         items:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         type: array
                       mappings:
                         description: Index specifications for the collection's fields.
@@ -3871,6 +3872,7 @@ spec:
                               Atlas Search index. Required if **mappings.dynamic**
                               is omitted or set to **false**.
                             type: object
+                            x-kubernetes-preserve-unknown-fields: true
                         title: mappings
                         type: object
                       name:
@@ -3898,6 +3900,7 @@ spec:
                           - field1
                           - field2
                         type: object
+                        x-kubernetes-preserve-unknown-fields: true
                       synonyms:
                         description: Rule sets that map words to their synonyms in
                           this index.
