@@ -34,7 +34,7 @@ func (s *StatusPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1
 		return fmt.Errorf("status schema %q not found in openapi spec", mappingConfig.StatusMapping.Schema)
 	}
 
-	statusProps := g.ConvertProperty(statusSchema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.StatusMapping)
+	statusProps := g.ConvertProperty(statusSchema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.StatusMapping, 0)
 	statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", s.crd.Spec.Names.Singular, mappingConfig.MajorVersion)
 	if statusProps != nil {
 		s.crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mappingConfig.MajorVersion] = *statusProps

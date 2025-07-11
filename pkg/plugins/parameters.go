@@ -54,7 +54,7 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mappingConfig *configv1al
 			case "envelope":
 			case "pretty":
 			default:
-				props := g.ConvertProperty(p.Value.Schema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.ParametersMapping, "$", p.Value.Name)
+				props := g.ConvertProperty(p.Value.Schema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.ParametersMapping, 0, "$", p.Value.Name)
 				props.Description = p.Value.Description
 				props.XValidations = apiextensions.ValidationRules{
 					{
