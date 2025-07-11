@@ -53,25 +53,6 @@ type ImportInfo struct {
 	Path  string
 }
 
-var (
-	formatAliases = map[string]string{
-		"date-time": "datetime",
-		"datetime":  "datetime",
-	}
-
-	timeType = builtInType("Time", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1")
-	jsonType = builtInType("JSON", "apiextensionsv1", "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1")
-
-	builtInTypes = map[string]*GoType{
-		timeType.signature(): timeType,
-		jsonType.signature(): jsonType,
-	}
-
-	format2Builtin = map[string]*GoType{
-		"datetime": builtInTypes[timeType.signature()],
-	}
-)
-
 // isPrimitive checks if the GoType is a primitive type
 func (g *GoType) isPrimitive() bool {
 	switch g.Kind {
@@ -520,17 +501,4 @@ func GoKind(k reflect.Kind) string {
 		panic(fmt.Sprintf("%s reflect.Kind: %#v", UnsupportedKind, k))
 	}
 	return ""
-}
-
-func builtInType(name, alias, path string) *GoType {
-	return AddImportInfo(NewOpaqueType(name), alias, path)
-}
-
-func toBuiltInType(t reflect.Type) *GoType {
-	builtInKey := fmt.Sprintf("%s.%s", t.PkgPath(), t.Name())
-	gt, ok := builtInTypes[builtInKey]
-	if ok {
-		return gt
-	}
-	return nil
 }
