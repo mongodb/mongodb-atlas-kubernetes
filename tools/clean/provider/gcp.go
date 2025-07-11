@@ -116,9 +116,15 @@ func (gcp *GCP) DeletePrivateEndpoint(ctx context.Context, groupName, sAttachmen
 	return nil
 }
 
-func (gcp *GCP) DeleteOrphanVPCs(ctx context.Context, lifetimeHours int, vpcNamePrefix string) ([]string, []string, []error) {
+func (gcp *GCP) DeleteOrphanVPCs(ctx context.Context, vpcNamePrefixes, regions []string, lifetimeHours int) ([]string, []string, []error) {
+	var filterParts []string
+	for _, prefix := range vpcNamePrefixes {
+		filterParts = append(filterParts, fmt.Sprintf(`name = "%s*"`, prefix))
+	}
+	filterString := strings.Join(filterParts, " OR ")
 	vpcs := gcp.networkClient.List(ctx, &computepb.ListNetworksRequest{
 		Project: gcp.projectID,
+		Filter:  &filterString,
 	})
 
 	var done, skipped []string
@@ -134,12 +140,7 @@ func (gcp *GCP) DeleteOrphanVPCs(ctx context.Context, lifetimeHours int, vpcName
 			)
 			continue
 		}
-		if !strings.HasPrefix(vpc.GetName(), vpcNamePrefix) {
-			skipped = append(skipped,
-				fmt.Sprintf("VPC %s skipped\n", vpc.GetName()),
-			)
-			continue
-		}
+
 		createdAt, err := asTime(vpc.GetCreationTimestamp())
 		if err != nil {
 			errs = append(errs,
@@ -152,6 +153,24 @@ func (gcp *GCP) DeleteOrphanVPCs(ctx context.Context, lifetimeHours int, vpcName
 				fmt.Sprintf("VPC %s skipped once created less than %d hours ago\n", vpc.GetName(), lifetimeHours),
 			)
 			continue
+		}
+
+		if len(vpc.GetSubnetworks()) > 0 {
+			for _, subnet := range vpc.GetSubnetworks() {
+				for _, region := range regions {
+					_, err := gcp.subnetworksClient.Delete(ctx, &computepb.DeleteSubnetworkRequest{
+						Project:    gcp.projectID,
+						Region:     region,
+						Subnetwork: path.Base(subnet),
+					})
+					if err != nil {
+						errs = append(errs,
+							fmt.Errorf("error deleting subnetwork %s: %w", subnet, err),
+						)
+						continue
+					}
+				}
+			}
 		}
 
 		op, err := gcp.networkClient.Delete(ctx, &computepb.DeleteNetworkRequest{
@@ -180,7 +199,7 @@ func (gcp *GCP) DeleteOrphanVPCs(ctx context.Context, lifetimeHours int, vpcName
 	return done, skipped, errs
 }
 
-func (gcp *GCP) DeleteOrphanPrivateEndpoints(ctx context.Context, lifetimeHours int, region string, subnet string) ([]string, []string, []error) {
+func (gcp *GCP) DeleteOrphanPrivateEndpoints(ctx context.Context, region string, lifetimeHours int) ([]string, []string, []error) {
 	addresses := gcp.addressClient.List(ctx, &computepb.ListAddressesRequest{
 		Project: gcp.projectID,
 		Region:  region,
@@ -193,21 +212,17 @@ func (gcp *GCP) DeleteOrphanPrivateEndpoints(ctx context.Context, lifetimeHours 
 			break
 		}
 		if err != nil {
-			errs = append(errs,
+			errs = append(
+				errs,
 				fmt.Errorf("failed iterating addresses in project %v region %v: %w", gcp.projectID, region, err),
 			)
 			continue
 		}
-		suffix := fmt.Sprintf("subnetworks/%s", subnet)
-		if !strings.HasSuffix(addr.GetSubnetwork(), suffix) {
-			skipped = append(skipped,
-				fmt.Sprintf("Address %s(%s) skipped, not in %s\n", addr.GetName(), addr.GetAddress(), subnet),
-			)
-			continue
-		}
+
 		createdAt, err := asTime(addr.GetCreationTimestamp())
 		if err != nil {
-			errs = append(errs,
+			errs = append(
+				errs,
 				fmt.Errorf(
 					"failed parsing Address %s(%s) creation timestamp %q: %w",
 					addr.GetCreationTimestamp(), addr.GetName(), addr.GetAddress(), err,
@@ -224,27 +239,26 @@ func (gcp *GCP) DeleteOrphanPrivateEndpoints(ctx context.Context, lifetimeHours 
 			)
 			continue
 		}
-		frName, err := expectForwardingRule(addr.GetUsers())
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
 
-		if frName != "" {
-			err := gcp.deleteForwardingRule(ctx, frName, region)
-			if err != nil {
-				errs = append(errs,
-					fmt.Errorf("failed deleting Forwarding Rule %q in region %q: %w", region, frName, err),
+		if addr.GetStatus() == "IN_USE" {
+			for _, user := range addr.GetUsers() {
+				fr := path.Base(user)
+				err = gcp.deleteForwardingRule(ctx, fr, region)
+				if err != nil {
+					errs = append(errs,
+						fmt.Errorf("failed deleting Forwarding Rule %q in region %q: %w", region, fr, err),
+					)
+					continue
+				}
+				done = append(done,
+					fmt.Sprintf("Deleted Forwarding Rule %s for %s\n", fr, addr.GetAddress()),
 				)
-				continue
 			}
-			done = append(done,
-				fmt.Sprintf("Deleted Forwarding Rule %s for %s\n", frName, addr.GetAddress()),
-			)
 		} else {
 			skipped = append(skipped,
 				fmt.Sprintf("No forwarding rule using Address %s(%s)", addr.GetName(), addr.GetAddress()))
 		}
+
 		if err := gcp.deleteIPAddress(ctx, addr.GetName(), region); err != nil {
 			errs = append(errs,
 				fmt.Errorf("error deleting Address %s(%s) in region %q: %w",
@@ -260,19 +274,6 @@ func (gcp *GCP) DeleteOrphanPrivateEndpoints(ctx context.Context, lifetimeHours 
 
 func asTime(rfc3339time string) (time.Time, error) {
 	return time.Parse(time.RFC3339, rfc3339time)
-}
-
-func expectForwardingRule(usersOfEndpointAddress []string) (string, error) {
-	if len(usersOfEndpointAddress) == 0 {
-		return "", nil
-	}
-	if len(usersOfEndpointAddress) > 1 {
-		return "", fmt.Errorf("expected a single user of an Endpoint Address, but got %v", usersOfEndpointAddress)
-	}
-	if strings.Contains(usersOfEndpointAddress[0], "/forwardingRules/") {
-		return path.Base(usersOfEndpointAddress[0]), nil
-	}
-	return "", fmt.Errorf("expected a Forwarding Rule user for Endpoint Address but got %s", usersOfEndpointAddress[0])
 }
 
 func (gcp *GCP) DeleteCryptoKey(ctx context.Context, keyName string) error {

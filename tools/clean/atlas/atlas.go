@@ -111,9 +111,18 @@ func (c *Cleaner) Clean(ctx context.Context, lifetimeHours int) error {
 }
 
 func (c *Cleaner) cleanOrphanResources(ctx context.Context, lifetimeHours int) {
-	region := envOrDefault("GCP_CLEANUP_REGION", "europe-west1")
-	subnet := envOrDefault("GCP_CLEANUP_SUBNET", "atlas-operator-e2e-test-subnet1")
-	vpcPrefix := envOrDefault("GCP_CLEANUP_VPC_NAME_PREFIX", "network-peering-gcp-1-vpc")
+	gcpVpcPrefixes := []string{"gcp-pe", "ao-vpc", "migrate-private-endpoint"}
+	gcpRegions := []string{
+		"us-west3",
+		"us-east5",
+		"southamerica-east1",
+		"europe-west3",
+		"europe-north1",
+		"europe-west6",
+		"asia-east2",
+		"asia-northeast2",
+		"australia-southeast2",
+	}
 
 	var done, skipped []string
 	var errs []error
@@ -125,12 +134,14 @@ func (c *Cleaner) cleanOrphanResources(ctx context.Context, lifetimeHours int) {
 		errs = append(errs, e...)
 	}
 
-	addResults(func() ([]string, []string, []error) {
-		return c.gcp.DeleteOrphanPrivateEndpoints(ctx, lifetimeHours, region, subnet)
-	})
+	for _, region := range gcpRegions {
+		addResults(func() ([]string, []string, []error) {
+			return c.gcp.DeleteOrphanPrivateEndpoints(ctx, region, lifetimeHours)
+		})
+	}
 
 	addResults(func() ([]string, []string, []error) {
-		return c.gcp.DeleteOrphanVPCs(ctx, lifetimeHours, vpcPrefix)
+		return c.gcp.DeleteOrphanVPCs(ctx, gcpVpcPrefixes, gcpRegions, lifetimeHours)
 	})
 
 	for _, doneMsg := range done {
@@ -181,12 +192,4 @@ func NewCleaner(aws *provider.AWS, gcp *provider.GCP, azure *provider.Azure) (*C
 
 func isGov(url string) bool {
 	return strings.HasSuffix(url, "mongodbgov.com")
-}
-
-func envOrDefault(name, defaultValue string) string {
-	value, defined := os.LookupEnv(name)
-	if !defined {
-		return defaultValue
-	}
-	return value
 }
