@@ -13,14 +13,39 @@ type refMapping struct {
 }
 
 type kubeMapping struct {
-	GVR              string `json:"gvr"`
-	NameSelector     string `json:"nameSelector"`
-	PropertySelector string `json:"propertySelector"`
+	NameSelector      string   `json:"nameSelector"`
+	PropertySelectors []string `json:"propertySelectors"`
+	Type              kubeType `json:"type"`
+}
+
+type kubeType struct {
+	Kind     string `json:"kind"`
+	Group    string `json:"group,omitempty"`
+	Resource string `json:"resource"`
+	Version  string `json:"version"`
 }
 
 type openAPIMapping struct {
 	Property string `json:"property"`
 	Type     string `json:"type"`
+}
+
+func (km kubeMapping) GVK() string {
+	if km.Type.Group == "" {
+		return fmt.Sprintf("%s, Kind=%s", km.Type.Version, km.Type.Kind)
+	}
+	return fmt.Sprintf("%s/%s, Kind=%s", km.Type.Group, km.Type.Version, km.Type.Kind)
+}
+
+func (km kubeMapping) GVR() string {
+	if km.Type.Group == "" {
+		return fmt.Sprintf("%s/%s", km.Type.Version, km.Type.Resource)
+	}
+	return fmt.Sprintf("%s/%s/%s", km.Type.Group, km.Type.Version, km.Type.Resource)
+}
+
+func (km kubeMapping) Equal(gvk schema.GroupVersionKind) bool {
+	return km.Type.Group == gvk.Group && km.Type.Version == gvk.Version && km.Type.Kind == gvk.Kind
 }
 
 func isReference(obj map[string]any) bool {
@@ -44,34 +69,30 @@ func processReference(path []string, mapping, spec map[string]any, deps ...clien
 	return processSecretReference(path, &refMap, reference, spec, deps...)
 }
 
-func solveReferencedDependency(path []string, reference map[string]any, refMap *refMapping, gvk schema.GroupVersionKind, deps ...client.Object) (map[string]any, error) {
+func solveReferencedDependency(path []string, reference map[string]any, refMap *refMapping, deps ...client.Object) (map[string]any, error) {
 	referenceValue, err := accessField[string](reference, asPath(refMap.XKubernetesMapping.NameSelector)...)
 	if err != nil {
 		return nil, fmt.Errorf("failed accessing reference value for mapping at %v: %w", path, err)
 	}
-	dep := findReferencedDep(deps, gvk, referenceValue)
+	dep := findReferencedDep(deps, &refMap.XKubernetesMapping, referenceValue)
 	if dep == nil {
 		return nil, fmt.Errorf("kubernetes dependency of type %q not found with name %q",
-			refMap.XKubernetesMapping.GVR, referenceValue)
+			refMap.XKubernetesMapping.GVK(), referenceValue)
 	}
 
 	depUnstructured, err := toUnstructured(dep)
 	if err != nil {
 		return nil, fmt.Errorf("failed to translate referenced kubernetes type %q to unstructured: %w",
-			refMap.XKubernetesMapping.GVR, err)
+			refMap.XKubernetesMapping.GVK(), err)
 	}
 	return depUnstructured, nil
 }
 
-func findReferencedDep(deps []client.Object, gvk schema.GroupVersionKind, name string) client.Object {
+func findReferencedDep(deps []client.Object, kubeMap *kubeMapping, name string) client.Object {
 	for _, dep := range deps {
-		if equalGroupVersionKind(gvk, dep.GetObjectKind().GroupVersionKind()) && dep.GetName() == name {
+		if kubeMap.Equal(dep.GetObjectKind().GroupVersionKind()) && dep.GetName() == name {
 			return dep
 		}
 	}
 	return nil
-}
-
-func equalGroupVersionKind(a, b schema.GroupVersionKind) bool {
-	return a.Group == b.Group && a.Version == b.Version && a.Kind == b.Kind
 }
