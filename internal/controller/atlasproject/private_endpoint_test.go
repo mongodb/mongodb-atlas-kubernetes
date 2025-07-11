@@ -231,7 +231,7 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 		specPEids        []string
 		atlasPEids       []string
 		wantRemoved      []string
-		wantResult       workflow.Result
+		wantResult       workflow.DeprecatedResult
 		conditions       []api.Condition
 	}{
 		{

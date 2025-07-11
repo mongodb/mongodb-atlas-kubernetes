@@ -36,7 +36,7 @@ const (
 	SPEStatusAvailable = "AVAILABLE"
 )
 
-func ensureServerlessPrivateEndpoints(service *workflow.Context, projectID string, deployment *akov2.AtlasDeployment) workflow.Result {
+func ensureServerlessPrivateEndpoints(service *workflow.Context, projectID string, deployment *akov2.AtlasDeployment) workflow.DeprecatedResult {
 	if deployment == nil || deployment.Spec.ServerlessSpec == nil {
 		return workflow.Terminate(workflow.Internal, errors.New("serverless deployment spec is empty"))
 	}
@@ -52,7 +52,7 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, projectID strin
 	}
 
 	finished, err := syncServerlessPrivateEndpoints(service, projectID, deploymentSpec)
-	var result workflow.Result
+	var result workflow.DeprecatedResult
 	switch {
 	case err != nil:
 		result = workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, err)

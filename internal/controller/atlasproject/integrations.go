@@ -30,7 +30,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 )
 
-func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject) workflow.DeprecatedResult {
 	result := r.createOrDeleteIntegrations(workflowCtx, akoProject.ID(), akoProject)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(api.IntegrationReadyType, result)
@@ -46,7 +46,7 @@ func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context
 	return workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	integrationsInAtlas, err := fetchIntegrations(ctx, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInternal, err)
@@ -93,7 +93,7 @@ func fetchIntegrations(ctx *workflow.Context, projectID string) (*mongodbatlas.T
 	return integrationsInAtlas, nil
 }
 
-func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, projectID string, integrationsToUpdate [][]set.DeprecatedIdentifiable, namespace string) workflow.Result {
+func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, projectID string, integrationsToUpdate [][]set.DeprecatedIdentifiable, namespace string) workflow.DeprecatedResult {
 	for _, item := range integrationsToUpdate {
 		kubeIntegration, err := item[1].(project.Integration).ToAtlas(ctx.Context, r.Client, namespace)
 		if kubeIntegration == nil {
@@ -120,7 +120,7 @@ func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integr
 	return nil
 }
 
-func (r *AtlasProjectReconciler) createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrations []set.DeprecatedIdentifiable, namespace string) workflow.Result {
+func (r *AtlasProjectReconciler) createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrations []set.DeprecatedIdentifiable, namespace string) workflow.DeprecatedResult {
 	for _, item := range integrations {
 		integration, err := item.(project.Integration).ToAtlas(ctx.Context, r.Client, namespace)
 		if err != nil || integration == nil {

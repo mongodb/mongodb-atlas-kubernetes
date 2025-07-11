@@ -60,7 +60,8 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.
 	return h.unmanage(integration.Spec.Type)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState,
+	integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to build reconcile request: %w", err))
@@ -100,7 +101,8 @@ func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentS
 	)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentState state.ResourceState, req *reconcileRequest, integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentState state.ResourceState, req *reconcileRequest,
+	integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (ctrlstate.Result, error) {
 	newIntegration, err := req.Service.Create(ctx, req.Project.ID, integrationSpec)
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to create %s Atlas Third Party Integration for project %s: %w",
@@ -122,7 +124,8 @@ func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentS
 	)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) update(ctx context.Context, currentState state.ResourceState, req *reconcileRequest, integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) update(ctx context.Context, currentState state.ResourceState, req *reconcileRequest,
+	integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (ctrlstate.Result, error) {
 	updatedIntegration, err := req.Service.Update(ctx, req.Project.ID, integrationSpec)
 	if req.integration.Status.ID == "" { // On imports, the ID might be unset
 		req.integration.Status.ID = updatedIntegration.ID

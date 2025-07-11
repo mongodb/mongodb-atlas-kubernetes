@@ -59,15 +59,15 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 
 	connectionConfig, err := r.ResolveConnectionConfig(ctx, networkContainer)
 	if err != nil {
-		return r.release(workflowCtx, networkContainer, err), nil
+		return r.release(workflowCtx, networkContainer, err)
 	}
 	sdkClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, r.Log)
 	if err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err), nil
+		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err)
 	}
 	project, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20250312002, networkContainer)
 	if err != nil {
-		return r.release(workflowCtx, networkContainer, err), nil
+		return r.release(workflowCtx, networkContainer, err)
 	}
 	return r.handle(workflowCtx, &reconcileRequest{
 		projectID:        project.ID,
@@ -79,7 +79,7 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 func (r *AtlasNetworkContainerReconciler) handle(workflowCtx *workflow.Context, req *reconcileRequest) (ctrl.Result, error) {
 	atlasContainer, err := discover(workflowCtx.Context, req)
 	if err != nil {
-		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, err), nil
+		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, err)
 	}
 	inAtlas := atlasContainer != nil
 	deleted := req.networkContainer.DeletionTimestamp != nil

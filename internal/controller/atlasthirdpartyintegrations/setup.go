@@ -66,7 +66,7 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 	globalSecretRef client.ObjectKey,
 	reapplySupport bool,
 ) *ctrlstate.Reconciler[akov2.AtlasThirdPartyIntegration] {
-	handler := &AtlasThirdPartyIntegrationHandler{
+	intHandler := &AtlasThirdPartyIntegrationHandler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
 			AtlasProvider:   atlasProvider,
@@ -77,7 +77,7 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 		serviceBuilder:     thirdpartyintegration.NewThirdPartyIntegrationServiceFromClientSet,
 	}
 	return ctrlstate.NewStateReconciler(
-		handler,
+		intHandler,
 		ctrlstate.WithCluster[akov2.AtlasThirdPartyIntegration](c),
 		ctrlstate.WithReapplySupport[akov2.AtlasThirdPartyIntegration](reapplySupport),
 	)
@@ -179,11 +179,11 @@ func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Cont
 	}
 	req.ClientSet = sdkClientSet
 	req.Service = h.serviceBuilder(sdkClientSet)
-	project, err := h.ResolveProject(ctx, sdkClientSet.SdkClient20250312002, integration)
+	resolvedProject, err := h.ResolveProject(ctx, sdkClientSet.SdkClient20250312002, integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch referenced project: %w", err)
 	}
-	req.Project = project
+	req.Project = resolvedProject
 	req.integration = integration
 	return &req, nil
 }

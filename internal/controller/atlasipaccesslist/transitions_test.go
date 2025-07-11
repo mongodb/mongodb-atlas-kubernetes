@@ -43,9 +43,11 @@ func TestCreate(t *testing.T) {
 		partial             bool
 		ipAccessListService func() ipaccesslist.IPAccessListService
 		expectedResult      ctrl.Result
+		expectError         bool
 		expectedConditions  []api.Condition
 	}{
 		"should fail to add": {
+			expectError:     true,
 			akoIPAccessList: ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
 			ipAccessListService: func() ipaccesslist.IPAccessListService {
 				s := translation.NewIPAccessListServiceMock(t)
@@ -106,7 +108,13 @@ func TestCreate(t *testing.T) {
 					Log:    logger,
 				},
 			}
-			result := r.create(ctx, tt.ipAccessListService(), ipAccessList, "", tt.akoIPAccessList)
+			result, err := r.create(ctx, tt.ipAccessListService(), ipAccessList, "", tt.akoIPAccessList)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
 		})
@@ -118,9 +126,11 @@ func TestDeleteAll(t *testing.T) {
 		atlasIPAccessList   ipaccesslist.IPAccessEntries
 		ipAccessListService func() ipaccesslist.IPAccessListService
 		expectedResult      ctrl.Result
+		expectError         bool
 		expectedConditions  []api.Condition
 	}{
 		"should fail to delete": {
+			expectError:       true,
 			atlasIPAccessList: ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
 			ipAccessListService: func() ipaccesslist.IPAccessListService {
 				s := translation.NewIPAccessListServiceMock(t)
@@ -177,7 +187,13 @@ func TestDeleteAll(t *testing.T) {
 					Log:    logger,
 				},
 			}
-			result := r.deleteAll(ctx, tt.ipAccessListService(), ipAccessList, "", tt.atlasIPAccessList)
+			result, err := r.deleteAll(ctx, tt.ipAccessListService(), ipAccessList, "", tt.atlasIPAccessList)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
 		})
@@ -189,9 +205,11 @@ func TestDeletePartial(t *testing.T) {
 		atlasIPAccessList   ipaccesslist.IPAccessEntries
 		ipAccessListService func() ipaccesslist.IPAccessListService
 		expectedResult      ctrl.Result
+		expectError         bool
 		expectedConditions  []api.Condition
 	}{
 		"should fail to delete": {
+			expectError:       true,
 			atlasIPAccessList: ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}},
 			ipAccessListService: func() ipaccesslist.IPAccessListService {
 				s := translation.NewIPAccessListServiceMock(t)
@@ -254,7 +272,13 @@ func TestDeletePartial(t *testing.T) {
 					Log:    logger,
 				},
 			}
-			result := r.deletePartial(ctx, tt.ipAccessListService(), ipAccessList, "", tt.atlasIPAccessList)
+			result, err := r.deletePartial(ctx, tt.ipAccessListService(), ipAccessList, "", tt.atlasIPAccessList)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
 		})

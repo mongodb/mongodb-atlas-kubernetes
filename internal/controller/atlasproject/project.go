@@ -63,7 +63,7 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 	for i := range results {
 		if !results[i].IsOk() {
 			logIfWarning(ctx, results[i])
-			return results[i].ReconcileResult(), nil
+			return results[i].ReconcileResult()
 		}
 	}
 
@@ -95,7 +95,7 @@ func (r *AtlasProjectReconciler) terminate(ctx *workflow.Context, errorCondition
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ProjectReadyType, terminated)
 
-	return terminated.ReconcileResult(), nil
+	return terminated.ReconcileResult()
 }
 
 func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, services *AtlasProjectServices, orgID string, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
@@ -135,7 +135,7 @@ func (r *AtlasProjectReconciler) delete(ctx *workflow.Context, services *AtlasPr
 		}
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasProjectReconciler) ready(ctx *workflow.Context, projectID string) (ctrl.Result, error) {
@@ -144,7 +144,7 @@ func (r *AtlasProjectReconciler) ready(ctx *workflow.Context, projectID string) 
 	ctx.SetConditionFromResult(api.ProjectReadyType, result)
 	ctx.SetConditionFromResult(api.ReadyType, result)
 
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasProjectReconciler) release(ctx *workflow.Context, atlasProject *akov2.AtlasProject) (ctrl.Result, error) {
@@ -152,7 +152,7 @@ func (r *AtlasProjectReconciler) release(ctx *workflow.Context, atlasProject *ak
 		return r.terminate(ctx, workflow.AtlasFinalizerNotRemoved, err)
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasProjectReconciler) manage(ctx *workflow.Context, atlasProject *akov2.AtlasProject, projectID string) (ctrl.Result, error) {
@@ -165,7 +165,7 @@ func (r *AtlasProjectReconciler) manage(ctx *workflow.Context, atlasProject *ako
 	result := workflow.InProgress(workflow.ProjectBeingConfiguredInAtlas, "configuring project in Atlas")
 	ctx.SetConditionFromResult(api.ProjectReadyType, result)
 
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func (r *AtlasProjectReconciler) hasDependencies(ctx *workflow.Context, project *akov2.AtlasProject) (bool, error) {

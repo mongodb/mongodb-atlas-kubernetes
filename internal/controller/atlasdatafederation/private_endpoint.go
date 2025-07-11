@@ -23,7 +23,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 )
 
-func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, service datafederation.DatafederationPrivateEndpointService, project *akov2.AtlasProject, dataFederation *akov2.AtlasDataFederation) workflow.Result {
+func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, service datafederation.DatafederationPrivateEndpointService,
+	project *akov2.AtlasProject, dataFederation *akov2.AtlasDataFederation) workflow.DeprecatedResult {
 	projectID := project.ID()
 	fromAtlas, err := service.List(ctx.Context, projectID)
 	if err != nil {
@@ -49,19 +50,19 @@ func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Con
 	return r.privateEndpointsIdle(ctx)
 }
 
-func (r *AtlasDataFederationReconciler) privateEndpointsFailed(ctx *workflow.Context, err error) workflow.Result {
+func (r *AtlasDataFederationReconciler) privateEndpointsFailed(ctx *workflow.Context, err error) workflow.DeprecatedResult {
 	ctx.Log.Errorw("getAllDataFederationPEs error", "err", err.Error())
 	result := workflow.Terminate(workflow.Internal, err)
 	ctx.SetConditionFromResult(api.DataFederationPEReadyType, result)
 	return result
 }
 
-func (r *AtlasDataFederationReconciler) privateEndpointsIdle(ctx *workflow.Context) workflow.Result {
+func (r *AtlasDataFederationReconciler) privateEndpointsIdle(ctx *workflow.Context) workflow.DeprecatedResult {
 	ctx.SetConditionTrue(api.DataFederationPEReadyType)
 	return workflow.OK()
 }
 
-func (r *AtlasDataFederationReconciler) privateEndpointsUnmanage(ctx *workflow.Context) workflow.Result {
+func (r *AtlasDataFederationReconciler) privateEndpointsUnmanage(ctx *workflow.Context) workflow.DeprecatedResult {
 	ctx.UnsetCondition(api.DataFederationPEReadyType)
 	return workflow.OK()
 }

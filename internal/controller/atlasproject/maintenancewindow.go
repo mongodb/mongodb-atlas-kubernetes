@@ -27,7 +27,7 @@ import (
 // ensureMaintenanceWindow ensures that the state of the Atlas Maintenance Window matches the
 // state of the Maintenance Window specified in the project CR. If a Maintenance Window exists
 // in Atlas but is not specified in the CR, it is deleted.
-func (r *AtlasProjectReconciler) ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *akov2.AtlasProject, maintenanceService maintenancewindow.MaintenanceWindowService) workflow.Result {
+func (r *AtlasProjectReconciler) ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *akov2.AtlasProject, maintenanceService maintenancewindow.MaintenanceWindowService) workflow.DeprecatedResult {
 	if isEmptyWindow(atlasProject.Spec.MaintenanceWindow) {
 		if condition, found := workflowCtx.GetCondition(api.MaintenanceWindowReadyType); found {
 			workflowCtx.Log.Debugw("Window is empty, deleting in Atlas")
@@ -51,7 +51,7 @@ func (r *AtlasProjectReconciler) ensureMaintenanceWindow(workflowCtx *workflow.C
 	return workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec project.MaintenanceWindow, maintenanceService maintenancewindow.MaintenanceWindowService) workflow.Result {
+func (r *AtlasProjectReconciler) syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec project.MaintenanceWindow, maintenanceService maintenancewindow.MaintenanceWindowService) workflow.DeprecatedResult {
 	ctx.Log.Debugw("Validate the maintenance window")
 	if err := validateMaintenanceWindow(windowSpec); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowInvalid, err)

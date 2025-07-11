@@ -59,7 +59,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   workflow.Result
+		want   workflow.DeprecatedResult
 	}{
 		{
 			name: "Create custom role successfully",
@@ -748,7 +748,7 @@ func Test_handleCustomRole(t *testing.T) {
 		name       string
 		args       args
 		solveError error
-		want       workflow.Result
+		want       workflow.DeprecatedResult
 	}{
 		{
 			name: "Create custom role successfully using external project ID",

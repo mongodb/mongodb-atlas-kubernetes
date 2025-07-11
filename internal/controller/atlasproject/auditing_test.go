@@ -42,7 +42,7 @@ func TestAuditController_reconcile(t *testing.T) {
 	tests := map[string]struct {
 		service            audit.AuditLogService
 		audit              *akov2.Auditing
-		expectedResult     workflow.Result
+		expectedResult     workflow.DeprecatedResult
 		expectedConditions []api.Condition
 	}{
 		"should unmanage audit config when unset on both Atlas and AKO": {
@@ -189,7 +189,7 @@ func TestHandleAudit(t *testing.T) {
 	tests := map[string]struct {
 		audit              *akov2.Auditing
 		expectedCalls      func(api *mockadmin.AuditingApi) admin.AuditingApi
-		expectedResult     workflow.Result
+		expectedResult     workflow.DeprecatedResult
 		expectedConditions []api.Condition
 	}{
 		"should successfully handle audit reconciliation": {

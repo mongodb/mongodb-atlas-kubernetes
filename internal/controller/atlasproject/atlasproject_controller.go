@@ -49,6 +49,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/maintenancewindow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
@@ -94,7 +95,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	atlasProject := &akov2.AtlasProject{}
 	result := customresource.PrepareResource(ctx, r.Client, req, atlasProject, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(atlasProject) {
@@ -104,17 +105,17 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err)
 				log.Errorw("Failed to remove finalizer", "error", err)
-				return result.ReconcileResult(), nil
+				return result.ReconcileResult()
 			}
 		}
 
 		if err := r.clearLastAppliedMigratedResources(ctx, atlasProject); err != nil {
 			result = workflow.Terminate(workflow.Internal, err)
 			log.Errorw("Failed to clear migrated independent resources", "error", err)
-			return result.ReconcileResult(), nil
+			return result.ReconcileResult()
 		}
 
-		return workflow.OK().ReconcileResult(), nil
+		return workflow.OK().ReconcileResult()
 	}
 
 	conditions := akov2.InitCondition(atlasProject, api.FalseCondition(api.ReadyType))
@@ -129,13 +130,13 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, atlasProject, r.Log)
 	if !resourceVersionIsValid.IsOk() {
 		r.Log.Debugf("project validation result: %v", resourceVersionIsValid)
-		return resourceVersionIsValid.ReconcileResult(), nil
+		return resourceVersionIsValid.ReconcileResult()
 	}
 
 	if err := validate.Project(atlasProject, r.AtlasProvider.IsCloudGov()); err != nil {
 		result := workflow.Terminate(workflow.Internal, err)
 		setCondition(workflowCtx, api.ValidationSucceeded, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
@@ -143,21 +144,21 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, errors.New("the AtlasProject is not supported by Atlas for government")).
 			WithoutRetry()
 		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, atlasProject.ConnectionSecretObjectKey(), &r.GlobalSecretRef)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	atlasSdkClient, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	workflowCtx.SdkClientSet = atlasSdkClient
@@ -171,7 +172,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err)
 		setCondition(workflowCtx, api.ProjectReadyType, result)
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 	workflowCtx.OrgID = connectionConfig.OrgID
 	workflowCtx.Client = atlasClient
@@ -180,13 +181,13 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
-func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Context, project *akov2.AtlasProject, services *AtlasProjectServices) (results []workflow.Result) {
+func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Context, project *akov2.AtlasProject, services *AtlasProjectServices) (results []workflow.DeprecatedResult) {
 	for k, v := range project.Annotations {
 		workflowCtx.Log.Debugf(k)
 		workflowCtx.Log.Debugf(v)
 	}
 
-	var result workflow.Result
+	var result workflow.DeprecatedResult
 	if result = handleIPAccessList(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.IPAccessListReadyType), "")
 	}
@@ -283,7 +284,9 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager, skipNameVali
 			handler.EnqueueRequestsFromMapFunc(newProjectsMapFunc[akov2.AtlasBackupCompliancePolicy](indexer.AtlasProjectByBackupCompliancePolicyIndex, r.Client, r.Log)),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 
@@ -347,12 +350,12 @@ func newProjectsMapFunc[T any](indexName string, kubeClient client.Client, logge
 }
 
 // setCondition sets the condition from the result and logs the warnings
-func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.Result) {
+func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.DeprecatedResult) {
 	ctx.SetConditionFromResult(condition, result)
 	logIfWarning(ctx, result)
 }
 
-func logIfWarning(ctx *workflow.Context, result workflow.Result) {
+func logIfWarning(ctx *workflow.Context, result workflow.DeprecatedResult) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
 	}

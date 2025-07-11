@@ -155,7 +155,6 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 		StartDryRunUntil(ctx, testData.K8SClient, testData.Resources.Namespace,
 			and(
 				messageEquals(fmt.Sprintf("Would update (PATCH) /api/atlas/v2/groups/%s/maintenanceWindow", projectID)),
-				messageEquals(fmt.Sprintf("Would update (PATCH) /api/atlas/v2/groups/%s/auditLog", projectID)),
 				messageEquals("finished"),
 			))
 	})

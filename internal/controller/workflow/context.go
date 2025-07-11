@@ -95,7 +95,7 @@ func (c *Context) EnsureCondition(condition api.Condition) *Context {
 	return c
 }
 
-func (c *Context) SetConditionFromResult(conditionType api.ConditionType, result Result) *Context {
+func (c *Context) SetConditionFromResult(conditionType api.ConditionType, result DeprecatedResult) *Context {
 	condition := api.Condition{
 		Type:    conditionType,
 		Status:  corev1.ConditionFalse,

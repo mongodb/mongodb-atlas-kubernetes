@@ -37,7 +37,7 @@ func (r *AtlasNetworkContainerReconciler) create(workflowCtx *workflow.Context, 
 	createdContainer, err := req.service.Create(workflowCtx.Context, req.projectID, cfg)
 	if err != nil {
 		wrappedErr := fmt.Errorf("failed to create container: %w", err)
-		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
+		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr)
 	}
 	return r.ready(workflowCtx, req.networkContainer, createdContainer)
 }
@@ -56,7 +56,7 @@ func (r *AtlasNetworkContainerReconciler) update(workflowCtx *workflow.Context, 
 	updatedContainer, err := req.service.Update(workflowCtx.Context, req.projectID, id, config)
 	if err != nil {
 		wrappedErr := fmt.Errorf("failed to update container: %w", err)
-		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr), nil
+		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotConfigured, wrappedErr)
 	}
 	return r.ready(workflowCtx, req.networkContainer, updatedContainer)
 }
@@ -68,34 +68,34 @@ func (r *AtlasNetworkContainerReconciler) delete(workflowCtx *workflow.Context, 
 	err := req.service.Delete(workflowCtx.Context, req.projectID, container.ID)
 	if err != nil {
 		wrappedErr := fmt.Errorf("failed to delete container: %w", err)
-		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotDeleted, wrappedErr), nil
+		return r.terminate(workflowCtx, req.networkContainer, workflow.NetworkContainerNotDeleted, wrappedErr)
 	}
 	return r.unmanage(workflowCtx, req.networkContainer)
 }
 
 func (r *AtlasNetworkContainerReconciler) ready(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
 	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.SetFinalizer); err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotSet, err), nil
+		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotSet, err)
 	}
 
 	workflowCtx.SetConditionTrueMsg(api.NetworkContainerReady, fmt.Sprintf("Network Container %s is ready", container.ID)).
 		SetConditionTrue(api.ReadyType).EnsureStatusOption(updateNetworkContainerStatusOption(container))
 
 	if networkContainer.Spec.ExternalProjectRef != nil {
-		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
+		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult()
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasNetworkContainerReconciler) unmanage(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer) (ctrl.Result, error) {
 	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.UnsetFinalizer); err != nil {
-		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotRemoved, err), nil
+		return r.terminate(workflowCtx, networkContainer, workflow.AtlasFinalizerNotRemoved, err)
 	}
-	return workflow.Deleted().ReconcileResult(), nil
+	return workflow.Deleted().ReconcileResult()
 }
 
-func (r *AtlasNetworkContainerReconciler) release(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, err error) ctrl.Result {
+func (r *AtlasNetworkContainerReconciler) release(workflowCtx *workflow.Context, networkContainer *akov2.AtlasNetworkContainer, err error) (ctrl.Result, error) {
 	if errors.Is(err, reconciler.ErrMissingKubeProject) {
 		if finalizerErr := customresource.ManageFinalizer(workflowCtx.Context, r.Client, networkContainer, customresource.UnsetFinalizer); finalizerErr != nil {
 			err = errors.Join(err, finalizerErr)
@@ -109,7 +109,7 @@ func (r *AtlasNetworkContainerReconciler) terminate(
 	resource api.AtlasCustomResource,
 	reason workflow.ConditionReason,
 	err error,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	condition := api.ReadyType
 	r.Log.Errorf("resource %T(%s/%s) failed on condition %s: %s",
 		resource, resource.GetNamespace(), resource.GetName(), condition, err)

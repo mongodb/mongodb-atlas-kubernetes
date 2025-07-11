@@ -75,6 +75,7 @@ func TestHandleCustomResource(t *testing.T) {
 		networkPeering *akov2.AtlasNetworkPeering
 		provider       atlas.Provider
 		wantResult     ctrl.Result
+		wantError      bool
 		wantFinalizers []string
 		wantConditions []api.Condition
 	}{
@@ -94,7 +95,8 @@ func TestHandleCustomResource(t *testing.T) {
 			wantFinalizers: []string{customresource.FinalizerLabel},
 		},
 		{
-			title: "should fail to validate resource",
+			title:     "should fail to validate resource",
+			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-peering",
@@ -134,7 +136,8 @@ func TestHandleCustomResource(t *testing.T) {
 			},
 		},
 		{
-			title: "should fail to resolve credentials and remove finalizer",
+			title:     "should fail to resolve credentials and remove finalizer",
+			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-peering",
@@ -163,7 +166,8 @@ func TestHandleCustomResource(t *testing.T) {
 			},
 		},
 		{
-			title: "should fail to create sdk",
+			title:     "should fail to create sdk",
+			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "network-peering",
@@ -194,7 +198,8 @@ func TestHandleCustomResource(t *testing.T) {
 			},
 		},
 		{
-			title: "should fail to resolve project and remove finalizers",
+			title:     "should fail to resolve project and remove finalizers",
+			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "network-peering",
@@ -235,7 +240,8 @@ func TestHandleCustomResource(t *testing.T) {
 			},
 		},
 		{
-			title: "should handle network peering but fail to find container id from kube",
+			title:     "should handle network peering but fail to find container id from kube",
+			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "network-peering",
@@ -321,7 +327,11 @@ func TestHandleCustomResource(t *testing.T) {
 			r := testReconciler(k8sClient, tc.provider, logger)
 			result, err := r.handleCustomResource(ctx, tc.networkPeering)
 			np := getNetworkPeering(t, ctx, k8sClient, client.ObjectKeyFromObject(tc.networkPeering))
-			require.NoError(t, err)
+			if tc.wantError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Equal(t, tc.wantResult, result)
 			assert.Equal(t, tc.wantFinalizers, getFinalizers(np))
 			assert.Equal(t, cleanConditions(tc.wantConditions), cleanConditions(getConditions(np)))
@@ -406,6 +416,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
+			wantErr:        fmt.Errorf("failed to create peering connection: %w", ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkPeeringNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to create peering connection: %v", ErrTestFail)),
@@ -545,6 +556,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantErr:        fmt.Errorf("peering connection failed: %s", ErrTestFail.Error()),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.Internal)).
@@ -662,6 +674,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantErr:        fmt.Errorf("failed to update peering connection: %w", ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.Internal)).
 					WithMessageRegexp(fmt.Sprintf("failed to update peering connection: %v", ErrTestFail)),
@@ -781,6 +794,8 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantErr: fmt.Errorf("failed to delete peer connection %s: %s",
+				testPeeringID, ErrTestFail.Error()),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.Internal)).
 					WithMessageRegexp(fmt.Sprintf("failed to delete peer connection %s: %s",
@@ -833,6 +848,8 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantErr: fmt.Errorf("failed to get closing peer connection %s: %s",
+				testPeeringID, ErrTestFail.Error()),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.Internal)).
 					WithMessageRegexp(fmt.Sprintf("failed to get closing peer connection %s: %s",
@@ -901,7 +918,11 @@ func TestHandle(t *testing.T) {
 				Build()
 			r := testReconciler(k8sClient, emptyProvider, logger)
 			result, err := r.handle(workflowCtx, tc.req)
-			assert.ErrorIs(t, err, tc.wantErr)
+			if tc.wantErr != nil {
+				assert.Equal(t, err.Error(), tc.wantErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tc.wantResult, result)
 			nc := getNetworkPeering(t, workflowCtx.Context, k8sClient, client.ObjectKeyFromObject(tc.req.networkPeering))
 			assert.Equal(t, tc.wantFinalizers, getFinalizers(nc))

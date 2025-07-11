@@ -33,21 +33,21 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 )
 
-func terminateX509(workflowCtx *workflow.Context, err error) workflow.Result {
+func terminateX509(workflowCtx *workflow.Context, err error) workflow.DeprecatedResult {
 	workflowCtx.SetConditionFalseMsg(api.X509AuthReadyType, err.Error())
 	return workflow.Terminate(workflow.ProjectX509NotConfigured, err)
 }
 
-func emptyX509(workflowCtx *workflow.Context) workflow.Result {
+func emptyX509(workflowCtx *workflow.Context) workflow.DeprecatedResult {
 	workflowCtx.UnsetCondition(api.X509AuthReadyType)
 	return idleX509()
 }
 
-func idleX509() workflow.Result {
+func idleX509() workflow.DeprecatedResult {
 	return workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
 	atlasProject.Status.AuthModes.AddAuthMode(authmode.Scram)
 
 	hasAuthModesX509 := atlasProject.Status.AuthModes.CheckAuthMode(authmode.X509)
@@ -64,7 +64,7 @@ func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, atlasProject 
 	return idleX509()
 }
 
-func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
 	specCert, err := readX509CertFromSecret(ctx.Context, r.Client, *atlasProject.X509SecretObjectKey(), r.Log)
 	if err != nil {
 		return terminateX509(ctx, err)
@@ -96,7 +96,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 	return idleX509()
 }
 
-func (r *AtlasProjectReconciler) disableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) disableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
 	r.Log.Infow("Disable x509 auth", "projectID", atlasProject.ID())
 	_, _, err := ctx.SdkClientSet.SdkClient20250312002.X509AuthenticationApi.DisableCustomerManagedX509(ctx.Context, atlasProject.ID()).Execute()
 	if err != nil {

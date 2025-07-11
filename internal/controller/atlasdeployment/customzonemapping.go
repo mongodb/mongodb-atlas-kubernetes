@@ -24,7 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 )
 
-func (r *AtlasDeploymentReconciler) ensureCustomZoneMapping(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, customZoneMappings []akov2.CustomZoneMapping, deploymentName string) workflow.Result {
+func (r *AtlasDeploymentReconciler) ensureCustomZoneMapping(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, customZoneMappings []akov2.CustomZoneMapping, deploymentName string) workflow.DeprecatedResult {
 	result := r.syncCustomZoneMapping(service, deploymentService, groupID, deploymentName, customZoneMappings)
 	if !result.IsOk() {
 		service.SetConditionFromResult(api.CustomZoneMappingReadyType, result)
@@ -41,7 +41,7 @@ func (r *AtlasDeploymentReconciler) ensureCustomZoneMapping(service *workflow.Co
 	return result
 }
 
-func (r *AtlasDeploymentReconciler) syncCustomZoneMapping(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, deploymentName string, customZoneMappings []akov2.CustomZoneMapping) workflow.Result {
+func (r *AtlasDeploymentReconciler) syncCustomZoneMapping(service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, groupID string, deploymentName string, customZoneMappings []akov2.CustomZoneMapping) workflow.DeprecatedResult {
 	logger := service.Log
 	err := verifyZoneMapping(customZoneMappings)
 	if err != nil {
@@ -106,7 +106,7 @@ func verifyZoneMapping(desired []akov2.CustomZoneMapping) error {
 	return nil
 }
 
-func checkCustomZoneMapping(customZoneMapping status.CustomZoneMapping) workflow.Result {
+func checkCustomZoneMapping(customZoneMapping status.CustomZoneMapping) workflow.DeprecatedResult {
 	if customZoneMapping.ZoneMappingState != status.StatusReady {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Errorf("zone mapping is not ready: %v", customZoneMapping.ZoneMappingErrMessage))
 	}

@@ -101,7 +101,7 @@ func (r *AtlasNetworkPeeringReconciler) unmanage(workflowCtx *workflow.Context, 
 		return r.terminate(workflowCtx, req.networkPeering, workflow.AtlasFinalizerNotRemoved, err)
 	}
 
-	return workflow.Deleted().ReconcileResult(), nil
+	return workflow.Deleted().ReconcileResult()
 }
 
 func (r *AtlasNetworkPeeringReconciler) inProgress(workflowCtx *workflow.Context, reason workflow.ConditionReason, peer *networkpeering.NetworkPeer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
@@ -110,7 +110,7 @@ func (r *AtlasNetworkPeeringReconciler) inProgress(workflowCtx *workflow.Context
 	workflowCtx.SetConditionFalseMsg(api.NetworkPeerReadyType, statusMsg)
 	workflowCtx.SetConditionFalse(api.ReadyType)
 
-	return workflow.InProgress(reason, statusMsg).ReconcileResult(), nil
+	return workflow.InProgress(reason, statusMsg).ReconcileResult()
 }
 
 func (r *AtlasNetworkPeeringReconciler) ready(workflowCtx *workflow.Context, req *reconcileRequest, peer *networkpeering.NetworkPeer, container *networkcontainer.NetworkContainer) (ctrl.Result, error) {
@@ -123,10 +123,10 @@ func (r *AtlasNetworkPeeringReconciler) ready(workflowCtx *workflow.Context, req
 	workflowCtx.SetConditionTrue(api.ReadyType)
 
 	if req.networkPeering.Spec.ExternalProjectRef != nil {
-		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult(), nil
+		return workflow.Requeue(r.independentSyncPeriod).ReconcileResult()
 	}
 
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK().ReconcileResult()
 }
 
 func (r *AtlasNetworkPeeringReconciler) release(workflowCtx *workflow.Context, networkPeering *akov2.AtlasNetworkPeering, err error) (ctrl.Result, error) {
@@ -150,7 +150,7 @@ func (r *AtlasNetworkPeeringReconciler) terminate(
 	result := workflow.Terminate(reason, err)
 	ctx.SetConditionFalse(api.ReadyType).SetConditionFromResult(condition, result)
 
-	return result.ReconcileResult(), nil
+	return result.ReconcileResult()
 }
 
 func updatePeeringStatusOption(peer *networkpeering.NetworkPeer, container *networkcontainer.NetworkContainer) status.AtlasNetworkPeeringStatusOption {

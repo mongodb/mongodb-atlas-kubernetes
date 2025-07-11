@@ -43,12 +43,16 @@ import (
 )
 
 func TestHandleAdvancedDeployment(t *testing.T) {
+	type workflowRes struct {
+		res ctrl.Result
+		err error
+	}
 	tests := map[string]struct {
 		atlasDeployment    *akov2.AtlasDeployment
 		deploymentInAtlas  *deployment.Cluster
 		deploymentService  func() deployment.AtlasDeploymentsService
 		sdkMock            func() *admin.APIClient
-		expectedResult     ctrl.Result
+		expectedResult     workflowRes
 		expectedConditions []api.Condition
 	}{
 		"fail to create a new cluster in atlas": {
@@ -86,7 +90,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("failed to create cluster"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentNotCreatedInAtlas)).
@@ -159,7 +166,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentCreating)).
@@ -224,7 +234,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("failed to update cluster"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
@@ -320,7 +333,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
@@ -385,7 +401,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
@@ -450,7 +469,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult:     ctrl.Result{},
+			expectedResult: workflowRes{
+				res: ctrl.Result{},
+				err: nil,
+			},
 			expectedConditions: nil,
 		},
 		"cluster has an unknown state in atlas": { //nolint:dupl
@@ -511,7 +533,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("unknown deployment state: LOST"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.Internal)).
@@ -603,7 +628,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("failed to get process args"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentAdvancedOptionsReady)).
@@ -741,7 +769,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			sdkMock: func() *admin.APIClient {
 				return &admin.APIClient{}
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
@@ -776,8 +807,11 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Cluster)
 			var projectService project.ProjectService // nil projetc service
 			result, err := reconciler.handleAdvancedDeployment(ctx, projectService, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expectedResult, result)
+			//require.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, workflowRes{
+				res: result,
+				err: err,
+			})
 			assert.True(
 				t,
 				cmp.Equal(

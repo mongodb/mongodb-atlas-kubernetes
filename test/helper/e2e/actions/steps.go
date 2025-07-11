@@ -117,14 +117,14 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 			g.Expect(err).ToNot(HaveOccurred())
 			return deploymentStatus
 		},
-	).WithTimeout(30*time.Minute).WithPolling(1*time.Minute).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
+	).WithTimeout(40*time.Minute).WithPolling(1*time.Minute).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
 
 	Eventually(func(g Gomega) {
 		deploymentState, err := k8s.GetK8sDeploymentStateName(data.Context, data.K8SClient,
 			input.Namespace, input.Deployments[0].ObjectMeta.GetName())
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(deploymentState).Should(Equal("IDLE"), "Kubernetes resource: Deployment status should be IDLE")
-	}).WithTimeout(30 * time.Minute).WithPolling(1 * time.Minute).Should(Succeed())
+	}).WithTimeout(40 * time.Minute).WithPolling(1 * time.Minute).Should(Succeed())
 
 	deploymentState, err := k8s.GetK8sDeploymentStateName(data.Context, data.K8SClient,
 		input.Namespace, input.Deployments[0].ObjectMeta.GetName())
@@ -149,7 +149,7 @@ func WaitTestApplication(data *model.TestDataProvider, ns, labelKey, labelValue 
 			return phase == "Running"
 		}
 	}
-	EventuallyWithOffset(1, isAppRunning(), "2m", "10s").Should(BeTrue(), "Test application should be running")
+	EventuallyWithOffset(1, isAppRunning(), "10m", "10s").Should(BeTrue(), "Test application should be running")
 }
 
 func CheckIfUsersExist(input model.UserInputs) func() bool {

@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -312,7 +313,10 @@ YJZC5C0=
 		By("Deleting project", func() {
 			if testProject != nil {
 				projectID := testProject.ID()
-				Expect(k8sClient.Delete(ctx, testProject)).To(Succeed())
+				err := k8sClient.Delete(ctx, testProject)
+				if err != nil && !apierrors.IsNotFound(err) {
+					Fail(fmt.Sprintf("Failed to delete project %s: %v", projectID, err))
+				}
 
 				Eventually(func(g Gomega) {
 					_, r, err := atlasClient.ProjectsApi.GetProject(ctx, projectID).Execute()

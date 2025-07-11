@@ -51,10 +51,14 @@ import (
 )
 
 func TestHandleCustomResource(t *testing.T) {
+	type workflowRes struct {
+		result ctrl.Result
+		err    error
+	}
 	tests := map[string]struct {
 		ipAccessList       akov2.AtlasIPAccessList
 		provider           atlas.Provider
-		expectedResult     ctrl.Result
+		expectedResult     workflowRes
 		expectedFinalizers []string
 		expectedConditions []api.Condition
 	}{
@@ -76,7 +80,10 @@ func TestHandleCustomResource(t *testing.T) {
 					},
 				},
 			},
-			expectedResult:     ctrl.Result{},
+			expectedResult: workflowRes{
+				result: ctrl.Result{},
+				err:    nil,
+			},
 			expectedFinalizers: []string{customresource.FinalizerLabel},
 		},
 		"should fail to validate resource": {
@@ -96,7 +103,10 @@ func TestHandleCustomResource(t *testing.T) {
 					},
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err:    errors.New("wrong is not a valid semver version for label mongodb.com/atlas-resource-version"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.ResourceVersionStatus).
@@ -123,7 +133,10 @@ func TestHandleCustomResource(t *testing.T) {
 					return false
 				},
 			},
-			expectedResult: ctrl.Result{},
+			expectedResult: workflowRes{
+				result: ctrl.Result{},
+				err:    nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasGovUnsupported)).
@@ -155,7 +168,10 @@ func TestHandleCustomResource(t *testing.T) {
 					return true
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err:    errors.New("error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasAPIAccessNotConfigured)).
@@ -190,7 +206,10 @@ func TestHandleCustomResource(t *testing.T) {
 					return nil, errors.New("failed to create sdk")
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err:    errors.New("failed to create sdk"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasAPIAccessNotConfigured)).
@@ -230,7 +249,10 @@ func TestHandleCustomResource(t *testing.T) {
 					}, nil
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err:    errors.New("failed to get project via Kubernetes reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasAPIAccessNotConfigured)).
@@ -304,7 +326,10 @@ func TestHandleCustomResource(t *testing.T) {
 					}, nil
 				},
 			},
-			expectedResult:     ctrl.Result{},
+			expectedResult: workflowRes{
+				result: ctrl.Result{},
+				err:    nil,
+			},
 			expectedFinalizers: []string{customresource.FinalizerLabel},
 			expectedConditions: []api.Condition{
 				api.TrueCondition(api.ReadyType),
@@ -354,11 +379,15 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 				EventRecorder: record.NewFakeRecorder(10),
 			}
-			result := r.handleCustomResource(ctx.Context, &tt.ipAccessList)
-
+			result, err := r.handleCustomResource(ctx.Context, &tt.ipAccessList)
 			ipAccessList := &akov2.AtlasIPAccessList{}
 			require.NoError(t, k8sClient.Get(ctx.Context, client.ObjectKeyFromObject(&tt.ipAccessList), ipAccessList))
-			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedResult.result, result)
+			if tt.expectedResult.err != nil {
+				assert.True(t, err.Error() == tt.expectedResult.err.Error(), "expected error: "+tt.expectedResult.err.Error()+" got: "+err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedFinalizers, ipAccessList.GetFinalizers())
 			diff := cmp.Diff(tt.expectedConditions, ipAccessList.Status.GetConditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"))
 			if diff != "" {
@@ -377,8 +406,10 @@ func TestHandleIPAccessList(t *testing.T) {
 		ipAccessListService func() ipaccesslist.IPAccessListService
 		expectedResult      ctrl.Result
 		expectedConditions  []api.Condition
+		expectError         bool
 	}{
 		"should fail to parse ip access list from crd": {
+			expectError: true,
 			akoIPAccessList: &akov2.AtlasIPAccessList{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ip-access-list",
@@ -406,6 +437,7 @@ func TestHandleIPAccessList(t *testing.T) {
 			},
 		},
 		"should fail to list from atlas": {
+			expectError: true,
 			akoIPAccessList: &akov2.AtlasIPAccessList{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ip-access-list",
@@ -497,6 +529,7 @@ func TestHandleIPAccessList(t *testing.T) {
 			},
 		},
 		"should fail to add an expired entry": {
+			expectError: true,
 			akoIPAccessList: &akov2.AtlasIPAccessList{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ip-access-list",
@@ -563,6 +596,7 @@ func TestHandleIPAccessList(t *testing.T) {
 			},
 		},
 		"should fail to get status": {
+			expectError: true,
 			akoIPAccessList: &akov2.AtlasIPAccessList{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "ip-access-list",
@@ -673,7 +707,12 @@ func TestHandleIPAccessList(t *testing.T) {
 					Log:    logger,
 				},
 			}
-			result := r.handleIPAccessList(ctx, tt.ipAccessListService(), "", tt.akoIPAccessList)
+			result, err := r.handleIPAccessList(ctx, tt.ipAccessListService(), "", tt.akoIPAccessList)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(t, cmp.Equal(tt.expectedConditions, ctx.Conditions(), cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime")))
 		})

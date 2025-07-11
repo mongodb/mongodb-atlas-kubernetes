@@ -173,7 +173,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(
 			t,
 			ctrl.Result{
@@ -316,7 +316,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(
 			t,
 			ctrl.Result{
@@ -421,7 +421,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(
 			t,
 			ctrl.Result{
@@ -534,7 +534,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 			},
 		)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Equal(
 			t,
 			ctrl.Result{

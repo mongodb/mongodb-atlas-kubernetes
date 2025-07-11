@@ -1434,7 +1434,7 @@ func TestChangeDeploymentType(t *testing.T) {
 				},
 			)
 
-			assert.NoError(t, err)
+			assert.Error(t, err)
 			assert.Equal(t, ctrl.Result{Requeue: false, RequeueAfter: workflow.DefaultRetry}, result)
 			assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(tt.deployment), tt.deployment))
 			assert.True(

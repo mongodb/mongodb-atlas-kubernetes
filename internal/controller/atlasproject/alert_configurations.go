@@ -34,7 +34,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
-func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Context, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	service.Log.Debug("starting alert configurations processing")
 	defer service.Log.Debug("finished alert configurations processing")
 
@@ -144,7 +144,7 @@ func readNotificationSecret(ctx context.Context, kubeClient client.Client, res c
 	return string(val), nil
 }
 
-func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.Result {
+func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.DeprecatedResult {
 	logger := service.Log
 	existedAlertConfigs, err := paging.ListAll(service.Context, func(ctx context.Context, pageNum int) (paging.Response[admin.GroupAlertsConfig], *http.Response, error) {
 		return service.SdkClientSet.SdkClient20250312002.AlertConfigurationsApi.
@@ -176,7 +176,7 @@ func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpe
 	return checkAlertConfigurationStatuses(newStatuses)
 }
 
-func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workflow.Result {
+func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workflow.DeprecatedResult {
 	for _, alertConfigurationStatus := range statuses {
 		if alertConfigurationStatus.ErrorMessage != "" {
 			return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas,

@@ -29,7 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist"
 )
 
-func (r *AtlasIPAccessListReconciler) handleCustomResource(ctx context.Context, ipAccessList *akov2.AtlasIPAccessList) ctrl.Result {
+func (r *AtlasIPAccessListReconciler) handleCustomResource(ctx context.Context, ipAccessList *akov2.AtlasIPAccessList) (ctrl.Result, error) {
 	if customresource.ReconciliationShouldBeSkipped(ipAccessList) {
 		return r.skip(ctx, ipAccessList)
 	}
@@ -69,7 +69,7 @@ func (r *AtlasIPAccessListReconciler) handleIPAccessList(
 	ipAccessListService ipaccesslist.IPAccessListService,
 	projectID string,
 	ipAccessList *akov2.AtlasIPAccessList,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	akoIPAccessList, err := ipaccesslist.NewIPAccessListEntries(ipAccessList)
 	if err != nil {
 		return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.Internal, err)

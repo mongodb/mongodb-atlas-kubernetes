@@ -42,6 +42,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 const instanceNotFound = "STREAM_TENANT_NOT_FOUND_FOR_NAME"
@@ -76,7 +77,7 @@ func (r *AtlasStreamsInstanceReconciler) Reconcile(ctx context.Context, req ctrl
 	akoStreamInstance := akov2.AtlasStreamInstance{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &akoStreamInstance, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	return r.ensureAtlasStreamsInstance(ctx, log, &akoStreamInstance)
@@ -86,7 +87,7 @@ func (r *AtlasStreamsInstanceReconciler) Reconcile(ctx context.Context, req ctrl
 func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.Context, log *zap.SugaredLogger, akoStreamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
 	// check if stream instance is in "skipped" state
 	if customresource.ReconciliationShouldBeSkipped(akoStreamInstance) {
-		return r.skip(ctx, log, akoStreamInstance), nil
+		return r.skip(ctx, log, akoStreamInstance)
 	}
 
 	conditions := api.InitCondition(akoStreamInstance, api.FalseCondition(api.ReadyType))
@@ -96,12 +97,12 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 	// check if stream instance is in "invalid" state
 	isValid := customresource.ValidateResourceVersion(workflowCtx, akoStreamInstance, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid), nil
+		return r.invalidate(isValid)
 	}
 
 	// check if stream instance is in "unsupported" state
 	if !r.AtlasProvider.IsResourceSupported(akoStreamInstance) {
-		return r.unsupport(workflowCtx), nil
+		return r.unsupport(workflowCtx)
 	}
 
 	project := akov2.AtlasProject{}
@@ -175,7 +176,9 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager, skip
 			handler.EnqueueRequestsFromMapFunc(r.findStreamInstancesForSecret),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 

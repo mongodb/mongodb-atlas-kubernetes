@@ -37,7 +37,7 @@ type ipAccessListController struct {
 }
 
 // reconcile dispatch state transitions
-func (i *ipAccessListController) reconcile() workflow.Result {
+func (i *ipAccessListController) reconcile() workflow.DeprecatedResult {
 	ialInAtlas, err := i.service.List(i.ctx.Context, i.project.ID())
 	if err != nil {
 		return i.terminate(workflow.Internal, err)
@@ -61,7 +61,7 @@ func (i *ipAccessListController) reconcile() workflow.Result {
 }
 
 // configure update Atlas with new ip access list
-func (i *ipAccessListController) configure(current, desired ipaccesslist.IPAccessEntries, isUnset bool) workflow.Result {
+func (i *ipAccessListController) configure(current, desired ipaccesslist.IPAccessEntries, isUnset bool) workflow.DeprecatedResult {
 	err := i.service.Add(i.ctx.Context, i.project.ID(), desired.GetByStatus(false))
 	if err != nil {
 		return i.terminate(workflow.ProjectIPNotCreatedInAtlas, err)
@@ -87,7 +87,7 @@ func (i *ipAccessListController) configure(current, desired ipaccesslist.IPAcces
 }
 
 // progress transitions to pending while ip access list are not active
-func (i *ipAccessListController) progress(ipAccessEntries ipaccesslist.IPAccessEntries) workflow.Result {
+func (i *ipAccessListController) progress(ipAccessEntries ipaccesslist.IPAccessEntries) workflow.DeprecatedResult {
 	for _, entry := range ipAccessEntries.GetByStatus(false) {
 		stat, err := i.service.Status(i.ctx.Context, i.project.ID(), entry)
 		if err != nil {
@@ -112,7 +112,7 @@ func (i *ipAccessListController) progress(ipAccessEntries ipaccesslist.IPAccessE
 }
 
 // ready transitions to ready state after successfully configure ip access list
-func (i *ipAccessListController) ready(ipAccessEntries ipaccesslist.IPAccessEntries) workflow.Result {
+func (i *ipAccessListController) ready(ipAccessEntries ipaccesslist.IPAccessEntries) workflow.DeprecatedResult {
 	i.ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(ipaccesslist.FromInternal(ipAccessEntries.GetByStatus(true))))
 
 	result := workflow.OK()
@@ -122,7 +122,7 @@ func (i *ipAccessListController) ready(ipAccessEntries ipaccesslist.IPAccessEntr
 }
 
 // terminate ends a state transition if an error occurred.
-func (i *ipAccessListController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+func (i *ipAccessListController) terminate(reason workflow.ConditionReason, err error) workflow.DeprecatedResult {
 	i.ctx.Log.Error(err)
 	result := workflow.Terminate(reason, err)
 	i.ctx.SetConditionFromResult(api.IPAccessListReadyType, result)
@@ -131,14 +131,14 @@ func (i *ipAccessListController) terminate(reason workflow.ConditionReason, err 
 }
 
 // unmanage transitions to unmanaged state if no ip access list config is set
-func (i *ipAccessListController) unmanage() workflow.Result {
+func (i *ipAccessListController) unmanage() workflow.DeprecatedResult {
 	i.ctx.UnsetCondition(api.IPAccessListReadyType)
 
 	return workflow.OK()
 }
 
 // handleIPAccessList prepare internal ip access list controller to handle states
-func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	ctx.Log.Debug("starting ip access list processing")
 	defer ctx.Log.Debug("finished ip access list processing")
 

@@ -37,7 +37,7 @@ type roleController struct {
 	k8sClient client.Client
 }
 
-func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, project *project.Project, service customroles.CustomRoleService, akoCustomRole *akov2.AtlasCustomRole, dpEnabled bool) workflow.Result {
+func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, project *project.Project, service customroles.CustomRoleService, akoCustomRole *akov2.AtlasCustomRole, dpEnabled bool) workflow.DeprecatedResult {
 	ctx.Log.Debug("starting custom role processing")
 	defer ctx.Log.Debug("finished custom role processing")
 
@@ -55,7 +55,7 @@ func handleCustomRole(ctx *workflow.Context, k8sClient client.Client, project *p
 	return result
 }
 
-func (r *roleController) Reconcile() workflow.Result {
+func (r *roleController) Reconcile() workflow.DeprecatedResult {
 	if r.project.ID == "" {
 		return workflow.Terminate(workflow.ProjectCustomRolesReady,
 			fmt.Errorf("the referenced AtlasProject resource '%s' doesn't have ID (status.ID is empty)", r.project.Name))
@@ -83,21 +83,21 @@ func (r *roleController) Reconcile() workflow.Result {
 	return r.unmanaged()
 }
 
-func (r *roleController) unmanaged() workflow.Result {
+func (r *roleController) unmanaged() workflow.DeprecatedResult {
 	if err := customresource.ManageFinalizer(r.ctx.Context, r.k8sClient, r.role, customresource.UnsetFinalizer); err != nil {
 		return r.terminate(workflow.AtlasFinalizerNotRemoved, err)
 	}
 	return workflow.Deleted()
 }
 
-func (r *roleController) managed() workflow.Result {
+func (r *roleController) managed() workflow.DeprecatedResult {
 	if err := customresource.ManageFinalizer(r.ctx.Context, r.k8sClient, r.role, customresource.SetFinalizer); err != nil {
 		return r.terminate(workflow.AtlasFinalizerNotSet, err)
 	}
 	return r.idle()
 }
 
-func (r *roleController) create(role customroles.CustomRole) workflow.Result {
+func (r *roleController) create(role customroles.CustomRole) workflow.DeprecatedResult {
 	err := r.service.Create(r.ctx.Context, r.project.ID, role)
 	if err != nil {
 		return r.terminate(workflow.AtlasCustomRoleNotCreated, err)
@@ -105,7 +105,7 @@ func (r *roleController) create(role customroles.CustomRole) workflow.Result {
 	return r.managed()
 }
 
-func (r *roleController) update(roleInAKO, roleInAtlas customroles.CustomRole) workflow.Result {
+func (r *roleController) update(roleInAKO, roleInAtlas customroles.CustomRole) workflow.DeprecatedResult {
 	if reflect.DeepEqual(roleInAKO, roleInAtlas) {
 		return r.idle()
 	}
@@ -116,7 +116,7 @@ func (r *roleController) update(roleInAKO, roleInAtlas customroles.CustomRole) w
 	return r.managed()
 }
 
-func (r *roleController) delete(roleInAtlas customroles.CustomRole) workflow.Result {
+func (r *roleController) delete(roleInAtlas customroles.CustomRole) workflow.DeprecatedResult {
 	err := r.service.Delete(r.ctx.Context, r.project.ID, roleInAtlas.Name)
 	if err != nil {
 		return r.terminate(workflow.AtlasCustomRoleNotDeleted, err)
@@ -124,14 +124,14 @@ func (r *roleController) delete(roleInAtlas customroles.CustomRole) workflow.Res
 	return r.unmanaged()
 }
 
-func (r *roleController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+func (r *roleController) terminate(reason workflow.ConditionReason, err error) workflow.DeprecatedResult {
 	r.ctx.Log.Error(err)
 	result := workflow.Terminate(reason, err)
 	r.ctx.SetConditionFromResult(api.ProjectCustomRolesReadyType, result)
 	return result
 }
 
-func (r *roleController) idle() workflow.Result {
+func (r *roleController) idle() workflow.DeprecatedResult {
 	r.ctx.SetConditionTrue(api.ProjectCustomRolesReadyType)
 	return workflow.OK()
 }

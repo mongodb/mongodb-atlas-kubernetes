@@ -37,7 +37,7 @@ type TeamDataContainer struct {
 	Context     *workflow.Context
 }
 
-func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, teamsService teams.TeamsService, project *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, teamsService teams.TeamsService, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	teamsToAssign := map[string]*akov2.Team{}
 	for _, entry := range project.Spec.Teams {
 		assignedTeam := entry
