@@ -2,42 +2,52 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/josvazg/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
-	SchemeBuilder.Register(&UserCustomDBRole{})
+	SchemeBuilder.Register(&CustomRole{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 
-type UserCustomDBRole struct {
+type CustomRole struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   UserCustomDBRoleSpec   `json:"spec,omitempty"`
-	Status UserCustomDBRoleStatus `json:"status,omitempty"`
+	Spec   CustomRoleSpec   `json:"spec,omitempty"`
+	Status CustomRoleStatus `json:"status,omitempty"`
 }
 
-type UserCustomDBRoleSpec struct {
-	// V20231115 The spec of the usercustomdbrole resource for version v20231115.
-	V20231115 *UserCustomDBRoleSpecV20231115 `json:"v20231115,omitempty"`
+type CustomRoleSpec struct {
+	// V20250312 The spec of the customrole resource for version v20250312.
+	V20250312 *CustomRoleSpecV20250312 `json:"v20250312,omitempty"`
 }
 
-type UserCustomDBRoleSpecV20231115 struct {
-	// Entry The entry fields of the usercustomdbrole resource spec. These fields can
-	// be set for creating and updating usercustomdbroles.
-	Entry *UserCustomDBRoleSpecV20231115Entry `json:"entry,omitempty"`
+type CustomRoleSpecV20250312 struct {
+	// Entry The entry fields of the customrole resource spec. These fields can be set
+	// for creating and updating customroles.
+	Entry *CustomRoleSpecV20250312Entry `json:"entry,omitempty"`
 
 	/*
 	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
 
 	   **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
 	*/
-	GroupId string `json:"groupId"`
+	GroupId *string `json:"groupId,omitempty"`
+
+	/*
+	   GroupRef A reference to a "Group" resource.
+	   The value of "$.status.v20250312.groupId" will be used to set "groupId".
+	   Mutually exclusive with the "groupId" property.
+	*/
+	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 }
 
-type UserCustomDBRoleSpecV20231115Entry struct {
+type CustomRoleSpecV20250312Entry struct {
 	// Actions List of the individual privilege actions that the role grants.
 	Actions *[]Actions `json:"actions,omitempty"`
 
@@ -86,8 +96,8 @@ type InheritedRoles struct {
 	Role string `json:"role"`
 }
 
-type UserCustomDBRoleStatus struct {
+type CustomRoleStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]Conditions `json:"conditions,omitempty"`
+	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
 }
