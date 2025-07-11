@@ -58,6 +58,11 @@ var formatAliases = map[string]string{
 	"datetime":  "datetime",
 }
 
+var (
+	timeType = builtInType("Time", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1")
+	jsonType = builtInType("JSON", "apiextensionsv1", "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1")
+)
+
 // isPrimitive checks if the GoType is a primitive type
 func (g *GoType) isPrimitive() bool {
 	switch g.Kind {
@@ -227,6 +232,13 @@ func AddImportInfo(gt *GoType, alias, packagePath string) *GoType {
 	return gt
 }
 
+func setAlias(gt *GoType, alias string) *GoType {
+	if gt.Import != nil {
+		gt.Import.Alias = alias
+	}
+	return gt
+}
+
 // TypeDict is a dictionary of Go types, used to track and ensure unique type names.
 // It also keeps track of generated types to avoid re-genrating the same type again.
 type TypeDict struct {
@@ -311,6 +323,9 @@ func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *api
 
 // fromOpenAPIStruct converts an OpenAPI object schema to a GoType struct
 func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
+	if isDynamicObject(schema) {
+		return jsonType, nil
+	}
 	fields := []*GoField{}
 	fieldsParents := append(parents, typeName)
 	for _, key := range orderedkeys(schema.Properties) {
@@ -391,6 +406,10 @@ func fromOpenAPIPrimitive(kind string) (*GoType, error) {
 	return NewPrimitive(goTypeName, goTypeName), nil
 }
 
+func isDynamicObject(schema *apiextensionsv1.JSONSchemaProps) bool {
+	return len(schema.Properties) == 0 && schema.XPreserveUnknownFields != nil && *schema.XPreserveUnknownFields == true
+}
+
 // openAPIKindtoGoType converts an OpenAPI kind to a Go type
 func openAPIKindtoGoType(kind string) (string, error) {
 	switch kind {
@@ -421,7 +440,7 @@ func KnownTypes() []*GoType {
 	return []*GoType{
 		MustTypeFrom(reflect.TypeOf(k8s.LocalReference{})),
 		MustTypeFrom(reflect.TypeOf(k8s.Reference{})),
-		MustTypeFrom(reflect.TypeOf(metav1.Condition{})),
+		setAlias(MustTypeFrom(reflect.TypeOf(metav1.Condition{})), "metav1"),
 	}
 }
 
@@ -508,8 +527,6 @@ func toBuiltInType(t reflect.Type) *GoType {
 }
 
 func builtInTypesFor(key string) *GoType {
-	timeType := builtInType("Time", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1")
-	jsonType := builtInType("JSON", "apiextensionsv1", "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1")
 	builtInTypes := map[string]*GoType{
 		timeType.signature(): timeType,
 		jsonType.signature(): jsonType,

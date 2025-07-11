@@ -120,27 +120,6 @@ func reservedTypeNames(reservedNames []string) []*crd2go.GoType {
 	return reserved
 }
 
-// func reservedNames() []string {
-// 	knownVersions := []string{
-// 		"V20231115",
-// 		"V20241113",
-// 		"V20250312",
-// 	}
-// 	repeated := []string{
-// 		"Entry",
-// 		"Parameters",
-// 	}
-// 	reserved := make([]string, 0, len(knownVersions)*len(repeated))
-// 	reserved = append(reserved, repeated...)
-// 	for _, version := range knownVersions {
-// 		reserved = append(reserved, version)
-// 		for _, r := range repeated {
-// 			reserved = append(reserved, fmt.Sprintf("%s%s", version, r))
-// 		}
-// 	}
-// 	return reserved
-// }
-
 func ReserveTypeName(name string) *crd2go.GoType {
 	return crd2go.NewOpaqueType(name)
 }

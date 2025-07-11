@@ -124,14 +124,14 @@ func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomRe
 		jen.Id("Spec").Id(specType).Tag(map[string]string{"json": "spec,omitempty"}),
 		jen.Id("Status").Id(statusType).Tag(map[string]string{"json": "status,omitempty"}),
 	)
-	td.Add(NewOpaqueType(crd.Spec.Names.Kind)) // reserve the name of the root type not to be taken
+	td.Add(NewStruct(crd.Spec.Names.Kind, nil)) // reserve the name of the root type not to be taken
 
 	specSchema := v.Schema.OpenAPIV3Schema.Properties["spec"]
 	spec, err := FromOpenAPIType(td, specType, []string{crd.Spec.Names.Kind}, &specSchema)
 	if err != nil {
 		return fmt.Errorf("failed to generate spec type: %w", err)
 	}
-	specCode, err := generateType(td, spec)
+	specCode, err := generateType(f, td, spec)
 	if err != nil {
 		return fmt.Errorf("failed to generate spec code: %w", err)
 	}
@@ -142,7 +142,7 @@ func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomRe
 	if err != nil {
 		return fmt.Errorf("failed to generate status code: %w", err)
 	}
-	statusCode, err := generateType(td, status)
+	statusCode, err := generateType(f, td, status)
 	if err != nil {
 		return fmt.Errorf("failed to generate status code: %w", err)
 	}
@@ -151,30 +151,30 @@ func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomRe
 }
 
 // generateType generates Go code for a given type using the provided TypeDict
-func generateType(td TypeDict, t *GoType) (*jen.Statement, error) {
+func generateType(f *jen.File, td TypeDict, t *GoType) (*jen.Statement, error) {
 	if t.Import != nil { // do not generate code for known imported types
 		return jen.Null(), nil
 	}
 	if t.Kind == StructKind {
-		return generateStructType(td, t)
+		return generateStructType(f, td, t)
 	}
 	if t.Kind == ArrayKind {
-		return generateArrayType(td, t)
+		return generateArrayType(f, td, t)
 	}
 	return nil, fmt.Errorf("unsupported type %q", t.Kind)
 }
 
 // generateStructType generates Go code for a struct type
-func generateStructType(td TypeDict, t *GoType) (*jen.Statement, error) {
+func generateStructType(f *jen.File, td TypeDict, t *GoType) (*jen.Statement, error) {
 	fields := make([]jen.Code, 0, len(t.Fields))
 	subtypes := make([]jen.Code, 0, len(t.Fields))
 	for _, field := range t.Fields {
-		fieldCode, err := generateField(field)
+		fieldCode, err := generateField(f, field)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate field %s: %w", field.Name, err)
 		}
 		fields = append(fields, fieldCode)
-		subtype, err := generateSubtype(td, field.GoType)
+		subtype, err := generateSubtype(f, td, field.GoType)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate field %s subtype: %w", field.Name, err)
 		}
@@ -184,8 +184,8 @@ func generateStructType(td TypeDict, t *GoType) (*jen.Statement, error) {
 }
 
 // generateArrayType generates Go code for an array type
-func generateArrayType(td TypeDict, t *GoType) (*jen.Statement, error) {
-	elementType, err := generateSubtype(td, t.Element)
+func generateArrayType(f *jen.File, td TypeDict, t *GoType) (*jen.Statement, error) {
+	elementType, err := generateSubtype(f, td, t.Element)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate array subtype: %w", err)
 	}
@@ -193,9 +193,9 @@ func generateArrayType(td TypeDict, t *GoType) (*jen.Statement, error) {
 }
 
 // generateSubtype generates Go code for a subtype of a given type
-func generateSubtype(td TypeDict, t *GoType) (*jen.Statement, error) {
+func generateSubtype(f *jen.File, td TypeDict, t *GoType) (*jen.Statement, error) {
 	if !t.isPrimitive() && !td.WasGenerated(t) {
-		subtypeCode, err := generateType(td, t)
+		subtypeCode, err := generateType(f, td, t)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate subtype %s: %w", t.Name, err)
 		}
@@ -206,19 +206,19 @@ func generateSubtype(td TypeDict, t *GoType) (*jen.Statement, error) {
 }
 
 // generateField generates Go code for a field in a struct
-func generateField(f *GoField) (jen.Code, error) {
-	if f.GoType == nil {
-		return nil, fmt.Errorf("field %q has no Go type", f.Name)
+func generateField(f *jen.File, field *GoField) (jen.Code, error) {
+	if field.GoType == nil {
+		return nil, fmt.Errorf("field %q has no Go type", field.Name)
 	}
-	typeRefCode, err := qualifyRequired(generateTypeRef(f.GoType), f.Required)
+	typeRefCode, err := qualifyRequired(generateTypeRef(f, field.GoType), field.Required)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate field type: %w", err)
 	}
 	fieldCode := jen.Null()
-	if f.Comment != "" {
-		fieldCode = generateFieldComment(fieldCode, f.Name, f.Comment)
+	if field.Comment != "" {
+		fieldCode = generateFieldComment(fieldCode, field.Name, field.Comment)
 	}
-	return fieldCode.Id(f.Name).Add(typeRefCode).Add(generateJSONTag(f)).Line(), nil
+	return fieldCode.Id(field.Name).Add(typeRefCode).Add(generateJSONTag(field)).Line(), nil
 }
 
 // generateFieldComment generates a comment for a field in a struct
@@ -240,7 +240,7 @@ func qualifyRequired(typeRef *jen.Statement, required bool) (*jen.Statement, err
 }
 
 // generateTypeRef generates a type reference for a given GoType
-func generateTypeRef(t *GoType) *jen.Statement {
+func generateTypeRef(f *jen.File, t *GoType) *jen.Statement {
 	switch t.Kind {
 	case StringKind:
 		return jen.String()
@@ -251,9 +251,12 @@ func generateTypeRef(t *GoType) *jen.Statement {
 	case BoolKind:
 		return jen.Bool()
 	case ArrayKind:
-		return jen.Index().Add(generateTypeRef(t.Element))
+		return jen.Index().Add(generateTypeRef(f, t.Element))
 	default:
 		if t.Import != nil {
+			if t.Import.Alias != "" {
+				f.ImportAlias(t.Import.Path, t.Import.Alias)
+			}
 			return jen.Qual(t.Import.Path, title(t.Name))
 		}
 		return jen.Id(title(t.Name))
