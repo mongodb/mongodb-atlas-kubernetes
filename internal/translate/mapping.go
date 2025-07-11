@@ -11,7 +11,7 @@ import (
 const (
 	APIMAppingsAnnotation = "api-mappings"
 
-	SecretProperySelector = ".key"
+	SecretProperySelector = "$.data.#"
 )
 
 func processMappings(typeInfo *TypeInfo, spec map[string]any, deps ...client.Object) error {

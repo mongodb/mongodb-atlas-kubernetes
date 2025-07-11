@@ -8,10 +8,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/josvazg/crd2go/internal/crd2go"
+	v1 "github.com/josvazg/crd2go/internal/crd2go/samples/v1"
+	"github.com/josvazg/crd2go/internal/pointer"
 	"github.com/josvazg/crd2go/internal/translate"
 )
 
@@ -32,138 +37,139 @@ func TestToAPI(t *testing.T) {
 		target     any
 		want       any
 	}{
-		// disabled till crd2go is fully fixed
-		// {
-		// 	name:       "simple group",
-		// 	crd:        "Group",
-		// 	sdkVersion: "V20231115",
-		// 	spec: v1.GroupSpec{
-		// 		V20231115: &v1.GroupSpecV20231115{
-		// 			Entry: &v1.GroupSpecV20231115Entry{
-		// 				Name:                      "project-name",
-		// 				OrgId:                     "60987654321654321",
-		// 				RegionUsageRestrictions:   pointer.Get("fake-restriction"),
-		// 				WithDefaultAlertsSettings: pointer.Get(true),
-		// 				Tags: &[]v1.Tags{
-		// 					{Key: "key", Value: "value"},
-		// 				},
-		// 			},
-		// 			// read only field, not translated back to the API
-		// 			ProjectOwnerId: "61234567890123456",
-		// 		},
-		// 	},
-		// 	target: &admin2025.Group{},
-		// 	want: &admin2025.Group{
-		// 		Name:                      "project-name",
-		// 		OrgId:                     "60987654321654321",
-		// 		RegionUsageRestrictions:   pointer.Get("fake-restriction"),
-		// 		WithDefaultAlertsSettings: pointer.Get(true),
-		// 		Tags: &[]admin2025.ResourceTag{
-		// 			{Key: "key", Value: "value"},
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name:       "group alert config with project and credential references",
-		// 	crd:        "GroupAlertsConfig",
-		// 	sdkVersion: "V20250312",
-		// 	spec: v1.GroupAlertsConfigSpec{
-		// 		V20250312: &v1.GroupAlertsConfigSpecV20250312{
-		// 			Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-		// 				Enabled:       pointer.Get(true),
-		// 				EventTypeName: pointer.Get("event-type"),
-		// 				Matchers: &[]v1.Matchers{
-		// 					{
-		// 						FieldName: "field-name-1",
-		// 						Operator:  "operator-1",
-		// 						Value:     "value-1",
-		// 					},
-		// 					{
-		// 						FieldName: "field-name-2",
-		// 						Operator:  "operator-2",
-		// 						Value:     "value-2",
-		// 					},
-		// 				},
-		// 				MetricThreshold: &v1.MetricThreshold{
-		// 					MetricName: "metric-1",
-		// 					Mode:       pointer.Get("mode"),
-		// 					Operator:   pointer.Get("operator"),
-		// 					Threshold:  pointer.Get(1.1),
-		// 					Units:      pointer.Get("units"),
-		// 				},
-		// 				Threshold: &v1.MetricThreshold{
-		// 					MetricName: "metric-t",
-		// 					Mode:       pointer.Get("mode-t"),
-		// 					Operator:   pointer.Get("operator-t"),
-		// 					Threshold:  pointer.Get(2.3),
-		// 					Units:      pointer.Get("units-t"),
-		// 				},
-		// 				Notifications: &[]v1.Notifications{
-		// 					{
-		// 						DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-		// 							Name: pointer.Get("datadog-secret"),
-		// 						},
-		// 						DatadogRegion: pointer.Get("US"),
-		// 					},
-		// 				},
-		// 			},
-		// 			//GroupId: "60965432187654321",
-		// 		},
-		// 	},
-		// 	deps: []client.Object{
-		// 		&corev1.Secret{
-		// 			TypeMeta: metav1.TypeMeta{
-		// 				Kind:       "Secret",
-		// 				APIVersion: "v1",
-		// 			},
-		// 			ObjectMeta: metav1.ObjectMeta{
-		// 				Name:      "datadog-secret",
-		// 				Namespace: "ns",
-		// 			},
-		// 			Data: map[string][]byte{
-		// 				"datadogApiKey": ([]byte)("sample-password"),
-		// 			},
-		// 		},
-		// 	},
-		// 	target: &admin2025.GroupAlertsConfig{},
-		// 	want: &admin2025.GroupAlertsConfig{
-		// 		Enabled:       pointer.Get(true),
-		// 		EventTypeName: pointer.Get("event-type"),
-		// 		Matchers: &[]admin2025.StreamsMatcher{
-		// 			{
-		// 				FieldName: "field-name-1",
-		// 				Operator:  "operator-1",
-		// 				Value:     "value-1",
-		// 			},
-		// 			{
-		// 				FieldName: "field-name-2",
-		// 				Operator:  "operator-2",
-		// 				Value:     "value-2",
-		// 			},
-		// 		},
-		// 		MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-		// 			MetricName: "metric-1",
-		// 			Mode:       pointer.Get("mode"),
-		// 			Operator:   pointer.Get("operator"),
-		// 			Threshold:  pointer.Get(1.1),
-		// 			Units:      pointer.Get("units"),
-		// 		},
-		// 		Threshold: &admin2025.StreamProcessorMetricThreshold{
-		// 			Operator:   pointer.Get("op"),
-		// 			Units:      pointer.Get("units"),
-		// 			MetricName: pointer.Get("metric"),
-		// 			Mode:       pointer.Get("mode"),
-		// 		},
-		// 		Notifications: &[]admin2025.AlertsNotificationRootForGroup{
-		// 			{
-		// 				DatadogApiKey: pointer.Get("sample-password"),
-		// 				DatadogRegion: pointer.Get("US"),
-		// 			},
-		// 		},
-		// 		GroupId:          pointer.Get("60965432187654321"),
-		// 		SeverityOverride: pointer.Get("some-severity-override"),
-		// 	},
-		// },
+		{
+			name:       "simple group",
+			crd:        "Group",
+			sdkVersion: "v20250312",
+			spec: v1.GroupSpec{
+				V20250312: &v1.GroupSpecV20250312{
+					Entry: &v1.V20250312Entry{
+						Name:                      "project-name",
+						OrgId:                     "60987654321654321",
+						RegionUsageRestrictions:   pointer.Get("fake-restriction"),
+						WithDefaultAlertsSettings: pointer.Get(true),
+						Tags: &[]v1.Tags{
+							{Key: "key", Value: "value"},
+						},
+					},
+					// read only field, not translated back to the API
+					ProjectOwnerId: "61234567890123456",
+				},
+			},
+			target: &admin2025.Group{},
+			want: &admin2025.Group{
+				Name:                      "project-name",
+				OrgId:                     "60987654321654321",
+				RegionUsageRestrictions:   pointer.Get("fake-restriction"),
+				WithDefaultAlertsSettings: pointer.Get(true),
+				Tags: &[]admin2025.ResourceTag{
+					{Key: "key", Value: "value"},
+				},
+			},
+		},
+		{
+			name:       "group alert config with project and credential references",
+			crd:        "GroupAlertsConfig",
+			sdkVersion: "v20250312",
+			spec: v1.GroupAlertsConfigSpec{
+				V20250312: &v1.GroupAlertsConfigSpecV20250312{
+					Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+						Enabled:       pointer.Get(true),
+						EventTypeName: pointer.Get("event-type"),
+						Matchers: &[]v1.Matchers{
+							{
+								FieldName: "field-name-1",
+								Operator:  "operator-1",
+								Value:     "value-1",
+							},
+							{
+								FieldName: "field-name-2",
+								Operator:  "operator-2",
+								Value:     "value-2",
+							},
+						},
+						MetricThreshold: &v1.MetricThreshold{
+							MetricName: "metric-1",
+							Mode:       pointer.Get("mode"),
+							Operator:   pointer.Get("operator"),
+							Threshold:  pointer.Get(1.1),
+							Units:      pointer.Get("units"),
+						},
+						Threshold: &v1.MetricThreshold{
+							MetricName: "metric-t",
+							Mode:       pointer.Get("mode-t"),
+							Operator:   pointer.Get("operator-t"),
+							Threshold:  pointer.Get(2.2),
+							Units:      pointer.Get("units-t"),
+						},
+						Notifications: &[]v1.Notifications{
+							{
+								DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
+									Name: pointer.Get("datadog-secret"),
+								},
+								DatadogRegion: pointer.Get("US"),
+							},
+						},
+						SeverityOverride: pointer.Get("some-severity-override"),
+					},
+					GroupId: pointer.Get("60965432187654321"),
+				},
+			},
+			deps: []client.Object{
+				&corev1.Secret{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Secret",
+						APIVersion: "v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "datadog-secret",
+						Namespace: "ns",
+					},
+					Data: map[string][]byte{
+						"datadogApiKey": ([]byte)("sample-password"),
+					},
+				},
+			},
+			target: &admin2025.GroupAlertsConfig{},
+			want: &admin2025.GroupAlertsConfig{
+				Enabled:       pointer.Get(true),
+				EventTypeName: pointer.Get("event-type"),
+				Matchers: &[]admin2025.StreamsMatcher{
+					{
+						FieldName: "field-name-1",
+						Operator:  "operator-1",
+						Value:     "value-1",
+					},
+					{
+						FieldName: "field-name-2",
+						Operator:  "operator-2",
+						Value:     "value-2",
+					},
+				},
+				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
+					MetricName: "metric-1",
+					Mode:       pointer.Get("mode"),
+					Operator:   pointer.Get("operator"),
+					Threshold:  pointer.Get(1.1),
+					Units:      pointer.Get("units"),
+				},
+				Threshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: pointer.Get("metric-t"),
+					Mode:       pointer.Get("mode-t"),
+					Operator:   pointer.Get("operator-t"),
+					Threshold:  pointer.Get(2.2),
+					Units:      pointer.Get("units-t"),
+				},
+				Notifications: &[]admin2025.AlertsNotificationRootForGroup{
+					{
+						DatadogApiKey: pointer.Get("sample-password"),
+						DatadogRegion: pointer.Get("US"),
+					},
+				},
+				GroupId:          pointer.Get("60965432187654321"),
+				SeverityOverride: pointer.Get("some-severity-override"),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			crdsYML, err := samples.Open("samples/crds.yaml")
