@@ -57,7 +57,7 @@ type FlexClusterSpecV20250312Entry struct {
 
 	// Tags List that contains key-value pairs between 1 to 255 characters in length
 	// for tagging and categorizing the instance.
-	Tags *[]Tags `json:"tags,omitempty"`
+	Tags *[]Labels `json:"tags,omitempty"`
 
 	// TerminationProtectionEnabled Flag that indicates whether termination protection
 	// is enabled on the cluster. If set to `true`, MongoDB Cloud won't delete the
@@ -91,7 +91,7 @@ type FlexClusterStatus struct {
 
 type FlexClusterStatusV20250312 struct {
 	// BackupSettings Flex backup configuration.
-	BackupSettings *DiskGB `json:"backupSettings,omitempty"`
+	BackupSettings *BackupSettings `json:"backupSettings,omitempty"`
 
 	// ClusterType Flex cluster topology.
 	ClusterType *string `json:"clusterType,omitempty"`
@@ -126,6 +126,12 @@ type FlexClusterStatusV20250312 struct {
 
 	// VersionReleaseSystem Method by which the cluster maintains the MongoDB versions.
 	VersionReleaseSystem *string `json:"versionReleaseSystem,omitempty"`
+}
+
+type BackupSettings struct {
+	// Enabled Flag that indicates whether backups are performed for this flex cluster.
+	// Backup uses flex cluster backups.
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type V20250312ConnectionStrings struct {

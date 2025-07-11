@@ -52,14 +52,6 @@ type ImportInfo struct {
 	Path  string
 }
 
-var builtInTypes = map[string]*GoType{
-	"k8s.io/apimachinery/pkg/apis/meta/v1.Time": builtInType("Time", "struct", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1"),
-}
-
-var format2BuiltinGoType = map[string]*GoType{
-	"datetime": builtInTypes["k8s.io/apimachinery/pkg/apis/meta/v1.Time"],
-}
-
 var formatAliases = map[string]string{
 	"date-time": "datetime",
 	"datetime":  "datetime",
@@ -82,6 +74,9 @@ func (gt *GoType) signature() string {
 		return "nil"
 	}
 	if gt.Kind == StructKind {
+		if len(gt.Fields) == 0 { // de-duplicate empty structs as different types
+			return fmt.Sprintf("{%s}", gt.Name)
+		}
 		fieldSignatures := make([]string, 0, len(gt.Fields))
 		for _, field := range gt.Fields {
 			fieldSignatures = append(fieldSignatures, field.signature())
@@ -240,7 +235,8 @@ func NewTypeDict(goTypes ...*GoType) TypeDict {
 
 // Has checks if the TypeDict contains a GoType with the same signature
 func (td TypeDict) Has(gt *GoType) bool {
-	_, ok := td.bySignature[gt.signature()]
+	signature := gt.signature()
+	_, ok := td.bySignature[signature]
 	return ok
 }
 
@@ -364,8 +360,8 @@ func fromOpenAPIFormattedType(schema *apiextensionsv1.JSONSchemaProps) (*GoType,
 	// - date: a date string like "2006-01-02" as defined by full-date in RFC3339
 	// - duration: a duration string like "22 ns" as parsed by Golang time.ParseDuration or compatible with Scala duration format
 	// - datetime: a date time string like "2014-12-15T19:30:20.000Z" as defined by date-time in RFC3339.
-	gt, ok := format2BuiltinGoType[formatAliases[schema.Format]]
-	if ok {
+	gt := format2BuiltinGoType(formatAliases[schema.Format])
+	if gt != nil {
 		return gt, nil
 	}
 	return fromOpenAPIPrimitive(schema.Type)
@@ -408,7 +404,6 @@ func orderedkeys[T any](m map[string]T) []string {
 
 func KnownTypes() []*GoType {
 	return []*GoType{
-
 		MustTypeFrom(reflect.TypeOf(k8s.LocalReference{})),
 		MustTypeFrom(reflect.TypeOf(k8s.Reference{})),
 		MustTypeFrom(reflect.TypeOf(metav1.Condition{})),
@@ -497,9 +492,23 @@ func builtInType(name, kind string, alias, path string) *GoType {
 
 func toBuiltInType(t reflect.Type) *GoType {
 	builtInKey := fmt.Sprintf("%s.%s", t.PkgPath(), t.Name())
-	gt, ok := builtInTypes[builtInKey]
-	if ok {
+	gt := builtInTypesFor(builtInKey)
+	if gt != nil {
 		return gt
 	}
 	return nil
+}
+
+func builtInTypesFor(key string) *GoType {
+	builtInTypes := map[string]*GoType{
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Time": builtInType("Time", "struct", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1"),
+	}
+	return builtInTypes[key]
+}
+
+func format2BuiltinGoType(format string) *GoType {
+	format2Builtin := map[string]*GoType{
+		"datetime": builtInTypesFor("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+	}
+	return format2Builtin[format]
 }

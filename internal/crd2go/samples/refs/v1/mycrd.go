@@ -37,7 +37,7 @@ type MyCRDStatus struct {
 }
 
 type Conditions struct {
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
 
 	Message *string `json:"message,omitempty"`
 

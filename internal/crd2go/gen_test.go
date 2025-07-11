@@ -19,15 +19,28 @@ import (
 //go:embed samples/*
 var samples embed.FS
 
+const (
+	expectedSources = 12
+)
+
+var disabledKinds = []string{"Cluster", "CustomRole", "Group", "SearchIndex"}
+
+var extraReserved = []string{"ConnectionStrings"}
+
 func TestGenerateFromCRDStream(t *testing.T) {
 	buffers := make(map[string]*bytes.Buffer)
 
 	in, err := samples.Open("samples/crds.yaml")
 	require.NoError(t, err)
-	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, crd2go.FirstVersion, preloadedTypes()...))
+	cfg := crd2go.GenerateConfig{
+		Version:        crd2go.FirstVersion,
+		Skips:          disabledKinds,
+		PreloadedTypes: preloadedTypes(),
+	}
+	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, &cfg))
 
 	assert.NotEmpty(t, buffers)
-	assert.Len(t, buffers, 8)
+	assert.Len(t, buffers, expectedSources)
 	for key, buf := range buffers {
 		want := readTestFile(t, filepath.Join("samples", "v1", key))
 		require.Equal(t, want, buf.String())
@@ -39,12 +52,17 @@ func TestRefs(t *testing.T) {
 
 	in, err := samples.Open("samples/samplerefs.yaml")
 	require.NoError(t, err)
-	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, crd2go.FirstVersion, preloadedTypes()...))
+	cfg := crd2go.GenerateConfig{
+		Version:        crd2go.FirstVersion,
+		Skips:          disabledKinds,
+		PreloadedTypes: preloadedTypes(),
+	}
+	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, &cfg))
 
 	assert.NotEmpty(t, buffers)
 	assert.Len(t, buffers, 1)
 	for key, buf := range buffers {
-		want := readTestFile(t, filepath.Join("samples", "refs", "v1",  key))
+		want := readTestFile(t, filepath.Join("samples", "refs", "v1", key))
 		require.Equal(t, want, buf.String())
 	}
 }
@@ -91,11 +109,10 @@ func newWriteNopCloser(w io.Writer) io.WriteCloser {
 }
 
 func preloadedTypes() []*crd2go.GoType {
-	return append(crd2go.KnownTypes(), reservedTypeNames()...)
+	return append(crd2go.KnownTypes(), reservedTypeNames(extraReserved)...)
 }
 
-func reservedTypeNames() []*crd2go.GoType {
-	reservedNames := reservedNames()
+func reservedTypeNames(reservedNames []string) []*crd2go.GoType {
 	reserved := make([]*crd2go.GoType, 0, len(reservedNames))
 	for _, reservedName := range reservedNames {
 		reserved = append(reserved, ReserveTypeName(reservedName))
@@ -103,26 +120,26 @@ func reservedTypeNames() []*crd2go.GoType {
 	return reserved
 }
 
-func reservedNames() []string {
-	knownVersions := []string{
-		"V20231115",
-		"V20241113",
-		"V20250312",
-	}
-	repeated := []string{
-		"Entry",
-		"Parameters",
-	}
-	reserved := make([]string, 0, len(knownVersions)*len(repeated))
-	reserved = append(reserved, repeated...)
-	for _, version := range knownVersions {
-		reserved = append(reserved, version)
-		for _, r := range repeated {
-			reserved = append(reserved, fmt.Sprintf("%s%s", version, r))
-		}
-	}
-	return reserved
-}
+// func reservedNames() []string {
+// 	knownVersions := []string{
+// 		"V20231115",
+// 		"V20241113",
+// 		"V20250312",
+// 	}
+// 	repeated := []string{
+// 		"Entry",
+// 		"Parameters",
+// 	}
+// 	reserved := make([]string, 0, len(knownVersions)*len(repeated))
+// 	reserved = append(reserved, repeated...)
+// 	for _, version := range knownVersions {
+// 		reserved = append(reserved, version)
+// 		for _, r := range repeated {
+// 			reserved = append(reserved, fmt.Sprintf("%s%s", version, r))
+// 		}
+// 	}
+// 	return reserved
+// }
 
 func ReserveTypeName(name string) *crd2go.GoType {
 	return crd2go.NewStruct(name, nil)
