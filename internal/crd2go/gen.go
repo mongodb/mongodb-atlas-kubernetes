@@ -25,6 +25,12 @@ const (
 	metav1Package = "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type GenerateConfig struct {
+	Version        string
+	Skips          []string
+	PreloadedTypes []*GoType
+}
+
 // CodeWriterFunc is a function type that takes a CRD and returns a writer for the generated code
 type CodeWriterFunc func(*apiextensions.CustomResourceDefinition) (io.WriteCloser, error)
 
@@ -45,10 +51,10 @@ func CodeFileForCRDAtPath(dir string) CodeWriterFunc {
 // It uses the provided CodeWriterFunc to write the generated code to the specified output.
 // The version parameter specifies the version of the CRD to generate code for.
 // The preloadedTypes parameter allows for preloading specific types to avoid name collisions.
-func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string, preloadedTypes ...*GoType) error {
+func GenerateStream(cwFn CodeWriterFunc, r io.Reader, cfg *GenerateConfig) error {
 	generated := false
 	scanner := bufio.NewScanner(r)
-	td := NewTypeDict(preloadedTypes...)
+	td := NewTypeDict(cfg.PreloadedTypes...)
 	for {
 		crd, err := ParseCRD(scanner)
 		if errors.Is(err, io.EOF) {
@@ -60,12 +66,15 @@ func GenerateStream(cwFn CodeWriterFunc, r io.Reader, version string, preloadedT
 		if err != nil {
 			return fmt.Errorf("failed to read input: %w", err)
 		}
+		if in(cfg.Skips, crd.Spec.Names.Kind) {
+			continue
+		}
 		w, err := cwFn(crd)
 		if err != nil {
 			return fmt.Errorf("failed to get writer for CRD %s: %w", crd.Name, err)
 		}
 		defer w.Close()
-		stmt, err := generateCRD(td, crd, version)
+		stmt, err := generateCRD(td, crd, cfg.Version)
 		if err != nil {
 			return fmt.Errorf("failed to generate CRD code: %w", err)
 		}
@@ -245,7 +254,7 @@ func generateTypeRef(t *GoType) *jen.Statement {
 		return jen.Index().Add(generateTypeRef(t.Element))
 	default:
 		if t.Import != nil {
-			return jen.Qual(t.Import.Path,title(t.Name))
+			return jen.Qual(t.Import.Path, title(t.Name))
 		}
 		return jen.Id(title(t.Name))
 	}
@@ -319,4 +328,13 @@ func formatComment(comment string, maxWidth int) []string {
 		lines = append(lines, currentLine)
 	}
 	return lines
+}
+
+func in[T comparable](list []T, target T) bool {
+	for _, item := range list {
+		if item == target {
+			return true
+		}
+	}
+	return false
 }
