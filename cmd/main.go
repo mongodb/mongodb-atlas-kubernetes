@@ -33,7 +33,7 @@ func generate(output, input string, reservations, skips []string) error {
 	}
 	preloaded := crd2go.KnownTypes()
 	for _, name := range reservations {
-		preloaded = append(preloaded, crd2go.NewStruct(name, nil))
+		preloaded = append(preloaded, crd2go.NewOpaqueType(name))
 	}
 	cfg := crd2go.GenerateConfig{
 		Version: crd2go.FirstVersion,
