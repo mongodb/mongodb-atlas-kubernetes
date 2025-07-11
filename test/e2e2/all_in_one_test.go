@@ -32,10 +32,9 @@ var _ = Describe("all-in-one.yaml", Ordered, Label("all-in-one"), func() {
 	var kubeClient client.Client
 
 	_ = BeforeAll(func() {
-		ctx := context.Background()
-		c, err := kube.NewK8sTest(ctx)
-		kubeClient = c
+		c, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
+		kubeClient = c
 	})
 
 	It("applies all-in-one.yaml", func() {

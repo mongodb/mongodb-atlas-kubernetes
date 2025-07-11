@@ -49,11 +49,12 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		ako.Start(GinkgoT())
 
 		ctx = context.Background()
-		client, err := kube.NewK8sTest(ctx, &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: v1.ObjectMeta{Name: AtlasProjectCRDName},
-		})
+		client, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = client
+		Expect(kube.AssertCRDs(ctx, kubeClient, &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: v1.ObjectMeta{Name: AtlasProjectCRDName},
+		})).To(Succeed())
 	})
 
 	_ = AfterAll(func() {

@@ -59,11 +59,12 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		ako.Start(GinkgoT())
 
 		ctx = context.Background()
-		client, err := kube.NewK8sTest(ctx, &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: v1.ObjectMeta{Name: AtlasThirdPartyIntegrationsCRDName},
-		})
+		client, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = client
+		Expect(kube.AssertCRDs(ctx, kubeClient, &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: v1.ObjectMeta{Name: AtlasThirdPartyIntegrationsCRDName},
+		})).To(Succeed())
 	})
 
 	_ = AfterAll(func() {
