@@ -155,7 +155,7 @@ func (sr *searchIndexesReconcileRequest) terminate(reason workflow.ConditionReas
 
 func (sr *searchIndexesReconcileRequest) progress() workflow.Result {
 	result := workflow.InProgress(api.SearchIndexesNotReady, "not all indexes are in READY state")
-	sr.ctx.SetConditionFromResult(status.SearchIndexStatusReady, result)
+	sr.ctx.SetConditionFromResult(api.SearchIndexesReadyType, result)
 	return result
 }
 

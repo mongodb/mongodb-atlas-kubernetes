@@ -15,7 +15,7 @@
 package status
 
 const (
-	SearchIndexStatusReady      = "READY"
+	SearchIndexStatusReady      = "Ready"
 	SearchIndexStatusError      = "Error"
 	SearchIndexStatusInProgress = "InProgress"
 )
