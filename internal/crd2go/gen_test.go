@@ -20,10 +20,10 @@ import (
 var samples embed.FS
 
 const (
-	expectedSources = 13
+	expectedSources = 15
 )
 
-var disabledKinds = []string{"Cluster", "CustomRole", "Group"}
+var disabledKinds = []string{"Group"}
 
 var extraReserved = []string{"ConnectionStrings"}
 
