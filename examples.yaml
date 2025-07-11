@@ -145,20 +145,20 @@
 #            name: data-dog
 #            key: .data.datadogApiKey
 
-apiVersion: atlas.generated.mongodb.com/v1
-kind: ThirdPartyIntegration
-metadata:
-  name: sample-webhook-integration
-spec:
-  v20250312:
-    integrationType: WEBHOOK
-    groupId: 32b6e34b3d91647abb20e7b8
-    entry:
-      type: WEBHOOK
-      urlSecretRef:
-        name: webhook-secret
-        key: url
-      enabled: true
+#apiVersion: atlas.generated.mongodb.com/v1
+#kind: ThirdPartyIntegration
+#metadata:
+#  name: sample-webhook-integration
+#spec:
+#  v20250312:
+#    integrationType: WEBHOOK
+#    groupId: 32b6e34b3d91647abb20e7b8
+#    entry:
+#      type: WEBHOOK
+#      urlSecretRef:
+#        name: webhook-secret
+#        key: url
+#      enabled: true
 
 #  v20241113:
 #    integrationType: WEBHOOK
@@ -169,3 +169,37 @@ spec:
 #        name: webhook-secret
 #        key: url
 #      enabled: true
+
+apiVersion: atlas.generated.mongodb.com/v1
+kind: SearchIndex
+metadata:
+  name: sample-search-index
+spec:
+  v20250312:
+    clusterName: my-atlas-cluster
+    groupId: "32b6e34b3d91647abb20e7b8"
+    entry:
+      name: custom-analyzer-index
+      database: mydatabase
+      collectionName: products
+      analyzers:
+        - name: custom-text-analyzer
+          tokenizer:
+            type: standard
+          tokenFilters:
+            - type: lowercase
+            - type: stopword
+              tokens:
+                - "the"
+                - "and"
+                - "or"
+            - type: snowballStemmer
+              language: english
+            - type: shingle
+              maxShingleSize: 3
+              minShingleSize: 2
+              outputUnigrams: false
+      mappings:
+        dynamic: true
+        fields:
+          boo: blub

@@ -82,8 +82,11 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 		}
 	}
 
-	if props.Type == "" && props.Items == nil && len(props.Properties) == 0 {
+	if props.Type == "" {
 		props.Type = "object"
+	}
+
+	if props.Type == "object" && props.Items == nil && len(props.Properties) == 0 && props.AdditionalProperties == nil {
 		props.XPreserveUnknownFields = ptr.To(true)
 	}
 
