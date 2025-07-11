@@ -215,11 +215,11 @@ func TestBuildOpenAPIType(t *testing.T) {
 		})),
 		crd2go.NewGoField("LocalReference", crd2go.AddImportInfo(crd2go.NewStruct("LocalReference", []*crd2go.GoField{
 			crd2go.NewGoField("Name", crd2go.NewPrimitive("string", "string")),
-		}), "github.com/josvazg/crd2go/k8s", "k8s")),
+		}), "k8s", "github.com/josvazg/crd2go/k8s")),
 		crd2go.NewGoField("CrossReference", crd2go.AddImportInfo(crd2go.NewStruct("Reference", []*crd2go.GoField{
 			crd2go.NewGoField("Name", crd2go.NewPrimitive("string", "string")),
 			crd2go.NewGoField("Namespace", crd2go.NewPrimitive("string", "string")),
-		}), "github.com/josvazg/crd2go/k8s", "k8s")),
+		}), "k8s", "github.com/josvazg/crd2go/k8s")),
 		crd2go.NewGoField("SimpleString", crd2go.NewPrimitive("string", "string")),
 		crd2go.NewGoField("SimpleNumber", crd2go.NewPrimitive("float64", "float64")),
 		crd2go.NewGoField("SimpleInteger", crd2go.NewPrimitive("int", "int")),
@@ -241,7 +241,7 @@ func TestBuiltInFormat2Type(t *testing.T) {
 	require.NoError(t, err)
 	want := &crd2go.GoType{
 		Name: "Time",
-		Kind: "struct",
+		Kind: "opaque",
 		Import: &crd2go.ImportInfo{
 			"metav1",
 			"k8s.io/apimachinery/pkg/apis/meta/v1",
@@ -261,7 +261,7 @@ func TestConditionsKnownTypeMatch(t *testing.T) {
 				Name:    "LastTransitionTime",
 				GoType: &crd2go.GoType{
 					Name: "Time",
-					Kind: "struct",
+					Kind: "opaque",
 					Import: &crd2go.ImportInfo{
 						"metav1",
 						"k8s.io/apimachinery/pkg/apis/meta/v1",
@@ -306,7 +306,7 @@ func TestConditionsKnownTypeMatch(t *testing.T) {
 				Name:    "LastTransitionTime",
 				GoType: &crd2go.GoType{
 					Name: "Time",
-					Kind: "struct",
+					Kind: "opaque",
 					Import: &crd2go.ImportInfo{
 						"metav1",
 						"k8s.io/apimachinery/pkg/apis/meta/v1",

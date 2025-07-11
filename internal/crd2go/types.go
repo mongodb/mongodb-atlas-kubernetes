@@ -23,6 +23,7 @@ const (
 	Uint64Kind      = "uint64"
 	FloatKind       = "float64"
 	BoolKind        = "bool"
+	OpaqueKind      = "opaque"
 )
 
 const (
@@ -72,6 +73,12 @@ func (g *GoType) isPrimitive() bool {
 func (gt *GoType) signature() string {
 	if gt == nil {
 		return "nil"
+	}
+	if gt.Kind == OpaqueKind {
+		if gt.Import != nil {
+			return fmt.Sprintf("%s.%s", gt.Import.Path, gt.Name)
+		}
+		return gt.Name
 	}
 	if gt.Kind == StructKind {
 		if len(gt.Fields) == 0 { // de-duplicate empty structs as different types
@@ -203,7 +210,15 @@ func NewStruct(name string, fields []*GoField) *GoType {
 	}
 }
 
-func AddImportInfo(gt *GoType, packagePath, alias string) *GoType {
+// NewOpaqueType creates a new GoType representing an opaque type with hidden internals
+func NewOpaqueType(name string) *GoType {
+	return &GoType{
+		Name: title(name),
+		Kind: OpaqueKind,
+	}
+}
+
+func AddImportInfo(gt *GoType, alias, packagePath string) *GoType {
 	effectiveAlias := alias
 	if effectiveAlias == "" {
 		effectiveAlias = path.Base(packagePath)
@@ -447,7 +462,7 @@ func StructTypeFrom(t reflect.Type) (*GoType, error) {
 		}
 		fields = append(fields, NewGoField(f.Name, gt))
 	}
-	return AddImportInfo(NewStruct(t.Name(), fields), t.PkgPath(), ""), nil
+	return AddImportInfo(NewStruct(t.Name(), fields), "", t.PkgPath()), nil
 }
 
 func ArrayTypeFrom(t reflect.Type) (*GoType, error) {
@@ -456,7 +471,7 @@ func ArrayTypeFrom(t reflect.Type) (*GoType, error) {
 		return nil, fmt.Errorf("failed to translate array element type %v: %w",
 			t.Elem(), err)
 	}
-	return AddImportInfo(NewArray(gt), t.Key().PkgPath(), ""), nil
+	return AddImportInfo(NewArray(gt), "", t.Key().PkgPath()), nil
 }
 
 func GoKind(k reflect.Kind) string {
@@ -479,15 +494,8 @@ func GoKind(k reflect.Kind) string {
 	return ""
 }
 
-func builtInType(name, kind string, alias, path string) *GoType {
-	return &GoType{
-		Name: name,
-		Kind: kind,
-		Import: &ImportInfo{
-			Alias: alias,
-			Path:  path,
-		},
-	}
+func builtInType(name, alias, path string) *GoType {
+	return AddImportInfo(NewOpaqueType(name), alias, path)
 }
 
 func toBuiltInType(t reflect.Type) *GoType {
@@ -500,8 +508,11 @@ func toBuiltInType(t reflect.Type) *GoType {
 }
 
 func builtInTypesFor(key string) *GoType {
+	timeType := builtInType("Time", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1")
+	jsonType := builtInType("JSON", "apiextensionsv1", "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1")
 	builtInTypes := map[string]*GoType{
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Time": builtInType("Time", "struct", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1"),
+		timeType.signature(): timeType,
+		jsonType.signature(): jsonType,
 	}
 	return builtInTypes[key]
 }

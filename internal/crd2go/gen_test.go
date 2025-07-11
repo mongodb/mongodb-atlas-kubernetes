@@ -20,10 +20,10 @@ import (
 var samples embed.FS
 
 const (
-	expectedSources = 12
+	expectedSources = 13
 )
 
-var disabledKinds = []string{"Cluster", "CustomRole", "Group", "SearchIndex"}
+var disabledKinds = []string{"Cluster", "CustomRole", "Group"}
 
 var extraReserved = []string{"ConnectionStrings"}
 
@@ -142,5 +142,5 @@ func reservedTypeNames(reservedNames []string) []*crd2go.GoType {
 // }
 
 func ReserveTypeName(name string) *crd2go.GoType {
-	return crd2go.NewStruct(name, nil)
+	return crd2go.NewOpaqueType(name)
 }
