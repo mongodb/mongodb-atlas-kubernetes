@@ -20,14 +20,14 @@ type Group struct {
 }
 
 type GroupSpec struct {
-	// V20231115 The spec of the group resource for version v20231115.
-	V20231115 *GroupSpecV20231115 `json:"v20231115,omitempty"`
+	// V20250312 The spec of the group resource for version v20250312.
+	V20250312 *GroupSpecV20250312 `json:"v20250312,omitempty"`
 }
 
-type GroupSpecV20231115 struct {
+type GroupSpecV20250312 struct {
 	// Entry The entry fields of the group resource spec. These fields can be set for
 	// creating and updating groups.
-	Entry *GroupSpecV20231115Entry `json:"entry,omitempty"`
+	Entry *V20250312Entry `json:"entry,omitempty"`
 
 	// ProjectOwnerId Unique 24-hexadecimal digit string that identifies the MongoDB
 	// Cloud user to whom to grant the Project Owner role on the specified project. If
@@ -36,7 +36,7 @@ type GroupSpecV20231115 struct {
 	ProjectOwnerId string `json:"projectOwnerId"`
 }
 
-type GroupSpecV20231115Entry struct {
+type V20250312Entry struct {
 	// Name Human-readable label that identifies the project included in the MongoDB
 	// Cloud organization.
 	Name string `json:"name"`
@@ -52,10 +52,9 @@ type GroupSpecV20231115Entry struct {
 
 	   This field sets restrictions on available regions in the project.
 
-	   | Value                             | Available Regions |
-	   |-----------------------------------|------------|
-	   | `COMMERCIAL_FEDRAMP_REGIONS_ONLY` | Only allows deployments in FedRAMP Moderate regions.|
-	   | `GOV_REGIONS_ONLY`                | Only allows deployments in GovCloud regions.|
+	   `COMMERCIAL_FEDRAMP_REGIONS_ONLY`: Only allows deployments in FedRAMP Moderate regions.
+
+	   `GOV_REGIONS_ONLY`: Only allows deployments in GovCloud regions.
 	*/
 	RegionUsageRestrictions *string `json:"regionUsageRestrictions,omitempty"`
 
@@ -81,36 +80,14 @@ type Tags struct {
 type GroupStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
-	Conditions *[]Conditions `json:"conditions,omitempty"`
+	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
 
-	// V20231115 The last observed Atlas state of the group resource for version
-	// v20231115.
-	V20231115 *GroupStatusV20231115 `json:"v20231115,omitempty"`
+	// V20250312 The last observed Atlas state of the group resource for version
+	// v20250312.
+	V20250312 *GroupStatusV20250312 `json:"v20250312,omitempty"`
 }
 
-type Conditions struct {
-	// LastTransitionTime Last time the condition transitioned from one status to
-	// another.
-	LastTransitionTime *string `json:"lastTransitionTime,omitempty"`
-
-	// Message A human readable message indicating details about the transition.
-	Message *string `json:"message,omitempty"`
-
-	// ObservedGeneration observedGeneration represents the .metadata.generation that
-	// the condition was set based upon.
-	ObservedGeneration *int `json:"observedGeneration,omitempty"`
-
-	// Reason The reason for the condition's last transition.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the condition, one of True, False, Unknown.
-	Status string `json:"status"`
-
-	// Type Type of condition.
-	Type string `json:"type"`
-}
-
-type GroupStatusV20231115 struct {
+type GroupStatusV20250312 struct {
 	// ClusterCount Quantity of MongoDB Cloud clusters deployed in this project.
 	ClusterCount int `json:"clusterCount"`
 

@@ -31,7 +31,7 @@ type NetworkPeeringConnectionSpec struct {
 type NetworkPeeringConnectionSpecV20250312 struct {
 	// Entry The entry fields of the networkpeeringconnection resource spec. These
 	// fields can be set for creating and updating networkpeeringconnections.
-	Entry *V20250312Entry `json:"entry,omitempty"`
+	Entry *NetworkPeeringConnectionSpecV20250312Entry `json:"entry,omitempty"`
 
 	/*
 	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
@@ -48,7 +48,7 @@ type NetworkPeeringConnectionSpecV20250312 struct {
 	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 }
 
-type V20250312Entry struct {
+type NetworkPeeringConnectionSpecV20250312Entry struct {
 	// AccepterRegionName Amazon Web Services (AWS) region where the Virtual Peering
 	// Connection (VPC) that you peered with the MongoDB Cloud VPC resides. The
 	// resource returns `null` if your VPC and the MongoDB Cloud VPC reside in the same
