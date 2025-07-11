@@ -74,7 +74,7 @@ type DatabaseUserSpecV20250312Entry struct {
 
 	// Labels List that contains the key-value pairs for tagging and categorizing the
 	// MongoDB database user. The labels that you define do not appear in the console.
-	Labels *[]Labels `json:"labels,omitempty"`
+	Labels *[]Tags `json:"labels,omitempty"`
 
 	// LdapAuthType Part of the Lightweight Directory Access Protocol (LDAP) record
 	// that the database uses to authenticate this database user on the LDAP host.
@@ -126,14 +126,6 @@ type DatabaseUserSpecV20250312Entry struct {
 	   Users created with the `CUSTOMER` method require a Common Name (CN) in the **username** parameter. You must create externally authenticated users on the `$external` database.
 	*/
 	X509Type *string `json:"x509Type,omitempty"`
-}
-
-type Labels struct {
-	// Key Key applied to tag and categorize this component.
-	Key *string `json:"key,omitempty"`
-
-	// Value Value set to the Key applied to tag and categorize this component.
-	Value *string `json:"value,omitempty"`
 }
 
 type Roles struct {
