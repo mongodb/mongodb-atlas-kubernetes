@@ -20,12 +20,12 @@ import (
 var samples embed.FS
 
 const (
-	expectedSources = 15
+	expectedSources = 16
 )
 
-var disabledKinds = []string{"Group"}
+var disabledKinds = []string{} // use ito skip problematic CRD kinds temporarily
 
-var extraReserved = []string{"ConnectionStrings"}
+var extraReserved = []string{} // use to fix problematic name picks, usually due to skips
 
 func TestGenerateFromCRDStream(t *testing.T) {
 	buffers := make(map[string]*bytes.Buffer)
