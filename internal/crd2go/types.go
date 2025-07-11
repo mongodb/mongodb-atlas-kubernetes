@@ -53,14 +53,23 @@ type ImportInfo struct {
 	Path  string
 }
 
-var formatAliases = map[string]string{
-	"date-time": "datetime",
-	"datetime":  "datetime",
-}
-
 var (
+	formatAliases = map[string]string{
+		"date-time": "datetime",
+		"datetime":  "datetime",
+	}
+
 	timeType = builtInType("Time", "metav1", "k8s.io/apimachinery/pkg/apis/meta/v1")
 	jsonType = builtInType("JSON", "apiextensionsv1", "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1")
+
+	builtInTypes = map[string]*GoType{
+		timeType.signature(): timeType,
+		jsonType.signature(): jsonType,
+	}
+
+	format2Builtin = map[string]*GoType{
+		"datetime": builtInTypes[timeType.signature()],
+	}
 )
 
 // isPrimitive checks if the GoType is a primitive type
@@ -390,7 +399,7 @@ func fromOpenAPIFormattedType(schema *apiextensionsv1.JSONSchemaProps) (*GoType,
 	// - date: a date string like "2006-01-02" as defined by full-date in RFC3339
 	// - duration: a duration string like "22 ns" as parsed by Golang time.ParseDuration or compatible with Scala duration format
 	// - datetime: a date time string like "2014-12-15T19:30:20.000Z" as defined by date-time in RFC3339.
-	gt := format2BuiltinGoType(formatAliases[schema.Format])
+	gt := format2Builtin[formatAliases[schema.Format]]
 	if gt != nil {
 		return gt, nil
 	}
@@ -519,24 +528,9 @@ func builtInType(name, alias, path string) *GoType {
 
 func toBuiltInType(t reflect.Type) *GoType {
 	builtInKey := fmt.Sprintf("%s.%s", t.PkgPath(), t.Name())
-	gt := builtInTypesFor(builtInKey)
-	if gt != nil {
+	gt, ok := builtInTypes[builtInKey]
+	if ok {
 		return gt
 	}
 	return nil
-}
-
-func builtInTypesFor(key string) *GoType {
-	builtInTypes := map[string]*GoType{
-		timeType.signature(): timeType,
-		jsonType.signature(): jsonType,
-	}
-	return builtInTypes[key]
-}
-
-func format2BuiltinGoType(format string) *GoType {
-	format2Builtin := map[string]*GoType{
-		"datetime": builtInTypesFor("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-	}
-	return format2Builtin[format]
 }
