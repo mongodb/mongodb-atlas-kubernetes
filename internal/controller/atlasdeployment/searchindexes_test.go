@@ -443,7 +443,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			{
 				Name:    "Index1",
 				ID:      "123",
-				Status:  "READY",
+				Status:  status.SearchIndexStatusReady,
 				Message: "Atlas search index status: READY",
 			},
 			{
@@ -465,7 +465,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			{
 				Name:    "Index1",
 				ID:      "123",
-				Status:  "READY",
+				Status:  status.SearchIndexStatusReady,
 				Message: "Atlas search index status: READY",
 			},
 		}, deployment.Status.SearchIndexes)
