@@ -14,8 +14,7 @@ func (in *Conditions) DeepCopyInto(out *Conditions) {
 	*out = *in
 	if in.LastTransitionTime != nil {
 		in, out := &in.LastTransitionTime, &out.LastTransitionTime
-		*out = new(string)
-		**out = **in
+		*out = (*in).DeepCopy()
 	}
 	if in.Message != nil {
 		in, out := &in.Message, &out.Message
