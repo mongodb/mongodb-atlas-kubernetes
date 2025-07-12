@@ -1,0 +1,104 @@
+name: Release Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., 1.2.3)"
+        required: true
+        type: string
+      authors:
+        description: "Comma-separated list of the release authors' emails (e.g. author1@mongodb.com,author2@mongodb.com)"
+        required: true
+        type: string
+      commit_sha:
+        description: "Commit SHA to use for the image (e.g. 7c2a91 or 'latest' for most recent)"
+        required: false
+        default: "latest"
+        type: string
+
+jobs:
+  release-image:
+    runs-on: ubuntu-latest
+    environment: release
+    env:
+      DOCKER_RELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator
+      DOCKER_RRERELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
+      QUAY_RELEASE_REPO: quay.io/andrpac/mongodb-atlas-kubernetes-operator
+      QUAY_PRERELEASE_REPO: quay.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Login to Docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+            
+      - name: Log in to Quay registry
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Extract exact commit SHA
+        id: extract_commit_sha
+        run: |
+          if [ "${{ github.event.inputs.commit_sha }}" = "latest" ]; then
+            echo "Resolving SHA for 'latest' from origin/main..."
+            git fetch origin main
+            sha=$(git rev-parse origin/main)
+          else
+            echo "Using provided commit SHA: ${{ github.event.inputs.commit_sha }}"
+            sha="${{ github.event.inputs.commit_sha }}"
+          fi
+          echo "commit_sha=$sha" >> "$GITHUB_OUTPUT"
+
+      # Note, I think this can be unified with the other step in a script for modularity!! 
+      - name: Prepare tag for promoted image
+        id: promoted_tag
+        run: |
+          echo "tag=promoted-${{ steps.extract_commit_sha.outputs.commit_sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Pull equivalent image from Docker registry prerelease
+        run: |
+          tag=${{ steps.promoted_tag.outputs.tag }}
+          image="${DOCKER_RRERELEASE_REPO}:${tag}"
+          echo "Checking image: $image"
+          if ! docker manifest inspect "$image" > /dev/null 2>&1; then
+            echo "Image not found: $image"
+            echo "Make sure that the specified image is present Docker Hub prerelease registry!"
+            exit 1
+          else
+
+      - name: Pull equivalent image from Quay registry prerelease
+        run: |
+          tag=${{ steps.promoted_tag.outputs.tag }}
+          image="${QUAY_PRERELEASE_REPO}:${tag}"
+          echo "Checking image: $image"
+          if ! docker manifest inspect "$image" > /dev/null 2>&1; then
+            echo "Image not found: $image"
+            echo "Make sure that the specified image is present Quay prerelease registry!"
+            exit 1
+          else
+
+      - name: Move image to Docker Registry release with release-version tag
+        run: ./scripts/move-image.sh
+        env:
+          IMAGE_SRC_REPO: ${{ env.DOCKER_RRERELEASE_REPO }}
+          IMAGE_DEST_REPO: ${{ env.DOCKER_RELEASE_REPO }}
+          IMAGE_SRC_TAG: ${{ steps.promoted_tag.outputs.tag }}
+          IMAGE_DEST_TAG: ${{ github.event.inputs.version }}
+
+      - name: Move image to Quay Registry release with release-version tag
+        run: ./scripts/move-image.sh
+        env:
+          IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
+          IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
+          IMAGE_SRC_TAG: ${{ steps.promoted_tag.outputs.tag }}
+          IMAGE_DEST_TAG: ${{ github.event.inputs.version }}            
