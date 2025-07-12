@@ -2,7 +2,7 @@ name: Test
 
 on:
   schedule:
-    - cron: '*/15 * * * 1-5' # Run a nightly test 
+    - cron: '*/15 * * * *'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
     branches:

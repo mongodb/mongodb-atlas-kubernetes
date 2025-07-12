@@ -58,11 +58,9 @@ jobs:
       - name: Prepare tag for promoted image
         id: promoted_tag
         run: |
-          echo "tag=promoted-${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
-
-      - name: Pull unofficial image from GitHub Container Registry
-        run: |
-          docker pull ${{ env.GHCR_REPO }}:${{ steps.set_tag.outputs.tag }}
+          RAW_TAG="${{ steps.set_tag.outputs.tag }}"
+          COMMIT_SHA="${RAW_TAG##*-}"
+          echo "tag=promoted-${COMMIT_SHA}" >> $GITHUB_OUTPUT
 
       - name: Move image to Docker Hub
         run: ./scripts/move-image.sh

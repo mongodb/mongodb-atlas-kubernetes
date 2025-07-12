@@ -8,22 +8,28 @@ on:
         required: true
         type: string
       authors:
-        description: "Comma-separated list of the release authors' emails (e.g. author1@mongodb.com,author2@mongodb.com)"
+        description: "Comma-separated list of the release authors' emails (e.g. a1@mongodb.com,a2@mongodb.com)"
         required: true
         type: string
       commit_sha:
-        description: "Commit SHA to use for the image (e.g. 7c2a91 or 'latest' for most recent)"
+        description: "Commit SHA to use for the image (e.g. 7c2a91 or latest)"
         required: false
         default: "latest"
         type: string
 
+permissions:
+  contents: write
+  pull-requests: write
+      
 jobs:
   release-image:
     runs-on: ubuntu-latest
     environment: release
     env:
+      VERSION: ${{ github.event.inputs.version }}
+      AUTHORS: ${{ github.event.inputs.authors }}
       DOCKER_RELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator
-      DOCKER_RRERELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
+      DOCKER_PRERELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
       QUAY_RELEASE_REPO: quay.io/andrpac/mongodb-atlas-kubernetes-operator
       QUAY_PRERELEASE_REPO: quay.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
     steps:
@@ -32,13 +38,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Login to Docker registry
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: mongodb/apix-action/token@v8
+        with:
+          app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
+          private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
+
+      - name: Log in to Docker registry
         uses: docker/login-action@v3
         with:
           registry: docker.io
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-            
+
       - name: Log in to Quay registry
         uses: docker/login-action@v3
         with:
@@ -46,59 +59,90 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Extract exact commit SHA
-        id: extract_commit_sha
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.13.0
+
+      - name: Resolve commit SHA and promotion tag
+        id: tags
         run: |
           if [ "${{ github.event.inputs.commit_sha }}" = "latest" ]; then
-            echo "Resolving SHA for 'latest' from origin/main..."
             git fetch origin main
             sha=$(git rev-parse origin/main)
           else
-            echo "Using provided commit SHA: ${{ github.event.inputs.commit_sha }}"
             sha="${{ github.event.inputs.commit_sha }}"
           fi
-          echo "commit_sha=$sha" >> "$GITHUB_OUTPUT"
 
-      # Note, I think this can be unified with the other step in a script for modularity!! 
-      - name: Prepare tag for promoted image
-        id: promoted_tag
-        run: |
-          echo "tag=promoted-${{ steps.extract_commit_sha.outputs.commit_sha }}" >> "$GITHUB_OUTPUT"
+          short_sha="${sha:0:6}"
+          echo "promoted_tag=promoted-${short_sha}" >> "$GITHUB_OUTPUT"
 
-      - name: Pull equivalent image from Docker registry prerelease
-        run: |
-          tag=${{ steps.promoted_tag.outputs.tag }}
-          image="${DOCKER_RRERELEASE_REPO}:${tag}"
-          echo "Checking image: $image"
-          if ! docker manifest inspect "$image" > /dev/null 2>&1; then
-            echo "Image not found: $image"
-            echo "Make sure that the specified image is present Docker Hub prerelease registry!"
-            exit 1
-          else
-
-      - name: Pull equivalent image from Quay registry prerelease
-        run: |
-          tag=${{ steps.promoted_tag.outputs.tag }}
-          image="${QUAY_PRERELEASE_REPO}:${tag}"
-          echo "Checking image: $image"
-          if ! docker manifest inspect "$image" > /dev/null 2>&1; then
-            echo "Image not found: $image"
-            echo "Make sure that the specified image is present Quay prerelease registry!"
-            exit 1
-          else
-
-      - name: Move image to Docker Registry release with release-version tag
-        run: ./scripts/move-image.sh
+      - name: Move image to Docker registry release from prerelease
+        run: devbox run -- ./scripts/move-image.sh
         env:
-          IMAGE_SRC_REPO: ${{ env.DOCKER_RRERELEASE_REPO }}
+          IMAGE_SRC_REPO: ${{ env.DOCKER_PRERELEASE_REPO }}
           IMAGE_DEST_REPO: ${{ env.DOCKER_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ steps.promoted_tag.outputs.tag }}
+          IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
           IMAGE_DEST_TAG: ${{ github.event.inputs.version }}
 
-      - name: Move image to Quay Registry release with release-version tag
-        run: ./scripts/move-image.sh
+      - name: Move image to Quay registry release from prerelease
+        run: devbox run -- ./scripts/move-image.sh
         env:
           IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
           IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ steps.promoted_tag.outputs.tag }}
-          IMAGE_DEST_TAG: ${{ github.event.inputs.version }}            
+          IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
+          IMAGE_DEST_TAG: ${{ github.event.inputs.version }}
+      
+      - name: Create deploy configurations
+        uses: ./.github/actions/gen-install-scripts
+        with:
+          ENV: prod
+          IMAGE_URL: "${{ env.DOCKER_RELEASE_REPO }}:${{ github.event.inputs.version }}"
+      
+      - name: Bump helm chart version
+        run: devbox run -- ./scripts/bump-helm-chart-version.sh 
+
+      - name: Login to artifactory
+        uses: docker/login-action@v3
+        with:
+          registry: artifactory.corp.mongodb.com
+          username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
+          password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
+
+      - name: Sign Docker registry released images
+        run: devbox run -- make sign
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD: ${{ secrets.GRS_PASSWORD }}
+          IMG_REPO: ${{ env.DOCKER_RELEASE_REPO }}
+          VERSION: ${{ github.event.inputs.version }}
+
+      - name: Sign Quay registry release image
+        run: devbox run -- make sign
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD: ${{ secrets.GRS_PASSWORD }}
+          IMG_REPO: ${{ env.QUAY_RELEASE_REPO }}
+          VERSION: ${{ github.event.inputs.version }}
+
+      - name: Generate SBOMs
+        run: devbox run -- make generate-sboms
+        env:
+          RELEASED_OPERATOR_IMAGE: ${{ env.DOCKER_RELEASE_REPO }}
+
+      - name: Create SDLC report
+        run: devbox run -- make gen-sdlc-checklist    
+
+      - name: Commit and create pull request for release changes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          commit-message: "chore(release): updates from new release v${{ github.event.inputs.version }}"
+          title: "Release v${{ github.event.inputs.version }}"
+          body: |
+            This PR was automatically generated by the **release-image** workflow.
+            
+            Version: `${{ github.event.inputs.version }}`
+            Authors: ${{ github.event.inputs.authors }}
+          branch: "release/${{ github.event.inputs.version }}"
+          delete-branch: true
