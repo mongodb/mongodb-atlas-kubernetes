@@ -11,6 +11,10 @@ inputs:
   version:
     description: The version of the image to be certified
     required: true
+  registry_username:
+    description: The username to access the registry
+    required: false
+    default: "mongodb+mongodb_atlas_kubernetes"
   registry_password:
     description: The password to access the quay.io registry
     required: true
@@ -31,6 +35,7 @@ runs:
     REGISTRY: ${{ inputs.registry }}
     REPOSITORY: ${{ inputs.repository }}
     VERSION: ${{ inputs.version }}
+    REGISTRY_USERNAME: ${{ inputs.registry_username }}
     REGISTRY_PASSWORD: ${{ inputs.registry_password }}
     RHCC_TOKEN: ${{ inputs.rhcc_token }}
     RHCC_PROJECT: ${{ inputs.rhcc_project }}

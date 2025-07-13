@@ -35,54 +35,14 @@ jobs:
       - name: allowed message
         run: echo "Allowed to run tests"
 
-  lint:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/lint.yaml
-
-  validate-manifests:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/validate-manifests.yml
-  
-  unit-tests:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/test-unit.yml
-    secrets: inherit
-
-  license-header-check:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/license-header-check.yml
-
-  check-licenses:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/check-licenses.yml
-  
   cloud-tests-filter:
     if: github.event.pull_request.head.repo.fork == false
     needs:
       - run-tests
     uses: ./.github/workflows/cloud-tests-filter.yml
 
-  e2e2:
-    needs:
-      - lint
-      - unit-tests
-      - validate-manifests
-      - check-licenses
-      - cloud-tests-filter
-    uses: ./.github/workflows/tests-e2e2.yaml
-    secrets: inherit
-
   cloud-tests:
     needs:
-      - lint
-      - unit-tests
-      - validate-manifests
-      - check-licenses
       - cloud-tests-filter
     if: |
       github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true'

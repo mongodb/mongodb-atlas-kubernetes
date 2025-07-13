@@ -55,7 +55,7 @@ jobs:
             ACTOR: ${{ github.actor }}
           run: |
             # Evaluate whether or not cloud tests should run
-            RUN_CLOUD_TESTS='false'
+            RUN_CLOUD_TESTS='true'
             # Scheduled runs on default branch always run all tests
             if [ "${EVENT}" == "schedule" ];then
               RUN_CLOUD_TESTS='true'
