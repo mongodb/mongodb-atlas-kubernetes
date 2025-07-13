@@ -1,7 +1,7 @@
-# Create Release Branch
+# DEPRECATED: Create Release Branch
 # TODO after GitHub add permission for action-bot to commit to the protected branches - please merge release-* workflow into one
 
-name: Create Release Branch
+name: "[Deprecated] Create Release Branch"
 
 on:
   workflow_dispatch:

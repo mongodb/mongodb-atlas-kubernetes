@@ -1,5 +1,5 @@
-# GitHub workflow for creating the SDLC SBOMs PR after a release.
-name: Create SBOMs PR
+# DEPRECATED: GitHub workflow for creating the SDLC SBOMs PR after a release.
+name: "[Deprecated] Create SBOMs PR"
 
 on:
   workflow_call:
