@@ -1,8 +1,8 @@
-# GitHub workflow for creating release.
+# DEPRECATED: GitHub workflow for creating release.
 # Trigger release branch should be merge into main
 # TODO add e2e/smoke test for autogen configuration
 
-name: Create Release
+name: "[Deprecated] Create Release"
 
 on:
   push:

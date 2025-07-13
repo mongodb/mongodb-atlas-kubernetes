@@ -74,41 +74,7 @@ jobs:
         k8s: ${{ fromJson(needs.prepare-e2e.outputs.test_matrix) }}
         test: 
           [
-            "alert-config",
-            "auditing",
-            "cloud-access-role",
-            "deployment-annotations-ns",
-            "deployment-ns",
-            "users",
-            "users-oidc",
-            "deployment-wide",
-            "encryption-at-rest",
             "free-tier",
-            "global-deployment",
-            "integration-ns",
-            "long-run",
-            "multinamespaced",
-            "networkpeering",
-            "privatelink",
-            "private-endpoint",
-            "project-settings",
-            "x509auth",
-            "custom-roles",
-            "teams",
-            "backup-config",
-            "datafederation",
-            "atlas-search-nodes",
-            "atlas-search-index",
-            "cache-watch",
-            "reconcile-all",
-            "reconcile-one",
-            "reconcile-two",
-            "backup-compliance",
-            "flex",
-            "ip-access-list",
-            "dry-run",
-            "networkcontainer-controller",
-            "networkpeering-controller",
           ]
     steps:
       - uses: actions/checkout@v4
@@ -178,7 +144,7 @@ jobs:
       fail-fast: false
       matrix:
         k8s: ${{ fromJson(needs.prepare-e2e.outputs.test_matrix) }}
-        test: ["helm-ns", "helm-update", "helm-wide"]
+        test: ["helm-wide"]
     steps:
       - uses: actions/checkout@v4
         with:

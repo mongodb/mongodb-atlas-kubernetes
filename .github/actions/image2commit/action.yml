@@ -1,0 +1,42 @@
+name: image2commit
+description: Resolve full commit SHA from a promoted image tag.
+
+inputs:
+  register:
+    description: "Registry (e.g., docker.io, quay.io)"
+    required: true
+  repo:
+    description: "Repository path (e.g., andrpac/my-repo)"
+    required: true
+  image_sha:
+    description: "Short SHA or 'latest'"
+    required: true
+
+outputs:
+  commit_sha:
+    description: "Resolved full commit SHA"
+    value: ${{ steps.resolve.outputs.commit_sha }}
+runs:
+  using: "composite"
+  steps:
+    - name: Install skopeo and jq
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y skopeo jq
+
+    - name: Resolve commit SHA
+      id: resolve
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/entrypoint.sh
+        full_sha=$(${{
+          github.action_path
+        }}/entrypoint.sh \
+          "${{ inputs.register }}" \
+          "${{ inputs.repo }}" \
+          "${{ inputs.image_sha }}"
+        )
+
+        echo "Raw full_sha: $full_sha"
+        echo "commit_sha=$full_sha" >> $GITHUB_OUTPUT
