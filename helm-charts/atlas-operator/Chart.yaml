@@ -3,8 +3,8 @@ name: mongodb-atlas-operator
 description: |-
   MongoDB Atlas Operator - a Helm chart for installing and upgrading Atlas Operator: the official Kubernetes operator allowing to manage MongoDB Atlas resources from Kubernetes
 type: application
-version: 2.9.1
-appVersion: 2.9.1
+version: test-0.0.1
+appVersion: test-0.0.1
 kubeVersion: ">=1.15.0-0"
 keywords:
   - mongodb
@@ -19,6 +19,6 @@ maintainers:
     email: support@mongodb.com
 dependencies:
   - name: mongodb-atlas-operator-crds
-    version: "2.9.1"
+    version: "test-0.0.1"
     repository:  "file://../../helm-charts/atlas-operator-crds"
     condition: mongodb-atlas-operator-crds.enabled
