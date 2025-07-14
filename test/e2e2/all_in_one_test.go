@@ -28,7 +28,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 )
 
-var _ = Describe("all-in-one.yaml", Ordered, Label("all-in-one"), func() {
+var _ = Describe("all-in-one.yaml", Ordered, Label("nightly-core", "all-in-one"), func() {
 	var kubeClient client.Client
 
 	_ = BeforeAll(func() {
