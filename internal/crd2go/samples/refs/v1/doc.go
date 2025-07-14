@@ -1,5 +1,5 @@
 // +k8s:deepcopy-gen=package
-// +groupName=test.example.com
+// +groupName=atlas.generated.mongodb.com
 
 package v1
 

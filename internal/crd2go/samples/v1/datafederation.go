@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&DataFederation{})
+	SchemeBuilder.Register(&DataFederationList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -358,4 +359,11 @@ type PrivateEndpointHostnames struct {
 
 	// PrivateEndpoint Human-readable label that identifies private endpoint.
 	PrivateEndpoint *string `json:"privateEndpoint,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type DataFederationList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []DataFederation `json:"items"`
 }

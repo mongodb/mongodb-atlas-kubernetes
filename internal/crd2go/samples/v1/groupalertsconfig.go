@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&GroupAlertsConfig{})
+	SchemeBuilder.Register(&GroupAlertsConfigList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -390,4 +391,11 @@ type GroupAlertsConfigStatusV20250312 struct {
 	// Updated Date and time when someone last updated this alert configuration. This
 	// parameter expresses its value in the ISO 8601 timestamp format in UTC.
 	Updated *string `json:"updated,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type GroupAlertsConfigList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []GroupAlertsConfig `json:"items"`
 }

@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&NetworkPermissionEntries{})
+	SchemeBuilder.Register(&NetworkPermissionEntriesList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -97,4 +98,11 @@ type NetworkPermissionEntriesStatusV20250312 struct {
 	// GroupId Unique 24-hexadecimal digit string that identifies the project that
 	// contains the IP access list to which you want to add one or more entries.
 	GroupId *string `json:"groupId,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type NetworkPermissionEntriesList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []NetworkPermissionEntries `json:"items"`
 }
