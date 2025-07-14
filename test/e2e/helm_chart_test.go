@@ -34,7 +34,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
-var _ = Describe("HELM charts", Ordered, func() {
+var _ = Describe("HELM charts", Ordered, FlakeAttempts(1), func() {
 	var data model.TestDataProvider
 	skipped := false
 

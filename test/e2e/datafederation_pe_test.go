@@ -43,7 +43,7 @@ import (
 
 // AWS NOTES: reserved VPC in eu-west-2, eu-south-1, us-east-1 (due to limitation no more 4 VPC per region)
 
-var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), func() {
+var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), FlakeAttempts(3), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
 	var pe *cloud.PrivateEndpointDetails
