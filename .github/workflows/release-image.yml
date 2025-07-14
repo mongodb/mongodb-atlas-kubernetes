@@ -16,6 +16,7 @@ on:
         required: false
         default: "latest"
         type: string
+
   push:
     branches:
       - '**'
@@ -25,14 +26,45 @@ permissions:
   pull-requests: write
 
 jobs:
+  resolve_commit_sha:
+    name: Resolve Commit SHA
+    runs-on: ubuntu-latest
+    env:
+      COMMIT_SHA: latest  # for testing; replace with "${{ inputs.commit_sha }}" later
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+    steps:
+      - name: Checkout repo to access refs
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve commit to check out
+        id: resolve
+        run: |
+          if [ "${{ env.COMMIT_SHA }}" = "latest" ]; then
+            branch="${GITHUB_REF#refs/heads/}"
+            echo "Resolving latest commit on branch: $branch"
+            git fetch origin "$branch"
+            sha=$(git rev-parse origin/"$branch")
+          else
+            echo "Using specified commit SHA: ${{ env.COMMIT_SHA }}"
+            sha="${{ env.COMMIT_SHA }}"
+            git fetch origin "$sha"
+          fi
+
+          echo "Resolved commit SHA: $sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
   release-image:
+    name: Release Image
+    needs: resolve_commit_sha
     runs-on: ubuntu-latest
     environment: release
     env:
-      VERSION: test-0.0.1
+      VERSION: test-0.0.0
       AUTHORS: andrei.pacurar@mongodb.com
-      COMMIT_SHA: 99511c
-
+      COMMIT_SHA: ${{ needs.resolve_commit_sha.outputs.sha }}
       DOCKER_RELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator
       DOCKER_PRERELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
       DOCKER_SIGNATURE_REPO: docker.io/andrpac/signatures
@@ -40,10 +72,11 @@ jobs:
       QUAY_PRERELEASE_REPO: quay.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
 
     steps:
-      - name: Checkout code
+      - name: Checkout resolved commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ env.COMMIT_SHA }}
 
       - name: Generate GitHub App Token
         id: generate_token
@@ -51,8 +84,7 @@ jobs:
         with:
           app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
           private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
-        
-        # Login in into all registries
+
       - name: Log in to Docker registry
         uses: docker/login-action@v3
         with:
@@ -74,28 +106,18 @@ jobs:
           username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
           password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
 
-      - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.13.0
-
       - name: Resolve commit SHA and tags
         id: tags
         run: |
-          if [ "${{ env.COMMIT_SHA }}" = "latest" ]; then
-            git fetch origin main
-            sha=$(git rev-parse origin/main)
-          else
-            sha="${{ env.COMMIT_SHA }}"
-          fi
-
-          short_sha="${sha:0:6}"
+          short_sha="${COMMIT_SHA:0:6}"
           promoted_tag="promoted-${short_sha}"
-          release_tag="${{ env.VERSION }}"
+          release_tag="${VERSION}"
           certified_tag="certified-${release_tag}"
+          docker_image_url="${DOCKER_RELEASE_REPO}:${release_tag}"
+          quay_image_url="${QUAY_RELEASE_REPO}:${release_tag}"
+          quay_certified_image_url="${QUAY_RELEASE_REPO}:${certified_tag}"
 
-          docker_image_url="${{ env.DOCKER_RELEASE_REPO }}:${release_tag}"
-          quay_image_url="${{ env.QUAY_RELEASE_REPO }}:${release_tag}"
-          quay_certified_image_url="${{ env.QUAY_RELEASE_REPO }}:${certified_tag}"
-
+          echo "sha=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           echo "promoted_tag=${promoted_tag}" >> "$GITHUB_OUTPUT"
           echo "release_tag=${release_tag}" >> "$GITHUB_OUTPUT"
           echo "certified_tag=${certified_tag}" >> "$GITHUB_OUTPUT"
@@ -103,106 +125,58 @@ jobs:
           echo "quay_image_url=${quay_image_url}" >> "$GITHUB_OUTPUT"
           echo "quay_certified_image_url=${quay_certified_image_url}" >> "$GITHUB_OUTPUT"
 
-      # Move prerelease images to official release registries in Docker Hub and Quay
-      - name: Promote Docker prerelease image
-        run: devbox run -- ./scripts/move-image.sh
-        env:
-          IMAGE_SRC_REPO: ${{ env.DOCKER_PRERELEASE_REPO }}
-          IMAGE_DEST_REPO: ${{ env.DOCKER_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
-          IMAGE_DEST_TAG: ${{ steps.tags.outputs.release_tag }}
-
-      - name: Promote Quay prerelease image
-        run: devbox run -- ./scripts/move-image.sh
-        env:
-          IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
-          IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
-          IMAGE_DEST_TAG: ${{ steps.tags.outputs.release_tag }}
-
-      # Create Openshift certified images 
-      - name: Create OpenShift certified image on Quay
-        run: devbox run -- ./scripts/move-image.sh
-        env:
-          IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
-          IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
-          IMAGE_DEST_TAG: ${{ steps.tags.outputs.certified_tag }}
-
-      # Link updates to pr: all-in-one.yml, helm-updates, sdlc requirements
       - name: Generate deployment configurations
         uses: ./.github/actions/gen-install-scripts
         with:
           ENV: prod
           IMAGE_URL: ${{ steps.tags.outputs.docker_image_url }}
 
-      - name: Bump Helm chart version
-        run: devbox run -- ./scripts/bump-helm-chart-version.sh
+      - name: Generate SDLC checklist files for released version
+        run: make gen-sdlc-checklist
 
-      # Prepare SDLC requirement: signatures, sboms, compliance reports
-      # Note, signed images will live in mongodb/release and mongodb/signature repos
-      - name: Sign released images
+      - name: Create release branch, commit, and PR
+        id: generate_branch
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          devbox run -- make sign IMG="${{ steps.tags.outputs.docker_image_url }}"         SIGNATURE_REPO="${{ env.DOCKER_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ steps.tags.outputs.quay_image_url }}"           SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ steps.tags.outputs.docker_image_url }}"         SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
-          devbox run -- make sign IMG="${{ steps.tags.outputs.quay_certified_image_url }}" SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ steps.tags.outputs.quay_certified_image_url }}" SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
-        env:
-          PKCS11_URI: ${{ secrets.PKCS11_URI }}
-          GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
-          GRS_PASSWORD: ${{ secrets.GRS_PASSWORD }}
+          git config --global user.name "${{ steps.generate_token.outputs.user-name }}"
+          git config --global user.email "${{ steps.generate_token.outputs.user-email }}"
 
-      - name: Generate SBOMs
-        run: devbox run -- make generate-sboms
-        env:
-          RELEASED_OPERATOR_IMAGE: ${{ env.DOCKER_RELEASE_REPO }}
+          export BRANCH="new-release/${VERSION}"
+          export COMMIT_MESSAGE="Release ${VERSION}"
 
-      - name: Generate SDLC report
-        run: devbox run -- make gen-sdlc-checklist
+          git checkout -b "$BRANCH"
+          git add -f ./deploy ./bundle bundle.Dockerfile docs/releases
+          scripts/create-signed-commit.sh
 
-      # Create pr with all updates
-      - name: Create pull request for release changes
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ steps.generate_token.outputs.token }}
-          commit-message: "chore(release): updates from new release v${{ env.VERSION }}"
-          title: "Release v${{ env.VERSION }}"
-          body: |
-            This PR was automatically generated by the **release-image** workflow.
+          gh pr create --head="$BRANCH" \
+            --title "$COMMIT_MESSAGE" \
+            --body "This is an autogenerated PR to prepare for the release"
 
-            Version: `${{ env.VERSION }}`
-            Authors: ${{ env.AUTHORS }}
-          base: main
-          branch: "new-release/${{ env.VERSION }}" # This should avoid for now running all tests till we fix cloud-test-filter.yml
-          delete-branch: true
-          draft: true
+      - name: Tag commit and push
+        run: |
+            git fetch origin --tags
 
-        # Create release assets on GitHub
+            export BRANCH="new-release/${VERSION}"
+            git checkout "$BRANCH"
+
+            RELEASE_COMMIT=$(git rev-parse HEAD) # Note, get the new release commit from the previous pr
+            git tag -a "${VERSION}" "$RELEASE_COMMIT" -m "Release ${VERSION}"
+            git push origin "${VERSION}"
+
       - name: Create configuration package
         run: |
-          devbox run -- 'set -x'
-          devbox run -- 'tar czvf atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz -C deploy all-in-one.yaml'
+          set -x
+          tar czvf atlas-operator-all-in-one-${VERSION}.tar.gz -C deploy all-in-one.yaml
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Create GitHub Release and Upload Asset
+        uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: 
         with:
+          token: ${{ steps.generate_token.outputs.token }}
           tag_name: ${{ env.VERSION }}
-          release_name: ${{ env.VERSION }}
-          body_path: docs/release-notes/release-notes-template.md
-          draft: true
+          name: ${{ env.VERSION }}
+          files: ./atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz
           prerelease: false
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz
-          asset_name: atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz
-          asset_content_type: application/tgz
+          draft: true
