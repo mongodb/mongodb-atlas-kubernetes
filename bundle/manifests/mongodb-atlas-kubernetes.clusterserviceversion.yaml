@@ -534,7 +534,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Database
-    createdAt: "2025-07-14T21:57:07Z"
+    createdAt: "2025-07-14T21:58:41Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -893,4 +893,4 @@ spec:
   provider:
     name: MongoDB, Inc
   version: 0.0.0
-  replaces: mongodb-atlas-kubernetes.v2.9.1
+  replaces: mongodb-atlas-kubernetes.v0.0.0
