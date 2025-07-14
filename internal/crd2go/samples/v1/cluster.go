@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&Cluster{})
+	SchemeBuilder.Register(&ClusterList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -707,4 +708,11 @@ type V20250312ReplicationSpecs struct {
 	// ZoneId Unique 24-hexadecimal digit string that identifies the zone in a Global
 	// Cluster. This value can be used to configure Global Cluster backup policies.
 	ZoneId *string `json:"zoneId,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type ClusterList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []Cluster `json:"items"`
 }

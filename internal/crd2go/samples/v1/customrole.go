@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&CustomRole{})
+	SchemeBuilder.Register(&CustomRoleList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -100,4 +101,11 @@ type CustomRoleStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
 	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type CustomRoleList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []CustomRole `json:"items"`
 }

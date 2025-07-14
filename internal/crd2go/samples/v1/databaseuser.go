@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&DatabaseUser{})
+	SchemeBuilder.Register(&DatabaseUserList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -153,4 +154,11 @@ type DatabaseUserStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
 	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type DatabaseUserList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []DatabaseUser `json:"items"`
 }

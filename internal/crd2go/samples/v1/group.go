@@ -6,6 +6,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 func init() {
 	SchemeBuilder.Register(&Group{})
+	SchemeBuilder.Register(&GroupList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -97,4 +98,11 @@ type GroupStatusV20250312 struct {
 
 	// Id Unique 24-hexadecimal digit string that identifies the MongoDB Cloud project.
 	Id *string `json:"id,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type GroupList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []Group `json:"items"`
 }

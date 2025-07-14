@@ -101,6 +101,9 @@ func generateCRD(td TypeDict, crd *apiextensions.CustomResourceDefinition, versi
 		jen.Id("SchemeBuilder").Dot("Register").Params(
 			jen.Op("&").Id(crd.Spec.Names.Kind).Values(),
 		),
+		jen.Id("SchemeBuilder").Dot("Register").Params(
+			jen.Op("&").Id(crd.Spec.Names.Kind+"List").Values(),
+		),
 	)
 
 	if err := generateCRDRootObject(f, td, crd, v); err != nil {
@@ -147,6 +150,14 @@ func generateCRDRootObject(f *jen.File, td TypeDict, crd *apiextensions.CustomRe
 		return fmt.Errorf("failed to generate status code: %w", err)
 	}
 	code.Add(statusCode)
+
+	f.Comment("+kubebuilder:object:root=true")
+	f.Type().Id(crd.Spec.Names.Kind+"List").Struct(
+		jen.Qual(metav1Package, "TypeMeta").Tag(map[string]string{"json": ",inline"}),
+		jen.Qual(metav1Package, "ObjectMeta").Tag(map[string]string{"json": "metadata,omitempty"}),
+		jen.Id("Items").Index().Id(crd.Spec.Names.Kind).Tag(map[string]string{"json": "items"}),
+	)
+
 	return nil
 }
 

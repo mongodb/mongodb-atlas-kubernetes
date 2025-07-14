@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&BackupCompliancePolicy{})
+	SchemeBuilder.Register(&BackupCompliancePolicyList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -148,4 +149,11 @@ type BackupCompliancePolicyStatusV20250312 struct {
 	// Compliance Policy settings. MongoDB Cloud ignores this email setting when you
 	// enable or update the Backup Compliance Policy settings.
 	UpdatedUser *string `json:"updatedUser,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type BackupCompliancePolicyList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []BackupCompliancePolicy `json:"items"`
 }
