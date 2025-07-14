@@ -10,6 +10,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&SearchIndex{})
+	SchemeBuilder.Register(&SearchIndexList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -217,4 +218,11 @@ type SearchIndexStatusV20250312 struct {
 	   - `PAUSED`: The cluster is paused.
 	*/
 	Status *string `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type SearchIndexList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []SearchIndex `json:"items"`
 }

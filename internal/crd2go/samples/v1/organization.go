@@ -6,6 +6,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 func init() {
 	SchemeBuilder.Register(&Organization{})
+	SchemeBuilder.Register(&OrganizationList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -106,4 +107,11 @@ type V20250312Organization struct {
 	// SkipDefaultAlertsSettings Disables automatic alert creation. When set to true,
 	// no organization level alerts will be created automatically.
 	SkipDefaultAlertsSettings *bool `json:"skipDefaultAlertsSettings,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type OrganizationList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []Organization `json:"items"`
 }

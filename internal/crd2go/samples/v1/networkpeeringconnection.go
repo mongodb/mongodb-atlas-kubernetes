@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&NetworkPeeringConnection{})
+	SchemeBuilder.Register(&NetworkPeeringConnectionList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -139,4 +140,11 @@ type NetworkPeeringConnectionStatusV20250312 struct {
 	// StatusName State of the network peering connection at the time you made the
 	// request.
 	StatusName *string `json:"statusName,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type NetworkPeeringConnectionList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []NetworkPeeringConnection `json:"items"`
 }

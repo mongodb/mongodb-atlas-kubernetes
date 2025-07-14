@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&ThirdPartyIntegration{})
+	SchemeBuilder.Register(&ThirdPartyIntegrationList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -256,4 +257,11 @@ type ThirdPartyIntegrationStatusV20250312 struct {
 	// integrate with MongoDB Cloud. The value must match the third-party service
 	// integration type.
 	Type *string `json:"type,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type ThirdPartyIntegrationList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []ThirdPartyIntegration `json:"items"`
 }
