@@ -97,6 +97,7 @@ func TestReconcile(t *testing.T) {
 					Message: "blah is not a valid semver version for label mongodb.com/atlas-resource-version",
 				},
 			},
+			wantErr: "blah is not a valid semver version for label mongodb.com/atlas-resource-version",
 		},
 		{
 			name: "should transition to error state when resource is unsupported",

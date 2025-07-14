@@ -54,9 +54,11 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		atlasPrivateEndpoint *akov2.AtlasPrivateEndpoint
 		peClient             func() privateendpoint.PrivateEndpointService
 		expectedResult       reconcile.Result
+		wantErr              bool
 		expectedConditions   []api.Condition
 	}{
 		"failed to retrieve private endpoint": {
+			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pe1",
@@ -92,6 +94,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 		},
 		"failed to create private endpoint service": {
+			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pe1",
@@ -193,6 +196,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			expectedResult: reconcile.Result{},
 		},
 		"failed to delete private endpoint": {
+			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "pe1",
@@ -332,6 +336,7 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 		},
 		"private endpoint service was rejected": {
+			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pe1",
@@ -491,7 +496,11 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			}
 
 			result, err := r.handlePrivateEndpointService(&workflowCtx, tt.peClient(), projectID, tt.atlasPrivateEndpoint)
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			assert.True(
 				t,
@@ -517,9 +526,11 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 		atlasPEService       func() privateendpoint.EndpointService
 		peClient             func() privateendpoint.PrivateEndpointService
 		expectedResult       reconcile.Result
+		wantErr              bool
 		expectedConditions   []api.Condition
 	}{
 		"failed to create private endpoint interface": {
+			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pe1",
@@ -692,6 +703,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 		},
 		"failed to configure private endpoint interface": {
+			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pe1",
@@ -775,6 +787,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 		},
 		"failed to delete private endpoint interface": {
+			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pe1",
@@ -1133,7 +1146,11 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 
 			akoPEService := privateendpoint.NewPrivateEndpoint(tt.atlasPrivateEndpoint)
 			result, err := r.handlePrivateEndpointInterface(&workflowCtx, tt.peClient(), projectID, tt.atlasPrivateEndpoint, akoPEService, tt.atlasPEService())
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 			t.Log(cmp.Diff(
 				tt.expectedConditions,

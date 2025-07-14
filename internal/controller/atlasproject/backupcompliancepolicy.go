@@ -37,7 +37,7 @@ type backupComplianceController struct {
 	project *akov2.AtlasProject
 }
 
-func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	ctx.Log.Debug("starting backup compliance policy processing")
 	defer ctx.Log.Debug("finished backup compliance policy processing")
 
@@ -58,7 +58,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	return b.handlePending()
 }
 
-func (b *backupComplianceController) handlePending() workflow.Result {
+func (b *backupComplianceController) handlePending() workflow.DeprecatedResult {
 	bcp, inAtlas, err := b.getAtlasBackupCompliancePolicy()
 	if err != nil {
 		return b.terminate(workflow.Internal, err)
@@ -81,7 +81,7 @@ func (b *backupComplianceController) handlePending() workflow.Result {
 	}
 }
 
-func (b *backupComplianceController) handleUpserting() workflow.Result {
+func (b *backupComplianceController) handleUpserting() workflow.DeprecatedResult {
 	atlasBCP, found, err := b.getAtlasBackupCompliancePolicy()
 	if err != nil {
 		return b.terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err)
@@ -125,7 +125,7 @@ func (b *backupComplianceController) handleUpserting() workflow.Result {
 
 // upsert updates the backup compliance settings for a project. These settings can only be updated (not created), so
 // we also use this for creation too.
-func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettings20231001) workflow.Result {
+func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettings20231001) workflow.DeprecatedResult {
 	b.ctx.Log.Debug("updating backup compliance policy")
 	akoBCP, err := b.getAKOBackupCompliancePolicy()
 	if err != nil {
@@ -171,7 +171,7 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 
 // delete begins the deletion process for a backup compliance policy. However, the admin API cannot delete BCPs (which must be
 // done via support), so we notify the user of next steps via status.
-func (b *backupComplianceController) delete() workflow.Result {
+func (b *backupComplianceController) delete() workflow.DeprecatedResult {
 	b.ctx.Log.Debug("deleting backup compliance policy")
 	return b.terminate(
 		workflow.ProjectBackupCompliancePolicyCannotDelete,
@@ -179,7 +179,7 @@ func (b *backupComplianceController) delete() workflow.Result {
 	).WithoutRetry()
 }
 
-func (b *backupComplianceController) progress(state workflow.ConditionReason, fineMsg, coarseMsg string) workflow.Result {
+func (b *backupComplianceController) progress(state workflow.ConditionReason, fineMsg, coarseMsg string) workflow.DeprecatedResult {
 	var (
 		fineProgress   = workflow.InProgress(state, fineMsg)
 		coarseProgress = workflow.InProgress(state, coarseMsg)
@@ -190,7 +190,7 @@ func (b *backupComplianceController) progress(state workflow.ConditionReason, fi
 }
 
 // terminate transitions to pending state if an error occurred.
-func (b *backupComplianceController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+func (b *backupComplianceController) terminate(reason workflow.ConditionReason, err error) workflow.DeprecatedResult {
 	b.ctx.Log.Error(err)
 	result := workflow.Terminate(reason, err)
 	b.ctx.SetConditionFromResult(api.BackupComplianceReadyType, result)
@@ -198,13 +198,13 @@ func (b *backupComplianceController) terminate(reason workflow.ConditionReason, 
 }
 
 // unmanage transitions to pending state if there is no managed BCP.
-func (b *backupComplianceController) unmanage() workflow.Result {
+func (b *backupComplianceController) unmanage() workflow.DeprecatedResult {
 	b.ctx.UnsetCondition(api.BackupComplianceReadyType)
 	return workflow.OK()
 }
 
 // idle transitions BCP to idle state when ready and idle.
-func (b *backupComplianceController) idle() workflow.Result {
+func (b *backupComplianceController) idle() workflow.DeprecatedResult {
 	b.ctx.SetConditionTrue(api.BackupComplianceReadyType)
 	return workflow.OK()
 }

@@ -41,11 +41,15 @@ import (
 )
 
 func TestHandleFlexInstance(t *testing.T) {
+	type workflowRes struct {
+		res ctrl.Result
+		err error
+	}
 	tests := map[string]struct {
 		atlasDeployment    *akov2.AtlasDeployment
 		deploymentInAtlas  *deployment.Flex
 		deploymentService  func() deployment.AtlasDeploymentsService
-		expectedResult     ctrl.Result
+		expectedResult     workflowRes
 		expectedConditions []api.Condition
 	}{
 		"fail to create flex cluster in atlas": {
@@ -58,7 +62,10 @@ func TestHandleFlexInstance(t *testing.T) {
 
 				return service
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("failed to create flex cluster"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentNotCreatedInAtlas)).
@@ -89,7 +96,10 @@ func TestHandleFlexInstance(t *testing.T) {
 
 				return service
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentCreating)).
@@ -117,7 +127,10 @@ func TestHandleFlexInstance(t *testing.T) {
 
 				return service
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("failed to update flex cluster"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
@@ -171,7 +184,10 @@ func TestHandleFlexInstance(t *testing.T) {
 
 				return service
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
@@ -195,7 +211,10 @@ func TestHandleFlexInstance(t *testing.T) {
 			deploymentService: func() deployment.AtlasDeploymentsService {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
@@ -219,7 +238,10 @@ func TestHandleFlexInstance(t *testing.T) {
 			deploymentService: func() deployment.AtlasDeploymentsService {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
-			expectedResult: ctrl.Result{},
+			expectedResult: workflowRes{
+				res: ctrl.Result{},
+				err: nil,
+			},
 		},
 		"flex cluster has unknown state in atlas": {
 			atlasDeployment: basicFlexCluster(),
@@ -238,7 +260,10 @@ func TestHandleFlexInstance(t *testing.T) {
 			deploymentService: func() deployment.AtlasDeploymentsService {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: errors.New("unknown deployment state: NONSENSE"),
+			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.Internal)).
@@ -272,8 +297,11 @@ func TestHandleFlexInstance(t *testing.T) {
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Flex)
 			var projectService project.ProjectService
 			result, err := reconciler.handleFlexInstance(workflowCtx, projectService, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expectedResult, result)
+
+			assert.Equal(t, tt.expectedResult, workflowRes{
+				res: result,
+				err: err,
+			})
 			assert.True(
 				t,
 				cmp.Equal(

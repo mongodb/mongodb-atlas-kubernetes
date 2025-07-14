@@ -29,7 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 )
 
-func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Context, federationService datafederation.DataFederationService, project *akov2.AtlasProject, df *akov2.AtlasDataFederation) workflow.Result {
+func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Context, federationService datafederation.DataFederationService, project *akov2.AtlasProject, df *akov2.AtlasDataFederation) workflow.DeprecatedResult {
 	databaseUsers := akov2.AtlasDatabaseUserList{}
 	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
 	if err != nil {

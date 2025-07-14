@@ -34,7 +34,7 @@ const (
 	ObjectIDRegex = "^([a-f0-9]{24})$"
 )
 
-func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *akov2.AtlasProject, encryptionAtRestService encryptionatrest.EncryptionAtRestService) workflow.Result {
+func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *akov2.AtlasProject, encryptionAtRestService encryptionatrest.EncryptionAtRestService) workflow.DeprecatedResult {
 	encRest := encryptionatrest.NewEncryptionAtRest(project)
 
 	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, encRest, project.Namespace); err != nil {
@@ -153,7 +153,7 @@ func readSecretData(ctx context.Context, kubeClient client.Client, res common.Re
 	return result, nil
 }
 
-func createOrDeleteEncryptionAtRests(ctx *workflow.Context, service encryptionatrest.EncryptionAtRestService, projectID string, encRest *encryptionatrest.EncryptionAtRest) workflow.Result {
+func createOrDeleteEncryptionAtRests(ctx *workflow.Context, service encryptionatrest.EncryptionAtRestService, projectID string, encRest *encryptionatrest.EncryptionAtRest) workflow.DeprecatedResult {
 	encryptionAtRestsInAtlas, err := service.Get(ctx.Context, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)

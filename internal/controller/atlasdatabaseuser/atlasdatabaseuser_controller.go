@@ -47,6 +47,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authentication is disabled")
@@ -81,13 +82,13 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	switch {
 	case failedToRetrieve:
-		return r.fail(req, err), nil
+		return r.fail(req, err)
 	case objectNotFound:
-		return r.notFound(req), nil
+		return r.notFound(req)
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(atlasDatabaseUser) {
-		return r.skip(), nil
+		return r.skip()
 	}
 
 	r.Log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", atlasDatabaseUser.Spec, "status", atlasDatabaseUser.GetStatus())
@@ -97,24 +98,24 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, atlasDatabaseUser)
 	}()
 
-	return r.handleDatabaseUser(workflowCtx, atlasDatabaseUser), nil
+	return r.handleDatabaseUser(workflowCtx, atlasDatabaseUser)
 }
 
 // notFound terminates the reconciliation silently(no updates on conditions) and without retry
-func (r *AtlasDatabaseUserReconciler) notFound(req ctrl.Request) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) notFound(req ctrl.Request) (ctrl.Result, error) {
 	err := fmt.Errorf("object %s doesn't exist, was it deleted after reconcile request?", req.NamespacedName)
 	r.Log.Infof(err.Error())
 	return workflow.TerminateSilently(err).WithoutRetry().ReconcileResult()
 }
 
 // fail terminates the reconciliation silently(no updates on conditions)
-func (r *AtlasDatabaseUserReconciler) fail(req ctrl.Request, err error) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) fail(req ctrl.Request, err error) (ctrl.Result, error) {
 	r.Log.Errorf("Failed to query object %s: %s", req.NamespacedName, err)
 	return workflow.TerminateSilently(err).ReconcileResult()
 }
 
 // skip prevents the reconciliation to start and successfully return
-func (r *AtlasDatabaseUserReconciler) skip() ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) skip() (ctrl.Result, error) {
 	r.Log.Infow(fmt.Sprintf("-> Skipping AtlasDatabaseUser reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip))
 	return workflow.OK().ReconcileResult()
 }
@@ -127,7 +128,7 @@ func (r *AtlasDatabaseUserReconciler) terminate(
 	reason workflow.ConditionReason,
 	retry bool,
 	err error,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	r.Log.Errorf("resource %T(%s/%s) failed on condition %s: %s", object, object.GetNamespace(), object.GetName(), condition, err)
 	result := workflow.Terminate(reason, err)
 	ctx.SetConditionFromResult(condition, result)
@@ -140,7 +141,7 @@ func (r *AtlasDatabaseUserReconciler) terminate(
 }
 
 // unmanage remove finalizer and release resource
-func (r *AtlasDatabaseUserReconciler) unmanage(ctx *workflow.Context, projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) unmanage(ctx *workflow.Context, projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) (ctrl.Result, error) {
 	err := connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, projectID, atlasDatabaseUser.Spec.Username, *atlasDatabaseUser, r.Log)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
@@ -157,7 +158,7 @@ func (r *AtlasDatabaseUserReconciler) unmanage(ctx *workflow.Context, projectID 
 }
 
 // inProgress set finalizer and requeue the reconciliation
-func (r *AtlasDatabaseUserReconciler) inProgress(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, passwordVersion, msg string) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) inProgress(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, passwordVersion, msg string) (ctrl.Result, error) {
 	if !customresource.HaveFinalizer(atlasDatabaseUser, customresource.FinalizerLabel) {
 		if err := customresource.ManageFinalizer(ctx.Context, r.Client, atlasDatabaseUser, customresource.SetFinalizer); err != nil {
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasFinalizerNotSet, true, err)
@@ -178,7 +179,7 @@ func (r *AtlasDatabaseUserReconciler) inProgress(ctx *workflow.Context, atlasDat
 }
 
 // ready set finalizer and put the resource in ready state
-func (r *AtlasDatabaseUserReconciler) ready(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, passwordVersion string) ctrl.Result {
+func (r *AtlasDatabaseUserReconciler) ready(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser, passwordVersion string) (ctrl.Result, error) {
 	if !customresource.HaveFinalizer(atlasDatabaseUser, customresource.FinalizerLabel) {
 		if err := customresource.ManageFinalizer(ctx.Context, r.Client, atlasDatabaseUser, customresource.SetFinalizer); err != nil {
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasFinalizerNotSet, true, err)
@@ -220,7 +221,9 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager, skipNam
 			handler.EnqueueRequestsFromMapFunc(r.databaseUsersForCredentialMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 

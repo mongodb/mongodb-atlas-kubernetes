@@ -52,7 +52,7 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 
 		wantDataFederation *akov2.AtlasDataFederation
 		wantSecrets        []corev1.Secret
-		wantResult         workflow.Result
+		wantResult         workflow.DeprecatedResult
 	}{
 		{
 			name: "no finalizer",

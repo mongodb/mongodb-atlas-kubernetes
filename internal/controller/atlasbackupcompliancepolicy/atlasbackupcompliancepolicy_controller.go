@@ -40,6 +40,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 type AtlasBackupCompliancePolicyReconciler struct {
@@ -67,11 +68,11 @@ func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, r
 	bcp := &akov2.AtlasBackupCompliancePolicy{}
 	result := customresource.PrepareResource(ctx, r.Client, req, bcp, log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(bcp) {
-		return r.skip(ctx, log, bcp), nil
+		return r.skip(ctx, log, bcp)
 	}
 
 	conditions := akov2.InitCondition(bcp, api.FalseCondition(api.ReadyType))
@@ -80,17 +81,17 @@ func (r *AtlasBackupCompliancePolicyReconciler) Reconcile(ctx context.Context, r
 
 	isValid := customresource.ValidateResourceVersion(workflowCtx, bcp, r.Log)
 	if !isValid.IsOk() {
-		return r.invalidate(isValid), nil
+		return r.invalidate(isValid)
 	}
 
 	if !r.AtlasProvider.IsResourceSupported(bcp) {
-		return r.unsupport(workflowCtx), nil
+		return r.unsupport(workflowCtx)
 	}
 
-	return r.ensureAtlasBackupCompliancePolicy(workflowCtx, bcp), nil
+	return r.ensureAtlasBackupCompliancePolicy(workflowCtx, bcp)
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolicy(workflowCtx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) ensureAtlasBackupCompliancePolicy(workflowCtx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	projects := &akov2.AtlasProjectList{}
 	listOpts := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(
@@ -123,7 +124,9 @@ func (r *AtlasBackupCompliancePolicyReconciler) SetupWithManager(mgr ctrl.Manage
 			handler.EnqueueRequestsFromMapFunc(r.findBCPForProjects),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 
@@ -163,7 +166,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) findBCPForProjects(_ context.Con
 	}
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) skip(ctx context.Context, log *zap.SugaredLogger, bcp *akov2.AtlasBackupCompliancePolicy) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) skip(ctx context.Context, log *zap.SugaredLogger, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	log.Infow(fmt.Sprintf("-> Skipping AtlasBackupCompliancePolicy reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", bcp.Spec)
 	if !bcp.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, bcp, customresource.UnsetFinalizer); err != nil {
@@ -177,13 +180,13 @@ func (r *AtlasBackupCompliancePolicyReconciler) skip(ctx context.Context, log *z
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) invalidate(invalid workflow.Result) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) invalidate(invalid workflow.DeprecatedResult) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasBackupCompliancePolicy is invalid: %v", invalid)
 	return invalid.ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, errors.New("the AtlasBackupCompliancePolicy is not supported by Atlas for government")).
 		WithoutRetry()
@@ -191,20 +194,20 @@ func (r *AtlasBackupCompliancePolicyReconciler) unsupport(ctx *workflow.Context)
 	return unsupported.ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.ReadyType, terminated)
 	return terminated.ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) ready(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) ready(ctx *workflow.Context) (ctrl.Result, error) {
 	result := workflow.OK()
 	ctx.SetConditionFromResult(api.ReadyType, result)
 	return result.ReconcileResult()
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) lock(ctx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) lock(ctx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	if customresource.HaveFinalizer(bcp, customresource.FinalizerLabel) {
 		return r.ready(ctx)
 	}
@@ -216,7 +219,7 @@ func (r *AtlasBackupCompliancePolicyReconciler) lock(ctx *workflow.Context, bcp 
 	return r.ready(ctx)
 }
 
-func (r *AtlasBackupCompliancePolicyReconciler) release(ctx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) ctrl.Result {
+func (r *AtlasBackupCompliancePolicyReconciler) release(ctx *workflow.Context, bcp *akov2.AtlasBackupCompliancePolicy) (ctrl.Result, error) {
 	if !customresource.HaveFinalizer(bcp, customresource.FinalizerLabel) {
 		return r.ready(ctx)
 	}

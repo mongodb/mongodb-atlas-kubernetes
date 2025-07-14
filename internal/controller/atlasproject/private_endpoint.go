@@ -31,7 +31,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 )
 
-func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	specPEs := project.Spec.DeepCopy().PrivateEndpoints
 
 	lastAppliedPEs, err := mapLastAppliedPrivateEndpoint(project)
@@ -90,7 +90,7 @@ func syncPrivateEndpointsWithAtlas(
 	specPEs []akov2.PrivateEndpoint,
 	atlasPEs []atlasPE,
 	lastAppliedPEs map[string]akov2.PrivateEndpoint,
-) (workflow.Result, api.ConditionType) {
+) (workflow.DeprecatedResult, api.ConditionType) {
 	log := ctx.Log
 
 	log.Debugw("PE Connections", "atlasPEs", atlasPEs, "specPEs", specPEs)
@@ -124,7 +124,7 @@ func syncPrivateEndpointsWithAtlas(
 	return workflow.OK(), api.PrivateEndpointReadyType
 }
 
-func getStatusForServices(atlasPEs []atlasPE) workflow.Result {
+func getStatusForServices(atlasPEs []atlasPE) workflow.DeprecatedResult {
 	allAvailable := true
 	for _, conn := range atlasPEs {
 		if isFailed(conn.GetStatus()) {
@@ -143,7 +143,7 @@ func getStatusForServices(atlasPEs []atlasPE) workflow.Result {
 	return workflow.OK()
 }
 
-func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) workflow.Result {
+func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) workflow.DeprecatedResult {
 	totalInterfaceCount := 0
 
 	for _, atlasPeService := range atlasPEs {
@@ -332,7 +332,7 @@ func endpointDefinedInSpec(specEndpoint akov2.PrivateEndpoint) bool {
 	return specEndpoint.ID != "" || specEndpoint.EndpointGroupName != ""
 }
 
-func DeleteAllPrivateEndpoints(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.Result {
+func DeleteAllPrivateEndpoints(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
 	atlasPEs, err := getAllPrivateEndpoints(ctx.Context, ctx.SdkClientSet.SdkClient20250312002, atlasProject.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
@@ -347,7 +347,7 @@ func DeleteAllPrivateEndpoints(ctx *workflow.Context, atlasProject *akov2.AtlasP
 	return deletePrivateEndpointsFromAtlas(ctx, atlasProject.ID(), endpointsToDelete)
 }
 
-func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, listsToRemove []atlasPE) workflow.Result {
+func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, listsToRemove []atlasPE) workflow.DeprecatedResult {
 	if len(listsToRemove) == 0 {
 		return workflow.OK()
 	}
@@ -472,7 +472,7 @@ func getGCPInterfaceEndpoint(ctx *workflow.Context, projectID string, endpoint s
 		}
 		listOfInterfaces = append(listOfInterfaces, endpoint)
 	}
-	log.Debugw("Result of getGCPEndpointData", "endpoint.ID", endpoint.ID, "listOfInterfaces", listOfInterfaces)
+	log.Debugw("DeprecatedResult of getGCPEndpointData", "endpoint.ID", endpoint.ID, "listOfInterfaces", listOfInterfaces)
 
 	return listOfInterfaces, nil
 }
@@ -512,7 +512,7 @@ func isFailed(status string) bool {
 	return status == "FAILED"
 }
 
-func terminateWithError(ctx *workflow.Context, conditionType api.ConditionType, message string, err error) (workflow.Result, api.ConditionType) {
+func terminateWithError(ctx *workflow.Context, conditionType api.ConditionType, message string, err error) (workflow.DeprecatedResult, api.ConditionType) {
 	ctx.Log.Debugw(message, "error", err)
 	result := workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, err).WithoutRetry()
 	return result, conditionType

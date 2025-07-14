@@ -22,7 +22,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 )
 
-func ensureProjectSettings(workflowCtx *workflow.Context, project *akov2.AtlasProject) (result workflow.Result) {
+func ensureProjectSettings(workflowCtx *workflow.Context, project *akov2.AtlasProject) (result workflow.DeprecatedResult) {
 	if result = syncProjectSettings(workflowCtx, project.ID(), project); !result.IsOk() {
 		workflowCtx.SetConditionFromResult(api.ProjectSettingsReadyType, result)
 		return result
@@ -37,7 +37,7 @@ func ensureProjectSettings(workflowCtx *workflow.Context, project *akov2.AtlasPr
 	return workflow.OK()
 }
 
-func syncProjectSettings(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) workflow.Result {
+func syncProjectSettings(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	spec := project.Spec.Settings
 
 	atlas, err := fetchSettings(ctx, projectID)

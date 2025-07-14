@@ -30,7 +30,7 @@ type auditController struct {
 }
 
 // reconcile dispatch state transitions
-func (a *auditController) reconcile() workflow.Result {
+func (a *auditController) reconcile() workflow.DeprecatedResult {
 	auditInAtlas, err := a.service.Get(a.ctx.Context, a.project.ID())
 	if err != nil {
 		return a.terminate(workflow.Internal, err)
@@ -51,7 +51,7 @@ func (a *auditController) reconcile() workflow.Result {
 }
 
 // configure update Atlas with new audit log configuration
-func (a *auditController) configure(auditConfig *audit.AuditConfig, isUnset bool) workflow.Result {
+func (a *auditController) configure(auditConfig *audit.AuditConfig, isUnset bool) workflow.DeprecatedResult {
 	err := a.service.Update(a.ctx.Context, a.project.ID(), auditConfig)
 	if err != nil {
 		return a.terminate(workflow.ProjectAuditingReady, err)
@@ -65,7 +65,7 @@ func (a *auditController) configure(auditConfig *audit.AuditConfig, isUnset bool
 }
 
 // ready transitions to ready state after successfully configure audit log
-func (a *auditController) ready() workflow.Result {
+func (a *auditController) ready() workflow.DeprecatedResult {
 	result := workflow.OK()
 	a.ctx.SetConditionFromResult(api.AuditingReadyType, result)
 
@@ -73,7 +73,7 @@ func (a *auditController) ready() workflow.Result {
 }
 
 // terminate ends a state transition if an error occurred.
-func (a *auditController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
+func (a *auditController) terminate(reason workflow.ConditionReason, err error) workflow.DeprecatedResult {
 	a.ctx.Log.Error(err)
 	result := workflow.Terminate(reason, err)
 	a.ctx.SetConditionFromResult(api.AuditingReadyType, result)
@@ -82,14 +82,14 @@ func (a *auditController) terminate(reason workflow.ConditionReason, err error) 
 }
 
 // unmanage transitions to unmanaged state if no audit config is set
-func (a *auditController) unmanage() workflow.Result {
+func (a *auditController) unmanage() workflow.DeprecatedResult {
 	a.ctx.UnsetCondition(api.AuditingReadyType)
 
 	return workflow.OK()
 }
 
 // handleAudit prepare internal audit controller to handle audit log states
-func handleAudit(ctx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
+func handleAudit(ctx *workflow.Context, project *akov2.AtlasProject) workflow.DeprecatedResult {
 	ctx.Log.Debug("starting audit log processing")
 	defer ctx.Log.Debug("finished audit log processing")
 

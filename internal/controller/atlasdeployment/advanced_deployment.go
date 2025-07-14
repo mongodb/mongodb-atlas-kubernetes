@@ -83,7 +83,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
-		var results []workflow.Result
+		var results []workflow.DeprecatedResult
 		if !r.AtlasProvider.IsCloudGov() {
 			searchNodeResult := handleSearchNodes(ctx, akoCluster.GetCustomResource(), akoCluster.GetProjectID())
 			results = append(results, searchNodeResult)

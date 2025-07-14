@@ -59,12 +59,16 @@ const (
 )
 
 func TestHandleCustomResource(t *testing.T) {
+	type workflowResult struct {
+		result ctrl.Result
+		err    error
+	}
 	deletionTime := metav1.Now()
 	tests := []struct {
 		title            string
 		networkContainer *akov2.AtlasNetworkContainer
 		provider         atlas.Provider
-		wantResult       ctrl.Result
+		wantResult       workflowResult
 		wantFinalizers   []string
 		wantConditions   []api.Condition
 	}{
@@ -87,7 +91,10 @@ func TestHandleCustomResource(t *testing.T) {
 					},
 				},
 			},
-			wantResult:     ctrl.Result{},
+			wantResult: workflowResult{
+				result: ctrl.Result{},
+				err:    nil,
+			},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 		},
 		{
@@ -108,7 +115,10 @@ func TestHandleCustomResource(t *testing.T) {
 					},
 				},
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult: workflowResult{
+				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err:    errors.New("wrong is not a valid semver version for label mongodb.com/atlas-resource-version"),
+			},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.ResourceVersionStatus).
@@ -136,7 +146,10 @@ func TestHandleCustomResource(t *testing.T) {
 					return false
 				},
 			},
-			wantResult: ctrl.Result{},
+			wantResult: workflowResult{
+				result: ctrl.Result{},
+				err:    nil,
+			},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.AtlasGovUnsupported)).
@@ -170,7 +183,10 @@ func TestHandleCustomResource(t *testing.T) {
 					return true
 				},
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult: workflowResult{
+				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err:    errors.New("error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+			},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
@@ -207,7 +223,10 @@ func TestHandleCustomResource(t *testing.T) {
 					return nil, errors.New("failed to create sdk")
 				},
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult: workflowResult{
+				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err:    errors.New("failed to create sdk"),
+			},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkContainerNotConfigured)).
@@ -250,7 +269,10 @@ func TestHandleCustomResource(t *testing.T) {
 					}, nil
 				},
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantResult: workflowResult{
+				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err:    errors.New("failed to get project via Kubernetes reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+			},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
@@ -315,7 +337,10 @@ func TestHandleCustomResource(t *testing.T) {
 					}, nil
 				},
 			},
-			wantResult:     ctrl.Result{},
+			wantResult: workflowResult{
+				result: ctrl.Result{},
+				err:    nil,
+			},
 			wantFinalizers: nil,
 			wantConditions: nil,
 		},
@@ -351,8 +376,13 @@ func TestHandleCustomResource(t *testing.T) {
 			r := testReconciler(k8sClient, tc.provider, logger)
 			result, err := r.handleCustomResource(ctx, tc.networkContainer)
 			nc := getNetworkContainer(t, ctx, k8sClient, client.ObjectKeyFromObject(tc.networkContainer))
-			require.NoError(t, err)
-			assert.Equal(t, tc.wantResult, result)
+			if tc.wantResult.err != nil {
+				assert.Equal(t, tc.wantResult.err.Error(), err.Error())
+				//assert.ErrorIs(t, tc.wantResult.err, err, "expected '%v',\ngot '%v'", tc.wantResult.err, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tc.wantResult.result, result)
 			assert.Equal(t, tc.wantFinalizers, getFinalizers(nc))
 			assert.Equal(t, cleanConditions(tc.wantConditions), cleanConditions(getConditions(nc)))
 		})
@@ -446,6 +476,7 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
+			wantErr:        fmt.Errorf("failed to create container: %w", ErrTestFail),
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
@@ -644,6 +675,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
+			wantErr:        fmt.Errorf("failed to update container: %w", ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to update container: %v", ErrTestFail)),
@@ -731,6 +763,7 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantErr:        fmt.Errorf("failed to delete container: %w", ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotDeleted)).
 					WithMessageRegexp(fmt.Sprintf("failed to delete container: %v", ErrTestFail)),
@@ -762,6 +795,8 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantErr: fmt.Errorf("failed to find container from project %s: %w",
+				testProjectID, ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to find container from project %s: %v",
@@ -795,6 +830,8 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantErr: fmt.Errorf("failed to get container %s from project %s: %w",
+				testContainerID, testProjectID, ErrTestFail),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to get container %s from project %s: %v",
@@ -831,6 +868,8 @@ func TestHandle(t *testing.T) {
 			},
 			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
+			wantErr: fmt.Errorf("failed to get container %s from project %s: %w",
+				testContainerID, testProjectID, networkcontainer.ErrNotFound),
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
 					WithMessageRegexp(fmt.Sprintf("failed to get container %s from project %s: %v",
@@ -850,7 +889,12 @@ func TestHandle(t *testing.T) {
 				Build()
 			r := testReconciler(k8sClient, emptyProvider, logger)
 			result, err := r.handle(workflowCtx, tc.req)
-			assert.ErrorIs(t, err, tc.wantErr)
+			if tc.wantErr != nil {
+				assert.Equal(t, err.Error(), tc.wantErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+			//assert.ErrorIs(t, err, tc.wantErr)
 			assert.Equal(t, tc.wantResult, result)
 			nc := getNetworkContainer(t, workflowCtx.Context, k8sClient, client.ObjectKeyFromObject(tc.req.networkContainer))
 			assert.Equal(t, tc.wantFinalizers, getFinalizers(nc))

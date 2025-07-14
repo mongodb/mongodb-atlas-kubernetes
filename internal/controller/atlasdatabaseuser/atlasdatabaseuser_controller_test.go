@@ -52,6 +52,7 @@ func TestReconcile(t *testing.T) {
 		dbUser         *akov2.AtlasDatabaseUser
 		interceptors   interceptor.Funcs
 		expectedResult ctrl.Result
+		wantErr        bool
 	}{
 		"failed to retrieve user": {
 			dbUser: &akov2.AtlasDatabaseUser{
@@ -79,6 +80,7 @@ func TestReconcile(t *testing.T) {
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantErr:        true,
 		},
 		"user was not found": {
 			dbUser: &akov2.AtlasDatabaseUser{
@@ -101,6 +103,7 @@ func TestReconcile(t *testing.T) {
 				},
 			},
 			expectedResult: ctrl.Result{},
+			wantErr:        false,
 		},
 		"skip reconciliation": {
 			dbUser: &akov2.AtlasDatabaseUser{
@@ -126,6 +129,7 @@ func TestReconcile(t *testing.T) {
 				},
 			},
 			expectedResult: ctrl.Result{},
+			wantErr:        false,
 		},
 		"handle user": {
 			dbUser: &akov2.AtlasDatabaseUser{
@@ -148,6 +152,7 @@ func TestReconcile(t *testing.T) {
 				},
 			},
 			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			wantErr:        true,
 		},
 	}
 
@@ -170,7 +175,11 @@ func TestReconcile(t *testing.T) {
 			}
 
 			result, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Name: "user1", Namespace: "default"}})
-			assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
@@ -185,7 +194,10 @@ func TestNotFound(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, ctrl.Result{}, c.notFound(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}))
+		res, err := c.notFound(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}})
+		assert.NoError(t, err)
+		assert.Equal(t, ctrl.Result{}, res)
+		//assert.Equal(t, ctrl.Result{}, c.notFound(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}))
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, zapcore.Level(0), logs.All()[0].Level)
 		assert.Equal(t, "object test/object doesn't exist, was it deleted after reconcile request?", logs.All()[0].Message)
@@ -201,11 +213,14 @@ func TestFail(t *testing.T) {
 			},
 		}
 
-		assert.Equal(
-			t,
-			ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			c.fail(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}, errors.New("failed to retrieve custom resource")),
-		)
+		res, err := c.fail(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}, errors.New("failed to retrieve custom resource"))
+		assert.Error(t, err)
+		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, res)
+		//assert.Equal(
+		//	t,
+		//	ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+		//	c.fail(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}, errors.New("failed to retrieve custom resource")),
+		//)
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, zapcore.Level(2), logs.All()[0].Level)
 		assert.Equal(t, "Failed to query object test/object: failed to retrieve custom resource", logs.All()[0].Message)
@@ -221,7 +236,10 @@ func TestSkip(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, ctrl.Result{}, c.skip())
+		res, err := c.skip()
+		assert.NoError(t, err)
+		assert.Equal(t, ctrl.Result{}, res)
+		//assert.Equal(t, ctrl.Result{}, c.skip())
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, zapcore.Level(0), logs.All()[0].Level)
 		assert.Equal(t, "-> Skipping AtlasDatabaseUser reconciliation as annotation mongodb.com/atlas-reconciliation-policy=skip", logs.All()[0].Message)
@@ -236,6 +254,7 @@ func TestTerminate(t *testing.T) {
 		retry          bool
 		err            error
 		expectedResult ctrl.Result
+		wantErr        bool
 		expectedLogs   []string
 	}{
 		"terminates reconciliation with retry": {
@@ -253,6 +272,7 @@ func TestTerminate(t *testing.T) {
 			expectedLogs: []string{
 				"resource *v1.AtlasProject(ns-test/my-project) failed on condition ProjectReady: failed to reconcile project",
 			},
+			wantErr: true,
 		},
 		"terminates reconciliation without retry": {
 			object: &akov2.AtlasStreamInstance{
@@ -269,6 +289,7 @@ func TestTerminate(t *testing.T) {
 			expectedLogs: []string{
 				"resource *v1.AtlasStreamInstance(ns-test/my-project) failed on condition StreamInstanceReady: failed to reconcile stream instance",
 			},
+			wantErr: false,
 		},
 	}
 	for name, tt := range tests {
@@ -280,7 +301,14 @@ func TestTerminate(t *testing.T) {
 				},
 			}
 
-			assert.Equal(t, tt.expectedResult, c.terminate(&workflow.Context{}, tt.object, tt.condition, tt.reason, tt.retry, tt.err))
+			res, err := c.terminate(&workflow.Context{}, tt.object, tt.condition, tt.reason, tt.retry, tt.err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedResult, res)
+			//assert.Equal(t, tt.expectedResult, c.terminate(&workflow.Context{}, tt.object, tt.condition, tt.reason, tt.retry, tt.err))
 			assert.Equal(t, len(tt.expectedLogs), logs.Len())
 			for ix, log := range logs.All() {
 				assert.Equal(t, zapcore.Level(2), log.Level)
@@ -291,12 +319,16 @@ func TestTerminate(t *testing.T) {
 }
 
 func TestReady(t *testing.T) {
+	type expectedRes struct {
+		result ctrl.Result
+		err    error
+	}
 	tests := map[string]struct {
 		dbUser          *akov2.AtlasDatabaseUser
 		passwordVersion string
 		interceptors    interceptor.Funcs
 
-		expectedResult     ctrl.Result
+		expectedResult     expectedRes
 		expectedConditions []api.Condition
 	}{
 		"fail to set finalizer": {
@@ -325,7 +357,11 @@ func TestReady(t *testing.T) {
 					return errors.New("failed to set finalizer")
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.AtlasFinalizerNotSet, errors.New("")).ReconcileResult(),
+
+			expectedResult: func() expectedRes {
+				r, err := workflow.Terminate(workflow.AtlasFinalizerNotSet, errors.New("failed to set finalizer")).ReconcileResult()
+				return expectedRes{r, err}
+			}(),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.AtlasFinalizerNotSet)).
@@ -362,7 +398,10 @@ func TestReady(t *testing.T) {
 					return errors.New("failed to set last applied config")
 				},
 			},
-			expectedResult: workflow.Terminate(workflow.Internal, errors.New("")).ReconcileResult(),
+			expectedResult: func() expectedRes {
+				r, err := workflow.Terminate(workflow.Internal, errors.New("failed to set last applied config")).ReconcileResult()
+				return expectedRes{r, err}
+			}(),
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).
@@ -390,7 +429,10 @@ func TestReady(t *testing.T) {
 				},
 			},
 			passwordVersion: "1",
-			expectedResult:  workflow.OK().ReconcileResult(),
+			expectedResult: func() expectedRes {
+				r, err := workflow.OK().ReconcileResult()
+				return expectedRes{r, err}
+			}(),
 			expectedConditions: []api.Condition{
 				api.TrueCondition(api.ReadyType),
 				api.TrueCondition(api.DatabaseUserReadyType),
@@ -419,7 +461,10 @@ func TestReady(t *testing.T) {
 				},
 			},
 			passwordVersion: "1",
-			expectedResult:  workflow.Requeue(10 * time.Minute).ReconcileResult(),
+			expectedResult: func() expectedRes {
+				r, err := workflow.Requeue(10 * time.Minute).ReconcileResult()
+				return expectedRes{r, err}
+			}(),
 			expectedConditions: []api.Condition{
 				api.TrueCondition(api.ReadyType),
 				api.TrueCondition(api.DatabaseUserReadyType),
@@ -452,7 +497,9 @@ func TestReady(t *testing.T) {
 				Log:     logger,
 			}
 
-			assert.Equal(t, tt.expectedResult, c.ready(ctx, tt.dbUser, tt.passwordVersion))
+			r, err := c.ready(ctx, tt.dbUser, tt.passwordVersion)
+			assert.Equal(t, tt.expectedResult, expectedRes{r, err})
+			//assert.Equal(t, tt.expectedResult, c.ready(ctx, tt.dbUser, tt.passwordVersion))
 			assert.True(
 				t,
 				cmp.Equal(

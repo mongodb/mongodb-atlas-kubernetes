@@ -42,6 +42,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
 // AtlasNetworkPeeringReconciler reconciles a AtlasNetworkPeering object
@@ -100,7 +101,7 @@ func (r *AtlasNetworkPeeringReconciler) Reconcile(ctx context.Context, req ctrl.
 	akoNetworkPeering := akov2.AtlasNetworkPeering{}
 	result := customresource.PrepareResource(ctx, r.Client, req, &akoNetworkPeering, r.Log)
 	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+		return result.ReconcileResult()
 	}
 	return r.handleCustomResource(ctx, &akoNetworkPeering)
 }
@@ -129,7 +130,9 @@ func (r *AtlasNetworkPeeringReconciler) SetupWithManager(mgr ctrl.Manager, skipN
 			handler.EnqueueRequestsFromMapFunc(r.networkPeeringForContainerByIDMapFunc()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
-		WithOptions(controller.TypedOptions[reconcile.Request]{SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+		WithOptions(controller.TypedOptions[reconcile.Request]{
+			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
 		Complete(r)
 }
 

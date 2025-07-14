@@ -35,7 +35,7 @@ func (r *AtlasIPAccessListReconciler) create(
 	ipAccessList *akov2.AtlasIPAccessList,
 	projectID string,
 	akoIPAccessList ipaccesslist.IPAccessEntries,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	err := ipAccessListService.Add(ctx.Context, projectID, akoIPAccessList)
 	if err != nil {
 		return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListFailedToCreate, err)
@@ -50,7 +50,7 @@ func (r *AtlasIPAccessListReconciler) deleteAll(
 	ipAccessList *akov2.AtlasIPAccessList,
 	projectID string,
 	atlasIPAccessList ipaccesslist.IPAccessEntries,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	err := r.delete(ctx, ipAccessListService, projectID, atlasIPAccessList)
 	if err != nil {
 		return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListFailedToDelete, err)
@@ -65,7 +65,7 @@ func (r *AtlasIPAccessListReconciler) deletePartial(
 	ipAccessList *akov2.AtlasIPAccessList,
 	projectID string,
 	atlasIPAccessList ipaccesslist.IPAccessEntries,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	err := r.delete(ctx, ipAccessListService, projectID, atlasIPAccessList)
 	if err != nil {
 		return r.terminate(ctx, ipAccessList, api.IPAccessListReady, workflow.IPAccessListFailedToDelete, err)
@@ -92,7 +92,7 @@ func (r *AtlasIPAccessListReconciler) delete(
 	return nil
 }
 
-func (r *AtlasIPAccessListReconciler) skip(ctx context.Context, ipAccessList *akov2.AtlasIPAccessList) ctrl.Result {
+func (r *AtlasIPAccessListReconciler) skip(ctx context.Context, ipAccessList *akov2.AtlasIPAccessList) (ctrl.Result, error) {
 	r.Log.Infow(fmt.Sprintf("-> Skipping AtlasIPAccessList reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", ipAccessList.Spec)
 	if !ipAccessList.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, ipAccessList, customresource.UnsetFinalizer); err != nil {
@@ -106,13 +106,13 @@ func (r *AtlasIPAccessListReconciler) skip(ctx context.Context, ipAccessList *ak
 	return workflow.OK().ReconcileResult()
 }
 
-func (r *AtlasIPAccessListReconciler) invalidate(invalid workflow.Result) ctrl.Result {
+func (r *AtlasIPAccessListReconciler) invalidate(invalid workflow.DeprecatedResult) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasIPAccessList is invalid: %v", invalid)
 	return invalid.ReconcileResult()
 }
 
-func (r *AtlasIPAccessListReconciler) unsupport(ctx *workflow.Context) ctrl.Result {
+func (r *AtlasIPAccessListReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, errors.New("the AtlasIPAccessList is not supported by Atlas for government")).
 		WithoutRetry()
@@ -124,7 +124,7 @@ func (r *AtlasIPAccessListReconciler) inProgress(
 	ctx *workflow.Context,
 	ipAccessList *akov2.AtlasIPAccessList,
 	msg string,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	if err := customresource.ManageFinalizer(ctx.Context, r.Client, ipAccessList, customresource.SetFinalizer); err != nil {
 		return r.terminate(ctx, ipAccessList, api.ReadyType, workflow.AtlasFinalizerNotSet, err)
 	}
@@ -136,7 +136,7 @@ func (r *AtlasIPAccessListReconciler) inProgress(
 	return result.ReconcileResult()
 }
 
-func (r *AtlasIPAccessListReconciler) unmanage(ctx *workflow.Context, ipAccessList *akov2.AtlasIPAccessList) ctrl.Result {
+func (r *AtlasIPAccessListReconciler) unmanage(ctx *workflow.Context, ipAccessList *akov2.AtlasIPAccessList) (ctrl.Result, error) {
 	if err := customresource.ManageFinalizer(ctx.Context, r.Client, ipAccessList, customresource.UnsetFinalizer); err != nil {
 		return r.terminate(ctx, ipAccessList, api.ReadyType, workflow.AtlasFinalizerNotRemoved, err)
 	}
@@ -144,7 +144,7 @@ func (r *AtlasIPAccessListReconciler) unmanage(ctx *workflow.Context, ipAccessLi
 	return workflow.Deleted().ReconcileResult()
 }
 
-func (r *AtlasIPAccessListReconciler) ready(ctx *workflow.Context, ipAccessList *akov2.AtlasIPAccessList) ctrl.Result {
+func (r *AtlasIPAccessListReconciler) ready(ctx *workflow.Context, ipAccessList *akov2.AtlasIPAccessList) (ctrl.Result, error) {
 	if err := customresource.ManageFinalizer(ctx.Context, r.Client, ipAccessList, customresource.SetFinalizer); err != nil {
 		return r.terminate(ctx, ipAccessList, api.ReadyType, workflow.AtlasFinalizerNotSet, err)
 	}
@@ -165,7 +165,7 @@ func (r *AtlasIPAccessListReconciler) terminate(
 	condition api.ConditionType,
 	reason workflow.ConditionReason,
 	err error,
-) ctrl.Result {
+) (ctrl.Result, error) {
 	r.Log.Errorf("resource %T(%s/%s) failed on condition %s: %s", ipAccessList, ipAccessList.GetNamespace(), ipAccessList.GetName(), condition, err)
 	result := workflow.Terminate(reason, err)
 	ctx.SetConditionFalse(api.ReadyType).

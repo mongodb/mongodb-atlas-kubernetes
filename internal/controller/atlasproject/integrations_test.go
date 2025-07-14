@@ -60,7 +60,7 @@ func TestUpdateIntegrationsAtlas(t *testing.T) {
 		title          string
 		toUpdate       [][]set.DeprecatedIdentifiable
 		client         *mongodbatlas.Client
-		expectedResult workflow.Result
+		expectedResult workflow.DeprecatedResult
 		expectedCalls  int
 	}{
 		{
