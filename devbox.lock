@@ -50,66 +50,66 @@
       }
     },
     "awscli2@latest": {
-      "last_modified": "2025-06-30T02:52:09Z",
-      "resolved": "github:NixOS/nixpkgs/b95255df2360a45ddbb03817a68869d5cb01bf96#awscli2",
+      "last_modified": "2025-07-07T01:36:15Z",
+      "resolved": "github:NixOS/nixpkgs/2defa37146df235ef62f566cde69930a86f14df1#awscli2",
       "source": "devbox-search",
-      "version": "2.27.31",
+      "version": "2.27.49",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/vyw64nmm2jq7m538ln08kp4sqkapp6cw-awscli2-2.27.31",
+              "path": "/nix/store/bag4qimhk2f5nr5800rz4mjfv86nbgyw-awscli2-2.27.49",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/ymr19x1icbgcsyir9gj2xirv0pp271x8-awscli2-2.27.31-dist"
+              "path": "/nix/store/h50sgzbnnfrn0zjxdjsdvzr1hnjh4ij7-awscli2-2.27.49-dist"
             }
           ],
-          "store_path": "/nix/store/vyw64nmm2jq7m538ln08kp4sqkapp6cw-awscli2-2.27.31"
+          "store_path": "/nix/store/bag4qimhk2f5nr5800rz4mjfv86nbgyw-awscli2-2.27.49"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/9qpfvim7vdbifh39g3v2crm8191cr8b6-awscli2-2.27.31",
+              "path": "/nix/store/2gkza8xzq2bfg41v74wspxn7vmfgg3jw-awscli2-2.27.49",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/38i0q6c2jj66vd9g84rp31y4qaznxmkm-awscli2-2.27.31-dist"
+              "path": "/nix/store/vpciaikvvz5nccp3qdh0ndcrr0lz6683-awscli2-2.27.49-dist"
             }
           ],
-          "store_path": "/nix/store/9qpfvim7vdbifh39g3v2crm8191cr8b6-awscli2-2.27.31"
+          "store_path": "/nix/store/2gkza8xzq2bfg41v74wspxn7vmfgg3jw-awscli2-2.27.49"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/hyjpwk3xd7b6cj9l1nyniiivvsjzcn1q-awscli2-2.27.31",
+              "path": "/nix/store/xx7q6wjgv5n822dqkf1z85zcwssbx8gq-awscli2-2.27.49",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/b3ds1lhw3i4gnn98rrwv5d5vvfnhvd1c-awscli2-2.27.31-dist"
+              "path": "/nix/store/15292xci0kj15cdkjcga1b2bqn7757c7-awscli2-2.27.49-dist"
             }
           ],
-          "store_path": "/nix/store/hyjpwk3xd7b6cj9l1nyniiivvsjzcn1q-awscli2-2.27.31"
+          "store_path": "/nix/store/xx7q6wjgv5n822dqkf1z85zcwssbx8gq-awscli2-2.27.49"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/l7z95l195520a6v68m9xzhfybfcq6y2a-awscli2-2.27.31",
+              "path": "/nix/store/bb1d8j9d2fs120d58hamkgm06na0isxl-awscli2-2.27.49",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/vhv1f9d9hcrn2yyqvj34nz9kizknznph-awscli2-2.27.31-dist"
+              "path": "/nix/store/l1h5gdfwdg2grv5iqqpq34igzr7xrvis-awscli2-2.27.49-dist"
             }
           ],
-          "store_path": "/nix/store/l7z95l195520a6v68m9xzhfybfcq6y2a-awscli2-2.27.31"
+          "store_path": "/nix/store/bb1d8j9d2fs120d58hamkgm06na0isxl-awscli2-2.27.49"
         }
       }
     },
@@ -306,8 +306,8 @@
       }
     },
     "gettext@latest": {
-      "last_modified": "2025-06-25T07:32:58Z",
-      "resolved": "github:NixOS/nixpkgs/d7bb1922f0bb3d0c990f56f9cdb767fdb20a5f22#gettext",
+      "last_modified": "2025-07-07T01:36:15Z",
+      "resolved": "github:NixOS/nixpkgs/2defa37146df235ef62f566cde69930a86f14df1#gettext",
       "source": "devbox-search",
       "version": "0.22.5",
       "systems": {
@@ -370,12 +370,12 @@
               "default": true
             },
             {
-              "name": "doc",
-              "path": "/nix/store/9ff482n21sifam67a4hawlmim5qd2xj3-gettext-0.22.5-doc"
-            },
-            {
               "name": "info",
               "path": "/nix/store/h9g11qmdvcfj5c63s3rksz3w4byb903s-gettext-0.22.5-info"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/9ff482n21sifam67a4hawlmim5qd2xj3-gettext-0.22.5-doc"
             }
           ],
           "store_path": "/nix/store/5qi7j7hqbp157iygygys9pb36d8ik4i0-gettext-0.22.5"
@@ -526,8 +526,8 @@
       }
     },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "last_modified": "2025-07-04T10:39:05Z",
-      "resolved": "github:NixOS/nixpkgs/c860cf0b3a0829f0f6cf344ca8de83a2bbfab428?lastModified=1751625545&narHash=sha256-4E7wWftF1ExK5ZEDzj41%2B9mVgxtuRV3wWCId7QAYMAU%3D"
+      "last_modified": "2025-07-08T22:16:38Z",
+      "resolved": "github:NixOS/nixpkgs/2a2130494ad647f953593c4e84ea4df839fbd68c?lastModified=1752012998&narHash=sha256-Q82Ms%2BFQmgOBkdoSVm%2BFBpuFoeUAffNerR5yVV7SgT8%3D"
     },
     "go-mockery@latest": {
       "last_modified": "2025-06-20T02:24:11Z",
@@ -770,8 +770,8 @@
       }
     },
     "jq@latest": {
-      "last_modified": "2025-07-02T23:15:33Z",
-      "resolved": "github:NixOS/nixpkgs/d55716bb59b91ae9d1ced4b1ccdea7a442ecbfdb#jq",
+      "last_modified": "2025-07-08T04:39:49Z",
+      "resolved": "github:NixOS/nixpkgs/9b008d60392981ad674e04016d25619281550a9d#jq",
       "source": "devbox-search",
       "version": "1.8.0",
       "systems": {
@@ -815,16 +815,16 @@
               "default": true
             },
             {
-              "name": "out",
-              "path": "/nix/store/8p4cdklsb5kn1w4ycq9na07ja19j6d87-jq-1.8.0"
-            },
-            {
               "name": "dev",
               "path": "/nix/store/rzzhwmzryil6g7pl5i7jb4fs54nkkrm4-jq-1.8.0-dev"
             },
             {
               "name": "doc",
               "path": "/nix/store/xjcyd1pjjzja918407x5hvsa6sa3k4mj-jq-1.8.0-doc"
+            },
+            {
+              "name": "out",
+              "path": "/nix/store/8p4cdklsb5kn1w4ycq9na07ja19j6d87-jq-1.8.0"
             }
           ],
           "store_path": "/nix/store/k9mybm2b3yr0v9fsm8vi0319diai4flj-jq-1.8.0-bin"
