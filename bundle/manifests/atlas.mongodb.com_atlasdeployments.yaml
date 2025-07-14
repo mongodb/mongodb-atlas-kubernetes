@@ -918,6 +918,12 @@ spec:
                 - name
                 - providerSettings
                 type: object
+              upgradeToDedicated:
+                description: |2-
+                   upgradeToDedicated, when set to true, triggers the migration from a Flex to a
+                   Dedicated cluster. The user MUST provide the new dedicated cluster configuration.
+                   This flag is ignored if the cluster is already dedicated.
+                type: boolean
             type: object
             x-kubernetes-validations:
             - message: must define only one project reference through externalProjectRef
