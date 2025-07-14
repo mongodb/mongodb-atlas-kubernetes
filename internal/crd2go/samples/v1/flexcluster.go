@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&FlexCluster{})
+	SchemeBuilder.Register(&FlexClusterList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -157,4 +158,11 @@ type V20250312ProviderSettings struct {
 	// [GCP](https://docs.atlas.mongodb.com/reference/google-gcp/), and
 	// [Azure](https://docs.atlas.mongodb.com/reference/microsoft-azure/).
 	RegionName *string `json:"regionName,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type FlexClusterList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []FlexCluster `json:"items"`
 }

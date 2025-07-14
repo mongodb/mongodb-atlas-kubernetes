@@ -6,6 +6,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 func init() {
 	SchemeBuilder.Register(&OrganizationSetting{})
+	SchemeBuilder.Register(&OrganizationSettingList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -84,4 +85,11 @@ type OrganizationSettingStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
 	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type OrganizationSettingList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []OrganizationSetting `json:"items"`
 }

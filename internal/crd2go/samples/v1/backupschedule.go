@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&BackupSchedule{})
+	SchemeBuilder.Register(&BackupScheduleList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -186,4 +187,11 @@ type BackupScheduleStatusV20250312 struct {
 	// NextSnapshot Date and time when MongoDB Cloud takes the next Snapshot. This
 	// parameter expresses its value in the ISO 8601 timestamp format in UTC.
 	NextSnapshot *string `json:"nextSnapshot,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type BackupScheduleList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []BackupSchedule `json:"items"`
 }

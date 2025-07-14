@@ -6,6 +6,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 func init() {
 	SchemeBuilder.Register(&Team{})
+	SchemeBuilder.Register(&TeamList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -57,4 +58,11 @@ type TeamStatus struct {
 type TeamStatusV20250312 struct {
 	// Id Unique 24-hexadecimal digit string that identifies this team.
 	Id *string `json:"id,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type TeamList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []Team `json:"items"`
 }
