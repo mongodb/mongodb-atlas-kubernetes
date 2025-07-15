@@ -4254,6 +4254,177 @@ metadata:
                     property: $.groupId
               x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
   creationTimestamp: null
+  name: sampledatasets.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: SampleDataset
+    listKind: SampleDatasetList
+    plural: sampledatasets
+    shortNames:
+    - asd
+    singular: sampledataset
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A sampledataset, managed by the MongoDB Kubernetes Atlas Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the sampledataset supporting the following versions:
+
+              - v20250312
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20250312:
+                description: The spec of the sampledataset resource for version v20250312.
+                properties:
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                  groupRef:
+                    description: |-
+                      A reference to a "Group" resource.
+                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      Mutually exclusive with the "groupId" property.
+                    properties:
+                      name:
+                        description: Name of the "Group" resource.
+                        type: string
+                    type: object
+                  name:
+                    description: Human-readable label that identifies the cluster
+                      into which you load the sample dataset.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: name cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - name
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the sampledataset
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20250312:
+                description: The last observed Atlas state of the sampledataset resource
+                  for version v20250312.
+                properties:
+                  _id:
+                    description: Unique 24-hexadecimal character string that identifies
+                      this sample dataset.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                  clusterName:
+                    description: Human-readable label that identifies the cluster
+                      into which you loaded the sample dataset.
+                    type: string
+                  completeDate:
+                    description: Date and time when the sample dataset load job completed.
+                      MongoDB Cloud represents this timestamp in ISO 8601 format in
+                      UTC.
+                    type: string
+                  createDate:
+                    description: Date and time when you started the sample dataset
+                      load job. MongoDB Cloud represents this timestamp in ISO 8601
+                      format in UTC.
+                    type: string
+                  errorMessage:
+                    description: Details of the error returned when MongoDB Cloud
+                      loads the sample dataset. This endpoint returns null if state
+                      has a value other than FAILED.
+                    type: string
+                  state:
+                    description: Status of the sample dataset load job.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    nameSelector: .name
+                    properties:
+                    - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
+                  x-openapi-mapping:
+                    property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
+  creationTimestamp: null
   name: customroles.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com

@@ -385,6 +385,27 @@ spec:
 
     - gvk:
         version: v1
+        kind: SampleDataset
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - asd
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/sampleDatasetLoad/{name}'
+              verb: post
+            references:
+              - *groupRef
+          status:
+            schema: 'SampleDatasetStatus'
+
+    - gvk:
+        version: v1
         kind: CustomRole
         group: atlas.generated.mongodb.com
       categories:

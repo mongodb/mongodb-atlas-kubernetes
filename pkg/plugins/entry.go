@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"errors"
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
 	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
@@ -37,8 +36,6 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.
 		}
 	case mappingConfig.EntryMapping.Path.Name != "":
 		entrySchema = openApiSpec.Paths[mappingConfig.EntryMapping.Path.Name].Operations()[strings.ToUpper(mappingConfig.EntryMapping.Path.Verb)].RequestBody.Value.Content[mappingConfig.EntryMapping.Path.RequestBody.MimeType].Schema
-	default:
-		return errors.New("entry schema not found in spec")
 	}
 
 	extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion] = &openapi3.SchemaRef{
@@ -49,9 +46,12 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.
 		},
 	}
 
-	entryProps := g.ConvertProperty(entrySchema, extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion].Value.Properties["entry"], &mappingConfig.EntryMapping, 0)
+	if entrySchema != nil {
+		entryProps := g.ConvertProperty(entrySchema, extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion].Value.Properties["entry"], &mappingConfig.EntryMapping, 0)
 
-	entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", s.crd.Spec.Names.Singular, s.crd.Spec.Names.Plural)
-	s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion].Properties["entry"] = *entryProps
+		entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", s.crd.Spec.Names.Singular, s.crd.Spec.Names.Plural)
+		s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion].Properties["entry"] = *entryProps
+	}
+
 	return nil
 }
