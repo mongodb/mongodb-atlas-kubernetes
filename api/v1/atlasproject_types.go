@@ -43,6 +43,7 @@ func init() {
 type AtlasProjectSpec struct {
 
 	// Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Name cannot be modified after project creation"
 	Name string `json:"name"`
 
 	// RegionUsageRestrictions designate the project's AWS region when using Atlas for Government.

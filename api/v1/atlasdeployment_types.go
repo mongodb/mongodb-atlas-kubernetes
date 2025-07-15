@@ -127,6 +127,7 @@ type AdvancedDeploymentSpec struct {
 	// Can only contain ASCII letters, numbers, and hyphens.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Name cannot be modified after deployment creation"
 	Name string `json:"name,omitempty"`
 	// Flag that indicates whether the deployment should be paused.
 	Paused *bool `json:"paused,omitempty"`

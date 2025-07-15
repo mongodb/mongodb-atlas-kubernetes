@@ -197,6 +197,9 @@ spec:
                       Can only contain ASCII letters, numbers, and hyphens.
                     pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
+                    x-kubernetes-validations:
+                    - message: Name cannot be modified after deployment creation
+                      rule: self == oldSelf
                   paused:
                     description: Flag that indicates whether the deployment should
                       be paused.

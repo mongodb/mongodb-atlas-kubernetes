@@ -21,11 +21,15 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	internalcmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cel"
 )
 
 func TestSpecEquality(t *testing.T) {
@@ -137,4 +141,41 @@ func mustMarshal(t *testing.T, what any) string {
 		t.Fatal(err)
 	}
 	return string(result)
+}
+
+func TestProjectCELChecks(t *testing.T) {
+	for _, tc := range []struct {
+		title          string
+		old, obj       *AtlasProject
+		expectedErrors []string
+	}{
+		{
+			title: "Cannot rename a project",
+			old: &AtlasProject{
+				Spec: AtlasProjectSpec{
+					Name: "name-old",
+				},
+			},
+			obj: &AtlasProject{
+				Spec: AtlasProjectSpec{
+					Name: "name-new",
+				},
+			},
+			expectedErrors: []string{"spec.name: Invalid value: \"string\": Name cannot be modified after project creation"},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			unstructuredOldObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.old)
+			require.NoError(t, err)
+			unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.obj)
+			require.NoError(t, err)
+
+			crdPath := "../../config/crd/bases/atlas.mongodb.com_atlasprojects.yaml"
+			validator, err := cel.VersionValidatorFromFile(t, crdPath, "v1")
+			assert.NoError(t, err)
+			errs := validator(unstructuredObject, unstructuredOldObject)
+
+			require.Equal(t, tc.expectedErrors, cel.ErrorListAsStrings(errs))
+		})
+	}
 }
