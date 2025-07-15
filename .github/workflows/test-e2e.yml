@@ -18,8 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - id: compute
-        name: Compute K8s Matrix
+      - name: Compute K8s matrix/versions for testing
+        id: compute
         run: |
           matrix='["v1.30.10-kind"]'
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
@@ -37,21 +37,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - id: set_tag
+      
+      - name: Prepare image tag
+        id: set_tag
         uses: ./.github/actions/set-tag
-
-      - id: set_image_url
+      
+      - name: Prepare image url for GitHub Container Registry
+        id: set_image_url
         run: |
           echo "image_url=${REPO}:${{ steps.set_tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
 
-      - run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-          | docker login ghcr.io \
-              -u ${{ github.actor }} \
-              --password-stdin
-
-      - uses: ./.github/actions/build-push-image
+      - name: Log in to the GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push image to GitHub Container Registry
+        uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
           repository: ${{ env.REPO }}
@@ -75,13 +79,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - uses: jetify-com/devbox-install-action@v0.13.0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.13.0
         with:
           enable-cache: 'true'
 
-      - uses: ./.github/actions/gen-install-scripts
+      - name: Generate kustomized all-in-one install configs
+        uses: ./.github/actions/gen-install-scripts
         with:
           ENV: dev
           VERSION: dev
@@ -92,7 +98,7 @@ jobs:
           echo "k8s_version=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $1}')" >> $GITHUB_OUTPUT
           echo "k8s_platform=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $2}')" >> $GITHUB_OUTPUT
 
-      - name: Setup kind cluster if needed
+      - name: Setup kind cluster
         if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
         uses: helm/kind-action@v1.12.0
         with:
@@ -102,9 +108,14 @@ jobs:
           cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
           wait: 180s
 
-      - run: devbox run -- kubectl version
-      - run: devbox run -- kubectl apply -f deploy/crds
-      - run: devbox run -- ./scripts/launch-ci-e2e.sh
+      - name: Print Kubernetes version
+        run: devbox run -- kubectl version
+
+      - name: Apply CRDs
+        run: devbox run -- kubectl apply -f deploy/crds
+
+      - name: Run CI E2E tests
+        run: devbox run -- ./scripts/launch-ci-e2e.sh
         env:
           TEST_NAME: ${{ matrix.test }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -118,7 +129,8 @@ jobs:
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
 
-      - if: ${{ failure() }}
+      - name: Upload logs on failure
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
           name: logs

@@ -42,12 +42,6 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
-      # Note, we have to be careful how we retrive the image. The event that pushed 
-      # the image to the ghcr.io repo was mainly a push/schedule that passed all the
-      # tests. This event has access to github.ref_name. However, the workflow_run
-      # event does not have access github.ref_name set up. 
-      # 
-      # Therefore, we need to manually specify the branch as main
       - name: Prepare image tag
         id: set_tag
         uses: ./.github/actions/set-tag
@@ -69,6 +63,8 @@ jobs:
           IMAGE_DEST_REPO: ${{ env.DOCKER_REPO }}
           IMAGE_SRC_TAG: ${{ steps.set_tag.outputs.tag }}
           IMAGE_DEST_TAG: ${{ steps.promoted_tag.outputs.tag }}
+          ALIAS_ENABLED: true
+          ALIAS_TAG: promoted-latest
 
       - name: Move image to Quay
         run: ./scripts/move-image.sh
@@ -77,3 +73,5 @@ jobs:
           IMAGE_DEST_REPO: ${{ env.QUAY_REPO }}
           IMAGE_SRC_TAG: ${{ steps.set_tag.outputs.tag }}
           IMAGE_DEST_TAG: ${{ steps.promoted_tag.outputs.tag }}
+          ALIAS_ENABLED: true
+          ALIAS_TAG: promoted-latest

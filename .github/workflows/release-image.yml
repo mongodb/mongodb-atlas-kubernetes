@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (e.g., 1.2.3)"
+        description: "Release version"
         required: true
         type: string
       authors:
-        description: "Comma-separated list of the release authors' emails (e.g. a1@mongodb.com,a2@mongodb.com)"
+        description: "Comma-separated list of author emails"
         required: true
         type: string
-      commit_sha:
-        description: "Commit SHA to use for the image (e.g. 7c2a91 or latest)"
+      image_sha:
+        description: "6-digit commit SHA used for the promoted image (e.g. 3e79a3 or 'latest')"
         required: false
         default: "latest"
         type: string
@@ -20,10 +20,140 @@ on:
 permissions:
   contents: write
   pull-requests: write
-      
+     
 jobs:
+
+  # Note, the first step is necessary for getting the exact commit from the passed in image_sha
+  # This is because, the release-image step should exactly check out that exact commit
+  image2commit:
+    name: Resolve Commit SHA from Image
+    runs-on: ubuntu-latest
+    outputs:
+      commit_sha: ${{ steps.resolve.outputs.commit_sha }}
+
+    steps:
+      - name: Log in to Docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Run image2commit
+        id: resolve
+        uses: ./.github/actions/image2commit
+        with:
+          register: docker.io
+          repo: andrpac/mongodb-atlas-kubernetes-operator-prerelease
+          image_sha: ${{ github.event.inputs.image_sha }}
+
+  check-commit:
+    name: Check resolved commit
+    runs-on: ubuntu-latest
+    needs: image2commit
+    steps:
+      - name: Echo resolved commit
+        run: |
+          echo "Resolved commit: ${{ needs.image2commit.outputs.commit_sha }}"
+
+  prepare-environment:
+    name: Set up Environment Variables
+    runs-on: ubuntu-latest
+    if: false
+    environment: release
+
+    outputs:
+      # Inputs
+      version:                        ${{ steps.setup.outputs.version }}
+      authors:                        ${{ steps.setup.outputs.authors }}
+      commit_sha:                     ${{ steps.setup.outputs.commit_sha }}
+
+      # Release related
+      release_commit:                 ${{ steps.setup.outputs.release_commit }}
+      release_branch:                 ${{ steps.setup.outputs.release_branch }}
+
+      # Tags
+      promoted_tag:                   ${{ steps.setup.outputs.promoted_tag }}
+      release_tag:                    ${{ steps.setup.outputs.release_tag }}
+      certified_tag:                  ${{ steps.setup.outputs.certified_tag }}
+
+      # Repos
+      docker_prerelease_repo:         ${{ steps.setup.outputs.docker_prerelease_repo }}
+      docker_release_repo:            ${{ steps.setup.outputs.docker_release_repo }}
+      docker_signature_repo:          ${{ steps.setup.outputs.docker_signature_repo }}
+      quay_prerelease_repo:           ${{ steps.setup.outputs.quay_prerelease_repo }}
+      quay_release_repo:              ${{ steps.setup.outputs.quay_release_repo }}
+
+      # Image URLs
+      docker_image_url:               ${{ steps.setup.outputs.docker_image_url }}
+      quay_image_url:                 ${{ steps.setup.outputs.quay_image_url }}
+      quay_certified_image_url:       ${{ steps.setup.outputs.quay_certified_image_url }}
+
+    steps:
+      - name: Log in to Docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "authors=${{ github.event.inputs.authors }}" >> $GITHUB_OUTPUT
+          echo "image_sha=${{ github.event.inputs.image_sha }}" >> $GITHUB_OUTPUT
+
+      - name: Resolve commit SHA from image
+        id: image2commit
+        uses: ./.github/actions/image2commit
+        with:
+          image_sha: ${{ steps.inputs.outputs.image_sha }}
+          repo: docker.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
+
+      - name: Set derived environment variables
+        id: setup
+        run: |
+          version="${{ steps.inputs.outputs.version }}"
+          authors="${{ steps.inputs.outputs.authors }}"
+          sha="${{ steps.image2commit.outputs.commit_sha }}"
+
+          docker_prerelease_repo="docker.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease"
+          docker_release_repo="docker.io/andrpac/mongodb-atlas-kubernetes-operator"
+          docker_signature_repo="docker.io/andrpac/signatures"
+          quay_prerelease_repo="quay.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease"
+          quay_release_repo="quay.io/andrpac/mongodb-atlas-kubernetes-operator"
+
+          short_sha="${sha:0:6}"
+          promoted_tag="promoted-${short_sha}"
+
+          release_tag="$version"
+          certified_tag="certified-${version}"
+          release_branch="new-release/${version}"
+          docker_image_url="${docker_release_repo}:${release_tag}"
+          quay_image_url="${quay_release_repo}:${release_tag}"
+          quay_certified_image_url="${quay_release_repo}:${certified_tag}"
+
+          echo "version=$version"                                   >> $GITHUB_OUTPUT
+          echo "authors=$authors"                                   >> $GITHUB_OUTPUT
+          echo "commit_sha=${{ steps.inputs.outputs.image_sha }}"   >> $GITHUB_OUTPUT
+          echo "release_commit=$sha"                                >> $GITHUB_OUTPUT
+          echo "release_branch=$release_branch"                     >> $GITHUB_OUTPUT
+          echo "promoted_tag=$promoted_tag"                         >> $GITHUB_OUTPUT
+          echo "release_tag=$release_tag"                           >> $GITHUB_OUTPUT
+          echo "certified_tag=$certified_tag"                       >> $GITHUB_OUTPUT
+          echo "docker_prerelease_repo=$docker_prerelease_repo"     >> $GITHUB_OUTPUT
+          echo "docker_release_repo=$docker_release_repo"           >> $GITHUB_OUTPUT
+          echo "docker_signature_repo=$docker_signature_repo"       >> $GITHUB_OUTPUT
+          echo "quay_prerelease_repo=$quay_prerelease_repo"         >> $GITHUB_OUTPUT
+          echo "quay_release_repo=$quay_release_repo"               >> $GITHUB_OUTPUT
+          echo "docker_image_url=$docker_image_url"                 >> $GITHUB_OUTPUT
+          echo "quay_image_url=$quay_image_url"                     >> $GITHUB_OUTPUT
+          echo "quay_certified_image_url=$quay_certified_image_url" >> $GITHUB_OUTPUT
+
   release-image:
     runs-on: ubuntu-latest
+    if: false
     environment: release
     env:
       VERSION: ${{ github.event.inputs.version }}

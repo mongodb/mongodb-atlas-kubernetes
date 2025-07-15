@@ -14,14 +14,17 @@
 # limitations under the License.
 
 # This script moves a multi-arch image from one registry to another using docker buildx.
-
 set -euo pipefail
 
-# Required environment variables
+# Required env vars
 : "${IMAGE_SRC_REPO:?Missing IMAGE_SRC_REPO}"
 : "${IMAGE_SRC_TAG:?Missing IMAGE_SRC_TAG}"
 : "${IMAGE_DEST_REPO:?Missing IMAGE_DEST_REPO}"
 : "${IMAGE_DEST_TAG:?Missing IMAGE_DEST_TAG}"
+
+# Optional env vars -> ALIAS TAG can be updated to a list later on
+ALIAS_TAG="${ALIAS_TAG:-}"
+ALIAS_ENABLED="${ALIAS_ENABLED:-false}"
 
 image_src_url="${IMAGE_SRC_REPO}:${IMAGE_SRC_TAG}"
 image_dest_url="${IMAGE_DEST_REPO}:${IMAGE_DEST_TAG}"
@@ -37,9 +40,14 @@ echo "  From: ${image_src_url}"
 echo "  To:   ${image_dest_url}"
 
 BUILDER_NAME="tmpbuilder-move-image"
-
-echo "Creating temporary buildx builder..."
 docker buildx create --name "${BUILDER_NAME}" --use > /dev/null
 docker buildx imagetools create "${image_src_url}" --tag "${image_dest_url}"
+
+if [[ "${ALIAS_ENABLED}" == "true" && -n "${ALIAS_TAG}" ]]; then
+  echo "Aliasing ${image_src_url} as ${IMAGE_DEST_REPO}:${ALIAS_TAG}"
+  docker buildx imagetools create "${image_src_url}" --tag "${IMAGE_DEST_REPO}:${ALIAS_TAG}"
+  echo "Successfully aliased as ${IMAGE_DEST_REPO}:${ALIAS_TAG}"
+fi
+
 docker buildx rm "${BUILDER_NAME}" > /dev/null
 echo "Successfully moved ${image_src_url} -> ${image_dest_url}"
