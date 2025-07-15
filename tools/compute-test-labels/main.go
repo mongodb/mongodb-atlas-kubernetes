@@ -24,10 +24,11 @@ import (
 )
 
 type labelSet struct {
-	prLabels   string
-	intLabels  string
-	e2eLabels  string
-	e2e2Labels string
+	prLabels     string
+	intLabels    string
+	e2eLabels    string
+	e2e2Labels   string
+	skipPrefixes string
 }
 
 func jsonDump(data interface{}) string {
@@ -86,11 +87,35 @@ func FilterLabelsContain(labels []string, substr string) []string {
 	return filtered
 }
 
+func SkipLabelsByPrefix(labels []string, skipPrefixes []string) []string {
+	if len(skipPrefixes) == 0 {
+		return labels
+	}
+	filtered := make([]string, 0, len(labels))
+	for _, label := range labels {
+		if hasSkipPrefix(label, skipPrefixes) {
+			continue
+		}
+		filtered = append(filtered, label)
+	}
+	return filtered
+}
+
+func hasSkipPrefix(label string, skipPrefixes []string) bool {
+	for _, skipPrefix := range skipPrefixes {
+		if strings.HasPrefix(label, skipPrefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func computeTestLabels(out io.Writer, outputJSON bool, inputs *labelSet) error {
 	var labels []string
 	var intLabels []string
 	var e2eLabels []string
 	var e2e2Labels []string
+	var skipPrefixes []string
 
 	if err := json.Unmarshal([]byte(inputs.prLabels), &labels); err != nil {
 		return fmt.Errorf("Error parsing PR labels: %w", err)
@@ -110,10 +135,15 @@ func computeTestLabels(out io.Writer, outputJSON bool, inputs *labelSet) error {
 			return fmt.Errorf("Error parsing E2E2 tests labels: %w", err)
 		}
 	}
+	if len(inputs.skipPrefixes) > 0 {
+		if err := json.Unmarshal([]byte(inputs.skipPrefixes), &skipPrefixes); err != nil {
+			return fmt.Errorf("Error parsing Skip prefixes tests labels: %w", err)
+		}
+	}
 
-	matchedIntTests := MatchWildcards(labels, intLabels, "int")
-	matchedE2ETests := MatchWildcards(labels, e2eLabels, "e2e")
-	matchedE2E2Tests := MatchWildcards(labels, e2e2Labels, "e2e2")
+	matchedIntTests := MatchWildcards(labels, SkipLabelsByPrefix(intLabels, skipPrefixes), "int")
+	matchedE2ETests := MatchWildcards(labels, SkipLabelsByPrefix(e2eLabels, skipPrefixes), "e2e")
+	matchedE2E2Tests := MatchWildcards(labels, SkipLabelsByPrefix(e2e2Labels, skipPrefixes), "e2e2")
 	// These have to be executed in their own environment )
 	matchedE2EGovTests := FilterLabelsContain(matchedE2ETests, "atlas-gov")
 
@@ -143,10 +173,11 @@ func computeTestLabels(out io.Writer, outputJSON bool, inputs *labelSet) error {
 func main() {
 	useJSON := os.Getenv("USE_JSON") != ""
 	inputs := labelSet{
-		prLabels:   os.Getenv("PR_LABELS"),
-		intLabels:  os.Getenv("INT_LABELS"),
-		e2eLabels:  os.Getenv("E2E_LABELS"),
-		e2e2Labels: os.Getenv("E2E2_LABELS"),
+		prLabels:     os.Getenv("PR_LABELS"),
+		intLabels:    os.Getenv("INT_LABELS"),
+		e2eLabels:    os.Getenv("E2E_LABELS"),
+		e2e2Labels:   os.Getenv("E2E2_LABELS"),
+		skipPrefixes: os.Getenv("SKIP_PREFIXES"),
 	}
 	if err := computeTestLabels(os.Stdout, useJSON, &inputs); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

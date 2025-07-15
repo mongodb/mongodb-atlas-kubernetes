@@ -258,3 +258,36 @@ func TestComputeTestLabel(t *testing.T) {
 		})
 	}
 }
+
+func TestSkipLabelsByPrefix(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		labels       []string
+		skipPrefixes []string
+		want         []string
+	}{
+		{
+			name:         "no filtering",
+			labels:       []string{"a", "b", "c"},
+			skipPrefixes: []string{},
+			want:         []string{"a", "b", "c"},
+		},
+		{
+			name:         "several prefixes matched",
+			labels:       []string{"something", "anotherthing", "andanother"},
+			skipPrefixes: []string{"something", "another"},
+			want:         []string{"andanother"},
+		},
+		{
+			name:         "no matches",
+			labels:       []string{"something", "anotherthing", "andanother"},
+			skipPrefixes: []string{"blah"},
+			want:         []string{"something", "anotherthing", "andanother"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := SkipLabelsByPrefix(tc.labels, tc.skipPrefixes)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
