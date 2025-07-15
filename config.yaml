@@ -371,31 +371,17 @@ spec:
             name: v20250312
           parameters:
             path:
-              name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/fts/indexes'
+              name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/search/indexes'
               verb: post
             references:
               - *groupRef
           entry:
-            schema: 'ClusterSearchIndex'
-            filters:
-              skipProperties:
-                - $.indexID
-                - $.status
+            schema: 'SearchIndexCreateRequest'
           status:
-            schema: 'ClusterSearchIndex'
+            schema: 'SearchIndexResponse'
             filters:
               skipProperties:
-                - $.analyzer
-                - $.analyzers
-                - $.collectionName
-                - $.database
-                - $.fields
-                - $.mappings
-                - $.name
-                - $.searchAnalyzer
-                - $.storedSource
-                - $.synonyms
-                - $.type
+                - $.latestDefinition
 
     - gvk:
         version: v1
