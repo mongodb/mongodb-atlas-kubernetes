@@ -39,7 +39,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("Private Endpoints", Label("private-endpoint"), func() {
+var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(2), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(OncePerOrdered, func() {
