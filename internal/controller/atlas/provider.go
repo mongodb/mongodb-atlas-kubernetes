@@ -141,6 +141,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 	var transport http.RoundTripper = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
 	transport = p.newDryRunTransport(transport)
 	transport = httputil.NewLoggingTransport(log, false, transport)
+	transport = httputil.NewTransportWithDiff(transport, log.Named("payload_diff"))
 
 	httpClient := &http.Client{Transport: transport}
 
