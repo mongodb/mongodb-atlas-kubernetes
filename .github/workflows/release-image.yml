@@ -16,9 +16,6 @@ on:
         required: false
         default: "latest"
         type: string
-  push:
-    branches:
-      - '**'
 
 permissions:
   contents: write
@@ -41,8 +38,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: docker.io
-          username: ${{ secrets.ANDRPAC_DOCKER_USERNAME }}
-          password: ${{ secrets.ANDRPAC_DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Run image2commit
         id: resolve
@@ -50,7 +47,7 @@ jobs:
         with:
           register: docker.io
           repo: mongodb/mongodb-atlas-kubernetes-operator-prerelease
-          image_sha: latest
+          image_sha: ${{ github.event.inputs.image_sha }}
 
   # Check-commit: Outputs the commit used when someone wants to use latest image_sha
   # and does not know what version of operator will end up using
@@ -70,14 +67,14 @@ jobs:
     environment: release
     needs: image2commit
     env:
-      VERSION: ${{ github.event.inputs.version || 'vtest-0.0.0-dev' }}
-      AUTHORS: ${{ github.event.inputs.authors || 'unknown' }}
-      IMAGE_SHA: ${{ github.event.inputs.image_sha || 'latest' }}
-      DOCKER_SIGNATURE_REPO: docker.io/andrpac/signatures
-      DOCKER_RELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator
-      DOCKER_PRERELEASE_REPO: docker.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
-      QUAY_RELEASE_REPO: quay.io/andrpac/mongodb-atlas-kubernetes-operator
-      QUAY_PRERELEASE_REPO: quay.io/andrpac/mongodb-atlas-kubernetes-operator-prerelease
+      VERSION: ${{ github.event.inputs.version }}
+      AUTHORS: ${{ github.event.inputs.authors }}
+      IMAGE_SHA: ${{ github.event.inputs.image_sha }}
+      DOCKER_SIGNATURE_REPO: docker.io/mongodb/signatures
+      DOCKER_RELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator
+      DOCKER_PRERELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      QUAY_RELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator
+      QUAY_PRERELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -97,15 +94,15 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: docker.io
-          username: ${{ secrets.ANDRPAC_DOCKER_USERNAME }}
-          password: ${{ secrets.ANDRPAC_DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Log in to Quay registry
         uses: docker/login-action@v3
         with:
           registry: quay.io
-          username: ${{ secrets.ANDRPAC_QUAY_USERNAME }}
-          password: ${{ secrets.ANDRPAC_QUAY_PASSWORD }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Log in to Artifactory
         uses: docker/login-action@v3
@@ -136,6 +133,16 @@ jobs:
           echo "quay_image_url=$quay_image_url"                     >> $GITHUB_OUTPUT
           echo "quay_certified_image_url=$quay_certified_image_url" >> $GITHUB_OUTPUT
         
+      # Trigger the helm release workflow to sync
+      - name: Trigger helm post release workflow
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          gh workflow run post-atlas-operator-release.yaml \
+            --repo mongodb/helm-charts \
+            --ref main \
+            --fields version="${{ steps.tags.outputs.release_tag }}" \
+
       # Move prerelease images to official release registries in Docker Hub and Quay 
       - name: Move image to Docker registry release from prerelease
         run: devbox run -- ./scripts/move-image.sh
@@ -161,6 +168,17 @@ jobs:
           IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
           IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
           IMAGE_DEST_TAG: ${{ steps.tags.outputs.certified_tag }}
+
+      - name: Certify Openshift images
+        uses: ./.github/actions/certify-openshift-images
+        with:
+          registry: quay.io
+          repository: mongodb/mongodb-atlas-kubernetes-operator
+          version: ${{ steps.tags.outputs.certified_tag }}
+          registry_password: ${{ secrets.QUAY_PASSWORD }}
+          rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
+          rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
+          submit: true
 
       # Link updates to pr: all-in-one.yml, helm-updates, sdlc requirements
       - name: Generate deployment configurations
@@ -233,7 +251,7 @@ jobs:
       - name: Tag the release assets
         run: |
           git fetch --tags
-          git tag -f ${{ env.VERSION }}
+          git tag -f ${{ env.VERSION }} ${{ needs.image2commit.outputs.commit_sha }}
           git push -f origin ${{ env.VERSION }}
         
       - name: Create release on GitHub
