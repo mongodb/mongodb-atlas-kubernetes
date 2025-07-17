@@ -144,6 +144,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 	transport = p.newDryRunTransport(transport)
 	transport = httputil.NewLoggingTransport(log, false, transport)
 	if p.isLogInDebug {
+		log.Debug("JSON payload diff is enabled for Atlas API requests (PATCH & PUT)")
 		transport = httputil.NewTransportWithDiff(transport, log.Named("payload_diff"))
 	}
 

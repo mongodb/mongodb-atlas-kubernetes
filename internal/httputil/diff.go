@@ -32,11 +32,12 @@ func (t *TransportWithDiff) RoundTrip(req *http.Request) (*http.Response, error)
 		)
 		if err != nil {
 			t.log.Debug("failed to calculate diff", zap.Error(err))
+		} else {
+			t.log.Debug("JSON diff text",
+				zap.String("url", req.URL.String()),
+				zap.Any("diff", diffString),
+			)
 		}
-		t.log.Debug("JSON diff text",
-			zap.String("url", req.URL.String()),
-			zap.Any("diff", diffString),
-		)
 	}
 	return t.transport.RoundTrip(req)
 }
