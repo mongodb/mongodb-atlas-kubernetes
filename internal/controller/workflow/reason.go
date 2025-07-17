@@ -78,6 +78,8 @@ const (
 	DeploymentUpdating                    ConditionReason = "DeploymentUpdating"
 	DeploymentConnectionSecretsNotCreated ConditionReason = "DeploymentConnectionSecretsNotCreated"
 	DeploymentAdvancedOptionsReady        ConditionReason = "DeploymentAdvancedOptionsReady"
+	DedicatedMigrationProgressing         ConditionReason = "DedicatedMigrationProgressing"
+	DedicatedMigrationFailed              ConditionReason = "DedicatedMigrationFailed"
 	ServerlessPrivateEndpointReady        ConditionReason = "ServerlessPrivateEndpointReady"
 	ServerlessPrivateEndpointFailed       ConditionReason = "ServerlessPrivateEndpointFailed"
 	ServerlessPrivateEndpointInProgress   ConditionReason = "ServerlessPrivateEndpointInProgress"

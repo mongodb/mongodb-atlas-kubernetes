@@ -34,7 +34,11 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Conte
 	if !ok {
 		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not a serverless cluster"))
 	}
-	atlasServerless, _ := atlasDeployment.(*deployment.Serverless)
+
+	var atlasServerless *deployment.Serverless
+	if atlasServerless, ok = atlasDeployment.(*deployment.Serverless); atlasDeployment != nil && !ok {
+		return r.terminate(ctx, workflow.Internal, errors.New("deployment in Atlas is not a serverless cluster"))
+	}
 
 	if atlasServerless == nil {
 		ctx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", akoServerless.GetName())

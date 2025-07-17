@@ -32,9 +32,13 @@ func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, pr
 	deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
 	akoFlex, ok := akoDeployment.(*deployment.Flex)
 	if !ok {
-		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not a serverless cluster"))
+		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not a flex cluster"))
 	}
-	atlasFlex, _ := atlasDeployment.(*deployment.Flex)
+
+	var atlasFlex *deployment.Flex
+	if atlasFlex, ok = atlasDeployment.(*deployment.Flex); atlasDeployment != nil && !ok {
+		return r.terminate(ctx, workflow.Internal, errors.New("deployment in Atlas is not a flex cluster"))
+	}
 
 	if atlasFlex == nil {
 		ctx.Log.Infof("Flex Instance %s doesn't exist in Atlas - creating", akoFlex.GetName())

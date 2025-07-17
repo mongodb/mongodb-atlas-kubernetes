@@ -27,7 +27,7 @@ func (_m *DeploymentMock) Deprecated() (bool, string) {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for Deprecated")
+		panic("no return value specified for Notifications")
 	}
 
 	var r0 bool
@@ -57,7 +57,7 @@ type DeploymentMock_Deprecated_Call struct {
 
 // Deprecated is a helper method to define mock.On call
 func (_e *DeploymentMock_Expecter) Deprecated() *DeploymentMock_Deprecated_Call {
-	return &DeploymentMock_Deprecated_Call{Call: _e.mock.On("Deprecated")}
+	return &DeploymentMock_Deprecated_Call{Call: _e.mock.On("Notifications")}
 }
 
 func (_c *DeploymentMock_Deprecated_Call) Run(run func()) *DeploymentMock_Deprecated_Call {

@@ -883,6 +883,7 @@ func TestDeprecated(t *testing.T) {
 		name           string
 		deployment     *akov2.AtlasDeployment
 		wantDeprecated bool
+		wantReason     string
 		wantMsg        string
 	}{
 		{
@@ -1035,6 +1036,7 @@ func TestDeprecated(t *testing.T) {
 				},
 			},
 			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_DEPRECATION,
 			wantMsg:        "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
 		},
 		{
@@ -1066,6 +1068,7 @@ func TestDeprecated(t *testing.T) {
 				},
 			},
 			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_DEPRECATION,
 			wantMsg:        "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
 		},
 		{
@@ -1076,13 +1079,45 @@ func TestDeprecated(t *testing.T) {
 				},
 			},
 			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_DEPRECATION,
 			wantMsg:        "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
+		},
+		{
+			name: "remove upgrade flag",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					UpgradeToDedicated: true,
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_EAST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M10",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_RECOMMENDATION,
+			wantMsg:        "Cluster is already dedicated. It’s recommended to remove or set the upgrade flag to false",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			d := NewDeployment("123", tc.deployment)
-			gotDeprecated, gotMsg := d.Deprecated()
+			gotDeprecated, gotReason, gotMsg := d.Notifications()
 			require.Equal(t, tc.wantDeprecated, gotDeprecated)
+			require.Equal(t, tc.wantReason, gotReason)
 			require.Equal(t, tc.wantMsg, gotMsg)
 		})
 	}

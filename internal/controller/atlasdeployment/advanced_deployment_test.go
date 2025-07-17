@@ -49,7 +49,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 	}
 	tests := map[string]struct {
 		atlasDeployment    *akov2.AtlasDeployment
-		deploymentInAtlas  *deployment.Cluster
+		deploymentInAtlas  deployment.Deployment
 		deploymentService  func() deployment.AtlasDeploymentsService
 		sdkMock            func() *admin.APIClient
 		expectedResult     workflowRes
@@ -777,6 +777,180 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				api.FalseCondition(api.DeploymentReadyType).
 					WithReason(string(workflow.DeploymentUpdating)).
 					WithMessageRegexp("deployment is updating"),
+			},
+		},
+		"fail to upgrade a shared cluster to dedicated": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					UpgradeToDedicated: true,
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M20",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Flex{
+				ProjectID: "project-id",
+				State:     "IDLE",
+				FlexSpec: &akov2.FlexSpec{
+					Name: "cluster0",
+					ProviderSettings: &akov2.FlexProviderSettings{
+						RegionName:          "US_EAST_1",
+						BackingProviderName: "AWS",
+					},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().UpgradeToDedicated(context.Background(), mock.AnythingOfType("*deployment.Flex"), mock.AnythingOfType("*deployment.Cluster")).
+					Return(nil, errors.New("failed to update cluster"))
+
+				return service
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.DedicatedMigrationFailed)).
+					WithMessageRegexp("failed to upgrade cluster: failed to update cluster"),
+			},
+		},
+		"watch upgrade progress": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "test",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					UpgradeToDedicated: true,
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M20",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Flex{
+				ProjectID: "project-id",
+				State:     "UPDATING",
+				FlexSpec: &akov2.FlexSpec{
+					Name: "cluster0",
+					ProviderSettings: &akov2.FlexProviderSettings{
+						RegionName:          "US_EAST_1",
+						BackingProviderName: "AWS",
+					},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				return service
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.DeploymentUpdating)).
+					WithMessageRegexp("deployment is updating"),
+			},
+		},
+		"upgrade a flex to dedicated cluster": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "test",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					UpgradeToDedicated: true,
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M20",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Flex{
+				ProjectID: "project-id",
+				State:     "IDLE",
+				FlexSpec: &akov2.FlexSpec{
+					Name: "cluster0",
+					ProviderSettings: &akov2.FlexProviderSettings{
+						RegionName:          "US_EAST_1",
+						BackingProviderName: "AWS",
+					},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().UpgradeToDedicated(context.Background(), mock.AnythingOfType("*deployment.Flex"), mock.AnythingOfType("*deployment.Cluster")).
+					Return(&deployment.Flex{}, nil)
+
+				return service
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.DedicatedMigrationProgressing)).
+					WithMessageRegexp("Cluster upgrade to dedicated instance initiated in Atlas. The process may take several minutes"),
 			},
 		},
 	}
