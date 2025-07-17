@@ -127,11 +127,12 @@ func (c *Cluster) Notifications() (bool, string, string) {
 		}
 	}
 
-	if c.ProcessArgs != nil {
-		if c.ProcessArgs.DefaultReadConcern != "" {
+	processArgs := c.customResource.Spec.ProcessArgs
+	if processArgs != nil {
+		if processArgs.DefaultReadConcern != "" {
 			return true, NOTIFICATION_REASON_DEPRECATION, "Process Arg DefaultReadConcern is no longer available in Atlas. Setting this will have no effect."
 		}
-		if c.ProcessArgs.FailIndexKeyTooLong != nil {
+		if processArgs.FailIndexKeyTooLong != nil {
 			return true, NOTIFICATION_REASON_DEPRECATION, "Process Arg FailIndexKeyTooLong is no longer available in Atlas. Setting this will have no effect."
 		}
 	}

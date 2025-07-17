@@ -364,9 +364,6 @@ func TestGetDeployment(t *testing.T) {
 				serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.Anything).Return(nil, nil, atlasAPIError(atlas.ClusterInstanceFromServerlessAPI))
 
 				flexAPI := mockadmin.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(mock.Anything, "project-id", mock.Anything).
-					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.Anything).Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
 
 				return clusterAPI, serverlessAPI, flexAPI
 			},
@@ -384,9 +381,6 @@ func TestGetDeployment(t *testing.T) {
 					Return(nil, nil, errors.New("failed to get serverless instance from atlas"))
 
 				flexAPI := mockadmin.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(mock.Anything, "project-id", mock.Anything).
-					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.Anything).Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
 
 				return clusterAPI, serverlessInstanceAPI, flexAPI
 			},
@@ -456,9 +450,6 @@ func TestGetDeployment(t *testing.T) {
 				serverlessAPI.EXPECT().GetServerlessInstanceExecute(mock.Anything).Return(nil, nil, atlasAPIError(atlas.ClusterInstanceFromServerlessAPI))
 
 				flexAPI := mockadmin.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(mock.Anything, "project-id", mock.Anything).
-					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.Anything).Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
 
 				return clusterAPI, serverlessAPI, flexAPI
 			},
@@ -470,9 +461,6 @@ func TestGetDeployment(t *testing.T) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 
 				flexAPI := mockadmin.NewFlexClustersApi(t)
-				flexAPI.EXPECT().GetFlexCluster(mock.Anything, "project-id", mock.Anything).
-					Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().GetFlexClusterExecute(mock.Anything).Return(nil, nil, atlasAPIError(atlas.NonFlexInFlexAPI))
 
 				serverlessInstanceAPI := mockadmin.NewServerlessInstancesApi(t)
 				serverlessInstanceAPI.EXPECT().GetServerlessInstance(context.Background(), "project-id", "instance0").

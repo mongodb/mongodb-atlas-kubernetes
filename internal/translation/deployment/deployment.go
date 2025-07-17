@@ -225,14 +225,6 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		return nil, errors.New("deployment is nil")
 	}
 
-	flex, err := ds.GetFlexCluster(ctx, projectID, deployment.GetDeploymentName())
-	if !admin.IsErrorCode(err, atlas.NonFlexInFlexAPI) && err != nil {
-		return nil, err
-	}
-	if flex != nil {
-		return flex, nil
-	}
-
 	serverless, err := ds.GetServerless(ctx, projectID, deployment.GetDeploymentName())
 	if !admin.IsErrorCode(err, atlas.ClusterInstanceFromServerlessAPI) && err != nil {
 		return nil, err
@@ -242,11 +234,19 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 	}
 
 	cluster, err := ds.GetCluster(ctx, projectID, deployment.GetDeploymentName())
-	if !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) && err != nil {
+	if !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) && !admin.IsErrorCode(err, atlas.FlexFromClusterAPI) && err != nil {
 		return nil, err
 	}
 	if cluster != nil {
 		return cluster, nil
+	}
+
+	flex, err := ds.GetFlexCluster(ctx, projectID, deployment.GetDeploymentName())
+	if !admin.IsErrorCode(err, atlas.NonFlexInFlexAPI) && err != nil {
+		return nil, err
+	}
+	if flex != nil {
+		return flex, nil
 	}
 
 	// not found
