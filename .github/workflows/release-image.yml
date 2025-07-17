@@ -23,7 +23,7 @@ permissions:
      
 jobs:
   # Image2commit: Creates a mapping between the image_sha given as input and the actual git commit
-  # This is necassary for the release-image step that requires checking out that exact git commit
+  # This is necessary for the release-image step that requires checking out that exact git commit
   image2commit:
     name: Resolve Commit SHA from Image
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
         id: resolve
         uses: ./.github/actions/image2commit
         with:
-          register: docker.io
+          registry: docker.io
           repo: mongodb/mongodb-atlas-kubernetes-operator-prerelease
           image_sha: ${{ github.event.inputs.image_sha }}
 
@@ -75,6 +75,12 @@ jobs:
       DOCKER_PRERELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       QUAY_RELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator
       QUAY_PRERELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      PROMOTED_TAG: promoted-${{ github.event.inputs.image_sha }}
+      RELEASE_TAG: ${{ github.event.inputs.version }}
+      CERTIFIED_TAG: certified-${{ github.event.inputs.version }}
+      DOCKER_IMAGE_URL: docker.io/mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
+      QUAY_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
+      QUAY_CERTIFIED_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:certified-${{ github.event.inputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -84,11 +90,15 @@ jobs:
 
       - name: Generate GitHub App Token
         id: generate_token
-        uses: mongodb/apix-action/token@v8
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
           private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
-      
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            mongodb-atlas-kubernetes
+            helm-charts
+
       # Login in into all registries
       - name: Log in to Docker registry
         uses: docker/login-action@v3
@@ -114,25 +124,6 @@ jobs:
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.13.0
 
-      # This step configures all of the dynamic variables needed for later steps
-      - name: Configure job environment for downstream steps
-        id: tags
-        run: |
-          promoted_tag="promoted-${IMAGE_SHA}"
-          release_tag="${VERSION}"
-          certified_tag="certified-${release_tag}"
-
-          docker_image_url="${DOCKER_RELEASE_REPO}:${release_tag}"
-          quay_image_url="${QUAY_RELEASE_REPO}:${release_tag}"
-          quay_certified_image_url="${QUAY_RELEASE_REPO}:${certified_tag}"
-
-          echo "promoted_tag=$promoted_tag"                         >> $GITHUB_OUTPUT
-          echo "release_tag=$release_tag"                           >> $GITHUB_OUTPUT
-          echo "certified_tag=$certified_tag"                       >> $GITHUB_OUTPUT
-          echo "docker_image_url=$docker_image_url"                 >> $GITHUB_OUTPUT
-          echo "quay_image_url=$quay_image_url"                     >> $GITHUB_OUTPUT
-          echo "quay_certified_image_url=$quay_certified_image_url" >> $GITHUB_OUTPUT
-        
       # Trigger the helm release workflow to sync
       - name: Trigger helm post release workflow
         env:
@@ -141,7 +132,7 @@ jobs:
           gh workflow run post-atlas-operator-release.yaml \
             --repo mongodb/helm-charts \
             --ref main \
-            --fields version="${{ steps.tags.outputs.release_tag }}" \
+            --fields version="${{ env.RELEASE_TAG }}"
 
       # Move prerelease images to official release registries in Docker Hub and Quay 
       - name: Move image to Docker registry release from prerelease
@@ -149,16 +140,16 @@ jobs:
         env:
           IMAGE_SRC_REPO: ${{ env.DOCKER_PRERELEASE_REPO }}
           IMAGE_DEST_REPO: ${{ env.DOCKER_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
-          IMAGE_DEST_TAG: ${{ steps.tags.outputs.release_tag }}
+          IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
+          IMAGE_DEST_TAG: ${{ env.RELEASE_TAG }}
 
       - name: Move image to Quay registry release from prerelease
         run: devbox run -- ./scripts/move-image.sh
         env:
           IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
           IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
-          IMAGE_DEST_TAG: ${{ steps.tags.outputs.release_tag }}
+          IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
+          IMAGE_DEST_TAG: ${{ env.RELEASE_TAG }}
 
       # Create Openshift certified images 
       - name: Create OpenShift certified image on Quay
@@ -166,15 +157,15 @@ jobs:
         env:
           IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
           IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ steps.tags.outputs.promoted_tag }}
-          IMAGE_DEST_TAG: ${{ steps.tags.outputs.certified_tag }}
+          IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
+          IMAGE_DEST_TAG: ${{ env.CERTIFIED_TAG }}
 
       - name: Certify Openshift images
         uses: ./.github/actions/certify-openshift-images
         with:
           registry: quay.io
           repository: mongodb/mongodb-atlas-kubernetes-operator
-          version: ${{ steps.tags.outputs.certified_tag }}
+          version: ${{ env.CERTIFIED_TAG }}
           registry_password: ${{ secrets.QUAY_PASSWORD }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
@@ -185,20 +176,20 @@ jobs:
         uses: ./.github/actions/gen-install-scripts
         with:
           ENV: prod
-          IMAGE_URL: ${{ steps.tags.outputs.docker_image_url }}
+          IMAGE_URL: ${{ env.DOCKER_IMAGE_URL }}
 
       - name: Bump Helm chart version
         run: devbox run -- ./scripts/bump-helm-chart-version.sh
-    
+
       # Prepare SDLC requirement: signatures, sboms, compliance reports
       # Note, signed images will live in mongodb/release and mongodb/signature repos
       - name: Sign released images
         run: |
-          devbox run -- make sign IMG="${{ steps.tags.outputs.docker_image_url }}"         SIGNATURE_REPO="${{ env.DOCKER_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ steps.tags.outputs.quay_image_url }}"           SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ steps.tags.outputs.docker_image_url }}"         SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
-          devbox run -- make sign IMG="${{ steps.tags.outputs.quay_certified_image_url }}" SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ steps.tags.outputs.quay_certified_image_url }}" SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
+          devbox run -- make sign IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_RELEASE_REPO }}"
+          devbox run -- make sign IMG="${{ env.QUAY_IMAGE_URL }}"           SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
+          devbox run -- make sign IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
+          devbox run -- make sign IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
+          devbox run -- make sign IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
         env:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
@@ -219,8 +210,8 @@ jobs:
           export COMMIT_MESSAGE="feat: release ${VERSION}"
           export RELEASE_DIR="releases/${VERSION}"
 
-          git config --global user.name "${{ steps.generate_token.outputs.user-name }}"
-          git config --global user.email "${{ steps.generate_token.outputs.user-email }}"
+          git config --global user.name "release-bot[bot]"
+          git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
 
           mkdir -p "$RELEASE_DIR"
           cp -r deploy "$RELEASE_DIR/deploy"
@@ -253,7 +244,7 @@ jobs:
           git fetch --tags
           git tag -f ${{ env.VERSION }} ${{ needs.image2commit.outputs.commit_sha }}
           git push -f origin ${{ env.VERSION }}
-        
+
       - name: Create release on GitHub
         uses: softprops/action-gh-release@v2
         with:

@@ -2,7 +2,7 @@ name: image2commit
 description: Resolve full commit SHA from a promoted image tag.
 
 inputs:
-  register:
+  registry:
     description: "Registry (e.g., docker.io, quay.io)"
     required: true
   repo:
@@ -33,7 +33,7 @@ runs:
         full_sha=$(${{
           github.action_path
         }}/entrypoint.sh \
-          "${{ inputs.register }}" \
+          "${{ inputs.registry }}" \
           "${{ inputs.repo }}" \
           "${{ inputs.image_sha }}"
         )
