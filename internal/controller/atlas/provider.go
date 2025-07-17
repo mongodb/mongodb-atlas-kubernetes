@@ -50,8 +50,9 @@ type ClientSet struct {
 }
 
 type ProductionProvider struct {
-	domain string
-	dryRun bool
+	domain       string
+	dryRun       bool
+	isLogInDebug bool
 }
 
 // ConnectionConfig is the type that contains connection configuration to Atlas, including credentials.
@@ -73,10 +74,11 @@ type APIKeys struct {
 	PrivateKey string
 }
 
-func NewProductionProvider(atlasDomain string, dryRun bool) *ProductionProvider {
+func NewProductionProvider(atlasDomain string, dryRun, isLogInDebug bool) *ProductionProvider {
 	return &ProductionProvider{
-		domain: atlasDomain,
-		dryRun: dryRun,
+		domain:       atlasDomain,
+		dryRun:       dryRun,
+		isLogInDebug: isLogInDebug,
 	}
 }
 
@@ -141,7 +143,9 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 	var transport http.RoundTripper = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
 	transport = p.newDryRunTransport(transport)
 	transport = httputil.NewLoggingTransport(log, false, transport)
-	transport = httputil.NewTransportWithDiff(transport, log.Named("payload_diff"))
+	if p.isLogInDebug {
+		transport = httputil.NewTransportWithDiff(transport, log.Named("payload_diff"))
+	}
 
 	httpClient := &http.Client{Transport: transport}
 
