@@ -17,6 +17,7 @@ package atlasdeployment
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -827,7 +828,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 			},
 			expectedResult: workflowRes{
 				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err: nil,
+				err: fmt.Errorf("failed to upgrade cluster: %w", errors.New("failed to update cluster")),
 			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DeploymentReadyType).
