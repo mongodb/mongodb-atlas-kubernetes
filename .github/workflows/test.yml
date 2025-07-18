@@ -16,6 +16,15 @@ on:
       - 'docs/**'
   merge_group:
   workflow_dispatch:
+    inputs:
+      promote:
+        description: "Flag to indicate whether to run all tests and promote the image"
+        required: false
+        type: choice
+        default: "false"
+        options:
+          - "true"
+          - "false"
 
 concurrency:
   group: test-${{ github.head_ref || github.ref_name }}
@@ -103,4 +112,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: All tests status
-        run: echo "All tests sucessfully ran. This will get printed only on success!"
+        run: echo "All tests successfully ran. This will get printed only on success!"

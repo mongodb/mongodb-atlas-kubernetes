@@ -53,11 +53,15 @@ jobs:
             PR_HEAD_REPONAME: ${{ github.event.pull_request.head.repo.full_name }}
             REPONAME: ${{ github.repository }}
             ACTOR: ${{ github.actor }}
+            PROMOTE: ${{ github.event.inputs.promote }}
           run: |
             # Evaluate whether or not cloud tests should run
             RUN_CLOUD_TESTS='false'
             # Scheduled runs on default branch always run all tests
             if [ "${EVENT}" == "schedule" ];then
+              RUN_CLOUD_TESTS='true'
+            # Manual runs of tests that aim to create a promoted image should run all tests
+            elif [ "${EVENT}" == "workflow_dispatch" ] && [ "${PROMOTE}" == "true" ]; then
               RUN_CLOUD_TESTS='true'
             # Release branches always run all tests
             elif [[ "${GH_HEAD_REF}" == release/* ]];then
