@@ -34,48 +34,57 @@ Please refer to the [CI documentation](ci.md#kubernetes-version-matrix) and subm
 
 The reason for this preparatory step is to avoid customers getting new or breaking changes before their supporting documentation.
 
-## Create the release branch
+## Create the Release
 
-Once the release notes and documentation are ready and got explicit approval to start the release:
+Once release notes and documentation are approved, trigger the [`release-image.yml`](../../.github/workflows/release-image.yml) workflow.
 
-- Use the [GitHub UI](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-branch.yml) to create the new "Create Release Branch" workflow.
-- Specify the `version` to be released in the text box and the author MongoDB email or multiple emails in the case of multiple release authors involved in the release.
-Do not specify the whole team but only the release authors to respect SSDLC compliance requirements.
+You will be prompted to enter:
 
-The deployment scripts (K8s configs, OLM bundle) will be generated and PR will be created with new changes on behalf
-of the `github-actions` bot.
+- `version`: The version to be released (e.g., `1.10.3`), without the `v` prefix
+- `authors`: A comma-separated list of MongoDB email addresses responsible for the release
+- `image_sha`: The image tag corresponding to a previously promoted and tested operator image
 
-Pass the version with the `X.Y.Z` eg. `1.2.3`, **without** the `v...` prefix.
+### What Happens Next
 
-See [Troubleshooting](#troubleshooting) in case of issues, such as [errors with the major version](#major-version-issues-when-create-release-branch).
+Once triggered:
 
-Expect this branch to include the Software Security Development Lifecycle Policy Checklist (SSDLC) document at path `docs/releases/v${VERSION}/sdlc-compliance.md`.
-Note the SBOM files cannot be generated yet, as they require the image to have been published already.
+- A release PR is created that adds a new `release/<version>` directory (containing `deploy/`, `helm-charts/`, and `bundle/` folders)
+- A Git tag of the form `v<version>` is created and pushed
+- A GitHub release is published with:
+  - Zipped `all-in-one.yml`
+  - SDLC-compliant artifacts: SBOMs and compliance reports
 
-## Approve the Pull Request named "Release x.y.z"
+The only manual step is to **review and merge** the release PR. This PR does **not** re-run any of the expensive tests on cloud-qa.
 
-1. Review the Pull Request.
-1. Approve and merge it to `main`.
+**Note:** this directory-based approach avoids merge conflicts entirely. Because each release introduces a clean, isolated `release/<version>` folder, it can be merged directly into `main` without conflicting with prior or future releases. This enables a linear and conflict-free release history while maintaining clear traceability for each version.
 
-At this point `main` represents what would become the next release, cut the release by doing:
+---
 
-```shell
-$ export VERSION=x.y.z
-$ git checkout -b main origin/main
-$ git tag v${VERSION}
-$ git push origin v${VERSION}
-```
+## Image Promotion
 
-A new job "Create Release" will be triggered and the following will be done:
-* Atlas Operator image is built and pushed to DockerHub
-* Draft Release will be created with all commits since the previous release
-* A subsequent job will be triggered to create a SBOMs update PR
+The `image_sha` used in a release must already be tested and promoted via CI. Promotion can occur in one of three ways:
 
-### SSDLC SBOMs PR
+- A scheduled CI run on the `main` branch
+- A merge into `main` that includes production code changes
+- A manual dispatch of the `tests.yml` workflow with the `promote` flag enabled
 
-A new PR should have been created titled `Add SBOMs for version ...`. Please review all is as expected and merge. It should contain just a couple of new files at directory `docs/releases/v${VERSION}/`:
-- `linux-amd64.sbom.json`
-- `linux-arm64.sbom.json`
+### How Promotion Works
+
+During promotion, the operator image used in Helm-based E2E tests is first built and published as a dummy image in `ghcr.io`. Once **all** tests—including the cloud-based Helm scenarios—complete successfully, the [`promote-image.yml`](../../.github/workflows/promote-image.yml) workflow is triggered.
+
+This workflow:
+
+- Verifies that all required tests succeeded
+- Moves the image from `ghcr.io` to both `docker.io` and `quay.io`
+- Tags the image as:
+  - `promoted-<git_sha>` — uniquely maps the image to the source Git commit
+  - `promoted-latest` — always points to the most recent image that passed all tests
+
+The `promoted-latest` tag is **only updated** by scheduled runs or merges into `main` where **all** tests have executed and passed. Manual promotions will never overwrite this tag.
+
+### Best Practice
+
+Releases should generally use `promoted-latest` as the `image_sha`. This ensures that you are releasing the most recently tested and CI-verified image. The tag is reliably mapped to a Git commit through embedded metadata, allowing traceability without requiring the exact SHA to be specified manually. Every release run will have an echoing step which will indicate what Git commit will be used, allowing for easy debugging and validation of the source, especially when using `promoted-latest`.
 
 ## Manual SSDLC steps
 
