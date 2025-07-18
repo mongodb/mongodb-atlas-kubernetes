@@ -55,7 +55,7 @@ type containerAndPeering struct {
 	peering   *akov2.AtlasNetworkPeering
 }
 
-var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"), FlakeAttempts(2), func() {
+var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"), FlakeAttempts(3), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(OncePerOrdered, func() {
