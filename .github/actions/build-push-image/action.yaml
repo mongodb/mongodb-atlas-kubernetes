@@ -99,3 +99,5 @@ runs:
         sbom: true
         push: true
         tags: ${{ inputs.tags }}
+        labels: |
+          org.opencontainers.image.revision=${{ github.sha }}
