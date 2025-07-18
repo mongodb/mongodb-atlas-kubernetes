@@ -88,3 +88,19 @@ jobs:
       github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true'
     uses: ./.github/workflows/cloud-tests.yml
     secrets: inherit
+
+  # Test-status: this is a hook for jobs that require all the tests to succeed like promote-image
+  # in order to check the overall status of the tests (no test failed nor got skipped)
+  test-status:
+    name: Final Test Status
+    needs:
+      - lint
+      - unit-tests
+      - validate-manifests
+      - check-licenses
+      - e2e2
+      - cloud-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: All tests status
+        run: echo "All tests sucessfully ran. This will get printed only on success!"
