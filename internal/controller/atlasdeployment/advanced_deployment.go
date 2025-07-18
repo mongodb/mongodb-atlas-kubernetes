@@ -41,11 +41,29 @@ import (
 const FreeTier = "M0"
 
 func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
+	if akoDeployment.GetCustomResource().Spec.UpgradeToDedicated && !atlasDeployment.IsDedicated() {
+		if atlasDeployment.GetState() == status.StateUPDATING {
+			return r.inProgress(ctx, akoDeployment.GetCustomResource(), atlasDeployment, workflow.DeploymentUpdating, "deployment is updating")
+		}
+
+		updatedDeployment, err := deploymentService.UpgradeToDedicated(ctx.Context, atlasDeployment, akoDeployment)
+
+		if err != nil {
+			return r.terminate(ctx, workflow.DedicatedMigrationFailed, fmt.Errorf("failed to upgrade cluster: %w", err))
+		}
+
+		return r.inProgress(ctx, akoDeployment.GetCustomResource(), updatedDeployment, workflow.DedicatedMigrationProgressing, "Cluster upgrade to dedicated instance initiated in Atlas. The process may take several minutes")
+	}
+
 	akoCluster, ok := akoDeployment.(*deployment.Cluster)
 	if !ok {
 		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not an advanced cluster"))
 	}
-	atlasCluster, _ := atlasDeployment.(*deployment.Cluster)
+
+	var atlasCluster *deployment.Cluster
+	if atlasCluster, ok = atlasDeployment.(*deployment.Cluster); atlasDeployment != nil && !ok {
+		return r.terminate(ctx, workflow.Internal, errors.New("deployment in Atlas is not an advanced cluster"))
+	}
 
 	if atlasCluster == nil {
 		ctx.Log.Infof("Advanced Deployment %s doesn't exist in Atlas - creating", akoCluster.GetName())

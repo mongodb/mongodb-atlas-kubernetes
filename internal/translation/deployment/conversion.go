@@ -30,6 +30,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/tag"
 )
 
+const NOTIFICATION_REASON_DEPRECATION = "DeprecationWarning"
+const NOTIFICATION_REASON_RECOMMENDATION = "RecommendationWarning"
+
 type Deployment interface {
 	GetName() string
 	GetProjectID() string
@@ -40,7 +43,9 @@ type Deployment interface {
 	GetReplicaSet() []status.ReplicaSet
 	IsServerless() bool
 	IsFlex() bool
-	Deprecated() (bool, string)
+	IsTenant() bool
+	IsDedicated() bool
+	Notifications() (bool, string, string)
 }
 
 type Cluster struct {
@@ -99,7 +104,11 @@ func (c *Cluster) IsTenant() bool {
 	return c.isTenant
 }
 
-func (c *Cluster) Deprecated() (bool, string) {
+func (c *Cluster) IsDedicated() bool {
+	return !c.IsTenant()
+}
+
+func (c *Cluster) Notifications() (bool, string, string) {
 	for _, replicationSpec := range c.ReplicationSpecs {
 		if replicationSpec == nil {
 			continue
@@ -113,19 +122,25 @@ func (c *Cluster) Deprecated() (bool, string) {
 			if deprecatedSpecs(regionConfig.ElectableSpecs) ||
 				deprecatedSpecs(regionConfig.ReadOnlySpecs) ||
 				deprecatedSpecs(regionConfig.AnalyticsSpecs) {
-				return true, "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
+				return true, NOTIFICATION_REASON_DEPRECATION, "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
 			}
 		}
 	}
-	if c.ProcessArgs != nil {
-		if c.ProcessArgs.DefaultReadConcern != "" {
-			return true, "Process Arg DefaultReadConcern is no longer available in Atlas. Setting this will have no effect."
+
+	processArgs := c.customResource.Spec.ProcessArgs
+	if processArgs != nil {
+		if processArgs.DefaultReadConcern != "" {
+			return true, NOTIFICATION_REASON_DEPRECATION, "Process Arg DefaultReadConcern is no longer available in Atlas. Setting this will have no effect."
 		}
-		if c.ProcessArgs.FailIndexKeyTooLong != nil {
-			return true, "Process Arg FailIndexKeyTooLong is no longer available in Atlas. Setting this will have no effect."
+		if processArgs.FailIndexKeyTooLong != nil {
+			return true, NOTIFICATION_REASON_DEPRECATION, "Process Arg FailIndexKeyTooLong is no longer available in Atlas. Setting this will have no effect."
 		}
 	}
-	return false, ""
+
+	if c.IsDedicated() && c.customResource.Spec.UpgradeToDedicated {
+		return true, NOTIFICATION_REASON_RECOMMENDATION, "Cluster is already dedicated. It’s recommended to remove or set the upgrade flag to false"
+	}
+	return false, "", ""
 }
 
 func deprecatedSpecs(specs *akov2.Specs) bool {
@@ -184,8 +199,16 @@ func (s *Serverless) IsFlex() bool {
 	return false
 }
 
-func (s *Serverless) Deprecated() (bool, string) {
-	return true, "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
+func (s *Serverless) IsTenant() bool {
+	return false
+}
+
+func (s *Serverless) IsDedicated() bool {
+	return false
+}
+
+func (s *Serverless) Notifications() (bool, string, string) {
+	return true, NOTIFICATION_REASON_DEPRECATION, "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
 }
 
 type Flex struct {
@@ -234,8 +257,16 @@ func (f *Flex) IsFlex() bool {
 	return true
 }
 
-func (f *Flex) Deprecated() (bool, string) {
-	return false, ""
+func (f *Flex) IsTenant() bool {
+	return false
+}
+
+func (f *Flex) IsDedicated() bool {
+	return false
+}
+
+func (f *Flex) Notifications() (bool, string, string) {
+	return false, "", ""
 }
 
 type Connection struct {
@@ -1245,21 +1276,22 @@ func flexUpdateToAtlas(flex *Flex) *admin.FlexClusterDescriptionUpdate20241113 {
 	}
 }
 
-func flexUpgradeToAtlas(flex *Flex) *admin.AtlasTenantClusterUpgradeRequest20240805 {
-	cluster := flex.GetCustomResource().Spec.DeploymentSpec
+func flexUpgradeToAtlas(cluster *Cluster) *admin.AtlasTenantClusterUpgradeRequest20240805 {
+	spec := cluster.GetCustomResource().Spec.DeploymentSpec
 	return &admin.AtlasTenantClusterUpgradeRequest20240805{
-		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
-		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),
-		VersionReleaseSystem:         pointer.MakePtrOrNil(cluster.VersionReleaseSystem),
-		BackupEnabled:                cluster.BackupEnabled,
-		BiConnector:                  biConnectToAtlas(cluster.BiConnector),
-		EncryptionAtRestProvider:     pointer.MakePtrOrNil(cluster.EncryptionAtRestProvider),
-		Labels:                       labelsToAtlas(cluster.Labels),
-		Paused:                       cluster.Paused,
-		PitEnabled:                   cluster.PitEnabled,
-		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB),
-		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
-		Tags:                         tag.ToAtlas(cluster.Tags),
-		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
+		Name:                         spec.Name,
+		ClusterType:                  pointer.MakePtrOrNil(spec.ClusterType),
+		MongoDBMajorVersion:          pointer.MakePtrOrNil(spec.MongoDBMajorVersion),
+		VersionReleaseSystem:         pointer.MakePtrOrNil(spec.VersionReleaseSystem),
+		BackupEnabled:                spec.BackupEnabled,
+		BiConnector:                  biConnectToAtlas(spec.BiConnector),
+		EncryptionAtRestProvider:     pointer.MakePtrOrNil(spec.EncryptionAtRestProvider),
+		Labels:                       labelsToAtlas(spec.Labels),
+		Paused:                       spec.Paused,
+		PitEnabled:                   spec.PitEnabled,
+		ReplicationSpecs:             replicationSpecToAtlas(spec.ReplicationSpecs, spec.ClusterType, spec.DiskSizeGB),
+		RootCertType:                 pointer.MakePtrOrNil(spec.RootCertType),
+		Tags:                         tag.ToAtlas(spec.Tags),
+		TerminationProtectionEnabled: pointer.MakePtrOrNil(spec.TerminationProtectionEnabled),
 	}
 }

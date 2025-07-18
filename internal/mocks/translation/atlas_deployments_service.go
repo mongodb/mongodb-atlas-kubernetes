@@ -964,9 +964,9 @@ func (_c *AtlasDeploymentsServiceMock_UpdateProcessArgs_Call) RunAndReturn(run f
 	return _c
 }
 
-// UpgradeToDedicated provides a mock function with given fields: ctx, _a1
-func (_m *AtlasDeploymentsServiceMock) UpgradeToDedicated(ctx context.Context, _a1 deployment.Deployment) (deployment.Deployment, error) {
-	ret := _m.Called(ctx, _a1)
+// UpgradeToDedicated provides a mock function with given fields: ctx, currentDeployment, targetDeployment
+func (_m *AtlasDeploymentsServiceMock) UpgradeToDedicated(ctx context.Context, currentDeployment deployment.Deployment, targetDeployment deployment.Deployment) (deployment.Deployment, error) {
+	ret := _m.Called(ctx, currentDeployment, targetDeployment)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpgradeToDedicated")
@@ -974,19 +974,19 @@ func (_m *AtlasDeploymentsServiceMock) UpgradeToDedicated(ctx context.Context, _
 
 	var r0 deployment.Deployment
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) (deployment.Deployment, error)); ok {
-		return rf(ctx, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment, deployment.Deployment) (deployment.Deployment, error)); ok {
+		return rf(ctx, currentDeployment, targetDeployment)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment) deployment.Deployment); ok {
-		r0 = rf(ctx, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, deployment.Deployment, deployment.Deployment) deployment.Deployment); ok {
+		r0 = rf(ctx, currentDeployment, targetDeployment)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(deployment.Deployment)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, deployment.Deployment) error); ok {
-		r1 = rf(ctx, _a1)
+	if rf, ok := ret.Get(1).(func(context.Context, deployment.Deployment, deployment.Deployment) error); ok {
+		r1 = rf(ctx, currentDeployment, targetDeployment)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1001,14 +1001,15 @@ type AtlasDeploymentsServiceMock_UpgradeToDedicated_Call struct {
 
 // UpgradeToDedicated is a helper method to define mock.On call
 //   - ctx context.Context
-//   - _a1 deployment.Deployment
-func (_e *AtlasDeploymentsServiceMock_Expecter) UpgradeToDedicated(ctx interface{}, _a1 interface{}) *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call {
-	return &AtlasDeploymentsServiceMock_UpgradeToDedicated_Call{Call: _e.mock.On("UpgradeToDedicated", ctx, _a1)}
+//   - currentDeployment deployment.Deployment
+//   - targetDeployment deployment.Deployment
+func (_e *AtlasDeploymentsServiceMock_Expecter) UpgradeToDedicated(ctx interface{}, currentDeployment interface{}, targetDeployment interface{}) *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call {
+	return &AtlasDeploymentsServiceMock_UpgradeToDedicated_Call{Call: _e.mock.On("UpgradeToDedicated", ctx, currentDeployment, targetDeployment)}
 }
 
-func (_c *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call) Run(run func(ctx context.Context, _a1 deployment.Deployment)) *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call {
+func (_c *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call) Run(run func(ctx context.Context, currentDeployment deployment.Deployment, targetDeployment deployment.Deployment)) *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(deployment.Deployment))
+		run(args[0].(context.Context), args[1].(deployment.Deployment), args[2].(deployment.Deployment))
 	})
 	return _c
 }
@@ -1018,7 +1019,7 @@ func (_c *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call) Return(_a0 deploy
 	return _c
 }
 
-func (_c *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call) RunAndReturn(run func(context.Context, deployment.Deployment) (deployment.Deployment, error)) *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call {
+func (_c *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call) RunAndReturn(run func(context.Context, deployment.Deployment, deployment.Deployment) (deployment.Deployment, error)) *AtlasDeploymentsServiceMock_UpgradeToDedicated_Call {
 	_c.Call.Return(run)
 	return _c
 }

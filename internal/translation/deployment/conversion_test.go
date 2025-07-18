@@ -883,6 +883,7 @@ func TestDeprecated(t *testing.T) {
 		name           string
 		deployment     *akov2.AtlasDeployment
 		wantDeprecated bool
+		wantReason     string
 		wantMsg        string
 	}{
 		{
@@ -1035,6 +1036,7 @@ func TestDeprecated(t *testing.T) {
 				},
 			},
 			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_DEPRECATION,
 			wantMsg:        "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
 		},
 		{
@@ -1066,7 +1068,36 @@ func TestDeprecated(t *testing.T) {
 				},
 			},
 			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_DEPRECATION,
 			wantMsg:        "WARNING: M2 and M5 instance sizes are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
+		},
+		{
+			name: "default read concern set",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
+					ProcessArgs: &akov2.ProcessArgs{
+						DefaultReadConcern: "true",
+					},
+				},
+			},
+			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_DEPRECATION,
+			wantMsg:        "Process Arg DefaultReadConcern is no longer available in Atlas. Setting this will have no effect.",
+		},
+		{
+			name: "fail index key too long set",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
+					ProcessArgs: &akov2.ProcessArgs{
+						FailIndexKeyTooLong: pointer.MakePtr(true),
+					},
+				},
+			},
+			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_DEPRECATION,
+			wantMsg:        "Process Arg FailIndexKeyTooLong is no longer available in Atlas. Setting this will have no effect.",
 		},
 		{
 			name: "empty serverless instance",
@@ -1076,14 +1107,138 @@ func TestDeprecated(t *testing.T) {
 				},
 			},
 			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_DEPRECATION,
 			wantMsg:        "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.",
+		},
+		{
+			name: "remove upgrade flag",
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					UpgradeToDedicated: true,
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_EAST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M10",
+											NodeCount:    pointer.MakePtr(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantDeprecated: true,
+			wantReason:     NOTIFICATION_REASON_RECOMMENDATION,
+			wantMsg:        "Cluster is already dedicated. It’s recommended to remove or set the upgrade flag to false",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			d := NewDeployment("123", tc.deployment)
-			gotDeprecated, gotMsg := d.Deprecated()
+			gotDeprecated, gotReason, gotMsg := d.Notifications()
 			require.Equal(t, tc.wantDeprecated, gotDeprecated)
+			require.Equal(t, tc.wantReason, gotReason)
 			require.Equal(t, tc.wantMsg, gotMsg)
+		})
+	}
+}
+
+func TestIsType(t *testing.T) {
+	tests := map[string]struct {
+		deployment     *akov2.AtlasDeployment
+		wantServerless bool
+		wantFlex       bool
+		wantTenant     bool
+		wantDedicated  bool
+	}{
+		"Cluster is serverless": {
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					ServerlessSpec: &akov2.ServerlessSpec{},
+				},
+			},
+			wantServerless: true,
+			wantFlex:       false,
+			wantTenant:     false,
+			wantDedicated:  false,
+		},
+		"Cluster is flex": {
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					FlexSpec: &akov2.FlexSpec{},
+				},
+			},
+			wantServerless: false,
+			wantFlex:       true,
+			wantTenant:     false,
+			wantDedicated:  false,
+		},
+		"Cluster is tenant": {
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName:        "TENANT",
+										BackingProviderName: "AWS",
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M0",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantServerless: false,
+			wantFlex:       false,
+			wantTenant:     true,
+			wantDedicated:  false,
+		},
+		"Cluster is dedicated": {
+			deployment: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M10",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantServerless: false,
+			wantFlex:       false,
+			wantTenant:     false,
+			wantDedicated:  true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			d := NewDeployment("123", tt.deployment)
+			assert.Equal(t, tt.wantServerless, d.IsServerless())
+			assert.Equal(t, tt.wantFlex, d.IsFlex())
+			assert.Equal(t, tt.wantTenant, d.IsTenant())
+			assert.Equal(t, tt.wantDedicated, d.IsDedicated())
 		})
 	}
 }

@@ -42,7 +42,7 @@ type DeploymentService interface {
 	CreateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
 	UpdateDeployment(ctx context.Context, deployment Deployment) (Deployment, error)
 	DeleteDeployment(ctx context.Context, deployment Deployment) error
-	UpgradeToDedicated(ctx context.Context, deployment Deployment) (Deployment, error)
+	UpgradeToDedicated(ctx context.Context, currentDeployment, targetDeployment Deployment) (Deployment, error)
 	ClusterWithProcessArgs(ctx context.Context, cluster *Cluster) error
 	UpdateProcessArgs(ctx context.Context, cluster *Cluster) error
 }
@@ -225,33 +225,28 @@ func (ds *ProductionAtlasDeployments) GetDeployment(ctx context.Context, project
 		return nil, errors.New("deployment is nil")
 	}
 
-	switch {
-	case deployment.IsFlex():
-		flex, err := ds.GetFlexCluster(ctx, projectID, deployment.GetDeploymentName())
-		if err != nil {
-			return nil, err
-		}
-		if flex != nil {
-			return flex, err
-		}
+	serverless, err := ds.GetServerless(ctx, projectID, deployment.GetDeploymentName())
+	if !admin.IsErrorCode(err, atlas.ClusterInstanceFromServerlessAPI) && err != nil {
+		return nil, err
+	}
+	if serverless != nil {
+		return serverless, nil
+	}
 
-	case deployment.IsServerless():
-		serverless, err := ds.GetServerless(ctx, projectID, deployment.GetDeploymentName())
-		if err != nil {
-			return nil, err
-		}
-		if serverless != nil {
-			return serverless, err
-		}
+	cluster, err := ds.GetCluster(ctx, projectID, deployment.GetDeploymentName())
+	if !admin.IsErrorCode(err, atlas.ServerlessInstanceFromClusterAPI) && !admin.IsErrorCode(err, atlas.FlexFromClusterAPI) && err != nil {
+		return nil, err
+	}
+	if cluster != nil {
+		return cluster, nil
+	}
 
-	case deployment.IsAdvancedDeployment():
-		cluster, err := ds.GetCluster(ctx, projectID, deployment.GetDeploymentName())
-		if err != nil {
-			return nil, err
-		}
-		if cluster != nil {
-			return cluster, err
-		}
+	flex, err := ds.GetFlexCluster(ctx, projectID, deployment.GetDeploymentName())
+	if !admin.IsErrorCode(err, atlas.NonFlexInFlexAPI) && err != nil {
+		return nil, err
+	}
+	if flex != nil {
+		return flex, nil
 	}
 
 	// not found
@@ -336,14 +331,15 @@ func (ds *ProductionAtlasDeployments) DeleteDeployment(ctx context.Context, depl
 	return nil
 }
 
-func (ds *ProductionAtlasDeployments) UpgradeToDedicated(ctx context.Context, deployment Deployment) (Deployment, error) {
-	switch d := deployment.(type) {
+func (ds *ProductionAtlasDeployments) UpgradeToDedicated(ctx context.Context, currentDeployment, targetDeployment Deployment) (Deployment, error) {
+	switch currentDeployment.(type) {
 	case *Cluster:
 		return nil, errors.New("upgrade from shared to dedicated is not supported")
 	case *Serverless:
 		return nil, errors.New("upgrade from serverless to dedicated is not supported")
 	case *Flex:
-		flex, _, err := ds.flexAPI.UpgradeFlexCluster(ctx, deployment.GetProjectID(), flexUpgradeToAtlas(d)).Execute()
+		d := targetDeployment.(*Cluster)
+		flex, _, err := ds.flexAPI.UpgradeFlexCluster(ctx, targetDeployment.GetProjectID(), flexUpgradeToAtlas(d)).Execute()
 		if err != nil {
 			return nil, err
 		}

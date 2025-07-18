@@ -159,10 +159,10 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	deploymentInAKO := deployment.NewDeployment(atlasProject.ID, atlasDeployment)
 
-	if ok, deprecationMsg := deploymentInAKO.Deprecated(); ok {
+	if ok, notificationReason, notificationMsg := deploymentInAKO.Notifications(); ok {
 		// emit Log and event
-		r.Log.Log(zapcore.WarnLevel, deprecationMsg)
-		r.EventRecorder.Event(deploymentInAKO.GetCustomResource(), corev1.EventTypeWarning, "DeprecationWarning", deprecationMsg)
+		r.Log.Log(zapcore.WarnLevel, notificationMsg)
+		r.EventRecorder.Event(deploymentInAKO.GetCustomResource(), corev1.EventTypeWarning, notificationReason, notificationMsg)
 	}
 	deploymentInAtlas, err := deploymentService.GetDeployment(workflowCtx.Context, atlasProject.ID, atlasDeployment)
 
@@ -173,7 +173,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	existsInAtlas := deploymentInAtlas != nil
 	if !atlasDeployment.GetDeletionTimestamp().IsZero() {
 		if existsInAtlas {
-			return r.delete(workflowCtx, deploymentService, deploymentInAKO)
+			return r.delete(workflowCtx, deploymentService, deploymentInAKO, deploymentInAtlas)
 		}
 		return r.unmanage(workflowCtx, deploymentInAKO)
 	}
@@ -195,28 +195,29 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func (r *AtlasDeploymentReconciler) delete(
 	ctx *workflow.Context,
 	deploymentService deployment.AtlasDeploymentsService,
-	deployment deployment.Deployment, // this must be the original non converted deployment
+	deploymentInAKO deployment.Deployment, // this must be the original non converted deployment
+	deploymentInAtlas deployment.Deployment, // this must be the original non converted deployment
 ) (ctrl.Result, error) {
-	if err := r.cleanupBindings(ctx.Context, deployment); err != nil {
+	if err := r.cleanupBindings(ctx.Context, deploymentInAKO); err != nil {
 		return r.terminate(ctx, workflow.Internal, fmt.Errorf("failed to cleanup deployment bindings (backups): %w", err))
 	}
 
 	switch {
-	case customresource.IsResourcePolicyKeepOrDefault(deployment.GetCustomResource(), r.ObjectDeletionProtection):
+	case customresource.IsResourcePolicyKeepOrDefault(deploymentInAKO.GetCustomResource(), r.ObjectDeletionProtection):
 		ctx.Log.Info("Not removing Atlas deployment from Atlas as per configuration")
-	case customresource.IsResourcePolicyKeep(deployment.GetCustomResource()):
+	case customresource.IsResourcePolicyKeep(deploymentInAKO.GetCustomResource()):
 		ctx.Log.Infof("Not removing Atlas deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
-	case isTerminationProtectionEnabled(deployment.GetCustomResource()):
-		msg := fmt.Sprintf("Termination protection for %s deployment enabled. Deployment in Atlas won't be removed", deployment.GetName())
+	case isTerminationProtectionEnabled(deploymentInAKO.GetCustomResource()):
+		msg := fmt.Sprintf("Termination protection for %s deployment enabled. Deployment in Atlas won't be removed", deploymentInAKO.GetName())
 		ctx.Log.Info(msg)
-		r.EventRecorder.Event(deployment.GetCustomResource(), "Warning", "AtlasDeploymentTermination", msg)
+		r.EventRecorder.Event(deploymentInAKO.GetCustomResource(), "Warning", "AtlasDeploymentTermination", msg)
 	default:
-		if err := r.deleteDeploymentFromAtlas(ctx, deploymentService, deployment); err != nil {
+		if err := r.deleteDeploymentFromAtlas(ctx, deploymentService, deploymentInAKO, deploymentInAtlas); err != nil {
 			return r.terminate(ctx, workflow.Internal, fmt.Errorf("failed to remove deployment from Atlas: %w", err))
 		}
 	}
 
-	if err := customresource.ManageFinalizer(ctx.Context, r.Client, deployment.GetCustomResource(), customresource.UnsetFinalizer); err != nil {
+	if err := customresource.ManageFinalizer(ctx.Context, r.Client, deploymentInAKO.GetCustomResource(), customresource.UnsetFinalizer); err != nil {
 		return r.terminate(ctx, workflow.Internal, fmt.Errorf("failed to remove finalizer: %w", err))
 	}
 
@@ -235,15 +236,20 @@ func isTerminationProtectionEnabled(deployment *akov2.AtlasDeployment) bool {
 		deployment.Spec.ServerlessSpec.TerminationProtectionEnabled)
 }
 
-func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService, deployment deployment.Deployment) error {
-	ctx.Log.Infow("-> Starting AtlasDeployment deletion", "spec", deployment)
+func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
+	ctx *workflow.Context,
+	deploymentService deployment.AtlasDeploymentsService,
+	deploymentInAKO deployment.Deployment,
+	deploymentInAtlas deployment.Deployment,
+) error {
+	ctx.Log.Infow("-> Starting AtlasDeployment deletion", "spec", deploymentInAKO)
 
-	err := r.deleteConnectionStrings(ctx, deployment)
+	err := r.deleteConnectionStrings(ctx, deploymentInAKO)
 	if err != nil {
 		return err
 	}
 
-	err = deploymentService.DeleteDeployment(ctx.Context, deployment)
+	err = deploymentService.DeleteDeployment(ctx.Context, deploymentInAtlas)
 	if err != nil {
 		ctx.Log.Errorw("Cannot delete Atlas deployment", "error", err)
 		return err
@@ -349,10 +355,10 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, deploymentInAKO
 		return r.terminate(ctx, workflow.AtlasFinalizerNotSet, err)
 	}
 
-	_, deprecationMsg := deploymentInAKO.Deprecated()
+	_, _, notificationMsg := deploymentInAKO.Notifications()
 
 	ctx.SetConditionTrue(api.DeploymentReadyType).
-		SetConditionTrueMsg(api.ReadyType, deprecationMsg).
+		SetConditionTrueMsg(api.ReadyType, notificationMsg).
 		EnsureStatusOption(status.AtlasDeploymentStateNameOption(deploymentInAtlas.GetState())).
 		EnsureStatusOption(status.AtlasDeploymentReplicaSet(deploymentInAtlas.GetReplicaSet())).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
