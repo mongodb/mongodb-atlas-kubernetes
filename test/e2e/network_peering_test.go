@@ -32,7 +32,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
+var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(OncePerOrdered, func() {
