@@ -27,17 +27,17 @@ import (
 
 func TestProvider_IsCloudGov(t *testing.T) {
 	t.Run("should return false for invalid domain", func(t *testing.T) {
-		p := NewProductionProvider("http://x:namedport", false)
+		p := NewProductionProvider("http://x:namedport", false, false)
 		assert.False(t, p.IsCloudGov())
 	})
 
 	t.Run("should return false for commercial Atlas domain", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodb.com/", false)
+		p := NewProductionProvider("https://cloud.mongodb.com/", false, false)
 		assert.False(t, p.IsCloudGov())
 	})
 
 	t.Run("should return true for Atlas for government domain", func(t *testing.T) {
-		p := NewProductionProvider("https://cloud.mongodbgov.com/", false)
+		p := NewProductionProvider("https://cloud.mongodbgov.com/", false, false)
 		assert.True(t, p.IsCloudGov())
 	})
 }
@@ -137,7 +137,7 @@ func TestProvider_IsResourceSupported(t *testing.T) {
 
 	for desc, data := range dataProvider {
 		t.Run(desc, func(t *testing.T) {
-			p := NewProductionProvider(data.domain, false)
+			p := NewProductionProvider(data.domain, false, false)
 			assert.Equal(t, data.expectation, p.IsResourceSupported(data.resource))
 		})
 	}
