@@ -34,48 +34,86 @@ Please refer to the [CI documentation](ci.md#kubernetes-version-matrix) and subm
 
 The reason for this preparatory step is to avoid customers getting new or breaking changes before their supporting documentation.
 
-## Create the release branch
+## Create the Release
 
-Once the release notes and documentation are ready and got explicit approval to start the release:
+Once release notes and documentation are approved, trigger the [`release-image.yml`](../../.github/workflows/release-image.yml) workflow.
 
-- Use the [GitHub UI](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-branch.yml) to create the new "Create Release Branch" workflow.
-- Specify the `version` to be released in the text box and the author MongoDB email or multiple emails in the case of multiple release authors involved in the release.
-Do not specify the whole team but only the release authors to respect SSDLC compliance requirements.
+You will be prompted to enter:
 
-The deployment scripts (K8s configs, OLM bundle) will be generated and PR will be created with new changes on behalf
-of the `github-actions` bot.
+| Input       | Description                                                                                         | Required | Default  | Example                               |
+|-------------|-----------------------------------------------------------------------------------------------------|----------|----------|---------------------------------------|
+| `version`   | The version to be released, including the `v` prefix                                                | Yes      | None     | `v1.10.3`                             |
+| `authors`   | A comma-separated list of MongoDB email addresses responsible for the release                       | Yes      | None     | `alice@mongodb.com,bob@mongodb.com`   |
+| `image_sha` | The 7-character Git commit SHA used for the promoted image, or `'latest'` for the most recent       | No       | `latest` | `3e79a3f`.                            |
 
-Pass the version with the `X.Y.Z` eg. `1.2.3`, **without** the `v...` prefix.
+The inputs `version` and `authors` must be filled out every time you trigger the release workflow. The `image_sha` is optional and defaults to `latest` if left empty.
 
-See [Troubleshooting](#troubleshooting) in case of issues, such as [errors with the major version](#major-version-issues-when-create-release-branch).
+The `image_sha` corresponds exactly to the 7-character Git commit SHA used to build the operator image; for example, `image_sha: 3e79a3f` means the image was built from Git commit `3e79a3f`. Using `latest` as the `image_sha` means the workflow will release the most recently promoted and tested operator image—not necessarily the latest Git commit—and when `latest` is used, the workflow will echo the corresponding Git commit during the internal steps so the user knows exactly which source is being released.
 
-Expect this branch to include the Software Security Development Lifecycle Policy Checklist (SSDLC) document at path `docs/releases/v${VERSION}/sdlc-compliance.md`.
-Note the SBOM files cannot be generated yet, as they require the image to have been published already.
+### Example Release Input
 
-## Approve the Pull Request named "Release x.y.z"
-
-1. Review the Pull Request.
-1. Approve and merge it to `main`.
-
-At this point `main` represents what would become the next release, cut the release by doing:
-
-```shell
-$ export VERSION=x.y.z
-$ git checkout -b main origin/main
-$ git tag v${VERSION}
-$ git push origin v${VERSION}
+```yaml
+version: v1.10.3
+authors: alice@mongodb.com,bob@mongodb.com
+image_sha: 3e79a3f
 ```
 
-A new job "Create Release" will be triggered and the following will be done:
-* Atlas Operator image is built and pushed to DockerHub
-* Draft Release will be created with all commits since the previous release
-* A subsequent job will be triggered to create a SBOMs update PR
+or
 
-### SSDLC SBOMs PR
+```yaml
+version: v1.10.3
+authors: alice@mongodb.com,bob@mongodb.com
+image_sha: latest
+```
 
-A new PR should have been created titled `Add SBOMs for version ...`. Please review all is as expected and merge. It should contain just a couple of new files at directory `docs/releases/v${VERSION}/`:
-- `linux-amd64.sbom.json`
-- `linux-arm64.sbom.json`
+### What Happens Next
+
+Once triggered:
+
+- A release PR is created that adds a new `release/<version>` directory (containing `deploy/`, `helm-charts/`, and `bundle/` directories)
+- A Git tag of the form `v<version>` is created and pushed on GitHub
+- A GitHub release is published with:
+  - Zipped `all-in-one.yml`
+  - SDLC-compliant artifacts: SBOMs and compliance reports
+
+The only manual step is to **review and merge** the release PR. This PR does **not** re-run any of the expensive tests on cloud-qa.
+
+**Note:** this directory-based approach avoids merge conflicts entirely. Because each release introduces a clean, isolated `release/<version>` folder, it can be merged directly into `main` without conflicting with prior or future releases. This enables a linear and conflict-free release history while maintaining clear traceability for each version.
+
+---
+
+## Image Promotion
+
+The `image_sha` used in a release must already be tested and promoted via CI. Promotion can occur in one of three ways:
+
+- A scheduled CI run on the `main` branch
+- A merge into `main` that includes production code changes
+- A manual dispatch of the `tests.yml` workflow with the `promote` flag enabled
+
+### How Promotion Works
+
+During promotion, the operator image used in Helm-based E2E tests is first built and published as a dummy image in `ghcr.io`. Once **all** tests—including the cloud-based Helm scenarios—complete successfully, the [`promote-image.yml`](../../.github/workflows/promote-image.yml) workflow is triggered.
+
+This workflow:
+
+- Verifies that all required tests succeeded
+- Moves the image from `ghcr.io` to official prerelease registries in `docker.io` and `quay.io`
+- Tags the image in the official prerelease registires as:
+  - `promoted-<git_sha>` — uniquely maps the image to the source Git commit
+  - `promoted-latest` — always points to the most recent image that passed all tests
+
+The `promoted-<git_sha>` builds the one-to-one correspondence between the 7-character Git commit and the `image_sha`. For the correspondence between the 7-character Git commit and `image_sha: latest`, we internally store a label within the image `promoted-latest` that has the exact git commit used for that image. Moreover, the `promoted-latest` tag is only updated by events that run on the main branch—whether triggered by a schedule, a merge, or a workflow dispatch. Manual promotions on any other branch will never overwrite this tag.
+
+One can find promoted images by checking the [`promote-image.yml`](../../.github/workflows/promote-image.yml) workflow runs in GitHub Actions, or by browsing the prerelease Docker registries at:
+
+- Docker Hub: `mongodb/mongodb-atlas-kubernetes-prerelease`
+- Quay.io: `mongodb/mongodb-atlas-kubernetes-prerelease`
+
+**Note:** When releasing, you omit the `promoted-` prefix and specify only the image SHA or `latest`. The `promoted-` prefix is used internally to organize images in the registries.
+
+### Best Practice
+
+Releases should generally use `latest` as the `image_sha`. This ensures that you are releasing the most recently tested and CI-verified image.
 
 ## Manual SSDLC steps
 

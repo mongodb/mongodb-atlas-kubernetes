@@ -131,17 +131,32 @@ Finally, adjust the `com.redhat.openshift.versions` setting in all relevant file
 
 ## Release CI
 
-A **release PR** is prepared by the [release-branch.yml](../../.github/workflows/release-branch.yml) workflow.
+A **release** is initiated by the [`release-image.yml`](../../.github/workflows/release-image.yml) workflow, which takes three inputs: the version to release, the image SHA to be published for the promoted image, and the authors for compliance reporting. The process is fully automated; the only manual step is approving and merging the release PR. This PR does **not** re-run any tests.
 
-Once the PR is approved and **closed**, the [tag.yml](../../.github/workflows/release-branch.yml) workflow takes over:
-- The branch `release/X.Y.Z` would be tagged as release `vX.Y.Z`.
-  - A pre-release branch `prerelease/X.Y.Z-...` would become `vX.Y.Z-...`.
-- Then does a workflow call to [release-post-merge.yml](../../.github/workflows/release-opost-merge.yml).
+The `image_sha` refers to a previously tested and promoted operator image stored in official prerelease registries (`docker.io`, `quay.io`), traceable to a specific Git commit. Using `latest` here will use the most recent successful image tested. The release workflow uses this image to generate the `release/<version>` directory containing `deploy/`, `helm-charts/`, and `bundle/` folders with all necessary metadata.
 
-Note `release-post-merge` can also be triggered by tagging a release or pre-release manually.
+A Git tag of the form `v<version>` is automatically created, and a GitHub release is published. This includes the zipped `all-in-one.yml` and SDLC-compliant artifacts such as SBOMs and compliance reports.
 
-After a release is published, daily rebuilds are run by [rebuild-released-images](../../.github/workflows/rebuild-released-images.yaml):
-  - The list of [supported releases is computed dynamically](../../scripts/supported-releases.sh).
+For more information, see [`release.md`](./release.md).
+
+### Promotion Logic
+
+Operator images are promoted to official prerelease registries after passing all tests. Promotion occurs via:
+
+- Scheduled CI runs on the `main` branch  
+- Merges to `main` that modify production code  
+- Manual dispatch of `tests.yml` with promotion enabled  
+
+The [`promote-image.yml`](../../.github/workflows/promote-image.yml) workflow verifies all tests, including cloud-based Helm tests, have passed. If successful, it:
+
+- Copies the tested image from `ghcr.io` to `docker.io` and `quay.io`
+- Tags the image as `promoted-<commit-sha>` for traceability
+- Updates the `promoted-latest` tag to point to this image
+
+For more information, see [`release.md`](./release.md).
+
+Daily rebuilds of released images are triggered by [`rebuild-released-images`](../../.github/workflows/rebuild-released-images.yaml), using a dynamically computed list of [supported releases](../../scripts/supported-releases.sh).
+
 
 ## Other Workflows
 
