@@ -230,7 +230,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		}
 
 		if b.atlasProvider == nil {
-			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, true)
+			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, true, b.logger.Level() < 0)
 		}
 
 		// We cannot use cluster.Cluster's event recorder. This event recorder has no guarantees about the delivery of events to API server.
@@ -285,7 +285,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		}
 
 		if b.atlasProvider == nil {
-			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, false)
+			b.atlasProvider = atlas.NewProductionProvider(b.atlasDomain, false, b.logger.Level() < 0)
 		}
 
 		if err := controllerRegistry.RegisterWithManager(mgr, b.skipNameValidation, b.atlasProvider); err != nil {
