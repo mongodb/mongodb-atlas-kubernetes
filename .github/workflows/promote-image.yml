@@ -20,7 +20,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
-          jobs=$(gh api /repos/$REPO/actions/runs/$RUN_ID/jobs --jq '.jobs[] | select(.name == "Final Test Status")')
+          jobs=$(gh api --paginate /repos/$REPO/actions/runs/$RUN_ID/jobs --jq '.jobs[] | select(.name == "Final Test Status")')
 
           if [[ -z "$jobs" ]]; then
             echo "test-status job not found"
