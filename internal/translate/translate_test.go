@@ -170,6 +170,30 @@ func TestToAPI(t *testing.T) {
 				SeverityOverride: pointer.Get("some-severity-override"),
 			},
 		},
+		{
+			name:       "sample organization",
+			crd:        "Organization",
+			sdkVersion: "v20250312",
+			spec: v1.OrganizationSpec{
+				V20250312: &v1.V20250312{
+					Entry: &v1.Entry{
+						ApiKey: &v1.ApiKey{
+							Desc:  "description",
+							Roles: []string{"role-1","role-2"},
+						},
+						FederationSettingsId:      pointer.Get("fed-id"),
+						Name:                      "org-name",
+						OrgOwnerId:                pointer.Get("org-owner-id"),
+						SkipDefaultAlertsSettings: pointer.Get(true),
+					},
+				},
+			},
+			target: &admin2025.AtlasOrganization{},
+			want: &admin2025.AtlasOrganization{
+				Name:                      "org-name",
+				SkipDefaultAlertsSettings: pointer.Get(true),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			crdsYML, err := samples.Open("samples/crds.yaml")
