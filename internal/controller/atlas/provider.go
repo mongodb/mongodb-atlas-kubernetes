@@ -148,7 +148,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 
 func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.SugaredLogger) http.RoundTripper {
 	if os.Getenv("AKO_DEPRECATION_WARNINGS") != "" {
-		return deprecation.NewLoggingTransport(delegate, log.Desugar())
+		delegate = deprecation.NewLoggingTransport(delegate, log.Desugar())
 	}
 
 	if p.dryRun {
