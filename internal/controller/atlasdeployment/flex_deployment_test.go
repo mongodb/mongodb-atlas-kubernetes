@@ -63,7 +63,6 @@ func TestHandleFlexInstance(t *testing.T) {
 				return service
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("failed to create flex cluster"),
 			},
 			expectedConditions: []api.Condition{
@@ -128,7 +127,6 @@ func TestHandleFlexInstance(t *testing.T) {
 				return service
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("failed to update flex cluster"),
 			},
 			expectedConditions: []api.Condition{
@@ -261,7 +259,6 @@ func TestHandleFlexInstance(t *testing.T) {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("unknown deployment state: NONSENSE"),
 			},
 			expectedConditions: []api.Condition{

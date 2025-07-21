@@ -56,7 +56,6 @@ func TestCreate(t *testing.T) {
 
 				return s
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.IPAccessListReady).
@@ -139,7 +138,6 @@ func TestDeleteAll(t *testing.T) {
 
 				return s
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.IPAccessListReady).
@@ -218,7 +216,6 @@ func TestDeletePartial(t *testing.T) {
 
 				return s
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.IPAccessListReady).

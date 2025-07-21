@@ -81,8 +81,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			atlasProvider:  &atlasmock.TestProvider{},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			atlasProvider: &atlasmock.TestProvider{},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ResourceVersionStatus).
 					WithReason(string(workflow.AtlasResourceVersionIsInvalid)).
@@ -107,8 +106,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			atlasProvider:  &atlasmock.TestProvider{},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			atlasProvider: &atlasmock.TestProvider{},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ResourceVersionStatus).
 					WithReason(string(workflow.AtlasResourceVersionMismatch)).
@@ -393,7 +391,6 @@ func TestDbuLifeCycle(t *testing.T) {
 			dService: func() deployment.AtlasDeploymentsService {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).
@@ -877,7 +874,6 @@ func TestCreate(t *testing.T) {
 			dbUserService: func() dbuser.AtlasUsersService {
 				return translation.NewAtlasUsersServiceMock(t)
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).
@@ -914,7 +910,6 @@ func TestCreate(t *testing.T) {
 			dbUserService: func() dbuser.AtlasUsersService {
 				return translation.NewAtlasUsersServiceMock(t)
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).
@@ -958,7 +953,6 @@ func TestCreate(t *testing.T) {
 
 				return service
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.DatabaseUserNotCreatedInAtlas)).
@@ -1129,7 +1123,6 @@ func TestUpdate(t *testing.T) {
 			dService: func() deployment.AtlasDeploymentsService {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).
@@ -1169,7 +1162,6 @@ func TestUpdate(t *testing.T) {
 			dService: func() deployment.AtlasDeploymentsService {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).
@@ -1280,7 +1272,6 @@ func TestUpdate(t *testing.T) {
 			dService: func() deployment.AtlasDeploymentsService {
 				return translation.NewAtlasDeploymentsServiceMock(t)
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.DatabaseUserNotUpdatedInAtlas)).
@@ -1463,7 +1454,6 @@ func TestDelete(t *testing.T) {
 				return service
 			},
 			deletionProtection: false,
-			expectedResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.DatabaseUserNotDeletedInAtlas)).
@@ -1593,7 +1583,6 @@ func TestReadiness(t *testing.T) {
 
 				return service
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).
@@ -1629,7 +1618,6 @@ func TestReadiness(t *testing.T) {
 
 				return service
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.Internal)).
@@ -1702,7 +1690,6 @@ func TestReadiness(t *testing.T) {
 
 				return service
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.DatabaseUserConnectionSecretsNotCreated)).

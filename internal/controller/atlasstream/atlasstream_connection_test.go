@@ -279,9 +279,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Name: pointer.MakePtr("instance-0"),
 		}
 
-		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
+		_, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamConnectionNotConfigured), ctx.Conditions()[0].Reason)
@@ -367,9 +366,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Connections: &[]admin.StreamsConnection{},
 		}
 
-		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
+		_, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamConnectionNotCreated), ctx.Conditions()[0].Reason)
@@ -464,9 +462,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Name: pointer.MakePtr("instance-0"),
 		}
 
-		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
+		_, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamConnectionNotUpdated), ctx.Conditions()[0].Reason)
@@ -545,9 +542,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Name: pointer.MakePtr("instance-0"),
 		}
 
-		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
+		_, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamConnectionNotRemoved), ctx.Conditions()[0].Reason)

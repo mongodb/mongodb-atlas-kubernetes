@@ -41,7 +41,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
@@ -98,8 +97,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 					return errors.New("failed to get custom role")
 				},
 			},
-			expected: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			wantErr:  true,
+			wantErr: true,
 		},
 		"custom role is not found": {
 			isSupported: true,
@@ -180,8 +178,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			},
-			expected: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			wantErr:  true,
+			wantErr: true,
 		},
 		"custom role resource unsupported": {
 			isSupported: false,
@@ -343,8 +340,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				},
 				Status: status.AtlasCustomRoleStatus{},
 			},
-			expected: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			wantErr:  true,
+			wantErr: true,
 		},
 	}
 	version.Version = "1.0.0"

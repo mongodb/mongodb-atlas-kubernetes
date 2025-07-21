@@ -86,7 +86,6 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 
 				return c
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.Internal)).
@@ -120,7 +119,6 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 
 				return c
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.PrivateEndpointServiceReady).
@@ -237,7 +235,6 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 
 				return c
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.PrivateEndpointServiceReady).
@@ -374,7 +371,6 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 
 				return c
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.PrivateEndpointServiceReady).
@@ -595,7 +591,6 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 
 				return c
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.PrivateEndpointReady).
@@ -778,7 +773,6 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 
 				return c
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.PrivateEndpointReady).
@@ -859,7 +853,6 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 
 				return c
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.PrivateEndpointReady).

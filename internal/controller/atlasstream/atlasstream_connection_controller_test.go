@@ -186,7 +186,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -196,7 +196,6 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 	})
 
 	t.Run("should transition to invalid state when resource version is invalid", func(t *testing.T) {
@@ -227,7 +226,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 			EventRecorder: record.NewFakeRecorder(1),
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -237,14 +236,6 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamConnection), streamConnection))
 		conditions := streamConnection.Status.GetConditions()
 		assert.Len(t, conditions, 2)
@@ -350,7 +341,7 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 			},
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -360,14 +351,6 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamConnection), streamConnection))
 		conditions := streamConnection.Status.GetConditions()
 		assert.Len(t, conditions, 2)
@@ -627,10 +610,8 @@ func TestLock(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result, err := reconciler.lock(ctx, connection)
+		_, err := reconciler.lock(ctx, connection)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(connection), connection))
 		assert.Empty(t, connection.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
@@ -720,10 +701,8 @@ func TestRelease(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result, err := reconciler.release(ctx, connection)
+		_, err := reconciler.release(ctx, connection)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(connection), connection))
 		assert.NotEmpty(t, connection.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)

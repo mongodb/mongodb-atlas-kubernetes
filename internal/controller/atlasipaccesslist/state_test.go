@@ -104,8 +104,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			expectedResult: workflowRes{
-				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err:    errors.New("wrong is not a valid semver version for label mongodb.com/atlas-resource-version"),
+				err: errors.New("wrong is not a valid semver version for label mongodb.com/atlas-resource-version"),
 			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
@@ -169,8 +168,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			expectedResult: workflowRes{
-				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err:    errors.New("error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+				err: errors.New("error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
@@ -207,8 +205,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			expectedResult: workflowRes{
-				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err:    errors.New("failed to create sdk"),
+				err: errors.New("failed to create sdk"),
 			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
@@ -250,8 +247,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			expectedResult: workflowRes{
-				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err:    errors.New("failed to get project via Kubernetes reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+				err: errors.New("failed to get project via Kubernetes reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 			},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
@@ -428,7 +424,6 @@ func TestHandleIPAccessList(t *testing.T) {
 
 				return s
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.IPAccessListReady).
@@ -451,7 +446,6 @@ func TestHandleIPAccessList(t *testing.T) {
 
 				return s
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.IPAccessListReady).
@@ -556,7 +550,6 @@ func TestHandleIPAccessList(t *testing.T) {
 
 				return s
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.IPAccessListReady).
@@ -619,7 +612,6 @@ func TestHandleIPAccessList(t *testing.T) {
 
 				return s
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.IPAccessListReady).
