@@ -156,5 +156,8 @@ func (r DeprecatedResult) ReconcileResult() (reconcile.Result, error) {
 	if r.requeueAfter < 0 {
 		return reconcile.Result{}, nil
 	}
-	return reconcile.Result{RequeueAfter: r.requeueAfter}, r.err
+	if r.err != nil {
+		return reconcile.Result{}, r.err
+	}
+	return reconcile.Result{RequeueAfter: r.requeueAfter}, nil
 }
