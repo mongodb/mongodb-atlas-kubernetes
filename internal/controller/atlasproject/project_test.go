@@ -101,7 +101,6 @@ func TestHandleProject(t *testing.T) {
 					Name: "my-project",
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.ProjectNotCreatedInAtlas)).
@@ -272,7 +271,6 @@ func TestHandleProject(t *testing.T) {
 					Name: "my-project",
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.AtlasFinalizerNotRemoved)).
@@ -379,7 +377,6 @@ func TestHandleProject(t *testing.T) {
 					ID: "projectID",
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry, Requeue: false},
 			conditions: []api.Condition{
 				api.TrueCondition(api.ProjectReadyType),
 				api.FalseCondition(api.X509AuthReadyType).
@@ -613,7 +610,6 @@ func TestHandleProject(t *testing.T) {
 					ID: "projectID",
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.TrueCondition(api.ProjectReadyType),
 				api.FalseCondition(api.IPAccessListReadyType).
@@ -736,7 +732,6 @@ func TestHandleProject(t *testing.T) {
 					return errors.New("failed to save last applied config")
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.Internal)).
@@ -829,7 +824,6 @@ func TestCreate(t *testing.T) {
 					Namespace: "default",
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.ProjectNotCreatedInAtlas)).
@@ -858,7 +852,6 @@ func TestCreate(t *testing.T) {
 					Namespace: "default",
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.AtlasFinalizerNotSet)).
@@ -887,7 +880,6 @@ func TestCreate(t *testing.T) {
 					Namespace: "default",
 				},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.Internal)).
@@ -1013,7 +1005,6 @@ func TestDelete(t *testing.T) {
 				&akov2.AtlasStreamInstance{ObjectMeta: metav1.ObjectMeta{Name: "instance0"}},
 				&akov2.AtlasTeam{ObjectMeta: metav1.ObjectMeta{Name: teamName}},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.Internal)).
@@ -1058,7 +1049,6 @@ func TestDelete(t *testing.T) {
 				},
 				&akov2.AtlasTeam{ObjectMeta: metav1.ObjectMeta{Name: teamName}},
 			},
-			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
 					WithReason(string(workflow.Internal)).

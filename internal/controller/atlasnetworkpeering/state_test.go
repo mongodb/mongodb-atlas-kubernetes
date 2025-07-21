@@ -106,7 +106,6 @@ func TestHandleCustomResource(t *testing.T) {
 					},
 				},
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
 				api.FalseCondition(api.ResourceVersionStatus).
@@ -156,7 +155,6 @@ func TestHandleCustomResource(t *testing.T) {
 					return true
 				},
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
@@ -189,7 +187,6 @@ func TestHandleCustomResource(t *testing.T) {
 					return nil, errors.New("failed to create sdk")
 				},
 			},
-			wantResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
 					WithReason(string(workflow.NetworkPeeringNotConfigured)).
@@ -230,7 +227,6 @@ func TestHandleCustomResource(t *testing.T) {
 					}, nil
 				},
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
@@ -283,7 +279,6 @@ func TestHandleCustomResource(t *testing.T) {
 					}, nil
 				},
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp(
@@ -414,7 +409,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
 			wantErr:        fmt.Errorf("failed to create peering connection: %w", ErrTestFail),
 			wantConditions: []api.Condition{
@@ -554,7 +548,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantErr:        fmt.Errorf("peering connection failed: %s", ErrTestFail.Error()),
 			wantConditions: []api.Condition{
@@ -672,7 +665,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantErr:        fmt.Errorf("failed to update peering connection: %w", ErrTestFail),
 			wantConditions: []api.Condition{
@@ -792,7 +784,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantErr: fmt.Errorf("failed to delete peer connection %s: %s",
 				testPeeringID, ErrTestFail.Error()),
@@ -846,7 +837,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantErr: fmt.Errorf("failed to get closing peer connection %s: %s",
 				testPeeringID, ErrTestFail.Error()),

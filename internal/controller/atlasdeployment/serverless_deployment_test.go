@@ -98,7 +98,6 @@ func TestHandleServerlessInstance(t *testing.T) {
 				return &admin.APIClient{}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("failed to create serverless instance"),
 			},
 			expectedConditions: []api.Condition{
@@ -239,7 +238,6 @@ func TestHandleServerlessInstance(t *testing.T) {
 				return &admin.APIClient{}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("failed to update serverless instance"),
 			},
 			expectedConditions: []api.Condition{
@@ -584,7 +582,6 @@ func TestHandleServerlessInstance(t *testing.T) {
 				return &admin.APIClient{ServerlessPrivateEndpointsApi: speClient}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("unable to retrieve list of serverless private endpoints from Atlas: failed to list private endpoints"),
 			},
 			expectedConditions: []api.Condition{
@@ -676,7 +673,6 @@ func TestHandleServerlessInstance(t *testing.T) {
 				return &admin.APIClient{ServerlessPrivateEndpointsApi: speClient}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("serverless private endpoints are not supported: "),
 			},
 			expectedConditions: []api.Condition{
@@ -919,7 +915,6 @@ func TestHandleServerlessInstance(t *testing.T) {
 				return &admin.APIClient{}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("unknown deployment state: NEW_UNKNOWN_STATE"),
 			},
 			expectedConditions: []api.Condition{

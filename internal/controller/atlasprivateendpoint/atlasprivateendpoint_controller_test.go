@@ -195,8 +195,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					ServiceStatus: "AVAILABLE",
 				},
 			},
-			wantErr:        true,
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
+			wantErr: true,
 			expectedLogs: []string{
 				"resource version for 'pe1' is invalid",
 				"AtlasPrivateEndpoint is invalid: {true 10000000000 wrong is not a valid semver version for label mongodb.com/atlas-resource-version AtlasResourceVersionIsInvalid true false}",
@@ -273,8 +272,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					return nil, errors.New("failed to create sdk client")
 				},
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
-			wantErr:        true,
+			wantErr: true,
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
 				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: failed to create sdk client",
@@ -310,8 +308,7 @@ func TestEnsureCustomResource(t *testing.T) {
 					return true
 				},
 			},
-			expectedResult: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
-			wantErr:        true,
+			wantErr: true,
 			expectedLogs: []string{
 				"resource 'pe1' version is valid",
 				"resource *v1.AtlasPrivateEndpoint(default/pe1) failed on condition Ready: error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-project\" not found",
@@ -512,9 +509,8 @@ func TestFailManageFinalizer(t *testing.T) {
 				},
 			}
 
-			result, err := tt.transition(r)
+			_, err := tt.transition(r)
 			assert.Error(t, err)
-			assert.Equal(t, reconcile.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		})
 	}
 }

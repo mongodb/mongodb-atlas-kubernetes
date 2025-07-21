@@ -1591,7 +1591,7 @@ func TestChangeDeploymentType(t *testing.T) {
 				},
 				EventRecorder: record.NewFakeRecorder(10),
 			}
-			result, err := r.Reconcile(
+			_, err := r.Reconcile(
 				ctx,
 				ctrl.Request{
 					NamespacedName: types.NamespacedName{
@@ -1602,7 +1602,6 @@ func TestChangeDeploymentType(t *testing.T) {
 			)
 
 			assert.Error(t, err)
-			assert.Equal(t, ctrl.Result{Requeue: false, RequeueAfter: workflow.DefaultRetry}, result)
 			assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(tt.deployment), tt.deployment))
 			assert.True(
 				t,

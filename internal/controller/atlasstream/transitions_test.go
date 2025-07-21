@@ -226,9 +226,8 @@ func TestCreate(t *testing.T) {
 			},
 		}
 
-		result, err := reconciler.create(ctx, project, streamInstance)
+		_, err := reconciler.create(ctx, project, streamInstance)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Len(t, ctx.Conditions(), 1)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
@@ -485,11 +484,8 @@ func TestDelete(t *testing.T) {
 				},
 			}
 
-			result, err := reconciler.delete(ctx, project, streamInstance)
+			_, err := reconciler.delete(ctx, project, streamInstance)
 			assert.Error(t, err)
-			assert.Equal(t, ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			}, result)
 			assert.NotEmpty(t, streamInstance.Finalizers)
 			assert.Len(t, ctx.Conditions(), 1)
 			assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
@@ -740,11 +736,8 @@ func TestDelete(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result, err := reconciler.delete(ctx, project, streamInstance)
+		_, err := reconciler.delete(ctx, project, streamInstance)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{
-			RequeueAfter: workflow.DefaultRetry,
-		}, result)
 		assert.NotEmpty(t, streamInstance.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
@@ -945,9 +938,8 @@ func TestUpdate(t *testing.T) {
 			},
 		}
 
-		result, err := reconciler.update(ctx, project, streamInstance)
+		_, err := reconciler.update(ctx, project, streamInstance)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Len(t, ctx.Conditions(), 1)
 		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)

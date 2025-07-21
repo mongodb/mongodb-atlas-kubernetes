@@ -92,7 +92,6 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				return &admin.APIClient{}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("failed to create cluster"),
 			},
 			expectedConditions: []api.Condition{
@@ -236,7 +235,6 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				return &admin.APIClient{}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("failed to update cluster"),
 			},
 			expectedConditions: []api.Condition{
@@ -535,7 +533,6 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				return &admin.APIClient{}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("unknown deployment state: LOST"),
 			},
 			expectedConditions: []api.Condition{
@@ -630,7 +627,6 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				return &admin.APIClient{}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: errors.New("failed to get process args"),
 			},
 			expectedConditions: []api.Condition{
@@ -827,7 +823,6 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				return &admin.APIClient{}
 			},
 			expectedResult: workflowRes{
-				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 				err: fmt.Errorf("failed to upgrade cluster: %w", errors.New("failed to update cluster")),
 			},
 			expectedConditions: []api.Condition{

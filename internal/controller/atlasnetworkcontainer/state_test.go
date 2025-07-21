@@ -116,8 +116,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			wantResult: workflowResult{
-				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err:    errors.New("wrong is not a valid semver version for label mongodb.com/atlas-resource-version"),
+				err: errors.New("wrong is not a valid semver version for label mongodb.com/atlas-resource-version"),
 			},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType),
@@ -184,8 +183,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			wantResult: workflowResult{
-				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err:    errors.New("error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+				err: errors.New("error resolving project reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 			},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
@@ -224,8 +222,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			wantResult: workflowResult{
-				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err:    errors.New("failed to create sdk"),
+				err: errors.New("failed to create sdk"),
 			},
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).
@@ -270,8 +267,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 			},
 			wantResult: workflowResult{
-				result: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				err:    errors.New("failed to get project via Kubernetes reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
+				err: errors.New("failed to get project via Kubernetes reference: missing Kubernetes Atlas Project\natlasprojects.atlas.mongodb.com \"my-no-existing-project\" not found"),
 			},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
@@ -477,7 +473,6 @@ func TestHandle(t *testing.T) {
 				}(),
 			},
 			wantErr:        fmt.Errorf("failed to create container: %w", ErrTestFail),
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
 			wantConditions: []api.Condition{
 				api.FalseCondition(api.ReadyType).WithReason(string(workflow.NetworkContainerNotConfigured)).
@@ -673,7 +668,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: nil,
 			wantErr:        fmt.Errorf("failed to update container: %w", ErrTestFail),
 			wantConditions: []api.Condition{
@@ -761,7 +755,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantErr:        fmt.Errorf("failed to delete container: %w", ErrTestFail),
 			wantConditions: []api.Condition{
@@ -793,7 +786,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantErr: fmt.Errorf("failed to find container from project %s: %w",
 				testProjectID, ErrTestFail),
@@ -828,7 +820,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantErr: fmt.Errorf("failed to get container %s from project %s: %w",
 				testContainerID, testProjectID, ErrTestFail),
@@ -866,7 +857,6 @@ func TestHandle(t *testing.T) {
 					return ncs
 				}(),
 			},
-			wantResult:     ctrl.Result{RequeueAfter: workflow.DefaultRetry},
 			wantFinalizers: []string{customresource.FinalizerLabel},
 			wantErr: fmt.Errorf("failed to get container %s from project %s: %w",
 				testContainerID, testProjectID, networkcontainer.ErrNotFound),

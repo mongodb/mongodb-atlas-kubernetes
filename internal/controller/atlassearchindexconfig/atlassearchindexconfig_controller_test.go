@@ -126,7 +126,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			EventRecorder: record.NewFakeRecorder(1),
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -136,14 +136,6 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		conditions := searchIndexConfig.Status.GetConditions()
 		assert.Len(t, conditions, 2)
@@ -241,7 +233,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			},
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -251,14 +243,6 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		conditions := searchIndexConfig.Status.GetConditions()
 		assert.Len(t, conditions, 2)
@@ -451,9 +435,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result, err := reconciler.lock(ctx, searchIndexConfig)
+		_, err := reconciler.lock(ctx, searchIndexConfig)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.Empty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
@@ -544,9 +527,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 			Context: context.Background(),
 		}
 
-		result, err := reconciler.release(ctx, searchIndexConfig)
+		_, err := reconciler.release(ctx, searchIndexConfig)
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.NotEmpty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)

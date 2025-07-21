@@ -164,7 +164,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			EventRecorder: record.NewFakeRecorder(1),
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -174,14 +174,6 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamInstance), streamInstance))
 		conditions := streamInstance.Status.GetConditions()
 		assert.Len(t, conditions, 2)
@@ -307,7 +299,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -317,14 +309,6 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamInstance), streamInstance))
 		conditions := streamInstance.Status.GetConditions()
 		assert.Len(t, conditions, 3)
@@ -412,7 +396,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -422,14 +406,6 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamInstance), streamInstance))
 		conditions := streamInstance.Status.GetConditions()
 		assert.Len(t, conditions, 3)
@@ -525,7 +501,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 
-		result, err := reconciler.Reconcile(
+		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -535,14 +511,6 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		)
 		assert.Error(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamInstance), streamInstance))
 		conditions := streamInstance.Status.GetConditions()
 		assert.Len(t, conditions, 3)

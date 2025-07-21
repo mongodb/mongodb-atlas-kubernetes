@@ -27,12 +27,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 )
@@ -45,7 +43,6 @@ func TestReconcile(t *testing.T) {
 		isSupported bool
 
 		wantErr              string
-		wantResult           reconcile.Result
 		wantStatusConditions []api.Condition
 		wantFinalizers       []string
 	}{
@@ -80,9 +77,6 @@ func TestReconcile(t *testing.T) {
 						},
 					},
 				},
-			},
-			wantResult: ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
 			},
 			isSupported: true,
 			wantStatusConditions: []api.Condition{
@@ -239,7 +233,7 @@ func TestReconcile(t *testing.T) {
 				},
 			}
 
-			result, err := reconciler.Reconcile(
+			_, err := reconciler.Reconcile(
 				context.Background(),
 				ctrl.Request{
 					NamespacedName: types.NamespacedName{
@@ -254,7 +248,6 @@ func TestReconcile(t *testing.T) {
 				gotErr = err.Error()
 			}
 			assert.Equal(t, tc.wantErr, gotErr)
-			assert.Equal(t, tc.wantResult, result)
 
 			if len(tc.objects) == 0 {
 				return

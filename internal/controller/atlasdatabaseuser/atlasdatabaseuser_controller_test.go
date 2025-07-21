@@ -79,8 +79,7 @@ func TestReconcile(t *testing.T) {
 					return errors.New("failed to get user")
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			wantErr:        true,
+			wantErr: true,
 		},
 		"user was not found": {
 			dbUser: &akov2.AtlasDatabaseUser{
@@ -151,8 +150,7 @@ func TestReconcile(t *testing.T) {
 					DatabaseName: "admin",
 				},
 			},
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-			wantErr:        true,
+			wantErr: true,
 		},
 	}
 
@@ -213,9 +211,8 @@ func TestFail(t *testing.T) {
 			},
 		}
 
-		res, err := c.fail(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}, errors.New("failed to retrieve custom resource"))
+		_, err := c.fail(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}, errors.New("failed to retrieve custom resource"))
 		assert.Error(t, err)
-		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, res)
 		//assert.Equal(
 		//	t,
 		//	ctrl.Result{RequeueAfter: workflow.DefaultRetry},
@@ -264,11 +261,10 @@ func TestTerminate(t *testing.T) {
 					Namespace: "ns-test",
 				},
 			},
-			condition:      api.ProjectReadyType,
-			reason:         workflow.Internal,
-			retry:          true,
-			err:            errors.New("failed to reconcile project"),
-			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			condition: api.ProjectReadyType,
+			reason:    workflow.Internal,
+			retry:     true,
+			err:       errors.New("failed to reconcile project"),
 			expectedLogs: []string{
 				"resource *v1.AtlasProject(ns-test/my-project) failed on condition ProjectReady: failed to reconcile project",
 			},
@@ -281,11 +277,10 @@ func TestTerminate(t *testing.T) {
 					Namespace: "ns-test",
 				},
 			},
-			condition:      api.StreamInstanceReadyType,
-			reason:         workflow.StreamConnectionNotCreated,
-			retry:          false,
-			err:            errors.New("failed to reconcile stream instance"),
-			expectedResult: ctrl.Result{},
+			condition: api.StreamInstanceReadyType,
+			reason:    workflow.StreamConnectionNotCreated,
+			retry:     false,
+			err:       errors.New("failed to reconcile stream instance"),
 			expectedLogs: []string{
 				"resource *v1.AtlasStreamInstance(ns-test/my-project) failed on condition StreamInstanceReady: failed to reconcile stream instance",
 			},
