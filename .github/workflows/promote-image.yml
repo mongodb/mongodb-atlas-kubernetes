@@ -6,13 +6,38 @@ on:
     types: [completed]
 
 jobs:
+  # Check-test-status: Uses the hook called test-status on the test.yml job in order to 
+  # see if any test failed or was skipped; promotion should only run when all tests suceeded!
+  check-test-status:
+    runs-on: ubuntu-latest
+    outputs:
+      test-status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Ensure test-status job completed
+        id: set-status
+        env:
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          jobs=$(gh api /repos/$REPO/actions/runs/$RUN_ID/jobs --jq '.jobs[] | select(.name == "Final Test Status")')
+
+          if [[ -z "$jobs" ]]; then
+            echo "test-status job not found"
+            exit 1
+          fi
+
+          conclusion=$(echo "$jobs" | jq -r '.conclusion')
+          echo "status=$conclusion" >> "$GITHUB_OUTPUT"
+
+  # Promote image: this will be responbile for taking a tested image from an unofficial registry like
+  # ghcr.io and promote it by adding it to an official registry (docker.io and quay.io)
   promote-image:
     runs-on: ubuntu-latest
     environment: release
+    needs: check-test-status
     if: |
-      github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'schedule'
+      needs.check-test-status.outputs.test-status == 'success'
     env:
       GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       DOCKER_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
@@ -21,6 +46,7 @@ jobs:
       - name: Checkout PR commit
         uses: actions/checkout@v4
       
+      # Login in all the needed registries
       - name: Log in to the GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -42,6 +68,7 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
+      # Prepare tags
       - name: Prepare image tag
         id: set_tag
         uses: ./.github/actions/set-tag
@@ -56,6 +83,7 @@ jobs:
           COMMIT_SHA="${RAW_TAG##*-}"
           echo "tag=promoted-${COMMIT_SHA}" >> $GITHUB_OUTPUT
 
+      # Promote image to official prerelease registries
       - name: Move image to Docker Hub
         run: ./scripts/move-image.sh
         env:
@@ -63,7 +91,7 @@ jobs:
           IMAGE_DEST_REPO: ${{ env.DOCKER_REPO }}
           IMAGE_SRC_TAG: ${{ steps.set_tag.outputs.tag }}
           IMAGE_DEST_TAG: ${{ steps.promoted_tag.outputs.tag }}
-          ALIAS_ENABLED: true
+          ALIAS_ENABLED: ${{ github.event.workflow_run.head_branch == 'main' }}
           ALIAS_TAG: promoted-latest
 
       - name: Move image to Quay
@@ -73,5 +101,5 @@ jobs:
           IMAGE_DEST_REPO: ${{ env.QUAY_REPO }}
           IMAGE_SRC_TAG: ${{ steps.set_tag.outputs.tag }}
           IMAGE_DEST_TAG: ${{ steps.promoted_tag.outputs.tag }}
-          ALIAS_ENABLED: true
+          ALIAS_ENABLED: ${{ github.event.workflow_run.head_branch == 'main' }}
           ALIAS_TAG: promoted-latest
