@@ -74,7 +74,7 @@ jobs:
           E2E2_LABELS: ${{ env.e2e2_labels }}
           USE_JSON: true
           SKIP_PREFIXES: "[\"nightly\"]"
-          NIGHTLY_MATRIX: "[\"nightly-core\",\"nightly-integration\"]"
+          NIGHTLY_MATRIX: "[\"nightly-core\",\"nightly-integration\",\"nightly-flex2dedicated\"]"
         run: |
           # Nightly runs all tests, overriding PR labels as '["test/e2e2/*"]'
           if [ "${{ github.ref }}" == "refs/heads/main" ];then
