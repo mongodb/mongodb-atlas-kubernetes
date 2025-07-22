@@ -39,7 +39,7 @@ cd -
 
 pwd
 
-cp -r bundle.Dockerfile bundle/manifests bundle/metadata bundle/tests "${REPO}/${VERSION}"
+cp -r releases/${VERSION}/bundle.Dockerfile releases/${VERSION}/bundle/manifests releases/${VERSION}/bundle/metadata bundle/tests "${REPO}/${VERSION}"
 
 # Replace deployment image version with SHA256
 value="${IMG_SHA_AMD64}" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = "quay.io/mongodb/mongodb-atlas-kubernetes-operator@" + env(value)' \
