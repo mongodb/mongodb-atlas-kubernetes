@@ -767,6 +767,324 @@ func TestToAPI(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "cluster all fields",
+			crd:        "Cluster",
+			sdkVersion: "v20250312",
+			spec: v1.ClusterSpec{
+				V20250312: &v1.ClusterSpecV20250312{
+					Entry: &v1.ClusterSpecV20250312Entry{
+						AcceptDataRisksAndForceReplicaSetReconfig: pointer.Get("2025-01-01T00:00:00Z"),
+						AdvancedConfiguration: &v1.AdvancedConfiguration{
+							CustomOpensslCipherConfigTls12: &[]string{
+								"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
+							},
+							MinimumEnabledTlsProtocol: 	pointer.Get("TLS1.2"),
+							TlsCipherConfigMode: 		  pointer.Get("Custom"),
+						},
+						BackupEnabled:                             pointer.Get(true),
+						BiConnector:                               &v1.BiConnector{Enabled: pointer.Get(true)},
+						ClusterType:                               pointer.Get("ReplicaSet"),
+						ConfigServerManagementMode:                pointer.Get("Managed"),
+						ConfigServerType:                          pointer.Get("ReplicaSet"),
+						DiskWarmingMode:                           pointer.Get("Enabled"),
+						EncryptionAtRestProvider:                  pointer.Get("AWS-KMS"),
+						FeatureCompatibilityVersion:               pointer.Get("7.0"),
+						FeatureCompatibilityVersionExpirationDate: pointer.Get("2025-12-31T00:00:00Z"),
+						GlobalClusterSelfManagedSharding:          pointer.Get(true),
+						Labels: &[]v1.Tags{
+							{Key: "key1", Value: "value1"},
+							{Key: "key2", Value: "value2"},
+						},
+						MongoDBEmployeeAccessGrant: &v1.MongoDBEmployeeAccessGrant{
+							ExpirationTime: "2025-12-31T00:00:00Z",
+							GrantType: 		"Temporary",
+						},
+						MongoDBMajorVersion: pointer.Get("8.0"),
+						Name:                pointer.Get("my-cluster"),
+						Paused: 							  pointer.Get(true),
+						PitEnabled: 							  pointer.Get(true),
+						RedactClientLogData:                     pointer.Get(true),
+						ReplicaSetScalingStrategy:                pointer.Get("Auto"),
+						ReplicationSpecs: &[]v1.ReplicationSpecs{
+							{
+								ZoneId: pointer.Get("zone-id-1"),
+								ZoneName: pointer.Get("zone-name-1"),
+								RegionConfigs: &[]v1.RegionConfigs{
+									{
+										RegionName: pointer.Get("us-east-1"),
+										AnalyticsSpecs: &v1.AnalyticsSpecs{
+											DiskIOPS:         pointer.Get(1000),
+											DiskSizeGB:       pointer.Get(10.0),
+											EbsVolumeType:    pointer.Get("gp2"),
+											InstanceSize:     pointer.Get("M10"),
+											NodeCount:        pointer.Get(3),
+										},
+										AutoScaling: &v1.AnalyticsAutoScaling{
+											Compute: &v1.Compute{
+												Enabled:           pointer.Get(true),
+												ScaleDownEnabled:  pointer.Get(true),
+												MaxInstanceSize:   pointer.Get("M20"),
+												MinInstanceSize:   pointer.Get("M10"),
+												PredictiveEnabled: pointer.Get(true),
+											},
+											DiskGB:  &v1.DiskGB{
+												Enabled: pointer.Get(true),
+											},
+										},
+										AnalyticsAutoScaling: &v1.AnalyticsAutoScaling{
+											Compute: &v1.Compute{
+												Enabled:           pointer.Get(true),
+												ScaleDownEnabled:  pointer.Get(true),
+												MaxInstanceSize:   pointer.Get("M30"),
+												MinInstanceSize:   pointer.Get("M10"),
+												PredictiveEnabled: pointer.Get(true),
+											},
+											DiskGB:  &v1.DiskGB{
+												Enabled: pointer.Get(true),
+											},
+										},
+										BackingProviderName:  pointer.Get("AWS"),
+										ElectableSpecs:       &v1.ElectableSpecs{
+											DiskIOPS:              pointer.Get(1000),
+											DiskSizeGB:            pointer.Get(10.0),
+											EbsVolumeType:         pointer.Get("gp2"),
+											EffectiveInstanceSize: pointer.Get("M10"),
+											InstanceSize:          pointer.Get("M10"),
+											NodeCount:             pointer.Get(3),
+										},
+										Priority:             pointer.Get(1),
+										ProviderName:         pointer.Get("AWS"),
+										ReadOnlySpecs:        &v1.AnalyticsSpecs{
+											DiskIOPS:         pointer.Get(1000),
+											DiskSizeGB:       pointer.Get(10.0),
+											EbsVolumeType:    pointer.Get("gp2"),
+											InstanceSize:     pointer.Get("M10"),
+											NodeCount:        pointer.Get(3),
+										},
+									},
+									{
+										RegionName: pointer.Get("us-east-2"),
+										AnalyticsSpecs: &v1.AnalyticsSpecs{
+											DiskIOPS:         	pointer.Get(2000),
+											DiskSizeGB:       pointer.Get(10.0),
+											EbsVolumeType:    pointer.Get("gp3"),
+											InstanceSize:     pointer.Get("M20"),
+											NodeCount:        pointer.Get(3),
+										},
+										AutoScaling: &v1.AnalyticsAutoScaling{
+											Compute: &v1.Compute{
+												Enabled:           pointer.Get(true),
+												ScaleDownEnabled:  pointer.Get(true),
+												MaxInstanceSize:   pointer.Get("M50"),
+												MinInstanceSize:   pointer.Get("M20"),
+												PredictiveEnabled: pointer.Get(true),
+											},
+											DiskGB:  &v1.DiskGB{
+												Enabled: pointer.Get(true),
+											},
+										},
+										AnalyticsAutoScaling: &v1.AnalyticsAutoScaling{
+											Compute: &v1.Compute{
+												Enabled:           pointer.Get(true),
+												ScaleDownEnabled:  pointer.Get(true),
+												MaxInstanceSize:   pointer.Get("M40"),
+												MinInstanceSize:   pointer.Get("M10"),
+												PredictiveEnabled: pointer.Get(true),
+											},
+											DiskGB:  &v1.DiskGB{
+												Enabled: pointer.Get(true),
+											},
+										},
+										BackingProviderName:  pointer.Get("AWS"),
+										ElectableSpecs:       &v1.ElectableSpecs{
+											DiskIOPS:              pointer.Get(1000),
+											DiskSizeGB:            pointer.Get(10.0),
+											EbsVolumeType:         pointer.Get("gp2"),
+											EffectiveInstanceSize: pointer.Get("M10"),
+											InstanceSize:          pointer.Get("M10"),
+											NodeCount:             pointer.Get(3),
+										},
+										Priority:             pointer.Get(1),
+										ProviderName:         pointer.Get("AWS"),
+										ReadOnlySpecs:        &v1.AnalyticsSpecs{
+											DiskIOPS:         pointer.Get(1000),
+											DiskSizeGB:       pointer.Get(10.0),
+											EbsVolumeType:    pointer.Get("gp2"),
+											InstanceSize:     pointer.Get("M10"),
+											NodeCount:        pointer.Get(3),
+										},
+									},
+								},
+							},
+						},
+						RootCertType:                              pointer.Get("X509"),
+						Tags:                                      &[]v1.Tags{
+							{Key: "key1", Value: "value1"},
+							{Key: "key2", Value: "value2"},
+						},
+						TerminationProtectionEnabled:              pointer.Get(true),
+						VersionReleaseSystem:                      pointer.Get("Atlas"),
+					},
+					GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+				},
+			},
+			target: &admin2025.ClusterDescription20240805{},
+			want:   &admin2025.ClusterDescription20240805{
+				AcceptDataRisksAndForceReplicaSetReconfig: pointer.Get(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+				AdvancedConfiguration: &admin2025.ApiAtlasClusterAdvancedConfiguration{
+					CustomOpensslCipherConfigTls12: &[]string{
+						"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
+					},
+					MinimumEnabledTlsProtocol:  pointer.Get("TLS1.2"),
+					TlsCipherConfigMode:        pointer.Get("Custom"),
+				},
+				BackupEnabled:                             pointer.Get(true),
+				BiConnector:                               &admin2025.BiConnector{Enabled: pointer.Get(true)},
+				ClusterType:                               pointer.Get("ReplicaSet"),
+				ConfigServerManagementMode:                pointer.Get("Managed"),
+				ConfigServerType:                          pointer.Get("ReplicaSet"),
+				DiskWarmingMode:                           pointer.Get("Enabled"),
+				EncryptionAtRestProvider:                  pointer.Get("AWS-KMS"),
+				FeatureCompatibilityVersion:               	pointer.Get("7.0"),
+				FeatureCompatibilityVersionExpirationDate: pointer.Get(time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC)),
+				GlobalClusterSelfManagedSharding:          pointer.Get(true),
+				Labels: &[]admin2025.ComponentLabel{
+					{Key: pointer.Get("key1"), Value: pointer.Get("value1")},
+					{Key: pointer.Get("key2"), Value: pointer.Get("value2")},
+				},
+				MongoDBEmployeeAccessGrant: &admin2025.EmployeeAccessGrant{
+					ExpirationTime: time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
+					GrantType:      "Temporary",
+				},
+				MongoDBMajorVersion: pointer.Get("8.0"),
+				Name:                pointer.Get("my-cluster"),
+				Paused: 							  pointer.Get(true),
+				PitEnabled: 							  pointer.Get(true),
+				RedactClientLogData:                     pointer.Get(true),
+				ReplicaSetScalingStrategy:                pointer.Get("Auto"),
+				ReplicationSpecs: &[]admin2025.ReplicationSpec20240805{
+					{
+						ZoneId:   pointer.Get("zone-id-1"),
+						ZoneName: pointer.Get("zone-name-1"),
+						RegionConfigs: &[]admin2025.CloudRegionConfig20240805{
+							{
+								RegionName: pointer.Get("us-east-1"),
+								AnalyticsSpecs: &admin2025.DedicatedHardwareSpec20240805{
+									DiskIOPS:         pointer.Get(1000),
+									DiskSizeGB:       pointer.Get(10.0),
+									EbsVolumeType:    pointer.Get("gp2"),
+									InstanceSize:     pointer.Get("M10"),
+									NodeCount:        pointer.Get(3),
+								},
+								AutoScaling: &admin2025.AdvancedAutoScalingSettings{
+									Compute: &admin2025.AdvancedComputeAutoScaling{
+										Enabled:           pointer.Get(true),
+										ScaleDownEnabled:  pointer.Get(true),
+										MaxInstanceSize:   pointer.Get("M20"),
+										MinInstanceSize:   pointer.Get("M10"),
+										PredictiveEnabled: pointer.Get(true),
+									},
+									DiskGB:  &admin2025.DiskGBAutoScaling{
+										Enabled: pointer.Get(true),
+									},
+								},
+								AnalyticsAutoScaling: &admin2025.AdvancedAutoScalingSettings{
+									Compute: &admin2025.AdvancedComputeAutoScaling{
+										Enabled:           pointer.Get(true),
+										ScaleDownEnabled:  pointer.Get(true),
+										MaxInstanceSize:   pointer.Get("M30"),
+										MinInstanceSize:   pointer.Get("M10"),
+										PredictiveEnabled: pointer.Get(true),
+									},
+									DiskGB:  &admin2025.DiskGBAutoScaling{
+										Enabled: pointer.Get(true),
+									},
+								},
+								BackingProviderName:  pointer.Get("AWS"),
+								ElectableSpecs:       &admin2025.HardwareSpec20240805{
+									DiskIOPS:              pointer.Get(1000),
+									DiskSizeGB:            pointer.Get(10.0),
+									EbsVolumeType:         pointer.Get("gp2"),
+									EffectiveInstanceSize: pointer.Get("M10"),
+									InstanceSize:          pointer.Get("M10"),
+									NodeCount:             pointer.Get(3),
+								},
+								Priority:             pointer.Get(1),
+								ProviderName:         pointer.Get("AWS"),
+								ReadOnlySpecs:        &admin2025.DedicatedHardwareSpec20240805{
+									DiskIOPS:         pointer.Get(1000),
+									DiskSizeGB:       pointer.Get(10.0),
+									EbsVolumeType:    pointer.Get("gp2"),
+									InstanceSize:     pointer.Get("M10"),
+									NodeCount:        pointer.Get(3),
+								},
+							},
+							{
+								RegionName: pointer.Get("us-east-2"),
+								AnalyticsSpecs: &admin2025.DedicatedHardwareSpec20240805{
+									DiskIOPS:         pointer.Get(2000),
+									DiskSizeGB:       pointer.Get(10.0),
+									EbsVolumeType:    pointer.Get("gp3"),
+									InstanceSize:     pointer.Get("M20"),
+									NodeCount:        pointer.Get(3),
+								},
+								AutoScaling: &admin2025.AdvancedAutoScalingSettings{
+									Compute: &admin2025.AdvancedComputeAutoScaling{
+										Enabled:           pointer.Get(true),
+										ScaleDownEnabled:  pointer.Get(true),
+										MaxInstanceSize:   pointer.Get("M50"),
+										MinInstanceSize:   pointer.Get("M20"),
+										PredictiveEnabled: pointer.Get(true),
+									},
+									DiskGB:  &admin2025.DiskGBAutoScaling{
+										Enabled: pointer.Get(true),
+									},
+								},
+								AnalyticsAutoScaling: &admin2025.AdvancedAutoScalingSettings{
+									Compute: &admin2025.AdvancedComputeAutoScaling{
+										Enabled:           pointer.Get(true),
+										ScaleDownEnabled:  pointer.Get(true),
+										MaxInstanceSize:   pointer.Get("M40"),
+										MinInstanceSize:   pointer.Get("M10"),
+										PredictiveEnabled: pointer.Get(true),
+									},
+									DiskGB:  &admin2025.DiskGBAutoScaling{
+										Enabled: pointer.Get(true),
+									},
+								},
+								BackingProviderName:  pointer.Get("AWS"),
+								ElectableSpecs:       &admin2025.HardwareSpec20240805{
+									DiskIOPS:              pointer.Get(1000),
+									DiskSizeGB:            pointer.Get(10.0),
+									EbsVolumeType:         pointer.Get("gp2"),
+									EffectiveInstanceSize: pointer.Get("M10"),
+									InstanceSize:          pointer.Get("M10"),
+									NodeCount:             pointer.Get(3),
+								},
+								Priority:             pointer.Get(1),
+								ProviderName:         pointer.Get("AWS"),
+								ReadOnlySpecs:        &admin2025.DedicatedHardwareSpec20240805{
+									DiskIOPS:         pointer.Get(1000),
+									DiskSizeGB:       pointer.Get(10.0),
+									EbsVolumeType:    pointer.Get("gp2"),
+									InstanceSize:     pointer.Get("M10"),
+									NodeCount:        pointer.Get(3),	
+								},
+							},
+						},
+					},
+				},
+				RootCertType:                              pointer.Get("X509"),
+				Tags:                                      &[]admin2025.ResourceTag{
+					{Key: "key1", Value: "value1"},
+					{Key: "key2", Value: "value2"},
+				},
+				TerminationProtectionEnabled:              pointer.Get(true),
+				VersionReleaseSystem:                      pointer.Get("Atlas"),
+				GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			crdsYML, err := samples.Open("samples/crds.yaml")
