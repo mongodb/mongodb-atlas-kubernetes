@@ -23,6 +23,7 @@ const (
 	Uint64Kind      = "uint64"
 	FloatKind       = "float64"
 	BoolKind        = "bool"
+	MapKind         = "map"
 	OpaqueKind      = "opaque"
 )
 
@@ -98,7 +99,7 @@ func (g *GoType) baseType() *GoType {
 	if g == nil {
 		return nil
 	}
-	if g.Kind == ArrayKind {
+	if g.Kind == ArrayKind || g.Kind == MapKind {
 		return g.Element.baseType()
 	}
 	return g
@@ -155,7 +156,7 @@ func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
 func RenameType(td TypeDict, parentNames []string, gt *GoType) error {
 	goType := gt.baseType()
 	if goType.isPrimitive() {
-		return nil // primitive types are not to be renamed
+		return nil
 	}
 	if td.Has(goType) {
 		existingType := td.bySignature[goType.signature()]
@@ -323,6 +324,9 @@ func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *a
 	if isUnstructured(schema) {
 		return jsonType, nil
 	}
+	if isDict(schema) {
+		return fromOpenAPIDict(td, typeName, parents, schema)
+	}
 	fields := []*GoField{}
 	fieldsParents := append(parents, typeName)
 	for _, key := range orderedkeys(schema.Properties) {
@@ -403,11 +407,24 @@ func fromOpenAPIPrimitive(kind string) (*GoType, error) {
 	return NewPrimitive(goTypeName, goTypeName), nil
 }
 
+func fromOpenAPIDict(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
+	elemType := jsonType
+	if schema.AdditionalProperties.Schema != nil {
+		var err error
+		elemType, err = FromOpenAPIType(td, typeName, parents, schema.AdditionalProperties.Schema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check map value type: %w", err)
+		}
+	}
+	return &GoType{Name: MapKind, Kind: MapKind, Element: elemType}, nil
+}
+
 func isUnstructured(schema *apiextensionsv1.JSONSchemaProps) bool {
-	return (len(schema.Properties) == 0 && schema.XPreserveUnknownFields != nil && *schema.XPreserveUnknownFields == true) ||
-		(schema.AdditionalProperties != nil && schema.AdditionalProperties.Schema != nil &&
-			schema.AdditionalProperties.Schema.XPreserveUnknownFields != nil &&
-			*schema.AdditionalProperties.Schema.XPreserveUnknownFields == true)
+	return (len(schema.Properties) == 0 && schema.XPreserveUnknownFields != nil && *schema.XPreserveUnknownFields == true)
+}
+
+func isDict(schema *apiextensionsv1.JSONSchemaProps) bool {
+	return schema.AdditionalProperties != nil
 }
 
 // openAPIKindtoGoType converts an OpenAPI kind to a Go type

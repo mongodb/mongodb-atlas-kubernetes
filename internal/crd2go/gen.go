@@ -172,6 +172,9 @@ func generateType(f *jen.File, td TypeDict, t *GoType) (*jen.Statement, error) {
 	if t.Kind == ArrayKind {
 		return generateArrayType(f, td, t)
 	}
+	if t.Kind == MapKind {
+		return generateMapType(f, td, t)
+	}
 	return nil, fmt.Errorf("unsupported type %q", t.Kind)
 }
 
@@ -203,14 +206,24 @@ func generateArrayType(f *jen.File, td TypeDict, t *GoType) (*jen.Statement, err
 	return elementType, nil
 }
 
+// generateMapType generates Go code for an array type
+func generateMapType(f *jen.File, td TypeDict, t *GoType) (*jen.Statement, error) {
+	elementType, err := generateSubtype(f, td, t.Element)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate map subtype: %w", err)
+	}
+	return elementType, nil
+}
+
 // generateSubtype generates Go code for a subtype of a given type
 func generateSubtype(f *jen.File, td TypeDict, t *GoType) (*jen.Statement, error) {
-	if !t.isPrimitive() && !td.WasGenerated(t) {
-		subtypeCode, err := generateType(f, td, t)
+	baseType := t.baseType()
+	if !baseType.isPrimitive() && !td.WasGenerated(baseType) {
+		subtypeCode, err := generateType(f, td, baseType)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate subtype %s: %w", t.Name, err)
 		}
-		td.MarkGenerated(t)
+		td.MarkGenerated(baseType)
 		return subtypeCode, nil
 	}
 	return jen.Null(), nil
@@ -263,6 +276,8 @@ func generateTypeRef(f *jen.File, t *GoType) *jen.Statement {
 		return jen.Bool()
 	case ArrayKind:
 		return jen.Index().Add(generateTypeRef(f, t.Element))
+	case MapKind:
+		return jen.Map(jen.String()).Add(generateTypeRef(f, t.Element))
 	default:
 		if t.Import != nil {
 			if t.Import.Alias != "" {
