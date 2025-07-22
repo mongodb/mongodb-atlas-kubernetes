@@ -3760,182 +3760,162 @@ spec:
                     description: The entry fields of the searchindex resource spec.
                       These fields can be set for creating and updating searchindexes.
                     properties:
-                      analyzer:
-                        description: |-
-                          Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a **term** or **token**. This process, known as tokenization, involves a variety of changes made to the text in fields:
-
-                          - extracting words
-                          - removing punctuation
-                          - removing accents
-                          - changing to lowercase
-                          - removing common words
-                          - reducing words to their root form (stemming)
-                          - changing words to their base form (lemmatization)
-                           MongoDB Cloud uses the selected process to build the Atlas Search index.
-                        type: string
-                      analyzers:
-                        description: List of user-defined methods to convert database
-                          field text into searchable words.
-                        items:
-                          description: Settings that describe one Atlas Search custom
-                            analyzer.
-                          properties:
-                            charFilters:
-                              description: Filters that examine text one character
-                                at a time and perform filtering operations.
-                              items:
-                                type: object
-                                x-kubernetes-preserve-unknown-fields: true
-                              type: array
-                            name:
-                              description: |-
-                                Human-readable name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
-                                - `lucene.`
-                                - `builtin.`
-                                - `mongodb.`
-                              type: string
-                            tokenFilters:
-                              description: |-
-                                Filter that performs operations such as:
-
-                                - Stemming, which reduces related words, such as "talking", "talked", and "talks" to their root word "talk".
-
-                                - Redaction, the removal of sensitive information from public documents.
-                              items:
-                                type: object
-                                x-kubernetes-preserve-unknown-fields: true
-                              type: array
-                            tokenizer:
-                              description: Tokenizer that you want to use to create
-                                tokens. Tokens determine how Atlas Search splits up
-                                text into discrete chunks for indexing.
-                              properties:
-                                group:
-                                  description: Index of the character group within
-                                    the matching expression to extract into tokens.
-                                    Use `0` to extract all character groups.
-                                  type: integer
-                                maxGram:
-                                  description: Characters to include in the longest
-                                    token that Atlas Search creates.
-                                  type: integer
-                                maxTokenLength:
-                                  description: Maximum number of characters in a single
-                                    token. Tokens greater than this length are split
-                                    at this length into multiple tokens.
-                                  type: integer
-                                minGram:
-                                  description: Characters to include in the shortest
-                                    token that Atlas Search creates.
-                                  type: integer
-                                pattern:
-                                  description: Regular expression to match against.
-                                  type: string
-                                type:
-                                  description: Human-readable label that identifies
-                                    this tokenizer type.
-                                  type: string
-                              type: object
-                          required:
-                          - name
-                          - tokenizer
-                          title: analyzers
-                          type: object
-                        type: array
                       collectionName:
-                        description: Human-readable label that identifies the collection
-                          that contains one or more Atlas Search indexes.
+                        description: Label that identifies the collection to create
+                          an Atlas Search index in.
                         type: string
                       database:
-                        description: Human-readable label that identifies the database
-                          that contains the collection with one or more Atlas Search
-                          indexes.
+                        description: Label that identifies the database that contains
+                          the collection to create an Atlas Search index in.
                         type: string
-                      fields:
-                        description: Settings that configure the fields, one per object,
-                          to index. You must define at least one "vector" type field.
-                          You can optionally define "filter" type fields also.
-                        items:
-                          type: object
-                          x-kubernetes-preserve-unknown-fields: true
-                        type: array
-                      mappings:
-                        description: Index specifications for the collection's fields.
+                      definition:
                         properties:
-                          dynamic:
-                            description: Flag that indicates whether the index uses
-                              dynamic or static mappings. Required if **mappings.fields**
-                              is omitted.
-                            type: boolean
+                          analyzer:
+                            description: |-
+                              Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a **term** or **token**. This process, known as tokenization, involves making the following changes to the text in fields:
+
+                              - extracting words
+                              - removing punctuation
+                              - removing accents
+                              - changing to lowercase
+                              - removing common words
+                              - reducing words to their root form (stemming)
+                              - changing words to their base form (lemmatization)
+                               MongoDB Cloud uses the process you select to build the Atlas Search index.
+                            type: string
+                          analyzers:
+                            description: List of user-defined methods to convert database
+                              field text into searchable words.
+                            items:
+                              properties:
+                                charFilters:
+                                  description: Filters that examine text one character
+                                    at a time and perform filtering operations.
+                                  items:
+                                    type: object
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  type: array
+                                name:
+                                  description: |-
+                                    Name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
+                                    - `lucene.`
+                                    - `builtin.`
+                                    - `mongodb.`
+                                  type: string
+                                tokenFilters:
+                                  description: |-
+                                    Filter that performs operations such as:
+
+                                    - Stemming, which reduces related words, such as "talking", "talked", and "talks" to their root word "talk".
+
+                                    - Redaction, which is the removal of sensitive information from public documents.
+                                  items:
+                                    type: object
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  type: array
+                                tokenizer:
+                                  description: Tokenizer that you want to use to create
+                                    tokens. Tokens determine how Atlas Search splits
+                                    up text into discrete chunks for indexing.
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                              required:
+                              - name
+                              - tokenizer
+                              title: Atlas Search Analyzer
+                              type: object
+                            type: array
                           fields:
-                            description: One or more field specifications for the
-                              Atlas Search index. Required if **mappings.dynamic**
-                              is omitted or set to **false**.
+                            description: Settings that configure the fields, one per
+                              object, to index. You must define at least one "vector"
+                              type field. You can optionally define "filter" type
+                              fields also.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          mappings:
+                            description: Index specifications for the collection's
+                              fields.
+                            properties:
+                              dynamic:
+                                description: Flag that indicates whether the index
+                                  uses dynamic or static mappings. Required if **mappings.fields**
+                                  is omitted.
+                                type: boolean
+                              fields:
+                                additionalProperties:
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                                description: One or more field specifications for
+                                  the Atlas Search index. Required if **mappings.dynamic**
+                                  is omitted or set to **false**.
+                                type: object
+                            title: Mappings
+                            type: object
+                          numPartitions:
+                            description: Number of index partitions. Allowed values
+                              are [1, 2, 4].
+                            type: integer
+                          searchAnalyzer:
+                            description: Method applied to identify words when searching
+                              this index.
+                            type: string
+                          storedSource:
+                            description: Flag that indicates whether to store all
+                              fields (true) on Atlas Search. By default, Atlas doesn't
+                              store (false) the fields on Atlas Search.  Alternatively,
+                              you can specify an object that only contains the list
+                              of fields to store (include) or not store (exclude)
+                              on Atlas Search. To learn more, see Stored Source Fields.
+                            example:
+                              include | exclude:
+                              - field1
+                              - field2
                             type: object
                             x-kubernetes-preserve-unknown-fields: true
-                        title: mappings
+                          synonyms:
+                            description: Rule sets that map words to their synonyms
+                              in this index.
+                            items:
+                              description: Synonyms used for this full text index.
+                              properties:
+                                analyzer:
+                                  description: Specific pre-defined method chosen
+                                    to apply to the synonyms to be searched.
+                                  type: string
+                                name:
+                                  description: Label that identifies the synonym definition.
+                                    Each **synonym.name** must be unique within the
+                                    same index definition.
+                                  type: string
+                                source:
+                                  description: Data set that stores words and their
+                                    applicable synonyms.
+                                  properties:
+                                    collection:
+                                      description: Label that identifies the MongoDB
+                                        collection that stores words and their applicable
+                                        synonyms.
+                                      type: string
+                                  required:
+                                  - collection
+                                  type: object
+                              required:
+                              - analyzer
+                              - name
+                              - source
+                              title: Synonym Mapping Definition
+                              type: object
+                            type: array
                         type: object
                       name:
-                        description: Human-readable label that identifies this index.
-                          Within each namespace, names of all indexes in the namespace
-                          must be unique.
+                        description: Label that identifies this index. Within each
+                          namespace, names of all indexes in the namespace must be
+                          unique.
                         type: string
-                      numPartitions:
-                        description: Number of index partitions. Allowed values are
-                          [1, 2, 4].
-                        type: integer
-                      searchAnalyzer:
-                        description: Method applied to identify words when searching
-                          this index.
-                        type: string
-                      storedSource:
-                        description: Flag that indicates whether to store all fields
-                          (true) on Atlas Search. By default, Atlas doesn't store
-                          (false) the fields on Atlas Search.  Alternatively, you
-                          can specify an object that only contains the list of fields
-                          to store (include) or not store (exclude) on Atlas Search.
-                          To learn more, see documentation.
-                        example:
-                          include | exclude:
-                          - field1
-                          - field2
-                        type: object
-                        x-kubernetes-preserve-unknown-fields: true
-                      synonyms:
-                        description: Rule sets that map words to their synonyms in
-                          this index.
-                        items:
-                          description: Synonyms used for this full text index.
-                          properties:
-                            analyzer:
-                              description: Specific pre-defined method chosen to apply
-                                to the synonyms to be searched.
-                              type: string
-                            name:
-                              description: Label that identifies the synonym definition.
-                                Each **synonym.name** must be unique within the same
-                                index definition.
-                              type: string
-                            source:
-                              description: Data set that stores words and their applicable
-                                synonyms.
-                              properties:
-                                collection:
-                                  description: Label that identifies the MongoDB collection
-                                    that stores words and their applicable synonyms.
-                                  type: string
-                              required:
-                              - collection
-                              type: object
-                          required:
-                          - analyzer
-                          - name
-                          - source
-                          title: Synonym Mapping Definition
-                          type: object
-                        type: array
                       type:
-                        description: Type of the index. Default type is search.
+                        description: Type of the index. The default type is search.
                         type: string
                     required:
                     - collectionName
@@ -4010,24 +3990,401 @@ spec:
                 description: The last observed Atlas state of the searchindex resource
                   for version v20250312.
                 properties:
+                  collectionName:
+                    description: Label that identifies the collection that contains
+                      one or more Atlas Search indexes.
+                    type: string
+                  database:
+                    description: Label that identifies the database that contains
+                      the collection with one or more Atlas Search indexes.
+                    type: string
                   indexID:
                     description: Unique 24-hexadecimal digit string that identifies
                       this Atlas Search index.
                     example: 32b6e34b3d91647abb20e7b8
                     type: string
-                  numPartitions:
-                    description: Number of index partitions. Allowed values are [1,
-                      2, 4].
-                    type: integer
+                  latestDefinitionVersion:
+                    description: Object which includes the version number of the index
+                      definition and the time that the index definition was created.
+                    properties:
+                      createdAt:
+                        description: The time at which this index definition was created.
+                          This parameter expresses its value in the ISO 8601 timestamp
+                          format in UTC.
+                        type: string
+                      version:
+                        description: The version number associated with this index
+                          definition when it was created.
+                        type: integer
+                    title: Search Index Definition Version
+                    type: object
+                  name:
+                    description: Label that identifies this index. Within each namespace,
+                      the names of all indexes must be unique.
+                    type: string
+                  queryable:
+                    description: Flag that indicates whether the index is queryable
+                      on all hosts.
+                    type: boolean
                   status:
                     description: |-
                       Condition of the search index when you made this request.
 
-                      - `IN_PROGRESS`: Atlas is building or re-building the index after an edit.
-                      - `STEADY`: You can use this search index.
-                      - `FAILED`: Atlas could not build the index.
-                      - `MIGRATING`: Atlas is upgrading the underlying cluster tier and migrating indexes.
-                      - `PAUSED`: The cluster is paused.
+                      - `DELETING`: The index is being deleted.
+                      - `FAILED` The index build failed. Indexes can enter the FAILED state due to an invalid index definition.
+                      - `STALE`: The index is queryable but has stopped replicating data from the indexed collection. Searches on the index may return out-of-date data.
+                      - `PENDING`: Atlas has not yet started building the index.
+                      - `BUILDING`: Atlas is building or re-building the index after an edit.
+                      - `READY`: The index is ready and can support queries.
+                    type: string
+                  statusDetail:
+                    description: List of documents detailing index status on each
+                      host.
+                    items:
+                      properties:
+                        hostname:
+                          description: Hostname that corresponds to the status detail.
+                          type: string
+                        mainIndex:
+                          description: Contains status information about a vector
+                            search index.
+                          properties:
+                            definition:
+                              description: The vector search index definition set
+                                by the user.
+                              properties:
+                                fields:
+                                  description: Settings that configure the fields,
+                                    one per object, to index. You must define at least
+                                    one "vector" type field. You can optionally define
+                                    "filter" type fields also.
+                                  items:
+                                    type: object
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  type: array
+                                numPartitions:
+                                  description: Number of index partitions. Allowed
+                                    values are [1, 2, 4].
+                                  type: integer
+                              title: Vector Search Index Definition
+                              type: object
+                            definitionVersion:
+                              description: Object which includes the version number
+                                of the index definition and the time that the index
+                                definition was created.
+                              properties:
+                                createdAt:
+                                  description: The time at which this index definition
+                                    was created. This parameter expresses its value
+                                    in the ISO 8601 timestamp format in UTC.
+                                  type: string
+                                version:
+                                  description: The version number associated with
+                                    this index definition when it was created.
+                                  type: integer
+                              title: Search Index Definition Version
+                              type: object
+                            message:
+                              description: Optional message describing an error.
+                              type: string
+                            queryable:
+                              description: Flag that indicates whether the index generation
+                                is queryable on the host.
+                              type: boolean
+                            status:
+                              description: |-
+                                Condition of the search index when you made this request.
+
+                                - `DELETING`: The index is being deleted.
+                                - `FAILED` The index build failed. Indexes can enter the FAILED state due to an invalid index definition.
+                                - `STALE`: The index is queryable but has stopped replicating data from the indexed collection. Searches on the index may return out-of-date data.
+                                - `PENDING`: Atlas has not yet started building the index.
+                                - `BUILDING`: Atlas is building or re-building the index after an edit.
+                                - `READY`: The index is ready and can support queries.
+                              type: string
+                          title: Vector Search Index Status Detail
+                          type: object
+                        queryable:
+                          description: Flag that indicates whether the index is queryable
+                            on the host.
+                          type: boolean
+                        stagedIndex:
+                          description: Contains status information about a vector
+                            search index.
+                          properties:
+                            definition:
+                              description: The vector search index definition set
+                                by the user.
+                              properties:
+                                fields:
+                                  description: Settings that configure the fields,
+                                    one per object, to index. You must define at least
+                                    one "vector" type field. You can optionally define
+                                    "filter" type fields also.
+                                  items:
+                                    type: object
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  type: array
+                                numPartitions:
+                                  description: Number of index partitions. Allowed
+                                    values are [1, 2, 4].
+                                  type: integer
+                              title: Vector Search Index Definition
+                              type: object
+                            definitionVersion:
+                              description: Object which includes the version number
+                                of the index definition and the time that the index
+                                definition was created.
+                              properties:
+                                createdAt:
+                                  description: The time at which this index definition
+                                    was created. This parameter expresses its value
+                                    in the ISO 8601 timestamp format in UTC.
+                                  type: string
+                                version:
+                                  description: The version number associated with
+                                    this index definition when it was created.
+                                  type: integer
+                              title: Search Index Definition Version
+                              type: object
+                            message:
+                              description: Optional message describing an error.
+                              type: string
+                            queryable:
+                              description: Flag that indicates whether the index generation
+                                is queryable on the host.
+                              type: boolean
+                            status:
+                              description: |-
+                                Condition of the search index when you made this request.
+
+                                - `DELETING`: The index is being deleted.
+                                - `FAILED` The index build failed. Indexes can enter the FAILED state due to an invalid index definition.
+                                - `STALE`: The index is queryable but has stopped replicating data from the indexed collection. Searches on the index may return out-of-date data.
+                                - `PENDING`: Atlas has not yet started building the index.
+                                - `BUILDING`: Atlas is building or re-building the index after an edit.
+                                - `READY`: The index is ready and can support queries.
+                              type: string
+                          title: Vector Search Index Status Detail
+                          type: object
+                        status:
+                          description: |-
+                            Condition of the search index when you made this request.
+
+                            - `DELETING`: The index is being deleted.
+                            - `FAILED` The index build failed. Indexes can enter the FAILED state due to an invalid index definition.
+                            - `STALE`: The index is queryable but has stopped replicating data from the indexed collection. Searches on the index may return out-of-date data.
+                            - `PENDING`: Atlas has not yet started building the index.
+                            - `BUILDING`: Atlas is building or re-building the index after an edit.
+                            - `READY`: The index is ready and can support queries.
+                          type: string
+                      title: Vector Search Host Status Detail
+                      type: object
+                    type: array
+                  synonymMappingStatus:
+                    description: Status that describes this index's synonym mappings.
+                      This status appears only if the index has synonyms defined.
+                    type: string
+                  synonymMappingStatusDetail:
+                    description: A list of documents describing the status of the
+                      index's synonym mappings on each search host. Only appears if
+                      the index has synonyms defined.
+                    items:
+                      additionalProperties:
+                        description: Contains the status of the index's synonym mappings
+                          on each search host. This field (and its subfields) only
+                          appear if the index has synonyms defined.
+                        properties:
+                          message:
+                            description: Optional message describing an error.
+                            type: string
+                          queryable:
+                            description: Flag that indicates whether the synonym mapping
+                              is queryable on a host.
+                            type: boolean
+                          status:
+                            description: Status that describes this index's synonym
+                              mappings. This status appears only if the index has
+                              synonyms defined.
+                            type: string
+                        title: Synonym Mapping Status Detail
+                        type: object
+                      type: object
+                    type: array
+                  type:
+                    description: Type of the index. The default type is search.
+                    type: string
+                title: Search Index Response
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    nameSelector: .name
+                    properties:
+                    - $.status.v20250312.groupId
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
+                  x-openapi-mapping:
+                    property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312005/admin
+  creationTimestamp: null
+  name: sampledatasets.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: SampleDataset
+    listKind: SampleDatasetList
+    plural: sampledatasets
+    shortNames:
+    - asd
+    singular: sampledataset
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: A sampledataset, managed by the MongoDB Kubernetes Atlas Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the sampledataset supporting the following versions:
+
+              - v20250312
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              v20250312:
+                description: The spec of the sampledataset resource for version v20250312.
+                properties:
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                  groupRef:
+                    description: |-
+                      A reference to a "Group" resource.
+                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      Mutually exclusive with the "groupId" property.
+                    properties:
+                      name:
+                        description: Name of the "Group" resource.
+                        type: string
+                    type: object
+                  name:
+                    description: Human-readable label that identifies the cluster
+                      into which you load the sample dataset.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: name cannot be modified after creation
+                      rule: self == oldSelf
+                required:
+                - name
+                type: object
+            type: object
+          status:
+            description: 'Most recently observed read-only status of the sampledataset
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20250312:
+                description: The last observed Atlas state of the sampledataset resource
+                  for version v20250312.
+                properties:
+                  _id:
+                    description: Unique 24-hexadecimal character string that identifies
+                      this sample dataset.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                  clusterName:
+                    description: Human-readable label that identifies the cluster
+                      into which you loaded the sample dataset.
+                    type: string
+                  completeDate:
+                    description: Date and time when the sample dataset load job completed.
+                      MongoDB Cloud represents this timestamp in ISO 8601 format in
+                      UTC.
+                    type: string
+                  createDate:
+                    description: Date and time when you started the sample dataset
+                      load job. MongoDB Cloud represents this timestamp in ISO 8601
+                      format in UTC.
+                    type: string
+                  errorMessage:
+                    description: Details of the error returned when MongoDB Cloud
+                      loads the sample dataset. This endpoint returns null if state
+                      has a value other than FAILED.
+                    type: string
+                  state:
+                    description: Status of the sample dataset load job.
                     type: string
                 type: object
             type: object

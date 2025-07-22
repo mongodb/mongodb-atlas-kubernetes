@@ -276,10 +276,9 @@ func generateTypeRef(f *jen.File, t *GoType) *jen.Statement {
 
 // generateJSONTag generates a JSON tag for a field in a struct
 func generateJSONTag(f *GoField) *jen.Statement {
-	name := untitle(f.Name)
-	jsTag := fmt.Sprintf("%s,omitempty", name)
+	jsTag := fmt.Sprintf("%s,omitempty", f.Key)
 	if f.Required {
-		jsTag = fmt.Sprintf("%s", name)
+		jsTag = fmt.Sprintf("%s", f.Key)
 	}
 	return jen.Tag(map[string]string{"json": jsTag})
 }
@@ -305,6 +304,7 @@ func title(s string) string {
 	if s == "" {
 		return ""
 	}
+	s = strings.TrimLeft(s, "_") // remove leading underscores
 	return cases.Upper(language.English).String(s[0:1]) + s[1:]
 }
 

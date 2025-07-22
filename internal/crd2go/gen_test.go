@@ -20,7 +20,7 @@ import (
 var samples embed.FS
 
 const (
-	expectedSources = 16
+	expectedSources = 17
 )
 
 var disabledKinds = []string{} // use ito skip problematic CRD kinds temporarily

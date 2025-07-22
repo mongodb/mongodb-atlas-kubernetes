@@ -102,7 +102,7 @@ type NetworkPermissionEntriesStatusV20250312 struct {
 
 // +kubebuilder:object:root=true
 type NetworkPermissionEntriesList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []NetworkPermissionEntries `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []NetworkPermissionEntries `json:"items"`
 }

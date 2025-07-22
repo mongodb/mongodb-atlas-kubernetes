@@ -89,7 +89,7 @@ type OrganizationSettingStatus struct {
 
 // +kubebuilder:object:root=true
 type OrganizationSettingList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []OrganizationSetting `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []OrganizationSetting `json:"items"`
 }
