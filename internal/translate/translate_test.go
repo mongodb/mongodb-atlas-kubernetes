@@ -1377,6 +1377,76 @@ func TestToAPI(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "customrole with all fields",
+			crd:        "CustomRole",
+			sdkVersion: "v20250312",
+			spec: v1.CustomRoleSpec{
+				V20250312: &v1.CustomRoleSpecV20250312{
+					Entry: &v1.CustomRoleSpecV20250312Entry{
+						RoleName: "custom-role-name",
+						Actions: &[]v1.Actions{
+							{
+								Action: "action1",
+								Resources: &[]v1.Resources{
+									{
+										Collection: "collection0",
+										Cluster:    true,
+										Db:         "db0",
+									},
+									{
+										Collection: "collection1",
+										Cluster:    true,
+										Db:         "db1",
+									},
+								},
+							},
+						},
+						InheritedRoles: &[]v1.InheritedRoles{
+							{
+								Db:   "inherited-db-name1",
+								Role: "inherited-role-name1",
+							},
+							{
+								Db:   "inherited-db-name2",
+								Role: "inherited-role-name2",
+							},
+						},
+					},
+				},
+			},
+			target: &admin2025.UserCustomDBRole{},
+			want:   &admin2025.UserCustomDBRole{
+				RoleName: "custom-role-name",
+				Actions: &[]admin2025.DatabasePrivilegeAction{
+					{
+						Action: "action1",
+						Resources: &[]admin2025.DatabasePermittedNamespaceResource{
+							{
+								Collection: "collection0",
+								Cluster:    true,
+								Db:         "db0",
+							},
+							{
+								Collection: "collection1",
+								Cluster:    true,
+								Db:         "db1",
+							},
+						},
+					},
+				},
+				InheritedRoles: &[]admin2025.DatabaseInheritedRole{
+					{
+						Db:   "inherited-db-name1",
+						Role: "inherited-role-name1",
+					},
+					{
+						Db:   "inherited-db-name2",
+						Role: "inherited-role-name2",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			crdsYML, err := samples.Open("samples/crds.yaml")
