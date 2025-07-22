@@ -1269,6 +1269,41 @@ func TestToAPI(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "flex cluster with all fields",
+			crd:        "FlexCluster",
+			sdkVersion: "v20250312",
+			spec: v1.FlexClusterSpec{
+				V20250312: &v1.FlexClusterSpecV20250312{
+					Entry: &v1.FlexClusterSpecV20250312Entry{
+						Name: "flex-cluster-name",
+						ProviderSettings: v1.ProviderSettings{
+							BackingProviderName: "AWS",
+							RegionName:          "us-east-1",
+						},
+						Tags: &[]v1.Tags{
+							{Key: "key1", Value: "value1"},
+							{Key: "key2", Value: "value2"},
+						},
+						TerminationProtectionEnabled: pointer.Get(true),
+					},
+					GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+				},
+			},
+			target: &admin2025.FlexClusterDescriptionCreate20241113{},
+			want: &admin2025.FlexClusterDescriptionCreate20241113{
+				Name: "flex-cluster-name",
+				ProviderSettings: admin2025.FlexProviderSettingsCreate20241113{
+					BackingProviderName: "AWS",
+					RegionName:          "us-east-1",
+				},
+				Tags: &[]admin2025.ResourceTag{
+					{Key: "key1", Value: "value1"},
+					{Key: "key2", Value: "value2"},
+				},
+				TerminationProtectionEnabled: pointer.Get(true),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			crdsYML, err := samples.Open("samples/crds.yaml")
