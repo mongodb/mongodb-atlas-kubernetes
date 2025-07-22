@@ -43,6 +43,16 @@ func (c *Cleaner) deleteClusters(ctx context.Context, projectID string, clusters
 			continue
 		}
 
+		if cluster.GetTerminationProtectionEnabled() {
+			fmt.Println(text.FgHiBlue.Sprintf("\t\t\tDisabling termination protection for Cluster %s...", cluster.GetName()))
+			params := new(admin.ClusterDescription20240805)
+			params.SetTerminationProtectionEnabled(false)
+			_, _, err := c.client.ClustersApi.UpdateCluster(ctx, projectID, cluster.GetName(), params).Execute()
+			if err != nil {
+				fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to update cluster %s: %s", cluster.GetName(), err))
+			}
+		}
+
 		_, err := c.client.ClustersApi.DeleteCluster(ctx, projectID, cluster.GetName()).Execute()
 		if err != nil {
 			fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of cluster %s: %s", cluster.GetName(), err))
@@ -79,5 +89,45 @@ func (c *Cleaner) deleteServerlessClusters(ctx context.Context, projectID string
 		}
 
 		fmt.Println(text.FgBlue.Sprintf("\t\t\tRequested deletion of serverless cluster %s", cluster.GetName()))
+	}
+}
+
+func (c *Cleaner) listFlexClusters(ctx context.Context, projectID string) []admin.FlexClusterDescription20241113 {
+	clusters, _, err := c.client.FlexClustersApi.
+		ListFlexClusters(ctx, projectID).
+		Execute()
+	if err != nil {
+		fmt.Println(text.FgRed.Sprintf("\tFailed to list flex clusters for project %s: %s", projectID, err))
+
+		return nil
+	}
+
+	return *clusters.Results
+}
+
+func (c *Cleaner) deleteFlexClusters(ctx context.Context, projectID string, clusters []admin.FlexClusterDescription20241113) {
+	for _, cluster := range clusters {
+		if cluster.GetStateName() == "DELETING" {
+			fmt.Println(text.FgHiBlue.Sprintf("\t\t\tServerless Cluster %s is being deleted...", cluster.GetName()))
+
+			continue
+		}
+
+		if cluster.GetTerminationProtectionEnabled() {
+			fmt.Println(text.FgHiBlue.Sprintf("\t\t\tDisabling termination protection for flex Cluster %s...", cluster.GetName()))
+			params := new(admin.FlexClusterDescriptionUpdate20241113)
+			params.SetTerminationProtectionEnabled(false)
+			_, _, err := c.client.FlexClustersApi.UpdateFlexCluster(ctx, projectID, cluster.GetName(), params).Execute()
+			if err != nil {
+				fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to update flex cluster %s: %s", cluster.GetName(), err))
+			}
+		}
+
+		_, err := c.client.FlexClustersApi.DeleteFlexCluster(ctx, projectID, cluster.GetName()).Execute()
+		if err != nil {
+			fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of flex cluster %s: %s", cluster.GetName(), err))
+		}
+
+		fmt.Println(text.FgBlue.Sprintf("\t\t\tRequested deletion of flex cluster %s", cluster.GetName()))
 	}
 }

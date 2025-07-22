@@ -56,11 +56,13 @@ type ProjectDependencies struct {
 	FederatedDatabases          []admin.DataLakeTenant
 	FederatedDBPrivateEndpoints []admin.PrivateNetworkEndpointIdEntry
 	EncryptionAtRest            *admin.EncryptionAtRest
+	FlexClusters                []admin.FlexClusterDescription20241113
+	Streams                     []admin.StreamsTenant
 }
 
 func (pd *ProjectDependencies) Length() int {
 	return len(pd.NetworkPeering) + len(pd.AWSPrivateEndpoints) + len(pd.GCPPrivateEndpoints) + len(pd.AzurePrivateEndpoints) +
-		len(pd.Clusters) + len(pd.ServerlessClusters) + len(pd.FederatedDBPrivateEndpoints) + len(pd.FederatedDatabases)
+		len(pd.Clusters) + len(pd.ServerlessClusters) + len(pd.FederatedDBPrivateEndpoints) + len(pd.FederatedDatabases) + len(pd.FlexClusters) + len(pd.Streams)
 }
 
 func (c *Cleaner) Clean(ctx context.Context, lifetimeHours int) error {
