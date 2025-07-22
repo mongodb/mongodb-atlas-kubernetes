@@ -1121,8 +1121,8 @@ func TestToAPI(t *testing.T) {
 							},
 							Mappings: &v1.Mappings{
 								Dynamic: pointer.Get(true),
-								Fields: &apiextensionsv1.JSON{
-									Raw: []byte(`{"field4":"value4"}`),
+								Fields: &map[string]apiextensionsv1.JSON{
+									"field1": {Raw: []byte(`{"key4":"value4"}`)},
 								},
 							},
 							NumPartitions:  pointer.Get(3),
@@ -1181,7 +1181,7 @@ func TestToAPI(t *testing.T) {
 					Mappings: &admin2025.SearchMappings{
 						Dynamic: pointer.Get(true),
 						Fields: &map[string]any{
-							"field4": "value4",
+							"field1": map[string]any{"key4":"value4"},
 						},
 					},
 					NumPartitions:  pointer.Get(3),

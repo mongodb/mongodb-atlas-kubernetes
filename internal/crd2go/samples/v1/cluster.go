@@ -588,7 +588,7 @@ type ConnectionStrings struct {
 	// Amazon Web Services (AWS) interface endpoint. Each value identifies the related
 	// `mongodb://` connection string that you use to connect to MongoDB Cloud through
 	// the interface endpoint that the key names.
-	AwsPrivateLink *AwsPrivateLink `json:"awsPrivateLink,omitempty"`
+	AwsPrivateLink *map[string]string `json:"awsPrivateLink,omitempty"`
 
 	// AwsPrivateLinkSrv Private endpoint-aware connection strings that use AWS-hosted
 	// clusters with Amazon Web Services (AWS) PrivateLink. Each key identifies an
@@ -599,7 +599,7 @@ type ConnectionStrings struct {
 	// If the cluster has the non-optimized (legacy) connection string,
 	// `awsPrivateLinkSrv` contains the non-optimized connection string even if an
 	// optimized connection string is also present.
-	AwsPrivateLinkSrv *AwsPrivateLinkSrv `json:"awsPrivateLinkSrv,omitempty"`
+	AwsPrivateLinkSrv *map[string]string `json:"awsPrivateLinkSrv,omitempty"`
 
 	// Private Network peering connection strings for each interface Virtual Private
 	// Cloud (VPC) endpoint that you configured to connect to this cluster. This
@@ -642,10 +642,6 @@ type ConnectionStrings struct {
 	// cluster. This connection string uses the `mongodb+srv://` protocol.
 	StandardSrv *string `json:"standardSrv,omitempty"`
 }
-
-type AwsPrivateLink struct{}
-
-type AwsPrivateLinkSrv struct{}
 
 type PrivateEndpoint struct {
 	// ConnectionString Private endpoint-aware connection string that uses the

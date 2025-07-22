@@ -150,7 +150,7 @@ type Mappings struct {
 
 	// Fields One or more field specifications for the Atlas Search index. Required if
 	// **mappings.dynamic** is omitted or set to **false**.
-	Fields *apiextensionsv1.JSON `json:"fields,omitempty"`
+	Fields *map[string]apiextensionsv1.JSON `json:"fields,omitempty"`
 }
 
 type Synonyms struct {
@@ -228,7 +228,7 @@ type SearchIndexStatusV20250312 struct {
 	// SynonymMappingStatusDetail A list of documents describing the status of the
 	// index's synonym mappings on each search host. Only appears if the index has
 	// synonyms defined.
-	SynonymMappingStatusDetail *[]SynonymMappingStatusDetail `json:"synonymMappingStatusDetail,omitempty"`
+	SynonymMappingStatusDetail *[]map[string]SynonymMappingStatusDetail `json:"synonymMappingStatusDetail,omitempty"`
 
 	// Type Type of the index. The default type is search.
 	Type *string `json:"type,omitempty"`
@@ -308,7 +308,18 @@ type MainIndexDefinition struct {
 	NumPartitions *int `json:"numPartitions,omitempty"`
 }
 
-type SynonymMappingStatusDetail struct{}
+type SynonymMappingStatusDetail struct {
+	// Message Optional message describing an error.
+	Message *string `json:"message,omitempty"`
+
+	// Queryable Flag that indicates whether the synonym mapping is queryable on a
+	// host.
+	Queryable *bool `json:"queryable,omitempty"`
+
+	// Status Status that describes this index's synonym mappings. This status appears
+	// only if the index has synonyms defined.
+	Status *string `json:"status,omitempty"`
+}
 
 // +kubebuilder:object:root=true
 type SearchIndexList struct {
