@@ -9,6 +9,7 @@ import (
 
 func init() {
 	SchemeBuilder.Register(&MyCRD{})
+	SchemeBuilder.Register(&MyCRDList{})
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -46,4 +47,11 @@ type Conditions struct {
 	Status *string `json:"status,omitempty"`
 
 	Type *string `json:"type,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type MyCRDList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []MyCRD `json:"items"`
 }

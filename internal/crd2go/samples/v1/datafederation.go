@@ -363,7 +363,7 @@ type PrivateEndpointHostnames struct {
 
 // +kubebuilder:object:root=true
 type DataFederationList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []DataFederation `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []DataFederation `json:"items"`
 }

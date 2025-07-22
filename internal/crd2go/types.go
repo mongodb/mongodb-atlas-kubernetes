@@ -109,13 +109,20 @@ type GoField struct {
 	Comment  string
 	Required bool
 	Name     string
+	Key      string
 	GoType   *GoType
 }
 
 // NewGoField creates a new GoField with the given name and GoType
 func NewGoField(name string, gt *GoType) *GoField {
+	return NewGoFieldWithKey(name, untitle(name), gt)
+}
+
+// NewGoFieldWithKey creates a new GoField with the given name, key, and GoType
+func NewGoFieldWithKey(name, key string, gt *GoType) *GoField {
 	return &GoField{
 		Name:   name,
+		Key:    key,
 		GoType: gt,
 	}
 }
@@ -313,7 +320,7 @@ func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *api
 
 // fromOpenAPIStruct converts an OpenAPI object schema to a GoType struct
 func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
-	if isDynamicObject(schema) {
+	if isUnstructured(schema) {
 		return jsonType, nil
 	}
 	fields := []*GoField{}
@@ -324,7 +331,7 @@ func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *a
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse %s type: %w", key, err)
 		}
-		field := NewGoField(title(key), fieldType)
+		field := NewGoFieldWithKey(title(key), key, fieldType)
 		field.Comment = props.Description
 		field.Required = slices.Contains(schema.Required, key)
 		if err := field.RenameType(td, fieldsParents); err != nil {
@@ -396,8 +403,11 @@ func fromOpenAPIPrimitive(kind string) (*GoType, error) {
 	return NewPrimitive(goTypeName, goTypeName), nil
 }
 
-func isDynamicObject(schema *apiextensionsv1.JSONSchemaProps) bool {
-	return len(schema.Properties) == 0 && schema.XPreserveUnknownFields != nil && *schema.XPreserveUnknownFields == true
+func isUnstructured(schema *apiextensionsv1.JSONSchemaProps) bool {
+	return (len(schema.Properties) == 0 && schema.XPreserveUnknownFields != nil && *schema.XPreserveUnknownFields == true) ||
+		(schema.AdditionalProperties != nil && schema.AdditionalProperties.Schema != nil &&
+			schema.AdditionalProperties.Schema.XPreserveUnknownFields != nil &&
+			*schema.AdditionalProperties.Schema.XPreserveUnknownFields == true)
 }
 
 // openAPIKindtoGoType converts an OpenAPI kind to a Go type

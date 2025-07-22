@@ -162,7 +162,7 @@ type V20250312ProviderSettings struct {
 
 // +kubebuilder:object:root=true
 type FlexClusterList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []FlexCluster `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []FlexCluster `json:"items"`
 }

@@ -54,8 +54,27 @@ type SearchIndexSpecV20250312 struct {
 }
 
 type SearchIndexSpecV20250312Entry struct {
+	// CollectionName Label that identifies the collection to create an Atlas Search
+	// index in.
+	CollectionName string `json:"collectionName"`
+
+	// Database Label that identifies the database that contains the collection to
+	// create an Atlas Search index in.
+	Database string `json:"database"`
+
+	Definition *Definition `json:"definition,omitempty"`
+
+	// Name Label that identifies this index. Within each namespace, names of all
+	// indexes in the namespace must be unique.
+	Name string `json:"name"`
+
+	// Type Type of the index. The default type is search.
+	Type *string `json:"type,omitempty"`
+}
+
+type Definition struct {
 	/*
-	   Analyzer Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a **term** or **token**. This process, known as tokenization, involves a variety of changes made to the text in fields:
+	   Analyzer Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a **term** or **token**. This process, known as tokenization, involves making the following changes to the text in fields:
 
 	   - extracting words
 	   - removing punctuation
@@ -64,21 +83,13 @@ type SearchIndexSpecV20250312Entry struct {
 	   - removing common words
 	   - reducing words to their root form (stemming)
 	   - changing words to their base form (lemmatization)
-	    MongoDB Cloud uses the selected process to build the Atlas Search index.
+	    MongoDB Cloud uses the process you select to build the Atlas Search index.
 	*/
 	Analyzer *string `json:"analyzer,omitempty"`
 
 	// Analyzers List of user-defined methods to convert database field text into
 	// searchable words.
 	Analyzers *[]Analyzers `json:"analyzers,omitempty"`
-
-	// CollectionName Human-readable label that identifies the collection that contains
-	// one or more Atlas Search indexes.
-	CollectionName string `json:"collectionName"`
-
-	// Database Human-readable label that identifies the database that contains the
-	// collection with one or more Atlas Search indexes.
-	Database string `json:"database"`
 
 	// Fields Settings that configure the fields, one per object, to index. You must
 	// define at least one "vector" type field. You can optionally define "filter" type
@@ -87,10 +98,6 @@ type SearchIndexSpecV20250312Entry struct {
 
 	// Mappings Index specifications for the collection's fields.
 	Mappings *Mappings `json:"mappings,omitempty"`
-
-	// Name Human-readable label that identifies this index. Within each namespace,
-	// names of all indexes in the namespace must be unique.
-	Name string `json:"name"`
 
 	// NumPartitions Number of index partitions. Allowed values are [1, 2, 4].
 	NumPartitions *int `json:"numPartitions,omitempty"`
@@ -102,14 +109,11 @@ type SearchIndexSpecV20250312Entry struct {
 	// Search. By default, Atlas doesn't store (false) the fields on Atlas Search.
 	// Alternatively, you can specify an object that only contains the list of fields
 	// to store (include) or not store (exclude) on Atlas Search. To learn more, see
-	// documentation.
+	// Stored Source Fields.
 	StoredSource *apiextensionsv1.JSON `json:"storedSource,omitempty"`
 
 	// Synonyms Rule sets that map words to their synonyms in this index.
 	Synonyms *[]Synonyms `json:"synonyms,omitempty"`
-
-	// Type Type of the index. Default type is search.
-	Type *string `json:"type,omitempty"`
 }
 
 type Analyzers struct {
@@ -118,7 +122,7 @@ type Analyzers struct {
 	CharFilters *[]apiextensionsv1.JSON `json:"charFilters,omitempty"`
 
 	/*
-	   Name Human-readable name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
+	   Name Name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
 	   - `lucene.`
 	   - `builtin.`
 	   - `mongodb.`
@@ -130,35 +134,13 @@ type Analyzers struct {
 
 	   - Stemming, which reduces related words, such as "talking", "talked", and "talks" to their root word "talk".
 
-	   - Redaction, the removal of sensitive information from public documents.
+	   - Redaction, which is the removal of sensitive information from public documents.
 	*/
 	TokenFilters *[]apiextensionsv1.JSON `json:"tokenFilters,omitempty"`
 
 	// Tokenizer Tokenizer that you want to use to create tokens. Tokens determine how
 	// Atlas Search splits up text into discrete chunks for indexing.
-	Tokenizer Tokenizer `json:"tokenizer"`
-}
-
-type Tokenizer struct {
-	// Group Index of the character group within the matching expression to extract
-	// into tokens. Use `0` to extract all character groups.
-	Group *int `json:"group,omitempty"`
-
-	// MaxGram Characters to include in the longest token that Atlas Search creates.
-	MaxGram *int `json:"maxGram,omitempty"`
-
-	// MaxTokenLength Maximum number of characters in a single token. Tokens greater
-	// than this length are split at this length into multiple tokens.
-	MaxTokenLength *int `json:"maxTokenLength,omitempty"`
-
-	// MinGram Characters to include in the shortest token that Atlas Search creates.
-	MinGram *int `json:"minGram,omitempty"`
-
-	// Pattern Regular expression to match against.
-	Pattern *string `json:"pattern,omitempty"`
-
-	// Type Human-readable label that identifies this tokenizer type.
-	Type *string `json:"type,omitempty"`
+	Tokenizer apiextensionsv1.JSON `json:"tokenizer"`
 }
 
 type Mappings struct {
@@ -201,28 +183,136 @@ type SearchIndexStatus struct {
 }
 
 type SearchIndexStatusV20250312 struct {
+	// CollectionName Label that identifies the collection that contains one or more
+	// Atlas Search indexes.
+	CollectionName *string `json:"collectionName,omitempty"`
+
+	// Database Label that identifies the database that contains the collection with
+	// one or more Atlas Search indexes.
+	Database *string `json:"database,omitempty"`
+
 	// IndexID Unique 24-hexadecimal digit string that identifies this Atlas Search
 	// index.
 	IndexID *string `json:"indexID,omitempty"`
 
-	// NumPartitions Number of index partitions. Allowed values are [1, 2, 4].
-	NumPartitions *int `json:"numPartitions,omitempty"`
+	// LatestDefinitionVersion Object which includes the version number of the index
+	// definition and the time that the index definition was created.
+	LatestDefinitionVersion *LatestDefinitionVersion `json:"latestDefinitionVersion,omitempty"`
+
+	// Name Label that identifies this index. Within each namespace, the names of all
+	// indexes must be unique.
+	Name *string `json:"name,omitempty"`
+
+	// Queryable Flag that indicates whether the index is queryable on all hosts.
+	Queryable *bool `json:"queryable,omitempty"`
 
 	/*
 	   Status Condition of the search index when you made this request.
 
-	   - `IN_PROGRESS`: Atlas is building or re-building the index after an edit.
-	   - `STEADY`: You can use this search index.
-	   - `FAILED`: Atlas could not build the index.
-	   - `MIGRATING`: Atlas is upgrading the underlying cluster tier and migrating indexes.
-	   - `PAUSED`: The cluster is paused.
+	   - `DELETING`: The index is being deleted.
+	   - `FAILED` The index build failed. Indexes can enter the FAILED state due to an invalid index definition.
+	   - `STALE`: The index is queryable but has stopped replicating data from the indexed collection. Searches on the index may return out-of-date data.
+	   - `PENDING`: Atlas has not yet started building the index.
+	   - `BUILDING`: Atlas is building or re-building the index after an edit.
+	   - `READY`: The index is ready and can support queries.
+	*/
+	Status *string `json:"status,omitempty"`
+
+	// StatusDetail List of documents detailing index status on each host.
+	StatusDetail *[]StatusDetail `json:"statusDetail,omitempty"`
+
+	// SynonymMappingStatus Status that describes this index's synonym mappings. This
+	// status appears only if the index has synonyms defined.
+	SynonymMappingStatus *string `json:"synonymMappingStatus,omitempty"`
+
+	// SynonymMappingStatusDetail A list of documents describing the status of the
+	// index's synonym mappings on each search host. Only appears if the index has
+	// synonyms defined.
+	SynonymMappingStatusDetail *[]SynonymMappingStatusDetail `json:"synonymMappingStatusDetail,omitempty"`
+
+	// Type Type of the index. The default type is search.
+	Type *string `json:"type,omitempty"`
+}
+
+type LatestDefinitionVersion struct {
+	// CreatedAt The time at which this index definition was created. This parameter
+	// expresses its value in the ISO 8601 timestamp format in UTC.
+	CreatedAt *string `json:"createdAt,omitempty"`
+
+	// Version The version number associated with this index definition when it was
+	// created.
+	Version *int `json:"version,omitempty"`
+}
+
+type StatusDetail struct {
+	// Hostname Hostname that corresponds to the status detail.
+	Hostname *string `json:"hostname,omitempty"`
+
+	// MainIndex Contains status information about a vector search index.
+	MainIndex *MainIndex `json:"mainIndex,omitempty"`
+
+	// Queryable Flag that indicates whether the index is queryable on the host.
+	Queryable *bool `json:"queryable,omitempty"`
+
+	// StagedIndex Contains status information about a vector search index.
+	StagedIndex *MainIndex `json:"stagedIndex,omitempty"`
+
+	/*
+	   Status Condition of the search index when you made this request.
+
+	   - `DELETING`: The index is being deleted.
+	   - `FAILED` The index build failed. Indexes can enter the FAILED state due to an invalid index definition.
+	   - `STALE`: The index is queryable but has stopped replicating data from the indexed collection. Searches on the index may return out-of-date data.
+	   - `PENDING`: Atlas has not yet started building the index.
+	   - `BUILDING`: Atlas is building or re-building the index after an edit.
+	   - `READY`: The index is ready and can support queries.
 	*/
 	Status *string `json:"status,omitempty"`
 }
 
+type MainIndex struct {
+	// Definition The vector search index definition set by the user.
+	Definition *MainIndexDefinition `json:"definition,omitempty"`
+
+	// DefinitionVersion Object which includes the version number of the index
+	// definition and the time that the index definition was created.
+	DefinitionVersion *LatestDefinitionVersion `json:"definitionVersion,omitempty"`
+
+	// Message Optional message describing an error.
+	Message *string `json:"message,omitempty"`
+
+	// Queryable Flag that indicates whether the index generation is queryable on the
+	// host.
+	Queryable *bool `json:"queryable,omitempty"`
+
+	/*
+	   Status Condition of the search index when you made this request.
+
+	   - `DELETING`: The index is being deleted.
+	   - `FAILED` The index build failed. Indexes can enter the FAILED state due to an invalid index definition.
+	   - `STALE`: The index is queryable but has stopped replicating data from the indexed collection. Searches on the index may return out-of-date data.
+	   - `PENDING`: Atlas has not yet started building the index.
+	   - `BUILDING`: Atlas is building or re-building the index after an edit.
+	   - `READY`: The index is ready and can support queries.
+	*/
+	Status *string `json:"status,omitempty"`
+}
+
+type MainIndexDefinition struct {
+	// Fields Settings that configure the fields, one per object, to index. You must
+	// define at least one "vector" type field. You can optionally define "filter" type
+	// fields also.
+	Fields *[]apiextensionsv1.JSON `json:"fields,omitempty"`
+
+	// NumPartitions Number of index partitions. Allowed values are [1, 2, 4].
+	NumPartitions *int `json:"numPartitions,omitempty"`
+}
+
+type SynonymMappingStatusDetail struct{}
+
 // +kubebuilder:object:root=true
 type SearchIndexList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []SearchIndex `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []SearchIndex `json:"items"`
 }

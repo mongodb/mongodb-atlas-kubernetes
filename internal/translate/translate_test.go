@@ -1086,174 +1086,60 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "searchindex definition fields",
-			crd:        "SearchIndex",
-			sdkVersion: "v20250312",
-			spec: v1.SearchIndexSpec{
-				V20250312: &v1.SearchIndexSpecV20250312{
-					Entry: &v1.SearchIndexSpecV20250312Entry{
-						Analyzer: pointer.Get("lucene.standard"),
-						Database: "database-name",
-						Analyzers: &[]v1.Analyzers{
-							{
-								Name: "custom-analyzer",
-								CharFilters: &[]apiextensionsv1.JSON{
-									{Raw: []byte(`{"key":"value"}`)},
-									{Raw: []byte(`{"key2":"value2"}`)},
-								},
-								TokenFilters: &[]apiextensionsv1.JSON{
-									{Raw: []byte(`{"key3":"value3"}`)},
-									{Raw: []byte(`{"key4":"value4"}`)},
-								},
-								Tokenizer: v1.Tokenizer{
-									Group:          pointer.Get(2),
-									MaxGram:        pointer.Get(100),
-									MaxTokenLength: pointer.Get(50),
-									MinGram:        pointer.Get(1),
-									Pattern:        pointer.Get("pattern"),
-									Type:           pointer.Get("custom"),
-								},
-							},
-						},
-						CollectionName: "collection-name",
-						Fields: &[]apiextensionsv1.JSON{
-							{Raw: []byte(`{"field1":"value1"}`)},
-							{Raw: []byte(`{"field2":"value2"}`)},
-							{Raw: []byte(`{"field3":"value3"}`)},
-						},
-						Mappings: &v1.Mappings{
-							Dynamic: pointer.Get(true),
-							Fields: &apiextensionsv1.JSON{
-								Raw: []byte(`{"field4":"value4"}`),
-							},
-						},
-						Name:           "index-name",
-						NumPartitions:  pointer.Get(3),
-						SearchAnalyzer: pointer.Get("lucene.standard"),
-						StoredSource: &apiextensionsv1.JSON{
-							Raw: []byte(`{"enabled": true}`),
-						},
-						Synonyms: &[]v1.Synonyms{
-							{
-								Analyzer: "synonym-analyzer",
-								Name:     "synonym-name",
-								Source: v1.Source{
-									Collection: "synonym-collection",
-								},
-							},
-						},
-						Type: pointer.Get("search-index-type"),
-					},
-					GroupId: pointer.Get("group-id-101"),
-				},
-			},
-			target: &admin2025.BaseSearchIndexCreateRequestDefinition{},
-			want: &admin2025.BaseSearchIndexCreateRequestDefinition{
-				Analyzer: pointer.Get("lucene.standard"),
-				Analyzers: &[]admin2025.AtlasSearchAnalyzer{
-					{
-						Name: "custom-analyzer",
-						CharFilters: &[]any{
-							map[string]any{"key": "value"},
-							map[string]any{"key2": "value2"},
-						},
-						TokenFilters: &[]any{
-							map[string]any{"key3": "value3"},
-							map[string]any{"key4": "value4"},
-						},
-						Tokenizer: map[string]any{
-							"group":          2.0,
-							"maxGram":        100.0,
-							"maxTokenLength": 50.0,
-							"minGram":        1.0,
-							"pattern":        "pattern",
-							"type":           "custom",
-						},
-					},
-				},
-				Fields: &[]any{
-					map[string]any{"field1": "value1"},
-					map[string]any{"field2": "value2"},
-					map[string]any{"field3": "value3"},
-				},
-				Mappings: &admin2025.SearchMappings{
-					Dynamic: pointer.Get(true),
-					Fields: &map[string]any{
-						"field4": "value4",
-					},
-				},
-				NumPartitions:  pointer.Get(3),
-				SearchAnalyzer: pointer.Get("lucene.standard"),
-				StoredSource:   any(map[string]any{"enabled": true}),
-				Synonyms: &[]admin2025.SearchSynonymMappingDefinition{
-					{
-						Analyzer: "synonym-analyzer",
-						Name:     "synonym-name",
-						Source: admin2025.SynonymSource{
-							Collection: "synonym-collection",
-						},
-					},
-				},
-			},
-		},
-		{
 			name:       "searchindex create request fields",
 			crd:        "SearchIndex",
 			sdkVersion: "v20250312",
 			spec: v1.SearchIndexSpec{
 				V20250312: &v1.SearchIndexSpecV20250312{
 					Entry: &v1.SearchIndexSpecV20250312Entry{
-						Analyzer: pointer.Get("lucene.standard"),
-						Database: "database-name",
-						Analyzers: &[]v1.Analyzers{
-							{
-								Name: "custom-analyzer",
-								CharFilters: &[]apiextensionsv1.JSON{
-									{Raw: []byte(`{"key":"value"}`)},
-									{Raw: []byte(`{"key2":"value2"}`)},
-								},
-								TokenFilters: &[]apiextensionsv1.JSON{
-									{Raw: []byte(`{"key3":"value3"}`)},
-									{Raw: []byte(`{"key4":"value4"}`)},
-								},
-								Tokenizer: v1.Tokenizer{
-									Group:          pointer.Get(2),
-									MaxGram:        pointer.Get(100),
-									MaxTokenLength: pointer.Get(50),
-									MinGram:        pointer.Get(1),
-									Pattern:        pointer.Get("pattern"),
-									Type:           pointer.Get("custom"),
-								},
-							},
-						},
+						Database:       "database-name",
 						CollectionName: "collection-name",
-						Fields: &[]apiextensionsv1.JSON{
-							{Raw: []byte(`{"field1":"value1"}`)},
-							{Raw: []byte(`{"field2":"value2"}`)},
-							{Raw: []byte(`{"field3":"value3"}`)},
-						},
-						Mappings: &v1.Mappings{
-							Dynamic: pointer.Get(true),
-							Fields: &apiextensionsv1.JSON{
-								Raw: []byte(`{"field4":"value4"}`),
-							},
-						},
 						Name:           "index-name",
-						NumPartitions:  pointer.Get(3),
-						SearchAnalyzer: pointer.Get("lucene.standard"),
-						StoredSource: &apiextensionsv1.JSON{
-							Raw: []byte(`{"enabled": true}`),
-						},
-						Synonyms: &[]v1.Synonyms{
-							{
-								Analyzer: "synonym-analyzer",
-								Name:     "synonym-name",
-								Source: v1.Source{
-									Collection: "synonym-collection",
+						Type:           pointer.Get("search-index-type"),
+						Definition: &v1.Definition{
+							Analyzer: pointer.Get("lucene.standard"),
+							Analyzers: &[]v1.Analyzers{
+								{
+									Name: "custom-analyzer",
+									CharFilters: &[]apiextensionsv1.JSON{
+										{Raw: []byte(`{"key":"value"}`)},
+										{Raw: []byte(`{"key2":"value2"}`)},
+									},
+									TokenFilters: &[]apiextensionsv1.JSON{
+										{Raw: []byte(`{"key3":"value3"}`)},
+										{Raw: []byte(`{"key4":"value4"}`)},
+									},
+									Tokenizer: apiextensionsv1.JSON{
+										Raw: []byte(`{"group":2,"maxGram":100,"maxTokenLength":50,"minGram":1,"pattern":"pattern","type":"custom"}`),
+									},
+								},
+							},
+							Fields: &[]apiextensionsv1.JSON{
+								{Raw: []byte(`{"field1":"value1"}`)},
+								{Raw: []byte(`{"field2":"value2"}`)},
+								{Raw: []byte(`{"field3":"value3"}`)},
+							},
+							Mappings: &v1.Mappings{
+								Dynamic: pointer.Get(true),
+								Fields: &apiextensionsv1.JSON{
+									Raw: []byte(`{"field4":"value4"}`),
+								},
+							},
+							NumPartitions:  pointer.Get(3),
+							SearchAnalyzer: pointer.Get("lucene.standard"),
+							StoredSource: &apiextensionsv1.JSON{
+								Raw: []byte(`{"enabled": true}`),
+							},
+							Synonyms: &[]v1.Synonyms{
+								{
+									Analyzer: "synonym-analyzer",
+									Name:     "synonym-name",
+									Source: v1.Source{
+										Collection: "synonym-collection",
+									},
 								},
 							},
 						},
-						Type: pointer.Get("search-index-type"),
 					},
 					GroupId: pointer.Get("group-id-101"),
 				},
@@ -1264,114 +1150,50 @@ func TestToAPI(t *testing.T) {
 				Database:       "database-name",
 				Name:           "index-name",
 				Type:           pointer.Get("search-index-type"),
-			},
-		},
-		{
-			name:       "searchindex update request fields",
-			crd:        "SearchIndex",
-			sdkVersion: "v20250312",
-			spec: v1.SearchIndexSpec{
-				V20250312: &v1.SearchIndexSpecV20250312{
-					Entry: &v1.SearchIndexSpecV20250312Entry{
-						Analyzer: pointer.Get("lucene.standard"),
-						Database: "database-name",
-						Analyzers: &[]v1.Analyzers{
-							{
-								Name: "custom-analyzer",
-								CharFilters: &[]apiextensionsv1.JSON{
-									{Raw: []byte(`{"key":"value"}`)},
-									{Raw: []byte(`{"key2":"value2"}`)},
-								},
-								TokenFilters: &[]apiextensionsv1.JSON{
-									{Raw: []byte(`{"key3":"value3"}`)},
-									{Raw: []byte(`{"key4":"value4"}`)},
-								},
-								Tokenizer: v1.Tokenizer{
-									Group:          pointer.Get(2),
-									MaxGram:        pointer.Get(100),
-									MaxTokenLength: pointer.Get(50),
-									MinGram:        pointer.Get(1),
-									Pattern:        pointer.Get("pattern"),
-									Type:           pointer.Get("custom"),
-								},
+				Definition: &admin2025.BaseSearchIndexCreateRequestDefinition{
+					Analyzer: pointer.Get("lucene.standard"),
+					Analyzers: &[]admin2025.AtlasSearchAnalyzer{
+						{
+							Name: "custom-analyzer",
+							CharFilters: &[]any{
+								map[string]any{"key": "value"},
+								map[string]any{"key2": "value2"},
+							},
+							TokenFilters: &[]any{
+								map[string]any{"key3": "value3"},
+								map[string]any{"key4": "value4"},
+							},
+							Tokenizer: map[string]any{
+								"group":          2.0,
+								"maxGram":        100.0,
+								"maxTokenLength": 50.0,
+								"minGram":        1.0,
+								"pattern":        "pattern",
+								"type":           "custom",
 							},
 						},
-						CollectionName: "collection-name",
-						Fields: &[]apiextensionsv1.JSON{
-							{Raw: []byte(`{"field1":"value1"}`)},
-							{Raw: []byte(`{"field2":"value2"}`)},
-							{Raw: []byte(`{"field3":"value3"}`)},
+					},
+					Fields: &[]any{
+						map[string]any{"field1": "value1"},
+						map[string]any{"field2": "value2"},
+						map[string]any{"field3": "value3"},
+					},
+					Mappings: &admin2025.SearchMappings{
+						Dynamic: pointer.Get(true),
+						Fields: &map[string]any{
+							"field4": "value4",
 						},
-						Mappings: &v1.Mappings{
-							Dynamic: pointer.Get(true),
-							Fields: &apiextensionsv1.JSON{
-								Raw: []byte(`{"field4":"value4"}`),
+					},
+					NumPartitions:  pointer.Get(3),
+					SearchAnalyzer: pointer.Get("lucene.standard"),
+					StoredSource:   any(map[string]any{"enabled": true}),
+					Synonyms: &[]admin2025.SearchSynonymMappingDefinition{
+						{
+							Analyzer: "synonym-analyzer",
+							Name:     "synonym-name",
+							Source: admin2025.SynonymSource{
+								Collection: "synonym-collection",
 							},
-						},
-						Name:           "index-name",
-						NumPartitions:  pointer.Get(3),
-						SearchAnalyzer: pointer.Get("lucene.standard"),
-						StoredSource: &apiextensionsv1.JSON{
-							Raw: []byte(`{"enabled": true}`),
-						},
-						Synonyms: &[]v1.Synonyms{
-							{
-								Analyzer: "synonym-analyzer",
-								Name:     "synonym-name",
-								Source: v1.Source{
-									Collection: "synonym-collection",
-								},
-							},
-						},
-						Type: pointer.Get("search-index-type"),
-					},
-					GroupId: pointer.Get("group-id-101"),
-				},
-			},
-			target: &admin2025.SearchIndexUpdateRequestDefinition{},
-			want: &admin2025.SearchIndexUpdateRequestDefinition{
-				Analyzer: pointer.Get("lucene.standard"),
-				Analyzers: &[]admin2025.AtlasSearchAnalyzer{
-					{
-						Name: "custom-analyzer",
-						CharFilters: &[]any{
-							map[string]any{"key": "value"},
-							map[string]any{"key2": "value2"},
-						},
-						TokenFilters: &[]any{
-							map[string]any{"key3": "value3"},
-							map[string]any{"key4": "value4"},
-						},
-						Tokenizer: map[string]any{
-							"group":          2.0,
-							"maxGram":        100.0,
-							"maxTokenLength": 50.0,
-							"minGram":        1.0,
-							"pattern":        "pattern",
-							"type":           "custom",
-						},
-					},
-				},
-				Fields: &[]any{
-					map[string]any{"field1": "value1"},
-					map[string]any{"field2": "value2"},
-					map[string]any{"field3": "value3"},
-				},
-				Mappings: &admin2025.SearchMappings{
-					Dynamic: pointer.Get(true),
-					Fields: &map[string]any{
-						"field4": "value4",
-					},
-				},
-				NumPartitions:  pointer.Get(3),
-				SearchAnalyzer: pointer.Get("lucene.standard"),
-				StoredSource:   any(map[string]any{"enabled": true}),
-				Synonyms: &[]admin2025.SearchSynonymMappingDefinition{
-					{
-						Analyzer: "synonym-analyzer",
-						Name:     "synonym-name",
-						Source: admin2025.SynonymSource{
-							Collection: "synonym-collection",
 						},
 					},
 				},
@@ -1416,7 +1238,7 @@ func TestToAPI(t *testing.T) {
 				},
 			},
 			target: &admin2025.UserCustomDBRole{},
-			want:   &admin2025.UserCustomDBRole{
+			want: &admin2025.UserCustomDBRole{
 				RoleName: "custom-role-name",
 				Actions: &[]admin2025.DatabasePrivilegeAction{
 					{
