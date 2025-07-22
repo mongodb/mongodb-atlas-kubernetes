@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e_test
+package e2e2_test
 
 import (
 	"context"
-	"os/exec"
-	"syscall"
+	"embed"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,63 +29,60 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	akov2common "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/yml"
 )
 
+//go:embed flex2dedicated/*
+var flex2dedicated embed.FS
+
 var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"), func() {
+	var ctx context.Context
 	var kubeClient client.Client
+	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var resourcePrefix string
-	var akoCmd *exec.Cmd
 
-	_ = BeforeAll(func(ctx context.Context) {
-		cmd, err := k8s.RunManagerBinary(false)
-		Expect(err).To(BeNil())
-		akoCmd = cmd
+	_ = BeforeAll(func() {
+		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), false)
+		ako.Start(GinkgoT())
 
-		client, err := k8s.CreateNewClient()
-		Expect(err).To(BeNil())
+		ctx = context.Background()
+		client, err := kube.NewTestClient()
+		Expect(err).ToNot(HaveOccurred())
 		kubeClient = client
 	})
 
-	_ = AfterAll(func(ctx context.Context) {
-		if akoCmd != nil {
-			if akoCmd.Process != nil {
-				Expect(syscall.Kill(akoCmd.Process.Pid, syscall.SIGTERM)).To(Succeed())
-			}
-
-			Expect(akoCmd.Wait()).To(Succeed())
+	_ = AfterAll(func() {
+		if ako != nil {
+			ako.Stop(GinkgoT())
 		}
 	})
 
-	_ = BeforeEach(func(ctx context.Context) {
-		Expect(akoCmd.ProcessState).To(BeNil())
-
+	_ = BeforeEach(func() {
 		resourcePrefix = utils.RandomName("flex-to-dedicated")
-
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: resourcePrefix + "-ns",
 		}}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
+		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
 
-	_ = AfterEach(func(ctx context.Context) {
+	_ = AfterEach(func() {
 		if kubeClient == nil {
 			return
 		}
 		Expect(kubeClient.Delete(ctx, testNamespace)).To(Succeed())
-
 		Eventually(func(g Gomega) {
-			g.Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace)).To(Succeed())
+			g.Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace)).ShouldNot(Succeed())
 		}).WithTimeout(time.Minute).WithPolling(time.Second).To(Succeed())
 	})
 
 	It("Should upgrade a Flex cluster to a Dedicated cluster", func(ctx context.Context) {
-		By("Create a secret with Atlas credentials", func() {
-			k8s.CreateDefaultSecret(ctx, kubeClient, resourcePrefix+"-secret", testNamespace.Name)
-		})
-
 		By("Create Atlas Project", func() {
 			project := akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -95,9 +91,6 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: resourcePrefix + "-project",
-					ConnectionSecret: &akov2common.ResourceRefNamespaced{
-						Name: resourcePrefix + "-secret",
-					},
 				},
 			}
 
@@ -199,17 +192,29 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 
 	DescribeTable(
 		"Should handle invalid upgrade scenarios",
-		func(ctx context.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment, updateDeployment *akov2.AtlasDeployment, errorMessage string) {
-			By("Create a secret with Atlas credentials", func() {
-				k8s.CreateDefaultSecret(ctx, kubeClient, resourcePrefix+"-secret", testNamespace.Name)
+		func(ctx context.Context, objects, updatedObjets []client.Object, errorMessage string) {
+			var project *akov2.AtlasProject
+			var deployment *akov2.AtlasDeployment
+			var updateDeployment *akov2.AtlasDeployment
+
+			By("Prepare test case objects", func() {
+				for _, obj := range objects {
+					switch obj.(type) {
+					case *akov2.AtlasProject:
+						project = withNamespacedName(obj, resourcePrefix, "-project").(*akov2.AtlasProject)
+					case *akov2.AtlasDeployment:
+						deployment = deploymentWithProject(withNamespacedName(obj, resourcePrefix, "-cluster").(*akov2.AtlasDeployment), project)
+					}
+				}
+				for _, obj := range updatedObjets {
+					switch obj.(type) {
+					case *akov2.AtlasDeployment:
+						updateDeployment = deploymentWithProject(withNamespacedName(obj, resourcePrefix, "-cluster").(*akov2.AtlasDeployment), project)
+					}
+				}
 			})
 
 			By("Create Atlas Project", func() {
-				project.WithName(resourcePrefix + "-project")
-				project.WithAtlasName(resourcePrefix + "-project")
-				project.WithConnectionSecret(resourcePrefix + "-secret")
-				project.Namespace = testNamespace.Name
-
 				Expect(kubeClient.Create(ctx, project)).To(Succeed())
 
 				Eventually(func(g Gomega) {
@@ -220,12 +225,8 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 			})
 
 			By("Create a cluster", func() {
-				deployment.WithName(resourcePrefix + "-cluster")
-				deployment.WithAtlasName(resourcePrefix + "-cluster")
-				deployment.WithProjectName(resourcePrefix + "-project")
-				deployment.Namespace = testNamespace.Name
-
 				Expect(kubeClient.Create(ctx, deployment)).To(Succeed())
+
 				Eventually(func(g Gomega) {
 					condition, err := k8s.GetDeploymentStatusCondition(ctx, kubeClient, api.ReadyType, testNamespace.Name, resourcePrefix+"-cluster")
 					g.Expect(err).To(BeNil())
@@ -235,13 +236,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 
 			By("Upgrade cluster to Dedicated cluster", func() {
 				Expect(kubeClient.Get(ctx, client.ObjectKey{Namespace: testNamespace.Name, Name: resourcePrefix + "-cluster"}, deployment)).To(Succeed())
-
 				updateDeployment.ObjectMeta = deployment.ObjectMeta
-				updateDeployment.WithAtlasName(resourcePrefix + "-cluster")
-				updateDeployment.WithProjectName(resourcePrefix + "-project")
-				updateDeployment.Namespace = testNamespace.Name
-				updateDeployment.Spec.UpgradeToDedicated = true
-				updateDeployment.Spec.DeploymentSpec.ClusterType = "SHARDED"
 
 				Expect(kubeClient.Update(ctx, updateDeployment)).To(Succeed())
 				Eventually(func(g Gomega) {
@@ -271,17 +266,33 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 		},
 		Entry(
 			"Cannot upgrade a shared cluster to dedicated",
-			utils.ParseObjectFromYAMLFile("../helper/e2e/data/atlasproject.yaml", &akov2.AtlasProject{}),
-			utils.ParseObjectFromYAMLFile("../helper/e2e/data/atlasdeployment_basic_free.yaml", &akov2.AtlasDeployment{}),
-			utils.ParseObjectFromYAMLFile("../helper/e2e/data/atlasdeployment_standard.yaml", &akov2.AtlasDeployment{}),
+			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/project_with_shared_cluster.yaml")),
+			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/sharded_cluster_upgrade.yaml")),
 			"failed to upgrade cluster: upgrade from shared to dedicated is not supported",
 		),
 		Entry(
+			"Cannot upgrade a serverless cluster to dedicated",
+			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/project_with_serverless_cluster.yaml")),
+			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/sharded_cluster_upgrade.yaml")),
+			"failed to upgrade cluster: upgrade from serverless to dedicated is not supported",
+		),
+		Entry(
 			"Cannot upgrade a flex cluster to dedicated with wrong spec",
-			utils.ParseObjectFromYAMLFile("../helper/e2e/data/atlasproject.yaml", &akov2.AtlasProject{}),
-			utils.ParseObjectFromYAMLFile("../helper/e2e/data/atlasdeployment_flex.yaml", &akov2.AtlasDeployment{}),
-			utils.ParseObjectFromYAMLFile("../helper/e2e/data/atlasdeployment_standard.yaml", &akov2.AtlasDeployment{}),
+			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/project_with_flex_cluster.yaml")),
+			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/sharded_cluster_upgrade.yaml")),
 			"Cannot upgrade a shared-tier cluster to a sharded cluster. Please upgrade to a dedicated replica set before converting to a sharded cluster",
 		),
 	)
 })
+
+func withNamespacedName(obj client.Object, resourcePrefix, name string) client.Object {
+	obj.SetName(resourcePrefix + name)
+	obj.SetNamespace(resourcePrefix + "-ns")
+	return obj
+}
+
+func deploymentWithProject(deployment *akov2.AtlasDeployment, project *akov2.AtlasProject) *akov2.AtlasDeployment {
+	deployment.WithProjectName(project.Name)
+
+	return deployment
+}

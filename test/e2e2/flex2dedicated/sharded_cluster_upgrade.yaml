@@ -1,0 +1,20 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasDeployment
+metadata:
+  name: my-atlas-deployment
+spec:
+  projectRef:
+    name: my-project
+  upgradeToDedicated: true
+  deploymentSpec:
+    name: cluster0
+    clusterType: SHARDED
+    replicationSpecs:
+      - numShards: 2
+        regionConfigs:
+        - providerName: AWS
+          regionName: US_EAST_1
+          priority: 7
+          electableSpecs:
+            instanceSize: M10
+            nodeCount: 3
