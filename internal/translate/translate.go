@@ -43,14 +43,16 @@ func ToAPI[T any, S any](typeInfo *TypeInfo, target T, spec S, deps ...client.Ob
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 	log.Printf("%s", jsonize(specValue))
-	entryFields, ok, err := unstructured.NestedMap(specValue, "entry")
-	if !ok {
-		return fmt.Errorf("failed to extract the CRD spec entry fields value: %w", err)
-	}
-	log.Printf("%s", jsonize(entryFields))
 	targetUnstructured := map[string]any{}
-	copyFields(targetUnstructured, skipKeys(specValue, "entry"))
-	copyFields(targetUnstructured, entryFields)
+	rawEntry := specValue["entry"]
+	if entry, ok := rawEntry.(map[string]any); ok {
+		log.Printf("flattened entry object %s", jsonize(entry))
+		copyFields(targetUnstructured, entry)
+		copyFields(targetUnstructured, skipKeys(specValue, "entry"))
+	} else {
+		copyFields(targetUnstructured, specValue)
+		log.Printf("copied all spec %s", jsonize(targetUnstructured))
+	}
 	if err := toStructured(target, targetUnstructured); err != nil {
 		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
 	}
@@ -195,4 +197,3 @@ func jsonize(obj any) string {
 	}
 	return string(js)
 }
-
