@@ -28,6 +28,14 @@ const (
 //go:embed samples/*
 var samples embed.FS
 
+// NetworkPermissions is a required sturct wrapper to match the API structure
+// TODO: do we need a mapping option? for this case a rename would suffice to
+// load the entry array field as results in a PaginatedNetworkAccess.
+// On the other hand, is extracting the whole list the proper way interact with the API?
+type NetworkPermissions struct {
+	Entry []admin2025.NetworkPermissionEntry `json:"entry"`
+}
+
 func TestToAPI(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
@@ -584,10 +592,10 @@ func TestToAPI(t *testing.T) {
 									ReadPreference: &v1.ReadPreference{
 										Mode: pointer.Get("primary"),
 									},
-									Region:                   pointer.Get("us-east-1"),
-									ReplacementDelimiter:     pointer.Get("replacement-delimiter"),
-									ServiceURL:               pointer.Get("https://service-url.com"),
-									Urls:                     &[]string{"url1", "url2"},
+									Region:               pointer.Get("us-east-1"),
+									ReplacementDelimiter: pointer.Get("replacement-delimiter"),
+									ServiceURL:           pointer.Get("https://service-url.com"),
+									Urls:                 &[]string{"url1", "url2"},
 								},
 							},
 						},
@@ -672,8 +680,89 @@ func TestToAPI(t *testing.T) {
 							Region:               pointer.Get("us-east-1"),
 							ReplacementDelimiter: pointer.Get("replacement-delimiter"),
 							ServiceURL:           pointer.Get("https://service-url.com"),
-							Urls: &[]string{"url1", "url2"},
+							Urls:                 &[]string{"url1", "url2"},
 						},
+					},
+				},
+			},
+		},
+		{
+			name:       "Organization setting with all fields",
+			crd:        "OrganizationSetting",
+			sdkVersion: "v20250312",
+			spec: v1.OrganizationSettingSpec{
+				V20250312: &v1.OrganizationSettingSpecV20250312{
+					Entry: &v1.OrganizationSettingSpecV20250312Entry{
+						ApiAccessListRequired:                  pointer.Get(true),
+						GenAIFeaturesEnabled:                   pointer.Get(true),
+						MaxServiceAccountSecretValidityInHours: pointer.Get(24),
+						MultiFactorAuthRequired:                pointer.Get(true),
+						RestrictEmployeeAccess:                 pointer.Get(true),
+						SecurityContact:                        pointer.Get("contact-info"),
+						StreamsCrossGroupEnabled:               pointer.Get(true),
+					},
+					OrgId: "org-id",
+				},
+			},
+			target: &admin2025.OrganizationSettings{},
+			want: &admin2025.OrganizationSettings{
+				ApiAccessListRequired:                  pointer.Get(true),
+				GenAIFeaturesEnabled:                   pointer.Get(true),
+				MaxServiceAccountSecretValidityInHours: pointer.Get(24),
+				MultiFactorAuthRequired:                pointer.Get(true),
+				RestrictEmployeeAccess:                 pointer.Get(true),
+				SecurityContact:                        pointer.Get("contact-info"),
+				StreamsCrossGroupEnabled:               pointer.Get(true),
+			},
+		},
+		{
+			name:       "team all fields",
+			crd:        "Team",
+			sdkVersion: "v20250312",
+			spec: v1.TeamSpec{
+				V20250312: &v1.TeamSpecV20250312{
+					Entry: &v1.TeamSpecV20250312Entry{
+						Name:      "team-name",
+						Usernames: []string{"user1", "user2"},
+					},
+					OrgId: "org-id",
+				},
+			},
+			target: &admin2025.Team{},
+			want: &admin2025.Team{
+				Name: "team-name",
+				Usernames: []string{
+					"user1", "user2",
+				},
+			},
+		},
+		{
+			name:       "network permission entries all fields",
+			crd:        "NetworkPermissionEntries",
+			sdkVersion: "v20250312",
+			spec: v1.NetworkPermissionEntriesSpec{
+				V20250312: &v1.NetworkPermissionEntriesSpecV20250312{
+					Entry: &[]v1.NetworkPermissionEntriesSpecV20250312Entry{
+						{
+							AwsSecurityGroup: pointer.Get("sg-12345678"),
+							CidrBlock:        pointer.Get("cird"),
+							Comment:          pointer.Get("comment"),
+							DeleteAfterDate:  pointer.Get("2025-07-01T00:00:00Z"),
+							IpAddress:        pointer.Get("1.1.1.1"),
+						},
+					},
+					GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+				},
+			},
+			target: &NetworkPermissions{},
+			want: &NetworkPermissions{
+				Entry: []admin2025.NetworkPermissionEntry{
+					{
+						AwsSecurityGroup: pointer.Get("sg-12345678"),
+						CidrBlock:        pointer.Get("cird"),
+						Comment:          pointer.Get("comment"),
+						DeleteAfterDate:  pointer.Get(time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)),
+						IpAddress:        pointer.Get("1.1.1.1"),
 					},
 				},
 			},
