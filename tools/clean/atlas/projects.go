@@ -89,7 +89,13 @@ func (c *Cleaner) GetProjectDependencies(ctx context.Context, projectID string, 
 	}()
 
 	if !isGov {
-		wg.Add(5)
+		wg.Add(7)
+
+		go func() {
+			defer wg.Done()
+
+			deps.Streams = c.listStreams(ctx, projectID)
+		}()
 
 		go func() {
 			defer wg.Done()
@@ -107,6 +113,12 @@ func (c *Cleaner) GetProjectDependencies(ctx context.Context, projectID string, 
 			defer wg.Done()
 
 			deps.ServerlessClusters = c.listServerlessClusters(ctx, projectID)
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			deps.FlexClusters = c.listFlexClusters(ctx, projectID)
 		}()
 
 		go func() {
@@ -132,6 +144,8 @@ func (c *Cleaner) DeleteProjectDependencies(ctx context.Context, projectID strin
 
 	c.deleteServerlessClusters(ctx, projectID, deps.ServerlessClusters)
 
+	c.deleteFlexClusters(ctx, projectID, deps.FlexClusters)
+
 	c.deleteFederatedDBPrivateEndpoints(ctx, projectID, deps.FederatedDBPrivateEndpoints)
 
 	c.deleteFederatedDatabases(ctx, projectID, deps.FederatedDatabases)
@@ -145,4 +159,6 @@ func (c *Cleaner) DeleteProjectDependencies(ctx context.Context, projectID strin
 	c.deletePrivateEndpoints(ctx, projectID, CloudProviderGCP, deps.GCPPrivateEndpoints)
 
 	c.deletePrivateEndpoints(ctx, projectID, CloudProviderAZURE, deps.AzurePrivateEndpoints)
+
+	c.deleteStreams(ctx, projectID, deps.Streams)
 }
