@@ -779,8 +779,8 @@ func TestToAPI(t *testing.T) {
 							CustomOpensslCipherConfigTls12: &[]string{
 								"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
 							},
-							MinimumEnabledTlsProtocol: 	pointer.Get("TLS1.2"),
-							TlsCipherConfigMode: 		  pointer.Get("Custom"),
+							MinimumEnabledTlsProtocol: pointer.Get("TLS1.2"),
+							TlsCipherConfigMode:       pointer.Get("Custom"),
 						},
 						BackupEnabled:                             pointer.Get(true),
 						BiConnector:                               &v1.BiConnector{Enabled: pointer.Get(true)},
@@ -798,27 +798,27 @@ func TestToAPI(t *testing.T) {
 						},
 						MongoDBEmployeeAccessGrant: &v1.MongoDBEmployeeAccessGrant{
 							ExpirationTime: "2025-12-31T00:00:00Z",
-							GrantType: 		"Temporary",
+							GrantType:      "Temporary",
 						},
-						MongoDBMajorVersion: pointer.Get("8.0"),
-						Name:                pointer.Get("my-cluster"),
-						Paused: 							  pointer.Get(true),
-						PitEnabled: 							  pointer.Get(true),
-						RedactClientLogData:                     pointer.Get(true),
-						ReplicaSetScalingStrategy:                pointer.Get("Auto"),
+						MongoDBMajorVersion:       pointer.Get("8.0"),
+						Name:                      pointer.Get("my-cluster"),
+						Paused:                    pointer.Get(true),
+						PitEnabled:                pointer.Get(true),
+						RedactClientLogData:       pointer.Get(true),
+						ReplicaSetScalingStrategy: pointer.Get("Auto"),
 						ReplicationSpecs: &[]v1.ReplicationSpecs{
 							{
-								ZoneId: pointer.Get("zone-id-1"),
+								ZoneId:   pointer.Get("zone-id-1"),
 								ZoneName: pointer.Get("zone-name-1"),
 								RegionConfigs: &[]v1.RegionConfigs{
 									{
 										RegionName: pointer.Get("us-east-1"),
 										AnalyticsSpecs: &v1.AnalyticsSpecs{
-											DiskIOPS:         pointer.Get(1000),
-											DiskSizeGB:       pointer.Get(10.0),
-											EbsVolumeType:    pointer.Get("gp2"),
-											InstanceSize:     pointer.Get("M10"),
-											NodeCount:        pointer.Get(3),
+											DiskIOPS:      pointer.Get(1000),
+											DiskSizeGB:    pointer.Get(10.0),
+											EbsVolumeType: pointer.Get("gp2"),
+											InstanceSize:  pointer.Get("M10"),
+											NodeCount:     pointer.Get(3),
 										},
 										AutoScaling: &v1.AnalyticsAutoScaling{
 											Compute: &v1.Compute{
@@ -828,7 +828,7 @@ func TestToAPI(t *testing.T) {
 												MinInstanceSize:   pointer.Get("M10"),
 												PredictiveEnabled: pointer.Get(true),
 											},
-											DiskGB:  &v1.DiskGB{
+											DiskGB: &v1.DiskGB{
 												Enabled: pointer.Get(true),
 											},
 										},
@@ -840,12 +840,12 @@ func TestToAPI(t *testing.T) {
 												MinInstanceSize:   pointer.Get("M10"),
 												PredictiveEnabled: pointer.Get(true),
 											},
-											DiskGB:  &v1.DiskGB{
+											DiskGB: &v1.DiskGB{
 												Enabled: pointer.Get(true),
 											},
 										},
-										BackingProviderName:  pointer.Get("AWS"),
-										ElectableSpecs:       &v1.ElectableSpecs{
+										BackingProviderName: pointer.Get("AWS"),
+										ElectableSpecs: &v1.ElectableSpecs{
 											DiskIOPS:              pointer.Get(1000),
 											DiskSizeGB:            pointer.Get(10.0),
 											EbsVolumeType:         pointer.Get("gp2"),
@@ -853,24 +853,24 @@ func TestToAPI(t *testing.T) {
 											InstanceSize:          pointer.Get("M10"),
 											NodeCount:             pointer.Get(3),
 										},
-										Priority:             pointer.Get(1),
-										ProviderName:         pointer.Get("AWS"),
-										ReadOnlySpecs:        &v1.AnalyticsSpecs{
-											DiskIOPS:         pointer.Get(1000),
-											DiskSizeGB:       pointer.Get(10.0),
-											EbsVolumeType:    pointer.Get("gp2"),
-											InstanceSize:     pointer.Get("M10"),
-											NodeCount:        pointer.Get(3),
+										Priority:     pointer.Get(1),
+										ProviderName: pointer.Get("AWS"),
+										ReadOnlySpecs: &v1.AnalyticsSpecs{
+											DiskIOPS:      pointer.Get(1000),
+											DiskSizeGB:    pointer.Get(10.0),
+											EbsVolumeType: pointer.Get("gp2"),
+											InstanceSize:  pointer.Get("M10"),
+											NodeCount:     pointer.Get(3),
 										},
 									},
 									{
 										RegionName: pointer.Get("us-east-2"),
 										AnalyticsSpecs: &v1.AnalyticsSpecs{
-											DiskIOPS:         	pointer.Get(2000),
-											DiskSizeGB:       pointer.Get(10.0),
-											EbsVolumeType:    pointer.Get("gp3"),
-											InstanceSize:     pointer.Get("M20"),
-											NodeCount:        pointer.Get(3),
+											DiskIOPS:      pointer.Get(2000),
+											DiskSizeGB:    pointer.Get(10.0),
+											EbsVolumeType: pointer.Get("gp3"),
+											InstanceSize:  pointer.Get("M20"),
+											NodeCount:     pointer.Get(3),
 										},
 										AutoScaling: &v1.AnalyticsAutoScaling{
 											Compute: &v1.Compute{
@@ -880,7 +880,7 @@ func TestToAPI(t *testing.T) {
 												MinInstanceSize:   pointer.Get("M20"),
 												PredictiveEnabled: pointer.Get(true),
 											},
-											DiskGB:  &v1.DiskGB{
+											DiskGB: &v1.DiskGB{
 												Enabled: pointer.Get(true),
 											},
 										},
@@ -892,12 +892,12 @@ func TestToAPI(t *testing.T) {
 												MinInstanceSize:   pointer.Get("M10"),
 												PredictiveEnabled: pointer.Get(true),
 											},
-											DiskGB:  &v1.DiskGB{
+											DiskGB: &v1.DiskGB{
 												Enabled: pointer.Get(true),
 											},
 										},
-										BackingProviderName:  pointer.Get("AWS"),
-										ElectableSpecs:       &v1.ElectableSpecs{
+										BackingProviderName: pointer.Get("AWS"),
+										ElectableSpecs: &v1.ElectableSpecs{
 											DiskIOPS:              pointer.Get(1000),
 											DiskSizeGB:            pointer.Get(10.0),
 											EbsVolumeType:         pointer.Get("gp2"),
@@ -905,39 +905,39 @@ func TestToAPI(t *testing.T) {
 											InstanceSize:          pointer.Get("M10"),
 											NodeCount:             pointer.Get(3),
 										},
-										Priority:             pointer.Get(1),
-										ProviderName:         pointer.Get("AWS"),
-										ReadOnlySpecs:        &v1.AnalyticsSpecs{
-											DiskIOPS:         pointer.Get(1000),
-											DiskSizeGB:       pointer.Get(10.0),
-											EbsVolumeType:    pointer.Get("gp2"),
-											InstanceSize:     pointer.Get("M10"),
-											NodeCount:        pointer.Get(3),
+										Priority:     pointer.Get(1),
+										ProviderName: pointer.Get("AWS"),
+										ReadOnlySpecs: &v1.AnalyticsSpecs{
+											DiskIOPS:      pointer.Get(1000),
+											DiskSizeGB:    pointer.Get(10.0),
+											EbsVolumeType: pointer.Get("gp2"),
+											InstanceSize:  pointer.Get("M10"),
+											NodeCount:     pointer.Get(3),
 										},
 									},
 								},
 							},
 						},
-						RootCertType:                              pointer.Get("X509"),
-						Tags:                                      &[]v1.Tags{
+						RootCertType: pointer.Get("X509"),
+						Tags: &[]v1.Tags{
 							{Key: "key1", Value: "value1"},
 							{Key: "key2", Value: "value2"},
 						},
-						TerminationProtectionEnabled:              pointer.Get(true),
-						VersionReleaseSystem:                      pointer.Get("Atlas"),
+						TerminationProtectionEnabled: pointer.Get(true),
+						VersionReleaseSystem:         pointer.Get("Atlas"),
 					},
 					GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
 				},
 			},
 			target: &admin2025.ClusterDescription20240805{},
-			want:   &admin2025.ClusterDescription20240805{
+			want: &admin2025.ClusterDescription20240805{
 				AcceptDataRisksAndForceReplicaSetReconfig: pointer.Get(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 				AdvancedConfiguration: &admin2025.ApiAtlasClusterAdvancedConfiguration{
 					CustomOpensslCipherConfigTls12: &[]string{
 						"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
 					},
-					MinimumEnabledTlsProtocol:  pointer.Get("TLS1.2"),
-					TlsCipherConfigMode:        pointer.Get("Custom"),
+					MinimumEnabledTlsProtocol: pointer.Get("TLS1.2"),
+					TlsCipherConfigMode:       pointer.Get("Custom"),
 				},
 				BackupEnabled:                             pointer.Get(true),
 				BiConnector:                               &admin2025.BiConnector{Enabled: pointer.Get(true)},
@@ -946,7 +946,7 @@ func TestToAPI(t *testing.T) {
 				ConfigServerType:                          pointer.Get("ReplicaSet"),
 				DiskWarmingMode:                           pointer.Get("Enabled"),
 				EncryptionAtRestProvider:                  pointer.Get("AWS-KMS"),
-				FeatureCompatibilityVersion:               	pointer.Get("7.0"),
+				FeatureCompatibilityVersion:               pointer.Get("7.0"),
 				FeatureCompatibilityVersionExpirationDate: pointer.Get(time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC)),
 				GlobalClusterSelfManagedSharding:          pointer.Get(true),
 				Labels: &[]admin2025.ComponentLabel{
@@ -957,12 +957,12 @@ func TestToAPI(t *testing.T) {
 					ExpirationTime: time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
 					GrantType:      "Temporary",
 				},
-				MongoDBMajorVersion: pointer.Get("8.0"),
-				Name:                pointer.Get("my-cluster"),
-				Paused: 							  pointer.Get(true),
-				PitEnabled: 							  pointer.Get(true),
-				RedactClientLogData:                     pointer.Get(true),
-				ReplicaSetScalingStrategy:                pointer.Get("Auto"),
+				MongoDBMajorVersion:       pointer.Get("8.0"),
+				Name:                      pointer.Get("my-cluster"),
+				Paused:                    pointer.Get(true),
+				PitEnabled:                pointer.Get(true),
+				RedactClientLogData:       pointer.Get(true),
+				ReplicaSetScalingStrategy: pointer.Get("Auto"),
 				ReplicationSpecs: &[]admin2025.ReplicationSpec20240805{
 					{
 						ZoneId:   pointer.Get("zone-id-1"),
@@ -971,11 +971,11 @@ func TestToAPI(t *testing.T) {
 							{
 								RegionName: pointer.Get("us-east-1"),
 								AnalyticsSpecs: &admin2025.DedicatedHardwareSpec20240805{
-									DiskIOPS:         pointer.Get(1000),
-									DiskSizeGB:       pointer.Get(10.0),
-									EbsVolumeType:    pointer.Get("gp2"),
-									InstanceSize:     pointer.Get("M10"),
-									NodeCount:        pointer.Get(3),
+									DiskIOPS:      pointer.Get(1000),
+									DiskSizeGB:    pointer.Get(10.0),
+									EbsVolumeType: pointer.Get("gp2"),
+									InstanceSize:  pointer.Get("M10"),
+									NodeCount:     pointer.Get(3),
 								},
 								AutoScaling: &admin2025.AdvancedAutoScalingSettings{
 									Compute: &admin2025.AdvancedComputeAutoScaling{
@@ -985,7 +985,7 @@ func TestToAPI(t *testing.T) {
 										MinInstanceSize:   pointer.Get("M10"),
 										PredictiveEnabled: pointer.Get(true),
 									},
-									DiskGB:  &admin2025.DiskGBAutoScaling{
+									DiskGB: &admin2025.DiskGBAutoScaling{
 										Enabled: pointer.Get(true),
 									},
 								},
@@ -997,12 +997,12 @@ func TestToAPI(t *testing.T) {
 										MinInstanceSize:   pointer.Get("M10"),
 										PredictiveEnabled: pointer.Get(true),
 									},
-									DiskGB:  &admin2025.DiskGBAutoScaling{
+									DiskGB: &admin2025.DiskGBAutoScaling{
 										Enabled: pointer.Get(true),
 									},
 								},
-								BackingProviderName:  pointer.Get("AWS"),
-								ElectableSpecs:       &admin2025.HardwareSpec20240805{
+								BackingProviderName: pointer.Get("AWS"),
+								ElectableSpecs: &admin2025.HardwareSpec20240805{
 									DiskIOPS:              pointer.Get(1000),
 									DiskSizeGB:            pointer.Get(10.0),
 									EbsVolumeType:         pointer.Get("gp2"),
@@ -1010,24 +1010,24 @@ func TestToAPI(t *testing.T) {
 									InstanceSize:          pointer.Get("M10"),
 									NodeCount:             pointer.Get(3),
 								},
-								Priority:             pointer.Get(1),
-								ProviderName:         pointer.Get("AWS"),
-								ReadOnlySpecs:        &admin2025.DedicatedHardwareSpec20240805{
-									DiskIOPS:         pointer.Get(1000),
-									DiskSizeGB:       pointer.Get(10.0),
-									EbsVolumeType:    pointer.Get("gp2"),
-									InstanceSize:     pointer.Get("M10"),
-									NodeCount:        pointer.Get(3),
+								Priority:     pointer.Get(1),
+								ProviderName: pointer.Get("AWS"),
+								ReadOnlySpecs: &admin2025.DedicatedHardwareSpec20240805{
+									DiskIOPS:      pointer.Get(1000),
+									DiskSizeGB:    pointer.Get(10.0),
+									EbsVolumeType: pointer.Get("gp2"),
+									InstanceSize:  pointer.Get("M10"),
+									NodeCount:     pointer.Get(3),
 								},
 							},
 							{
 								RegionName: pointer.Get("us-east-2"),
 								AnalyticsSpecs: &admin2025.DedicatedHardwareSpec20240805{
-									DiskIOPS:         pointer.Get(2000),
-									DiskSizeGB:       pointer.Get(10.0),
-									EbsVolumeType:    pointer.Get("gp3"),
-									InstanceSize:     pointer.Get("M20"),
-									NodeCount:        pointer.Get(3),
+									DiskIOPS:      pointer.Get(2000),
+									DiskSizeGB:    pointer.Get(10.0),
+									EbsVolumeType: pointer.Get("gp3"),
+									InstanceSize:  pointer.Get("M20"),
+									NodeCount:     pointer.Get(3),
 								},
 								AutoScaling: &admin2025.AdvancedAutoScalingSettings{
 									Compute: &admin2025.AdvancedComputeAutoScaling{
@@ -1037,7 +1037,7 @@ func TestToAPI(t *testing.T) {
 										MinInstanceSize:   pointer.Get("M20"),
 										PredictiveEnabled: pointer.Get(true),
 									},
-									DiskGB:  &admin2025.DiskGBAutoScaling{
+									DiskGB: &admin2025.DiskGBAutoScaling{
 										Enabled: pointer.Get(true),
 									},
 								},
@@ -1049,12 +1049,12 @@ func TestToAPI(t *testing.T) {
 										MinInstanceSize:   pointer.Get("M10"),
 										PredictiveEnabled: pointer.Get(true),
 									},
-									DiskGB:  &admin2025.DiskGBAutoScaling{
+									DiskGB: &admin2025.DiskGBAutoScaling{
 										Enabled: pointer.Get(true),
 									},
 								},
-								BackingProviderName:  pointer.Get("AWS"),
-								ElectableSpecs:       &admin2025.HardwareSpec20240805{
+								BackingProviderName: pointer.Get("AWS"),
+								ElectableSpecs: &admin2025.HardwareSpec20240805{
 									DiskIOPS:              pointer.Get(1000),
 									DiskSizeGB:            pointer.Get(10.0),
 									EbsVolumeType:         pointer.Get("gp2"),
@@ -1062,27 +1062,319 @@ func TestToAPI(t *testing.T) {
 									InstanceSize:          pointer.Get("M10"),
 									NodeCount:             pointer.Get(3),
 								},
-								Priority:             pointer.Get(1),
-								ProviderName:         pointer.Get("AWS"),
-								ReadOnlySpecs:        &admin2025.DedicatedHardwareSpec20240805{
-									DiskIOPS:         pointer.Get(1000),
-									DiskSizeGB:       pointer.Get(10.0),
-									EbsVolumeType:    pointer.Get("gp2"),
-									InstanceSize:     pointer.Get("M10"),
-									NodeCount:        pointer.Get(3),	
+								Priority:     pointer.Get(1),
+								ProviderName: pointer.Get("AWS"),
+								ReadOnlySpecs: &admin2025.DedicatedHardwareSpec20240805{
+									DiskIOPS:      pointer.Get(1000),
+									DiskSizeGB:    pointer.Get(10.0),
+									EbsVolumeType: pointer.Get("gp2"),
+									InstanceSize:  pointer.Get("M10"),
+									NodeCount:     pointer.Get(3),
 								},
 							},
 						},
 					},
 				},
-				RootCertType:                              pointer.Get("X509"),
-				Tags:                                      &[]admin2025.ResourceTag{
+				RootCertType: pointer.Get("X509"),
+				Tags: &[]admin2025.ResourceTag{
 					{Key: "key1", Value: "value1"},
 					{Key: "key2", Value: "value2"},
 				},
-				TerminationProtectionEnabled:              pointer.Get(true),
-				VersionReleaseSystem:                      pointer.Get("Atlas"),
-				GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+				TerminationProtectionEnabled: pointer.Get(true),
+				VersionReleaseSystem:         pointer.Get("Atlas"),
+				GroupId:                      pointer.Get("32b6e34b3d91647abb20e7b8"),
+			},
+		},
+		{
+			name:       "searchindex definition fields",
+			crd:        "SearchIndex",
+			sdkVersion: "v20250312",
+			spec: v1.SearchIndexSpec{
+				V20250312: &v1.SearchIndexSpecV20250312{
+					Entry: &v1.SearchIndexSpecV20250312Entry{
+						Analyzer: pointer.Get("lucene.standard"),
+						Database: "database-name",
+						Analyzers: &[]v1.Analyzers{
+							{
+								Name: "custom-analyzer",
+								CharFilters: &[]apiextensionsv1.JSON{
+									{Raw: []byte(`{"key":"value"}`)},
+									{Raw: []byte(`{"key2":"value2"}`)},
+								},
+								TokenFilters: &[]apiextensionsv1.JSON{
+									{Raw: []byte(`{"key3":"value3"}`)},
+									{Raw: []byte(`{"key4":"value4"}`)},
+								},
+								Tokenizer: v1.Tokenizer{
+									Group:          pointer.Get(2),
+									MaxGram:        pointer.Get(100),
+									MaxTokenLength: pointer.Get(50),
+									MinGram:        pointer.Get(1),
+									Pattern:        pointer.Get("pattern"),
+									Type:           pointer.Get("custom"),
+								},
+							},
+						},
+						CollectionName: "collection-name",
+						Fields: &[]apiextensionsv1.JSON{
+							{Raw: []byte(`{"field1":"value1"}`)},
+							{Raw: []byte(`{"field2":"value2"}`)},
+							{Raw: []byte(`{"field3":"value3"}`)},
+						},
+						Mappings: &v1.Mappings{
+							Dynamic: pointer.Get(true),
+							Fields: &apiextensionsv1.JSON{
+								Raw: []byte(`{"field4":"value4"}`),
+							},
+						},
+						Name:           "index-name",
+						NumPartitions:  pointer.Get(3),
+						SearchAnalyzer: pointer.Get("lucene.standard"),
+						StoredSource: &apiextensionsv1.JSON{
+							Raw: []byte(`{"enabled": true}`),
+						},
+						Synonyms: &[]v1.Synonyms{
+							{
+								Analyzer: "synonym-analyzer",
+								Name:     "synonym-name",
+								Source: v1.Source{
+									Collection: "synonym-collection",
+								},
+							},
+						},
+						Type: pointer.Get("search-index-type"),
+					},
+					GroupId: pointer.Get("group-id-101"),
+				},
+			},
+			target: &admin2025.BaseSearchIndexCreateRequestDefinition{},
+			want: &admin2025.BaseSearchIndexCreateRequestDefinition{
+				Analyzer: pointer.Get("lucene.standard"),
+				Analyzers: &[]admin2025.AtlasSearchAnalyzer{
+					{
+						Name: "custom-analyzer",
+						CharFilters: &[]any{
+							map[string]any{"key": "value"},
+							map[string]any{"key2": "value2"},
+						},
+						TokenFilters: &[]any{
+							map[string]any{"key3": "value3"},
+							map[string]any{"key4": "value4"},
+						},
+						Tokenizer: map[string]any{
+							"group":          2.0,
+							"maxGram":        100.0,
+							"maxTokenLength": 50.0,
+							"minGram":        1.0,
+							"pattern":        "pattern",
+							"type":           "custom",
+						},
+					},
+				},
+				Fields: &[]any{
+					map[string]any{"field1": "value1"},
+					map[string]any{"field2": "value2"},
+					map[string]any{"field3": "value3"},
+				},
+				Mappings: &admin2025.SearchMappings{
+					Dynamic: pointer.Get(true),
+					Fields: &map[string]any{
+						"field4": "value4",
+					},
+				},
+				NumPartitions:  pointer.Get(3),
+				SearchAnalyzer: pointer.Get("lucene.standard"),
+				StoredSource:   any(map[string]any{"enabled": true}),
+				Synonyms: &[]admin2025.SearchSynonymMappingDefinition{
+					{
+						Analyzer: "synonym-analyzer",
+						Name:     "synonym-name",
+						Source: admin2025.SynonymSource{
+							Collection: "synonym-collection",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:       "searchindex create request fields",
+			crd:        "SearchIndex",
+			sdkVersion: "v20250312",
+			spec: v1.SearchIndexSpec{
+				V20250312: &v1.SearchIndexSpecV20250312{
+					Entry: &v1.SearchIndexSpecV20250312Entry{
+						Analyzer: pointer.Get("lucene.standard"),
+						Database: "database-name",
+						Analyzers: &[]v1.Analyzers{
+							{
+								Name: "custom-analyzer",
+								CharFilters: &[]apiextensionsv1.JSON{
+									{Raw: []byte(`{"key":"value"}`)},
+									{Raw: []byte(`{"key2":"value2"}`)},
+								},
+								TokenFilters: &[]apiextensionsv1.JSON{
+									{Raw: []byte(`{"key3":"value3"}`)},
+									{Raw: []byte(`{"key4":"value4"}`)},
+								},
+								Tokenizer: v1.Tokenizer{
+									Group:          pointer.Get(2),
+									MaxGram:        pointer.Get(100),
+									MaxTokenLength: pointer.Get(50),
+									MinGram:        pointer.Get(1),
+									Pattern:        pointer.Get("pattern"),
+									Type:           pointer.Get("custom"),
+								},
+							},
+						},
+						CollectionName: "collection-name",
+						Fields: &[]apiextensionsv1.JSON{
+							{Raw: []byte(`{"field1":"value1"}`)},
+							{Raw: []byte(`{"field2":"value2"}`)},
+							{Raw: []byte(`{"field3":"value3"}`)},
+						},
+						Mappings: &v1.Mappings{
+							Dynamic: pointer.Get(true),
+							Fields: &apiextensionsv1.JSON{
+								Raw: []byte(`{"field4":"value4"}`),
+							},
+						},
+						Name:           "index-name",
+						NumPartitions:  pointer.Get(3),
+						SearchAnalyzer: pointer.Get("lucene.standard"),
+						StoredSource: &apiextensionsv1.JSON{
+							Raw: []byte(`{"enabled": true}`),
+						},
+						Synonyms: &[]v1.Synonyms{
+							{
+								Analyzer: "synonym-analyzer",
+								Name:     "synonym-name",
+								Source: v1.Source{
+									Collection: "synonym-collection",
+								},
+							},
+						},
+						Type: pointer.Get("search-index-type"),
+					},
+					GroupId: pointer.Get("group-id-101"),
+				},
+			},
+			target: &admin2025.SearchIndexCreateRequest{},
+			want: &admin2025.SearchIndexCreateRequest{
+				CollectionName: "collection-name",
+				Database:       "database-name",
+				Name:           "index-name",
+				Type:           pointer.Get("search-index-type"),
+			},
+		},
+		{
+			name:       "searchindex update request fields",
+			crd:        "SearchIndex",
+			sdkVersion: "v20250312",
+			spec: v1.SearchIndexSpec{
+				V20250312: &v1.SearchIndexSpecV20250312{
+					Entry: &v1.SearchIndexSpecV20250312Entry{
+						Analyzer: pointer.Get("lucene.standard"),
+						Database: "database-name",
+						Analyzers: &[]v1.Analyzers{
+							{
+								Name: "custom-analyzer",
+								CharFilters: &[]apiextensionsv1.JSON{
+									{Raw: []byte(`{"key":"value"}`)},
+									{Raw: []byte(`{"key2":"value2"}`)},
+								},
+								TokenFilters: &[]apiextensionsv1.JSON{
+									{Raw: []byte(`{"key3":"value3"}`)},
+									{Raw: []byte(`{"key4":"value4"}`)},
+								},
+								Tokenizer: v1.Tokenizer{
+									Group:          pointer.Get(2),
+									MaxGram:        pointer.Get(100),
+									MaxTokenLength: pointer.Get(50),
+									MinGram:        pointer.Get(1),
+									Pattern:        pointer.Get("pattern"),
+									Type:           pointer.Get("custom"),
+								},
+							},
+						},
+						CollectionName: "collection-name",
+						Fields: &[]apiextensionsv1.JSON{
+							{Raw: []byte(`{"field1":"value1"}`)},
+							{Raw: []byte(`{"field2":"value2"}`)},
+							{Raw: []byte(`{"field3":"value3"}`)},
+						},
+						Mappings: &v1.Mappings{
+							Dynamic: pointer.Get(true),
+							Fields: &apiextensionsv1.JSON{
+								Raw: []byte(`{"field4":"value4"}`),
+							},
+						},
+						Name:           "index-name",
+						NumPartitions:  pointer.Get(3),
+						SearchAnalyzer: pointer.Get("lucene.standard"),
+						StoredSource: &apiextensionsv1.JSON{
+							Raw: []byte(`{"enabled": true}`),
+						},
+						Synonyms: &[]v1.Synonyms{
+							{
+								Analyzer: "synonym-analyzer",
+								Name:     "synonym-name",
+								Source: v1.Source{
+									Collection: "synonym-collection",
+								},
+							},
+						},
+						Type: pointer.Get("search-index-type"),
+					},
+					GroupId: pointer.Get("group-id-101"),
+				},
+			},
+			target: &admin2025.SearchIndexUpdateRequestDefinition{},
+			want: &admin2025.SearchIndexUpdateRequestDefinition{
+				Analyzer: pointer.Get("lucene.standard"),
+				Analyzers: &[]admin2025.AtlasSearchAnalyzer{
+					{
+						Name: "custom-analyzer",
+						CharFilters: &[]any{
+							map[string]any{"key": "value"},
+							map[string]any{"key2": "value2"},
+						},
+						TokenFilters: &[]any{
+							map[string]any{"key3": "value3"},
+							map[string]any{"key4": "value4"},
+						},
+						Tokenizer: map[string]any{
+							"group":          2.0,
+							"maxGram":        100.0,
+							"maxTokenLength": 50.0,
+							"minGram":        1.0,
+							"pattern":        "pattern",
+							"type":           "custom",
+						},
+					},
+				},
+				Fields: &[]any{
+					map[string]any{"field1": "value1"},
+					map[string]any{"field2": "value2"},
+					map[string]any{"field3": "value3"},
+				},
+				Mappings: &admin2025.SearchMappings{
+					Dynamic: pointer.Get(true),
+					Fields: &map[string]any{
+						"field4": "value4",
+					},
+				},
+				NumPartitions:  pointer.Get(3),
+				SearchAnalyzer: pointer.Get("lucene.standard"),
+				StoredSource:   any(map[string]any{"enabled": true}),
+				Synonyms: &[]admin2025.SearchSynonymMappingDefinition{
+					{
+						Analyzer: "synonym-analyzer",
+						Name:     "synonym-name",
+						Source: admin2025.SynonymSource{
+							Collection: "synonym-collection",
+						},
+					},
+				},
 			},
 		},
 	} {
