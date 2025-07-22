@@ -109,7 +109,6 @@ jobs:
             "dry-run",
             "networkcontainer-controller",
             "networkpeering-controller",
-            "flex-to-dedicated",
           ]
     steps:
       - uses: actions/checkout@v4

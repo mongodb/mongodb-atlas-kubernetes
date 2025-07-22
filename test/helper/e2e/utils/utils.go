@@ -104,12 +104,6 @@ func ReadInYAMLFileAndConvert(pathToYamlFile string, cnfg interface{}) interface
 	return cnfg
 }
 
-func ParseObjectFromYAMLFile[T akov2.AtlasCustomResource](pathToYamlFile string, obj T) T {
-	ReadInYAMLFileAndConvert(pathToYamlFile, obj)
-
-	return obj
-}
-
 // ConvertYAMLtoJSONHelper converts the yaml to json recursively
 func ConvertYAMLtoJSONHelper(i interface{}) interface{} {
 	switch item := i.(type) {

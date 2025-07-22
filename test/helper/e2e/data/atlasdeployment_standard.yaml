@@ -17,4 +17,4 @@ spec:
             priority: 7
             electableSpecs:
               instanceSize: M10
-              nodeCount: 3
+              nodeCount: 1
