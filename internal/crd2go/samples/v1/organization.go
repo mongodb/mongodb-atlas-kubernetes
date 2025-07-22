@@ -111,7 +111,7 @@ type V20250312Organization struct {
 
 // +kubebuilder:object:root=true
 type OrganizationList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []Organization `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Organization `json:"items"`
 }
