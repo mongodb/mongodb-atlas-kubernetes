@@ -35,6 +35,14 @@ func processProperties(path []string, props, spec map[string]any, deps ...client
 		if !ok {
 			continue
 		}
+		subPath := append(path, key)
+		if isReference(mapping) {
+			err := processReference(subPath, mapping, spec, deps...)
+			if err != nil {
+				return fmt.Errorf("failed to process reference: %w", err)
+			}
+			continue
+		}
 		rawField, ok, err := unstructured.NestedFieldNoCopy(spec, key)
 		if !ok {
 			continue
@@ -42,22 +50,21 @@ func processProperties(path []string, props, spec map[string]any, deps ...client
 		if err != nil {
 			return fmt.Errorf("failed to access %q: %w", key, err)
 		}
-		subPath := append(path, key)
 		if arrayField, ok := (rawField).([]any); ok {
-			return processPropertyArray(subPath, mapping, arrayField, deps...)
+			return processArrayMapping(subPath, mapping, arrayField, deps...)
 		}
 		subSpec, ok := (rawField).(map[string]any)
 		if !ok {
 			return fmt.Errorf("unsupported mapping of type %T", rawField)
 		}
-		if err := processPropertyObject(subPath, mapping, subSpec, deps...); err != nil {
+		if err := processObjectMapping(subPath, mapping, subSpec, deps...); err != nil {
 			return fmt.Errorf("failed to process mapping %q: %w", key, err)
 		}
 	}
 	return nil
 }
 
-func processPropertyArray(path []string, mapping map[string]any, specs []any, deps ...client.Object) error {
+func processArrayMapping(path []string, mapping map[string]any, specs []any, deps ...client.Object) error {
 	items, err := accessField[map[string]any](mapping, "items", "properties")
 	if err != nil {
 		return fmt.Errorf("failed to access %q: %w", base(path), err)
@@ -72,14 +79,14 @@ func processPropertyArray(path []string, mapping map[string]any, specs []any, de
 			return fmt.Errorf("expected field %q at %v to be a map but was: %T", key, path, item)
 		}
 		subPath := append(path, key)
-		if err := processPropertyObject(subPath, mapping, spec, deps...); err != nil {
+		if err := processObjectMapping(subPath, mapping, spec, deps...); err != nil {
 			return fmt.Errorf("failed to map property from array item %q at %v: %w", key, path, err)
 		}
 	}
 	return nil
 }
 
-func processPropertyObject(path []string, mapping, spec map[string]any, deps ...client.Object) error {
+func processObjectMapping(path []string, mapping, spec map[string]any, deps ...client.Object) error {
 	if mapping["properties"] != nil {
 		props, err := accessField[map[string]any](mapping, "properties")
 		if err != nil {
