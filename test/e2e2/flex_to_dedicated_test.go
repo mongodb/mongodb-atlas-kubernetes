@@ -40,7 +40,7 @@ import (
 //go:embed flex2dedicated/*
 var flex2dedicated embed.FS
 
-var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"), func() {
+var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("nightly-flex2dedicated", "flex-to-dedicated"), func() {
 	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
