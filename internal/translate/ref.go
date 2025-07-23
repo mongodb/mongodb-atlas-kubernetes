@@ -57,13 +57,22 @@ func processReference(path []string, mapping, spec map[string]any, deps ...clien
 	if err != nil {
 		return fmt.Errorf("failed accessing value at path %v: %w", path, err)
 	}
+	if len(reference) == 0 {
+		return nil
+	}
 	refMap := refMapping{}
 	if err := toStructured(&refMap, mapping); err != nil {
 		return fmt.Errorf("failed to parse a reference mapping: %w", err)
 	}
 
+	if refMap.XKubernetesMapping.GVR() == "atlas.generated.mongodb.com/v1/groups" {
+		// TODO: implement group refs
+		return nil
+	}
+
 	if refMap.XOpenAPIMapping.Type != "string" {
-		return fmt.Errorf("unsupported referenced value type %v", refMap.XOpenAPIMapping.Type)
+		return fmt.Errorf("unsupported referenced value type %q (refMap=%v)",
+			refMap.XOpenAPIMapping.Type, refMap)
 	}
 
 	return processSecretReference(path, &refMap, reference, spec, deps...)

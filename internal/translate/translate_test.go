@@ -923,14 +923,8 @@ func TestToAPI(t *testing.T) {
 			},
 			deps: []client.Object{
 				&corev1.Secret{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "Secret",
-						APIVersion: "v1",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "datadog-secret",
-						Namespace: "ns",
-					},
+					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "datadog-secret", Namespace: "ns"},
 					Data: map[string][]byte{
 						"datadogApiKey": ([]byte)("sample-password"),
 					},
@@ -1169,6 +1163,20 @@ func TestToAPI(t *testing.T) {
 				},
 			},
 		},
+		// "SampleDataset" only holds a name, there is no SDK API struc for the request
+		// {
+		// 	name:       "sample dataset all fields",
+		// 	crd:        "SampleDataset",
+		// 	sdkVersion: "v20250312",
+		// 	spec: v1.SampleDatasetSpec{
+		// 		V20250312: &v1.SampleDatasetSpecV20250312{
+		// 			Name:     "sample-dataset",
+		// 			GroupId:  pointer.Get("32b6e34b3d91647abb20e7b8"),
+		// 		},
+		// 	},
+		// 	target: admin2025.SampleDatasetStatus{},
+		// 	want:   admin2025.SampleDatasetStatus{},
+		// },
 		{
 			name:       "searchindex create request fields",
 			crd:        "SearchIndex",
@@ -1301,6 +1309,76 @@ func TestToAPI(t *testing.T) {
 				Name: "team-name",
 				Usernames: []string{
 					"user1", "user2",
+				},
+			},
+		},
+		{
+			name:       "third part integration all fields",
+			crd:        "ThirdPartyIntegration",
+			sdkVersion: "v20250312",
+			spec: v1.ThirdPartyIntegrationSpec{
+				V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
+					IntegrationType: "ANY",
+					Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
+						AccountId: pointer.Get("account-id"),
+						ApiKeySecretRef: &v1.ApiTokenSecretRef{
+							Key:  pointer.Get("apiKey"),
+							Name: pointer.Get("multi-secret0"),
+						},
+						ApiTokenSecretRef: &v1.ApiTokenSecretRef{
+							Key:  pointer.Get("apiToken"),
+							Name: pointer.Get("multi-secret0"),
+						},
+						ChannelName: pointer.Get("channel-name"),
+						Enabled:     pointer.Get(true),
+						LicenseKeySecretRef: &v1.ApiTokenSecretRef{
+							Key:  pointer.Get("licenseKey"),
+							Name: pointer.Get("multi-secret1"),
+						},
+						Region:                       pointer.Get("some-region"),
+						SendCollectionLatencyMetrics: pointer.Get(true),
+						SendDatabaseMetrics:          pointer.Get(true),
+						SendUserProvidedResourceTags: pointer.Get(true),
+						ServiceDiscovery:             pointer.Get("service-discovery"),
+						TeamName:                     pointer.Get("some-team"),
+						Type:                         pointer.Get("some-type"),
+						Username:                     pointer.Get("username"),
+					},
+					GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+				},
+			},
+			target: &admin2025.ThirdPartyIntegration{},
+			want: &admin2025.ThirdPartyIntegration{
+				Type:                         pointer.Get("some-type"),
+				ApiKey:                       pointer.Get("sample-api-key"),
+				Region:                       pointer.Get("some-region"),
+				SendCollectionLatencyMetrics: pointer.Get(true),
+				SendDatabaseMetrics:          pointer.Get(true),
+				SendUserProvidedResourceTags: pointer.Get(true),
+				AccountId:                    pointer.Get("account-id"),
+				LicenseKey:                   pointer.Get("sample-license-key"),
+				Enabled:                      pointer.Get(true),
+				ServiceDiscovery:             pointer.Get("service-discovery"),
+				Username:                     pointer.Get("username"),
+				ApiToken:                     pointer.Get("sample-api-token"),
+				ChannelName:                  pointer.Get("channel-name"),
+				TeamName:                     pointer.Get("some-team"),
+			},
+			deps: []client.Object{
+				&corev1.Secret{
+					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "multi-secret0"},
+					Data: map[string][]byte{
+						"apiKey":   ([]byte)("sample-api-key"),
+						"apiToken": ([]byte)("sample-api-token"),
+					},
+				},
+				&corev1.Secret{
+					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "multi-secret1"},
+					Data: map[string][]byte{
+						"licenseKey":   ([]byte)("sample-license-key"),
+					},
 				},
 			},
 		},
