@@ -241,11 +241,13 @@ jobs:
     needs: [e2e]
     runs-on: ubuntu-latest
     steps:
-      - name: Parse logs from e2e tests
-        run: |
-          devbox run -- 'make tools/scandeprecation/scandeprecation'
-          LOGS=$(gh run view ${{ github.run_id }} --log | grep "javaMethod" | ./tools/scandeprecation/scandeprecations)
-          echo "LOGS=$LOGS" >> $GITHUB_ENV`
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.13.0
+        with:
+          enable-cache: 'true'
       - name: Generate GitHub App Token
         id: generate_token
         uses: actions/create-github-app-token@v2
@@ -255,6 +257,13 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: |
             mongodb-atlas-kubernetes
+      - name: Parse logs from e2e tests
+        env:
+          GH_TOKEN: ${{  steps.generate_token.outputs.token  }}
+        run: |
+          devbox run -- 'make tools/scandeprecation/scandeprecation'
+          LOGS=$(gh run view ${{ github.run_id }} --log | grep "javaMethod" | ./tools/scandeprecation/scandeprecations)
+          echo "LOGS=$LOGS" >> $GITHUB_ENV`
       - name: Create comment from data
         if: ${{ ! env.LOGS == '' }}
         uses: actions/github-script@v7
