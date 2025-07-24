@@ -11,13 +11,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type DependencyFinder interface {
+	Find(name, namespace string) client.Object
+}
+
+type StaticDependencies map[string]client.Object
+
+func NewStaticDependencies(objs ... client.Object) StaticDependencies {
+	sd := map[string]client.Object{}
+	for _, obj := range objs {
+		sd[client.ObjectKeyFromObject(obj).String()] = obj 
+	}
+	return sd
+}
+
+func (sd StaticDependencies) Find(name, namespace string) client.Object {
+	return sd[client.ObjectKey{Name: name, Namespace: namespace}.String()]
+}
+
 type TypeInfo struct {
 	CRDVersion string
 	SDKVersion string
 	CRD        *apiextensionsv1.CustomResourceDefinition
 }
 
-func ToAPI[T any, S any](typeInfo *TypeInfo, target T, spec S, deps ...client.Object) error {
+func ToAPI[T any, S any](typeInfo *TypeInfo, target T, namespace string, spec S, deps DependencyFinder) error {
 	specVersion := selectVersion(&typeInfo.CRD.Spec, typeInfo.CRDVersion)
 	kind := typeInfo.CRD.Spec.Names.Kind
 	props, err := getOpenAPIProperties(kind, specVersion)
@@ -39,7 +57,7 @@ func ToAPI[T any, S any](typeInfo *TypeInfo, target T, spec S, deps ...client.Ob
 	if err != nil {
 		return fmt.Errorf("failed to access version %q spec value: %w", typeInfo.SDKVersion, err)
 	}
-	if err := processMappings(typeInfo, specValue, deps...); err != nil {
+	if err := processMappings(typeInfo, namespace, specValue, deps); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 	log.Printf("%s", jsonize(specValue))

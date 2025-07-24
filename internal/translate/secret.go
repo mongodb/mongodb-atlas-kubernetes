@@ -3,15 +3,13 @@ package translate
 import (
 	"encoding/base64"
 	"fmt"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func processSecretReference(path []string, refMap *refMapping, reference, spec map[string]any, deps ...client.Object) error {
+func processSecretReference(path []string, namespace string, refMap *refMapping, reference, spec map[string]any, deps DependencyFinder) error {
 	if refMap.XKubernetesMapping.GVR() != "v1/secrets" {
 		return fmt.Errorf("unsupported GVR %q", refMap.XKubernetesMapping.GVR())
 	}
-	dep, err := solveReferencedDependency(path, reference, refMap, deps...)
+	dep, err := solveReferencedDependency(path, namespace, reference, refMap, deps)
 	if err != nil {
 		return fmt.Errorf("failed solving referenced kubernetes dependency: %w", err)
 	}

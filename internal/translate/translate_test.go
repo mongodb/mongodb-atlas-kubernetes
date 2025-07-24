@@ -1367,7 +1367,7 @@ func TestToAPI(t *testing.T) {
 			deps: []client.Object{
 				&corev1.Secret{
 					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-					ObjectMeta: metav1.ObjectMeta{Name: "multi-secret0"},
+					ObjectMeta: metav1.ObjectMeta{Name: "multi-secret0", Namespace: "ns"},
 					Data: map[string][]byte{
 						"apiKey":   ([]byte)("sample-api-key"),
 						"apiToken": ([]byte)("sample-api-token"),
@@ -1375,7 +1375,7 @@ func TestToAPI(t *testing.T) {
 				},
 				&corev1.Secret{
 					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-					ObjectMeta: metav1.ObjectMeta{Name: "multi-secret1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "multi-secret1", Namespace: "ns"},
 					Data: map[string][]byte{
 						"licenseKey":   ([]byte)("sample-license-key"),
 					},
@@ -1394,7 +1394,8 @@ func TestToAPI(t *testing.T) {
 				SDKVersion: tc.sdkVersion,
 				CRD:        crd,
 			}
-			require.NoError(t, translate.ToAPI(&typeInfo, tc.target, &tc.spec, tc.deps...))
+			deps := translate.NewStaticDependencies(tc.deps...)
+			require.NoError(t, translate.ToAPI(&typeInfo, tc.target, "ns", &tc.spec, deps))
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}

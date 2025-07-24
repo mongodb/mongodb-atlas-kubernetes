@@ -2,6 +2,7 @@ package translate
 
 import (
 	"fmt"
+	"log"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,7 +53,7 @@ func isReference(obj map[string]any) bool {
 	return obj["x-kubernetes-mapping"] != nil && obj["x-openapi-mapping"] != nil
 }
 
-func processReference(path []string, mapping, spec map[string]any, deps ...client.Object) error {
+func processReference(path []string, namespace string, mapping, spec map[string]any, deps DependencyFinder) error {
 	reference, err := accessField[map[string]any](spec, base(path))
 	if err != nil {
 		return fmt.Errorf("failed accessing value at path %v: %w", path, err)
@@ -75,15 +76,15 @@ func processReference(path []string, mapping, spec map[string]any, deps ...clien
 			refMap.XOpenAPIMapping.Type, refMap)
 	}
 
-	return processSecretReference(path, &refMap, reference, spec, deps...)
+	return processSecretReference(path, namespace, &refMap, reference, spec, deps)
 }
 
-func solveReferencedDependency(path []string, reference map[string]any, refMap *refMapping, deps ...client.Object) (map[string]any, error) {
+func solveReferencedDependency(path []string, namespace string, reference map[string]any, refMap *refMapping, deps DependencyFinder) (map[string]any, error) {
 	referenceValue, err := accessField[string](reference, asPath(refMap.XKubernetesMapping.NameSelector)...)
 	if err != nil {
 		return nil, fmt.Errorf("failed accessing reference value for mapping at %v: %w", path, err)
 	}
-	dep := findReferencedDep(deps, &refMap.XKubernetesMapping, referenceValue)
+	dep := findReferencedDep(deps, &refMap.XKubernetesMapping, referenceValue, namespace)
 	if dep == nil {
 		return nil, fmt.Errorf("kubernetes dependency of type %q not found with name %q",
 			refMap.XKubernetesMapping.GVK(), referenceValue)
@@ -97,11 +98,11 @@ func solveReferencedDependency(path []string, reference map[string]any, refMap *
 	return depUnstructured, nil
 }
 
-func findReferencedDep(deps []client.Object, kubeMap *kubeMapping, name string) client.Object {
-	for _, dep := range deps {
-		if kubeMap.Equal(dep.GetObjectKind().GroupVersionKind()) && dep.GetName() == name {
-			return dep
-		}
+func findReferencedDep(deps DependencyFinder, kubeMap *kubeMapping, name, namespace string) client.Object {
+	dep := deps.Find(name, namespace)
+	if dep != nil && kubeMap.Equal(dep.GetObjectKind().GroupVersionKind()) {
+		return dep
 	}
+	log.Printf("NOT FOUND %q at %v", name, deps)
 	return nil
 }
