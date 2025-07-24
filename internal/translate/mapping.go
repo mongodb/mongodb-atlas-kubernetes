@@ -5,7 +5,6 @@ import (
 
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -14,7 +13,7 @@ const (
 	SecretProperySelector = "$.data.#"
 )
 
-func processMappings(typeInfo *TypeInfo, spec map[string]any, deps ...client.Object) error {
+func processMappings(typeInfo *TypeInfo, namespace string, spec map[string]any, deps DependencyFinder) error {
 	mappingsYML := typeInfo.CRD.ObjectMeta.Annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return nil
@@ -26,10 +25,10 @@ func processMappings(typeInfo *TypeInfo, spec map[string]any, deps ...client.Obj
 	if err != nil {
 		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
 	}
-	return processProperties([]string{}, props, spec, deps...)
+	return processProperties([]string{}, namespace, props, spec, deps)
 }
 
-func processProperties(path []string, props, spec map[string]any, deps ...client.Object) error {
+func processProperties(path []string, namespace string, props, spec map[string]any, deps DependencyFinder) error {
 	for key, prop := range props {
 		mapping, ok := (prop).(map[string]any)
 		if !ok {
@@ -37,7 +36,7 @@ func processProperties(path []string, props, spec map[string]any, deps ...client
 		}
 		subPath := append(path, key)
 		if isReference(mapping) {
-			err := processReference(subPath, mapping, spec, deps...)
+			err := processReference(subPath, namespace, mapping, spec, deps)
 			if err != nil {
 				return fmt.Errorf("failed to process reference: %w", err)
 			}
@@ -51,20 +50,20 @@ func processProperties(path []string, props, spec map[string]any, deps ...client
 			return fmt.Errorf("failed to access %q: %w", key, err)
 		}
 		if arrayField, ok := (rawField).([]any); ok {
-			return processArrayMapping(subPath, mapping, arrayField, deps...)
+			return processArrayMapping(subPath, namespace, mapping, arrayField, deps)
 		}
 		subSpec, ok := (rawField).(map[string]any)
 		if !ok {
 			return fmt.Errorf("unsupported mapping of type %T", rawField)
 		}
-		if err := processObjectMapping(subPath, mapping, subSpec, deps...); err != nil {
+		if err := processObjectMapping(subPath, namespace, mapping, subSpec, deps); err != nil {
 			return fmt.Errorf("failed to process mapping %q: %w", key, err)
 		}
 	}
 	return nil
 }
 
-func processArrayMapping(path []string, mapping map[string]any, specs []any, deps ...client.Object) error {
+func processArrayMapping(path []string, namespace string, mapping map[string]any, specs []any, deps DependencyFinder) error {
 	items, err := accessField[map[string]any](mapping, "items", "properties")
 	if err != nil {
 		return fmt.Errorf("failed to access %q: %w", base(path), err)
@@ -79,23 +78,23 @@ func processArrayMapping(path []string, mapping map[string]any, specs []any, dep
 			return fmt.Errorf("expected field %q at %v to be a map but was: %T", key, path, item)
 		}
 		subPath := append(path, key)
-		if err := processObjectMapping(subPath, mapping, spec, deps...); err != nil {
+		if err := processObjectMapping(subPath, namespace, mapping, spec, deps); err != nil {
 			return fmt.Errorf("failed to map property from array item %q at %v: %w", key, path, err)
 		}
 	}
 	return nil
 }
 
-func processObjectMapping(path []string, mapping, spec map[string]any, deps ...client.Object) error {
+func processObjectMapping(path []string, namespace string, mapping, spec map[string]any, deps DependencyFinder) error {
 	if mapping["properties"] != nil {
 		props, err := accessField[map[string]any](mapping, "properties")
 		if err != nil {
 			return fmt.Errorf("faild to access properties at %q: %w", path, err)
 		}
-		return processProperties(path, props, spec, deps...)
+		return processProperties(path, namespace, props, spec, deps)
 	}
 	if isReference(mapping) {
-		return processReference(path, mapping, spec, deps...)
+		return processReference(path, namespace, mapping, spec, deps)
 	}
 	return fmt.Errorf("unsupported extension at %v with fields %v", path, fieldsOf(mapping))
 }
