@@ -10,4 +10,4 @@ Welcome to the Atlas Kubernetes Operator (AKO) SRE Runbook collection. This dire
 Use this index to quickly navigate to the desired runbook.
 
 ## Available Runbooks
-- [Resource are not reconciling](resources_are_not_reconciling.md)
+- [Resources are not reconciling](resources_are_not_reconciling.md)
