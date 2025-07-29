@@ -3,7 +3,6 @@ package translate
 import (
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 
 	"gopkg.in/yaml.v3"
@@ -61,67 +60,8 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	}
 }
 
-func ToAPI[T any, S any](t *Translator, target T, spec S) error {
-	specVersion := selectVersion(&t.crd.definition.Spec, t.crd.version)
-	kind := t.crd.definition.Spec.Names.Kind
-	props, err := getOpenAPIProperties(kind, specVersion)
-	if err != nil {
-		return fmt.Errorf("failed to enumerate CRD schema properties: %w", err)
-	}
-	specProps, err := getSpecPropertiesFor(kind, props, "spec")
-	if err != nil {
-		return fmt.Errorf("failed to enumerate CRD spec properties: %w", err)
-	}
-	if _, ok := specProps[t.sdk.version]; !ok {
-		return fmt.Errorf("failed to match the CRD spec version %q in schema", t.sdk.version)
-	}
-	unstructuredSpec, err := toUnstructured(spec)
-	if err != nil {
-		return fmt.Errorf("failed to convert spec value to unstructured: %w", err)
-	}
-	specValue, err := accessField[map[string]any](unstructuredSpec, t.sdk.version)
-	if err != nil {
-		return fmt.Errorf("failed to access version %q spec value: %w", t.sdk.version, err)
-	}
-	if err := t.processMappings(specValue); err != nil {
-		return fmt.Errorf("failed to process API mappings: %w", err)
-	}
-	log.Printf("%s", jsonize(specValue))
-	targetUnstructured := map[string]any{}
-	rawEntry := specValue["entry"]
-	if entry, ok := rawEntry.(map[string]any); ok {
-		log.Printf("flattened entry object %s", jsonize(entry))
-		copyFields(targetUnstructured, entry)
-		copyFields(targetUnstructured, skipKeys(specValue, "entry"))
-	} else {
-		copyFields(targetUnstructured, specValue)
-		log.Printf("copied all spec %s", jsonize(targetUnstructured))
-	}
-	if err := fromUnstructured(&target, targetUnstructured); err != nil {
-		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
-	}
-	return nil
-}
-
-func (t *Translator) processMappings(spec map[string]any) error {
-	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
-	if mappingsYML == "" {
-		return nil
-	}
-	mappings := map[string]any{}
-	yaml.Unmarshal([]byte(mappingsYML), mappings)
-	props, err := accessField[map[string]any](mappings,
-		"properties", "spec", "properties", t.sdk.version, "properties")
-	if errors.Is(err, ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
-	}
-	return processProperties([]string{}, props, spec, t.deps)
-}
-
-func ToAPIAuto[T any](t *Translator, targetType reflect.Type, target *T, source client.Object) error {
+func ToAPI[T any](t *Translator, target *T, source client.Object) error {
+	targetType := reflect.TypeOf(target).Elem()
 	specVersion := selectVersion(&t.crd.definition.Spec, t.crd.version)
 	kind := t.crd.definition.Spec.Names.Kind
 	props, err := getOpenAPIProperties(kind, specVersion)
@@ -149,7 +89,6 @@ func ToAPIAuto[T any](t *Translator, targetType reflect.Type, target *T, source 
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
-	log.Printf("target type %v kind %v num.fields %v", targetType, targetType.Kind(), targetType.NumField())
 	if targetType.Kind() != reflect.Struct {
 		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
 	}
@@ -171,11 +110,28 @@ func ToAPIAuto[T any](t *Translator, targetType reflect.Type, target *T, source 
 		copyFields(targetUnstructured, value)
 	}
 	delete(targetUnstructured, "groupref")
-	log.Printf("target: %v", jsonize(targetUnstructured))
 	if err := fromUnstructured(target, targetUnstructured); err != nil {
 		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
 	}
 	return nil
+}
+
+func (t *Translator) processMappings(spec map[string]any) error {
+	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
+	if mappingsYML == "" {
+		return nil
+	}
+	mappings := map[string]any{}
+	yaml.Unmarshal([]byte(mappingsYML), mappings)
+	props, err := accessField[map[string]any](mappings,
+		"properties", "spec", "properties", t.sdk.version, "properties")
+	if errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
+	}
+	return processProperties([]string{}, props, spec, t.deps)
 }
 
 func findEntryPathInTarget(targetType reflect.Type) []string {
