@@ -122,11 +122,3 @@ func in[T comparable](list []T, target T) bool {
 	}
 	return false
 }
-
-func jsonize(obj any) string {
-	js, err := json.MarshalIndent(obj, "  ", "  ")
-	if err != nil {
-		return err.Error()
-	}
-	return string(js)
-}
