@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "gh@latest": {
+      "last_modified": "2025-07-24T15:00:16Z",
+      "resolved": "github:NixOS/nixpkgs/b74a30dbc0a72e20df07d43109339f780b439291#gh",
+      "source": "devbox-search",
+      "version": "2.76.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1rk4zapq51hwrx1shzd059aha1n8rpys-gh-2.76.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/1rk4zapq51hwrx1shzd059aha1n8rpys-gh-2.76.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/wnbz91jxavdyrql8gn4lccl236p49684-gh-2.76.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/wnbz91jxavdyrql8gn4lccl236p49684-gh-2.76.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/vs7c36g9bz9wqkpy8lf48c1c2r2d9d7c-gh-2.76.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/vs7c36g9bz9wqkpy8lf48c1c2r2d9d7c-gh-2.76.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/sv3yv54i9wn5xmi3ppvdsq6xx4iv4axa-gh-2.76.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/sv3yv54i9wn5xmi3ppvdsq6xx4iv4axa-gh-2.76.1"
+        }
+      }
+    },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
       "last_modified": "2025-05-04T22:22:57Z",
       "resolved": "github:NixOS/nixpkgs/ed30f8aba41605e3ab46421e3dcb4510ec560ff8?lastModified=1746397377&narHash=sha256-5oLdRa3vWSRbuqPIFFmQBGGUqaYZBxX%2BGGtN9f%2Fn4lU%3D"
@@ -53,51 +101,51 @@
         }
       }
     },
-    "kubebuilder@latest": {
-      "last_modified": "2025-05-16T20:19:48Z",
-      "resolved": "github:NixOS/nixpkgs/12a55407652e04dcf2309436eb06fef0d3713ef3#kubebuilder",
+    "kubernetes-controller-tools@latest": {
+      "last_modified": "2025-07-13T22:45:35Z",
+      "resolved": "github:NixOS/nixpkgs/a421ac6595024edcfbb1ef950a3712b89161c359#kubernetes-controller-tools",
       "source": "devbox-search",
-      "version": "4.5.1",
+      "version": "0.18.0",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/4i17mznvpzns68pv3jwkx53k2bcjg2i7-kubebuilder-4.5.1",
+              "path": "/nix/store/jx4yw8w8cmn5kcwnmhzl1yfdkpxzilx6-controller-tools-0.18.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/4i17mznvpzns68pv3jwkx53k2bcjg2i7-kubebuilder-4.5.1"
+          "store_path": "/nix/store/jx4yw8w8cmn5kcwnmhzl1yfdkpxzilx6-controller-tools-0.18.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/d384rw9h29288l8v4yqf8wcd591nnx9k-kubebuilder-4.5.1",
+              "path": "/nix/store/qy94a4dw62a9d964hgcycwwmy9fvnkn6-controller-tools-0.18.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/d384rw9h29288l8v4yqf8wcd591nnx9k-kubebuilder-4.5.1"
+          "store_path": "/nix/store/qy94a4dw62a9d964hgcycwwmy9fvnkn6-controller-tools-0.18.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/3mrj62xs7qyzgv2x7my5fdr3i5lh1kvb-kubebuilder-4.5.1",
+              "path": "/nix/store/dpnl9ixjxx2r4cv1pn225df09j69nq3k-controller-tools-0.18.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/3mrj62xs7qyzgv2x7my5fdr3i5lh1kvb-kubebuilder-4.5.1"
+          "store_path": "/nix/store/dpnl9ixjxx2r4cv1pn225df09j69nq3k-controller-tools-0.18.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/hwa68xs5rwygadq8qfliaz7l58h0m9bh-kubebuilder-4.5.1",
+              "path": "/nix/store/hr39ibf9chllwnd3ikarjjhni1vhr2cn-controller-tools-0.18.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/hwa68xs5rwygadq8qfliaz7l58h0m9bh-kubebuilder-4.5.1"
+          "store_path": "/nix/store/hr39ibf9chllwnd3ikarjjhni1vhr2cn-controller-tools-0.18.0"
         }
       }
     },
