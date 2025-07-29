@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"embed"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -19,10 +20,13 @@ import (
 	v1 "github.com/josvazg/crd2go/internal/crd2go/samples/v1"
 	"github.com/josvazg/crd2go/internal/pointer"
 	"github.com/josvazg/crd2go/internal/translate"
+	"github.com/josvazg/crd2go/k8s"
 )
 
 const (
 	version = "v1"
+
+	sdkVersion = "v20250312"
 )
 
 //go:embed samples/*
@@ -36,20 +40,192 @@ type NetworkPermissions struct {
 	Entry []admin2025.NetworkPermissionEntry `json:"entry"`
 }
 
-func TestToAPI(t *testing.T) {
+func TestAllRefs(t *testing.T) {
 	for _, tc := range []struct {
-		name       string
-		crd        string
-		sdkVersion string
-		spec       any
-		deps       []client.Object
-		target     any
-		want       any
+		name   string
+		crd    string
+		input  client.Object
+		deps   []client.Object
+		target admin2025.CreateAlertConfigurationApiParams
+		want   admin2025.CreateAlertConfigurationApiParams
 	}{
 		{
-			name:       "sample backup compliance policy",
-			crd:        "BackupCompliancePolicy",
-			sdkVersion: "v20250312",
+			name: "group alert config with a groupRef and secrets",
+			crd:  "GroupAlertsConfig",
+			input: &v1.GroupAlertsConfig{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "GroupAlertsConfig",
+					APIVersion: "atlas.generated.mongodb.com/v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-group-alerts-config",
+					Namespace: "ns",
+				},
+				Spec: v1.GroupAlertsConfigSpec{
+					V20250312: &v1.GroupAlertsConfigSpecV20250312{
+						Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+							Enabled:       pointer.Get(true),
+							EventTypeName: pointer.Get("some-event"),
+							Matchers: &[]v1.Matchers{
+								{
+									FieldName: "field1",
+									Operator:  "op1",
+									Value:     "value1",
+								},
+								{
+									FieldName: "field2",
+									Operator:  "op2",
+									Value:     "value2",
+								},
+							},
+							MetricThreshold: &v1.MetricThreshold{
+								MetricName: "metric",
+								Mode:       pointer.Get("mode"),
+								Operator:   pointer.Get("operator"),
+								Threshold:  pointer.Get(1.0),
+								Units:      pointer.Get("unit"),
+							},
+							Notifications: &[]v1.Notifications{
+								{
+									DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
+										Name: pointer.Get("alert-secrets-0"),
+										Key:  pointer.Get("apiKey"),
+									},
+									DatadogRegion: pointer.Get("US"),
+								},
+								{
+									WebhookSecretSecretRef: &v1.ApiTokenSecretRef{
+										Name: pointer.Get("alert-secrets-0"),
+										Key:  pointer.Get("webhookSecret"),
+									},
+									WebhookUrlSecretRef: &v1.ApiTokenSecretRef{
+										Name: pointer.Get("alert-secrets-1"),
+										Key:  pointer.Get("webhookUrl"),
+									},
+								},
+							},
+							SeverityOverride: pointer.Get("severe"),
+							Threshold: &v1.MetricThreshold{
+								MetricName: "metric",
+								Mode:       pointer.Get("mode-t"),
+								Operator:   pointer.Get("op-t"),
+								Threshold:  pointer.Get(2.0),
+								Units:      pointer.Get("unit-t"),
+							},
+						},
+						GroupRef: &k8s.LocalReference{
+							Name: "my-project",
+						},
+					},
+				},
+			},
+			deps: []client.Object{
+				&v1.Group{
+					TypeMeta:   metav1.TypeMeta{Kind: "Group", APIVersion: "atlas.generated.mongodb.com/v1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "my-project", Namespace: "ns"},
+					Spec: v1.GroupSpec{
+						V20250312: &v1.GroupSpecV20250312{
+							Entry: &v1.V20250312Entry{
+								Name:  "some-project",
+								OrgId: "621454123423x125235142",
+							},
+						},
+					},
+					Status: v1.GroupStatus{
+						V20250312: &v1.GroupStatusV20250312{
+							Id: pointer.Get("62b6e34b3d91647abb20e7b8"),
+						},
+					},
+				},
+				&corev1.Secret{
+					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-0", Namespace: "ns"},
+					Data: map[string][]byte{
+						"apiKey":                ([]byte)("sample-api-key"),
+						"webhookSecret": ([]byte)("sample-webhook-secret"),
+					},
+				},
+				&corev1.Secret{
+					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-1", Namespace: "ns"},
+					Data: map[string][]byte{
+						"webhookUrl": ([]byte)("sample-webhook-url"),
+					},
+				},
+			},
+			want: admin2025.CreateAlertConfigurationApiParams{
+				GroupId: "62b6e34b3d91647abb20e7b8",
+				GroupAlertsConfig: &admin2025.GroupAlertsConfig{
+					Enabled:       pointer.Get(true),
+					EventTypeName: pointer.Get("some-event"),
+					Matchers: &[]admin2025.StreamsMatcher{
+						{
+							FieldName: "field1",
+							Operator:  "op1",
+							Value:     "value1",
+						},
+						{
+							FieldName: "field2",
+							Operator:  "op2",
+							Value:     "value2",
+						},
+					},
+					Notifications: &[]admin2025.AlertsNotificationRootForGroup{
+						{
+							DatadogApiKey: pointer.Get("sample-api-key"),
+							DatadogRegion: pointer.Get("US"),
+						},
+						{
+							WebhookSecret: pointer.Get("sample-webhook-secret"),
+							WebhookUrl:    pointer.Get("sample-webhook-url"),
+						},
+					},
+					SeverityOverride: pointer.Get("severe"),
+					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
+						MetricName: "metric",
+						Mode:       pointer.Get("mode"),
+						Operator:   pointer.Get("operator"),
+						Threshold:  pointer.Get(1.0),
+						Units:      pointer.Get("unit"),
+					},
+					Threshold: &admin2025.StreamProcessorMetricThreshold{
+						MetricName: pointer.Get("metric"),
+						Mode:       pointer.Get("mode-t"),
+						Operator:   pointer.Get("op-t"),
+						Threshold:  pointer.Get(2.0),
+						Units:      pointer.Get("unit-t"),
+					},
+				},
+			},
+			target: admin2025.CreateAlertConfigurationApiParams{},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			crdsYML, err := samples.Open("samples/crds.yaml")
+			require.NoError(t, err)
+			defer crdsYML.Close()
+			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
+			require.NoError(t, err)
+			deps := translate.NewStaticDependencies("ns", tc.deps...)
+			translator := translate.NewTranslator(crd, version, sdkVersion, deps)
+			require.NoError(t, translate.ToAPIAuto(translator, reflect.TypeOf(tc.target), &tc.target, tc.input))
+			assert.Equal(t, tc.want, tc.target)
+		})
+	}
+}
+
+func TestToAPI(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		crd    string
+		spec   any
+		deps   []client.Object
+		target any
+		want   any
+	}{
+		{
+			name: "sample backup compliance policy",
+			crd:  "BackupCompliancePolicy",
 			spec: v1.BackupCompliancePolicySpec{
 				V20250312: &v1.BackupCompliancePolicySpecV20250312{
 					Entry: &v1.BackupCompliancePolicySpecV20250312Entry{
@@ -119,9 +295,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "backup schedule all fields",
-			crd:        "BackupSchedule",
-			sdkVersion: "v20250312",
+			name: "backup schedule all fields",
+			crd:  "BackupSchedule",
 			spec: v1.BackupScheduleSpec{
 				V20250312: &v1.BackupScheduleSpecV20250312{
 					Entry: &v1.BackupScheduleSpecV20250312Entry{
@@ -260,9 +435,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "cluster all fields",
-			crd:        "Cluster",
-			sdkVersion: "v20250312",
+			name: "cluster all fields",
+			crd:  "Cluster",
 			spec: v1.ClusterSpec{
 				V20250312: &v1.ClusterSpecV20250312{
 					Entry: &v1.ClusterSpecV20250312Entry{
@@ -578,9 +752,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "data federation all fields",
-			crd:        "DataFederation",
-			sdkVersion: "v20250312",
+			name: "data federation all fields",
+			crd:  "DataFederation",
 			spec: v1.DataFederationSpec{
 				V20250312: &v1.DataFederationSpecV20250312{
 					Entry: &v1.DataFederationSpecV20250312Entry{
@@ -752,9 +925,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "sample database user",
-			crd:        "DatabaseUser",
-			sdkVersion: "v20250312",
+			name: "sample database user",
+			crd:  "DatabaseUser",
 			spec: v1.DatabaseUserSpec{
 				V20250312: &v1.DatabaseUserSpecV20250312{
 					Entry: &v1.DatabaseUserSpecV20250312Entry{
@@ -809,9 +981,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "flex cluster with all fields",
-			crd:        "FlexCluster",
-			sdkVersion: "v20250312",
+			name: "flex cluster with all fields",
+			crd:  "FlexCluster",
 			spec: v1.FlexClusterSpec{
 				V20250312: &v1.FlexClusterSpecV20250312{
 					Entry: &v1.FlexClusterSpecV20250312Entry{
@@ -844,9 +1015,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "simple group",
-			crd:        "Group",
-			sdkVersion: "v20250312",
+			name: "simple group",
+			crd:  "Group",
 			spec: v1.GroupSpec{
 				V20250312: &v1.GroupSpecV20250312{
 					Entry: &v1.V20250312Entry{
@@ -874,9 +1044,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "group alert config with project and credential references",
-			crd:        "GroupAlertsConfig",
-			sdkVersion: "v20250312",
+			name: "group alert config with project and credential references",
+			crd:  "GroupAlertsConfig",
 			spec: v1.GroupAlertsConfigSpec{
 				V20250312: &v1.GroupAlertsConfigSpecV20250312{
 					Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
@@ -971,9 +1140,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "sample network peering connection",
-			crd:        "NetworkPeeringConnection",
-			sdkVersion: "v20250312",
+			name: "sample network peering connection",
+			crd:  "NetworkPeeringConnection",
 			spec: v1.NetworkPeeringConnectionSpec{
 				V20250312: &v1.NetworkPeeringConnectionSpecV20250312{
 					Entry: &v1.NetworkPeeringConnectionSpecV20250312Entry{
@@ -1010,9 +1178,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "network permission entries all fields",
-			crd:        "NetworkPermissionEntries",
-			sdkVersion: "v20250312",
+			name: "network permission entries all fields",
+			crd:  "NetworkPermissionEntries",
 			spec: v1.NetworkPermissionEntriesSpec{
 				V20250312: &v1.NetworkPermissionEntriesSpecV20250312{
 					Entry: &[]v1.NetworkPermissionEntriesSpecV20250312Entry{
@@ -1041,9 +1208,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "sample organization",
-			crd:        "Organization",
-			sdkVersion: "v20250312",
+			name: "sample organization",
+			crd:  "Organization",
 			spec: v1.OrganizationSpec{
 				V20250312: &v1.V20250312{
 					Entry: &v1.Entry{
@@ -1065,9 +1231,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "Organization setting with all fields",
-			crd:        "OrganizationSetting",
-			sdkVersion: "v20250312",
+			name: "Organization setting with all fields",
+			crd:  "OrganizationSetting",
 			spec: v1.OrganizationSettingSpec{
 				V20250312: &v1.OrganizationSettingSpecV20250312{
 					Entry: &v1.OrganizationSettingSpecV20250312Entry{
@@ -1094,9 +1259,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "customrole with all fields",
-			crd:        "CustomRole",
-			sdkVersion: "v20250312",
+			name: "customrole with all fields",
+			crd:  "CustomRole",
 			spec: v1.CustomRoleSpec{
 				V20250312: &v1.CustomRoleSpecV20250312{
 					Entry: &v1.CustomRoleSpecV20250312Entry{
@@ -1167,7 +1331,6 @@ func TestToAPI(t *testing.T) {
 		// {
 		// 	name:       "sample dataset all fields",
 		// 	crd:        "SampleDataset",
-		// 	sdkVersion: "v20250312",
 		// 	spec: v1.SampleDatasetSpec{
 		// 		V20250312: &v1.SampleDatasetSpecV20250312{
 		// 			Name:     "sample-dataset",
@@ -1178,9 +1341,8 @@ func TestToAPI(t *testing.T) {
 		// 	want:   admin2025.SampleDatasetStatus{},
 		// },
 		{
-			name:       "searchindex create request fields",
-			crd:        "SearchIndex",
-			sdkVersion: "v20250312",
+			name: "searchindex create request fields",
+			crd:  "SearchIndex",
 			spec: v1.SearchIndexSpec{
 				V20250312: &v1.SearchIndexSpecV20250312{
 					Entry: &v1.SearchIndexSpecV20250312Entry{
@@ -1292,9 +1454,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "team all fields",
-			crd:        "Team",
-			sdkVersion: "v20250312",
+			name: "team all fields",
+			crd:  "Team",
 			spec: v1.TeamSpec{
 				V20250312: &v1.TeamSpecV20250312{
 					Entry: &v1.TeamSpecV20250312Entry{
@@ -1313,9 +1474,8 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		{
-			name:       "third part integration all fields",
-			crd:        "ThirdPartyIntegration",
-			sdkVersion: "v20250312",
+			name: "third part integration all fields",
+			crd:  "ThirdPartyIntegration",
 			spec: v1.ThirdPartyIntegrationSpec{
 				V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
 					IntegrationType: "ANY",
@@ -1377,7 +1537,7 @@ func TestToAPI(t *testing.T) {
 					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 					ObjectMeta: metav1.ObjectMeta{Name: "multi-secret1", Namespace: "ns"},
 					Data: map[string][]byte{
-						"licenseKey":   ([]byte)("sample-license-key"),
+						"licenseKey": ([]byte)("sample-license-key"),
 					},
 				},
 			},
@@ -1389,13 +1549,9 @@ func TestToAPI(t *testing.T) {
 			defer crdsYML.Close()
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			typeInfo := translate.TypeInfo{
-				CRDVersion: version,
-				SDKVersion: tc.sdkVersion,
-				CRD:        crd,
-			}
-			deps := translate.NewStaticDependencies(tc.deps...)
-			require.NoError(t, translate.ToAPI(&typeInfo, tc.target, "ns", &tc.spec, deps))
+			deps := translate.NewStaticDependencies("ns", tc.deps...)
+			translator := translate.NewTranslator(crd, version, sdkVersion, deps)
+			require.NoError(t, translate.ToAPI(translator, tc.target, &tc.spec))
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}
