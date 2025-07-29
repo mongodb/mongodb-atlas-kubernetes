@@ -43,7 +43,7 @@ type NetworkPermissionEntriesSpecV20250312 struct {
 
 	/*
 	   GroupRef A reference to a "Group" resource.
-	   The value of "$.status.v20250312.groupId" will be used to set "groupId".
+	   The value of "$.status.v20250312.id" will be used to set "groupId".
 	   Mutually exclusive with the "groupId" property.
 	*/
 	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
