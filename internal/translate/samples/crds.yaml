@@ -5040,7 +5040,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
