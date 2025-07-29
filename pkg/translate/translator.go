@@ -21,6 +21,7 @@ type StaticDependencies struct {
 	fallbackNamespace string
 }
 
+// NewStaticDependencies creates a static set of find-able Kubernetes client.Objects
 func NewStaticDependencies(fallbackNamespace string, objs ...client.Object) StaticDependencies {
 	deps := map[string]client.Object{}
 	for _, obj := range objs {
@@ -32,6 +33,7 @@ func NewStaticDependencies(fallbackNamespace string, objs ...client.Object) Stat
 	}
 }
 
+// Find will reteieve the object with matching name and namespace if present in the static set
 func (sd StaticDependencies) Find(name, namespace string) client.Object {
 	ns := namespace
 	if ns == SetFallbackNamespace {
@@ -48,10 +50,13 @@ type Translator struct {
 	deps DependencyFinder
 }
 
+// SDKInfo holds the SDK version information
 type SDKInfo struct {
 	version string
 }
 
+// NewTranslator creates a translator for a particular CRD and SDK version pairs,
+// and with a particular set of known Kubernetes dependencies 
 func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, sdkVersion string, deps DependencyFinder) *Translator {
 	return &Translator{
 		crd:  CRDInfo{definition: crd, version: crdVersion},
@@ -60,6 +65,7 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	}
 }
 
+// ToAPI translates a source Kubernetes object, mostly the spec part, into a target API structure
 func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 	targetType := reflect.TypeOf(target).Elem()
 	specVersion := selectVersion(&t.crd.definition.Spec, t.crd.version)
