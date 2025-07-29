@@ -3,7 +3,7 @@ module tools/clean
 go 1.24
 
 require (
-	cloud.google.com/go/compute v1.40.0
+	cloud.google.com/go/compute v1.41.0
 	cloud.google.com/go/kms v1.22.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1
