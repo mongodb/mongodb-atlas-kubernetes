@@ -21,9 +21,9 @@ jobs:
       - name: Compute K8s matrix/versions for testing
         id: compute
         run: |
-          matrix='["v1.30.10-kind"]'
+          matrix='["v1.31.9-kind"]'
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            matrix='["v1.30.10-kind", "v1.32.2-kind"]'
+            matrix='["v1.31.9-kind", "v1.33.2-kind"]'
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 
@@ -136,7 +136,7 @@ jobs:
         if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
         uses: helm/kind-action@v1.12.0
         with:
-          version: v0.26.0
+          version: v0.29.0
           config: test/helper/e2e/config/kind.yaml
           node_image: kindest/node:${{ steps.extract.outputs.k8s_version }}
           cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
@@ -206,7 +206,7 @@ jobs:
         if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
         uses: helm/kind-action@v1.12.0
         with:
-          version: v0.26.0
+          version: v0.29.0
           config: test/helper/e2e/config/kind.yaml
           node_image: kindest/node:${{ steps.extract.outputs.k8s_version }}
           cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
