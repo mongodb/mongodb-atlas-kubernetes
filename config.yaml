@@ -95,7 +95,7 @@ spec:
                     group: atlas.generated.mongodb.com
                     version: v1
                   properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
           entry:
             schema: 'BaseNetworkPeeringConnectionSettings'
             filters:

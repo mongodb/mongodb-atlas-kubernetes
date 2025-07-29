@@ -393,7 +393,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -514,7 +514,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -628,7 +628,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -831,7 +831,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -908,7 +908,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -1084,7 +1084,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -1197,7 +1197,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -1445,7 +1445,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -1543,7 +1543,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -1983,7 +1983,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -2406,7 +2406,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -2507,7 +2507,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -2595,7 +2595,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -3300,7 +3300,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -3709,7 +3709,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -3935,7 +3935,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -4244,7 +4244,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -4297,7 +4297,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -4415,7 +4415,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -4553,7 +4553,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -4630,7 +4630,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -4748,7 +4748,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -5040,7 +5040,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -5580,7 +5580,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
@@ -5816,7 +5816,7 @@ metadata:
                   x-kubernetes-mapping:
                     nameSelector: .name
                     properties:
-                    - $.status.v20250312.groupId
+                    - $.status.v20250312.id
                     type:
                       group: atlas.generated.mongodb.com
                       kind: Group
@@ -6164,7 +6164,7 @@ spec:
                   groupRef:
                     description: |-
                       A reference to a "Group" resource.
-                      The value of "$.status.v20250312.groupId" will be used to set "groupId".
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
                       Mutually exclusive with the "groupId" property.
                     properties:
                       name:
