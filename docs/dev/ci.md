@@ -147,7 +147,7 @@ Operator images are promoted to official prerelease registries after passing all
 - Merges to `main` that modify production code  
 - Manual dispatch of `tests.yml` with promotion enabled  
 
-The [`promote-image.yml`](../../.github/workflows/promote-image.yml) workflow verifies all tests, including cloud-based Helm tests, have passed. If successful, it:
+The [`promote-image.yml`](../../.github/workflows/promote-image.yml) workflow runs after all tests, including cloud-based Helm tests, have passed. If successful, it:
 
 - Copies the tested image from `ghcr.io` to `docker.io` and `quay.io`
 - Tags the image as `promoted-<commit-sha>` for traceability
