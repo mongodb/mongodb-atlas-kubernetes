@@ -132,7 +132,7 @@ jobs:
           gh workflow run post-atlas-operator-release.yaml \
             --repo mongodb/helm-charts \
             --ref main \
-            --fields version="${{ env.RELEASE_TAG }}"
+            --field version="${{ env.RELEASE_TAG }}"
 
       # Move prerelease images to official release registries in Docker Hub and Quay 
       - name: Move image to Docker registry release from prerelease
