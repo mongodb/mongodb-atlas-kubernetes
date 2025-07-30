@@ -100,7 +100,7 @@ ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
 # Envtest configuration params
 ENVTEST_ASSETS_DIR ?= $(shell pwd)/bin
-ENVTEST_K8S_VERSION ?= 1.31.9
+ENVTEST_K8S_VERSION ?= 1.31.0
 KUBEBUILDER_ASSETS ?= $(ENVTEST_ASSETS_DIR)/k8s/$(ENVTEST_K8S_VERSION)-$(TARGET_OS)-$(TARGET_ARCH)
 
 # Ginkgo configuration
