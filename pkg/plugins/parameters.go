@@ -30,8 +30,8 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mappingConfig *configv1al
 	if mappingConfig.ParametersMapping.Path.Name != "" {
 		var operation *openapi3.Operation
 
-		pathItem, ok := openApiSpec.Paths[mappingConfig.ParametersMapping.Path.Name]
-		if !ok {
+		pathItem := openApiSpec.Paths.Find(mappingConfig.ParametersMapping.Path.Name)
+		if pathItem == nil {
 			return fmt.Errorf("OpenAPI path %q does not exist", mappingConfig.ParametersMapping)
 		}
 

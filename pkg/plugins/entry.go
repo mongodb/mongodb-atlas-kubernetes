@@ -35,7 +35,7 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.
 			return fmt.Errorf("entry schema %q not found in openapi spec", mappingConfig.EntryMapping.Schema)
 		}
 	case mappingConfig.EntryMapping.Path.Name != "":
-		entrySchema = openApiSpec.Paths[mappingConfig.EntryMapping.Path.Name].Operations()[strings.ToUpper(mappingConfig.EntryMapping.Path.Verb)].RequestBody.Value.Content[mappingConfig.EntryMapping.Path.RequestBody.MimeType].Schema
+		entrySchema = openApiSpec.Paths.Find(mappingConfig.EntryMapping.Path.Name).Operations()[strings.ToUpper(mappingConfig.EntryMapping.Path.Verb)].RequestBody.Value.Content[mappingConfig.EntryMapping.Path.RequestBody.MimeType].Schema
 	}
 
 	extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion] = &openapi3.SchemaRef{
