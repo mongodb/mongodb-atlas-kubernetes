@@ -34,6 +34,8 @@ type PrivateEndpointService interface {
 	DeleteEndpointService(ctx context.Context, projectID, provider, ID string) error
 	CreatePrivateEndpointInterface(ctx context.Context, projectID, provider, serviceID, gcpProjectID string, peInterface EndpointInterface) (EndpointInterface, error)
 	DeleteEndpointInterface(ctx context.Context, projectID, provider, serviceID, ID string) error
+	GetRegionalizedPrivateEndpointMode(ctx context.Context, projectID string) (bool, error)
+	ToggleRegionalizedPrivateEndpointMode(ctx context.Context, projectID string, enabled bool) (bool, error)
 }
 
 type PrivateEndpoint struct {
@@ -157,6 +159,26 @@ func (pe *PrivateEndpoint) getEndpointInterfaces(ctx context.Context, projectID,
 	}
 
 	return interfaceFromAtlas(i), nil
+}
+
+func (pe *PrivateEndpoint) GetRegionalizedPrivateEndpointMode(ctx context.Context, projectID string) (bool, error) {
+	setting, _, err := pe.api.GetRegionalEndpointMode(ctx, projectID).Execute()
+	if err != nil {
+		return false, fmt.Errorf("failed to get regionalized private endpoint setting: %w", err)
+	}
+
+	return setting.GetEnabled(), nil
+}
+
+func (pe *PrivateEndpoint) ToggleRegionalizedPrivateEndpointMode(ctx context.Context, projectID string, enabled bool) (bool, error) {
+	setting, _, err := pe.api.ToggleRegionalEndpointMode(ctx, projectID, &admin.ProjectSettingItem{
+		Enabled: enabled,
+	}).Execute()
+	if err != nil {
+		return false, fmt.Errorf("failed to toggle regionalized private endpoint setting: %w", err)
+	}
+
+	return setting.GetEnabled(), nil
 }
 
 func getInterfacesIDs(peService *admin.EndpointService) []string {
