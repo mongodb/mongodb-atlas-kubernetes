@@ -147,7 +147,7 @@ func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
 		delete(schema.Properties, k)
 	}
 
-	if schema.AdditionalProperties != nil && clearPropertiesWithoutExtensions(schema.AdditionalProperties.Value) {
+	if schema.AdditionalProperties.Schema != nil && clearPropertiesWithoutExtensions(schema.AdditionalProperties.Schema.Value) {
 		hasExtensions = true
 	}
 

@@ -40,13 +40,22 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 	}
 
 	propertySchema := schema.Value
+	if propertySchema == nil {
+		return nil
+	}
+
+	typ := ""
+	if propertySchema.Type != nil && len(propertySchema.Type.Slice()) > 0 {
+		typ = (*propertySchema.Type)[0]
+	}
 	example := apiextensions.JSON(propertySchema.Example)
+
 	props := &apiextensions.JSONSchemaProps{
 		//ID:               schemaProps.ID,
 		//Schema:           apiextensions.JSONSchemaURL(string(schemaRef.Ref.)),
 		//Ref:              ref,
 		Description: propertySchema.Description,
-		Type:        propertySchema.Type,
+		Type:        typ,
 		//Format:      schemaProps.Format,
 		Title: propertySchema.Title,
 		//Maximum:          schemaProps.Max,
@@ -71,7 +80,7 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 		AnyOf:                g.convertPropertySlice(propertySchema.AnyOf, propertyConfig, extensionsSchema, depth, path),
 		Not:                  g.ConvertProperty(propertySchema.Not, extensionsSchema, propertyConfig, depth+1, path...),
 		Properties:           g.ConvertPropertyMap(propertySchema.Properties, extensionsSchema, propertyConfig, depth, path...),
-		AdditionalProperties: g.convertPropertyOrBool(propertySchema.AdditionalProperties, extensionsSchema, propertyConfig, depth, path),
+		AdditionalProperties: g.convertPropertyOrBool(propertySchema.AdditionalProperties.Schema, extensionsSchema, propertyConfig, depth, path),
 		Example:              &example,
 	}
 
@@ -98,7 +107,7 @@ func (g *Generator) ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef
 
 func (g *Generator) transformations(props *apiextensions.JSONSchemaProps, schemaRef *openapi3.SchemaRef, mapping *configv1alpha1.PropertyMapping, extensionsSchema *openapi3.SchemaRef, depth int, path []string) *apiextensions.JSONSchemaProps {
 	result := props
-	result = handleAdditionalProperties(result, schemaRef.Value.AdditionalPropertiesAllowed)
+	result = handleAdditionalProperties(result, schemaRef.Value.AdditionalProperties.Has)
 	result = removeUnknownFormats(result)
 	result = g.oneOfRefsTransform(result, schemaRef.Value.OneOf, mapping, extensionsSchema, depth, path)
 	return result
