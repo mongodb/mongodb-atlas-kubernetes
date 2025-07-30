@@ -902,6 +902,16 @@ spec:
                 - GOV_REGIONS_ONLY
                 - COMMERCIAL_FEDRAMP_REGIONS_ONLY
                 type: string
+              regionalizedPrivateEndpoint:
+                description: |-
+                  RegionalizedPrivateEndpoint allows to enable regionalized private endpoints. See more at
+                  https://www.mongodb.com/docs/atlas/security-private-endpoint/
+                properties:
+                  enabled:
+                    description: Flag indicating whether regionalized private endpoint
+                      mode should be enabled.
+                    type: boolean
+                type: object
               settings:
                 description: Settings allow to set Project Settings for the project
                 properties:

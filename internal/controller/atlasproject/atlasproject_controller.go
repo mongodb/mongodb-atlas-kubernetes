@@ -190,6 +190,11 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
+	if result = r.ensureRegionalizedPrivateEndpointMode(workflowCtx, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(api.RegionalizedPrivateEndpointReadyType), "")
+	}
+	results = append(results, result)
+
 	if result = ensureCloudProviderIntegration(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.CloudProviderIntegrationReadyType), "")
 	}

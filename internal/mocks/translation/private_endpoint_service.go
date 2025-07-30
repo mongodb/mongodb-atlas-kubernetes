@@ -306,6 +306,63 @@ func (_c *PrivateEndpointServiceMock_GetPrivateEndpoint_Call) RunAndReturn(run f
 	return _c
 }
 
+// GetRegionalizedPrivateEndpointSetting provides a mock function with given fields: ctx, projectID
+func (_m *PrivateEndpointServiceMock) GetRegionalizedPrivateEndpointSetting(ctx context.Context, projectID string) (bool, error) {
+	ret := _m.Called(ctx, projectID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRegionalizedPrivateEndpointSetting")
+	}
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return rf(ctx, projectID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = rf(ctx, projectID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, projectID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRegionalizedPrivateEndpointSetting'
+type PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call struct {
+	*mock.Call
+}
+
+// GetRegionalizedPrivateEndpointSetting is a helper method to define mock.On call
+//   - ctx context.Context
+//   - projectID string
+func (_e *PrivateEndpointServiceMock_Expecter) GetRegionalizedPrivateEndpointSetting(ctx interface{}, projectID interface{}) *PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call {
+	return &PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call{Call: _e.mock.On("GetRegionalizedPrivateEndpointSetting", ctx, projectID)}
+}
+
+func (_c *PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call) Run(run func(ctx context.Context, projectID string)) *PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call) Return(_a0 bool, _a1 error) *PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call) RunAndReturn(run func(context.Context, string) (bool, error)) *PrivateEndpointServiceMock_GetRegionalizedPrivateEndpointSetting_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListPrivateEndpoints provides a mock function with given fields: ctx, projectID, provider
 func (_m *PrivateEndpointServiceMock) ListPrivateEndpoints(ctx context.Context, projectID string, provider string) ([]privateendpoint.EndpointService, error) {
 	ret := _m.Called(ctx, projectID, provider)
@@ -362,6 +419,64 @@ func (_c *PrivateEndpointServiceMock_ListPrivateEndpoints_Call) Return(_a0 []pri
 }
 
 func (_c *PrivateEndpointServiceMock_ListPrivateEndpoints_Call) RunAndReturn(run func(context.Context, string, string) ([]privateendpoint.EndpointService, error)) *PrivateEndpointServiceMock_ListPrivateEndpoints_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ToggleRegionalizedPrivateEndpointSetting provides a mock function with given fields: ctx, projectID, enabled
+func (_m *PrivateEndpointServiceMock) ToggleRegionalizedPrivateEndpointSetting(ctx context.Context, projectID string, enabled bool) (bool, error) {
+	ret := _m.Called(ctx, projectID, enabled)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ToggleRegionalizedPrivateEndpointSetting")
+	}
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) (bool, error)); ok {
+		return rf(ctx, projectID, enabled)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, bool) bool); ok {
+		r0 = rf(ctx, projectID, enabled)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, bool) error); ok {
+		r1 = rf(ctx, projectID, enabled)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ToggleRegionalizedPrivateEndpointSetting'
+type PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call struct {
+	*mock.Call
+}
+
+// ToggleRegionalizedPrivateEndpointSetting is a helper method to define mock.On call
+//   - ctx context.Context
+//   - projectID string
+//   - enabled bool
+func (_e *PrivateEndpointServiceMock_Expecter) ToggleRegionalizedPrivateEndpointSetting(ctx interface{}, projectID interface{}, enabled interface{}) *PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call {
+	return &PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call{Call: _e.mock.On("ToggleRegionalizedPrivateEndpointSetting", ctx, projectID, enabled)}
+}
+
+func (_c *PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call) Run(run func(ctx context.Context, projectID string, enabled bool)) *PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(bool))
+	})
+	return _c
+}
+
+func (_c *PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call) Return(_a0 bool, _a1 error) *PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call) RunAndReturn(run func(context.Context, string, bool) (bool, error)) *PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointSetting_Call {
 	_c.Call.Return(run)
 	return _c
 }
