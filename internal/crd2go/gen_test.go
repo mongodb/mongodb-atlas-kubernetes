@@ -28,12 +28,11 @@ func TestGenerateFromCRDs(t *testing.T) {
 
 	in, err := samples.Open("samples/crds.yaml")
 	require.NoError(t, err)
-	cfg := crd2go.GenerateConfig{
-		Version:        crd2go.FirstVersion,
-		Skips:          disabledKinds,
-		PreloadedTypes: preloadedTypes(),
+	settings := crd2go.Settings{
+		Version:  crd2go.FirstVersion,
+		SkipList: disabledKinds,
 	}
-	require.NoError(t, crd2go.Generate(BufferForCRD(buffers), in, &cfg))
+	require.NoError(t, crd2go.Generate(BufferForCRD(buffers), in, &settings, preloadedTypes()))
 
 	assert.NotEmpty(t, buffers)
 	assert.Len(t, buffers, expectedSources)
@@ -48,12 +47,11 @@ func TestRefs(t *testing.T) {
 
 	in, err := samples.Open("samples/samplerefs.yaml")
 	require.NoError(t, err)
-	cfg := crd2go.GenerateConfig{
-		Version:        crd2go.FirstVersion,
-		Skips:          disabledKinds,
-		PreloadedTypes: preloadedTypes(),
+	settings := crd2go.Settings{
+		Version:  crd2go.FirstVersion,
+		SkipList: disabledKinds,
 	}
-	_, err = crd2go.GenerateStream(BufferForCRD(buffers), in, &cfg)
+	_, err = crd2go.GenerateStream(BufferForCRD(buffers), in, &settings, preloadedTypes())
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, buffers)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/dave/jennifer/jen"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"gopkg.in/yaml.v3"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
@@ -25,10 +27,36 @@ const (
 	metav1Package = "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type GenerateConfig struct {
-	Version        string
-	Skips          []string
-	PreloadedTypes []*GoType
+type Settings struct {
+	Version  string
+	Reserved []string
+	SkipList []string
+	Renames  map[string]string
+	Imports  map[string]ImportedTypeConfig
+}
+
+type Config struct {
+	Settings
+	Input  string
+	Output string
+}
+
+func LoadConfig(r io.Reader) (*Config, error) {
+	yml, err := io.ReadAll(r)
+	if err != nil {
+		fmt.Errorf("failed to read the file: %w", err)
+	}
+	cfg := Config{}
+	if err = yaml.Unmarshal(yml, &cfg); err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+	return &cfg, nil
+}
+
+type ImportedTypeConfig struct {
+	Name  string
+	Path  string
+	Alias string
 }
 
 // CodeWriterFunc is a function type that takes a CRD and returns a writer for the generated code
@@ -51,20 +79,20 @@ func CodeFileForCRDAtPath(dir string) CodeWriterFunc {
 }
 
 // GenerateToDir generates Go code from a CRD YAML file into a directory
-func GenerateToDir(outputDir, inputFile string, cfg *GenerateConfig) error {
-	in, err := os.Open(inputFile)
+func GenerateToDir(cfg *Config) error {
+	in, err := os.Open(cfg.Input)
 	if err != nil {
-		return fmt.Errorf("failed to open input file %s: %w", inputFile, err)
+		return fmt.Errorf("failed to open input file %s: %w", cfg.Input, err)
 	}
-	return Generate(CodeFileForCRDAtPath(outputDir), in, cfg)
+	return Generate(CodeFileForCRDAtPath(cfg.Output), in, &cfg.Settings, KnownTypes())
 }
 
 // Generate will write files using the CodeWriterFunc
-func Generate(cwFn CodeWriterFunc, r io.Reader, cfg *GenerateConfig) error {
+func Generate(cwFn CodeWriterFunc, r io.Reader, settings *Settings, knownTypes []*GoType) error {
 	groupsVersions := map[string]struct{}{}
 	group := ""
 	version := ""
-	generatedGVRs, err := GenerateStream(cwFn, r, cfg)
+	generatedGVRs, err := GenerateStream(cwFn, r, settings, knownTypes)
 	if err != nil {
 		return fmt.Errorf("failed to generate CRDs: %w", err)
 	}
@@ -150,12 +178,22 @@ func generateSchemeFile(cwFn CodeWriterFunc, group, version string) error {
 // It uses the provided CodeWriterFunc to write the generated code to the specified output.
 // The version parameter specifies the version of the CRD to generate code for.
 // The preloadedTypes parameter allows for preloading specific types to avoid name collisions.
-func GenerateStream(cwFn CodeWriterFunc, r io.Reader, cfg *GenerateConfig) ([]string, error) {
+func GenerateStream(cwFn CodeWriterFunc, r io.Reader, settings *Settings, knownTypes []*GoType) ([]string, error) {
+	if len(settings.Renames) > 0 {
+		panic("renames are not yet supported")
+	}
+	if len(settings.Imports) > 0 {
+		panic("imports are not yet supported")
+	}
+	preloaded := knownTypes
+	for _, name := range settings.Reserved {
+		preloaded = append(preloaded, NewOpaqueType(name))
+	}
 	overwrite := true
 	generatedGVRs := []string{}
 	generated := false
 	scanner := bufio.NewScanner(r)
-	td := NewTypeDict(cfg.PreloadedTypes...)
+	td := NewTypeDict(preloaded...)
 	for {
 		crd, err := ParseCRD(scanner)
 		if errors.Is(err, io.EOF) {
@@ -167,7 +205,7 @@ func GenerateStream(cwFn CodeWriterFunc, r io.Reader, cfg *GenerateConfig) ([]st
 		if err != nil {
 			return nil, fmt.Errorf("failed to read input: %w", err)
 		}
-		if in(cfg.Skips, crd.Spec.Names.Kind) {
+		if in(settings.SkipList, crd.Spec.Names.Kind) {
 			continue
 		}
 		w, err := cwFn(crd2Filename(crd), overwrite)
@@ -175,12 +213,12 @@ func GenerateStream(cwFn CodeWriterFunc, r io.Reader, cfg *GenerateConfig) ([]st
 			return nil, fmt.Errorf("failed to get writer for CRD %s: %w", crd.Name, err)
 		}
 		defer w.Close()
-		crdVersion := selectVersion(&crd.Spec, cfg.Version)
+		crdVersion := selectVersion(&crd.Spec, settings.Version)
 		if crdVersion == nil {
-			if cfg.Version == "" {
+			if settings.Version == "" {
 				return nil, fmt.Errorf("no versions to generate code from")
 			}
-			return nil, fmt.Errorf("no version %q to generate code from", cfg.Version)
+			return nil, fmt.Errorf("no version %q to generate code from", settings.Version)
 		}
 		stmt, err := generateCRD(td, crd, crdVersion)
 		if err != nil {
