@@ -29,6 +29,12 @@ ALIAS_ENABLED="${ALIAS_ENABLED:-false}"
 image_src_url="${IMAGE_SRC_REPO}:${IMAGE_SRC_TAG}"
 image_dest_url="${IMAGE_DEST_REPO}:${IMAGE_DEST_TAG}"
 
+echo "Checking if ${image_dest_url} already exists remotely..."
+if docker manifest inspect "${image_dest_url}" > /dev/null 2>&1; then
+  echo "Image ${image_dest_url} already exists. Skipping transfer."
+  exit 0
+fi
+
 echo "Transferring multi-arch image:"
 echo "  From: ${image_src_url}"
 echo "  To:   ${image_dest_url}"
