@@ -27,36 +27,37 @@ const (
 	metav1Package = "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Settings struct {
-	Version  string
-	Reserved []string
-	SkipList []string
-	Renames  map[string]string
-	Imports  map[string]ImportedTypeConfig
+type CoreConfig struct {
+	Version  string                        `yaml:"version"`
+	Reserved []string                      `yaml:"reserved"`
+	SkipList []string                      `yaml:"skipList"`
+	Renames  map[string]string             `yaml:"renames"`
+	Imports  map[string]ImportedTypeConfig `yaml:"imports"`
 }
 
 type Config struct {
-	Settings
-	Input  string
-	Output string
-}
+	CoreConfig `yaml:",inline"`
 
-func LoadConfig(r io.Reader) (*Config, error) {
-	yml, err := io.ReadAll(r)
-	if err != nil {
-		fmt.Errorf("failed to read the file: %w", err)
-	}
-	cfg := Config{}
-	if err = yaml.Unmarshal(yml, &cfg); err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
-	return &cfg, nil
+	Input  string `yaml:"input"`
+	Output string `yaml:"output"`
 }
 
 type ImportedTypeConfig struct {
 	Name  string
 	Path  string
 	Alias string
+}
+
+func LoadConfig(r io.Reader) (*Config, error) {
+	yml, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the file: %w", err)
+	}
+	cfg := Config{}
+	if err = yaml.Unmarshal(yml, &cfg); err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+	return &cfg, nil
 }
 
 // CodeWriterFunc is a function type that takes a CRD and returns a writer for the generated code
@@ -84,15 +85,26 @@ func GenerateToDir(cfg *Config) error {
 	if err != nil {
 		return fmt.Errorf("failed to open input file %s: %w", cfg.Input, err)
 	}
-	return Generate(CodeFileForCRDAtPath(cfg.Output), in, &cfg.Settings, KnownTypes())
+	req := Request{
+		CoreConfig:   cfg.CoreConfig,
+		CodeWriterFn: CodeFileForCRDAtPath(cfg.Output),
+		TypeDict:     NewTypeDict(cfg.Renames, KnownTypes()...),
+	}
+	return Generate(&req, in)
+}
+
+type Request struct {
+	CoreConfig
+	CodeWriterFn CodeWriterFunc
+	TypeDict     TypeDict
 }
 
 // Generate will write files using the CodeWriterFunc
-func Generate(cwFn CodeWriterFunc, r io.Reader, settings *Settings, knownTypes []*GoType) error {
+func Generate(req *Request, r io.Reader) error {
 	groupsVersions := map[string]struct{}{}
 	group := ""
 	version := ""
-	generatedGVRs, err := GenerateStream(cwFn, r, settings, knownTypes)
+	generatedGVRs, err := GenerateStream(req, r)
 	if err != nil {
 		return fmt.Errorf("failed to generate CRDs: %w", err)
 	}
@@ -106,31 +118,88 @@ func Generate(cwFn CodeWriterFunc, r io.Reader, settings *Settings, knownTypes [
 		}
 	}
 	if len(groupsVersions) == 1 {
-		if err := generateGroupVersionFiles(cwFn, group, version); err != nil {
+		if err := generateGroupVersionFiles(req, group, version); err != nil {
 			return fmt.Errorf("failed to generate files for group version '%s/%s': %w", group, version, err)
 		}
 	}
 	return nil
 }
 
-func generateGroupVersionFiles(cwFn CodeWriterFunc, group, version string) error {
-	if err := generateDocFile(cwFn, group, version); err != nil && !errors.Is(err, os.ErrExist) {
+// GenerateStream generates Go code from a stream of CRDs within a YAML reader.
+// It uses the provided CodeWriterFunc to write the generated code to the specified output.
+// The version parameter specifies the version of the CRD to generate code for.
+// The preloadedTypes parameter allows for preloading specific types to avoid name collisions.
+func GenerateStream(req *Request, r io.Reader) ([]string, error) {
+	if len(req.Imports) > 0 {
+		panic("imports are not yet supported")
+	}
+	preloaded := []*GoType{}
+	for _, name := range req.Reserved {
+		preloaded = append(preloaded, NewOpaqueType(name))
+	}
+	overwrite := true
+	generatedGVRs := []string{}
+	generated := false
+	scanner := bufio.NewScanner(r)
+	req.TypeDict.AddAll(preloaded...)
+	for {
+		crd, err := ParseCRD(scanner)
+		if errors.Is(err, io.EOF) {
+			if generated {
+				return generatedGVRs, nil
+			}
+			return nil, fmt.Errorf("failed to parse CRD: %w", err)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to read input: %w", err)
+		}
+		if in(req.SkipList, crd.Spec.Names.Kind) {
+			continue
+		}
+		w, err := req.CodeWriterFn(crd2Filename(crd), overwrite)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get writer for CRD %s: %w", crd.Name, err)
+		}
+		defer w.Close()
+		crdVersion := selectVersion(&crd.Spec, req.Version)
+		if crdVersion == nil {
+			if req.Version == "" {
+				return nil, fmt.Errorf("no versions to generate code from")
+			}
+			return nil, fmt.Errorf("no version %q to generate code from", req.Version)
+		}
+		stmt, err := generateCRD(req.TypeDict, crd, crdVersion)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate CRD code: %w", err)
+		}
+		if _, err := w.Write(([]byte)(stmt.GoString())); err != nil {
+			return nil, fmt.Errorf("failed to write Go code: %w", err)
+		}
+		generated = true
+		gvr := fmt.Sprintf("%s/%s/%s", crd.Spec.Group, crdVersion.Name, crd.Spec.Names.Plural)
+		gvr = strings.TrimPrefix(gvr, "/")
+		generatedGVRs = append(generatedGVRs, gvr)
+	}
+}
+
+func generateGroupVersionFiles(req *Request, group, version string) error {
+	if err := generateDocFile(req, group, version); err != nil && !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("failed to generate doc.go file: %w", err)
 	}
-	if err := generateSchemeFile(cwFn, group, version); err != nil && !errors.Is(err, os.ErrExist) {
+	if err := generateSchemeFile(req, group, version); err != nil && !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("failed to generate schema.go file: %w", err)
 	}
 	return nil
 }
 
-func generateDocFile(cwFn CodeWriterFunc, group, version string) error {
+func generateDocFile(req *Request, group, version string) error {
 	f := jen.NewFile(version)
 	f.HeaderComment("Code generated by crd2go. DO NOT EDIT.")
 	f.HeaderComment("+k8s:deepcopy-gen=package")
 	f.HeaderComment(fmt.Sprintf("+groupName=%s", group))
 	f.Add(jen.Commentf("controller-gen object paths=..."))
 	overwrite := false
-	wc, err := cwFn("doc.go", overwrite)
+	wc, err := req.CodeWriterFn("doc.go", overwrite)
 	if err != nil {
 		return fmt.Errorf("failed to prepare doc.go for writting: %w", err)
 	}
@@ -140,7 +209,7 @@ func generateDocFile(cwFn CodeWriterFunc, group, version string) error {
 	return nil
 }
 
-func generateSchemeFile(cwFn CodeWriterFunc, group, version string) error {
+func generateSchemeFile(req *Request, group, version string) error {
 	f := jen.NewFile(version)
 	f.HeaderComment("Code generated by crd2go. DO NOT EDIT.")
 	f.Var().Defs(
@@ -164,7 +233,7 @@ func generateSchemeFile(cwFn CodeWriterFunc, group, version string) error {
 	)
 
 	overwrite := true
-	wc, err := cwFn("scheme.go", overwrite)
+	wc, err := req.CodeWriterFn("scheme.go", overwrite)
 	if err != nil {
 		return fmt.Errorf("failed to prepare scheme.go for writting: %w", err)
 	}
@@ -172,66 +241,6 @@ func generateSchemeFile(cwFn CodeWriterFunc, group, version string) error {
 		return fmt.Errorf("failed to write Go code to scheme.go: %w", err)
 	}
 	return nil
-}
-
-// GenerateStream generates Go code from a stream of CRDs within a YAML reader.
-// It uses the provided CodeWriterFunc to write the generated code to the specified output.
-// The version parameter specifies the version of the CRD to generate code for.
-// The preloadedTypes parameter allows for preloading specific types to avoid name collisions.
-func GenerateStream(cwFn CodeWriterFunc, r io.Reader, settings *Settings, knownTypes []*GoType) ([]string, error) {
-	if len(settings.Renames) > 0 {
-		panic("renames are not yet supported")
-	}
-	if len(settings.Imports) > 0 {
-		panic("imports are not yet supported")
-	}
-	preloaded := knownTypes
-	for _, name := range settings.Reserved {
-		preloaded = append(preloaded, NewOpaqueType(name))
-	}
-	overwrite := true
-	generatedGVRs := []string{}
-	generated := false
-	scanner := bufio.NewScanner(r)
-	td := NewTypeDict(preloaded...)
-	for {
-		crd, err := ParseCRD(scanner)
-		if errors.Is(err, io.EOF) {
-			if generated {
-				return generatedGVRs, nil
-			}
-			return nil, fmt.Errorf("failed to parse CRD: %w", err)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to read input: %w", err)
-		}
-		if in(settings.SkipList, crd.Spec.Names.Kind) {
-			continue
-		}
-		w, err := cwFn(crd2Filename(crd), overwrite)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get writer for CRD %s: %w", crd.Name, err)
-		}
-		defer w.Close()
-		crdVersion := selectVersion(&crd.Spec, settings.Version)
-		if crdVersion == nil {
-			if settings.Version == "" {
-				return nil, fmt.Errorf("no versions to generate code from")
-			}
-			return nil, fmt.Errorf("no version %q to generate code from", settings.Version)
-		}
-		stmt, err := generateCRD(td, crd, crdVersion)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate CRD code: %w", err)
-		}
-		if _, err := w.Write(([]byte)(stmt.GoString())); err != nil {
-			return nil, fmt.Errorf("failed to write Go code: %w", err)
-		}
-		generated = true
-		gvr := fmt.Sprintf("%s/%s/%s", crd.Spec.Group, crdVersion.Name, crd.Spec.Names.Plural)
-		gvr = strings.TrimPrefix(gvr, "/")
-		generatedGVRs = append(generatedGVRs, gvr)
-	}
 }
 
 // generateCRD generates Go code for a CustomResourceDefinition (CRD) using the provided TypeDict and version

@@ -1,4 +1,5 @@
 input: ./internal/crd2go/samples/crds.yaml
 output: ./internal/crd2go/samples/v1
-skipList: {}
-reserved: {}
+skipList: []
+reserved: []
+renames: {}

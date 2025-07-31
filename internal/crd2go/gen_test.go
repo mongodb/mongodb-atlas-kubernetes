@@ -28,11 +28,15 @@ func TestGenerateFromCRDs(t *testing.T) {
 
 	in, err := samples.Open("samples/crds.yaml")
 	require.NoError(t, err)
-	settings := crd2go.Settings{
-		Version:  crd2go.FirstVersion,
-		SkipList: disabledKinds,
+	req := crd2go.Request{
+		CodeWriterFn: BufferForCRD(buffers),
+		TypeDict: crd2go.NewTypeDict(nil, preloadedTypes()...),
+		CoreConfig: crd2go.CoreConfig{
+			Version:  crd2go.FirstVersion,
+			SkipList: disabledKinds,
+		},
 	}
-	require.NoError(t, crd2go.Generate(BufferForCRD(buffers), in, &settings, preloadedTypes()))
+	require.NoError(t, crd2go.Generate(&req, in))
 
 	assert.NotEmpty(t, buffers)
 	assert.Len(t, buffers, expectedSources)
@@ -47,11 +51,15 @@ func TestRefs(t *testing.T) {
 
 	in, err := samples.Open("samples/samplerefs.yaml")
 	require.NoError(t, err)
-	settings := crd2go.Settings{
-		Version:  crd2go.FirstVersion,
-		SkipList: disabledKinds,
+	req := crd2go.Request{
+		CodeWriterFn: BufferForCRD(buffers),
+		TypeDict: crd2go.NewTypeDict(nil, preloadedTypes()...),
+		CoreConfig: crd2go.CoreConfig{
+			Version:  crd2go.FirstVersion,
+			SkipList: disabledKinds,
+		},
 	}
-	_, err = crd2go.GenerateStream(BufferForCRD(buffers), in, &settings, preloadedTypes())
+	_, err = crd2go.GenerateStream(&req, in)
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, buffers)

@@ -130,7 +130,7 @@ func TestRenameType(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			td := crd2go.NewTypeDict(tc.preloaded...)
+			td := crd2go.NewTypeDict(nil, tc.preloaded...)
 			err := tc.input.RenameType(td, tc.parents)
 			require.NoError(t, err)
 			goType := tc.input.GoType
@@ -146,7 +146,7 @@ func TestRenameType(t *testing.T) {
 }
 
 func TestBuildOpenAPIType(t *testing.T) {
-	td := crd2go.NewTypeDict(CrossReference(), LocalReference())
+	td := crd2go.NewTypeDict(nil, CrossReference(), LocalReference())
 
 	schema := &apiextensions.JSONSchemaProps{
 		Type: "object",
@@ -232,7 +232,7 @@ func TestBuildOpenAPIType(t *testing.T) {
 }
 
 func TestBuiltInFormat2Type(t *testing.T) {
-	td := crd2go.NewTypeDict(crd2go.KnownTypes()...)
+	td := crd2go.NewTypeDict(nil, crd2go.KnownTypes()...)
 	timeSchema := &apiextensionsv1.JSONSchemaProps{
 		Type:   "string",
 		Format: "date-time",
@@ -251,7 +251,7 @@ func TestBuiltInFormat2Type(t *testing.T) {
 }
 
 func TestConditionsKnownTypeMatch(t *testing.T) {
-	td := crd2go.NewTypeDict(crd2go.KnownTypes()...)
+	td := crd2go.NewTypeDict(nil, crd2go.KnownTypes()...)
 	input := &crd2go.GoType{
 		Name: "Cond",
 		Kind: "struct",
