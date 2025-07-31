@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version"
+        description: "Release version (without v prefix)"
         required: true
         type: string
       authors:
@@ -20,7 +20,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
-     
+
 jobs:
   # Image2commit: Creates a mapping between the image_sha given as input and the actual git commit
   # This is necessary for the release-image step that requires checking out that exact git commit
@@ -61,24 +61,24 @@ jobs:
           echo "Resolved commit: ${{ needs.image2commit.outputs.commit_sha }}"
 
   # Release-image: Created and uploads a release for the specified operator version given in the image_sha
-  # Note, with new releases, all of the release artifacts will be stored withing docs/releases/{release_version}
+  # Note, with new releases, all the release artifacts will be stored within docs/releases/{version}
   release-image:
     runs-on: ubuntu-latest
     environment: release
     needs: image2commit
     env:
       VERSION: ${{ github.event.inputs.version }}
+      RELEASE_TAG: v${{ github.event.inputs.version }}
       AUTHORS: ${{ github.event.inputs.authors }}
       IMAGE_SHA: ${{ github.event.inputs.image_sha }}
       DOCKER_SIGNATURE_REPO: docker.io/mongodb/signatures
-      DOCKER_RELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator
+      DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
       DOCKER_PRERELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       QUAY_RELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator
       QUAY_PRERELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       PROMOTED_TAG: promoted-${{ github.event.inputs.image_sha }}
-      RELEASE_TAG: ${{ github.event.inputs.version }}
-      CERTIFIED_TAG: certified-${{ github.event.inputs.version }}
-      DOCKER_IMAGE_URL: docker.io/mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
+      CERTIFIED_TAG: ${{ github.event.inputs.version }}-certified
+      DOCKER_IMAGE_URL: mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
       QUAY_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
       QUAY_CERTIFIED_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:certified-${{ github.event.inputs.version }}
     steps:
@@ -132,16 +132,16 @@ jobs:
           gh workflow run post-atlas-operator-release.yaml \
             --repo mongodb/helm-charts \
             --ref main \
-            --field version="${{ env.RELEASE_TAG }}"
+            --field version="${{ env.VERSION }}"
 
-      # Move prerelease images to official release registries in Docker Hub and Quay 
+      # Move prerelease images to official release registries in Docker Hub and Quay
       - name: Move image to Docker registry release from prerelease
         run: devbox run -- ./scripts/move-image.sh
         env:
           IMAGE_SRC_REPO: ${{ env.DOCKER_PRERELEASE_REPO }}
           IMAGE_DEST_REPO: ${{ env.DOCKER_RELEASE_REPO }}
           IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
-          IMAGE_DEST_TAG: ${{ env.RELEASE_TAG }}
+          IMAGE_DEST_TAG: ${{ env.VERSION }}
 
       - name: Move image to Quay registry release from prerelease
         run: devbox run -- ./scripts/move-image.sh
@@ -149,9 +149,9 @@ jobs:
           IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
           IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
           IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
-          IMAGE_DEST_TAG: ${{ env.RELEASE_TAG }}
+          IMAGE_DEST_TAG: ${{ env.VERSION }}
 
-      # Create Openshift certified images 
+      # Create Openshift certified images
       - name: Create OpenShift certified image on Quay
         run: devbox run -- ./scripts/move-image.sh
         env:
@@ -176,6 +176,7 @@ jobs:
         uses: ./.github/actions/gen-install-scripts
         with:
           ENV: prod
+          VERSION: ${{ env.VERSION }}
           IMAGE_URL: ${{ env.DOCKER_IMAGE_URL }}
 
       - name: Bump Helm chart version
@@ -199,16 +200,16 @@ jobs:
         run: devbox run -- make generate-sboms RELEASED_OPERATOR_IMAGE="${{ env.DOCKER_RELEASE_REPO }}"
 
       - name: Create SDLC report
-        run: devbox run -- make gen-sdlc-checklist 
+        run: devbox run -- make gen-sdlc-checklist
 
       # Create PR on release branch with all updates generated
       - name: Create release pr with all updated artefacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          export BRANCH="new-release/${VERSION}"
-          export COMMIT_MESSAGE="feat: release ${VERSION}"
-          export RELEASE_DIR="releases/${VERSION}"
+          export BRANCH="new-release/${RELEASE_TAG}"
+          export COMMIT_MESSAGE="feat: release ${RELEASE_TAG}"
+          export RELEASE_DIR="releases/${RELEASE_TAG}"
 
           git config --global user.name "release-bot[bot]"
           git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
@@ -237,21 +238,21 @@ jobs:
       - name: Create configuration package
         run: |
           set -x
-          tar czvf atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz -C releases/${{ env.VERSION }}/deploy all-in-one.yaml
+          tar czvf atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz -C releases/${{ env.RELEASE_TAG }}/deploy all-in-one.yaml
 
       - name: Tag the release assets
         run: |
           git fetch --tags
-          git tag -f ${{ env.VERSION }} ${{ needs.image2commit.outputs.commit_sha }}
-          git push -f origin ${{ env.VERSION }}
+          git tag -f ${{ env.RELEASE_TAG }} ${{ needs.image2commit.outputs.commit_sha }}
+          git push -f origin ${{ env.RELEASE_TAG }}
 
       - name: Create release on GitHub
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           prerelease: false
-          tag_name: "${{ env.VERSION }}"
-          name: "${{ env.VERSION }}"
+          tag_name: "${{ env.RELEASE_TAG }}"
+          name: "${{ env.RELEASE_TAG }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           body_path: docs/release-notes/release-notes-template.md
           files: |
