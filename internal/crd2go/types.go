@@ -158,6 +158,7 @@ func RenameType(td TypeDict, parentNames []string, gt *GoType) error {
 	if goType.isPrimitive() {
 		return nil
 	}
+	goType.Name = td.Rename(goType.Name)
 	if td.Has(goType) {
 		existingType := td.bySignature[goType.signature()]
 		if existingType == nil {
@@ -235,66 +236,6 @@ func setAlias(gt *GoType, alias string) *GoType {
 		gt.Import.Alias = alias
 	}
 	return gt
-}
-
-// TypeDict is a dictionary of Go types, used to track and ensure unique type names.
-// It also keeps track of generated types to avoid re-genrating the same type again.
-type TypeDict struct {
-	bySignature map[string]*GoType
-	byName      map[string]*GoType
-	generated   map[string]bool
-}
-
-// NewTypeDict creates a new TypeDict with the given Go types
-func NewTypeDict(goTypes ...*GoType) TypeDict {
-	td := TypeDict{
-		bySignature: make(map[string]*GoType),
-		byName:      make(map[string]*GoType),
-		generated:   make(map[string]bool),
-	}
-	for _, gt := range goTypes {
-		td.Add(gt)
-	}
-	return td
-}
-
-// Has checks if the TypeDict contains a GoType with the same signature
-func (td TypeDict) Has(gt *GoType) bool {
-	signature := gt.signature()
-	_, ok := td.bySignature[signature]
-	return ok
-}
-
-// Get retrieves a GoType by its name from the TypeDict
-func (td TypeDict) Get(name string) (*GoType, bool) {
-	gt, ok := td.byName[name]
-	return gt, ok
-}
-
-// Add adds a GoType to the TypeDict, ensuring that the type name is unique
-func (td TypeDict) Add(gt *GoType) {
-	titledName := title(gt.Name)
-	if gt.Name != titledName {
-		panic(fmt.Sprintf("type name %s is not titled", gt.Name))
-	}
-	td.bySignature[gt.signature()] = gt
-	td.byName[gt.Name] = gt
-}
-
-// MarkGenerated marks a GoType as generated
-func (td TypeDict) MarkGenerated(gt *GoType) {
-	if !td.Has(gt) {
-		td.Add(gt)
-	}
-	td.generated[gt.Name] = true
-}
-
-// WasGenerated checks if a GoType was marked as generated
-func (td TypeDict) WasGenerated(gt *GoType) bool {
-	if td.Has(gt) {
-		return td.generated[gt.Name]
-	}
-	return false
 }
 
 // orderFieldsByName sorts the fields of a GoType by name
