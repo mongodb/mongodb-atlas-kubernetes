@@ -3,7 +3,6 @@ package crd2go_test
 import (
 	"bytes"
 	"embed"
-	"fmt"
 	"io"
 	"path/filepath"
 	"testing"
@@ -11,23 +10,20 @@ import (
 	"github.com/josvazg/crd2go/internal/crd2go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 //go:embed samples/*
 var samples embed.FS
 
 const (
-	expectedSources = 17
+	expectedSources = 19
 )
 
 var disabledKinds = []string{} // use ito skip problematic CRD kinds temporarily
 
 var extraReserved = []string{} // use to fix problematic name picks, usually due to skips
 
-func TestGenerateFromCRDStream(t *testing.T) {
+func TestGenerateFromCRDs(t *testing.T) {
 	buffers := make(map[string]*bytes.Buffer)
 
 	in, err := samples.Open("samples/crds.yaml")
@@ -37,7 +33,7 @@ func TestGenerateFromCRDStream(t *testing.T) {
 		Skips:          disabledKinds,
 		PreloadedTypes: preloadedTypes(),
 	}
-	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, &cfg))
+	require.NoError(t, crd2go.Generate(BufferForCRD(buffers), in, &cfg))
 
 	assert.NotEmpty(t, buffers)
 	assert.Len(t, buffers, expectedSources)
@@ -57,7 +53,8 @@ func TestRefs(t *testing.T) {
 		Skips:          disabledKinds,
 		PreloadedTypes: preloadedTypes(),
 	}
-	require.NoError(t, crd2go.GenerateStream(BufferForCRD(buffers), in, &cfg))
+	_, err = crd2go.GenerateStream(BufferForCRD(buffers), in, &cfg)
+	require.NoError(t, err)
 
 	assert.NotEmpty(t, buffers)
 	assert.Len(t, buffers, 1)
@@ -80,17 +77,10 @@ func readTestFile(t *testing.T, path string) string {
 }
 
 func BufferForCRD(buffers map[string]*bytes.Buffer) crd2go.CodeWriterFunc {
-	return func(crd *apiextensions.CustomResourceDefinition) (io.WriteCloser, error) {
-		crdName := lowercase(crd.Spec.Names.Kind)
-		key := fmt.Sprintf("%s.go", crdName)
-		buffers[key] = bytes.NewBufferString("")
-		return newWriteNopCloser(buffers[key]), nil
+	return func(filename string, overwrite bool) (io.WriteCloser, error) {
+		buffers[filename] = bytes.NewBufferString("")
+		return newWriteNopCloser(buffers[filename]), nil
 	}
-}
-
-// lowercase converts a string to lowercase using Go cases library
-func lowercase(s string) string {
-	return cases.Lower(language.English).String(s)
 }
 
 // WriteNopCloser wraps an io.Writer and adds a no-op Close method.
