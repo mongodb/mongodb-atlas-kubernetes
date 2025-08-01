@@ -96,7 +96,6 @@ During promotion, the operator image used in Helm-based E2E tests is first built
 
 This workflow:
 
-- Verifies that all required tests succeeded
 - Moves the image from `ghcr.io` to official prerelease registries in `docker.io` and `quay.io`
 - Tags the image in the official prerelease registires as:
   - `promoted-<git_sha>` — uniquely maps the image to the source Git commit
@@ -104,7 +103,7 @@ This workflow:
 
 The `promoted-<git_sha>` builds the one-to-one correspondence between the 7-character Git commit and the `image_sha`. For the correspondence between the 7-character Git commit and `image_sha: latest`, we internally store a label within the image `promoted-latest` that has the exact git commit used for that image. Moreover, the `promoted-latest` tag is only updated by events that run on the main branch—whether triggered by a schedule, a merge, or a workflow dispatch. Manual promotions on any other branch will never overwrite this tag.
 
-One can find promoted images by checking the [`promote-image.yml`](../../.github/workflows/promote-image.yml) workflow runs in GitHub Actions, or by browsing the prerelease Docker registries at:
+One can find promoted images by browsing the prerelease Docker registries at:
 
 - Docker Hub: `mongodb/mongodb-atlas-kubernetes-prerelease`
 - Quay.io: `mongodb/mongodb-atlas-kubernetes-prerelease`
