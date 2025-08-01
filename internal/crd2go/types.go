@@ -25,6 +25,7 @@ const (
 	BoolKind        = "bool"
 	MapKind         = "map"
 	OpaqueKind      = "opaque"
+	AutoImportKind  = "autoImport"
 )
 
 const (
@@ -55,8 +56,8 @@ type ImportInfo struct {
 }
 
 // isPrimitive checks if the GoType is a primitive type
-func (g *GoType) isPrimitive() bool {
-	switch g.Kind {
+func (gt *GoType) isPrimitive() bool {
+	switch gt.Kind {
 	case StringKind, IntKind, FloatKind, BoolKind:
 		return true
 	default:
@@ -95,14 +96,22 @@ func (gt *GoType) signature() string {
 // baseType returns the base type of the GoType.
 // If a type is an array, it returns the element type,
 // traversing until a non-array type is found.
-func (g *GoType) baseType() *GoType {
-	if g == nil {
+func (gt *GoType) baseType() *GoType {
+	if gt == nil {
 		return nil
 	}
-	if g.Kind == ArrayKind || g.Kind == MapKind {
-		return g.Element.baseType()
+	if gt.Kind == ArrayKind || gt.Kind == MapKind {
+		return gt.Element.baseType()
 	}
-	return g
+	return gt
+}
+
+// cloneStructure copies the structure of another type,
+// but leaved the name and import info intact
+func (gt *GoType) cloneStructure(ot *GoType) {
+	gt.Kind = ot.Kind
+	gt.Fields = ot.Fields
+	gt.Element = ot.Element
 }
 
 // GoField is a field in a Go struct
@@ -140,51 +149,13 @@ func (g *GoField) signature() string {
 // RenameType renames the GoType of the field to ensure it is unique within the
 // TypeDict. It uses the parent names as needed to create a unique name for the
 // type, if the type is not a primitive and its name is already taken.
-func (f *GoField) RenameType(td TypeDict, parentNames []string) error {
+func (f *GoField) RenameType(td *TypeDict, parentNames []string) error {
 	if f.GoType == nil {
 		return fmt.Errorf("failed to rename type for field %s: GoType is nil", f.Name)
 	}
-	if err := RenameType(td, parentNames, f.GoType); err != nil {
+	if err := td.RenameType(parentNames, f.GoType); err != nil {
 		return fmt.Errorf("failed to rename field type: %w", err)
 	}
-	return nil
-}
-
-// RenameType renames the given GoType to ensure it is unique within the
-// TypeDict. It uses the parent names as needed to create a unique name for the
-// type, if the type is not a primitive and its name is already taken.
-func RenameType(td TypeDict, parentNames []string, gt *GoType) error {
-	goType := gt.baseType()
-	if goType.isPrimitive() {
-		return nil
-	}
-	goType.Name = td.Rename(goType.Name)
-	if td.Has(goType) {
-		existingType := td.bySignature[goType.signature()]
-		if existingType == nil {
-			return fmt.Errorf("failed to find existing type for %v", gt)
-		}
-		goType.Name = existingType.Name
-		goType.Import = existingType.Import
-		return nil
-	}
-
-	typeName := goType.Name
-	for i := len(parentNames) - 1; i >= 0; i-- {
-		_, used := td.Get(typeName)
-		if !used {
-			break
-		}
-		typeName = fmt.Sprintf("%s%s", title(parentNames[i]), typeName)
-	}
-
-	_, used := td.Get(typeName)
-	if used {
-		return fmt.Errorf("failed to find a free type name for type %v", gt)
-	}
-	goType.Name = typeName
-	td.Add(goType)
-
 	return nil
 }
 
@@ -222,6 +193,15 @@ func NewOpaqueType(name string) *GoType {
 	}
 }
 
+// NewAutoImportType creates a new GoType representing an opaque type with hidden internals
+func NewAutoImportType(importType *ImportedTypeConfig) *GoType {
+	return &GoType{
+		Name:   title(importType.Name),
+		Kind:   AutoImportKind,
+		Import: &importType.ImportInfo,
+	}
+}
+
 func AddImportInfo(gt *GoType, alias, packagePath string) *GoType {
 	effectiveAlias := alias
 	if effectiveAlias == "" {
@@ -247,7 +227,7 @@ func orderFieldsByName(fields []*GoField) []*GoField {
 }
 
 // FromOpenAPIType converts an OpenAPI schema to a GoType
-func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
+func FromOpenAPIType(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
 	switch schema.Type {
 	case OpenAPIObject:
 		return fromOpenAPIStruct(td, typeName, parents, schema)
@@ -261,7 +241,7 @@ func FromOpenAPIType(td TypeDict, typeName string, parents []string, schema *api
 }
 
 // fromOpenAPIStruct converts an OpenAPI object schema to a GoType struct
-func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
+func fromOpenAPIStruct(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
 	if isUnstructured(schema) {
 		return jsonType, nil
 	}
@@ -288,7 +268,7 @@ func fromOpenAPIStruct(td TypeDict, typeName string, parents []string, schema *a
 }
 
 // fromOpenAPIArray converts an OpenAPI array schema to a GoType array
-func fromOpenAPIArray(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
+func fromOpenAPIArray(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
 	if schema.Items == nil {
 		return nil, fmt.Errorf("array %s has no items", typeName)
 	}
@@ -299,7 +279,7 @@ func fromOpenAPIArray(td TypeDict, typeName string, parents []string, schema *ap
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse array %s element type: %w", typeName, err)
 	}
-	if err := RenameType(td, parents, elementType); err != nil {
+	if err := td.RenameType(parents, elementType); err != nil {
 		return nil, fmt.Errorf("failed to rename element type under %s: %w", typeName, err)
 	}
 	return NewArray(elementType), nil
@@ -348,7 +328,7 @@ func fromOpenAPIPrimitive(kind string) (*GoType, error) {
 	return NewPrimitive(goTypeName, goTypeName), nil
 }
 
-func fromOpenAPIDict(td TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
+func fromOpenAPIDict(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
 	elemType := jsonType
 	if schema.AdditionalProperties.Schema != nil {
 		var err error
