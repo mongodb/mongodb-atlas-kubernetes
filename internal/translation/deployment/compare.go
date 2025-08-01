@@ -48,6 +48,7 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 			VersionReleaseSystem:         desired.VersionReleaseSystem,
 			BackupEnabled:                desired.BackupEnabled,
 			EncryptionAtRestProvider:     desired.EncryptionAtRestProvider,
+			ConfigServerManagementMode:   desired.ConfigServerManagementMode,
 			BiConnector:                  desired.BiConnector,
 			PitEnabled:                   desired.PitEnabled,
 			RootCertType:                 desired.RootCertType,
@@ -142,6 +143,10 @@ func specAreEqual(desired, current *Cluster) bool {
 	}
 
 	if desired.EncryptionAtRestProvider != "" && !areEqual(&desired.EncryptionAtRestProvider, &current.EncryptionAtRestProvider) {
+		return false
+	}
+
+	if desired.ConfigServerManagementMode != "" && !areEqual(&desired.ConfigServerManagementMode, &current.ConfigServerManagementMode) {
 		return false
 	}
 

@@ -150,6 +150,7 @@ func TestNewDeployment(t *testing.T) {
 							},
 						},
 						TerminationProtectionEnabled: true,
+						ConfigServerManagementMode:   "ATLAS_MANAGED",
 						Labels: []common.LabelSpec{
 							{
 								Key:   "name",
@@ -213,6 +214,7 @@ func TestNewDeployment(t *testing.T) {
 						},
 					},
 					TerminationProtectionEnabled: true,
+					ConfigServerManagementMode:   "ATLAS_MANAGED",
 					Labels: []common.LabelSpec{
 						{
 							Key:   "name",
@@ -268,6 +270,7 @@ func TestNewDeployment(t *testing.T) {
 								},
 							},
 							TerminationProtectionEnabled: true,
+							ConfigServerManagementMode:   "ATLAS_MANAGED",
 							Labels: []common.LabelSpec{
 								{
 									Key:   "name",
