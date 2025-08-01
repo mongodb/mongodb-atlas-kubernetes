@@ -22,6 +22,25 @@ const (
 	OpenAPIBoolean = "boolean"
 )
 
+type CRD2GoHook interface {
+	Name() string
+	FromOpenAPIType(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, error)
+}
+
+var hooks = []CRD2GoHook {
+	&SampleEmptyHook{},
+}
+
+type SampleEmptyHook struct {}
+
+func (s *SampleEmptyHook) Name() string {
+	return "SampleEmptyHook"
+}
+
+func (s *SampleEmptyHook) FromOpenAPIType(td *gotype.TypeDict, crdType *CRDType)  (*gotype.GoType, error) {
+	return nil, nil
+}
+
 type CRDType struct {
 	Name    string
 	Parents []string
@@ -30,6 +49,18 @@ type CRDType struct {
 
 // FromOpenAPIType converts an OpenAPI schema to a GoType
 func FromOpenAPIType(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, error) {
+	for _, hook := range hooks {
+		if hook == nil {
+			continue
+		}
+		gt, err := hook.FromOpenAPIType(td, crdType)
+		if err != nil {
+			return nil, fmt.Errorf("hook %q failed: %w", hook.Name(), err)
+		}
+		if gt != nil {
+			return gt, nil
+		}
+	}
 	switch crdType.Schema.Type {
 	case OpenAPIObject:
 		return fromOpenAPIObject(td, crdType)
