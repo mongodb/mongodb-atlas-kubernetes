@@ -250,101 +250,127 @@ func TestBuiltInFormat2Type(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestConditionsKnownTypeMatch(t *testing.T) {
-	td := crd2go.NewTypeDict(nil, crd2go.KnownTypes()...)
-	input := &crd2go.GoType{
-		Name: "Cond",
-		Kind: "struct",
-		Fields: []*crd2go.GoField{
-			{
-				Comment: "Last time the condition transitioned from one status to another.",
-				Name:    "LastTransitionTime",
-				GoType: &crd2go.GoType{
-					Name: "Time",
-					Kind: "opaque",
-					Import: &crd2go.ImportInfo{
-						"metav1",
-						"k8s.io/apimachinery/pkg/apis/meta/v1",
+func TestConditionsMatch(t *testing.T) {
+	for _, tc := range []struct {
+		title string
+		td    *crd2go.TypeDict
+	}{
+		{
+			title: "match conditions with a known type",
+			td:    crd2go.NewTypeDict(nil, crd2go.KnownTypes()...),
+		},
+		{
+			title: "match conditions with renames and imports",
+			td: crd2go.NewTypeDict(
+				map[string]string{
+					"Cond": "Condition",
+				},
+				crd2go.NewAutoImportType(&crd2go.ImportedTypeConfig{
+					Name: "Condition",
+					ImportInfo: crd2go.ImportInfo{
+						Alias: "metav1",
+						Path:  "k8s.io/apimachinery/pkg/apis/meta/v1",
+					},
+				}),
+			),
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			input := &crd2go.GoType{
+				Name: "Cond",
+				Kind: "struct",
+				Fields: []*crd2go.GoField{
+					{
+						Comment: "Last time the condition transitioned from one status to another.",
+						Name:    "LastTransitionTime",
+						GoType: &crd2go.GoType{
+							Name: "Time",
+							Kind: "opaque",
+							Import: &crd2go.ImportInfo{
+								"metav1",
+								"k8s.io/apimachinery/pkg/apis/meta/v1",
+							},
+						},
+					},
+					{
+						Comment: "A human readable message indicating details about the transition.",
+						Name:    "Message",
+						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+					},
+					{
+						Comment: "observedGeneration represents the .metadata.generation that the condition was set based upon.",
+						Name:    "ObservedGeneration",
+						GoType:  &crd2go.GoType{Name: "int64", Kind: crd2go.IntKind},
+					},
+					{
+						Comment: "The reason for the condition's last transition.",
+						Name:    "Reason",
+						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+					},
+					{
+						Comment: "Status of the condition, one of True, False, Unknown.",
+						Name:    "Status",
+						GoType:  &crd2go.GoType{Name: "ConditionStatus", Kind: crd2go.StringKind},
+					},
+					{
+						Comment: "Type of condition.",
+						Name:    "Type",
+						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
 					},
 				},
-			},
-			{
-				Comment: "A human readable message indicating details about the transition.",
-				Name:    "Message",
-				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
-			},
-			{
-				Comment: "observedGeneration represents the .metadata.generation that the condition was set based upon.",
-				Name:    "ObservedGeneration",
-				GoType:  &crd2go.GoType{Name: "int64", Kind: crd2go.IntKind},
-			},
-			{
-				Comment: "The reason for the condition's last transition.",
-				Name:    "Reason",
-				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
-			},
-			{
-				Comment: "Status of the condition, one of True, False, Unknown.",
-				Name:    "Status",
-				GoType:  &crd2go.GoType{Name: "ConditionStatus", Kind: crd2go.StringKind},
-			},
-			{
-				Comment: "Type of condition.",
-				Name:    "Type",
-				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
-			},
-		},
-		Import: &crd2go.ImportInfo{},
-	}
-	require.NoError(t, crd2go.RenameType(td, []string{"conditions"}, input))
-	want := &crd2go.GoType{
-		Name: "Condition",
-		Kind: "struct",
-		Fields: []*crd2go.GoField{
-			{
-				Comment: "Last time the condition transitioned from one status to another.",
-				Name:    "LastTransitionTime",
-				GoType: &crd2go.GoType{
-					Name: "Time",
-					Kind: "opaque",
-					Import: &crd2go.ImportInfo{
-						"metav1",
-						"k8s.io/apimachinery/pkg/apis/meta/v1",
+				Import: &crd2go.ImportInfo{},
+			}
+			require.NoError(t, tc.td.RenameType([]string{"conditions"}, input))
+			want := &crd2go.GoType{
+				Name: "Condition",
+				Kind: "struct",
+				Fields: []*crd2go.GoField{
+					{
+						Comment: "Last time the condition transitioned from one status to another.",
+						Name:    "LastTransitionTime",
+						GoType: &crd2go.GoType{
+							Name: "Time",
+							Kind: "opaque",
+							Import: &crd2go.ImportInfo{
+								"metav1",
+								"k8s.io/apimachinery/pkg/apis/meta/v1",
+							},
+						},
+					},
+					{
+						Comment: "A human readable message indicating details about the transition.",
+						Name:    "Message",
+						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+					},
+					{
+						Comment: "observedGeneration represents the .metadata.generation that the condition was set based upon.",
+						Name:    "ObservedGeneration",
+						GoType:  &crd2go.GoType{Name: "int64", Kind: crd2go.IntKind},
+					},
+					{
+						Comment: "The reason for the condition's last transition.",
+						Name:    "Reason",
+						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+					},
+					{
+						Comment: "Status of the condition, one of True, False, Unknown.",
+						Name:    "Status",
+						GoType:  &crd2go.GoType{Name: "ConditionStatus", Kind: crd2go.StringKind},
+					},
+					{
+						Comment: "Type of condition.",
+						Name:    "Type",
+						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
 					},
 				},
-			},
-			{
-				Comment: "A human readable message indicating details about the transition.",
-				Name:    "Message",
-				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
-			},
-			{
-				Comment: "observedGeneration represents the .metadata.generation that the condition was set based upon.",
-				Name:    "ObservedGeneration",
-				GoType:  &crd2go.GoType{Name: "int64", Kind: crd2go.IntKind},
-			},
-			{
-				Comment: "The reason for the condition's last transition.",
-				Name:    "Reason",
-				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
-			},
-			{
-				Comment: "Status of the condition, one of True, False, Unknown.",
-				Name:    "Status",
-				GoType:  &crd2go.GoType{Name: "ConditionStatus", Kind: crd2go.StringKind},
-			},
-			{
-				Comment: "Type of condition.",
-				Name:    "Type",
-				GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
-			},
-		},
-		Import: &crd2go.ImportInfo{
-			"metav1",
-			"k8s.io/apimachinery/pkg/apis/meta/v1",
-		},
+				Import: &crd2go.ImportInfo{
+					"metav1",
+					"k8s.io/apimachinery/pkg/apis/meta/v1",
+				},
+			}
+			assert.Equal(t, want, input)
+		})
 	}
-	assert.Equal(t, want, input)
 }
 
 func jsonize(obj any) string {
