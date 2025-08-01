@@ -12,107 +12,99 @@ import (
 	"github.com/josvazg/crd2go/k8s"
 )
 
-type VersionedCRD struct {
-	// Spec    *apiextensionsv1.CustomResourceDefinitionSpec
-	Kind    string
-	Version *apiextensionsv1.CustomResourceDefinitionVersion
-}
-
-func NewVersionedCRD(spec *apiextensionsv1.CustomResourceDefinitionSpec,
-	version *apiextensionsv1.CustomResourceDefinitionVersion) *VersionedCRD {
-	return &VersionedCRD{
-		Kind:    spec.Names.Kind,
-		Version: version,
-	}
-}
-
-func (versionedCRD *VersionedCRD) specTypename() string {
-	return fmt.Sprintf("%sSpec", versionedCRD.Kind)
-}
-
-func (versionedCRD *VersionedCRD) statusTypename() string {
-	return fmt.Sprintf("%sStatus", versionedCRD.Kind)
-}
-
-// selectVersion returns the version from the CRD spec that matches the given version string
-func selectVersion(spec *apiextensionsv1.CustomResourceDefinitionSpec, version string) *VersionedCRD {
-	if len(spec.Versions) == 0 {
-		return nil
-	}
-	if version == "" {
-		return NewVersionedCRD(spec, &spec.Versions[0])
-	}
-	for _, v := range spec.Versions {
-		if v.Name == version {
-			return NewVersionedCRD(spec, &v)
-		}
-	}
-	return nil
+type CRDType struct {
+	Name    string
+	Parents []string
+	Schema  *apiextensionsv1.JSONSchemaProps
 }
 
 // FromOpenAPIType converts an OpenAPI schema to a GoType
-func FromOpenAPIType(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
-	switch schema.Type {
+func FromOpenAPIType(td *TypeDict, crdType *CRDType) (*GoType, error) {
+	switch crdType.Schema.Type {
 	case OpenAPIObject:
-		return fromOpenAPIObject(td, typeName, parents, schema)
+		return fromOpenAPIObject(td, crdType)
 	case OpenAPIArray:
-		return fromOpenAPIArray(td, typeName, parents, schema)
+		return fromOpenAPIArray(td, crdType)
 	case OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean:
-		return fromOpenAPIFormattedType(schema)
+		return fromOpenAPIFormattedType(crdType.Schema)
 	default:
-		return nil, fmt.Errorf("unsupported Open API type %q", schema.Type)
+		return nil, fmt.Errorf("unsupported Open API type %q", crdType.Name)
 	}
 }
 
 // fromOpenAPIObject converts an OpenAPI object schema into  unstructured JSON,
 // a map or a GoType struct
-func fromOpenAPIObject(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
-	if isUnstructured(schema) {
+func fromOpenAPIObject(td *TypeDict, crdType *CRDType) (*GoType, error) {
+	if isUnstructured(crdType.Schema) {
 		return jsonType, nil
 	}
-	if isDict(schema) {
-		return fromOpenAPIDict(td, typeName, parents, schema)
+	if isDict(crdType.Schema) {
+		return fromOpenAPIDict(td, crdType)
 	}
-	return fromOpenAPIStruct(td, typeName, parents, schema)
+	return fromOpenAPIStruct(td, crdType)
 }
 
 // fromOpenAPIStruct converts and OpenAPI object to a GoType struct
-func fromOpenAPIStruct(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
+func fromOpenAPIStruct(td *TypeDict, crdType *CRDType) (*GoType, error) {
 	fields := []*GoField{}
-	fieldsParents := append(parents, typeName)
-	for _, key := range orderedkeys(schema.Properties) {
-		props := schema.Properties[key]
-		fieldType, err := FromOpenAPIType(td, key, fieldsParents, &props)
+	fieldsParents := append(crdType.Parents, crdType.Name)
+	for _, key := range orderedkeys(crdType.Schema.Properties) {
+		props := crdType.Schema.Properties[key]
+		fieldType, err := FromOpenAPIType(td, &CRDType{
+			Name:    key,
+			Parents: fieldsParents,
+			Schema:  &props,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse %s type: %w", key, err)
 		}
 		field := NewGoFieldWithKey(title(key), key, fieldType)
 		field.Comment = props.Description
-		field.Required = slices.Contains(schema.Required, key)
+		field.Required = slices.Contains(crdType.Schema.Required, key)
 		if err := field.RenameType(td, fieldsParents); err != nil {
 			return nil, fmt.Errorf("failed to rename field %v: %w", field, err)
 		}
 		fields = append(fields, field)
 	}
-	return NewStruct(typeName, fields), nil
+	return NewStruct(crdType.Name, fields), nil
 }
 
 // fromOpenAPIArray converts an OpenAPI array schema to a GoType array
-func fromOpenAPIArray(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
-	if schema.Items == nil {
-		return nil, fmt.Errorf("array %s has no items", typeName)
+func fromOpenAPIArray(td *TypeDict, crdType *CRDType) (*GoType, error) {
+	if crdType.Schema.Items == nil {
+		return nil, fmt.Errorf("array %s has no items", crdType.Name)
 	}
-	if schema.Items.Schema == nil {
-		return nil, fmt.Errorf("array %s has no items schema", typeName)
+	if crdType.Schema.Items.Schema == nil {
+		return nil, fmt.Errorf("array %s has no items schema", crdType.Name)
 	}
-	elementType, err := FromOpenAPIType(td, typeName, nil, schema.Items.Schema)
+	elementType, err := FromOpenAPIType(td, &CRDType{
+		Name:   crdType.Name,
+		Schema: crdType.Schema.Items.Schema,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse array %s element type: %w", typeName, err)
+		return nil, fmt.Errorf("failed to parse array %s element type: %w", crdType.Name, err)
 	}
-	if err := td.RenameType(parents, elementType); err != nil {
-		return nil, fmt.Errorf("failed to rename element type under %s: %w", typeName, err)
+	if err := td.RenameType(crdType.Parents, elementType); err != nil {
+		return nil, fmt.Errorf("failed to rename element type under %s: %w", crdType.Name, err)
 	}
 	return NewArray(elementType), nil
+}
+
+// fromOpenAPIDict converts an OpenAPI dictionary to a GoType map
+func fromOpenAPIDict(td *TypeDict, crdType *CRDType) (*GoType, error) {
+	elemType := jsonType
+	if crdType.Schema.AdditionalProperties.Schema != nil {
+		var err error
+		elemType, err = FromOpenAPIType(td, &CRDType{
+			Name:    crdType.Name,
+			Parents: crdType.Parents,
+			Schema:  crdType.Schema.AdditionalProperties.Schema,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to check map value type: %w", err)
+		}
+	}
+	return &GoType{Name: MapKind, Kind: MapKind, Element: elemType}, nil
 }
 
 // fromOpenAPIFormattedType converts some OpenAPI formatted primitives to a hardwired GoType,
@@ -156,18 +148,6 @@ func fromOpenAPIPrimitive(kind string) (*GoType, error) {
 		return nil, fmt.Errorf("failed to parse OpenAPI kind %s: %w", kind, err)
 	}
 	return NewPrimitive(goTypeName, goTypeName), nil
-}
-
-func fromOpenAPIDict(td *TypeDict, typeName string, parents []string, schema *apiextensionsv1.JSONSchemaProps) (*GoType, error) {
-	elemType := jsonType
-	if schema.AdditionalProperties.Schema != nil {
-		var err error
-		elemType, err = FromOpenAPIType(td, typeName, parents, schema.AdditionalProperties.Schema)
-		if err != nil {
-			return nil, fmt.Errorf("failed to check map value type: %w", err)
-		}
-	}
-	return &GoType{Name: MapKind, Kind: MapKind, Element: elemType}, nil
 }
 
 func isUnstructured(schema *apiextensionsv1.JSONSchemaProps) bool {

@@ -148,56 +148,59 @@ func TestRenameType(t *testing.T) {
 func TestBuildOpenAPIType(t *testing.T) {
 	td := crd2go.NewTypeDict(nil, CrossReference(), LocalReference())
 
-	schema := &apiextensions.JSONSchemaProps{
-		Type: "object",
-		Properties: map[string]apiextensions.JSONSchemaProps{
-			"arrayOfStrings": {
-				Type: "array",
-				Items: &apiextensions.JSONSchemaPropsOrArray{
-					Schema: &apiextensions.JSONSchemaProps{
-						Type: "string",
-					},
-				},
-			},
-			"arrayOfObjects": {
-				Type: "array",
-				Items: &apiextensions.JSONSchemaPropsOrArray{
-					Schema: &apiextensions.JSONSchemaProps{
-						Type: "object",
-						Properties: map[string]apiextensions.JSONSchemaProps{
-							"key":   {Type: "string"},
-							"value": {Type: "integer"},
+	crdRootType := &crd2go.CRDType{
+		Name:    "RootType",
+		Parents: []string{},
+		Schema: &apiextensions.JSONSchemaProps{
+			Type: "object",
+			Properties: map[string]apiextensions.JSONSchemaProps{
+				"arrayOfStrings": {
+					Type: "array",
+					Items: &apiextensions.JSONSchemaPropsOrArray{
+						Schema: &apiextensions.JSONSchemaProps{
+							Type: "string",
 						},
 					},
 				},
-			},
-			"randomObject": {
-				Type: "object",
-				Properties: map[string]apiextensions.JSONSchemaProps{
-					"field1": {Type: "string"},
-					"field2": {Type: "number"},
+				"arrayOfObjects": {
+					Type: "array",
+					Items: &apiextensions.JSONSchemaPropsOrArray{
+						Schema: &apiextensions.JSONSchemaProps{
+							Type: "object",
+							Properties: map[string]apiextensions.JSONSchemaProps{
+								"key":   {Type: "string"},
+								"value": {Type: "integer"},
+							},
+						},
+					},
 				},
-			},
-			"localReference": {
-				Type: "object",
-				Properties: map[string]apiextensions.JSONSchemaProps{
-					"name": {Type: "string"},
+				"randomObject": {
+					Type: "object",
+					Properties: map[string]apiextensions.JSONSchemaProps{
+						"field1": {Type: "string"},
+						"field2": {Type: "number"},
+					},
 				},
-			},
-			"crossReference": {
-				Type: "object",
-				Properties: map[string]apiextensions.JSONSchemaProps{
-					"name":      {Type: "string"},
-					"namespace": {Type: "string"},
+				"localReference": {
+					Type: "object",
+					Properties: map[string]apiextensions.JSONSchemaProps{
+						"name": {Type: "string"},
+					},
 				},
+				"crossReference": {
+					Type: "object",
+					Properties: map[string]apiextensions.JSONSchemaProps{
+						"name":      {Type: "string"},
+						"namespace": {Type: "string"},
+					},
+				},
+				"simpleString":  {Type: "string"},
+				"simpleNumber":  {Type: "number"},
+				"simpleInteger": {Type: "integer"},
 			},
-			"simpleString":  {Type: "string"},
-			"simpleNumber":  {Type: "number"},
-			"simpleInteger": {Type: "integer"},
 		},
 	}
-
-	goType, err := crd2go.FromOpenAPIType(td, "RootType", []string{}, schema)
+	goType, err := crd2go.FromOpenAPIType(td, crdRootType)
 	assert.NoError(t, err)
 	assert.NotNil(t, goType)
 
@@ -233,11 +236,15 @@ func TestBuildOpenAPIType(t *testing.T) {
 
 func TestBuiltInFormat2Type(t *testing.T) {
 	td := crd2go.NewTypeDict(nil, crd2go.KnownTypes()...)
-	timeSchema := &apiextensionsv1.JSONSchemaProps{
-		Type:   "string",
-		Format: "date-time",
+	crdTimeType := &crd2go.CRDType{
+		Name:    "time",
+		Parents: []string{},
+		Schema: &apiextensionsv1.JSONSchemaProps{
+			Type:   "string",
+			Format: "date-time",
+		},
 	}
-	got, err := crd2go.FromOpenAPIType(td, "time", []string{}, timeSchema)
+	got, err := crd2go.FromOpenAPIType(td, crdTimeType)
 	require.NoError(t, err)
 	want := &crd2go.GoType{
 		Name: "Time",
