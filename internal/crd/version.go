@@ -1,4 +1,4 @@
-package crd2go
+package crd
 
 import (
 	"fmt"
@@ -20,16 +20,16 @@ func NewVersionedCRD(spec *apiextensionsv1.CustomResourceDefinitionSpec,
 	}
 }
 
-func (versionedCRD *VersionedCRD) specTypename() string {
+func (versionedCRD *VersionedCRD) SpecTypename() string {
 	return fmt.Sprintf("%sSpec", versionedCRD.Kind)
 }
 
-func (versionedCRD *VersionedCRD) statusTypename() string {
+func (versionedCRD *VersionedCRD) StatusTypename() string {
 	return fmt.Sprintf("%sStatus", versionedCRD.Kind)
 }
 
-// selectVersion returns the version from the CRD spec that matches the given version string
-func selectVersion(spec *apiextensionsv1.CustomResourceDefinitionSpec, version string) *VersionedCRD {
+// SelectVersion returns the version from the CRD spec that matches the given version string
+func SelectVersion(spec *apiextensionsv1.CustomResourceDefinitionSpec, version string) *VersionedCRD {
 	if len(spec.Versions) == 0 {
 		return nil
 	}

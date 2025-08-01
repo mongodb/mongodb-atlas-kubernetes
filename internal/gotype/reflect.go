@@ -1,4 +1,4 @@
-package crd2go
+package gotype
 
 import (
 	"fmt"
