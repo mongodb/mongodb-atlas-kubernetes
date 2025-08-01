@@ -1,6 +1,8 @@
 package crd2go
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // TypeDict is a dictionary of Go types, used to track and ensure unique type names.
 // It also keeps track of generated types to avoid re-genrating the same type again.
@@ -12,17 +14,17 @@ type TypeDict struct {
 }
 
 // NewTypeDict creates a new TypeDict with the given renames and Go types
-func NewTypeDict(renames map[string]string, goTypes ...*GoType) TypeDict {
+func NewTypeDict(renames map[string]string, goTypes ...*GoType) *TypeDict {
 	td := TypeDict{
 		bySignature: make(map[string]*GoType),
 		byName:      make(map[string]*GoType),
 		generated:   make(map[string]bool),
-		renames:    renames,
+		renames:     renames,
 	}
 	for _, gt := range goTypes {
 		td.Add(gt)
 	}
-	return td
+	return &td
 }
 
 // Has checks if the TypeDict contains a GoType with the same signature
@@ -39,7 +41,7 @@ func (td TypeDict) Get(name string) (*GoType, bool) {
 }
 
 // AddAll adds all the given tipes to the dictionary
-func (td TypeDict) AddAll(goTypes ... *GoType) {
+func (td TypeDict) AddAll(goTypes ...*GoType) {
 	for _, gt := range goTypes {
 		td.Add(gt)
 	}
@@ -71,11 +73,69 @@ func (td TypeDict) WasGenerated(gt *GoType) bool {
 	return false
 }
 
-func (td TypeDict) Rename(name string) string {
+// RenameType renames the given GoType to ensure it is unique within the
+// TypeDict. It uses the parent names as needed to create a unique name for the
+// type, if the type is not a primitive and its name is already taken.
+func (td TypeDict) RenameType(parentNames []string, gt *GoType) error {
+	goType := gt.baseType()
+	if goType.isPrimitive() {
+		return nil
+	}
+	goType.Name = td.rename(goType.Name)
+	if importInfo := td.matchImport(goType); importInfo != nil {
+		goType.Import = importInfo
+		return nil
+	}
+	if td.Has(goType) {
+		existingType := td.bySignature[goType.signature()]
+		if existingType == nil {
+			return fmt.Errorf("failed to find existing type for %v", gt)
+		}
+		goType.Name = existingType.Name
+		goType.Import = existingType.Import
+		return nil
+	}
+
+	typeName := goType.Name
+	for i := len(parentNames) - 1; i >= 0; i-- {
+		_, used := td.Get(typeName)
+		if !used {
+			break
+		}
+		typeName = fmt.Sprintf("%s%s", title(parentNames[i]), typeName)
+	}
+
+	_, used := td.Get(typeName)
+	if used {
+		return fmt.Errorf("failed to find a free type name for type %v", gt)
+	}
+	goType.Name = typeName
+	td.Add(goType)
+
+	return nil
+}
+
+// rename applies custom renames before automated renaming logic
+func (td TypeDict) rename(name string) string {
 	if len(td.renames) > 0 {
 		if newName, ok := td.renames[name]; ok {
 			return newName
 		}
 	}
 	return name
+}
+
+// matchImport checks if the given type matches a registered auto import type.
+// If so, it updated the type structure in the type dictionary entry,
+// so that it can be matched by signature going forward and
+// returns the matching import info.
+func (td TypeDict) matchImport(gt *GoType) *ImportInfo {
+	entry, ok := td.Get(gt.Name)
+	if !ok || entry.Kind != AutoImportKind {
+		return nil
+	}
+	entry.cloneStructure(gt)
+	td.byName[entry.Name] = entry
+	td.bySignature[entry.signature()] = entry
+	return entry.Import
 }
