@@ -1,19 +1,16 @@
-package crd2go
+package gen
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"io"
-	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
+	"github.com/josvazg/crd2go/internal/crd"
+	"github.com/josvazg/crd2go/internal/gotype"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -26,162 +23,8 @@ const (
 	metav1Package = "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type CoreConfig struct {
-	Version  string               `yaml:"version"`
-	Reserved []string             `yaml:"reserved"`
-	SkipList []string             `yaml:"skipList"`
-	Renames  map[string]string    `yaml:"renames"`
-	Imports  []ImportedTypeConfig `yaml:"imports"`
-}
-
-type Config struct {
-	CoreConfig `yaml:",inline"`
-
-	Input  string `yaml:"input"`
-	Output string `yaml:"output"`
-}
-
-type ImportedTypeConfig struct {
-	ImportInfo `yaml:",inline"`
-	Name       string `yaml:"name"`
-}
-
-func LoadConfig(r io.Reader) (*Config, error) {
-	yml, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read the file: %w", err)
-	}
-	cfg := Config{}
-	if err = yaml.Unmarshal(yml, &cfg); err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
-	return &cfg, nil
-}
-
-// CodeWriterFunc is a function type that takes a CRD and returns a writer for the generated code
-type CodeWriterFunc func(filename string, overwrite bool) (io.WriteCloser, error)
-
-// CodeFileForCRDAtPath creates a file writer for the given CRD at the specified directory
-func CodeFileForCRDAtPath(dir string) CodeWriterFunc {
-	return func(filename string, overwrite bool) (io.WriteCloser, error) {
-		srcFile := filepath.Join(dir, filename)
-		flags := os.O_CREATE | os.O_EXCL | os.O_WRONLY
-		if overwrite {
-			flags = os.O_CREATE | os.O_TRUNC | os.O_RDWR
-		}
-		w, err := os.OpenFile(srcFile, flags, 0666)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create file %s: %w", srcFile, err)
-		}
-		return w, nil
-	}
-}
-
-// GenerateToDir generates Go code from a CRD YAML file into a directory
-func GenerateToDir(cfg *Config) error {
-	in, err := os.Open(cfg.Input)
-	if err != nil {
-		return fmt.Errorf("failed to open input file %s: %w", cfg.Input, err)
-	}
-	req := Request{
-		CoreConfig:   cfg.CoreConfig,
-		CodeWriterFn: CodeFileForCRDAtPath(cfg.Output),
-		TypeDict:     NewTypeDict(cfg.Renames, KnownTypes()...),
-	}
-	return Generate(&req, in)
-}
-
-type Request struct {
-	CoreConfig
-	CodeWriterFn CodeWriterFunc
-	TypeDict     *TypeDict
-}
-
-// Generate will write files using the CodeWriterFunc
-func Generate(req *Request, r io.Reader) error {
-	groupsVersions := map[string]struct{}{}
-	group := ""
-	version := ""
-	generatedGVRs, err := GenerateStream(req, r)
-	if err != nil {
-		return fmt.Errorf("failed to generate CRDs: %w", err)
-	}
-	for _, gvr := range generatedGVRs {
-		parts := strings.Split(gvr, "/")
-		if len(parts) > 2 {
-			group = parts[0]
-			version = parts[1]
-			gv := fmt.Sprintf("%s/%s", group, version)
-			groupsVersions[gv] = struct{}{}
-		}
-	}
-	if len(groupsVersions) == 1 {
-		if err := generateGroupVersionFiles(req, group, version); err != nil {
-			return fmt.Errorf("failed to generate files for group version '%s/%s': %w", group, version, err)
-		}
-	}
-	return nil
-}
-
-// GenerateStream generates Go code from a stream of CRDs within a YAML reader.
-// It uses the provided CodeWriterFunc to write the generated code to the specified output.
-// The version parameter specifies the version of the CRD to generate code for.
-// The preloadedTypes parameter allows for preloading specific types to avoid name collisions.
-func GenerateStream(req *Request, r io.Reader) ([]string, error) {
-	preloaded := []*GoType{}
-	for _, name := range req.Reserved {
-		preloaded = append(preloaded, NewOpaqueType(name))
-	}
-	for _, importType := range req.Imports {
-		preloaded = append(preloaded, NewAutoImportType(&importType))
-	}
-	overwrite := true
-	generatedGVRs := []string{}
-	generated := false
-	scanner := bufio.NewScanner(r)
-	req.TypeDict.AddAll(preloaded...)
-	for {
-		crd, err := ParseCRD(scanner)
-		if errors.Is(err, io.EOF) {
-			if generated {
-				return generatedGVRs, nil
-			}
-			return nil, fmt.Errorf("failed to parse CRD: %w", err)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to read input: %w", err)
-		}
-		if in(req.SkipList, crd.Spec.Names.Kind) {
-			continue
-		}
-		w, err := req.CodeWriterFn(crd2Filename(crd), overwrite)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get writer for CRD %s: %w", crd.Name, err)
-		}
-		defer w.Close()
-		versionedCRD := selectVersion(&crd.Spec, req.Version)
-		if versionedCRD == nil {
-			if req.Version == "" {
-				return nil, fmt.Errorf("no versions to generate code from")
-			}
-			return nil, fmt.Errorf("no version %q to generate code from", req.Version)
-		}
-		stmt, err := generateCRD(req.TypeDict, versionedCRD)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate CRD code: %w", err)
-		}
-		if _, err := w.Write(([]byte)(stmt.GoString())); err != nil {
-			return nil, fmt.Errorf("failed to write Go code: %w", err)
-		}
-		generated = true
-		gvr := fmt.Sprintf("%s/%s/%s", crd.Spec.Group, versionedCRD.Version.Name, crd.Spec.Names.Plural)
-		gvr = strings.TrimPrefix(gvr, "/")
-		generatedGVRs = append(generatedGVRs, gvr)
-	}
-}
-
 // generateCRD generates Go code for a CustomResourceDefinition (CRD) using the provided TypeDict and version
-func generateCRD(td *TypeDict, versionedCRD *VersionedCRD) (*jen.File, error) {
+func GenerateCRD(td *gotype.TypeDict, versionedCRD *crd.VersionedCRD) (*jen.File, error) {
 	f := jen.NewFile(versionedCRD.Version.Name)
 	generateCRDFileHeader(f, versionedCRD)
 	generateCRDRootObject(f, td, versionedCRD)
@@ -195,7 +38,7 @@ func generateCRD(td *TypeDict, versionedCRD *VersionedCRD) (*jen.File, error) {
 	return f, nil
 }
 
-func generateCRDFileHeader(f *jen.File, versionedCRD *VersionedCRD) {
+func generateCRDFileHeader(f *jen.File, versionedCRD *crd.VersionedCRD) {
 	f.HeaderComment("Code generated by crd2go. DO NOT EDIT.")
 	f.ImportAlias(metav1Package, "metav1")
 	f.Func().Id("init").Params().Block(
@@ -209,24 +52,24 @@ func generateCRDFileHeader(f *jen.File, versionedCRD *VersionedCRD) {
 }
 
 // generateCRDRootObject generates the root object for the CRD
-func generateCRDRootObject(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD) {
+func generateCRDRootObject(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.VersionedCRD) {
 	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object")
 	f.Comment("+kubebuilder:object:root=true").Line()
 	f.Type().Id(versionedCRD.Kind).Struct(
 		jen.Qual(metav1Package, "TypeMeta").Tag(map[string]string{"json": ",inline"}),
 		jen.Qual(metav1Package, "ObjectMeta").Tag(map[string]string{"json": "metadata,omitempty"}),
 		jen.Line(),
-		jen.Id("Spec").Id(versionedCRD.specTypename()).Tag(map[string]string{"json": "spec,omitempty"}),
-		jen.Id("Status").Id(versionedCRD.statusTypename()).Tag(map[string]string{"json": "status,omitempty"}),
+		jen.Id("Spec").Id(versionedCRD.SpecTypename()).Tag(map[string]string{"json": "spec,omitempty"}),
+		jen.Id("Status").Id(versionedCRD.StatusTypename()).Tag(map[string]string{"json": "status,omitempty"}),
 	)
-	td.Add(NewStruct(versionedCRD.Kind, nil)) // reserve the name of the root type not to be taken
+	td.Add(gotype.NewStruct(versionedCRD.Kind, nil)) // reserve the name of the root type not to be taken
 }
 
 // generateCRDSpec generates the spec of the CRD
-func generateCRDSpec(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD) error {
+func generateCRDSpec(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.VersionedCRD) error {
 	specSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["spec"]
-	spec, err := FromOpenAPIType(td, &CRDType{
-		Name:    versionedCRD.specTypename(),
+	spec, err := crd.FromOpenAPIType(td, &crd.CRDType{
+		Name:    versionedCRD.SpecTypename(),
 		Parents: []string{versionedCRD.Kind},
 		Schema:  &specSchema,
 	})
@@ -242,10 +85,10 @@ func generateCRDSpec(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD) erro
 }
 
 // generateCRDStatus generates the spec of the CRD
-func generateCRDStatus(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD) error {
+func generateCRDStatus(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.VersionedCRD) error {
 	statusSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["status"]
-	status, err := FromOpenAPIType(td, &CRDType{
-		Name:    versionedCRD.statusTypename(),
+	status, err := crd.FromOpenAPIType(td, &crd.CRDType{
+		Name:    versionedCRD.StatusTypename(),
 		Parents: []string{versionedCRD.Kind},
 		Schema:  &statusSchema,
 	})
@@ -261,7 +104,7 @@ func generateCRDStatus(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD) er
 }
 
 // generateCRDListObject generates the root object for the CRD
-func generateCRDListObject(f *jen.File, versionedCRD *VersionedCRD) {
+func generateCRDListObject(f *jen.File, versionedCRD *crd.VersionedCRD) {
 	f.Comment("+kubebuilder:object:root=true")
 	f.Type().Id(versionedCRD.Kind+"List").Struct(
 		jen.Qual(metav1Package, "TypeMeta").Tag(map[string]string{"json": ",inline"}),
@@ -270,7 +113,8 @@ func generateCRDListObject(f *jen.File, versionedCRD *VersionedCRD) {
 	)
 }
 
-func generateGroupVersionFiles(req *Request, group, version string) error {
+// GenerateGroupVersionFiles generates the doc.go and scheme.go group version files
+func GenerateGroupVersionFiles(req *gotype.Request, group, version string) error {
 	if err := generateDocFile(req, group, version); err != nil && !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("failed to generate doc.go file: %w", err)
 	}
@@ -280,7 +124,7 @@ func generateGroupVersionFiles(req *Request, group, version string) error {
 	return nil
 }
 
-func generateDocFile(req *Request, group, version string) error {
+func generateDocFile(req *gotype.Request, group, version string) error {
 	f := jen.NewFile(version)
 	f.HeaderComment("Code generated by crd2go. DO NOT EDIT.")
 	f.HeaderComment("+k8s:deepcopy-gen=package")
@@ -297,7 +141,7 @@ func generateDocFile(req *Request, group, version string) error {
 	return nil
 }
 
-func generateSchemeFile(req *Request, group, version string) error {
+func generateSchemeFile(req *gotype.Request, group, version string) error {
 	f := jen.NewFile(version)
 	f.HeaderComment("Code generated by crd2go. DO NOT EDIT.")
 	f.Var().Defs(
@@ -332,24 +176,24 @@ func generateSchemeFile(req *Request, group, version string) error {
 }
 
 // generateType generates Go code for a given type using the provided TypeDict
-func generateType(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, error) {
+func generateType(f *jen.File, td *gotype.TypeDict, t *gotype.GoType) (*jen.Statement, error) {
 	if t.Import != nil { // do not generate code for known imported types
 		return jen.Null(), nil
 	}
-	if t.Kind == StructKind {
+	if t.Kind == gotype.StructKind {
 		return generateStructType(f, td, t)
 	}
-	if t.Kind == ArrayKind {
+	if t.Kind == gotype.ArrayKind {
 		return generateArrayType(f, td, t)
 	}
-	if t.Kind == MapKind {
+	if t.Kind == gotype.MapKind {
 		return generateMapType(f, td, t)
 	}
 	return nil, fmt.Errorf("unsupported type %q", t.Kind)
 }
 
 // generateStructType generates Go code for a struct type
-func generateStructType(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, error) {
+func generateStructType(f *jen.File, td *gotype.TypeDict, t *gotype.GoType) (*jen.Statement, error) {
 	fields := make([]jen.Code, 0, len(t.Fields))
 	subtypes := make([]jen.Code, 0, len(t.Fields))
 	for _, field := range t.Fields {
@@ -368,7 +212,7 @@ func generateStructType(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, e
 }
 
 // generateArrayType generates Go code for an array type
-func generateArrayType(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, error) {
+func generateArrayType(f *jen.File, td *gotype.TypeDict, t *gotype.GoType) (*jen.Statement, error) {
 	elementType, err := generateSubtype(f, td, t.Element)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate array subtype: %w", err)
@@ -377,7 +221,7 @@ func generateArrayType(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, er
 }
 
 // generateMapType generates Go code for an array type
-func generateMapType(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, error) {
+func generateMapType(f *jen.File, td *gotype.TypeDict, t *gotype.GoType) (*jen.Statement, error) {
 	elementType, err := generateSubtype(f, td, t.Element)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate map subtype: %w", err)
@@ -386,7 +230,7 @@ func generateMapType(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, erro
 }
 
 // generateSubtype generates Go code for a subtype of a given type
-func generateSubtype(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, error) {
+func generateSubtype(f *jen.File, td *gotype.TypeDict, t *gotype.GoType) (*jen.Statement, error) {
 	baseType := t.BaseType()
 	if !baseType.IsPrimitive() && !td.WasGenerated(baseType) {
 		subtypeCode, err := generateType(f, td, baseType)
@@ -400,7 +244,7 @@ func generateSubtype(f *jen.File, td *TypeDict, t *GoType) (*jen.Statement, erro
 }
 
 // generateField generates Go code for a field in a struct
-func generateField(f *jen.File, field *GoField) (jen.Code, error) {
+func generateField(f *jen.File, field *gotype.GoField) (jen.Code, error) {
 	if field.GoType == nil {
 		return nil, fmt.Errorf("field %q has no Go type", field.Name)
 	}
@@ -434,19 +278,19 @@ func qualifyRequired(typeRef *jen.Statement, required bool) (*jen.Statement, err
 }
 
 // generateTypeRef generates a type reference for a given GoType
-func generateTypeRef(f *jen.File, t *GoType) *jen.Statement {
+func generateTypeRef(f *jen.File, t *gotype.GoType) *jen.Statement {
 	switch t.Kind {
-	case StringKind:
+	case gotype.StringKind:
 		return jen.String()
-	case IntKind:
+	case gotype.IntKind:
 		return jen.Int()
-	case FloatKind:
+	case gotype.FloatKind:
 		return jen.Float64()
-	case BoolKind:
+	case gotype.BoolKind:
 		return jen.Bool()
-	case ArrayKind:
+	case gotype.ArrayKind:
 		return jen.Index().Add(generateTypeRef(f, t.Element))
-	case MapKind:
+	case gotype.MapKind:
 		return jen.Map(jen.String()).Add(generateTypeRef(f, t.Element))
 	default:
 		if t.Import != nil {
@@ -460,29 +304,12 @@ func generateTypeRef(f *jen.File, t *GoType) *jen.Statement {
 }
 
 // generateJSONTag generates a JSON tag for a field in a struct
-func generateJSONTag(f *GoField) *jen.Statement {
+func generateJSONTag(f *gotype.GoField) *jen.Statement {
 	jsTag := fmt.Sprintf("%s,omitempty", f.Key)
 	if f.Required {
 		jsTag = fmt.Sprintf("%s", f.Key)
 	}
 	return jen.Tag(map[string]string{"json": jsTag})
-}
-
-// title capitalizes the first letter of a string and returns it using Go cases library
-func title(s string) string {
-	if s == "" {
-		return ""
-	}
-	s = strings.TrimLeft(s, "_") // remove leading underscores
-	return cases.Upper(language.English).String(s[0:1]) + s[1:]
-}
-
-// untitle de-capitalizes the first letter of a string and returns it using Go cases library
-func untitle(s string) string {
-	if s == "" {
-		return ""
-	}
-	return cases.Lower(language.English).String(s[0:1]) + s[1:]
 }
 
 // formatComment formats a comment string to fit within a specified width,
@@ -513,11 +340,11 @@ func formatComment(comment string, maxWidth int) []string {
 	return lines
 }
 
-func in[T comparable](list []T, target T) bool {
-	for _, item := range list {
-		if item == target {
-			return true
-		}
+// title capitalizes the first letter of a string and returns it using Go cases library
+func title(s string) string {
+	if s == "" {
+		return ""
 	}
-	return false
+	s = strings.TrimLeft(s, "_") // remove leading underscores
+	return cases.Upper(language.English).String(s[0:1]) + s[1:]
 }

@@ -1,7 +1,10 @@
-package crd2go
+package gotype
 
 import (
 	"fmt"
+	"log"
+
+	"github.com/josvazg/crd2go/pkg/config"
 )
 
 // TypeDict is a dictionary of Go types, used to track and ensure unique type names.
@@ -11,6 +14,13 @@ type TypeDict struct {
 	byName      map[string]*GoType
 	generated   map[string]bool
 	renames     map[string]string
+}
+
+// Request holds the runtime information to handle a CRD generation request
+type Request struct {
+	config.CoreConfig
+	CodeWriterFn config.CodeWriterFunc
+	TypeDict     *TypeDict
 }
 
 // NewTypeDict creates a new TypeDict with the given renames and Go types
@@ -73,6 +83,19 @@ func (td TypeDict) WasGenerated(gt *GoType) bool {
 	return false
 }
 
+// RenameField renames the GoType of the field to ensure it is unique within the
+// TypeDict. It uses the parent names as needed to create a unique name for the
+// type, if the type is not a primitive and its name is already taken.
+func (td *TypeDict) RenameField(gf *GoField, parentNames []string) error {
+	if gf.GoType == nil {
+		return fmt.Errorf("failed to rename type for field %s: GoType is nil", gf.Name)
+	}
+	if err := td.RenameType(parentNames, gf.GoType); err != nil {
+		return fmt.Errorf("failed to rename field type: %w", err)
+	}
+	return nil
+}
+
 // RenameType renames the given GoType to ensure it is unique within the
 // TypeDict. It uses the parent names as needed to create a unique name for the
 // type, if the type is not a primitive and its name is already taken.
@@ -110,6 +133,9 @@ func (td TypeDict) RenameType(parentNames []string, gt *GoType) error {
 		return fmt.Errorf("failed to find a free type name for type %v", gt)
 	}
 	goType.Name = typeName
+	if goType.Name == "string" {
+		log.Printf("here")
+	}
 	td.Add(goType)
 
 	return nil
@@ -129,7 +155,7 @@ func (td TypeDict) rename(name string) string {
 // If so, it updated the type structure in the type dictionary entry,
 // so that it can be matched by signature going forward and
 // returns the matching import info.
-func (td TypeDict) matchImport(gt *GoType) *ImportInfo {
+func (td TypeDict) matchImport(gt *GoType) *config.ImportInfo {
 	entry, ok := td.Get(gt.Name)
 	if !ok || entry.Kind != AutoImportKind {
 		return nil
