@@ -225,7 +225,11 @@ func generateCRDRootObject(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD
 // generateCRDSpec generates the spec of the CRD
 func generateCRDSpec(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD) error {
 	specSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["spec"]
-	spec, err := FromOpenAPIType(td, versionedCRD.specTypename(), []string{versionedCRD.Kind}, &specSchema)
+	spec, err := FromOpenAPIType(td, &CRDType{
+		Name:    versionedCRD.specTypename(),
+		Parents: []string{versionedCRD.Kind},
+		Schema:  &specSchema,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to generate spec type: %w", err)
 	}
@@ -240,7 +244,11 @@ func generateCRDSpec(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD) erro
 // generateCRDStatus generates the spec of the CRD
 func generateCRDStatus(f *jen.File, td *TypeDict, versionedCRD *VersionedCRD) error {
 	statusSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["status"]
-	status, err := FromOpenAPIType(td, versionedCRD.statusTypename(), []string{versionedCRD.Kind}, &statusSchema)
+	status, err := FromOpenAPIType(td, &CRDType{
+		Name:    versionedCRD.statusTypename(),
+		Parents: []string{versionedCRD.Kind},
+		Schema:  &statusSchema,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to generate status code: %w", err)
 	}
