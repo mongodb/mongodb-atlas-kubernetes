@@ -29,7 +29,7 @@ func NewTypeDict(renames map[string]string, goTypes ...*GoType) *TypeDict {
 
 // Has checks if the TypeDict contains a GoType with the same signature
 func (td TypeDict) Has(gt *GoType) bool {
-	signature := gt.signature()
+	signature := gt.Signature()
 	_, ok := td.bySignature[signature]
 	return ok
 }
@@ -53,7 +53,7 @@ func (td TypeDict) Add(gt *GoType) {
 	if gt.Name != titledName {
 		panic(fmt.Sprintf("type name %s is not titled", gt.Name))
 	}
-	td.bySignature[gt.signature()] = gt
+	td.bySignature[gt.Signature()] = gt
 	td.byName[gt.Name] = gt
 }
 
@@ -77,8 +77,8 @@ func (td TypeDict) WasGenerated(gt *GoType) bool {
 // TypeDict. It uses the parent names as needed to create a unique name for the
 // type, if the type is not a primitive and its name is already taken.
 func (td TypeDict) RenameType(parentNames []string, gt *GoType) error {
-	goType := gt.baseType()
-	if goType.isPrimitive() {
+	goType := gt.BaseType()
+	if goType.IsPrimitive() {
 		return nil
 	}
 	goType.Name = td.rename(goType.Name)
@@ -87,7 +87,7 @@ func (td TypeDict) RenameType(parentNames []string, gt *GoType) error {
 		return nil
 	}
 	if td.Has(goType) {
-		existingType := td.bySignature[goType.signature()]
+		existingType := td.bySignature[goType.Signature()]
 		if existingType == nil {
 			return fmt.Errorf("failed to find existing type for %v", gt)
 		}
@@ -134,8 +134,8 @@ func (td TypeDict) matchImport(gt *GoType) *ImportInfo {
 	if !ok || entry.Kind != AutoImportKind {
 		return nil
 	}
-	entry.cloneStructure(gt)
+	entry.CloneStructure(gt)
 	td.byName[entry.Name] = entry
-	td.bySignature[entry.signature()] = entry
+	td.bySignature[entry.Signature()] = entry
 	return entry.Import
 }

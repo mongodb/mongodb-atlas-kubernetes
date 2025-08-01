@@ -15,12 +15,12 @@ var (
 	jsonType = builtInType("JSON", "apiextensionsv1", "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1")
 
 	builtInTypes = map[string]*GoType{
-		timeType.signature(): timeType,
-		jsonType.signature(): jsonType,
+		timeType.Signature(): timeType,
+		jsonType.Signature(): jsonType,
 	}
 
 	format2Builtin = map[string]*GoType{
-		"datetime": builtInTypes[timeType.signature()],
+		"datetime": builtInTypes[timeType.Signature()],
 	}
 )
 
