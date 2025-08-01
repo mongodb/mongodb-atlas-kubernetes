@@ -6,7 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/josvazg/crd2go/internal/crd2go"
+	"github.com/josvazg/crd2go/pkg/config"
+	"github.com/josvazg/crd2go/pkg/crd2go"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 	log.Printf("Code generated at %s", cfg.Output)
 }
 
-func generate(input, output, config string) (*crd2go.Config, error) {
+func generate(input, output, config string) (*config.Config, error) {
 	f, err := os.Open(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open configuration file: %w", err)

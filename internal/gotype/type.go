@@ -1,10 +1,14 @@
-package crd2go
+package gotype
 
 import (
 	"fmt"
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/josvazg/crd2go/pkg/config"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -21,15 +25,6 @@ const (
 	AutoImportKind  = "autoImport"
 )
 
-const (
-	OpenAPIObject  = "object"
-	OpenAPIArray   = "array"
-	OpenAPIString  = "string"
-	OpenAPIInteger = "integer"
-	OpenAPINumber  = "number"
-	OpenAPIBoolean = "boolean"
-)
-
 const PACKAGE_BASE = "github.com/josvazg/crd2go"
 
 // GoType represents a Go type, which can be a primitive type, a struct, or an array.
@@ -39,13 +34,7 @@ type GoType struct {
 	Kind    string
 	Fields  []*GoField
 	Element *GoType
-	Import  *ImportInfo
-}
-
-// ImportInfo holds the import path and alias for existing types
-type ImportInfo struct {
-	Alias string
-	Path  string
+	Import  *config.ImportInfo
 }
 
 // NewPrimitive creates a new GoType representing a primitive type
@@ -83,7 +72,7 @@ func NewOpaqueType(name string) *GoType {
 }
 
 // NewAutoImportType creates a new GoType representing an opaque type with hidden internals
-func NewAutoImportType(importType *ImportedTypeConfig) *GoType {
+func NewAutoImportType(importType *config.ImportedTypeConfig) *GoType {
 	return &GoType{
 		Name:   title(importType.Name),
 		Kind:   AutoImportKind,
@@ -97,7 +86,7 @@ func AddImportInfo(gt *GoType, alias, packagePath string) *GoType {
 	if effectiveAlias == "" {
 		effectiveAlias = path.Base(packagePath)
 	}
-	gt.Import = &ImportInfo{Path: packagePath, Alias: effectiveAlias}
+	gt.Import = &config.ImportInfo{Path: packagePath, Alias: effectiveAlias}
 	return gt
 }
 
@@ -175,4 +164,13 @@ func orderFieldsByName(fields []*GoField) []*GoField {
 		return fields[i].Name < fields[j].Name
 	})
 	return fields
+}
+
+// title capitalizes the first letter of a string and returns it using Go cases library
+func title(s string) string {
+	if s == "" {
+		return ""
+	}
+	s = strings.TrimLeft(s, "_") // remove leading underscores
+	return cases.Upper(language.English).String(s[0:1]) + s[1:]
 }

@@ -1,36 +1,37 @@
-package crd2go_test
+package crd_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
 
-	"github.com/josvazg/crd2go/internal/crd2go"
+	"github.com/josvazg/crd2go/internal/crd"
+	"github.com/josvazg/crd2go/internal/debug"
+	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/k8s"
+	"github.com/josvazg/crd2go/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func TestRenameType(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
-		preloaded      []*crd2go.GoType
-		input          *crd2go.GoField
+		preloaded      []*gotype.GoType
+		input          *gotype.GoField
 		parents        []string
 		want           string
 		wantImportInfo bool
 	}{
 		{
 			name: "Group Spec named Spec without preloads",
-			input: crd2go.NewGoField(
+			input: gotype.NewGoField(
 				"Spec",
-				crd2go.NewStruct("Spec", []*crd2go.GoField{
+				gotype.NewStruct("Spec", []*gotype.GoField{
 					{
 						Name:   "V20231115",
-						GoType: &crd2go.GoType{},
+						GoType: &gotype.GoType{},
 					},
 				}),
 			),
@@ -40,18 +41,18 @@ func TestRenameType(t *testing.T) {
 
 		{
 			name: "Group Spec named GroupSpec with preloads",
-			preloaded: []*crd2go.GoType{
+			preloaded: []*gotype.GoType{
 				{
 					Name: "Spec", // reserves this type name
 					Kind: "object",
 				},
 			},
-			input: crd2go.NewGoField(
+			input: gotype.NewGoField(
 				"Spec",
-				crd2go.NewStruct("Spec", []*crd2go.GoField{
+				gotype.NewStruct("Spec", []*gotype.GoField{
 					{
 						Name:   "V20231115",
-						GoType: &crd2go.GoType{},
+						GoType: &gotype.GoType{},
 					},
 				},
 				),
@@ -62,20 +63,20 @@ func TestRenameType(t *testing.T) {
 
 		{
 			name:      "Identify Cross Reference",
-			preloaded: []*crd2go.GoType{CrossReference()},
-			input: crd2go.NewGoField(
+			preloaded: []*gotype.GoType{CrossReference()},
+			input: gotype.NewGoField(
 				"SomeRef",
-				crd2go.NewStruct("SomeRef", []*crd2go.GoField{
+				gotype.NewStruct("SomeRef", []*gotype.GoField{
 					{
 						Name: "Namespace",
-						GoType: &crd2go.GoType{
+						GoType: &gotype.GoType{
 							Name: "string",
 							Kind: "string",
 						},
 					},
 					{
 						Name: "Name",
-						GoType: &crd2go.GoType{
+						GoType: &gotype.GoType{
 							Name: "string",
 							Kind: "string",
 						},
@@ -89,13 +90,13 @@ func TestRenameType(t *testing.T) {
 
 		{
 			name:      "Identify Local Reference",
-			preloaded: []*crd2go.GoType{LocalReference()},
-			input: crd2go.NewGoField(
+			preloaded: []*gotype.GoType{LocalReference()},
+			input: gotype.NewGoField(
 				"SomeRef",
-				crd2go.NewStruct("SomeRef", []*crd2go.GoField{
+				gotype.NewStruct("SomeRef", []*gotype.GoField{
 					{
 						Name: "Name",
-						GoType: &crd2go.GoType{
+						GoType: &gotype.GoType{
 							Name: "string",
 							Kind: "string",
 						},
@@ -109,14 +110,14 @@ func TestRenameType(t *testing.T) {
 
 		{
 			name:      "Identify Local Reference behind an Array",
-			preloaded: []*crd2go.GoType{LocalReference()},
-			input: crd2go.NewGoField(
+			preloaded: []*gotype.GoType{LocalReference()},
+			input: gotype.NewGoField(
 				"SomeRef",
-				crd2go.NewArray(
-					crd2go.NewStruct("SomeRef", []*crd2go.GoField{
+				gotype.NewArray(
+					gotype.NewStruct("SomeRef", []*gotype.GoField{
 						{
 							Name: "Name",
-							GoType: &crd2go.GoType{
+							GoType: &gotype.GoType{
 								Name: "string",
 								Kind: "string",
 							},
@@ -130,11 +131,11 @@ func TestRenameType(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			td := crd2go.NewTypeDict(nil, tc.preloaded...)
-			err := tc.input.RenameType(td, tc.parents)
+			td := gotype.NewTypeDict(nil, tc.preloaded...)
+			err := td.RenameField(tc.input, tc.parents)
 			require.NoError(t, err)
 			goType := tc.input.GoType
-			if goType.Kind == crd2go.ArrayKind {
+			if goType.Kind == gotype.ArrayKind {
 				goType = goType.Element
 			}
 			assert.Equal(t, tc.want, goType.Name)
@@ -146,28 +147,27 @@ func TestRenameType(t *testing.T) {
 }
 
 func TestBuildOpenAPIType(t *testing.T) {
-	td := crd2go.NewTypeDict(nil, CrossReference(), LocalReference())
-
-	crdRootType := &crd2go.CRDType{
+	td := gotype.NewTypeDict(nil, CrossReference(), LocalReference())
+	crdRootType := &crd.CRDType{
 		Name:    "RootType",
 		Parents: []string{},
-		Schema: &apiextensions.JSONSchemaProps{
+		Schema: &apiextensionsv1.JSONSchemaProps{
 			Type: "object",
-			Properties: map[string]apiextensions.JSONSchemaProps{
+			Properties: map[string]apiextensionsv1.JSONSchemaProps{
 				"arrayOfStrings": {
 					Type: "array",
-					Items: &apiextensions.JSONSchemaPropsOrArray{
-						Schema: &apiextensions.JSONSchemaProps{
+					Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+						Schema: &apiextensionsv1.JSONSchemaProps{
 							Type: "string",
 						},
 					},
 				},
 				"arrayOfObjects": {
 					Type: "array",
-					Items: &apiextensions.JSONSchemaPropsOrArray{
-						Schema: &apiextensions.JSONSchemaProps{
+					Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+						Schema: &apiextensionsv1.JSONSchemaProps{
 							Type: "object",
-							Properties: map[string]apiextensions.JSONSchemaProps{
+							Properties: map[string]apiextensionsv1.JSONSchemaProps{
 								"key":   {Type: "string"},
 								"value": {Type: "integer"},
 							},
@@ -176,20 +176,20 @@ func TestBuildOpenAPIType(t *testing.T) {
 				},
 				"randomObject": {
 					Type: "object",
-					Properties: map[string]apiextensions.JSONSchemaProps{
+					Properties: map[string]apiextensionsv1.JSONSchemaProps{
 						"field1": {Type: "string"},
 						"field2": {Type: "number"},
 					},
 				},
 				"localReference": {
 					Type: "object",
-					Properties: map[string]apiextensions.JSONSchemaProps{
+					Properties: map[string]apiextensionsv1.JSONSchemaProps{
 						"name": {Type: "string"},
 					},
 				},
 				"crossReference": {
 					Type: "object",
-					Properties: map[string]apiextensions.JSONSchemaProps{
+					Properties: map[string]apiextensionsv1.JSONSchemaProps{
 						"name":      {Type: "string"},
 						"namespace": {Type: "string"},
 					},
@@ -200,43 +200,43 @@ func TestBuildOpenAPIType(t *testing.T) {
 			},
 		},
 	}
-	goType, err := crd2go.FromOpenAPIType(td, crdRootType)
+	goType, err := crd.FromOpenAPIType(td, crdRootType)
 	assert.NoError(t, err)
 	assert.NotNil(t, goType)
 
-	expectedType := crd2go.NewStruct("RootType", []*crd2go.GoField{
-		crd2go.NewGoField("ArrayOfStrings", crd2go.NewArray(crd2go.NewPrimitive("string", "string"))),
-		crd2go.NewGoField("ArrayOfObjects", crd2go.NewArray(
-			crd2go.NewStruct("arrayOfObjects", []*crd2go.GoField{
-				crd2go.NewGoField("Key", crd2go.NewPrimitive("string", "string")),
-				crd2go.NewGoField("Value", crd2go.NewPrimitive("int", "int")),
+	expectedType := gotype.NewStruct("RootType", []*gotype.GoField{
+		gotype.NewGoField("ArrayOfStrings", gotype.NewArray(gotype.NewPrimitive("string", "string"))),
+		gotype.NewGoField("ArrayOfObjects", gotype.NewArray(
+			gotype.NewStruct("arrayOfObjects", []*gotype.GoField{
+				gotype.NewGoField("Key", gotype.NewPrimitive("string", "string")),
+				gotype.NewGoField("Value", gotype.NewPrimitive("int", "int")),
 			}),
 		)),
-		crd2go.NewGoField("RandomObject", crd2go.NewStruct("RandomObject", []*crd2go.GoField{
-			crd2go.NewGoField("Field1", crd2go.NewPrimitive("string", "string")),
-			crd2go.NewGoField("Field2", crd2go.NewPrimitive("float64", "float64")),
+		gotype.NewGoField("RandomObject", gotype.NewStruct("RandomObject", []*gotype.GoField{
+			gotype.NewGoField("Field1", gotype.NewPrimitive("string", "string")),
+			gotype.NewGoField("Field2", gotype.NewPrimitive("float64", "float64")),
 		})),
-		crd2go.NewGoField("LocalReference", crd2go.AddImportInfo(crd2go.NewStruct("LocalReference", []*crd2go.GoField{
-			crd2go.NewGoField("Name", crd2go.NewPrimitive("string", "string")),
+		gotype.NewGoField("LocalReference", gotype.AddImportInfo(gotype.NewStruct("LocalReference", []*gotype.GoField{
+			gotype.NewGoField("Name", gotype.NewPrimitive("string", "string")),
 		}), "k8s", "github.com/josvazg/crd2go/k8s")),
-		crd2go.NewGoField("CrossReference", crd2go.AddImportInfo(crd2go.NewStruct("Reference", []*crd2go.GoField{
-			crd2go.NewGoField("Name", crd2go.NewPrimitive("string", "string")),
-			crd2go.NewGoField("Namespace", crd2go.NewPrimitive("string", "string")),
+		gotype.NewGoField("CrossReference", gotype.AddImportInfo(gotype.NewStruct("Reference", []*gotype.GoField{
+			gotype.NewGoField("Name", gotype.NewPrimitive("string", "string")),
+			gotype.NewGoField("Namespace", gotype.NewPrimitive("string", "string")),
 		}), "k8s", "github.com/josvazg/crd2go/k8s")),
-		crd2go.NewGoField("SimpleString", crd2go.NewPrimitive("string", "string")),
-		crd2go.NewGoField("SimpleNumber", crd2go.NewPrimitive("float64", "float64")),
-		crd2go.NewGoField("SimpleInteger", crd2go.NewPrimitive("int", "int")),
+		gotype.NewGoField("SimpleString", gotype.NewPrimitive("string", "string")),
+		gotype.NewGoField("SimpleNumber", gotype.NewPrimitive("float64", "float64")),
+		gotype.NewGoField("SimpleInteger", gotype.NewPrimitive("int", "int")),
 	})
 
-	fmt.Printf("Generated GoType: %s\n", jsonize(goType))
-	fmt.Printf("Expected GoType: %s\n", jsonize(expectedType))
+	fmt.Printf("Generated GoType: %s\n", debug.JSONize(goType))
+	fmt.Printf("Expected GoType: %s\n", debug.JSONize(expectedType))
 
 	assert.Equal(t, expectedType, goType)
 }
 
 func TestBuiltInFormat2Type(t *testing.T) {
-	td := crd2go.NewTypeDict(nil, crd2go.KnownTypes()...)
-	crdTimeType := &crd2go.CRDType{
+	td := gotype.NewTypeDict(nil, crd.KnownTypes()...)
+	crdTimeType := &crd.CRDType{
 		Name:    "time",
 		Parents: []string{},
 		Schema: &apiextensionsv1.JSONSchemaProps{
@@ -244,12 +244,12 @@ func TestBuiltInFormat2Type(t *testing.T) {
 			Format: "date-time",
 		},
 	}
-	got, err := crd2go.FromOpenAPIType(td, crdTimeType)
+	got, err := crd.FromOpenAPIType(td, crdTimeType)
 	require.NoError(t, err)
-	want := &crd2go.GoType{
+	want := &gotype.GoType{
 		Name: "Time",
 		Kind: "opaque",
-		Import: &crd2go.ImportInfo{
+		Import: &config.ImportInfo{
 			"metav1",
 			"k8s.io/apimachinery/pkg/apis/meta/v1",
 		},
@@ -260,21 +260,21 @@ func TestBuiltInFormat2Type(t *testing.T) {
 func TestConditionsMatch(t *testing.T) {
 	for _, tc := range []struct {
 		title string
-		td    *crd2go.TypeDict
+		td    *gotype.TypeDict
 	}{
 		{
 			title: "match conditions with a known type",
-			td:    crd2go.NewTypeDict(nil, crd2go.KnownTypes()...),
+			td:    gotype.NewTypeDict(nil, crd.KnownTypes()...),
 		},
 		{
 			title: "match conditions with renames and imports",
-			td: crd2go.NewTypeDict(
+			td: gotype.NewTypeDict(
 				map[string]string{
 					"Cond": "Condition",
 				},
-				crd2go.NewAutoImportType(&crd2go.ImportedTypeConfig{
+				gotype.NewAutoImportType(&config.ImportedTypeConfig{
 					Name: "Condition",
-					ImportInfo: crd2go.ImportInfo{
+					ImportInfo: config.ImportInfo{
 						Alias: "metav1",
 						Path:  "k8s.io/apimachinery/pkg/apis/meta/v1",
 					},
@@ -283,17 +283,17 @@ func TestConditionsMatch(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			input := &crd2go.GoType{
+			input := &gotype.GoType{
 				Name: "Cond",
 				Kind: "struct",
-				Fields: []*crd2go.GoField{
+				Fields: []*gotype.GoField{
 					{
 						Comment: "Last time the condition transitioned from one status to another.",
 						Name:    "LastTransitionTime",
-						GoType: &crd2go.GoType{
+						GoType: &gotype.GoType{
 							Name: "Time",
 							Kind: "opaque",
-							Import: &crd2go.ImportInfo{
+							Import: &config.ImportInfo{
 								"metav1",
 								"k8s.io/apimachinery/pkg/apis/meta/v1",
 							},
@@ -302,43 +302,43 @@ func TestConditionsMatch(t *testing.T) {
 					{
 						Comment: "A human readable message indicating details about the transition.",
 						Name:    "Message",
-						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+						GoType:  &gotype.GoType{Name: "string", Kind: gotype.StringKind},
 					},
 					{
 						Comment: "observedGeneration represents the .metadata.generation that the condition was set based upon.",
 						Name:    "ObservedGeneration",
-						GoType:  &crd2go.GoType{Name: "int64", Kind: crd2go.IntKind},
+						GoType:  &gotype.GoType{Name: "int64", Kind: gotype.IntKind},
 					},
 					{
 						Comment: "The reason for the condition's last transition.",
 						Name:    "Reason",
-						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+						GoType:  &gotype.GoType{Name: "string", Kind: gotype.StringKind},
 					},
 					{
 						Comment: "Status of the condition, one of True, False, Unknown.",
 						Name:    "Status",
-						GoType:  &crd2go.GoType{Name: "ConditionStatus", Kind: crd2go.StringKind},
+						GoType:  &gotype.GoType{Name: "ConditionStatus", Kind: gotype.StringKind},
 					},
 					{
 						Comment: "Type of condition.",
 						Name:    "Type",
-						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+						GoType:  &gotype.GoType{Name: "string", Kind: gotype.StringKind},
 					},
 				},
-				Import: &crd2go.ImportInfo{},
+				Import: &config.ImportInfo{},
 			}
 			require.NoError(t, tc.td.RenameType([]string{"conditions"}, input))
-			want := &crd2go.GoType{
+			want := &gotype.GoType{
 				Name: "Condition",
 				Kind: "struct",
-				Fields: []*crd2go.GoField{
+				Fields: []*gotype.GoField{
 					{
 						Comment: "Last time the condition transitioned from one status to another.",
 						Name:    "LastTransitionTime",
-						GoType: &crd2go.GoType{
+						GoType: &gotype.GoType{
 							Name: "Time",
 							Kind: "opaque",
-							Import: &crd2go.ImportInfo{
+							Import: &config.ImportInfo{
 								"metav1",
 								"k8s.io/apimachinery/pkg/apis/meta/v1",
 							},
@@ -347,32 +347,32 @@ func TestConditionsMatch(t *testing.T) {
 					{
 						Comment: "A human readable message indicating details about the transition.",
 						Name:    "Message",
-						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+						GoType:  &gotype.GoType{Name: "string", Kind: gotype.StringKind},
 					},
 					{
 						Comment: "observedGeneration represents the .metadata.generation that the condition was set based upon.",
 						Name:    "ObservedGeneration",
-						GoType:  &crd2go.GoType{Name: "int64", Kind: crd2go.IntKind},
+						GoType:  &gotype.GoType{Name: "int64", Kind: gotype.IntKind},
 					},
 					{
 						Comment: "The reason for the condition's last transition.",
 						Name:    "Reason",
-						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+						GoType:  &gotype.GoType{Name: "string", Kind: gotype.StringKind},
 					},
 					{
 						Comment: "Status of the condition, one of True, False, Unknown.",
 						Name:    "Status",
-						GoType:  &crd2go.GoType{Name: "ConditionStatus", Kind: crd2go.StringKind},
+						GoType:  &gotype.GoType{Name: "ConditionStatus", Kind: gotype.StringKind},
 					},
 					{
 						Comment: "Type of condition.",
 						Name:    "Type",
-						GoType:  &crd2go.GoType{Name: "string", Kind: crd2go.StringKind},
+						GoType:  &gotype.GoType{Name: "string", Kind: gotype.StringKind},
 					},
 				},
-				Import: &crd2go.ImportInfo{
-					"metav1",
-					"k8s.io/apimachinery/pkg/apis/meta/v1",
+				Import: &config.ImportInfo{
+					Alias: "metav1",
+					Path:  "k8s.io/apimachinery/pkg/apis/meta/v1",
 				},
 			}
 			assert.Equal(t, want, input)
@@ -380,18 +380,10 @@ func TestConditionsMatch(t *testing.T) {
 	}
 }
 
-func jsonize(obj any) string {
-	js, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		return fmt.Sprintf("error: %v", err)
-	}
-	return string(js)
+func CrossReference() *gotype.GoType {
+	return gotype.MustTypeFrom(reflect.TypeOf(k8s.Reference{}))
 }
 
-func CrossReference() *crd2go.GoType {
-	return crd2go.MustTypeFrom(reflect.TypeOf(k8s.Reference{}))
-}
-
-func LocalReference() *crd2go.GoType {
-	return crd2go.MustTypeFrom(reflect.TypeOf(k8s.LocalReference{}))
+func LocalReference() *gotype.GoType {
+	return gotype.MustTypeFrom(reflect.TypeOf(k8s.LocalReference{}))
 }

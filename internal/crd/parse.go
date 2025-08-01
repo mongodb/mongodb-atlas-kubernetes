@@ -1,4 +1,4 @@
-package crd2go
+package crd
 
 import (
 	"bufio"

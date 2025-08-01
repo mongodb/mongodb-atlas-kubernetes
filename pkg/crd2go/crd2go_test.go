@@ -7,7 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/josvazg/crd2go/internal/crd2go"
+	"github.com/josvazg/crd2go/internal/crd"
+	"github.com/josvazg/crd2go/internal/gen"
+	"github.com/josvazg/crd2go/internal/gotype"
+	"github.com/josvazg/crd2go/pkg/crd2go"
+	"github.com/josvazg/crd2go/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,11 +32,11 @@ func TestGenerateFromCRDs(t *testing.T) {
 
 	in, err := samples.Open("samples/crds.yaml")
 	require.NoError(t, err)
-	req := crd2go.Request{
+	req := gotype.Request{
 		CodeWriterFn: BufferForCRD(buffers),
-		TypeDict: crd2go.NewTypeDict(nil, preloadedTypes()...),
-		CoreConfig: crd2go.CoreConfig{
-			Version:  crd2go.FirstVersion,
+		TypeDict:     gotype.NewTypeDict(nil, preloadedTypes()...),
+		CoreConfig: config.CoreConfig{
+			Version:  gen.FirstVersion,
 			SkipList: disabledKinds,
 		},
 	}
@@ -51,11 +55,11 @@ func TestRefs(t *testing.T) {
 
 	in, err := samples.Open("samples/samplerefs.yaml")
 	require.NoError(t, err)
-	req := crd2go.Request{
+	req := gotype.Request{
 		CodeWriterFn: BufferForCRD(buffers),
-		TypeDict: crd2go.NewTypeDict(nil, preloadedTypes()...),
-		CoreConfig: crd2go.CoreConfig{
-			Version:  crd2go.FirstVersion,
+		TypeDict:     gotype.NewTypeDict(nil, preloadedTypes()...),
+		CoreConfig: config.CoreConfig{
+			Version:  gen.FirstVersion,
 			SkipList: disabledKinds,
 		},
 	}
@@ -82,7 +86,7 @@ func readTestFile(t *testing.T, path string) string {
 	return string(b)
 }
 
-func BufferForCRD(buffers map[string]*bytes.Buffer) crd2go.CodeWriterFunc {
+func BufferForCRD(buffers map[string]*bytes.Buffer) config.CodeWriterFunc {
 	return func(filename string, overwrite bool) (io.WriteCloser, error) {
 		buffers[filename] = bytes.NewBufferString("")
 		return newWriteNopCloser(buffers[filename]), nil
@@ -104,18 +108,18 @@ func newWriteNopCloser(w io.Writer) io.WriteCloser {
 	return writeNopCloser{Writer: w}
 }
 
-func preloadedTypes() []*crd2go.GoType {
-	return append(crd2go.KnownTypes(), reservedTypeNames(extraReserved)...)
+func preloadedTypes() []*gotype.GoType {
+	return append(crd.KnownTypes(), reservedTypeNames(extraReserved)...)
 }
 
-func reservedTypeNames(reservedNames []string) []*crd2go.GoType {
-	reserved := make([]*crd2go.GoType, 0, len(reservedNames))
+func reservedTypeNames(reservedNames []string) []*gotype.GoType {
+	reserved := make([]*gotype.GoType, 0, len(reservedNames))
 	for _, reservedName := range reservedNames {
 		reserved = append(reserved, ReserveTypeName(reservedName))
 	}
 	return reserved
 }
 
-func ReserveTypeName(name string) *crd2go.GoType {
-	return crd2go.NewOpaqueType(name)
+func ReserveTypeName(name string) *gotype.GoType {
+	return gotype.NewOpaqueType(name)
 }

@@ -1,6 +1,11 @@
-package crd2go
+package gotype
 
-import "fmt"
+import (
+	"fmt"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
 
 // GoField is a field in a Go struct
 type GoField struct {
@@ -19,7 +24,7 @@ func NewGoField(name string, gt *GoType) *GoField {
 // NewGoFieldWithKey creates a new GoField with the given name, key, and GoType
 func NewGoFieldWithKey(name, key string, gt *GoType) *GoField {
 	return &GoField{
-		Name:   name,
+		Name:   title(name),
 		Key:    key,
 		GoType: gt,
 	}
@@ -33,15 +38,10 @@ func (g *GoField) Signature() string {
 	return fmt.Sprintf("%s:%s", g.Name, g.GoType.Signature())
 }
 
-// RenameType renames the GoType of the field to ensure it is unique within the
-// TypeDict. It uses the parent names as needed to create a unique name for the
-// type, if the type is not a primitive and its name is already taken.
-func (f *GoField) RenameType(td *TypeDict, parentNames []string) error {
-	if f.GoType == nil {
-		return fmt.Errorf("failed to rename type for field %s: GoType is nil", f.Name)
+// untitle de-capitalizes the first letter of a string and returns it using Go cases library
+func untitle(s string) string {
+	if s == "" {
+		return ""
 	}
-	if err := td.RenameType(parentNames, f.GoType); err != nil {
-		return fmt.Errorf("failed to rename field type: %w", err)
-	}
-	return nil
+	return cases.Lower(language.English).String(s[0:1]) + s[1:]
 }
