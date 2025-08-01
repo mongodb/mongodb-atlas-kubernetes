@@ -80,7 +80,7 @@ jobs:
       CERTIFIED_TAG: ${{ github.event.inputs.version }}-certified
       DOCKER_IMAGE_URL: mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
       QUAY_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
-      QUAY_CERTIFIED_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:certified-${{ github.event.inputs.version }}
+      QUAY_CERTIFIED_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}-certified
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
