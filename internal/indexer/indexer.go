@@ -70,6 +70,7 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasThirdPartyIntegrationByProjectIndexer(logger),
 		NewAtlasThirdPartyIntegrationByCredentialIndexer(logger),
 		NewAtlasThirdPartyIntegrationBySecretsIndexer(logger),
+		NewAtlasOrgSettingsByConnectionSecretIndexer(logger),
 	)
 	if version.IsExperimental() {
 		// add experimental indexers here

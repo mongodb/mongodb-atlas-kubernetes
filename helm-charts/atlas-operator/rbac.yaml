@@ -38,6 +38,7 @@
     - atlasstreaminstances
     - atlasteams
     - atlasthirdpartyintegrations
+    - atlasorgsettings
   verbs:
     - create
     - delete
@@ -67,6 +68,7 @@
     - atlasstreaminstances/status
     - atlasteams/status
     - atlasthirdpartyintegrations/status
+    - atlasorgsettings/status
   verbs:
     - get
     - patch
