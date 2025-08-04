@@ -215,9 +215,9 @@ jobs:
           git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
 
           mkdir -p "$RELEASE_DIR"
-          cp -r deploy "$RELEASE_DIR/deploy"
-          cp -r bundle "$RELEASE_DIR/bundle"
-          cp -r helm-charts "$RELEASE_DIR/helm-charts"
+          cp -rf deploy "$RELEASE_DIR/"
+          cp -rf bundle "$RELEASE_DIR/"
+          cp -rf helm-charts "$RELEASE_DIR/"
           cp bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
 
           git fetch origin
