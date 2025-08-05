@@ -151,4 +151,4 @@ sigs.k8s.io/controller-runtime,https://github.com/kubernetes-sigs/controller-run
 sigs.k8s.io/json,https://github.com/kubernetes-sigs/json/blob/9aa6b5e7a4b3/LICENSE,Apache-2.0
 sigs.k8s.io/randfill,https://github.com/kubernetes-sigs/randfill/blob/v1.0.0/LICENSE,Apache-2.0
 sigs.k8s.io/structured-merge-diff/v4,https://github.com/kubernetes-sigs/structured-merge-diff/blob/v4.6.0/LICENSE,Apache-2.0
-sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.5.0/LICENSE,Apache-2.0
+sigs.k8s.io/yaml,https://github.com/kubernetes-sigs/yaml/blob/v1.6.0/LICENSE,Apache-2.0
