@@ -19,11 +19,38 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
+
+func Ensure(ctx context.Context, client client.Client, namespace, projectName, projectID, clusterName string, data ConnSecretData) (string, error) {
+	var getError error
+	s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+		Name:      CreateK8sFormat(projectName, clusterName, data.DBUserName),
+		Namespace: namespace,
+	}}
+	if getError = client.Get(ctx, kube.ObjectKeyFromObject(s), s); getError != nil && !apierrors.IsNotFound(getError) {
+		return "", getError
+	}
+
+	ids := ConnSecretIdentifiers{
+		ProjectID:   projectID,
+		ClusterName: kube.NormalizeIdentifier(clusterName),
+	}
+	if err := fillConnSecretData(s, ids, data); err != nil {
+		return "", err
+	}
+	if getError != nil {
+		// Creating
+		return s.Name, client.Create(ctx, s)
+	}
+
+	return s.Name, client.Update(ctx, s)
+}
 
 // ListByDeploymentName returns all secrets in the specified namespace that have labels for 'projectID' and 'clusterName'
 func ListByDeploymentName(ctx context.Context, k8sClient client.Client, namespace, projectID, clusterName string) ([]corev1.Secret, error) {

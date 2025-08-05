@@ -114,3 +114,18 @@ func getSecretsNames(secrets []corev1.Secret) []string {
 	}
 	return res
 }
+
+func dataForSecret() ConnSecretData {
+	return ConnSecretData{
+		DBUserName: "admin",
+		Password:   "m@gick%",
+		ConnURL:    "mongodb://mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin",
+		SrvConnURL: "mongodb+srv://mongodb.example.com:27017/?authSource=admin",
+		PrivateConnURLs: []PrivateLinkConnURLs{
+			{
+				PvtConnURL:    "mongodb://mongodb0-pri.example.com:27017,mongodb1-pri.example.com:27017/?authSource=admin",
+				PvtSrvConnURL: "mongodb+srv://mongodb-pri.example.com:27017/?authSource=admin",
+			},
+		},
+	}
+}
