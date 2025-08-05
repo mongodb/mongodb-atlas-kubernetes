@@ -17,198 +17,272 @@ package connectionsecret
 import (
 	"context"
 	"fmt"
-	"strings"
+	"net/url"
 
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/record"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
-const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
+const (
+	ProjectLabelKey string = "atlas.mongodb.com/project-id"
+	ClusterLabelKey string = "atlas.mongodb.com/cluster-name"
+	TypeLabelKey           = "atlas.mongodb.com/type"
+	CredLabelVal           = "credentials"
 
-func ReapOrphanConnectionSecrets(ctx context.Context, k8sClient client.Client, projectID, namespace string, projectDeploymentNames []string) ([]string, error) {
-	secretList := &corev1.SecretList{}
-	labelSelector := labels.SelectorFromSet(labels.Set{TypeLabelKey: CredLabelVal, ProjectLabelKey: projectID})
-	err := k8sClient.List(context.Background(), secretList, &client.ListOptions{
-		LabelSelector: labelSelector,
-		Namespace:     namespace,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed listing possible orphan secrets: %w", err)
+	userNameKey     string = "username"
+	passwordKey     string = "password"
+	standardKey     string = "connectionStringStandard"
+	standardKeySrv  string = "connectionStringStandardSrv"
+	privateKey      string = "connectionStringPrivate"
+	privateSrvKey   string = "connectionStringPrivateSrv"
+	privateShardKey string = "connectionStringPrivateShard"
+)
+
+// resolveProjectName finds the respective project name for the given projectID in the identifiers
+func (r *ConnectionSecretReconciler) resolveProjectName(ctx context.Context, ids ConnSecretIdentifiers, pair *ConnSecretPair) (string, error) {
+	if ids.ProjectName != "" {
+		return ids.ProjectName, nil
 	}
 
-	removedOrphanSecrets := []string{}
-	for _, secret := range secretList.Items {
-		clusterName, ok := secret.Labels[ClusterLabelKey]
-		if !ok {
-			continue
-		}
-		if clusterExists := stringutil.Contains(projectDeploymentNames, clusterName); clusterExists {
-			continue
-		}
-		if err := k8sClient.Delete(ctx, &secret); err != nil {
-			return nil, fmt.Errorf("failed to remove orphan connection Secret: %w", err)
-		} else {
-			removedOrphanSecrets = append(removedOrphanSecrets, fmt.Sprintf("%s/%s", namespace, secret.Name))
-		}
-	}
-	return removedOrphanSecrets, nil
-}
-
-func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, ds deployment.AtlasDeploymentsService, recorder record.EventRecorder, project *project.Project, dbUser akov2.AtlasDatabaseUser) workflow.DeprecatedResult {
-	conns, err := ds.ListDeploymentConnections(ctx.Context, project.ID)
-	if err != nil {
-		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err)
-	}
-
-	// ensure secrets for both deployments and advanced deployment.
-	if result := createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx, k8sClient, recorder, project, dbUser, conns); !result.IsOk() {
-		return result
-	}
-
-	return workflow.OK()
-}
-
-func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project *project.Project, dbUser akov2.AtlasDatabaseUser, conns []deployment.Connection) workflow.DeprecatedResult {
-	requeue := false
-	secrets := make([]string, 0)
-
-	for _, di := range conns {
-		scopes := dbUser.GetScopes(akov2.DeploymentScopeType)
-		if len(scopes) != 0 && !stringutil.Contains(scopes, di.Name) {
-			continue
-		}
-		// Deployment may be not ready yet, so no connection urls - skipping
-		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
-		if di.SrvConnURL == "" {
-			ctx.Log.Debugw("Deployment is not ready yet - not creating a connection Secret", "deployment", di.Name)
-			requeue = true
-			continue
-		}
-		password, err := dbUser.ReadPassword(ctx.Context, k8sClient)
+	if pair.Deployment != nil && pair.Deployment.Spec.ProjectRef != nil {
+		projectName, err := pair.ResolveProjectNameK8s(ctx, r.Client, pair.Deployment.Namespace)
 		if err != nil {
-			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err)
+			return "", err
 		}
-		data := ConnectionData{
-			DBUserName: dbUser.Spec.Username,
-			Password:   password,
-			ConnURL:    di.ConnURL,
-			SrvConnURL: di.SrvConnURL,
+		if projectName != "" {
+			return projectName, nil
 		}
-		FillPrivateConns(di, &data)
+	}
 
-		var secretName string
-		if secretName, err = Ensure(ctx.Context, k8sClient, dbUser.Namespace, project.Name, project.ID, di.Name, data); err != nil {
-			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err)
+	if pair.User != nil && pair.User.Spec.ProjectRef != nil {
+		projectName, err := pair.ResolveProjectNameK8s(ctx, r.Client, pair.User.Namespace)
+		if err != nil {
+			return "", err
 		}
-		secrets = append(secrets, secretName)
-		ctx.Log.Debugw("Ensured connection Secret up-to-date", "secretname", secretName)
+		if projectName != "" {
+			return projectName, nil
+		}
 	}
 
-	if len(secrets) > 0 {
-		recorder.Eventf(&dbUser, "Normal", ConnectionSecretsEnsuredEvent, "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+	if pair.Deployment != nil {
+		connCfg, err := r.ResolveConnectionConfig(ctx, pair.Deployment)
+		if err != nil {
+			return "", err
+		}
+		sdkClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connCfg.Credentials, r.Log)
+		if err != nil {
+			return "", err
+		}
+		atlasProject, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20250312002, pair.Deployment)
+		if err != nil {
+			return "", err
+		}
+		if atlasProject.Name != "" {
+			return atlasProject.Name, nil
+		}
 	}
 
-	if err := cleanupStaleSecrets(ctx, k8sClient, project.ID, dbUser); err != nil {
-		return workflow.Terminate(workflow.DatabaseUserStaleConnectionSecrets, err)
+	if pair.User != nil {
+		connCfg, err := r.ResolveConnectionConfig(ctx, pair.User)
+		if err != nil {
+			return "", err
+		}
+		sdkClientSet, err := r.AtlasProvider.SdkClientSet(ctx, connCfg.Credentials, r.Log)
+		if err != nil {
+			return "", err
+		}
+		atlasProject, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20250312002, pair.User)
+		if err != nil {
+			return "", err
+		}
+		if atlasProject.Name != "" {
+			return atlasProject.Name, nil
+		}
 	}
 
-	if requeue {
-		return workflow.InProgress(workflow.DatabaseUserConnectionSecretsNotCreated, "Waiting for deployments to get created/updated")
-	}
-	return workflow.OK()
+	return "", fmt.Errorf("unable to resolve ProjectName")
 }
 
-func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, projectID string, user akov2.AtlasDatabaseUser) error {
-	if err := removeStaleByScope(ctx, k8sClient, projectID, user); err != nil {
-		return err
-	}
-	// Performing the cleanup of old secrets only if the username has changed
-	if user.Status.UserName != user.Spec.Username {
-		// Note, that we pass the username from the status, not from the spec
-		return RemoveStaleSecretsByUserName(ctx.Context, k8sClient, projectID, user.Status.UserName, user, ctx.Log)
-	}
-	return nil
-}
+// handleDelete manages the case where we will delete the connection secret
+func (r *ConnectionSecretReconciler) handleDelete(
+	ctx context.Context, req ctrl.Request, ids ConnSecretIdentifiers, pair *ConnSecretPair) (ctrl.Result, error) {
+	strRequest := req.NamespacedName.String()
 
-// removeStaleByScope removes the secrets that are not relevant due to changes to 'scopes' field for the AtlasDatabaseUser.
-func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectID string, user akov2.AtlasDatabaseUser) error {
-	scopes := user.GetScopes(akov2.DeploymentScopeType)
-	if len(scopes) == 0 {
-		return nil
+	// ProjectName is required for ConnectionSecret metadata.name to delete
+	projectName, err := r.resolveProjectName(ctx, ids, pair)
+	if projectName == "" {
+		err = fmt.Errorf("project name is empty")
 	}
-	secrets, err := ListByUserName(ctx.Context, k8sClient, user.Namespace, projectID, user.Spec.Username)
 	if err != nil {
-		return err
+		r.Log.Errorf("Failed to resolve project name for ConnectionSecret request with %s: %v", strRequest, err)
+		return workflow.Terminate("UnresolvedProjectName", err).ReconcileResult()
 	}
-	for i, s := range secrets {
-		deployment, ok := s.Labels[ClusterLabelKey]
-		if !ok {
-			continue
+
+	r.Log.Debugf("Project name resolved to delete for ConnectionSecret request with %s", strRequest)
+	name := CreateK8sFormat(projectName, ids.ClusterName, ids.DatabaseUsername)
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: req.Namespace,
+		},
+	}
+
+	// Delete the secret
+	if err := r.Client.Delete(ctx, secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			r.Log.Infof("No secret to delete for ConnectionSecret request with %s: %v", strRequest, err)
+			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 		}
-		if !stringutil.Contains(scopes, deployment) {
-			if err = k8sClient.Delete(ctx.Context, &secrets[i]); err != nil {
-				return err
+
+		r.Log.Errorf("Unable to delete secret for ConnectionSecret request with %s: %v", strRequest, err)
+		return workflow.Terminate("FailedDeletion", err).ReconcileResult()
+	}
+
+	r.Log.Infof("Secret deleted for ConnectionSecret request with %s", strRequest)
+	r.EventRecorder.Event(secret, corev1.EventTypeNormal, "Deleted", "ConnectionSecret deleted")
+	return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+}
+
+// handleUpdate manages the case where we will create or update the connection secret
+func (r *ConnectionSecretReconciler) handleUpdate(
+	ctx context.Context, req ctrl.Request, ids ConnSecretIdentifiers, pair *ConnSecretPair) (ctrl.Result, error) {
+	strRequest := req.NamespacedName.String()
+
+	// ProjectName is required for ConnectionSecret metadata.name to create or update
+	projectName, err := r.resolveProjectName(ctx, ids, pair)
+	if projectName == "" {
+		err = fmt.Errorf("project name is empty")
+	}
+	if err != nil {
+		r.Log.Errorf("Failed to resolve ProjectName for ConnectionSecret request with %s: %v", strRequest, err)
+		return workflow.Terminate("FailedToResolveProjectName", err).ReconcileResult()
+	}
+	ids.ProjectName = projectName
+	r.Log.Debugf("Project name resolved to create/update for ConnectionSecret request with %s", strRequest)
+
+	// Build connection data
+	data, err := pair.BuildConnectionData(ctx, r.Client)
+	if err != nil {
+		r.Log.Errorf("Failed to build connection data for ConnectionSecret request with %s: %v", strRequest, err)
+		return workflow.Terminate("FailedToBuildConnectionData", err).ReconcileResult()
+	}
+
+	r.Log.Debugf("ConnectionData created for ConnectionSecret request with %s", strRequest)
+
+	name := CreateK8sFormat(projectName, ids.ClusterName, ids.DatabaseUsername)
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: req.Namespace,
+		},
+	}
+
+	// Populate Secret data/labels
+	if err := fillConnSecretData(secret, ids, data); err != nil {
+		r.Log.Errorf("Failed to fill secret data for ConnectionSecret request with %s: %v", strRequest, err)
+		return workflow.Terminate("FailedToFillSecret", err).ReconcileResult()
+	}
+
+	// Add owners
+	if err := controllerutil.SetOwnerReference(pair.User, secret, r.Scheme); err != nil {
+		r.Log.Errorf("Failed to set controller owner (DatabaseUser) for %s: %v", strRequest, err)
+		return workflow.Terminate("FailedToSetOwnerReferences", err).ReconcileResult()
+	}
+
+	// Do not uncomment; we cannot create owners cross-namespaced. connection secret will live in the same namespace as the user
+	// if err := controllerutil.SetOwnerReference(pair.Deployment, secret, r.Scheme); err != nil {
+	// 	r.Log.Errorf("Failed to add Deployment owner for %s: %v", strRequest, err)
+	// 	return workflow.Terminate("FailedToSetOwnerReferences", err).ReconcileResult()
+	// }
+
+	// Create or Update the Secret
+	if err := r.Client.Create(ctx, secret); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			// Fetch existing to get ResourceVersion, then update
+			current := &corev1.Secret{}
+			if getErr := r.Client.Get(ctx, client.ObjectKeyFromObject(secret), current); getErr != nil {
+				r.Log.Errorf("Failed to fetch existing ConnectionSecret for request with %s: %v", strRequest, getErr)
+				return workflow.Terminate("FailedToGetSecret", getErr).ReconcileResult()
 			}
-			ctx.Log.Debugw("Removed connection Secret as it's not referenced by the AtlasDatabaseUser anymore", "secretname", s.Name)
+			secret.ResourceVersion = current.ResourceVersion
+			if updErr := r.Client.Update(ctx, secret); updErr != nil {
+				r.Log.Errorf("Failed to update ConnectionSecret for request with %s: %v", strRequest, updErr)
+				return workflow.Terminate("FailedToUpdateSecret", updErr).ReconcileResult()
+			}
+		} else {
+			r.Log.Errorf("Failed to create ConnectionSecret for request with %s: %v", strRequest, err)
+			return workflow.Terminate("FailedToCreateSecret", err).ReconcileResult()
 		}
 	}
+
+	r.Log.Infof("Secret created/updated for ConnectionSecret request with %s", strRequest)
+	r.EventRecorder.Event(secret, corev1.EventTypeNormal, "Updated", "ConnectionSecret updated")
+	return workflow.OK().ReconcileResult()
+}
+
+func fillConnSecretData(secret *corev1.Secret, ids ConnSecretIdentifiers, data ConnSecretData) error {
+	var err error
+	username := data.DBUserName
+	password := data.Password
+
+	if data.ConnURL, err = CreateURL(data.ConnURL, username, password); err != nil {
+		return err
+	}
+	if data.SrvConnURL, err = CreateURL(data.SrvConnURL, username, password); err != nil {
+		return err
+	}
+	for idx, privateConn := range data.PrivateConnURLs {
+		if data.PrivateConnURLs[idx].PvtConnURL, err = CreateURL(privateConn.PvtConnURL, username, password); err != nil {
+			return err
+		}
+		if data.PrivateConnURLs[idx].PvtSrvConnURL, err = CreateURL(privateConn.PvtSrvConnURL, username, password); err != nil {
+			return err
+		}
+		if data.PrivateConnURLs[idx].PvtShardConnURL, err = CreateURL(privateConn.PvtShardConnURL, username, password); err != nil {
+			return err
+		}
+	}
+
+	secret.Labels = map[string]string{
+		TypeLabelKey:    CredLabelVal,
+		ProjectLabelKey: ids.ProjectID,
+		ClusterLabelKey: ids.ClusterName,
+	}
+
+	secret.Data = map[string][]byte{
+		userNameKey:    []byte(data.DBUserName),
+		passwordKey:    []byte(data.Password),
+		standardKey:    []byte(data.ConnURL),
+		standardKeySrv: []byte(data.SrvConnURL),
+		privateKey:     []byte(""),
+		privateSrvKey:  []byte(""),
+	}
+
+	for idx, privateConn := range data.PrivateConnURLs {
+		var suffix string
+		if idx != 0 {
+			suffix = fmt.Sprint(idx)
+		}
+		secret.Data[privateKey+suffix] = []byte(privateConn.PvtConnURL)
+		secret.Data[privateSrvKey+suffix] = []byte(privateConn.PvtSrvConnURL)
+		secret.Data[privateShardKey+suffix] = []byte(privateConn.PvtShardConnURL)
+	}
+
 	return nil
 }
 
-// RemoveStaleSecretsByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
-func RemoveStaleSecretsByUserName(ctx context.Context, k8sClient client.Client, projectID, userName string, user akov2.AtlasDatabaseUser, log *zap.SugaredLogger) error {
-	secrets, err := ListByUserName(ctx, k8sClient, user.Namespace, projectID, userName)
+func CreateURL(connURL, username, password string) (string, error) {
+	cs, err := url.Parse(connURL)
 	if err != nil {
-		return err
-	}
-	var lastError error
-	removed := 0
-	for i := range secrets {
-		if err = k8sClient.Delete(ctx, &secrets[i]); err != nil {
-			log.Errorf("Failed to remove connection Secret: %v", err)
-			lastError = err
-		} else {
-			log.Debugw("Removed connection Secret", "secret", kube.ObjectKeyFromObject(&secrets[i]))
-			removed++
-		}
-	}
-	if removed > 0 {
-		log.Infof("Removed %d connection secrets", removed)
-	}
-	return lastError
-}
-
-func FillPrivateConns(conn deployment.Connection, data *ConnectionData) {
-	if conn.PrivateURL != "" {
-		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-			PvtConnURL:    conn.PrivateURL,
-			PvtSrvConnURL: conn.SrvPrivateURL,
-		})
+		return "", err
 	}
 
-	if conn.Serverless {
-		for _, pe := range conn.PrivateEndpoints {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-				PvtSrvConnURL: pe.ServerURL,
-			})
-		}
-	} else {
-		for _, pe := range conn.PrivateEndpoints {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-				PvtConnURL:      pe.URL,
-				PvtSrvConnURL:   pe.ServerURL,
-				PvtShardConnURL: pe.ShardURL,
-			})
-		}
-	}
+	cs.User = url.UserPassword(username, password)
+	return cs.String(), nil
 }

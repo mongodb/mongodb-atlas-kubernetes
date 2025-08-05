@@ -79,7 +79,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 			connURLs = append(connURLs, fmt.Sprintf("mongodb://%s:%s@%s?ssl=true", dbUser.Spec.Username, password, host))
 		}
 
-		data := connectionsecret.ConnectionData{
+		data := connectionsecret.ConnSecretData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
 			ConnURL:    strings.Join(connURLs, ","),
