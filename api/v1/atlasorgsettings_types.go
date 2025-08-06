@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
 
 func init() {
@@ -91,14 +92,8 @@ type AtlasOrgSettings struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasOrgSettingsSpec   `json:"spec,omitempty"`
-	Status AtlasOrgSettingsStatus `json:"status,omitempty"`
-}
-
-type AtlasOrgSettingsStatus struct {
-	// Conditions Represents the latest available observations of a resource's current
-	// state.
-	Conditions *[]metav1.Condition `json:"conditions,omitempty"`
+	Spec   AtlasOrgSettingsSpec          `json:"spec,omitempty"`
+	Status status.AtlasOrgSettingsStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
