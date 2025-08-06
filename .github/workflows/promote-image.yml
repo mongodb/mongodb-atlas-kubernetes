@@ -43,9 +43,6 @@ jobs:
       - name: Prepare image tag
         id: set_tag
         uses: ./.github/actions/set-tag
-        with:
-          branch_name: ${{ github.ref_name }}
-          commit_sha: ${{ github.sha }}
 
       - name: Prepare tag for promoted image
         id: promoted_tag

@@ -107,5 +107,6 @@ jobs:
       - check-licenses
       - e2e2
       - cloud-tests
+    if: github.ref_name == 'main'
     uses: ./.github/workflows/promote-image.yml
     secrets: inherit
