@@ -51,7 +51,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
@@ -143,7 +142,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
-	projectService := project.NewProjectAPIService(sdkClientSet.SdkClient20250312002.ProjectsApi)
 	deploymentService := deployment.NewAtlasDeployments(sdkClientSet.SdkClient20250312002.ClustersApi, sdkClientSet.SdkClient20250312002.ServerlessInstancesApi, sdkClientSet.SdkClient20250312002.GlobalClustersApi, sdkClientSet.SdkClient20250312002.FlexClustersApi, r.AtlasProvider.IsCloudGov())
 	atlasProject, err := r.ResolveProject(workflowCtx.Context, sdkClientSet.SdkClient20250312002, atlasDeployment)
 	if err != nil {
@@ -180,13 +178,13 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	switch {
 	case atlasDeployment.IsServerless():
-		return r.handleServerlessInstance(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
+		return r.handleServerlessInstance(workflowCtx, deploymentService, deploymentInAKO, deploymentInAtlas)
 
 	case atlasDeployment.IsFlex():
-		return r.handleFlexInstance(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
+		return r.handleFlexInstance(workflowCtx, deploymentService, deploymentInAKO, deploymentInAtlas)
 
 	case atlasDeployment.IsAdvancedDeployment():
-		return r.handleAdvancedDeployment(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
+		return r.handleAdvancedDeployment(workflowCtx, deploymentService, deploymentInAKO, deploymentInAtlas)
 	}
 
 	return workflow.OK().ReconcileResult()

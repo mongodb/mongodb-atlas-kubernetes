@@ -693,7 +693,6 @@ func TestDbuLifeCycle(t *testing.T) {
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
 				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
-				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
 
 				return service
 			},
@@ -1213,7 +1212,6 @@ func TestUpdate(t *testing.T) {
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
 				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
-				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
 
 				return service
 			},
@@ -1659,43 +1657,6 @@ func TestReadiness(t *testing.T) {
 					WithMessageRegexp("0 out of 1 deployments have applied database user changes"),
 			},
 		},
-		"failed to create connection secrets": {
-			wantErr: true,
-			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					Username: "user1",
-					PasswordSecret: &common.ResourceRef{
-						Name: "user-pass",
-					},
-					Scopes: []akov2.ScopeSpec{
-						{
-							Name: "cluster2",
-							Type: akov2.DeploymentScopeType,
-						},
-					},
-				},
-			},
-			dService: func() deployment.AtlasDeploymentsService {
-				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListDeploymentNames(context.Background(), "").
-					Return([]string{"cluster1", "cluster2"}, nil)
-				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
-					Return(true, nil)
-				service.EXPECT().ListDeploymentConnections(context.Background(), "").
-					Return(nil, errors.New("failed to list cluster connections"))
-
-				return service
-			},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.DatabaseUserReadyType).
-					WithReason(string(workflow.DatabaseUserConnectionSecretsNotCreated)).
-					WithMessageRegexp("failed to list cluster connections"),
-			},
-		},
 		"resource is ready": {
 			dbUser: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1721,8 +1682,6 @@ func TestReadiness(t *testing.T) {
 					Return([]string{"cluster1", "cluster2"}, nil)
 				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
 					Return(true, nil)
-				service.EXPECT().ListDeploymentConnections(context.Background(), "").
-					Return([]deployment.Connection{}, nil)
 
 				return service
 			},

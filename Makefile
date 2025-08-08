@@ -573,7 +573,7 @@ install-credentials: set-namespace ## Install the Atlas credentials for the Oper
 
 .PHONY: prepare-run
 prepare-run: generate vet manifests run-kind install-crds install-credentials
-	rm bin/manager
+	rm -rf bin/manager
 	$(MAKE) manager VERSION=$(NEXT_VERSION)
 
 .PHONY: run
