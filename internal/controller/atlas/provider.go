@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
 	"strings"
 
@@ -29,6 +30,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/deprecation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
@@ -128,7 +130,7 @@ func (p *ProductionProvider) Client(ctx context.Context, creds *Credentials, log
 		httputil.LoggingTransport(log),
 	}
 
-	transport := p.newDryRunTransport(http.DefaultTransport)
+	transport := p.newTransport(http.DefaultTransport, log)
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: transport}, clientCfg...)
 	if err != nil {
 		return nil, err
@@ -141,7 +143,7 @@ func (p *ProductionProvider) Client(ctx context.Context, creds *Credentials, log
 
 func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error) {
 	var transport http.RoundTripper = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
-	transport = p.newDryRunTransport(transport)
+	transport = p.newTransport(transport, log)
 	transport = httputil.NewLoggingTransport(log, false, transport)
 	if p.isLogInDebug {
 		log.Debug("JSON payload diff is enabled for Atlas API requests (PATCH & PUT)")
@@ -163,7 +165,11 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 	}, nil
 }
 
-func (p *ProductionProvider) newDryRunTransport(delegate http.RoundTripper) http.RoundTripper {
+func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.SugaredLogger) http.RoundTripper {
+	if os.Getenv("AKO_DEPRECATION_WARNINGS") != "" {
+		delegate = deprecation.NewLoggingTransport(delegate, log.Desugar())
+	}
+
 	if p.dryRun {
 		return dryrun.NewDryRunTransport(delegate)
 	}
