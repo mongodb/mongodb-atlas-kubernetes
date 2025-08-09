@@ -56,8 +56,14 @@ MODIFIED_FILES=$(git diff --name-only --cached)
 echo "Modified files: $MODIFIED_FILES"  
 
 # Create blob and tree  
-NEW_TREE_ARRAY="["  
-for FILE_PATH in $MODIFIED_FILES; do  
+NEW_TREE_ARRAY="["
+for FILE_PATH in $MODIFIED_FILES; do
+  if [[ ! -f "$FILE_PATH" ]]; then
+    echo "Detected deleted file: $FILE_PATH"
+    NEW_TREE_ARRAY="${NEW_TREE_ARRAY}{\"path\": \"$FILE_PATH\", \"mode\": \"100644\", \"type\": \"blob\", \"sha\": null},"
+    continue
+  fi
+
   # Read file content encoded to base64  
   ENCODED_CONTENT=$(base64 -w0 < "${FILE_PATH}")
 
@@ -71,7 +77,7 @@ for FILE_PATH in $MODIFIED_FILES; do
   rm content.blob
 
   # Append file info to tree JSON  
-  NEW_TREE_ARRAY="${NEW_TREE_ARRAY}{\"path\": \"$FILE_PATH\", \"mode\": \"100644\", \"type\": \"blob\", \"sha\": \"$BLOB_SHA\"},"  
+  NEW_TREE_ARRAY="${NEW_TREE_ARRAY}{\"path\": \"$FILE_PATH\", \"mode\": \"100644\", \"type\": \"blob\", \"sha\": \"$BLOB_SHA\"},"
 done
 
 # Remove trailing comma and close the array  
