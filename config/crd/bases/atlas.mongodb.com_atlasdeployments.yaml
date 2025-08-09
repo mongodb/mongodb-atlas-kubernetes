@@ -113,6 +113,13 @@ spec:
                     - SHARDED
                     - GEOSHARDED
                     type: string
+                  configServerManagementMode:
+                    description: Config Server Management Mode for creating or updating
+                      a sharded cluster.
+                    enum:
+                    - ATLAS_MANAGED
+                    - FIXED_TO_DEDICATED
+                    type: string
                   customZoneMapping:
                     items:
                       properties:
