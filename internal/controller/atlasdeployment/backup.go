@@ -15,21 +15,20 @@
 package atlasdeployment
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"errors"
 	"fmt"
+	"reflect"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
@@ -210,42 +209,60 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(ctx context.Co
 }
 
 func backupSchedulesAreEqual(currentSchedule, newSchedule *admin.DiskBackupSnapshotSchedule20240805) (bool, error) {
-	currentCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
-	err := compat.JSONCopy(&currentCopy, currentSchedule)
+	currentCopy, err := deepCopy(currentSchedule)
 	if err != nil {
 		return false, err
 	}
 
-	newCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
-	err = compat.JSONCopy(&newCopy, newSchedule)
+	newCopy, err := deepCopy(newSchedule)
 	if err != nil {
 		return false, err
 	}
 
-	normalizeBackupSchedule(&currentCopy)
-	normalizeBackupSchedule(&newCopy)
-	d := cmp.Diff(&currentCopy, &newCopy, cmpopts.EquateEmpty())
-	if d != "" {
-		return false, nil
-	}
-	return true, nil
+	normalizeBackupSchedule(currentCopy)
+	normalizeBackupSchedule(newCopy)
+
+	return reflect.DeepEqual(currentCopy, newCopy), nil
 }
 
-func normalizeBackupSchedule(s *mongodbatlas.CloudProviderSnapshotBackupPolicy) {
-	s.Links = nil
-	s.NextSnapshot = ""
-	if len(s.Policies) > 0 && len(s.Policies[0].PolicyItems) > 0 {
-		for i := range s.Policies[0].PolicyItems {
-			s.Policies[0].PolicyItems[i].ID = ""
-		}
+func deepCopy[T any](src *T) (*T, error) {
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
+		return nil, err
 	}
-	s.UpdateSnapshots = nil
 
-	if len(s.CopySettings) > 0 {
-		for i := range s.CopySettings {
-			s.CopySettings[i].ReplicationSpecID = nil
+	dst := new(T)
+	err := gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
+	if err != nil {
+		return nil, err
+	}
+
+	return dst, nil
+}
+
+func normalizeBackupSchedule(s *admin.DiskBackupSnapshotSchedule20240805) {
+	policies := s.GetPolicies()
+	if len(policies) > 0 && len(policies[0].GetPolicyItems()) > 0 {
+		items := policies[0].GetPolicyItems()
+		for i := range items {
+			items[i].Id = nil
+		}
+
+		policies[0].SetPolicyItems(items)
+	}
+
+	copySettings := s.GetCopySettings()
+	if len(copySettings) > 0 {
+		for i := range copySettings {
+			copySettings[i].ZoneId = ""
 		}
 	}
+
+	s.Links = nil
+	s.NextSnapshot = nil
+	s.UpdateSnapshots = nil
+	s.SetPolicies(policies)
+	s.SetCopySettings(copySettings)
 }
 
 func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Context, clusterName string) error {

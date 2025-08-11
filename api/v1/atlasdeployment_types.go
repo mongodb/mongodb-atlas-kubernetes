@@ -15,10 +15,7 @@
 package v1
 
 import (
-	"errors"
-
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -26,7 +23,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -159,13 +155,6 @@ type AdvancedDeploymentSpec struct {
 	SearchIndexes []SearchIndex `json:"searchIndexes,omitempty"`
 }
 
-// ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
-func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error) {
-	result := &mongodbatlas.AdvancedCluster{}
-	err := compat.JSONCopy(result, s)
-	return result, err
-}
-
 func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymentSpec {
 	if len(s.SearchNodes) == 0 {
 		return nil
@@ -202,13 +191,6 @@ type ServerlessSpec struct {
 	// Flag that indicates whether termination protection is enabled on the cluster. If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
 	// +kubebuilder:default:=false
 	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
-}
-
-// ToAtlas converts the ServerlessSpec to native Atlas client Cluster format.
-func (s *ServerlessSpec) ToAtlas() (*mongodbatlas.Cluster, error) {
-	result := &mongodbatlas.Cluster{}
-	err := compat.JSONCopy(result, s)
-	return result, err
 }
 
 // BiConnector specifies BI Connector for Atlas configuration on this deployment.
@@ -382,9 +364,6 @@ type ProcessArgs struct {
 	OplogMinRetentionHours           string `json:"oplogMinRetentionHours,omitempty"`
 }
 
-// Check compatibility with library type.
-var _ = ComputeSpec(mongodbatlas.Compute{})
-
 // BiConnectorSpec specifies BI Connector for Atlas configuration on this deployment
 type BiConnectorSpec struct {
 	// Flag that indicates whether or not BI Connector for Atlas is enabled on the deployment.
@@ -395,9 +374,6 @@ type BiConnectorSpec struct {
 	// +optional
 	ReadPreference string `json:"readPreference,omitempty"`
 }
-
-// Check compatibility with library type.
-var _ = BiConnectorSpec(mongodbatlas.BiConnector{})
 
 // ServerlessProviderSettingsSpec configuration for the provisioned servers on which MongoDB runs. The available options are specific to the cloud service provider.
 type ServerlessProviderSettingsSpec struct {
@@ -440,16 +416,6 @@ type ServerlessProviderSettingsSpec struct {
 
 	// DEPRECATED FIELD. The value of this field doesn't take any effect. Range of instance sizes to which your deployment can scale.
 	AutoScaling *AutoScalingSpec `json:"autoScaling,omitempty"`
-}
-
-// Deployment converts the Spec to native Atlas client format.
-func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.AdvancedCluster, error) {
-	result := &mongodbatlas.AdvancedCluster{}
-	if spec.DeploymentSpec == nil {
-		return result, errors.New("AdvancedDeploymentSpec is empty")
-	}
-	err := compat.JSONCopy(result, *spec.DeploymentSpec)
-	return result, err
 }
 
 var _ api.AtlasCustomResource = &AtlasDeployment{}

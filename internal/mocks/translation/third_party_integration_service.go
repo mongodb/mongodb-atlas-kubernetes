@@ -191,6 +191,65 @@ func (_c *ThirdPartyIntegrationServiceMock_Get_Call) RunAndReturn(run func(conte
 	return _c
 }
 
+// List provides a mock function with given fields: ctx, projectID
+func (_m *ThirdPartyIntegrationServiceMock) List(ctx context.Context, projectID string) ([]*thirdpartyintegration.ThirdPartyIntegration, error) {
+	ret := _m.Called(ctx, projectID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 []*thirdpartyintegration.ThirdPartyIntegration
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]*thirdpartyintegration.ThirdPartyIntegration, error)); ok {
+		return rf(ctx, projectID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []*thirdpartyintegration.ThirdPartyIntegration); ok {
+		r0 = rf(ctx, projectID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*thirdpartyintegration.ThirdPartyIntegration)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, projectID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ThirdPartyIntegrationServiceMock_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type ThirdPartyIntegrationServiceMock_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - projectID string
+func (_e *ThirdPartyIntegrationServiceMock_Expecter) List(ctx interface{}, projectID interface{}) *ThirdPartyIntegrationServiceMock_List_Call {
+	return &ThirdPartyIntegrationServiceMock_List_Call{Call: _e.mock.On("List", ctx, projectID)}
+}
+
+func (_c *ThirdPartyIntegrationServiceMock_List_Call) Run(run func(ctx context.Context, projectID string)) *ThirdPartyIntegrationServiceMock_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *ThirdPartyIntegrationServiceMock_List_Call) Return(_a0 []*thirdpartyintegration.ThirdPartyIntegration, _a1 error) *ThirdPartyIntegrationServiceMock_List_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *ThirdPartyIntegrationServiceMock_List_Call) RunAndReturn(run func(context.Context, string) ([]*thirdpartyintegration.ThirdPartyIntegration, error)) *ThirdPartyIntegrationServiceMock_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function with given fields: ctx, projectID, integration
 func (_m *ThirdPartyIntegrationServiceMock) Update(ctx context.Context, projectID string, integration *thirdpartyintegration.ThirdPartyIntegration) (*thirdpartyintegration.ThirdPartyIntegration, error) {
 	ret := _m.Called(ctx, projectID, integration)

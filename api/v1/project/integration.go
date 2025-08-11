@@ -15,11 +15,6 @@
 package project
 
 import (
-	"context"
-
-	"go.mongodb.org/atlas/mongodbatlas"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 )
 
@@ -74,58 +69,6 @@ type Integration struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
-func (i Integration) ToAtlas(ctx context.Context, c client.Client, defaultNS string) (result *mongodbatlas.ThirdPartyIntegration, err error) {
-	result = &mongodbatlas.ThirdPartyIntegration{
-		Type:                     i.Type,
-		AccountID:                i.AccountID,
-		Region:                   i.Region,
-		TeamName:                 i.TeamName,
-		ChannelName:              i.ChannelName,
-		FlowName:                 i.FlowName,
-		OrgName:                  i.OrgName,
-		URL:                      i.URL,
-		Name:                     i.Name,
-		MicrosoftTeamsWebhookURL: i.MicrosoftTeamsWebhookURL,
-		UserName:                 i.UserName,
-		ServiceDiscovery:         i.ServiceDiscovery,
-		Scheme:                   i.Scheme,
-		Enabled:                  i.Enabled,
-	}
-
-	readPassword := func(passwordField common.ResourceRefNamespaced, target *string, errors *[]error) {
-		if passwordField.Name == "" {
-			return
-		}
-
-		*target, err = passwordField.ReadPassword(ctx, c, defaultNS)
-		storeError(err, errors)
-	}
-
-	errorList := make([]error, 0)
-	readPassword(i.LicenseKeyRef, &result.LicenseKey, &errorList)
-	readPassword(i.WriteTokenRef, &result.WriteToken, &errorList)
-	readPassword(i.ReadTokenRef, &result.ReadToken, &errorList)
-	readPassword(i.APIKeyRef, &result.APIKey, &errorList)
-	readPassword(i.ServiceKeyRef, &result.ServiceKey, &errorList)
-	readPassword(i.APITokenRef, &result.APIToken, &errorList)
-	readPassword(i.RoutingKeyRef, &result.RoutingKey, &errorList)
-	readPassword(i.SecretRef, &result.Secret, &errorList)
-	readPassword(i.PasswordRef, &result.Password, &errorList)
-
-	if len(errorList) != 0 {
-		firstError := (errorList)[0]
-		return nil, firstError
-	}
-
-	return result, nil
-}
-
 func (i Integration) Identifier() interface{} {
 	return i.Type
-}
-
-func storeError(err error, errors *[]error) {
-	if err != nil {
-		*errors = append(*errors, err)
-	}
 }

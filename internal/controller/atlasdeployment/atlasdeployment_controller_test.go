@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -513,9 +512,6 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				},
 			}, nil
 		},
-		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-			return &mongodbatlas.Client{}, nil
-		},
 		IsCloudGovFunc: func() bool {
 			return false
 		},
@@ -646,9 +642,6 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 					ProjectsApi:                   projectAPI,
 				},
 			}, nil
-		},
-		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-			return &mongodbatlas.Client{}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
@@ -783,9 +776,6 @@ func TestFlexClusterReconciliation(t *testing.T) {
 					ProjectsApi:            projectAPI,
 				},
 			}, nil
-		},
-		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-			return &mongodbatlas.Client{}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
@@ -970,9 +960,6 @@ func TestDeletionReconciliation(t *testing.T) {
 					ProjectsApi:            projectAPI,
 				},
 			}, nil
-		},
-		ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-			return &mongodbatlas.Client{}, nil
 		},
 		IsCloudGovFunc: func() bool {
 			return false
@@ -1300,9 +1287,6 @@ func TestChangeDeploymentType(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-					return &mongodbatlas.Client{}, nil
-				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					flexAPI := mockadmin.NewFlexClustersApi(t)
 
@@ -1396,9 +1380,6 @@ func TestChangeDeploymentType(t *testing.T) {
 				IsSupportedFunc: func() bool {
 					return true
 				},
-				ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-					return &mongodbatlas.Client{}, nil
-				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					flexAPI := mockadmin.NewFlexClustersApi(t)
 
@@ -1487,9 +1468,6 @@ func TestChangeDeploymentType(t *testing.T) {
 				},
 				IsSupportedFunc: func() bool {
 					return true
-				},
-				ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-					return &mongodbatlas.Client{}, nil
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					clusterAPI := mockadmin.NewClustersApi(t)

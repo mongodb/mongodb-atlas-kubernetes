@@ -24,7 +24,6 @@ import (
 
 	"github.com/mongodb-forks/digest"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -39,7 +38,6 @@ const (
 )
 
 type Provider interface {
-	Client(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error)
 	SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error)
 	IsCloudGov() bool
 	IsResourceSupported(resource api.AtlasCustomResource) bool
@@ -120,23 +118,6 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 	}
 
 	return false
-}
-
-func (p *ProductionProvider) Client(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-	clientCfg := []httputil.ClientOpt{
-		httputil.Digest(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey),
-		httputil.LoggingTransport(log),
-	}
-
-	transport := p.newDryRunTransport(http.DefaultTransport)
-	httpClient, err := httputil.DecorateClient(&http.Client{Transport: transport}, clientCfg...)
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(p.domain), mongodbatlas.SetUserAgent(operatorUserAgent()))
-
-	return c, err
 }
 
 func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error) {

@@ -14,12 +14,6 @@
 
 package project
 
-import (
-	"go.mongodb.org/atlas/mongodbatlas"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-)
-
 type IPAccessList struct {
 	// Unique identifier of AWS security group in this access list entry.
 	// +optional
@@ -36,13 +30,6 @@ type IPAccessList struct {
 	// Entry using an IP address in this access list entry.
 	// +optional
 	IPAddress string `json:"ipAddress,omitempty"`
-}
-
-// ToAtlas converts the ProjectIPAccessList to native Atlas client format.
-func (i IPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
-	result := &mongodbatlas.ProjectIPAccessList{}
-	err := compat.JSONCopy(result, i)
-	return result, err
 }
 
 // ************************************ Builder methods *************************************************

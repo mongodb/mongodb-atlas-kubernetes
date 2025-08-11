@@ -30,6 +30,7 @@ var (
 )
 
 type ThirdPartyIntegrationService interface {
+	List(ctx context.Context, projectID string) ([]*ThirdPartyIntegration, error)
 	Create(ctx context.Context, projectID string, integration *ThirdPartyIntegration) (*ThirdPartyIntegration, error)
 	Get(ctx context.Context, projectID, integrationType string) (*ThirdPartyIntegration, error)
 	Update(ctx context.Context, projectID string, integration *ThirdPartyIntegration) (*ThirdPartyIntegration, error)
@@ -48,6 +49,25 @@ type thirdPartyIntegration struct {
 	integrationsAPI admin.ThirdPartyIntegrationsApi
 }
 
+func (tpi *thirdPartyIntegration) List(ctx context.Context, projectID string) ([]*ThirdPartyIntegration, error) {
+	list, _, err := tpi.integrationsAPI.ListThirdPartyIntegrations(ctx, projectID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list integrations for project %v: %w", projectID, err)
+	}
+
+	result := make([]*ThirdPartyIntegration, 0, len(list.GetResults()))
+	for _, i := range list.GetResults() {
+		integration, err := fromAtlas(&i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert integration from Atlas: %w", err)
+		}
+
+		result = append(result, integration)
+	}
+
+	return result, nil
+}
+
 func (tpi *thirdPartyIntegration) Create(ctx context.Context, projectID string, integration *ThirdPartyIntegration) (*ThirdPartyIntegration, error) {
 	atlasIntegration, err := toAtlas(integration)
 	if err != nil {
@@ -56,7 +76,7 @@ func (tpi *thirdPartyIntegration) Create(ctx context.Context, projectID string, 
 	integrationPages, _, err := tpi.integrationsAPI.CreateThirdPartyIntegration(
 		ctx, atlasIntegration.GetType(), projectID, atlasIntegration).Execute()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create integration from config %v: %w", integration, err)
+		return nil, fmt.Errorf("failed to create integration from config: %w", err)
 	}
 	newIntegration, err := getResultOfType(integrationPages.GetResults(), integration.Type)
 	if err != nil {

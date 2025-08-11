@@ -16,499 +16,784 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
+	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
-const (
-	testProjectID = "project-id"
-
-	testNamespace = "some-namespace"
-)
-
-var errTest = fmt.Errorf("fake test error")
-
-func TestToAlias(t *testing.T) {
-	sample := []*mongodbatlas.ThirdPartyIntegration{{
-		Type:   "DATADOG",
-		APIKey: "some",
-		Region: "EU",
-	}}
-	result := toAliasThirdPartyIntegration(sample)
-	assert.Equal(t, sample[0].APIKey, result[0].APIKey)
-	assert.Equal(t, sample[0].Type, result[0].Type)
-	assert.Equal(t, sample[0].Region, result[0].Region)
-}
-
-func TestUpdateIntegrationsAtlas(t *testing.T) {
-	calls := 0
-	for _, tc := range []struct {
-		title          string
-		toUpdate       [][]set.DeprecatedIdentifiable
-		client         *mongodbatlas.Client
-		expectedResult workflow.DeprecatedResult
-		expectedCalls  int
+func TestFromAKO(t *testing.T) {
+	tests := map[string]struct {
+		integrations     []project.Integration
+		wantErr          bool
+		wantIntegrations []*thirdpartyintegration.ThirdPartyIntegration
 	}{
-		{
-			title:          "nil list does nothing",
-			expectedResult: workflow.OK(),
+		"empty integrations": {
+			integrations:     []project.Integration{},
+			wantErr:          false,
+			wantIntegrations: []*thirdpartyintegration.ThirdPartyIntegration{},
 		},
-
-		{
-			title:          "empty list does nothing",
-			toUpdate:       [][]set.DeprecatedIdentifiable{},
-			expectedResult: workflow.OK(),
-		},
-
-		{
-			title: "different integrations get updated",
-			toUpdate: set.DeprecatedIntersection(
-				[]aliasThirdPartyIntegration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
+		"multiple integrations": {
+			integrations: []project.Integration{
+				{
+					Type:      "DATADOG",
+					Region:    "EU",
+					APIKeyRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+				},
+				{
+					Type:                     "MICROSOFT_TEAMS",
+					MicrosoftTeamsWebhookURL: "https://example.com/webhook",
+				},
+				{
+					Type:          "NEW_RELIC",
+					AccountID:     "1234567890",
+					LicenseKeyRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+					ReadTokenRef:  common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+					WriteTokenRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+				},
+				{
+					Type:      "OPS_GENIE",
+					Region:    "US",
+					APIKeyRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+				},
+				{
+					Type:          "PAGER_DUTY",
+					Region:        "US",
+					ServiceKeyRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+				},
+				{
+					Type:             "PROMETHEUS",
+					Enabled:          true,
+					ServiceDiscovery: "http",
+					UserName:         "user",
+					PasswordRef:      common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+				},
+				{
+					Type:        "SLACK",
+					ChannelName: "ako",
+					APITokenRef: common.ResourceRefNamespaced{Name: "integration-secret"},
+				},
+				{
+					Type:          "VICTOR_OPS",
+					APIKeyRef:     common.ResourceRefNamespaced{Name: "integration-secret"},
+					RoutingKeyRef: common.ResourceRefNamespaced{Name: "integration-secret"},
+				},
+				{
+					Type:      "WEBHOOK",
+					URL:       "https://example.com/webhook",
+					SecretRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+				},
+			},
+			wantErr: false,
+			wantIntegrations: []*thirdpartyintegration.ThirdPartyIntegration{
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type: "DATADOG",
+						Datadog: &akov2.DatadogIntegration{
+							Region:                       "EU",
+							SendCollectionLatencyMetrics: pointer.MakePtr("disabled"),
+							SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+						},
+					},
+					DatadogSecrets: &thirdpartyintegration.DatadogSecrets{
+						APIKey: "my-secret-password",
 					},
 				},
-				[]project.Integration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						MicrosoftTeamsWebhookURL: "https://somehost/some-otherpath/some-othersecret",
-						Enabled:                  true,
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type:           "MICROSOFT_TEAMS",
+						MicrosoftTeams: &akov2.MicrosoftTeamsIntegration{},
 					},
-				}),
-			client: &mongodbatlas.Client{
-				Integrations: &atlas.IntegrationsMock{
-					ReplaceFunc: func(ctx context.Context, projectID string, integrationType string, integration *mongodbatlas.ThirdPartyIntegration) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						calls += 1
-						return nil, nil, nil
+					MicrosoftTeamsSecrets: &thirdpartyintegration.MicrosoftTeamsSecrets{
+						WebhookUrl: "https://example.com/webhook",
+					},
+				},
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type:     "NEW_RELIC",
+						NewRelic: &akov2.NewRelicIntegration{},
+					},
+					NewRelicSecrets: &thirdpartyintegration.NewRelicSecrets{
+						AccountID:  "1234567890",
+						LicenseKey: "my-secret-password",
+						ReadToken:  "my-secret-password",
+						WriteToken: "my-secret-password",
+					},
+				},
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type: "OPS_GENIE",
+						OpsGenie: &akov2.OpsGenieIntegration{
+							Region: "US",
+						},
+					},
+					OpsGenieSecrets: &thirdpartyintegration.OpsGenieSecrets{
+						APIKey: "my-secret-password",
+					},
+				},
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type:      "PAGER_DUTY",
+						PagerDuty: &akov2.PagerDutyIntegration{Region: "US"},
+					},
+					PagerDutySecrets: &thirdpartyintegration.PagerDutySecrets{
+						ServiceKey: "my-secret-password",
+					},
+				},
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type: "PROMETHEUS",
+						Prometheus: &akov2.PrometheusIntegration{
+							Enabled:          pointer.MakePtr("enabled"),
+							ServiceDiscovery: "http",
+						},
+					},
+					PrometheusSecrets: &thirdpartyintegration.PrometheusSecrets{
+						Username: "user",
+						Password: "my-secret-password",
+					},
+				},
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type: "SLACK",
+						Slack: &akov2.SlackIntegration{
+							ChannelName: "ako",
+						},
+					},
+					SlackSecrets: &thirdpartyintegration.SlackSecrets{
+						APIToken: "my-secret-password",
+					},
+				},
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type: "VICTOR_OPS",
+						VictorOps: &akov2.VictorOpsIntegration{
+							RoutingKey: "my-secret-password",
+						},
+					},
+					VictorOpsSecrets: &thirdpartyintegration.VictorOpsSecrets{
+						APIKey: "my-secret-password",
+					},
+				},
+				{
+					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
+						Type:    "WEBHOOK",
+						Webhook: &akov2.WebhookIntegration{},
+					},
+					WebhookSecrets: &thirdpartyintegration.WebhookSecrets{
+						URL:    "https://example.com/webhook",
+						Secret: "my-secret-password",
 					},
 				},
 			},
-			expectedResult: workflow.OK(),
-			expectedCalls:  1,
 		},
-
-		{
-			title: "matching integrations get updated anyway",
-			toUpdate: set.DeprecatedIntersection(
-				[]aliasThirdPartyIntegration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-				},
-				[]project.Integration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-				}),
-			client: &mongodbatlas.Client{
-				Integrations: &atlas.IntegrationsMock{
-					ReplaceFunc: func(ctx context.Context, projectID string, integrationType string, integration *mongodbatlas.ThirdPartyIntegration) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						calls += 1
-						return nil, nil, nil
-					},
+		"failed to convert": {
+			integrations: []project.Integration{
+				{
+					Type:      "DATADOG",
+					Region:    "EU",
+					APIKeyRef: common.ResourceRefNamespaced{Name: "invalid-secret", Namespace: "default"},
 				},
 			},
-			expectedResult: workflow.OK(),
-			expectedCalls:  1,
+			wantErr:          true,
+			wantIntegrations: []*thirdpartyintegration.ThirdPartyIntegration{},
 		},
-
-		{
-			title: "integrations fail to update and return error",
-			toUpdate: set.DeprecatedIntersection(
-				[]aliasThirdPartyIntegration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-				},
-				[]project.Integration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-				}),
-			client: &mongodbatlas.Client{
-				Integrations: &atlas.IntegrationsMock{
-					ReplaceFunc: func(ctx context.Context, projectID string, integrationType string, integration *mongodbatlas.ThirdPartyIntegration) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						calls += 1
-						return nil, nil, errTest
-					},
-				},
-			},
-			expectedResult: workflow.Terminate(workflow.ProjectIntegrationRequest, fmt.Errorf("cannot apply integration: %w", errTest)),
-			expectedCalls:  1,
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			workflowCtx := &workflow.Context{
-				Context: context.Background(),
-				Log:     zap.S(),
-				Client:  tc.client,
-			}
-			r := AtlasProjectReconciler{}
-			calls = 0
-			result := r.updateIntegrationsAtlas(workflowCtx, testProjectID, tc.toUpdate, testNamespace)
-			assert.Equal(t, tc.expectedResult, result)
-			assert.Equal(t, tc.expectedCalls, calls)
-		})
 	}
-}
-
-func TestCheckIntegrationsReady(t *testing.T) {
-	for _, tc := range []struct {
-		title     string
-		toCheck   [][]set.DeprecatedIdentifiable
-		requested []project.Integration
-		expected  bool
-	}{
-		{
-			title:    "nil list does nothing",
-			expected: true,
-		},
-
-		{
-			title:     "empty list does nothing",
-			toCheck:   [][]set.DeprecatedIdentifiable{},
-			requested: []project.Integration{},
-			expected:  true,
-		},
-
-		{
-			title:     "when requested list differs in length it bails early",
-			toCheck:   [][]set.DeprecatedIdentifiable{},
-			requested: []project.Integration{{}},
-			expected:  false,
-		},
-
-		{
-			title: "matching integrations are considered applied",
-			toCheck: set.DeprecatedIntersection(
-				[]aliasThirdPartyIntegration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			atlasProject := &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-project",
+					Namespace: "default",
 				},
-				[]project.Integration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-				}),
-			requested: []project.Integration{{}},
-			expected:  true,
-		},
-
-		{
-			title: "different integrations are considered also applied",
-			toCheck: set.DeprecatedIntersection(
-				[]aliasThirdPartyIntegration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
+				Spec: akov2.AtlasProjectSpec{
+					Name:         "My Project",
+					Integrations: tt.integrations,
 				},
-				[]project.Integration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						MicrosoftTeamsWebhookURL: "https://somehost/some-otherpath/some-othersecret",
-						Enabled:                  true,
-					},
-				}),
-			requested: []project.Integration{{}},
-			expected:  true,
-		},
-
-		{
-			title: "matching integrations including prometheus are considered applied",
-			toCheck: set.DeprecatedIntersection(
-				[]aliasThirdPartyIntegration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-					{
-						Type:             "PROMETHEUS",
-						UserName:         "prometheus",
-						ServiceDiscovery: "http",
-						Enabled:          true,
-					},
-				},
-				[]project.Integration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-					{
-						Type:             "PROMETHEUS",
-						UserName:         "prometheus",
-						ServiceDiscovery: "http",
-						Enabled:          true,
-					},
-				}),
-			requested: []project.Integration{{}, {}},
-			expected:  true,
-		},
-
-		{
-			title: "matching integrations with a differing prometheus are considered different",
-			toCheck: set.DeprecatedIntersection(
-				[]aliasThirdPartyIntegration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						Name:                     testNamespace,
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-					{
-						Type:             "PROMETHEUS",
-						UserName:         "prometheus",
-						ServiceDiscovery: "http",
-						Enabled:          true,
-					},
-				},
-				[]project.Integration{
-					{
-						Type:                     "MICROSOFT_TEAMS",
-						MicrosoftTeamsWebhookURL: "https://somehost/somepath/somesecret",
-						Enabled:                  true,
-					},
-					{
-						Type:             "PROMETHEUS",
-						UserName:         "zeus",
-						ServiceDiscovery: "file",
-						Enabled:          true,
-					},
-				}),
-			requested: []project.Integration{{}, {}},
-			expected:  false,
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			workflowCtx := &workflow.Context{
-				Context: context.Background(),
-				Log:     zap.S(),
 			}
-			r := AtlasProjectReconciler{}
-			result := r.checkIntegrationsReady(workflowCtx, tc.toCheck, tc.requested)
-			assert.Equal(t, tc.expected, result)
-		})
-	}
-}
-
-func TestMapLastAppliedProjectIntegrations(t *testing.T) {
-	for _, tt := range []struct {
-		name    string
-		project *akov2.AtlasProject
-		want    []project.Integration
-		wantErr bool
-	}{
-		{
-			name: "returns integrations when present",
-			project: setLastApplied(
-				defaultTestProject(),
-				mustJSONIZE(
-					appendIntegrations(&defaultTestProject().Spec, []project.Integration{
-						{Type: "TYPE1"},
-						{Type: "TYPE2"},
-					}),
-				),
-			),
-			want:    []project.Integration{{Type: "TYPE1"}, {Type: "TYPE2"}},
-			wantErr: false,
-		},
-		{
-			name: "returns nil when no integrations",
-			project: setLastApplied(
-				defaultTestProject(),
-				mustJSONIZE(appendIntegrations(&defaultTestProject().Spec, nil)),
-			),
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name:    "returns nil when lastApplied is nil",
-			project: defaultTestProject(),
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "returns error if lastAppliedSpecFrom fails",
-			project: setLastApplied(
-				defaultTestProject(),
-				"broken json",
-			),
-			want:    nil,
-			wantErr: true,
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := mapLastAppliedProjectIntegrations(tt.project)
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "integration-secret",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					"password": []byte("my-secret-password"),
+				},
+			}
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
+			reconciler := &AtlasProjectReconciler{
+				Client: fake.NewClientBuilder().
+					WithScheme(testScheme).
+					WithObjects(atlasProject, secret).
+					Build(),
+			}
+			integrations, err := reconciler.fromAKO(context.Background(), atlasProject)
 			if tt.wantErr {
-				require.Error(t, err)
+				assert.Error(t, err)
+				assert.Nil(t, integrations)
 			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.want, got)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantIntegrations, integrations)
 			}
 		})
 	}
 }
 
-func defaultTestProject() *akov2.AtlasProject {
-	return &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-name",
-			Namespace: "ns",
-		},
-		Spec: akov2.AtlasProjectSpec{
-			Name: "test-project",
-		},
-	}
-}
-
-func appendIntegrations(spec *akov2.AtlasProjectSpec, integrations []project.Integration) *akov2.AtlasProjectSpec {
-	spec.Integrations = integrations
-	return spec
-}
-
-func mustJSONIZE(obj any) string {
-	js, err := json.Marshal(obj)
-	if err != nil {
-		panic(err)
-	}
-	return string(js)
-}
-
-func setLastApplied(project *akov2.AtlasProject, lastApplied string) *akov2.AtlasProject {
-	if project.Annotations == nil {
-		project.Annotations = map[string]string{}
-	}
-	project.Annotations[customresource.AnnotationLastAppliedConfiguration] = lastApplied
-	return project
-}
-
-func TestFilterOwnedIntegrations(t *testing.T) {
-	type args struct {
-		integrationIDs []project.Integration
-		lastApplied    []project.Integration
-	}
-	for _, tc := range []struct {
-		name string
-		args args
-		want []set.DeprecatedIdentifiable
+func TestEnsureIntegration(t *testing.T) {
+	tests := map[string]struct {
+		integrations           []project.Integration
+		lastAppliedIntegration string
+		apiMock                func() admin.ThirdPartyIntegrationsApi
+		wantOk                 bool
+		wantConditions         []api.Condition
 	}{
-		{
-			name: "returns only owned integrations",
-			args: args{
-				integrationIDs: []project.Integration{
-					{Type: "TYPE1"},
-					{Type: "TYPE2"},
-					{Type: "TYPE3"},
-				},
-				lastApplied: []project.Integration{
-					{Type: "TYPE1"},
-					{Type: "TYPE3"},
+		"empty integrations, condition unset": {
+			integrations:           []project.Integration{},
+			lastAppliedIntegration: "{}",
+			apiMock: func() admin.ThirdPartyIntegrationsApi {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "0123456789").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
+
+				return integrationsApi
+			},
+			wantOk:         true,
+			wantConditions: []api.Condition{},
+		},
+		"failed to convert integrations": {
+			integrations: []project.Integration{
+				{
+					Type:      "DATADOG",
+					Region:    "EU",
+					APIKeyRef: common.ResourceRefNamespaced{Name: "invalid-secret", Namespace: "default"},
 				},
 			},
-			want: toIdentifiableSlice([]project.Integration{
-				{Type: "TYPE1"},
-				{Type: "TYPE3"},
-			}),
-		},
-		{
-			name: "returns nil if no integrationIDs",
-			args: args{
-				integrationIDs: nil,
-				lastApplied:    []project.Integration{{Type: "TYPE1"}},
+			lastAppliedIntegration: "{}",
+			apiMock: func() admin.ThirdPartyIntegrationsApi {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+
+				return integrationsApi
 			},
-			want: nil,
+			wantOk: false,
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.IntegrationReadyType).
+					WithReason(string(workflow.ProjectIntegrationInternal)).
+					WithMessageRegexp("failed to convert integrations from AKO: failed to read API key for Datadog integration: secrets \"invalid-secret\" not found"),
+			},
 		},
-		{
-			name: "returns nil if none are owned",
-			args: args{
-				integrationIDs: []project.Integration{
-					{Type: "TYPE4"},
-				},
-				lastApplied: []project.Integration{
-					{Type: "TYPE1"},
-					{Type: "TYPE2"},
+		"failed to map lastApplied config": {
+			integrations: []project.Integration{
+				{
+					Type:      "DATADOG",
+					Region:    "EU",
+					APIKeyRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
 				},
 			},
-			want: []set.DeprecatedIdentifiable{},
+			lastAppliedIntegration: "{aaaa",
+			apiMock: func() admin.ThirdPartyIntegrationsApi {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+
+				return integrationsApi
+			},
+			wantOk: false,
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.IntegrationReadyType).
+					WithReason(string(workflow.ProjectIntegrationInternal)).
+					WithMessageRegexp("failed to map last applied integrations: error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]: invalid character 'a' looking for beginning of object key string"),
+			},
 		},
-		{
-			name: "returns all if all are owned",
-			args: args{
-				integrationIDs: []project.Integration{
-					{Type: "TYPE1"},
-					{Type: "TYPE2"},
-				},
-				lastApplied: []project.Integration{
-					{Type: "TYPE1"},
-					{Type: "TYPE2"},
+		"failed to reconcile": {
+			integrations: []project.Integration{
+				{
+					Type:      "DATADOG",
+					Region:    "EU",
+					APIKeyRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
 				},
 			},
-			want: toIdentifiableSlice([]project.Integration{
-				{Type: "TYPE1"},
-				{Type: "TYPE2"},
-			}),
+			lastAppliedIntegration: "{}",
+			apiMock: func() admin.ThirdPartyIntegrationsApi {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "0123456789").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
+
+				integrationsApi.EXPECT().CreateThirdPartyIntegration(context.Background(), "DATADOG", "0123456789", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
+					Return(admin.CreateThirdPartyIntegrationApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().CreateThirdPartyIntegrationExecute(mock.AnythingOfType("admin.CreateThirdPartyIntegrationApiRequest")).
+					Return(nil, nil, errors.New("failed to create integration"))
+
+				return integrationsApi
+			},
+			wantOk: false,
+			wantConditions: []api.Condition{
+				api.FalseCondition(api.IntegrationReadyType).
+					WithReason(string(workflow.ProjectIntegrationRequest)).
+					WithMessageRegexp("failed to create integration DATADOG: failed to create integration from config: failed to create integration"),
+			},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got := filterOwnedIntegrations(
-				toIdentifiableSlice(tc.args.integrationIDs),
-				tc.args.lastApplied,
+		"successfully reconcile": {
+			integrations: []project.Integration{
+				{
+					Type:      "DATADOG",
+					Region:    "EU",
+					APIKeyRef: common.ResourceRefNamespaced{Name: "integration-secret", Namespace: "default"},
+				},
+			},
+			lastAppliedIntegration: "{}",
+			apiMock: func() admin.ThirdPartyIntegrationsApi {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "0123456789").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
+
+				integrationsApi.EXPECT().CreateThirdPartyIntegration(context.Background(), "DATADOG", "0123456789", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
+					Return(admin.CreateThirdPartyIntegrationApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().CreateThirdPartyIntegrationExecute(mock.AnythingOfType("admin.CreateThirdPartyIntegrationApiRequest")).
+					Return(
+						&admin.PaginatedIntegration{
+							Results: &[]admin.ThirdPartyIntegration{
+								{
+									Type: pointer.MakePtr("DATADOG"),
+								},
+							},
+							TotalCount: pointer.MakePtr(1),
+						},
+						nil,
+						nil,
+					)
+
+				return integrationsApi
+			},
+			wantOk: true,
+			wantConditions: []api.Condition{
+				api.TrueCondition(api.IntegrationReadyType),
+			},
+		},
+		//{
+		//	name: "fromAKO returns error, condition set false",
+		//	setupProject: func() *akov2.AtlasProject {
+		//		return &akov2.AtlasProject{
+		//			Spec: akov2.AtlasProjectSpec{
+		//				Integrations: []akov2.AtlasThirdPartyIntegration{
+		//					{Type: "DATADOG", APIKeyRef: common.ResourceRefNamespaced{Name: "invalid-secret"}},
+		//				},
+		//			},
+		//		}
+		//	},
+		//	setupReconciler: func(t *testing.T) *AtlasProjectReconciler {
+		//		return &AtlasProjectReconciler{
+		//			Client: fake.NewClientBuilder().Build(),
+		//		}
+		//	},
+		//	wantOk:        false,
+		//	wantCondition: pointer.MakePtr(false),
+		//	wantCode:      workflow.ProjectIntegrationInternal,
+		//	wantErrMsg:    "failed to convert integrations from AKO",
+		//},
+		//{
+		//	name: "mapLastAppliedProjectIntegrations returns error, condition set false",
+		//	setupProject: func() *akov2.AtlasProject {
+		//		p := &akov2.AtlasProject{}
+		//		// Simulate error by setting invalid last applied annotation
+		//		p.Annotations = map[string]string{"mongodb.com/last-applied-configuration": "{"}
+		//		return p
+		//	},
+		//	setupReconciler: func(t *testing.T) *AtlasProjectReconciler {
+		//		return &AtlasProjectReconciler{}
+		//	},
+		//	wantOk:        false,
+		//	wantCondition: pointer.MakePtr(false),
+		//	wantCode:      workflow.ProjectIntegrationInternal,
+		//	wantErrMsg:    "failed to map last applied integrations",
+		//},
+		//{
+		//	name: "reconcile returns error, condition set false",
+		//	setupProject: func() *akov2.AtlasProject {
+		//		return &akov2.AtlasProject{
+		//			Spec: akov2.AtlasProjectSpec{
+		//				Integrations: []akov2.AtlasThirdPartyIntegration{{Type: "DATADOG"}},
+		//			},
+		//		}
+		//	},
+		//	setupReconciler: func(t *testing.T) *AtlasProjectReconciler {
+		//		r := &AtlasProjectReconciler{}
+		//		// Patch fromAKO to return valid, but patch NewIntegrationReconciler to return a reconciler that fails
+		//		orig := NewIntegrationReconciler
+		//		NewIntegrationReconciler = func(ctx *workflow.Context, project *akov2.AtlasProject, integrations []*integration.ThirdPartyIntegration, lastApplied map[string]struct{}) *integrationReconciler {
+		//			return &integrationReconciler{
+		//				project: project,
+		//				lasAppliedIntegrationsTypes: lastApplied,
+		//				integrationsInAKO: map[string]*integration.ThirdPartyIntegration{
+		//					"DATADOG": {AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+		//				},
+		//				service: &integration.MockThirdPartyIntegrationService{
+		//					ListFunc: func(ctx context.Context, projectID string) ([]*integration.ThirdPartyIntegration, error) {
+		//						return nil, fmt.Errorf("fail")
+		//					},
+		//				},
+		//			}
+		//		}
+		//		t.Cleanup(func() { NewIntegrationReconciler = orig })
+		//		return r
+		//	},
+		//	wantOk:        false,
+		//	wantCondition: pointer.MakePtr(false),
+		//},
+		//{
+		//	name: "integrations exist, condition set true",
+		//	setupProject: func() *akov2.AtlasProject {
+		//		return &akov2.AtlasProject{
+		//			Spec: akov2.AtlasProjectSpec{
+		//				Integrations: []akov2.AtlasThirdPartyIntegration{{Type: "DATADOG"}},
+		//			},
+		//		}
+		//	},
+		//	setupReconciler: func(t *testing.T) *AtlasProjectReconciler {
+		//		r := &AtlasProjectReconciler{}
+		//		// Patch NewIntegrationReconciler to always return OK
+		//		orig := NewIntegrationReconciler
+		//		NewIntegrationReconciler = func(ctx *workflow.Context, project *akov2.AtlasProject, integrations []*integration.ThirdPartyIntegration, lastApplied map[string]struct{}) *integrationReconciler {
+		//			return &integrationReconciler{
+		//				project: project,
+		//				lasAppliedIntegrationsTypes: lastApplied,
+		//				integrationsInAKO: map[string]*integration.ThirdPartyIntegration{
+		//					"DATADOG": {AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+		//				},
+		//				service: &integration.MockThirdPartyIntegrationService{
+		//					ListFunc: func(ctx context.Context, projectID string) ([]*integration.ThirdPartyIntegration, error) {
+		//						return []*integration.ThirdPartyIntegration{}, nil
+		//					},
+		//				},
+		//			}
+		//		}
+		//		t.Cleanup(func() { NewIntegrationReconciler = orig })
+		//		return r
+		//	},
+		//	wantOk:        true,
+		//	wantCondition: pointer.MakePtr(true),
+		//},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			atlasProject := &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-project",
+					Namespace: "default",
+					Annotations: map[string]string{
+						customresource.AnnotationLastAppliedConfiguration: tt.lastAppliedIntegration,
+					},
+				},
+				Spec: akov2.AtlasProjectSpec{
+					Name:         "My Project",
+					Integrations: tt.integrations,
+				},
+				Status: status.AtlasProjectStatus{
+					ID: "0123456789",
+				},
+			}
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "integration-secret",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					"password": []byte("my-secret-password"),
+				},
+			}
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
+			workflowCtx := &workflow.Context{
+				Context: context.Background(),
+				Log:     zaptest.NewLogger(t).Sugar(),
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20250312002: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
+				},
+			}
+			workflowCtx.SdkClientSet.SdkClient20250312002.ThirdPartyIntegrationsApi = tt.apiMock()
+			reconciler := &AtlasProjectReconciler{
+				Client: fake.NewClientBuilder().
+					WithScheme(testScheme).
+					WithObjects(atlasProject, secret).
+					WithStatusSubresource(atlasProject).
+					Build(),
+			}
+
+			result := reconciler.ensureIntegration(workflowCtx, atlasProject)
+			assert.Equal(t, tt.wantOk, result.IsOk())
+			assert.True(
+				t,
+				cmp.Equal(
+					tt.wantConditions,
+					workflowCtx.Conditions(),
+					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+				),
 			)
-			require.Equal(t, tc.want, got)
+			t.Log(
+				cmp.Diff(
+					tt.wantConditions,
+					workflowCtx.Conditions(),
+					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+				),
+			)
 		})
 	}
 }
 
-type identifiableIntegration struct {
-	project.Integration
-}
+func TestIntegrationReconcile(t *testing.T) {
+	tests := map[string]struct {
+		lasAppliedIntegrations map[string]struct{}
+		integrationsInAKO      map[string]*thirdpartyintegration.ThirdPartyIntegration
+		service                func() thirdpartyintegration.ThirdPartyIntegrationService
+		wantOk                 bool
+		wantPrometheusStatus   bool
+	}{
+		"handles empty atlas integrations": {
+			lasAppliedIntegrations: map[string]struct{}{},
+			integrationsInAKO:      map[string]*thirdpartyintegration.ThirdPartyIntegration{},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").Return([]*thirdpartyintegration.ThirdPartyIntegration{}, nil)
 
-func (ii identifiableIntegration) Identifier() interface{} {
-	return ii.Integration.Type
-}
+				return s
+			},
+			wantOk: true,
+		},
+		"fail listing integrations": {
+			lasAppliedIntegrations: map[string]struct{}{},
+			integrationsInAKO:      map[string]*thirdpartyintegration.ThirdPartyIntegration{},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").Return(nil, errors.New("some error"))
 
-func toIdentifiableSlice(integrations []project.Integration) []set.DeprecatedIdentifiable {
-	identifiables := make([]set.DeprecatedIdentifiable, 0, len(integrations))
-	for _, integration := range integrations {
-		identifiables = append(identifiables, identifiableIntegration{Integration: integration})
+				return s
+			},
+			wantOk: false,
+		},
+		"delete owned integrations": {
+			lasAppliedIntegrations: map[string]struct{}{"DATADOG": {}},
+			integrationsInAKO:      map[string]*thirdpartyintegration.ThirdPartyIntegration{},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").
+					Return(
+						[]*thirdpartyintegration.ThirdPartyIntegration{
+							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "NEW_RELIC"}},
+						},
+						nil,
+					)
+				s.EXPECT().Delete(context.Background(), "0123456789", "DATADOG").Return(nil)
+
+				return s
+			},
+			wantOk: true,
+		},
+		"failed to delete integrations": {
+			lasAppliedIntegrations: map[string]struct{}{"DATADOG": {}},
+			integrationsInAKO:      map[string]*thirdpartyintegration.ThirdPartyIntegration{},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").
+					Return(
+						[]*thirdpartyintegration.ThirdPartyIntegration{
+							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+						},
+						nil,
+					)
+				s.EXPECT().Delete(context.Background(), "0123456789", "DATADOG").Return(errors.New("error"))
+
+				return s
+			},
+			wantOk: false,
+		},
+		"creates new integrations": {
+			lasAppliedIntegrations: map[string]struct{}{},
+			integrationsInAKO: map[string]*thirdpartyintegration.ThirdPartyIntegration{
+				"SLACK": {AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "SLACK"}},
+			},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").
+					Return([]*thirdpartyintegration.ThirdPartyIntegration{}, nil)
+				s.EXPECT().Create(
+					context.Background(),
+					"0123456789",
+					mock.AnythingOfType("*thirdpartyintegration.ThirdPartyIntegration"),
+				).Return(&thirdpartyintegration.ThirdPartyIntegration{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "SLACK"}}, nil)
+
+				return s
+			},
+			wantOk: true,
+		},
+		"faild creating new integrations": {
+			lasAppliedIntegrations: map[string]struct{}{},
+			integrationsInAKO: map[string]*thirdpartyintegration.ThirdPartyIntegration{
+				"SLACK": {AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "SLACK"}},
+			},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").
+					Return([]*thirdpartyintegration.ThirdPartyIntegration{}, nil)
+				s.EXPECT().Create(
+					context.Background(),
+					"0123456789",
+					mock.AnythingOfType("*thirdpartyintegration.ThirdPartyIntegration"),
+				).Return(nil, errors.New("error"))
+
+				return s
+			},
+			wantOk: false,
+		},
+		"updates existing integrations": {
+			lasAppliedIntegrations: map[string]struct{}{"DATADOG": {}},
+			integrationsInAKO: map[string]*thirdpartyintegration.ThirdPartyIntegration{
+				"DATADOG": {AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+			},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").
+					Return(
+						[]*thirdpartyintegration.ThirdPartyIntegration{
+							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+						},
+						nil,
+					)
+				s.EXPECT().Update(
+					context.Background(),
+					"0123456789",
+					mock.AnythingOfType("*thirdpartyintegration.ThirdPartyIntegration"),
+				).Return(&thirdpartyintegration.ThirdPartyIntegration{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}}, nil)
+
+				return s
+			},
+			wantOk: true,
+		},
+		"fails updating integrations": {
+			lasAppliedIntegrations: map[string]struct{}{"DATADOG": {}},
+			integrationsInAKO: map[string]*thirdpartyintegration.ThirdPartyIntegration{
+				"DATADOG": {AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+			},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").
+					Return(
+						[]*thirdpartyintegration.ThirdPartyIntegration{
+							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+						},
+						nil,
+					)
+				s.EXPECT().Update(
+					context.Background(),
+					"0123456789",
+					mock.AnythingOfType("*thirdpartyintegration.ThirdPartyIntegration"),
+				).Return(nil, errors.New("error"))
+
+				return s
+			},
+			wantOk: false,
+		},
+		"handles prometheus integration": {
+			lasAppliedIntegrations: map[string]struct{}{"PROMETHEUS": {}},
+			integrationsInAKO: map[string]*thirdpartyintegration.ThirdPartyIntegration{
+				"PROMETHEUS": {AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "PROMETHEUS"}},
+			},
+			service: func() thirdpartyintegration.ThirdPartyIntegrationService {
+				s := translation.NewThirdPartyIntegrationServiceMock(t)
+				s.EXPECT().List(context.Background(), "0123456789").
+					Return(
+						[]*thirdpartyintegration.ThirdPartyIntegration{
+							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "PROMETHEUS"}},
+						},
+						nil,
+					)
+				s.EXPECT().Update(
+					context.Background(),
+					"0123456789",
+					mock.AnythingOfType("*thirdpartyintegration.ThirdPartyIntegration"),
+				).Return(&thirdpartyintegration.ThirdPartyIntegration{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "PROMETHEUS"}}, nil)
+
+				return s
+			},
+			wantOk:               true,
+			wantPrometheusStatus: true,
+		},
 	}
-	return identifiables
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			atlasProject := &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasProjectSpec{
+					Name: "My Project",
+				},
+				Status: status.AtlasProjectStatus{
+					ID: "0123456789",
+				},
+			}
+			ctx := &workflow.Context{
+				Context: context.Background(),
+				Log:     zaptest.NewLogger(t).Sugar(),
+				SdkClientSet: &atlas.ClientSet{
+					SdkClient20250312002: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
+				},
+			}
+			reconciler := IntegrationReconciler{
+				project:                     atlasProject,
+				lasAppliedIntegrationsTypes: tt.lasAppliedIntegrations,
+				integrationsInAKO:           tt.integrationsInAKO,
+				service:                     tt.service(),
+			}
+			result := reconciler.reconcile(ctx)
+			assert.Equal(t, tt.wantOk, result.IsOk())
+
+			if tt.wantPrometheusStatus {
+				v := ctx.StatusOptions()[0].(status.AtlasProjectStatusOption)
+				v(&atlasProject.Status)
+				assert.Equal(
+					t,
+					&status.Prometheus{Scheme: "https", DiscoveryURL: "https://cloud-qa.mongodb.com/prometheus/v1.0/groups/0123456789/discovery"},
+					atlasProject.Status.Prometheus,
+				)
+			}
+		})
+	}
 }
