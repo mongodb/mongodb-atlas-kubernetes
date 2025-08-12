@@ -166,7 +166,6 @@ func LoadPairedResources(ctx context.Context, c client.Client, ids ConnSecretIde
 	deployments := &akov2.AtlasDeploymentList{}
 	if err := c.List(ctx, deployments, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDeploymentBySpecNameAndProjectID, compositeDeploymentKey),
-		// Namespace:     namespace, // Do not uncomment; we should be able to create connection secrets cross-namespaced
 	}); err != nil {
 		return nil, err
 	}
@@ -175,7 +174,6 @@ func LoadPairedResources(ctx context.Context, c client.Client, ids ConnSecretIde
 	users := &akov2.AtlasDatabaseUserList{}
 	if err := c.List(ctx, users, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserBySpecUsernameAndProjectID, compositeUserKey),
-		Namespace:     namespace,
 	}); err != nil {
 		return nil, err
 	}

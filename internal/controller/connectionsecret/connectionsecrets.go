@@ -112,7 +112,7 @@ func (r *ConnectionSecretReconciler) resolveProjectName(ctx context.Context, ids
 // handleDelete manages the case where we will delete the connection secret
 func (r *ConnectionSecretReconciler) handleDelete(
 	ctx context.Context, req ctrl.Request, ids ConnSecretIdentifiers, pair *ConnSecretPair) (ctrl.Result, error) {
-	strRequest := req.NamespacedName.String()
+	log := r.Log.With("ns", req.Namespace, "name", req.Name)
 
 	// ProjectName is required for ConnectionSecret metadata.name to delete
 	projectName, err := r.resolveProjectName(ctx, ids, pair)
@@ -120,11 +120,12 @@ func (r *ConnectionSecretReconciler) handleDelete(
 		err = fmt.Errorf("project name is empty")
 	}
 	if err != nil {
-		r.Log.Errorf("Failed to resolve project name for ConnectionSecret request with %s: %v", strRequest, err)
-		return workflow.Terminate("UnresolvedProjectName", err).ReconcileResult()
+		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
+		return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
 	}
 
-	r.Log.Debugf("Project name resolved to delete for ConnectionSecret request with %s", strRequest)
+	log.Debugw("project name resolved for delete")
+
 	name := CreateK8sFormat(projectName, ids.ClusterName, ids.DatabaseUsername)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -136,15 +137,14 @@ func (r *ConnectionSecretReconciler) handleDelete(
 	// Delete the secret
 	if err := r.Client.Delete(ctx, secret); err != nil {
 		if apierrors.IsNotFound(err) {
-			r.Log.Infof("No secret to delete for ConnectionSecret request with %s: %v", strRequest, err)
+			log.Debugw("no secret to delete; already gone")
 			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 		}
-
-		r.Log.Errorf("Unable to delete secret for ConnectionSecret request with %s: %v", strRequest, err)
-		return workflow.Terminate("FailedDeletion", err).ReconcileResult()
+		log.Errorw("unable to delete secret", "reason", workflow.ConnSecretFailedDeletion, "error", err)
+		return workflow.Terminate(workflow.ConnSecretFailedDeletion, err).ReconcileResult()
 	}
 
-	r.Log.Infof("Secret deleted for ConnectionSecret request with %s", strRequest)
+	log.Infow("secret deleted", "reason", workflow.ConnSecretDeleted)
 	r.EventRecorder.Event(secret, corev1.EventTypeNormal, "Deleted", "ConnectionSecret deleted")
 	return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 }
@@ -152,7 +152,7 @@ func (r *ConnectionSecretReconciler) handleDelete(
 // handleUpdate manages the case where we will create or update the connection secret
 func (r *ConnectionSecretReconciler) handleUpdate(
 	ctx context.Context, req ctrl.Request, ids ConnSecretIdentifiers, pair *ConnSecretPair) (ctrl.Result, error) {
-	strRequest := req.NamespacedName.String()
+	log := r.Log.With("ns", req.Namespace, "name", req.Name)
 
 	// ProjectName is required for ConnectionSecret metadata.name to create or update
 	projectName, err := r.resolveProjectName(ctx, ids, pair)
@@ -160,20 +160,20 @@ func (r *ConnectionSecretReconciler) handleUpdate(
 		err = fmt.Errorf("project name is empty")
 	}
 	if err != nil {
-		r.Log.Errorf("Failed to resolve ProjectName for ConnectionSecret request with %s: %v", strRequest, err)
-		return workflow.Terminate("FailedToResolveProjectName", err).ReconcileResult()
+		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
+		return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
 	}
 	ids.ProjectName = projectName
-	r.Log.Debugf("Project name resolved to create/update for ConnectionSecret request with %s", strRequest)
+	log.Debugw("project name resolved for upsert")
 
 	// Build connection data
 	data, err := pair.BuildConnectionData(ctx, r.Client)
 	if err != nil {
-		r.Log.Errorf("Failed to build connection data for ConnectionSecret request with %s: %v", strRequest, err)
-		return workflow.Terminate("FailedToBuildConnectionData", err).ReconcileResult()
+		log.Errorw("failed to build connection data", "reason", workflow.ConnSecretFailedToBuildData, "error", err)
+		return workflow.Terminate(workflow.ConnSecretFailedToBuildData, err).ReconcileResult()
 	}
 
-	r.Log.Debugf("ConnectionData created for ConnectionSecret request with %s", strRequest)
+	log.Debugw("connection data built")
 
 	name := CreateK8sFormat(projectName, ids.ClusterName, ids.DatabaseUsername)
 	secret := &corev1.Secret{
@@ -185,21 +185,15 @@ func (r *ConnectionSecretReconciler) handleUpdate(
 
 	// Populate Secret data/labels
 	if err := fillConnSecretData(secret, ids, data); err != nil {
-		r.Log.Errorf("Failed to fill secret data for ConnectionSecret request with %s: %v", strRequest, err)
-		return workflow.Terminate("FailedToFillSecret", err).ReconcileResult()
+		log.Errorw("failed to fill secret data", "reason", workflow.ConnSecretFailedToFillData, "error", err)
+		return workflow.Terminate(workflow.ConnSecretFailedToFillData, err).ReconcileResult()
 	}
 
 	// Add owners
 	if err := controllerutil.SetOwnerReference(pair.User, secret, r.Scheme); err != nil {
-		r.Log.Errorf("Failed to set controller owner (DatabaseUser) for %s: %v", strRequest, err)
-		return workflow.Terminate("FailedToSetOwnerReferences", err).ReconcileResult()
+		log.Errorw("failed to set controller owner (DatabaseUser)", "reason", workflow.ConnSecretFailedToSetOwnerReferences, "error", err)
+		return workflow.Terminate(workflow.ConnSecretFailedToSetOwnerReferences, err).ReconcileResult()
 	}
-
-	// Do not uncomment; we cannot create owners cross-namespaced. connection secret will live in the same namespace as the user
-	// if err := controllerutil.SetOwnerReference(pair.Deployment, secret, r.Scheme); err != nil {
-	// 	r.Log.Errorf("Failed to add Deployment owner for %s: %v", strRequest, err)
-	// 	return workflow.Terminate("FailedToSetOwnerReferences", err).ReconcileResult()
-	// }
 
 	// Create or Update the Secret
 	if err := r.Client.Create(ctx, secret); err != nil {
@@ -207,21 +201,21 @@ func (r *ConnectionSecretReconciler) handleUpdate(
 			// Fetch existing to get ResourceVersion, then update
 			current := &corev1.Secret{}
 			if getErr := r.Client.Get(ctx, client.ObjectKeyFromObject(secret), current); getErr != nil {
-				r.Log.Errorf("Failed to fetch existing ConnectionSecret for request with %s: %v", strRequest, getErr)
-				return workflow.Terminate("FailedToGetSecret", getErr).ReconcileResult()
+				log.Errorw("failed to fetch existing secret", "reason", workflow.ConnSecretFailedToGetSecret, "error", getErr)
+				return workflow.Terminate(workflow.ConnSecretFailedToGetSecret, getErr).ReconcileResult()
 			}
 			secret.ResourceVersion = current.ResourceVersion
 			if updErr := r.Client.Update(ctx, secret); updErr != nil {
-				r.Log.Errorf("Failed to update ConnectionSecret for request with %s: %v", strRequest, updErr)
-				return workflow.Terminate("FailedToUpdateSecret", updErr).ReconcileResult()
+				log.Errorw("failed to update secret", "reason", workflow.ConnSecretFailedToUpdateSecret, "error", updErr)
+				return workflow.Terminate(workflow.ConnSecretFailedToUpdateSecret, updErr).ReconcileResult()
 			}
 		} else {
-			r.Log.Errorf("Failed to create ConnectionSecret for request with %s: %v", strRequest, err)
-			return workflow.Terminate("FailedToCreateSecret", err).ReconcileResult()
+			log.Errorw("failed to create secret", "reason", workflow.ConnSecretFailedToCreateSecret, "error", err)
+			return workflow.Terminate(workflow.ConnSecretFailedToCreateSecret, err).ReconcileResult()
 		}
 	}
 
-	r.Log.Infof("Secret created/updated for ConnectionSecret request with %s", strRequest)
+	log.Infow("secret created/updated", "reason", workflow.ConnSecretUpsert)
 	r.EventRecorder.Event(secret, corev1.EventTypeNormal, "Updated", "ConnectionSecret updated")
 	return workflow.OK().ReconcileResult()
 }
