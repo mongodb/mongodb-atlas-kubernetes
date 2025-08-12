@@ -88,6 +88,7 @@ type AtlasOrgSettingsSpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
+// +kubebuilder:name:plural=AtlasOrgSettings, singular=AtlasOrgSettings
 type AtlasOrgSettings struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
