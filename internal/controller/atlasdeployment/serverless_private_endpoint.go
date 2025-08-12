@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -159,7 +159,7 @@ func isGCPWithoutPrivateEndpoints(deployment *akov2.ServerlessSpec) bool {
 
 func listServerlessPrivateEndpoints(service *workflow.Context, projectID, deploymentName string) ([]admin.ServerlessTenantEndpoint, error) {
 	// this endpoint does not offer paginated responses
-	privateEndpoints, _, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
+	privateEndpoints, _, err := service.SdkClientSet.SdkClient20250312006.ServerlessPrivateEndpointsApi.
 		ListServerlessPrivateEndpoints(service.Context, projectID, deploymentName).
 		Execute()
 
@@ -171,7 +171,7 @@ func createServerLessPrivateEndpoint(service *workflow.Context, projectID, deplo
 		Comment: &privateEndpoint.Name,
 	}
 
-	atlasPrivateEndpoint, _, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
+	atlasPrivateEndpoint, _, err := service.SdkClientSet.SdkClient20250312006.ServerlessPrivateEndpointsApi.
 		CreateServerlessPrivateEndpoint(service.Context, projectID, deploymentName, &request).
 		Execute()
 
@@ -190,7 +190,7 @@ func updateServerLessPrivateEndpoint(service *workflow.Context, projectID, deplo
 		request.PrivateEndpointIpAddress = &privateEndpoint.PrivateEndpointIPAddress
 	}
 
-	atlasPrivateEndpoint, _, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
+	atlasPrivateEndpoint, _, err := service.SdkClientSet.SdkClient20250312006.ServerlessPrivateEndpointsApi.
 		UpdateServerlessPrivateEndpoint(service.Context, projectID, deploymentName, endpointID, &request).
 		Execute()
 
@@ -198,7 +198,7 @@ func updateServerLessPrivateEndpoint(service *workflow.Context, projectID, deplo
 }
 
 func deleteServerLessPrivateEndpoint(service *workflow.Context, projectID, deploymentName, endpointID string) error {
-	_, err := service.SdkClientSet.SdkClient20250312002.ServerlessPrivateEndpointsApi.
+	_, err := service.SdkClientSet.SdkClient20250312006.ServerlessPrivateEndpointsApi.
 		DeleteServerlessPrivateEndpoint(service.Context, projectID, deploymentName, endpointID).
 		Execute()
 
