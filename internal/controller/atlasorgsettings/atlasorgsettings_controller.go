@@ -18,6 +18,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/atlasorgsettings"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	mckpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/predicate"
 )
@@ -28,10 +29,14 @@ import (
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasorgsettings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasorgsettings/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasorgsettings/finalizers,verbs=update
+
+type serviceBuilderFunc func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService
+
 type AtlasOrgSettingsHandler struct {
 	ctrlstate.StateHandler[akov2.AtlasOrgSettings]
 	reconciler.AtlasReconciler
 	deletionProtection bool
+	serviceBuilder     serviceBuilderFunc
 }
 
 func NewAtlasOrgSettingsReconciler(
@@ -48,6 +53,10 @@ func NewAtlasOrgSettingsReconciler(
 			AtlasProvider:   atlasProvider,
 			Log:             logger.Named("controllers").Named("AtlasOrgSettings").Sugar(),
 			GlobalSecretRef: globalSecretRef,
+		},
+		deletionProtection: deletionProtection,
+		serviceBuilder: func(clientSet *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
+			return atlasorgsettings.NewAtlasOrgSettingsService(clientSet.SdkClient20250312006.OrganizationsApi)
 		},
 	}
 	return ctrlstate.NewStateReconciler(

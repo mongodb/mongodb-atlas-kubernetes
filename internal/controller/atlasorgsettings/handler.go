@@ -38,7 +38,7 @@ func (h *AtlasOrgSettingsHandler) newReconcileContext(ctx context.Context, aos *
 		return nil, err
 	}
 	return &reconcileContext{
-		svc: atlasorgsettings.NewAtlasOrgSettingsService(atlasSdk.SdkClient20250312006.OrganizationsApi),
+		svc: h.serviceBuilder(atlasSdk),
 		aos: aos,
 	}, nil
 }
@@ -59,11 +59,11 @@ func (h *AtlasOrgSettingsHandler) upsert(ctx context.Context, currentState, next
 		return result.Error(currentState, fmt.Errorf("atlas returned OrgSettings which is nil after update"))
 	}
 
-	return result.NextState(state.StateCreated, "Initialized")
+	return result.NextState(nextState, "Initialized")
 }
 
 func (h *AtlasOrgSettingsHandler) unmanage(orgID string) (ctrlstate.Result, error) {
-	return result.NextState(state.StateDeleted, fmt.Sprintf("unmanaged is AtlasOrgSettings for orgID %s", orgID))
+	return result.NextState(state.StateDeleted, fmt.Sprintf("unmanaged is AtlasOrgSettings for orgID %s.", orgID))
 }
 
 func (h *AtlasOrgSettingsHandler) HandleInitial(ctx context.Context, aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
