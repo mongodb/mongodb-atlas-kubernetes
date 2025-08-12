@@ -129,7 +129,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 
 	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(c, ap, r.deletionProtection, r.logger, r.globalSecretRef, r.reapplySupport)
 	reconcilers = append(reconcilers, newCtrlStateReconciler(integrationsReconciler))
-	reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.deprecatedPredicates(), ap, r.logger, r.globalSecretRef))
+	reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
 
 	if version.IsExperimental() {
 		// Add experimental controllers here

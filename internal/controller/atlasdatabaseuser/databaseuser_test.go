@@ -47,6 +47,7 @@ import (
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
@@ -2086,7 +2087,7 @@ func TestIsExpired(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			expired, err := IsExpired(tt.dbUser)
+			expired, err := timeutil.IsExpired(tt.dbUser.Spec.DeleteAfterDate)
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.expected, expired)
 		})

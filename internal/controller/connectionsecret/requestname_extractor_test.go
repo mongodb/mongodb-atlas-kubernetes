@@ -31,10 +31,11 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 )
 
-func TestCreateK8sFormat(t *testing.T) {
+func Test_createK8sFormat(t *testing.T) {
 	tests := map[string]struct {
 		projectName      string
 		clusterName      string
@@ -104,7 +105,7 @@ func TestCreateInternalFormat(t *testing.T) {
 	}
 }
 
-func TestLoadRequestIdentifiers(t *testing.T) {
+func Test_loadRequestIdentifiers(t *testing.T) {
 	scheme := runtime.NewScheme()
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
@@ -178,6 +179,12 @@ func TestLoadRequestIdentifiers(t *testing.T) {
 		).
 		Build()
 
+	r := &ConnectionSecretReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client: client,
+		},
+	}
+
 	tests := map[string]struct {
 		name        string
 		namespace   string
@@ -239,9 +246,8 @@ func TestLoadRequestIdentifiers(t *testing.T) {
 
 	for tn, tc := range tests {
 		t.Run(tn, func(t *testing.T) {
-			ids, err := LoadRequestIdentifiers(
+			ids, err := r.loadRequestIdentifiers(
 				context.Background(),
-				client,
 				types.NamespacedName{Name: tc.name, Namespace: tc.namespace},
 			)
 
@@ -251,12 +257,12 @@ func TestLoadRequestIdentifiers(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, ids)
+			assert.Equal(t, tc.expected, *ids)
 		})
 	}
 }
 
-func TestPair_IsReady(t *testing.T) {
+func Test_isReady(t *testing.T) {
 	t.Run("Both ready", func(t *testing.T) {
 		p := &ConnSecretPair{
 			Deployment: &akov2.AtlasDeployment{
@@ -277,7 +283,7 @@ func TestPair_IsReady(t *testing.T) {
 			},
 			ProjectID: "proj123",
 		}
-		ok, notReady := p.IsReady()
+		ok, notReady := isReady(p)
 		assert.True(t, ok)
 		assert.Empty(t, notReady)
 	})
@@ -303,13 +309,13 @@ func TestPair_IsReady(t *testing.T) {
 			},
 			ProjectID: "proj123",
 		}
-		ok, notReady := p.IsReady()
+		ok, notReady := isReady(p)
 		assert.False(t, ok)
 		assert.Equal(t, []string{"AtlasDatabaseUser/user"}, notReady)
 	})
 }
 
-func TestPair_LoadPairedResources(t *testing.T) {
+func Test_loadPairedResources(t *testing.T) {
 	scheme := runtime.NewScheme()
 	utilruntime.Must(akov2.AddToScheme(scheme))
 
@@ -417,13 +423,19 @@ func TestPair_LoadPairedResources(t *testing.T) {
 				}).
 				Build()
 
-			ids := ConnSecretIdentifiers{
+			r := &ConnectionSecretReconciler{
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: cl,
+				},
+			}
+
+			ids := &ConnSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      tt.clusterName,
 				DatabaseUsername: tt.databaseUsername,
 			}
 
-			pair, err := LoadPairedResources(context.Background(), cl, ids, ns)
+			pair, err := r.loadPairedResources(context.Background(), ids)
 
 			if tt.expectedErr == nil {
 				assert.NoError(t, err)
@@ -437,13 +449,13 @@ func TestPair_LoadPairedResources(t *testing.T) {
 			}
 
 			// When the projectID doesn't match the indexed keys, BOTH resources are missing -> special error.
-			failIDs := ConnSecretIdentifiers{
+			failIDs := &ConnSecretIdentifiers{
 				ProjectID:        otherprojectID,
 				ClusterName:      tt.clusterName,
 				DatabaseUsername: tt.databaseUsername,
 			}
 
-			failPair, failErr := LoadPairedResources(context.Background(), cl, failIDs, ns)
+			failPair, failErr := r.loadPairedResources(context.Background(), failIDs)
 			assert.Error(t, failErr)
 			assert.Nil(t, failPair)
 			assert.ErrorIs(t, failErr, ErrNoPairedResourcesFound)
@@ -451,7 +463,7 @@ func TestPair_LoadPairedResources(t *testing.T) {
 	}
 }
 
-func TestPair_BuildConnectionData(t *testing.T) {
+func Test_buildConnectionData(t *testing.T) {
 	const (
 		username      = "admin"
 		passwordValue = "p@ssw0rd"
@@ -516,13 +528,19 @@ func TestPair_BuildConnectionData(t *testing.T) {
 		WithObjects(secret, user, deployment).
 		Build()
 
-	p := &ConnSecretPair{
+	r := &ConnectionSecretReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client: client,
+		},
+	}
+
+	pair := &ConnSecretPair{
 		Deployment: deployment,
 		User:       user,
 		ProjectID:  "proj123",
 	}
 
-	data, err := p.BuildConnectionData(context.Background(), client)
+	data, err := r.buildConnectionData(context.Background(), pair)
 	assert.NoError(t, err)
 	assert.Equal(t, username, data.DBUserName)
 	assert.Equal(t, passwordValue, data.Password)

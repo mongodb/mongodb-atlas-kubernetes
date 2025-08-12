@@ -197,6 +197,11 @@ func (p *AtlasDatabaseUser) ProjectDualRef() *ProjectDualReference {
 	return &p.Spec.ProjectDualReference
 }
 
+// IsDatabaseUserReady checks if the Ready condition is available
+func (p *AtlasDatabaseUser) IsDatabaseUserReady() bool {
+	return api.HasReadyCondition(p.Status.Conditions)
+}
+
 func (p *AtlasDatabaseUser) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	p.Status.Conditions = conditions
 	p.Status.ObservedGeneration = p.ObjectMeta.Generation
