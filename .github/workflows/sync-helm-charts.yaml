@@ -18,7 +18,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout AKO repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.13.0
@@ -37,7 +37,7 @@ jobs:
             helm-charts
 
       - name: Checkout Helm charts repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: mongodb/helm-charts
           token: ${{ steps.generate_token.outputs.token }}
