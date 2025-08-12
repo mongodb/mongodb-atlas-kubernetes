@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -56,18 +55,14 @@ import (
 
 func TestRenconcile(t *testing.T) {
 	tests := map[string]struct {
-		atlasClientMocker func() *mongodbatlas.Client
-		atlasSDKMocker    func() *admin.APIClient
-		interceptors      interceptor.Funcs
-		project           *akov2.AtlasProject
-		result            reconcile.Result
-		conditions        []api.Condition
-		finalizers        []string
+		atlasSDKMocker func() *admin.APIClient
+		interceptors   interceptor.Funcs
+		project        *akov2.AtlasProject
+		result         reconcile.Result
+		conditions     []api.Condition
+		finalizers     []string
 	}{
 		"should handle project": {
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				notFoundErr := &admin.GenericOpenAPIError{}
 				notFoundErr.SetModel(admin.ApiError{ErrorCode: "NOT_IN_GROUP"})
@@ -166,9 +161,6 @@ func TestRenconcile(t *testing.T) {
 					},
 					IsSupportedFunc: func() bool {
 						return true
-					},
-					ClientFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-						return tt.atlasClientMocker(), nil
 					},
 					SdkClientSetFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, error) {
 						return &atlas_controllers.ClientSet{

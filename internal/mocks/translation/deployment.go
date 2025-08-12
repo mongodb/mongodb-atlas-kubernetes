@@ -22,61 +22,6 @@ func (_m *DeploymentMock) EXPECT() *DeploymentMock_Expecter {
 	return &DeploymentMock_Expecter{mock: &_m.Mock}
 }
 
-// Deprecated provides a mock function with no fields
-func (_m *DeploymentMock) Deprecated() (bool, string) {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for Notifications")
-	}
-
-	var r0 bool
-	var r1 string
-	if rf, ok := ret.Get(0).(func() (bool, string)); ok {
-		return rf()
-	}
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	if rf, ok := ret.Get(1).(func() string); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Get(1).(string)
-	}
-
-	return r0, r1
-}
-
-// DeploymentMock_Deprecated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Deprecated'
-type DeploymentMock_Deprecated_Call struct {
-	*mock.Call
-}
-
-// Deprecated is a helper method to define mock.On call
-func (_e *DeploymentMock_Expecter) Deprecated() *DeploymentMock_Deprecated_Call {
-	return &DeploymentMock_Deprecated_Call{Call: _e.mock.On("Notifications")}
-}
-
-func (_c *DeploymentMock_Deprecated_Call) Run(run func()) *DeploymentMock_Deprecated_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *DeploymentMock_Deprecated_Call) Return(_a0 bool, _a1 string) *DeploymentMock_Deprecated_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *DeploymentMock_Deprecated_Call) RunAndReturn(run func() (bool, string)) *DeploymentMock_Deprecated_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetConnection provides a mock function with no fields
 func (_m *DeploymentMock) GetConnection() *status.ConnectionStrings {
 	ret := _m.Called()
@@ -398,6 +343,51 @@ func (_c *DeploymentMock_GetState_Call) RunAndReturn(run func() string) *Deploym
 	return _c
 }
 
+// IsDedicated provides a mock function with no fields
+func (_m *DeploymentMock) IsDedicated() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsDedicated")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// DeploymentMock_IsDedicated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsDedicated'
+type DeploymentMock_IsDedicated_Call struct {
+	*mock.Call
+}
+
+// IsDedicated is a helper method to define mock.On call
+func (_e *DeploymentMock_Expecter) IsDedicated() *DeploymentMock_IsDedicated_Call {
+	return &DeploymentMock_IsDedicated_Call{Call: _e.mock.On("IsDedicated")}
+}
+
+func (_c *DeploymentMock_IsDedicated_Call) Run(run func()) *DeploymentMock_IsDedicated_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DeploymentMock_IsDedicated_Call) Return(_a0 bool) *DeploymentMock_IsDedicated_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *DeploymentMock_IsDedicated_Call) RunAndReturn(run func() bool) *DeploymentMock_IsDedicated_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsFlex provides a mock function with no fields
 func (_m *DeploymentMock) IsFlex() bool {
 	ret := _m.Called()
@@ -484,6 +474,113 @@ func (_c *DeploymentMock_IsServerless_Call) Return(_a0 bool) *DeploymentMock_IsS
 }
 
 func (_c *DeploymentMock_IsServerless_Call) RunAndReturn(run func() bool) *DeploymentMock_IsServerless_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsTenant provides a mock function with no fields
+func (_m *DeploymentMock) IsTenant() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsTenant")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// DeploymentMock_IsTenant_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsTenant'
+type DeploymentMock_IsTenant_Call struct {
+	*mock.Call
+}
+
+// IsTenant is a helper method to define mock.On call
+func (_e *DeploymentMock_Expecter) IsTenant() *DeploymentMock_IsTenant_Call {
+	return &DeploymentMock_IsTenant_Call{Call: _e.mock.On("IsTenant")}
+}
+
+func (_c *DeploymentMock_IsTenant_Call) Run(run func()) *DeploymentMock_IsTenant_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DeploymentMock_IsTenant_Call) Return(_a0 bool) *DeploymentMock_IsTenant_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *DeploymentMock_IsTenant_Call) RunAndReturn(run func() bool) *DeploymentMock_IsTenant_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Notifications provides a mock function with no fields
+func (_m *DeploymentMock) Notifications() (bool, string, string) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Notifications")
+	}
+
+	var r0 bool
+	var r1 string
+	var r2 string
+	if rf, ok := ret.Get(0).(func() (bool, string, string)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func() string); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	if rf, ok := ret.Get(2).(func() string); ok {
+		r2 = rf()
+	} else {
+		r2 = ret.Get(2).(string)
+	}
+
+	return r0, r1, r2
+}
+
+// DeploymentMock_Notifications_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Notifications'
+type DeploymentMock_Notifications_Call struct {
+	*mock.Call
+}
+
+// Notifications is a helper method to define mock.On call
+func (_e *DeploymentMock_Expecter) Notifications() *DeploymentMock_Notifications_Call {
+	return &DeploymentMock_Notifications_Call{Call: _e.mock.On("Notifications")}
+}
+
+func (_c *DeploymentMock_Notifications_Call) Run(run func()) *DeploymentMock_Notifications_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DeploymentMock_Notifications_Call) Return(_a0 bool, _a1 string, _a2 string) *DeploymentMock_Notifications_Call {
+	_c.Call.Return(_a0, _a1, _a2)
+	return _c
+}
+
+func (_c *DeploymentMock_Notifications_Call) RunAndReturn(run func() (bool, string, string)) *DeploymentMock_Notifications_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -170,7 +169,7 @@ func (ds *ProductionAtlasDeployments) DeploymentIsReady(ctx context.Context, pro
 	if err != nil {
 		return false, fmt.Errorf("failed to get cluster %q status %w", deploymentName, err)
 	}
-	return clusterStatus.GetChangeStatus() == string(mongodbatlas.ChangeStatusApplied), nil
+	return clusterStatus.GetChangeStatus() == "APPLIED", nil
 }
 
 func (ds *ProductionAtlasDeployments) GetFlexCluster(ctx context.Context, projectID, name string) (*Flex, error) {

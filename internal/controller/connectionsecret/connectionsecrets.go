@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -212,41 +211,4 @@ func FillPrivateConns(conn deployment.Connection, data *ConnectionData) {
 			})
 		}
 	}
-}
-
-// FillPrivateConnStrings fills private conn urls from connection strings
-// TODO: (CLOUDP-253951) remove once all usages move over to FillPrivateConns instead
-// Right now only advanced deployment is using this one
-func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *ConnectionData) {
-	if connStrings.Private != "" {
-		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-			PvtConnURL:    connStrings.Private,
-			PvtSrvConnURL: connStrings.PrivateSrv,
-		})
-	}
-
-	for _, pe := range connStrings.PrivateEndpoint {
-		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-			PvtConnURL:      pe.ConnectionString,
-			PvtSrvConnURL:   pe.SRVConnectionString,
-			PvtShardConnURL: pe.SRVShardOptimizedConnectionString,
-		})
-	}
-}
-
-func IsCloudGovDomain(ctx *workflow.Context) bool {
-	domains := []string{
-		"cloudgov.mongodb.com",
-		"cloud.mongodbgov.com",
-		"cloud-dev.mongodbgov.com",
-		"cloud-qa.mongodbgov.com",
-	}
-
-	for _, domain := range domains {
-		if strings.HasPrefix(ctx.Client.BaseURL.Host, domain) {
-			return true
-		}
-	}
-
-	return false
 }

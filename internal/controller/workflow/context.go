@@ -17,7 +17,6 @@ package workflow
 import (
 	"context"
 
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,8 +37,6 @@ type Context struct {
 	// OrgID is the identifier of the Organization which the Atlas client was configured for
 	OrgID string
 
-	// Client is a mongodb atlas client used to make v1.0 API calls
-	Client       *mongodbatlas.Client
 	SdkClientSet *atlas.ClientSet
 
 	status Status

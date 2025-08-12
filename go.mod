@@ -27,7 +27,6 @@ require (
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.10.0
 	github.com/yudai/gojsondiff v1.0.0
-	go.mongodb.org/atlas v0.38.0
 	go.mongodb.org/atlas-sdk/v20250312002 v20250312002.0.0
 	go.mongodb.org/mongo-driver v1.17.4
 	go.uber.org/zap v1.27.0
@@ -117,7 +116,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect

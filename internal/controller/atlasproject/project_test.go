@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -59,7 +58,6 @@ func TestHandleProject(t *testing.T) {
 	deletionTime := metav1.Now()
 
 	tests := map[string]struct {
-		atlasClientMocker      func() *mongodbatlas.Client
 		atlasSDKMocker         func() *admin.APIClient
 		projectServiceMocker   func() project.ProjectService
 		teamServiceMocker      func() teams.TeamsService
@@ -73,9 +71,6 @@ func TestHandleProject(t *testing.T) {
 	}{
 		"should fail to get project from atlas": {
 			wantErr: true,
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil
 			},
@@ -108,9 +103,6 @@ func TestHandleProject(t *testing.T) {
 			},
 		},
 		"should create project": {
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil
 			},
@@ -147,17 +139,6 @@ func TestHandleProject(t *testing.T) {
 			finalizers: []string{customresource.FinalizerLabel},
 		},
 		"should delete project": {
-			atlasClientMocker: func() *mongodbatlas.Client {
-				projectsMock := &atlasmocks.ProjectsClientMock{
-					DeleteFunc: func(projectID string) (*mongodbatlas.Response, error) {
-						return nil, nil
-					},
-				}
-
-				return &mongodbatlas.Client{
-					Projects: projectsMock,
-				}
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				mockPrivateEndpointAPI := mockadmin.NewPrivateEndpointServicesApi(t)
 				mockPrivateEndpointAPI.EXPECT().
@@ -202,9 +183,6 @@ func TestHandleProject(t *testing.T) {
 			result: reconcile.Result{},
 		},
 		"should delete project when it's was already deleted in atlas": {
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil
 			},
@@ -236,9 +214,6 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should fail to remove finalizer from project when it's was already deleted in atlas": {
 			wantErr: true,
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil
 			},
@@ -280,25 +255,6 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should fail to configure authentication modes": {
 			wantErr: true,
-			atlasClientMocker: func() *mongodbatlas.Client {
-				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
-					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						return &mongodbatlas.ThirdPartyIntegrations{}, nil, nil
-					},
-				}
-				encryptionAtRest := &atlasmocks.EncryptionAtRestClientMock{
-					GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
-						return &mongodbatlas.EncryptionAtRest{}, nil, nil
-					},
-				}
-				projectAPI := &atlasmocks.ProjectsClientMock{}
-
-				return &mongodbatlas.Client{
-					Integrations:      integrations,
-					EncryptionsAtRest: encryptionAtRest,
-					Projects:          projectAPI,
-				}
-			},
 			atlasSDKMocker: func() *admin.APIClient { //nolint:dupl
 				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
 				ipAccessList.EXPECT().ListProjectIpAccessLists(context.Background(), "projectID").
@@ -335,6 +291,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -344,6 +305,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
+					ThirdPartyIntegrationsApi:  integrationsApi,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -385,25 +347,6 @@ func TestHandleProject(t *testing.T) {
 			finalizers: []string{customresource.FinalizerLabel},
 		},
 		"should configure project resources": {
-			atlasClientMocker: func() *mongodbatlas.Client {
-				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
-					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						return &mongodbatlas.ThirdPartyIntegrations{}, nil, nil
-					},
-				}
-				encryptionAtRest := &atlasmocks.EncryptionAtRestClientMock{
-					GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
-						return &mongodbatlas.EncryptionAtRest{}, nil, nil
-					},
-				}
-				projectAPI := &atlasmocks.ProjectsClientMock{}
-
-				return &mongodbatlas.Client{
-					Integrations:      integrations,
-					EncryptionsAtRest: encryptionAtRest,
-					Projects:          projectAPI,
-				}
-			},
 			atlasSDKMocker: func() *admin.APIClient { //nolint:dupl
 				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
 				ipAccessList.EXPECT().ListProjectIpAccessLists(context.Background(), "projectID").
@@ -444,6 +387,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -453,6 +401,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
+					ThirdPartyIntegrationsApi:  integrationsApi,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -503,23 +452,6 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should fail to configure project resources": {
 			wantErr: true,
-			atlasClientMocker: func() *mongodbatlas.Client {
-				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
-					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						return &mongodbatlas.ThirdPartyIntegrations{}, nil, nil
-					},
-				}
-				encryptionAtRest := &atlasmocks.EncryptionAtRestClientMock{
-					GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
-						return &mongodbatlas.EncryptionAtRest{}, nil, nil
-					},
-				}
-
-				return &mongodbatlas.Client{
-					Integrations:      integrations,
-					EncryptionsAtRest: encryptionAtRest,
-				}
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
 				ipAccessList.EXPECT().ListProjectIpAccessLists(context.Background(), "projectID").
@@ -560,6 +492,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -569,6 +506,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
+					ThirdPartyIntegrationsApi:  integrationsApi,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -620,23 +558,6 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should fail to save last applied config": {
 			wantErr: true,
-			atlasClientMocker: func() *mongodbatlas.Client {
-				integrations := &atlasmocks.ThirdPartyIntegrationsClientMock{
-					ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-						return &mongodbatlas.ThirdPartyIntegrations{}, nil, nil
-					},
-				}
-				encryptionAtRest := &atlasmocks.EncryptionAtRestClientMock{
-					GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
-						return &mongodbatlas.EncryptionAtRest{}, nil, nil
-					},
-				}
-
-				return &mongodbatlas.Client{
-					Integrations:      integrations,
-					EncryptionsAtRest: encryptionAtRest,
-				}
-			},
 			atlasSDKMocker: func() *admin.APIClient { //nolint:dupl
 				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
 				ipAccessList.EXPECT().ListProjectIpAccessLists(context.Background(), "projectID").
@@ -677,6 +598,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backup})
 				backup.EXPECT().GetDataProtectionSettingsExecute(mock.AnythingOfType("admin.GetDataProtectionSettingsApiRequest")).
 					Return(nil, nil, nil)
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "projectID").
+					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
 					ProjectIPAccessListApi:     ipAccessList,
@@ -686,6 +612,7 @@ func TestHandleProject(t *testing.T) {
 					CustomDatabaseRolesApi:     customRoles,
 					ProjectsApi:                projectAPI,
 					CloudBackupsApi:            backup,
+					ThirdPartyIntegrationsApi:  integrationsApi,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -750,7 +677,6 @@ func TestHandleProject(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				Log:     logger,
-				Client:  tt.atlasClientMocker(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312002: tt.atlasSDKMocker(),
 				},
@@ -965,7 +891,6 @@ func TestDelete(t *testing.T) {
 
 	tests := map[string]struct {
 		deletionProtection   bool
-		atlasClientMocker    func() *mongodbatlas.Client
 		atlasSDKMocker       func() *admin.APIClient
 		projectServiceMocker func() project.ProjectService
 		teamServiceMocker    func() teams.TeamsService
@@ -978,9 +903,6 @@ func TestDelete(t *testing.T) {
 	}{
 		"should fail when unable to check project dependencies": {
 			wantErr: true,
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil
 			},
@@ -1014,9 +936,6 @@ func TestDelete(t *testing.T) {
 		},
 		"should fail when project was deleted but it has dependencies": {
 			wantErr: true,
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil
 			},
@@ -1057,9 +976,6 @@ func TestDelete(t *testing.T) {
 			finalizers: []string{customresource.FinalizerLabel},
 		},
 		"should do soft deletion when deletion protection is enabled": {
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil
 			},
@@ -1088,9 +1004,6 @@ func TestDelete(t *testing.T) {
 			result: reconcile.Result{},
 		},
 		"should do soft deletion when resource policy is set to keep": {
-			atlasClientMocker: func() *mongodbatlas.Client {
-				return nil
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil
 			},
@@ -1117,17 +1030,6 @@ func TestDelete(t *testing.T) {
 			},
 		},
 		"should update team status when project is deleted": {
-			atlasClientMocker: func() *mongodbatlas.Client {
-				projectsMock := &atlasmocks.ProjectsClientMock{
-					DeleteFunc: func(projectID string) (*mongodbatlas.Response, error) {
-						return nil, nil
-					},
-				}
-
-				return &mongodbatlas.Client{
-					Projects: projectsMock,
-				}
-			},
 			atlasSDKMocker: func() *admin.APIClient {
 				mockPrivateEndpointAPI := mockadmin.NewPrivateEndpointServicesApi(t)
 				mockPrivateEndpointAPI.EXPECT().
@@ -1218,7 +1120,6 @@ func TestDelete(t *testing.T) {
 			logger := zaptest.NewLogger(t).Sugar()
 			ctx := &workflow.Context{
 				Context: context.Background(),
-				Client:  tt.atlasClientMocker(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312002: tt.atlasSDKMocker(),
 				},
@@ -1242,12 +1143,8 @@ func TestDelete(t *testing.T) {
 				Client:                   k8sClient,
 				ObjectDeletionProtection: tt.deletionProtection,
 				Log:                      logger,
-				AtlasProvider: &atlasmocks.TestProvider{
-					ClientFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*mongodbatlas.Client, error) {
-						return tt.atlasClientMocker(), nil
-					},
-				},
-				EventRecorder: record.NewFakeRecorder(1),
+				AtlasProvider:            &atlasmocks.TestProvider{},
+				EventRecorder:            record.NewFakeRecorder(1),
 			}
 
 			atlasProject := tt.objects[0].(*akov2.AtlasProject)

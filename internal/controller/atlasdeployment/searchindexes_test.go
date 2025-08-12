@@ -222,7 +222,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
-				Client:  nil,
 				Context: context.Background(),
 			},
 			deployment:    deployment,
@@ -305,7 +304,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
-				Client:  nil,
 				Context: context.Background(),
 			},
 			deployment:    deployment,
@@ -401,7 +399,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
-				Client:  nil,
 				Context: context.Background(),
 			},
 			deployment:    deployment,
@@ -556,7 +553,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
-				Client:  nil,
 				Context: context.Background(),
 			},
 			deployment:    cluster,
@@ -655,7 +651,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
-				Client:  nil,
 				Context: context.Background(),
 			},
 			deployment:    cluster,
@@ -759,7 +754,6 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:     zap.S(),
 				OrgID:   "testOrgID",
-				Client:  nil,
 				Context: context.Background(),
 			},
 			deployment:    cluster,

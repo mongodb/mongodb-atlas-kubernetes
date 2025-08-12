@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20250312002/admin"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -113,8 +113,7 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
 				_, err := teamCtx.SdkClientSet.SdkClient20250312002.TeamsApi.DeleteTeam(teamCtx.Context, teamCtx.OrgID, team.Status.ID).Execute()
-				var apiError *mongodbatlas.ErrorResponse
-				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
+				if admin.IsErrorCode(err, atlas.NotInGroup) {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
 					return workflow.Terminate(workflow.TeamDoesNotExist, err).ReconcileResult()
 				}
@@ -299,8 +298,7 @@ func (r *AtlasProjectReconciler) teamsManagedByAtlas(workflowCtx *workflow.Conte
 
 		atlasTeam, err := teamsService.GetTeamByID(workflowCtx.Context, workflowCtx.OrgID, team.Status.ID)
 		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
+			if admin.IsErrorCode(err, atlas.NotInGroup) || admin.IsErrorCode(err, atlas.ResourceNotFound) {
 				return false, nil
 			}
 

@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
@@ -76,9 +75,12 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			Context: context.Background(),
 		}
 		teamService := func() teams.TeamsService {
+			notFound := &admin.GenericOpenAPIError{}
+			notFound.SetModel(admin.ApiError{ErrorCode: atlas.ResourceNotFound})
+
 			service := translation.NewTeamsServiceMock(t)
 			service.EXPECT().GetTeamByID(workflowCtx.Context, workflowCtx.OrgID, "team-id-1").
-				Return(nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound})
+				Return(nil, notFound)
 			return service
 		}
 		r = AtlasProjectReconciler{}
