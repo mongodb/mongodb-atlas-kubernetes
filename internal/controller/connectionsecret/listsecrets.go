@@ -37,7 +37,7 @@ func Ensure(ctx context.Context, client client.Client, namespace, projectName, p
 		return "", getError
 	}
 
-	ids := ConnSecretIdentifiers{
+	ids := &ConnSecretIdentifiers{
 		ProjectID:   projectID,
 		ClusterName: kube.NormalizeIdentifier(clusterName),
 	}

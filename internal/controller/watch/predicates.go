@@ -84,3 +84,42 @@ func DefaultPredicates[T metav1.Object]() predicate.TypedPredicate[T] {
 		IgnoreDeletedPredicate[T](),
 	)
 }
+
+type ReadyFunc[T any] func(obj T) bool
+
+// ReadyTransitionPredicate filters out only those objects where the previous
+// oldObject was not ready but the new one it
+func ReadyTransitionPredicate[T any](ready ReadyFunc[T]) predicate.Predicate {
+	return predicate.Funcs{
+		CreateFunc:  func(e event.CreateEvent) bool { return false },
+		GenericFunc: func(e event.GenericEvent) bool { return false },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return true },
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			newObj, ok := e.ObjectNew.(T)
+			if !ok {
+				return false
+			}
+			oldObj, ok := e.ObjectOld.(T)
+			if !ok {
+				return false
+			}
+			return !ready(oldObj) && ready(newObj)
+		},
+	}
+}
+
+// SecretLabelPredicate filters out secrets based on the required labels
+func SecretLabelPredicate(requiredKeys ...string) predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
+		if obj == nil {
+			return false
+		}
+		labels := obj.GetLabels()
+		for _, k := range requiredKeys {
+			if _, ok := labels[k]; !ok {
+				return false
+			}
+		}
+		return true
+	})
+}
