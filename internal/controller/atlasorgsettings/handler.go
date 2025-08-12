@@ -45,7 +45,6 @@ func (h *AtlasOrgSettingsHandler) newReconcileContext(ctx context.Context, aos *
 
 func (h *AtlasOrgSettingsHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState,
 	aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
-
 	reconcileCtx, err := h.newReconcileContext(ctx, aos)
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to create reconcile context: %w", err))

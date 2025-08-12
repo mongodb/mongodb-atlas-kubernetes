@@ -88,7 +88,6 @@ func (h *AtlasOrgSettingsHandler) SetupWithManager(mgr ctrl.Manager, rec reconci
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(defaultOptions).Complete(rec)
-
 }
 
 func (h *AtlasOrgSettingsHandler) findSecretsForOrgSettings() handler.MapFunc {

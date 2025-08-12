@@ -16,6 +16,7 @@ package atlasorgsettings
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -43,6 +44,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
+//nolint:gosec
 const (
 	fakeOrgID     = "fake-org-id"
 	fakeAPIKey    = "fake-api-key"
@@ -82,6 +84,24 @@ var sampleAtlasOrgSettings = akov2.AtlasOrgSettings{
 	Status: status.AtlasOrgSettingsStatus{},
 }
 
+func createSuccessfulProvider() atlas.Provider {
+	return &atlasmock.TestProvider{
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+			return &atlas.ClientSet{
+				SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
+			}, nil
+		},
+	}
+}
+
+func createFailingProvider(errorMsg string) atlas.Provider {
+	return &atlasmock.TestProvider{
+		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+			return nil, errors.New(errorMsg)
+		},
+	}
+}
+
 func TestHandleInitial(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
@@ -98,14 +118,8 @@ func TestHandleInitial(t *testing.T) {
 		wantErr        string
 	}{
 		{
-			name: "successful initial update",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "successful initial update",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				service := mocks.NewAtlasOrgSettingsServiceMock(t)
 				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
@@ -132,14 +146,8 @@ func TestHandleInitial(t *testing.T) {
 			},
 		},
 		{
-			name: "connection config error",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "connection config error",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
@@ -160,12 +168,8 @@ func TestHandleInitial(t *testing.T) {
 			wantErr: "failed to create reconcile context",
 		},
 		{
-			name: "atlas provider sdk client error",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return nil, fmt.Errorf("sdk client error")
-				},
-			},
+			name:     "atlas provider sdk client error",
+			provider: createFailingProvider("sdk client error"),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
@@ -175,14 +179,8 @@ func TestHandleInitial(t *testing.T) {
 			wantErr: "failed to create reconcile context: sdk client error",
 		},
 		{
-			name: "org settings service update error",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "org settings service update error",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				service := mocks.NewAtlasOrgSettingsServiceMock(t)
 				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
@@ -195,14 +193,8 @@ func TestHandleInitial(t *testing.T) {
 			wantErr: "atlas api error",
 		},
 		{
-			name: "nil response from atlas service",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "nil response from atlas service",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				service := mocks.NewAtlasOrgSettingsServiceMock(t)
 				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
@@ -257,14 +249,8 @@ func TestHandleCreated(t *testing.T) {
 		wantErr        string
 	}{
 		{
-			name: "successful created update",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "successful created update",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				service := mocks.NewAtlasOrgSettingsServiceMock(t)
 				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
@@ -291,14 +277,8 @@ func TestHandleCreated(t *testing.T) {
 			},
 		},
 		{
-			name: "org settings service update error in created state",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "org settings service update error in created state",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				service := mocks.NewAtlasOrgSettingsServiceMock(t)
 				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
@@ -353,14 +333,8 @@ func TestHandleUpdated(t *testing.T) {
 		wantErr        string
 	}{
 		{
-			name: "successful updated state",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "successful updated state",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				service := mocks.NewAtlasOrgSettingsServiceMock(t)
 				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
@@ -401,14 +375,8 @@ func TestHandleUpdated(t *testing.T) {
 			},
 		},
 		{
-			name: "org settings service update error in updated state",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "org settings service update error in updated state",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				service := mocks.NewAtlasOrgSettingsServiceMock(t)
 				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
@@ -529,14 +497,8 @@ func TestNewReconcileContext(t *testing.T) {
 		wantErr        string
 	}{
 		{
-			name: "successful reconcile context creation",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "successful reconcile context creation",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
@@ -544,14 +506,8 @@ func TestNewReconcileContext(t *testing.T) {
 			objects: []client.Object{&fakeAtlasSecret},
 		},
 		{
-			name: "missing connection secret",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			name:     "missing connection secret",
+			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
@@ -571,12 +527,8 @@ func TestNewReconcileContext(t *testing.T) {
 			wantErr: "secrets \"non-existent-secret\" not found",
 		},
 		{
-			name: "atlas provider error",
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return nil, fmt.Errorf("invalid credentials")
-				},
-			},
+			name:     "atlas provider error",
+			provider: createFailingProvider("invalid credentials"),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
@@ -635,13 +587,7 @@ func TestUpsert(t *testing.T) {
 			name:         "successful upsert from initial to created",
 			currentState: state.StateInitial,
 			nextState:    state.StateCreated,
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
-					}, nil
-				},
-			},
+			provider:     createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				service := mocks.NewAtlasOrgSettingsServiceMock(t)
 				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
@@ -671,11 +617,7 @@ func TestUpsert(t *testing.T) {
 			name:         "failed reconcile context creation",
 			currentState: state.StateCreated,
 			nextState:    state.StateUpdated,
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return nil, fmt.Errorf("connection error")
-				},
-			},
+			provider:     createFailingProvider("connection error"),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
