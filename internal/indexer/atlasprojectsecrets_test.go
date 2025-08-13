@@ -77,7 +77,7 @@ func TestAtlasProjectByConnectionSecretIndexer(t *testing.T) {
 			object: &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{Name: "projectName", Namespace: "projectNamespace"},
 				Spec: akov2.AtlasProjectSpec{
-					ConnectionSecret: &common.ResourceRefNamespaced{Name: "ConnectionSecret", Namespace: "secretNamespace"},
+					ConnectionSecret: &common.ResourceRefNamespaced{Name: "ConnectionSecretRef", Namespace: "secretNamespace"},
 					AlertConfigurations: []akov2.AlertConfiguration{
 						{
 							Notifications: []akov2.Notification{
@@ -118,7 +118,7 @@ func TestAtlasProjectByConnectionSecretIndexer(t *testing.T) {
 				"projectNamespace/OpsGenieAPIKeyRef",
 				"projectNamespace/ServiceKeyRef",
 				"projectNamespace/VictorOpsSecretRef",
-				"secretNamespace/ConnectionSecret",
+				"secretNamespace/ConnectionSecretRef",
 			},
 		},
 	} {

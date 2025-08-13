@@ -70,7 +70,7 @@ var sampleAtlasOrgSettings = akov2.AtlasOrgSettings{
 	},
 	Spec: akov2.AtlasOrgSettingsSpec{
 		OrgID: fakeOrgID,
-		ConnectionSecret: &common.ResourceRef{
+		ConnectionSecretRef: &common.ResourceRef{
 			Name: "atlas-credentials",
 		},
 		ApiAccessListRequired:                  pointer.MakePtr(true),
@@ -102,383 +102,17 @@ func createFailingProvider(errorMsg string) atlas.Provider {
 	}
 }
 
-func TestHandleInitial(t *testing.T) {
-	scheme := runtime.NewScheme()
-	require.NoError(t, corev1.AddToScheme(scheme))
-	require.NoError(t, akov2.AddToScheme(scheme))
-	ctx := context.Background()
+// Helper functions for creating common service builders
+func createServiceBuilder(t *testing.T, getCurrentReturn *atlasorgsettings.AtlasOrgSettings, getCurrentErr error,
+	updateReturn *atlasorgsettings.AtlasOrgSettings, updateErr error, expectUpdate bool) func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
+	return func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
+		service := mocks.NewAtlasOrgSettingsServiceMock(t)
+		service.EXPECT().Get(mock.Anything, fakeOrgID).Return(getCurrentReturn, getCurrentErr)
 
-	for _, tc := range []struct {
-		name           string
-		provider       atlas.Provider
-		serviceBuilder func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService
-		input          *akov2.AtlasOrgSettings
-		objects        []client.Object
-		want           ctrlstate.Result
-		wantErr        string
-	}{
-		{
-			name:     "successful initial update",
-			provider: createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				service := mocks.NewAtlasOrgSettingsServiceMock(t)
-				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
-					Return(&atlasorgsettings.AtlasOrgSettings{
-						AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-							OrgID:                                  fakeOrgID,
-							ConnectionSecret:                       nil,
-							ApiAccessListRequired:                  sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
-							GenAIFeaturesEnabled:                   sampleAtlasOrgSettings.Spec.GenAIFeaturesEnabled,
-							MaxServiceAccountSecretValidityInHours: sampleAtlasOrgSettings.Spec.MaxServiceAccountSecretValidityInHours,
-							MultiFactorAuthRequired:                sampleAtlasOrgSettings.Spec.MultiFactorAuthRequired,
-							RestrictEmployeeAccess:                 sampleAtlasOrgSettings.Spec.RestrictEmployeeAccess,
-							SecurityContact:                        sampleAtlasOrgSettings.Spec.SecurityContact,
-							StreamsCrossGroupEnabled:               sampleAtlasOrgSettings.Spec.StreamsCrossGroupEnabled,
-						},
-					}, nil)
-				return service
-			},
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
-			want: ctrlstate.Result{
-				NextState: "Created",
-				StateMsg:  "Initialized.",
-			},
-		},
-		{
-			name:     "connection config error",
-			provider: createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				return mocks.NewAtlasOrgSettingsServiceMock(t)
-			},
-			input: &akov2.AtlasOrgSettings{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "sample-org-settings",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasOrgSettingsSpec{
-					OrgID: fakeOrgID,
-					ConnectionSecret: &common.ResourceRef{
-						Name: "non-existent-secret",
-					},
-				},
-			},
-			objects: []client.Object{},
-			want:    ctrlstate.Result{NextState: "Initial"},
-			wantErr: "failed to create reconcile context",
-		},
-		{
-			name:     "atlas provider sdk client error",
-			provider: createFailingProvider("sdk client error"),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				return mocks.NewAtlasOrgSettingsServiceMock(t)
-			},
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
-			want:    ctrlstate.Result{NextState: "Initial"},
-			wantErr: "failed to create reconcile context: sdk client error",
-		},
-		{
-			name:     "org settings service update error",
-			provider: createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				service := mocks.NewAtlasOrgSettingsServiceMock(t)
-				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
-					Return(nil, fmt.Errorf("atlas api error"))
-				return service
-			},
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
-			want:    ctrlstate.Result{NextState: "Initial"},
-			wantErr: "atlas api error",
-		},
-		{
-			name:     "nil response from atlas service",
-			provider: createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				service := mocks.NewAtlasOrgSettingsServiceMock(t)
-				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
-					Return(nil, nil)
-				return service
-			},
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
-			want:    ctrlstate.Result{NextState: "Initial"},
-			wantErr: "atlas returned OrgSettings which is nil after update",
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(scheme).
-				WithObjects(append(tc.objects, tc.input)...).
-				WithStatusSubresource(tc.input).Build()
-
-			h := &AtlasOrgSettingsHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					AtlasProvider: tc.provider,
-					Log:           zap.NewNop().Sugar(),
-				},
-				serviceBuilder: tc.serviceBuilder,
-			}
-
-			got, err := h.HandleInitial(ctx, tc.input)
-			if tc.wantErr == "" {
-				require.NoError(t, err)
-			} else {
-				assert.ErrorContains(t, err, tc.wantErr)
-			}
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestHandleCreated(t *testing.T) {
-	scheme := runtime.NewScheme()
-	require.NoError(t, corev1.AddToScheme(scheme))
-	require.NoError(t, akov2.AddToScheme(scheme))
-	ctx := context.Background()
-
-	for _, tc := range []struct {
-		name           string
-		provider       atlas.Provider
-		serviceBuilder func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService
-		input          *akov2.AtlasOrgSettings
-		objects        []client.Object
-		want           ctrlstate.Result
-		wantErr        string
-	}{
-		{
-			name:     "successful created update",
-			provider: createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				service := mocks.NewAtlasOrgSettingsServiceMock(t)
-				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
-					Return(&atlasorgsettings.AtlasOrgSettings{
-						AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-							OrgID:                                  fakeOrgID,
-							ConnectionSecret:                       nil,
-							ApiAccessListRequired:                  sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
-							GenAIFeaturesEnabled:                   sampleAtlasOrgSettings.Spec.GenAIFeaturesEnabled,
-							MaxServiceAccountSecretValidityInHours: sampleAtlasOrgSettings.Spec.MaxServiceAccountSecretValidityInHours,
-							MultiFactorAuthRequired:                sampleAtlasOrgSettings.Spec.MultiFactorAuthRequired,
-							RestrictEmployeeAccess:                 sampleAtlasOrgSettings.Spec.RestrictEmployeeAccess,
-							SecurityContact:                        sampleAtlasOrgSettings.Spec.SecurityContact,
-							StreamsCrossGroupEnabled:               sampleAtlasOrgSettings.Spec.StreamsCrossGroupEnabled,
-						},
-					}, nil)
-				return service
-			},
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
-			want: ctrlstate.Result{
-				NextState: "Updated",
-				StateMsg:  "Initialized.",
-			},
-		},
-		{
-			name:     "org settings service update error in created state",
-			provider: createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				service := mocks.NewAtlasOrgSettingsServiceMock(t)
-				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
-					Return(nil, fmt.Errorf("update failed"))
-				return service
-			},
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
-			want:    ctrlstate.Result{NextState: "Created"},
-			wantErr: "update failed",
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(scheme).
-				WithObjects(append(tc.objects, tc.input)...).
-				WithStatusSubresource(tc.input).Build()
-
-			h := &AtlasOrgSettingsHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					AtlasProvider: tc.provider,
-					Log:           zap.NewNop().Sugar(),
-				},
-				serviceBuilder: tc.serviceBuilder,
-			}
-
-			got, err := h.HandleCreated(ctx, tc.input)
-			if tc.wantErr == "" {
-				require.NoError(t, err)
-			} else {
-				assert.ErrorContains(t, err, tc.wantErr)
-			}
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestHandleUpdated(t *testing.T) {
-	scheme := runtime.NewScheme()
-	require.NoError(t, corev1.AddToScheme(scheme))
-	require.NoError(t, akov2.AddToScheme(scheme))
-	ctx := context.Background()
-
-	for _, tc := range []struct {
-		name           string
-		provider       atlas.Provider
-		serviceBuilder func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService
-		input          *akov2.AtlasOrgSettings
-		objects        []client.Object
-		want           ctrlstate.Result
-		wantErr        string
-	}{
-		{
-			name:     "successful updated state",
-			provider: createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				service := mocks.NewAtlasOrgSettingsServiceMock(t)
-				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
-					Return(&atlasorgsettings.AtlasOrgSettings{
-						AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-							OrgID:                                  fakeOrgID,
-							ConnectionSecret:                       nil,
-							ApiAccessListRequired:                  sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
-							GenAIFeaturesEnabled:                   sampleAtlasOrgSettings.Spec.GenAIFeaturesEnabled,
-							MaxServiceAccountSecretValidityInHours: sampleAtlasOrgSettings.Spec.MaxServiceAccountSecretValidityInHours,
-							MultiFactorAuthRequired:                sampleAtlasOrgSettings.Spec.MultiFactorAuthRequired,
-							RestrictEmployeeAccess:                 sampleAtlasOrgSettings.Spec.RestrictEmployeeAccess,
-							SecurityContact:                        sampleAtlasOrgSettings.Spec.SecurityContact,
-							StreamsCrossGroupEnabled:               sampleAtlasOrgSettings.Spec.StreamsCrossGroupEnabled,
-						},
-					}, nil)
-				return service
-			},
-			input: &akov2.AtlasOrgSettings{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "updated-org-settings",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasOrgSettingsSpec{
-					OrgID: fakeOrgID,
-					ConnectionSecret: &common.ResourceRef{
-						Name: "atlas-credentials",
-					},
-					MultiFactorAuthRequired: pointer.MakePtr(false),
-					RestrictEmployeeAccess:  pointer.MakePtr(true),
-					ApiAccessListRequired:   pointer.MakePtr(false),
-				},
-			},
-			objects: []client.Object{&fakeAtlasSecret},
-			want: ctrlstate.Result{
-				NextState: "Updated",
-				StateMsg:  "Initialized.",
-			},
-		},
-		{
-			name:     "org settings service update error in updated state",
-			provider: createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				service := mocks.NewAtlasOrgSettingsServiceMock(t)
-				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
-					Return(nil, fmt.Errorf("atlas permissions error"))
-				return service
-			},
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
-			want:    ctrlstate.Result{NextState: "Updated"},
-			wantErr: "atlas permissions error",
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(scheme).
-				WithObjects(append(tc.objects, tc.input)...).
-				WithStatusSubresource(tc.input).Build()
-
-			h := &AtlasOrgSettingsHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					AtlasProvider: tc.provider,
-					Log:           zap.NewNop().Sugar(),
-				},
-				serviceBuilder: tc.serviceBuilder,
-			}
-
-			got, err := h.HandleUpdated(ctx, tc.input)
-			if tc.wantErr == "" {
-				require.NoError(t, err)
-			} else {
-				assert.ErrorContains(t, err, tc.wantErr)
-			}
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestHandleDeletionRequested(t *testing.T) {
-	scheme := runtime.NewScheme()
-	require.NoError(t, corev1.AddToScheme(scheme))
-	require.NoError(t, akov2.AddToScheme(scheme))
-	ctx := context.Background()
-
-	for _, tc := range []struct {
-		name    string
-		input   *akov2.AtlasOrgSettings
-		objects []client.Object
-		want    ctrlstate.Result
-		wantErr string
-	}{
-		{
-			name:    "successful deletion unmanage",
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
-			want: ctrlstate.Result{
-				NextState: "Deleted",
-				StateMsg:  fmt.Sprintf("unmanaged is AtlasOrgSettings for orgID %s.", fakeOrgID),
-			},
-		},
-		{
-			name: "deletion with different org id",
-			input: &akov2.AtlasOrgSettings{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "different-org-settings",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasOrgSettingsSpec{
-					OrgID: "different-org-id",
-					ConnectionSecret: &common.ResourceRef{
-						Name: "atlas-credentials",
-					},
-				},
-			},
-			objects: []client.Object{&fakeAtlasSecret},
-			want: ctrlstate.Result{
-				NextState: "Deleted",
-				StateMsg:  "unmanaged is AtlasOrgSettings for orgID different-org-id.",
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			k8sClient := fake.NewClientBuilder().
-				WithScheme(scheme).
-				WithObjects(append(tc.objects, tc.input)...).
-				WithStatusSubresource(tc.input).Build()
-
-			h := &AtlasOrgSettingsHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    zap.NewNop().Sugar(),
-				},
-			}
-
-			got, err := h.HandleDeletionRequested(ctx, tc.input)
-			if tc.wantErr == "" {
-				require.NoError(t, err)
-			} else {
-				assert.ErrorContains(t, err, tc.wantErr)
-			}
-			assert.Equal(t, tc.want, got)
-		})
+		if expectUpdate {
+			service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).Return(updateReturn, updateErr)
+		}
+		return service
 	}
 }
 
@@ -488,22 +122,132 @@ func TestNewReconcileContext(t *testing.T) {
 	require.NoError(t, akov2.AddToScheme(scheme))
 	ctx := context.Background()
 
-	for _, tc := range []struct {
+	tests := []struct {
 		name           string
 		provider       atlas.Provider
 		serviceBuilder func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService
 		input          *akov2.AtlasOrgSettings
 		objects        []client.Object
+		globalSecret   client.ObjectKey
 		wantErr        string
+		expectService  bool
 	}{
 		{
-			name:     "successful reconcile context creation",
+			name:     "successful context creation with connection secret",
 			provider: createSuccessfulProvider(),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
-			input:   &sampleAtlasOrgSettings,
-			objects: []client.Object{&fakeAtlasSecret},
+			input:         &sampleAtlasOrgSettings,
+			objects:       []client.Object{&fakeAtlasSecret},
+			expectService: true,
+		},
+		{
+			name:     "successful context creation with global secret",
+			provider: createSuccessfulProvider(),
+			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
+				return mocks.NewAtlasOrgSettingsServiceMock(t)
+			},
+			input: &akov2.AtlasOrgSettings{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "no-connection-secret",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasOrgSettingsSpec{
+					OrgID: fakeOrgID,
+					// No ConnectionSecretRef - should use global secret
+				},
+			},
+			objects: []client.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "global-atlas-credentials",
+						Namespace: "atlas-system",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte(fakeOrgID),
+						"publicApiKey":  []byte(fakeAPIKey),
+						"privateApiKey": []byte(fakeAPISecret),
+					},
+				},
+			},
+			globalSecret: client.ObjectKey{
+				Name:      "global-atlas-credentials",
+				Namespace: "atlas-system",
+			},
+			expectService: true,
+		},
+		{
+			name:     "context creation with nil connection secret ref",
+			provider: createSuccessfulProvider(),
+			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
+				return mocks.NewAtlasOrgSettingsServiceMock(t)
+			},
+			input: &akov2.AtlasOrgSettings{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nil-connection-secret",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasOrgSettingsSpec{
+					OrgID:               fakeOrgID,
+					ConnectionSecretRef: nil,
+				},
+			},
+			objects: []client.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "global-atlas-credentials",
+						Namespace: "atlas-system",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte(fakeOrgID),
+						"publicApiKey":  []byte(fakeAPIKey),
+						"privateApiKey": []byte(fakeAPISecret),
+					},
+				},
+			},
+			globalSecret: client.ObjectKey{
+				Name:      "global-atlas-credentials",
+				Namespace: "atlas-system",
+			},
+			expectService: true,
+		},
+		{
+			name:     "context creation with empty connection secret name",
+			provider: createSuccessfulProvider(),
+			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
+				return mocks.NewAtlasOrgSettingsServiceMock(t)
+			},
+			input: &akov2.AtlasOrgSettings{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "empty-secret-name",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasOrgSettingsSpec{
+					OrgID: fakeOrgID,
+					ConnectionSecretRef: &common.ResourceRef{
+						Name: "", // Empty name
+					},
+				},
+			},
+			objects: []client.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "global-atlas-credentials",
+						Namespace: "atlas-system",
+					},
+					Data: map[string][]byte{
+						"orgId":         []byte(fakeOrgID),
+						"publicApiKey":  []byte(fakeAPIKey),
+						"privateApiKey": []byte(fakeAPISecret),
+					},
+				},
+			},
+			globalSecret: client.ObjectKey{
+				Name:      "global-atlas-credentials",
+				Namespace: "atlas-system",
+			},
+			expectService: true,
 		},
 		{
 			name:     "missing connection secret",
@@ -518,7 +262,7 @@ func TestNewReconcileContext(t *testing.T) {
 				},
 				Spec: akov2.AtlasOrgSettingsSpec{
 					OrgID: fakeOrgID,
-					ConnectionSecret: &common.ResourceRef{
+					ConnectionSecretRef: &common.ResourceRef{
 						Name: "non-existent-secret",
 					},
 				},
@@ -527,40 +271,45 @@ func TestNewReconcileContext(t *testing.T) {
 			wantErr: "secrets \"non-existent-secret\" not found",
 		},
 		{
-			name:     "atlas provider error",
-			provider: createFailingProvider("invalid credentials"),
+			name:     "atlas provider sdk client error",
+			provider: createFailingProvider("SDK initialization failed"),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
-			wantErr: "invalid credentials",
+			wantErr: "SDK initialization failed",
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(scheme).
-				WithObjects(append(tc.objects, tc.input)...).
-				WithStatusSubresource(tc.input).Build()
+				WithObjects(append(tt.objects, tt.input)...).
+				WithStatusSubresource(tt.input).Build()
 
 			h := &AtlasOrgSettingsHandler{
 				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					AtlasProvider: tc.provider,
-					Log:           zap.NewNop().Sugar(),
+					Client:          k8sClient,
+					AtlasProvider:   tt.provider,
+					Log:             zap.NewNop().Sugar(),
+					GlobalSecretRef: tt.globalSecret,
 				},
-				serviceBuilder: tc.serviceBuilder,
+				serviceBuilder: tt.serviceBuilder,
 			}
 
-			reconcileCtx, err := h.newReconcileContext(ctx, tc.input)
-			if tc.wantErr == "" {
+			reconcileCtx, err := h.newReconcileContext(ctx, tt.input)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, reconcileCtx)
+			} else {
 				require.NoError(t, err)
 				assert.NotNil(t, reconcileCtx)
-				assert.NotNil(t, reconcileCtx.svc)
-				assert.Equal(t, tc.input, reconcileCtx.aos)
-			} else {
-				assert.ErrorContains(t, err, tc.wantErr)
-				assert.Nil(t, reconcileCtx)
+				if tt.expectService {
+					assert.NotNil(t, reconcileCtx.svc)
+				}
+				assert.Equal(t, tt.input, reconcileCtx.aos)
 			}
 		})
 	}
@@ -572,7 +321,7 @@ func TestUpsert(t *testing.T) {
 	require.NoError(t, akov2.AddToScheme(scheme))
 	ctx := context.Background()
 
-	for _, tc := range []struct {
+	tests := []struct {
 		name           string
 		currentState   state.ResourceState
 		nextState      state.ResourceState
@@ -584,33 +333,72 @@ func TestUpsert(t *testing.T) {
 		wantErr        string
 	}{
 		{
-			name:         "successful upsert from initial to created",
+			name:         "successful upsert with settings different - update needed",
 			currentState: state.StateInitial,
 			nextState:    state.StateCreated,
 			provider:     createSuccessfulProvider(),
-			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-				service := mocks.NewAtlasOrgSettingsServiceMock(t)
-				service.EXPECT().Update(mock.Anything, fakeOrgID, mock.Anything).
-					Return(&atlasorgsettings.AtlasOrgSettings{
-						AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-							OrgID:                                  fakeOrgID,
-							ConnectionSecret:                       nil,
-							ApiAccessListRequired:                  sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
-							GenAIFeaturesEnabled:                   sampleAtlasOrgSettings.Spec.GenAIFeaturesEnabled,
-							MaxServiceAccountSecretValidityInHours: sampleAtlasOrgSettings.Spec.MaxServiceAccountSecretValidityInHours,
-							MultiFactorAuthRequired:                sampleAtlasOrgSettings.Spec.MultiFactorAuthRequired,
-							RestrictEmployeeAccess:                 sampleAtlasOrgSettings.Spec.RestrictEmployeeAccess,
-							SecurityContact:                        sampleAtlasOrgSettings.Spec.SecurityContact,
-							StreamsCrossGroupEnabled:               sampleAtlasOrgSettings.Spec.StreamsCrossGroupEnabled,
-						},
-					}, nil)
-				return service
-			},
+			serviceBuilder: createServiceBuilder(t,
+				&atlasorgsettings.AtlasOrgSettings{
+					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+						OrgID:                 fakeOrgID,
+						ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+					},
+				}, nil,
+				&atlasorgsettings.AtlasOrgSettings{
+					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+						OrgID:                 fakeOrgID,
+						ApiAccessListRequired: pointer.MakePtr(true),
+					},
+				}, nil, true),
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
 			want: ctrlstate.Result{
 				NextState: "Created",
-				StateMsg:  "Initialized.",
+				StateMsg:  "Updated.",
+			},
+		},
+		{
+			name:         "successful upsert with identical settings - no update needed",
+			currentState: state.StateInitial,
+			nextState:    state.StateCreated,
+			provider:     createSuccessfulProvider(),
+			serviceBuilder: createServiceBuilder(t,
+				&atlasorgsettings.AtlasOrgSettings{
+					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+						OrgID:                                  fakeOrgID,
+						ApiAccessListRequired:                  sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
+						GenAIFeaturesEnabled:                   sampleAtlasOrgSettings.Spec.GenAIFeaturesEnabled,
+						MaxServiceAccountSecretValidityInHours: sampleAtlasOrgSettings.Spec.MaxServiceAccountSecretValidityInHours,
+						MultiFactorAuthRequired:                sampleAtlasOrgSettings.Spec.MultiFactorAuthRequired,
+						RestrictEmployeeAccess:                 sampleAtlasOrgSettings.Spec.RestrictEmployeeAccess,
+						SecurityContact:                        sampleAtlasOrgSettings.Spec.SecurityContact,
+						StreamsCrossGroupEnabled:               sampleAtlasOrgSettings.Spec.StreamsCrossGroupEnabled,
+					},
+				}, nil, nil, nil, false), // No update expected
+			input:   &sampleAtlasOrgSettings,
+			objects: []client.Object{&fakeAtlasSecret},
+			want: ctrlstate.Result{
+				NextState: "Created",
+				StateMsg:  "Ready.",
+			},
+		},
+		{
+			name:         "successful upsert with nil current atlas settings",
+			currentState: state.StateInitial,
+			nextState:    state.StateCreated,
+			provider:     createSuccessfulProvider(),
+			serviceBuilder: createServiceBuilder(t, nil, nil,
+				&atlasorgsettings.AtlasOrgSettings{
+					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+						OrgID:                 fakeOrgID,
+						ApiAccessListRequired: sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
+					},
+				}, nil, true),
+			input:   &sampleAtlasOrgSettings,
+			objects: []client.Object{&fakeAtlasSecret},
+			want: ctrlstate.Result{
+				NextState: "Created",
+				StateMsg:  "Updated.",
 			},
 		},
 		{
@@ -626,29 +414,76 @@ func TestUpsert(t *testing.T) {
 			want:    ctrlstate.Result{NextState: "Created"},
 			wantErr: "failed to create reconcile context: connection error",
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
+		{
+			name:           "get current settings error",
+			currentState:   state.StateInitial,
+			nextState:      state.StateCreated,
+			provider:       createSuccessfulProvider(),
+			serviceBuilder: createServiceBuilder(t, nil, errors.New("get failed"), nil, nil, false),
+			input:          &sampleAtlasOrgSettings,
+			objects:        []client.Object{&fakeAtlasSecret},
+			want:           ctrlstate.Result{NextState: "Initial"},
+			wantErr:        "failed to get current org settings from Atlas: get failed",
+		},
+		{
+			name:         "update error after successful get",
+			currentState: state.StateInitial,
+			nextState:    state.StateCreated,
+			provider:     createSuccessfulProvider(),
+			serviceBuilder: createServiceBuilder(t,
+				&atlasorgsettings.AtlasOrgSettings{
+					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+						OrgID:                 fakeOrgID,
+						ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+					},
+				}, nil, nil, errors.New("update failed"), true),
+			input:   &sampleAtlasOrgSettings,
+			objects: []client.Object{&fakeAtlasSecret},
+			want:    ctrlstate.Result{NextState: "Initial"},
+			wantErr: "update failed",
+		},
+		{
+			name:         "nil response from atlas update service",
+			currentState: state.StateInitial,
+			nextState:    state.StateCreated,
+			provider:     createSuccessfulProvider(),
+			serviceBuilder: createServiceBuilder(t,
+				&atlasorgsettings.AtlasOrgSettings{
+					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+						OrgID:                 fakeOrgID,
+						ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+					},
+				}, nil, nil, nil, true), // Update returns nil
+			input:   &sampleAtlasOrgSettings,
+			objects: []client.Object{&fakeAtlasSecret},
+			want:    ctrlstate.Result{NextState: "Initial"},
+			wantErr: "atlas returned OrgSettings which is nil after update",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(scheme).
-				WithObjects(append(tc.objects, tc.input)...).
-				WithStatusSubresource(tc.input).Build()
+				WithObjects(append(tt.objects, tt.input)...).
+				WithStatusSubresource(tt.input).Build()
 
 			h := &AtlasOrgSettingsHandler{
 				AtlasReconciler: reconciler.AtlasReconciler{
 					Client:        k8sClient,
-					AtlasProvider: tc.provider,
+					AtlasProvider: tt.provider,
 					Log:           zap.NewNop().Sugar(),
 				},
-				serviceBuilder: tc.serviceBuilder,
+				serviceBuilder: tt.serviceBuilder,
 			}
 
-			got, err := h.upsert(ctx, tc.currentState, tc.nextState, tc.input)
-			if tc.wantErr == "" {
-				require.NoError(t, err)
+			got, err := h.upsert(ctx, tt.currentState, tt.nextState, tt.input)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
 			} else {
-				assert.ErrorContains(t, err, tc.wantErr)
+				require.NoError(t, err)
 			}
-			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -656,15 +491,15 @@ func TestUpsert(t *testing.T) {
 func TestUnmanage(t *testing.T) {
 	h := &AtlasOrgSettingsHandler{}
 
-	for _, tc := range []struct {
-		name  string
-		orgID string
-		want  ctrlstate.Result
+	tests := []struct {
+		name     string
+		orgID    string
+		expected ctrlstate.Result
 	}{
 		{
 			name:  "unmanage with standard org id",
 			orgID: fakeOrgID,
-			want: ctrlstate.Result{
+			expected: ctrlstate.Result{
 				NextState: "Deleted",
 				StateMsg:  fmt.Sprintf("unmanaged is AtlasOrgSettings for orgID %s.", fakeOrgID),
 			},
@@ -672,16 +507,249 @@ func TestUnmanage(t *testing.T) {
 		{
 			name:  "unmanage with different org id",
 			orgID: "another-org-id",
-			want: ctrlstate.Result{
+			expected: ctrlstate.Result{
 				NextState: "Deleted",
 				StateMsg:  "unmanaged is AtlasOrgSettings for orgID another-org-id.",
 			},
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := h.unmanage(tc.orgID)
+		{
+			name:  "unmanage with empty org id",
+			orgID: "",
+			expected: ctrlstate.Result{
+				NextState: "Deleted",
+				StateMsg:  "unmanaged is AtlasOrgSettings for orgID .",
+			},
+		},
+		{
+			name:  "unmanage with special characters in org id",
+			orgID: "org-with-special-chars!@#$%",
+			expected: ctrlstate.Result{
+				NextState: "Deleted",
+				StateMsg:  "unmanaged is AtlasOrgSettings for orgID org-with-special-chars!@#$%.",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := h.unmanage(tt.orgID)
 			require.NoError(t, err)
-			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tt.expected, got)
 		})
 	}
+}
+
+func TestHandlerMethods(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
+	ctx := context.Background()
+
+	// Test HandleInitial
+	t.Run("HandleInitial", func(t *testing.T) {
+		provider := createSuccessfulProvider()
+		serviceBuilder := createServiceBuilder(t,
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+				},
+			}, nil,
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(true),
+				},
+			}, nil, true)
+
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
+			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
+
+		h := &AtlasOrgSettingsHandler{
+			AtlasReconciler: reconciler.AtlasReconciler{
+				Client:        k8sClient,
+				AtlasProvider: provider,
+				Log:           zap.NewNop().Sugar(),
+			},
+			serviceBuilder: serviceBuilder,
+		}
+
+		got, err := h.HandleInitial(ctx, &sampleAtlasOrgSettings)
+		require.NoError(t, err)
+		assert.Equal(t, ctrlstate.Result{
+			NextState: "Created",
+			StateMsg:  "Updated.",
+		}, got)
+	})
+
+	// Test HandleCreated
+	t.Run("HandleCreated", func(t *testing.T) {
+		provider := createSuccessfulProvider()
+		serviceBuilder := createServiceBuilder(t,
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+				},
+			}, nil,
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(true),
+				},
+			}, nil, true)
+
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
+			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
+
+		h := &AtlasOrgSettingsHandler{
+			AtlasReconciler: reconciler.AtlasReconciler{
+				Client:        k8sClient,
+				AtlasProvider: provider,
+				Log:           zap.NewNop().Sugar(),
+			},
+			serviceBuilder: serviceBuilder,
+		}
+
+		got, err := h.HandleCreated(ctx, &sampleAtlasOrgSettings)
+		require.NoError(t, err)
+		assert.Equal(t, ctrlstate.Result{
+			NextState: "Updated",
+			StateMsg:  "Updated.",
+		}, got)
+	})
+
+	// Test HandleUpdated
+	t.Run("HandleUpdated", func(t *testing.T) {
+		provider := createSuccessfulProvider()
+		serviceBuilder := createServiceBuilder(t,
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+				},
+			}, nil,
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(true),
+				},
+			}, nil, true)
+
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
+			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
+
+		h := &AtlasOrgSettingsHandler{
+			AtlasReconciler: reconciler.AtlasReconciler{
+				Client:        k8sClient,
+				AtlasProvider: provider,
+				Log:           zap.NewNop().Sugar(),
+			},
+			serviceBuilder: serviceBuilder,
+		}
+
+		got, err := h.HandleUpdated(ctx, &sampleAtlasOrgSettings)
+		require.NoError(t, err)
+		assert.Equal(t, ctrlstate.Result{
+			NextState: "Updated",
+			StateMsg:  "Updated.",
+		}, got)
+	})
+
+	// Test HandleDeletionRequested
+	t.Run("HandleDeletionRequested", func(t *testing.T) {
+		h := &AtlasOrgSettingsHandler{}
+
+		got, err := h.HandleDeletionRequested(ctx, &sampleAtlasOrgSettings)
+		require.NoError(t, err)
+		assert.Equal(t, ctrlstate.Result{
+			NextState: "Deleted",
+			StateMsg:  fmt.Sprintf("unmanaged is AtlasOrgSettings for orgID %s.", fakeOrgID),
+		}, got)
+	})
+}
+
+func TestEqualMethodBehaviorInUpsert(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
+	ctx := context.Background()
+
+	// Test case where Equal method returns false due to nil current settings
+	t.Run("Equal with nil current settings - update needed", func(t *testing.T) {
+		provider := createSuccessfulProvider()
+		serviceBuilder := createServiceBuilder(t, nil, nil, // nil current settings
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(true),
+				},
+			}, nil, true)
+
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
+			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
+
+		h := &AtlasOrgSettingsHandler{
+			AtlasReconciler: reconciler.AtlasReconciler{
+				Client:        k8sClient,
+				AtlasProvider: provider,
+				Log:           zap.NewNop().Sugar(),
+			},
+			serviceBuilder: serviceBuilder,
+		}
+
+		got, err := h.upsert(ctx, state.StateInitial, state.StateCreated, &sampleAtlasOrgSettings)
+		require.NoError(t, err)
+		assert.Equal(t, ctrlstate.Result{
+			NextState: "Created",
+			StateMsg:  "Updated.",
+		}, got)
+	})
+
+	// Test case with different state transitions
+	t.Run("Updated to Updated state transition", func(t *testing.T) {
+		provider := createSuccessfulProvider()
+		serviceBuilder := createServiceBuilder(t,
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+				},
+			}, nil,
+			&atlasorgsettings.AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: pointer.MakePtr(true),
+				},
+			}, nil, true)
+
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
+			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
+
+		h := &AtlasOrgSettingsHandler{
+			AtlasReconciler: reconciler.AtlasReconciler{
+				Client:        k8sClient,
+				AtlasProvider: provider,
+				Log:           zap.NewNop().Sugar(),
+			},
+			serviceBuilder: serviceBuilder,
+		}
+
+		got, err := h.upsert(ctx, state.StateUpdated, state.StateUpdated, &sampleAtlasOrgSettings)
+		require.NoError(t, err)
+		assert.Equal(t, ctrlstate.Result{
+			NextState: "Updated",
+			StateMsg:  "Updated.",
+		}, got)
+	})
 }

@@ -30,6 +30,27 @@ func NewFromAKO(spec akov2.AtlasOrgSettingsSpec) *AtlasOrgSettings {
 	}
 }
 
+func (a *AtlasOrgSettings) Equal(other *AtlasOrgSettings) bool {
+	if other == nil {
+		return false
+	}
+
+	return a.ApiAccessListRequired != nil && other.ApiAccessListRequired != nil &&
+		*a.ApiAccessListRequired == *other.ApiAccessListRequired &&
+		a.GenAIFeaturesEnabled != nil && other.GenAIFeaturesEnabled != nil &&
+		*a.GenAIFeaturesEnabled == *other.GenAIFeaturesEnabled &&
+		a.MaxServiceAccountSecretValidityInHours != nil && other.MaxServiceAccountSecretValidityInHours != nil &&
+		*a.MaxServiceAccountSecretValidityInHours == *other.MaxServiceAccountSecretValidityInHours &&
+		a.MultiFactorAuthRequired != nil && other.MultiFactorAuthRequired != nil &&
+		*a.MultiFactorAuthRequired == *other.MultiFactorAuthRequired &&
+		a.RestrictEmployeeAccess != nil && other.RestrictEmployeeAccess != nil &&
+		*a.RestrictEmployeeAccess == *other.RestrictEmployeeAccess &&
+		a.SecurityContact != nil && other.SecurityContact != nil &&
+		*a.SecurityContact == *other.SecurityContact &&
+		a.StreamsCrossGroupEnabled != nil && other.StreamsCrossGroupEnabled != nil &&
+		*a.StreamsCrossGroupEnabled == *other.StreamsCrossGroupEnabled
+}
+
 func NewFromAtlas(orgID string, atlasSpec *admin.OrganizationSettings) *AtlasOrgSettings {
 	if atlasSpec == nil {
 		return nil
@@ -38,7 +59,7 @@ func NewFromAtlas(orgID string, atlasSpec *admin.OrganizationSettings) *AtlasOrg
 	return &AtlasOrgSettings{
 		AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 			OrgID:                                  orgID,
-			ConnectionSecret:                       nil,
+			ConnectionSecretRef:                    nil,
 			ApiAccessListRequired:                  atlasSpec.ApiAccessListRequired,
 			GenAIFeaturesEnabled:                   atlasSpec.GenAIFeaturesEnabled,
 			MaxServiceAccountSecretValidityInHours: atlasSpec.MaxServiceAccountSecretValidityInHours,

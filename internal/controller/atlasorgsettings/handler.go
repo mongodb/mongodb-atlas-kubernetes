@@ -35,10 +35,10 @@ type reconcileContext struct {
 
 func (h *AtlasOrgSettingsHandler) newReconcileContext(ctx context.Context, aos *akov2.AtlasOrgSettings) (*reconcileContext, error) {
 	var objKey *client.ObjectKey
-	if aos.Spec.ConnectionSecret != nil && aos.Spec.ConnectionSecret.Name != "" {
+	if aos.Spec.ConnectionSecretRef != nil && aos.Spec.ConnectionSecretRef.Name != "" {
 		objKey = &client.ObjectKey{
 			Namespace: aos.GetNamespace(),
-			Name:      aos.Spec.ConnectionSecret.Name,
+			Name:      aos.Spec.ConnectionSecretRef.Name,
 		}
 	}
 
@@ -64,15 +64,26 @@ func (h *AtlasOrgSettingsHandler) upsert(ctx context.Context, currentState, next
 		return result.Error(currentState, fmt.Errorf("failed to create reconcile context: %w", err))
 	}
 
-	resp, err := reconcileCtx.svc.Update(ctx, aos.Spec.OrgID, atlasorgsettings.NewFromAKO(aos.Spec))
+	currentAtlasSettings, err := reconcileCtx.svc.Get(ctx, aos.Spec.OrgID)
 	if err != nil {
-		return result.Error(currentState, err)
-	}
-	if resp == nil {
-		return result.Error(currentState, fmt.Errorf("atlas returned OrgSettings which is nil after update"))
+		return result.Error(currentState, fmt.Errorf("failed to get current org settings from Atlas: %w", err))
 	}
 
-	return result.NextState(nextState, "Initialized")
+	desiredSettings := atlasorgsettings.NewFromAKO(aos.Spec)
+
+	if !desiredSettings.Equal(currentAtlasSettings) {
+		resp, apiErr := reconcileCtx.svc.Update(ctx, aos.Spec.OrgID, desiredSettings)
+		if apiErr != nil {
+			return result.Error(currentState, apiErr)
+		}
+		if resp == nil {
+			return result.Error(currentState, fmt.Errorf("atlas returned OrgSettings which is nil after update"))
+		}
+
+		return result.NextState(nextState, "Updated")
+	}
+
+	return result.NextState(nextState, "Ready")
 }
 
 func (h *AtlasOrgSettingsHandler) unmanage(orgID string) (ctrlstate.Result, error) {

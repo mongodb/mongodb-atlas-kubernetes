@@ -32,9 +32,9 @@ type AtlasOrgSettingsSpec struct {
 	// +required
 	OrgID string `json:"orgID"`
 
-	// ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
+	// ConnectionSecretRef is the name of the Kubernetes Secret which contains the information about the way to connect to
 	// Atlas (Public & Private API keys).
-	ConnectionSecret *common.ResourceRef `json:"connectionSecret,omitempty"`
+	ConnectionSecretRef *common.ResourceRef `json:"connectionSecretRef,omitempty"`
 
 	// ApiAccessListRequired Flag that indicates whether to require API operations to
 	// originate from an IP Address added to the API access list for the specified
@@ -88,13 +88,23 @@ type AtlasOrgSettingsSpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:name:plural=AtlasOrgSettings, singular=AtlasOrgSettings
+// +kubebuilder:resource:categories=atlas,shortName=aos
+// +kubebuilder:subresource:status
 type AtlasOrgSettings struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   AtlasOrgSettingsSpec          `json:"spec,omitempty"`
 	Status status.AtlasOrgSettingsStatus `json:"status,omitempty"`
+}
+
+func (aos *AtlasOrgSettings) GetConditions() []metav1.Condition {
+	if aos.Status.Conditions == nil {
+		return []metav1.Condition{}
+	}
+	return aos.Status.Conditions
 }
 
 // +kubebuilder:object:root=true

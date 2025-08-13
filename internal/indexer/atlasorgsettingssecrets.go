@@ -1,6 +1,8 @@
 package indexer
 
 import (
+	"reflect"
+
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -23,7 +25,7 @@ import (
 // limitations under the License.
 
 const (
-	AtlasOrgSettingsBySecretsIndex = "atlasorgsettings.spec.secrets"
+	AtlasOrgSettingsBySecretsIndex = "atlasorgsettings.credentials"
 )
 
 type AtlasOrgSettingsByConnectionSecretIndexer struct {
@@ -36,12 +38,30 @@ func NewAtlasOrgSettingsByConnectionSecretIndexer(logger *zap.Logger) *AtlasOrgS
 	}
 }
 
-func (AtlasOrgSettingsByConnectionSecretIndexer) Object() client.Object {
+func (*AtlasOrgSettingsByConnectionSecretIndexer) Object() client.Object {
 	return &akov2.AtlasProject{}
 }
 
 func (*AtlasOrgSettingsByConnectionSecretIndexer) Name() string {
 	return AtlasOrgSettingsBySecretsIndex
+}
+
+func (i *AtlasOrgSettingsByConnectionSecretIndexer) Keys(object client.Object) []string {
+	if reflect.TypeOf(object) != reflect.TypeOf(&akov2.AtlasOrgSettings{}) {
+		i.logger.Errorf("expected %T but got %T", &akov2.AtlasOrgSettings{}, object)
+		return nil
+	}
+
+	orgSettings, ok := object.(*akov2.AtlasOrgSettings)
+	if !ok {
+		return nil
+	}
+
+	if orgSettings.Spec.ConnectionSecretRef == nil {
+		return nil
+	}
+
+	return []string{orgSettings.Spec.ConnectionSecretRef.Name}
 }
 
 func AtlasOrgSettingsRequest(list *akov2.AtlasOrgSettingsList) []reconcile.Request {

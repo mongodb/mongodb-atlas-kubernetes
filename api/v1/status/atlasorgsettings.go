@@ -14,6 +14,7 @@
 
 package status
 
+// +k8s:deepcopy-gen=true
 type AtlasOrgSettingsStatus struct {
 	UnifiedStatus `json:",inline"`
 }
