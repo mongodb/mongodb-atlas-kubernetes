@@ -539,132 +539,88 @@ func TestUnmanage(t *testing.T) {
 	}
 }
 
+func setupHandlerTest(t *testing.T, scheme *runtime.Scheme) (*AtlasOrgSettingsHandler, context.Context) {
+	provider := createSuccessfulProvider()
+	serviceBuilder := createServiceBuilder(t,
+		&atlasorgsettings.AtlasOrgSettings{
+			AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+				OrgID:                 fakeOrgID,
+				ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+			},
+		}, nil,
+		&atlasorgsettings.AtlasOrgSettings{
+			AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+				OrgID:                 fakeOrgID,
+				ApiAccessListRequired: pointer.MakePtr(true),
+			},
+		}, nil, true)
+
+	k8sClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
+		WithStatusSubresource(&sampleAtlasOrgSettings).Build()
+
+	h := &AtlasOrgSettingsHandler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Client:        k8sClient,
+			AtlasProvider: provider,
+			Log:           zap.NewNop().Sugar(),
+		},
+		serviceBuilder: serviceBuilder,
+	}
+
+	return h, context.Background()
+}
+
 func TestHandlerMethods(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
 	require.NoError(t, akov2.AddToScheme(scheme))
-	ctx := context.Background()
 
-	// Test HandleInitial
-	t.Run("HandleInitial", func(t *testing.T) {
-		provider := createSuccessfulProvider()
-		serviceBuilder := createServiceBuilder(t,
-			&atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
-				},
-			}, nil,
-			&atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(true),
-				},
-			}, nil, true)
-
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(scheme).
-			WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
-			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
-
-		h := &AtlasOrgSettingsHandler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Client:        k8sClient,
-				AtlasProvider: provider,
-				Log:           zap.NewNop().Sugar(),
+	tests := []struct {
+		name           string
+		handlerFunc    func(*AtlasOrgSettingsHandler, context.Context, *akov2.AtlasOrgSettings) (ctrlstate.Result, error)
+		expectedResult ctrlstate.Result
+	}{
+		{
+			name:        "HandleInitial",
+			handlerFunc: (*AtlasOrgSettingsHandler).HandleInitial,
+			expectedResult: ctrlstate.Result{
+				NextState: "Created",
+				StateMsg:  "Updated.",
 			},
-			serviceBuilder: serviceBuilder,
-		}
-
-		got, err := h.HandleInitial(ctx, &sampleAtlasOrgSettings)
-		require.NoError(t, err)
-		assert.Equal(t, ctrlstate.Result{
-			NextState: "Created",
-			StateMsg:  "Updated.",
-		}, got)
-	})
-
-	// Test HandleCreated
-	t.Run("HandleCreated", func(t *testing.T) {
-		provider := createSuccessfulProvider()
-		serviceBuilder := createServiceBuilder(t,
-			&atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
-				},
-			}, nil,
-			&atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(true),
-				},
-			}, nil, true)
-
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(scheme).
-			WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
-			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
-
-		h := &AtlasOrgSettingsHandler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Client:        k8sClient,
-				AtlasProvider: provider,
-				Log:           zap.NewNop().Sugar(),
+		},
+		{
+			name:        "HandleCreated",
+			handlerFunc: (*AtlasOrgSettingsHandler).HandleCreated,
+			expectedResult: ctrlstate.Result{
+				NextState: "Updated",
+				StateMsg:  "Updated.",
 			},
-			serviceBuilder: serviceBuilder,
-		}
-
-		got, err := h.HandleCreated(ctx, &sampleAtlasOrgSettings)
-		require.NoError(t, err)
-		assert.Equal(t, ctrlstate.Result{
-			NextState: "Updated",
-			StateMsg:  "Updated.",
-		}, got)
-	})
-
-	// Test HandleUpdated
-	t.Run("HandleUpdated", func(t *testing.T) {
-		provider := createSuccessfulProvider()
-		serviceBuilder := createServiceBuilder(t,
-			&atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
-				},
-			}, nil,
-			&atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(true),
-				},
-			}, nil, true)
-
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(scheme).
-			WithObjects(&fakeAtlasSecret, &sampleAtlasOrgSettings).
-			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
-
-		h := &AtlasOrgSettingsHandler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Client:        k8sClient,
-				AtlasProvider: provider,
-				Log:           zap.NewNop().Sugar(),
+		},
+		{
+			name:        "HandleUpdated",
+			handlerFunc: (*AtlasOrgSettingsHandler).HandleUpdated,
+			expectedResult: ctrlstate.Result{
+				NextState: "Updated",
+				StateMsg:  "Updated.",
 			},
-			serviceBuilder: serviceBuilder,
-		}
+		},
+	}
 
-		got, err := h.HandleUpdated(ctx, &sampleAtlasOrgSettings)
-		require.NoError(t, err)
-		assert.Equal(t, ctrlstate.Result{
-			NextState: "Updated",
-			StateMsg:  "Updated.",
-		}, got)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h, ctx := setupHandlerTest(t, scheme)
+			got, err := tt.handlerFunc(h, ctx, &sampleAtlasOrgSettings)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, got)
+		})
+	}
 
 	// Test HandleDeletionRequested
 	t.Run("HandleDeletionRequested", func(t *testing.T) {
 		h := &AtlasOrgSettingsHandler{}
+		ctx := context.Background()
 
 		got, err := h.HandleDeletionRequested(ctx, &sampleAtlasOrgSettings)
 		require.NoError(t, err)

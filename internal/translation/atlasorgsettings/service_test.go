@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package atlasorgsettings_test
+package atlasorgsettings
 
 import (
 	"context"
@@ -27,7 +27,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/atlasorgsettings"
 )
 
 const (
@@ -41,10 +40,10 @@ var (
 func TestNewAtlasOrgSettingsService(t *testing.T) {
 	mockAPI := &mockadmin.OrganizationsApi{}
 
-	service := atlasorgsettings.NewAtlasOrgSettingsService(mockAPI)
+	service := NewAtlasOrgSettingsService(mockAPI)
 
 	assert.NotNil(t, service)
-	assert.IsType(t, &atlasorgsettings.AtlasOrgSettingsServiceImpl{}, service)
+	assert.IsType(t, &AtlasOrgSettingsServiceImpl{}, service)
 }
 
 func TestAtlasOrgSettingsService_Get(t *testing.T) {
@@ -52,7 +51,7 @@ func TestAtlasOrgSettingsService_Get(t *testing.T) {
 		title         string
 		orgID         string
 		api           admin.OrganizationsApi
-		expected      *atlasorgsettings.AtlasOrgSettings
+		expected      *AtlasOrgSettings
 		expectedError error
 	}{
 		{
@@ -71,7 +70,7 @@ func TestAtlasOrgSettingsService_Get(t *testing.T) {
 				http.StatusOK,
 				nil,
 			),
-			expected: &atlasorgsettings.AtlasOrgSettings{
+			expected: &AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID:                                  testOrgID,
 					ConnectionSecretRef:                    nil,
@@ -102,7 +101,7 @@ func TestAtlasOrgSettingsService_Get(t *testing.T) {
 				http.StatusOK,
 				nil,
 			),
-			expected: &atlasorgsettings.AtlasOrgSettings{
+			expected: &AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID:                                  testOrgID,
 					ConnectionSecretRef:                    nil,
@@ -141,7 +140,7 @@ func TestAtlasOrgSettingsService_Get(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			service := atlasorgsettings.NewAtlasOrgSettingsService(tc.api)
+			service := NewAtlasOrgSettingsService(tc.api)
 
 			result, err := service.Get(context.Background(), tc.orgID)
 
@@ -163,7 +162,7 @@ func TestAtlasOrgSettingsService_Get(t *testing.T) {
 }
 
 func TestAtlasOrgSettingsService_Update(t *testing.T) {
-	inputSettings := &atlasorgsettings.AtlasOrgSettings{
+	inputSettings := &AtlasOrgSettings{
 		AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 			OrgID:                                  testOrgID,
 			ApiAccessListRequired:                  pointer.MakePtr(true),
@@ -176,94 +175,74 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 		},
 	}
 
+	// this is a common function to make golangci-lint happy
+	createSuccessfulUpdateTest := func(title string, statusCode int) struct {
+		title         string
+		orgID         string
+		settings      *AtlasOrgSettings
+		api           admin.OrganizationsApi
+		expected      *AtlasOrgSettings
+		expectedError error
+	} {
+		return struct {
+			title         string
+			orgID         string
+			settings      *AtlasOrgSettings
+			api           admin.OrganizationsApi
+			expected      *AtlasOrgSettings
+			expectedError error
+		}{
+			title:    title,
+			orgID:    testOrgID,
+			settings: inputSettings,
+			api: testUpdateOrgSettingsAPI(
+				&admin.OrganizationSettings{
+					ApiAccessListRequired:                  pointer.MakePtr(true),
+					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
+					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
+					MultiFactorAuthRequired:                pointer.MakePtr(true),
+					RestrictEmployeeAccess:                 pointer.MakePtr(false),
+					SecurityContact:                        pointer.MakePtr("security@example.com"),
+				},
+				&admin.OrganizationSettings{
+					ApiAccessListRequired:                  pointer.MakePtr(true),
+					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
+					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
+					MultiFactorAuthRequired:                pointer.MakePtr(true),
+					RestrictEmployeeAccess:                 pointer.MakePtr(false),
+					SecurityContact:                        pointer.MakePtr("security@example.com"),
+					StreamsCrossGroupEnabled:               pointer.MakePtr(true),
+				},
+				statusCode,
+				nil,
+			),
+			expected: &AtlasOrgSettings{
+				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
+					OrgID:                                  testOrgID,
+					ConnectionSecretRef:                    nil,
+					ApiAccessListRequired:                  pointer.MakePtr(true),
+					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
+					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
+					MultiFactorAuthRequired:                pointer.MakePtr(true),
+					RestrictEmployeeAccess:                 pointer.MakePtr(false),
+					SecurityContact:                        pointer.MakePtr("security@example.com"),
+					StreamsCrossGroupEnabled:               pointer.MakePtr(true),
+				},
+			},
+			expectedError: nil,
+		}
+	}
+
 	for _, tc := range []struct {
 		title         string
 		orgID         string
-		settings      *atlasorgsettings.AtlasOrgSettings
+		settings      *AtlasOrgSettings
 		api           admin.OrganizationsApi
-		expected      *atlasorgsettings.AtlasOrgSettings
+		expected      *AtlasOrgSettings
 		expectedError error
 	}{
-		{
-			title:    "successful update organization settings",
-			orgID:    testOrgID,
-			settings: inputSettings,
-			api: testUpdateOrgSettingsAPI(
-				&admin.OrganizationSettings{
-					ApiAccessListRequired:                  pointer.MakePtr(true),
-					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
-					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
-					MultiFactorAuthRequired:                pointer.MakePtr(true),
-					RestrictEmployeeAccess:                 pointer.MakePtr(false),
-					SecurityContact:                        pointer.MakePtr("security@example.com"),
-				},
-				&admin.OrganizationSettings{
-					ApiAccessListRequired:                  pointer.MakePtr(true),
-					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
-					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
-					MultiFactorAuthRequired:                pointer.MakePtr(true),
-					RestrictEmployeeAccess:                 pointer.MakePtr(false),
-					SecurityContact:                        pointer.MakePtr("security@example.com"),
-					StreamsCrossGroupEnabled:               pointer.MakePtr(true),
-				},
-				http.StatusOK,
-				nil,
-			),
-			expected: &atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                                  testOrgID,
-					ConnectionSecretRef:                    nil,
-					ApiAccessListRequired:                  pointer.MakePtr(true),
-					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
-					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
-					MultiFactorAuthRequired:                pointer.MakePtr(true),
-					RestrictEmployeeAccess:                 pointer.MakePtr(false),
-					SecurityContact:                        pointer.MakePtr("security@example.com"),
-					StreamsCrossGroupEnabled:               pointer.MakePtr(true),
-				},
-			},
-			expectedError: nil,
-		},
-		{
-			title:    "successful update with 201 status code",
-			orgID:    testOrgID,
-			settings: inputSettings,
-			api: testUpdateOrgSettingsAPI(
-				&admin.OrganizationSettings{
-					ApiAccessListRequired:                  pointer.MakePtr(true),
-					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
-					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
-					MultiFactorAuthRequired:                pointer.MakePtr(true),
-					RestrictEmployeeAccess:                 pointer.MakePtr(false),
-					SecurityContact:                        pointer.MakePtr("security@example.com"),
-				},
-				&admin.OrganizationSettings{
-					ApiAccessListRequired:                  pointer.MakePtr(true),
-					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
-					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
-					MultiFactorAuthRequired:                pointer.MakePtr(true),
-					RestrictEmployeeAccess:                 pointer.MakePtr(false),
-					SecurityContact:                        pointer.MakePtr("security@example.com"),
-					StreamsCrossGroupEnabled:               pointer.MakePtr(true),
-				},
-				http.StatusCreated,
-				nil,
-			),
-			expected: &atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                                  testOrgID,
-					ConnectionSecretRef:                    nil,
-					ApiAccessListRequired:                  pointer.MakePtr(true),
-					GenAIFeaturesEnabled:                   pointer.MakePtr(false),
-					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(48),
-					MultiFactorAuthRequired:                pointer.MakePtr(true),
-					RestrictEmployeeAccess:                 pointer.MakePtr(false),
-					SecurityContact:                        pointer.MakePtr("security@example.com"),
-					StreamsCrossGroupEnabled:               pointer.MakePtr(true),
-				},
-			},
-			expectedError: nil,
-		},
+		createSuccessfulUpdateTest("successful update organization settings", http.StatusOK),
+		createSuccessfulUpdateTest("successful update with 201 status code", http.StatusCreated),
 		{
 			title:    "API failure gets passed through",
 			orgID:    testOrgID,
@@ -295,7 +274,7 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 		{
 			title: "settings that convert to nil atlas settings return nil",
 			orgID: testOrgID,
-			settings: &atlasorgsettings.AtlasOrgSettings{
+			settings: &AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID: testOrgID,
 					// All other fields are nil, so ToAtlas might return nil
@@ -322,7 +301,7 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 				http.StatusOK,
 				nil,
 			),
-			expected: &atlasorgsettings.AtlasOrgSettings{
+			expected: &AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID:                                  testOrgID,
 					ConnectionSecretRef:                    nil,
@@ -359,7 +338,7 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			service := atlasorgsettings.NewAtlasOrgSettingsService(tc.api)
+			service := NewAtlasOrgSettingsService(tc.api)
 
 			result, err := service.Update(context.Background(), tc.orgID, tc.settings)
 
