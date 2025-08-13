@@ -361,7 +361,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 			},
 		},
-		"success: pair ready will call handleUpdate()": {
+		"success: pair ready will call handleUpsert()": {
 			reqName: "test-project-id$cluster1$admin",
 			deployment: &akov2.AtlasDeployment{
 				ObjectMeta: metav1.ObjectMeta{
@@ -528,7 +528,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			}
 
 			if tc.expectedUpdate {
-				ids, err := LoadRequestIdentifiers(ctx, compositeClient, req.NamespacedName)
+				ids, err := r.loadRequestIdentifiers(ctx, req.NamespacedName)
 				require.NoError(t, err)
 				ids.ProjectName = "myproject"
 
@@ -542,7 +542,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			}
 
 			if tc.expectedDeletion {
-				ids, err := LoadRequestIdentifiers(ctx, compositeClient, req.NamespacedName)
+				ids, err := r.loadRequestIdentifiers(ctx, req.NamespacedName)
 				require.NoError(t, err)
 
 				expectedName := CreateK8sFormat(ids.ProjectName, ids.ClusterName, ids.DatabaseUsername)

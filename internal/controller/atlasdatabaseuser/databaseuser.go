@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -83,12 +82,14 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUser
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
 
-	expired, err := IsExpired(atlasDatabaseUser)
+	expired, err := timeutil.IsExpired(atlasDatabaseUser.Spec.DeleteAfterDate)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, false, err)
 	}
 	if expired {
-		ctx.SetConditionFromResult(api.DatabaseUserReadyType, workflow.Terminate(workflow.DatabaseUserExpired, errors.New("an expired user cannot be managed")))
+		ctx.SetConditionFromResult(api.DatabaseUserReadyType,
+			workflow.Terminate(workflow.DatabaseUserExpired, errors.New("an expired user cannot be managed")),
+		)
 		return r.unmanage(ctx, atlasDatabaseUser)
 	}
 
@@ -272,23 +273,6 @@ func (r *AtlasDatabaseUserReconciler) removeOldUser(ctx context.Context, dbUserS
 	}
 
 	return err
-}
-
-func IsExpired(atlasDatabaseUser *akov2.AtlasDatabaseUser) (bool, error) {
-	if atlasDatabaseUser.Spec.DeleteAfterDate == "" {
-		return false, nil
-	}
-
-	deleteAfter, err := timeutil.ParseISO8601(atlasDatabaseUser.Spec.DeleteAfterDate)
-	if err != nil {
-		return false, err
-	}
-
-	if !deleteAfter.Before(time.Now()) {
-		return false, nil
-	}
-
-	return true, nil
 }
 
 func hasChanged(databaseUserInAKO, databaseUserInAtlas *dbuser.User, currentPassVersion, passVersion string) bool {

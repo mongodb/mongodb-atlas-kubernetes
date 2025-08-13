@@ -47,7 +47,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-func Test_ResolveProjectName(t *testing.T) {
+func Test_resolveProjectName(t *testing.T) {
 	type expectedResult struct {
 		expectedProjectName string
 		expectedError       error
@@ -310,11 +310,7 @@ func Test_ResolveProjectName(t *testing.T) {
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 
-			gotName, err := r.resolveProjectName(
-				context.Background(),
-				tc.ids,
-				&tc.pair,
-			)
+			gotName, err := r.resolveProjectName(context.Background(), &tc.ids, &tc.pair)
 
 			require.Equal(t, tc.result.expectedProjectName, gotName)
 			if tc.result.expectedError != nil {
@@ -326,7 +322,7 @@ func Test_ResolveProjectName(t *testing.T) {
 	}
 }
 
-func Test_HandleDelete(t *testing.T) {
+func Test_handleDelete(t *testing.T) {
 	type expectedResult struct {
 		expectedResult ctrl.Result
 		expectedError  error
@@ -477,7 +473,7 @@ func Test_HandleDelete(t *testing.T) {
 				NamespacedName: types.NamespacedName{Namespace: ns, Name: "any"},
 			}
 
-			res, err := r.handleDelete(context.Background(), req, tc.ids, &tc.pair)
+			res, err := r.handleDelete(context.Background(), req, &tc.ids, &tc.pair)
 			assert.Equal(t, tc.result.expectedResult, res)
 			if tc.result.expectedError != nil {
 				require.EqualError(t, err, tc.result.expectedError.Error())
@@ -501,7 +497,7 @@ func Test_HandleDelete(t *testing.T) {
 	}
 }
 
-func Test_HandleUpdate(t *testing.T) {
+func Test_handleUpsert(t *testing.T) {
 	type expectedResult struct {
 		expectedResult ctrl.Result
 		expectedError  error
@@ -676,7 +672,7 @@ func Test_HandleUpdate(t *testing.T) {
 
 			req := ctrl.Request{NamespacedName: types.NamespacedName{Namespace: ns, Name: "any"}}
 
-			res, err := r.handleUpdate(context.Background(), req, tc.ids, &tc.pair)
+			res, err := r.handleUpsert(context.Background(), req, &tc.ids, &tc.pair)
 			assert.Equal(t, tc.result.expectedResult, res)
 			if tc.result.expectedError != nil {
 				require.EqualError(t, err, tc.result.expectedError.Error())

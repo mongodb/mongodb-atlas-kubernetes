@@ -105,53 +105,55 @@ func CreateInternalFormat(projectID string, clusterName string, databaseUsername
 
 // LoadRequestIdentifiers determines whether the request name is internal or K8s format
 // and extracts ProjectID, ClusterName, and DatabaseUsername.
-func LoadRequestIdentifiers(ctx context.Context, c client.Client, req types.NamespacedName) (ConnSecretIdentifiers, error) {
-	var ids ConnSecretIdentifiers
-
-	// === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>
+func (r *ConnectionSecretReconciler) loadRequestIdentifiers(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	if strings.Contains(req.Name, InternalSeparator) {
-		parts := strings.SplitN(req.Name, InternalSeparator, 3)
-		if len(parts) != 3 {
-			return ids, ErrInternalFormatPartsInvalid
-		}
-		if parts[0] == "" || parts[1] == "" || parts[2] == "" {
-			return ids, ErrInternalFormatPartEmpty
-		}
-		return ConnSecretIdentifiers{
-			ProjectID:        parts[0],
-			ClusterName:      parts[1],
-			DatabaseUsername: parts[2],
-		}, nil
+		return r.indetifiersFromInternalName(req)
 	}
 
+	return r.indentifiersFromSecret(ctx, req)
+}
+
+func (r *ConnectionSecretReconciler) indetifiersFromInternalName(req types.NamespacedName) (*ConnSecretIdentifiers, error) {
+	// === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>
+	parts := strings.Split(req.Name, InternalSeparator)
+	if len(parts) != 3 {
+		return nil, ErrInternalFormatPartsInvalid
+	}
+	if parts[0] == "" || parts[1] == "" || parts[2] == "" {
+		return nil, ErrInternalFormatPartEmpty
+	}
+	return &ConnSecretIdentifiers{
+		ProjectID:        parts[0],
+		ClusterName:      parts[1],
+		DatabaseUsername: parts[2],
+	}, nil
+}
+
+func (r *ConnectionSecretReconciler) indentifiersFromSecret(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	// === K8s format: <ProjectName>-<ClusterName>-<DatabaseUserName>
 	var secret corev1.Secret
-	if err := c.Get(ctx, req, &secret); err != nil {
-		return ids, err
+	if err := r.Client.Get(ctx, req, &secret); err != nil {
+		return nil, err
 	}
-
 	labels := secret.GetLabels()
 	projectID, hasProject := labels[ProjectLabelKey]
 	clusterName, hasCluster := labels[ClusterLabelKey]
-
 	// Missing labels or values
 	if !hasProject || !hasCluster {
-		return ids, ErrK8sLabelsMissing
+		return nil, ErrK8sLabelsMissing
 	}
 	if projectID == "" || clusterName == "" {
-		return ids, ErrK8sLabelEmpty
+		return nil, ErrK8sLabelEmpty
 	}
-
 	sep := fmt.Sprintf("-%s-", clusterName)
 	parts := strings.SplitN(req.Name, sep, 2)
 	if len(parts) != 2 {
-		return ids, ErrK8sNameSplitInvalid
+		return nil, ErrK8sNameSplitInvalid
 	}
 	if parts[0] == "" || parts[1] == "" {
-		return ids, ErrK8sNameSplitEmpty
+		return nil, ErrK8sNameSplitEmpty
 	}
-
-	return ConnSecretIdentifiers{
+	return &ConnSecretIdentifiers{
 		ProjectID:        projectID,
 		ProjectName:      parts[0],
 		ClusterName:      clusterName,
@@ -161,10 +163,10 @@ func LoadRequestIdentifiers(ctx context.Context, c client.Client, req types.Name
 
 // LoadPairedResources fetches the paired AtlasDeployment and AtlasDatabaseUser forming the ConnectionSecret
 // using the registered indexers
-func LoadPairedResources(ctx context.Context, c client.Client, ids ConnSecretIdentifiers, namespace string) (*ConnSecretPair, error) {
+func (r *ConnectionSecretReconciler) loadPairedResources(ctx context.Context, ids *ConnSecretIdentifiers) (*ConnSecretPair, error) {
 	compositeDeploymentKey := ids.ProjectID + "-" + ids.ClusterName
 	deployments := &akov2.AtlasDeploymentList{}
-	if err := c.List(ctx, deployments, &client.ListOptions{
+	if err := r.Client.List(ctx, deployments, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDeploymentBySpecNameAndProjectID, compositeDeploymentKey),
 	}); err != nil {
 		return nil, err
@@ -172,7 +174,7 @@ func LoadPairedResources(ctx context.Context, c client.Client, ids ConnSecretIde
 
 	compositeUserKey := ids.ProjectID + "-" + ids.DatabaseUsername
 	users := &akov2.AtlasDatabaseUserList{}
-	if err := c.List(ctx, users, &client.ListOptions{
+	if err := r.Client.List(ctx, users, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserBySpecUsernameAndProjectID, compositeUserKey),
 	}); err != nil {
 		return nil, err
@@ -207,7 +209,7 @@ func LoadPairedResources(ctx context.Context, c client.Client, ids ConnSecretIde
 }
 
 // InvalidScopes checks whether the Deployment and User have a common scope
-func (p *ConnSecretPair) InvalidScopes() bool {
+func invalidScopes(p *ConnSecretPair) bool {
 	scopes := p.User.GetScopes(akov2.DeploymentScopeType)
 	if len(scopes) != 0 && !stringutil.Contains(scopes, p.Deployment.GetDeploymentName()) {
 		return true
@@ -217,17 +219,17 @@ func (p *ConnSecretPair) InvalidScopes() bool {
 }
 
 // IsReady checks that both AtlasDeployment and AtlasDatabaseUser are ready
-func (p *ConnSecretPair) IsReady() (bool, []string) {
+func isReady(p *ConnSecretPair) (bool, []string) {
 	notReady := []string{}
 
-	if p.Deployment == nil || !IsDeploymentReady(p.Deployment) {
+	if p.Deployment == nil || !p.Deployment.IsDeploymentReady() {
 		if p.Deployment != nil {
 			notReady = append(notReady, fmt.Sprintf("AtlasDeployment/%s", p.Deployment.GetName()))
 		} else {
 			notReady = append(notReady, "AtlasDeployment/<nil>")
 		}
 	}
-	if p.User == nil || !IsDatabaseUserReady(p.User) {
+	if p.User == nil || !p.User.IsDatabaseUserReady() {
 		if p.User != nil {
 			notReady = append(notReady, fmt.Sprintf("AtlasDatabaseUser/%s", p.User.GetName()))
 		} else {
@@ -238,28 +240,9 @@ func (p *ConnSecretPair) IsReady() (bool, []string) {
 	return len(notReady) == 0, notReady
 }
 
-// ResolveProjectNameK8s retrieves the ProjectName by K8s AtlasProject resource
-func (p *ConnSecretPair) ResolveProjectNameK8s(ctx context.Context, c client.Client, namespace string) (string, error) {
-	var name string
-	if p.Deployment != nil && p.Deployment.Spec.ProjectRef != nil {
-		name = p.Deployment.Spec.ProjectRef.Name
-	} else if p.User != nil && p.User.Spec.ProjectRef != nil {
-		name = p.User.Spec.ProjectRef.Name
-	} else {
-		return "", errors.New("no ProjectRef available on Deployment or User")
-	}
-
-	proj := &akov2.AtlasProject{}
-	if err := c.Get(ctx, kube.ObjectKey(namespace, name), proj); err != nil {
-		return "", fmt.Errorf("failed to retrieve AtlasProject %q: %w", name, err)
-	}
-
-	return kube.NormalizeIdentifier(proj.Spec.Name), nil
-}
-
 // BuildConnectionData constructs the secret data that will be passed in the secret
-func (p *ConnSecretPair) BuildConnectionData(ctx context.Context, c client.Client) (ConnSecretData, error) {
-	password, err := p.User.ReadPassword(ctx, c)
+func (r *ConnectionSecretReconciler) buildConnectionData(ctx context.Context, p *ConnSecretPair) (ConnSecretData, error) {
+	password, err := p.User.ReadPassword(ctx, r.Client)
 	if err != nil {
 		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", p.User.Spec.Username, err)
 	}
