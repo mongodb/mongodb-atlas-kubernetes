@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
@@ -70,7 +70,7 @@ var sampleAtlasOrgSettings = akov2.AtlasOrgSettings{
 	},
 	Spec: akov2.AtlasOrgSettingsSpec{
 		OrgID: fakeOrgID,
-		ConnectionSecretRef: &common.ResourceRef{
+		ConnectionSecretRef: &api.LocalObjectReference{
 			Name: "atlas-credentials",
 		},
 		ApiAccessListRequired:                  pointer.MakePtr(true),
@@ -225,7 +225,7 @@ func TestNewReconcileContext(t *testing.T) {
 				},
 				Spec: akov2.AtlasOrgSettingsSpec{
 					OrgID: fakeOrgID,
-					ConnectionSecretRef: &common.ResourceRef{
+					ConnectionSecretRef: &api.LocalObjectReference{
 						Name: "", // Empty name
 					},
 				},
@@ -262,7 +262,7 @@ func TestNewReconcileContext(t *testing.T) {
 				},
 				Spec: akov2.AtlasOrgSettingsSpec{
 					OrgID: fakeOrgID,
-					ConnectionSecretRef: &common.ResourceRef{
+					ConnectionSecretRef: &api.LocalObjectReference{
 						Name: "non-existent-secret",
 					},
 				},

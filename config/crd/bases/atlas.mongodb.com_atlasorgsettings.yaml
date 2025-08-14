@@ -57,7 +57,9 @@ spec:
                   Atlas (Public & Private API keys).
                 properties:
                   name:
-                    description: Name is the name of the Kubernetes Resource
+                    description: |-
+                      Name of the resource being referred to
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     type: string
                 required:
                 - name

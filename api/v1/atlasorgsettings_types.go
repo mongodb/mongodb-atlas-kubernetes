@@ -17,7 +17,7 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
 
@@ -34,7 +34,7 @@ type AtlasOrgSettingsSpec struct {
 
 	// ConnectionSecretRef is the name of the Kubernetes Secret which contains the information about the way to connect to
 	// Atlas (Public & Private API keys).
-	ConnectionSecretRef *common.ResourceRef `json:"connectionSecretRef,omitempty"`
+	ConnectionSecretRef *api.LocalObjectReference `json:"connectionSecretRef,omitempty"`
 
 	// ApiAccessListRequired Flag that indicates whether to require API operations to
 	// originate from an IP Address added to the API access list for the specified
@@ -98,6 +98,10 @@ type AtlasOrgSettings struct {
 
 	Spec   AtlasOrgSettingsSpec          `json:"spec,omitempty"`
 	Status status.AtlasOrgSettingsStatus `json:"status,omitempty"`
+}
+
+func (aos *AtlasOrgSettings) Credentials() *api.LocalObjectReference {
+	return aos.Spec.ConnectionSecretRef
 }
 
 func (aos *AtlasOrgSettings) GetConditions() []metav1.Condition {

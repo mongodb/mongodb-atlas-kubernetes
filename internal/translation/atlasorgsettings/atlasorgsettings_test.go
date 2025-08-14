@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
@@ -35,7 +35,7 @@ func TestNewFromAKO(t *testing.T) {
 			name: "complete org settings spec",
 			spec: akov2.AtlasOrgSettingsSpec{
 				OrgID: "test-org-id",
-				ConnectionSecretRef: &common.ResourceRef{
+				ConnectionSecretRef: &api.LocalObjectReference{
 					Name: "test-secret",
 				},
 				ApiAccessListRequired:                  pointer.MakePtr(true),
@@ -49,7 +49,7 @@ func TestNewFromAKO(t *testing.T) {
 			expected: &AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID: "test-org-id",
-					ConnectionSecretRef: &common.ResourceRef{
+					ConnectionSecretRef: &api.LocalObjectReference{
 						Name: "test-secret",
 					},
 					ApiAccessListRequired:                  pointer.MakePtr(true),
@@ -196,7 +196,7 @@ func TestToAtlas(t *testing.T) {
 			orgSettings: &AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID: "test-org-id",
-					ConnectionSecretRef: &common.ResourceRef{
+					ConnectionSecretRef: &api.LocalObjectReference{
 						Name: "test-secret",
 					},
 					ApiAccessListRequired:                  pointer.MakePtr(true),
@@ -585,7 +585,7 @@ func TestRoundTripConversion(t *testing.T) {
 	t.Run("AKO -> Atlas -> AKO round trip", func(t *testing.T) {
 		originalAKOSpec := akov2.AtlasOrgSettingsSpec{
 			OrgID: "test-org-id",
-			ConnectionSecretRef: &common.ResourceRef{
+			ConnectionSecretRef: &api.LocalObjectReference{
 				Name: "test-secret",
 			},
 			ApiAccessListRequired:                  pointer.MakePtr(true),

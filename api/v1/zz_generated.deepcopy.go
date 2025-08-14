@@ -1389,7 +1389,7 @@ func (in *AtlasOrgSettingsSpec) DeepCopyInto(out *AtlasOrgSettingsSpec) {
 	*out = *in
 	if in.ConnectionSecretRef != nil {
 		in, out := &in.ConnectionSecretRef, &out.ConnectionSecretRef
-		*out = new(common.ResourceRef)
+		*out = new(api.LocalObjectReference)
 		**out = **in
 	}
 	if in.ApiAccessListRequired != nil {
