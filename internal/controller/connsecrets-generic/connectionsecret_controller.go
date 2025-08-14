@@ -1,3 +1,17 @@
+// Copyright 2025 MongoDB Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package connsecretsgeneric
 
 import (
@@ -23,7 +37,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
@@ -45,13 +58,16 @@ type ConnSecretReconciler struct {
 type Endpoint interface {
 	GetName() string
 	IsReady() bool
-	GetConnStrings() *status.ConnectionStrings
+	GetProjectRef(ctx context.Context, r client.Reader) string
 	GetProjectID(ctx context.Context, r client.Reader) (string, error)
 	GetProjectName(ctx context.Context, r client.Reader, provider atlas.Provider, log *zap.SugaredLogger) (string, error)
 
 	ListObj() client.ObjectList
-	Selector(ids *ConnSecretIdentifiers) fields.Selector
 	ExtractList(client.ObjectList) ([]Endpoint, error)
+	SelectorByProject(projectRef string) fields.Selector
+	SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector
+
+	BuildConnData(ctx context.Context, c client.Client, provider atlas.Provider, log *zap.SugaredLogger, user *akov2.AtlasDatabaseUser) (ConnSecretData, error)
 }
 
 type ConnSecretPair struct {
@@ -62,7 +78,6 @@ type ConnSecretPair struct {
 
 func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-	log.Debugw("reconcile started")
 
 	ids, err := r.LoadIdentifiers(ctx, req.NamespacedName)
 	if err != nil {
@@ -186,28 +201,21 @@ func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, proje
 	var out []Endpoint
 	for _, kind := range r.EndpointKinds {
 		list := kind.ListObj()
-		switch kind.(type) {
-		case DeploymentEndpoint:
-			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDeploymentByProject, projectID),
-			}); err != nil {
-				return nil, err
-			}
-		// case FederationEndpoint:
-		// 	if err := r.Client.List(ctx, list, &client.ListOptions{
-		// 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDataFederationByProject, projectID),
-		// 	}); err != nil {
-		// 		return nil, err
-		// 	}
-		default:
-			continue
+
+		if err := r.Client.List(ctx, list, &client.ListOptions{
+			FieldSelector: kind.SelectorByProject(projectID),
+		}); err != nil {
+			return nil, err
 		}
+
 		eps, err := kind.ExtractList(list)
 		if err != nil {
 			return nil, err
 		}
+
 		out = append(out, eps...)
 	}
+
 	return out, nil
 }
 
@@ -221,6 +229,7 @@ func (r *ConnSecretReconciler) newEndpointMapFunc(ctx context.Context, obj clien
 	default:
 		return nil
 	}
+
 	projectID, err := ep.GetProjectID(ctx, r.Client)
 	if err != nil || projectID == "" {
 		return nil
@@ -231,6 +240,7 @@ func (r *ConnSecretReconciler) newEndpointMapFunc(ctx context.Context, obj clien
 	}); err != nil {
 		return nil
 	}
+
 	return r.generateConnectionSecretRequests(projectID, []Endpoint{ep}, users.Items)
 }
 
@@ -243,10 +253,12 @@ func (r *ConnSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj c
 	if err != nil || projectID == "" {
 		return nil
 	}
+	// The user should connect to all endpoint types
 	endpoints, err := r.listEndpointsByProject(ctx, projectID)
 	if err != nil {
 		return nil
 	}
+
 	return r.generateConnectionSecretRequests(projectID, endpoints, []akov2.AtlasDatabaseUser{*u})
 }
 

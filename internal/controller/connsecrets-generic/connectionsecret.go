@@ -1,3 +1,17 @@
+// Copyright 2025 MongoDB Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package connsecretsgeneric
 
 import (
@@ -149,7 +163,7 @@ func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIden
 	var selected Endpoint
 	for _, kind := range r.EndpointKinds {
 		list := kind.ListObj()
-		if err := r.Client.List(ctx, list, &client.ListOptions{FieldSelector: kind.Selector(ids)}); err != nil {
+		if err := r.Client.List(ctx, list, &client.ListOptions{FieldSelector: kind.SelectorByProjectAndName(ids)}); err != nil {
 			return nil, err
 		}
 		eps, err := kind.ExtractList(list)
@@ -190,7 +204,6 @@ func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIden
 	}, nil
 }
 
-// handleDelete manages the case where we will delete the connection secret
 func (r *ConnSecretReconciler) handleDelete(
 	ctx context.Context,
 	req ctrl.Request,
@@ -382,36 +395,7 @@ func (r *ConnSecretReconciler) buildConnectionData(ctx context.Context, p *ConnS
 		return ConnSecretData{}, fmt.Errorf("invalid pair: nil user or endpoint")
 	}
 
-	password, err := p.User.ReadPassword(ctx, r.Client)
-	if err != nil {
-		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", p.User.Spec.Username, err)
-	}
-
-	data := ConnSecretData{
-		DBUserName: p.User.Spec.Username,
-		Password:   password,
-	}
-
-	if conn := p.Endpoint.GetConnStrings(); conn != nil {
-		data.ConnURL = conn.Standard
-		data.SrvConnURL = conn.StandardSrv
-
-		if conn.Private != "" {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-				PvtConnURL:    conn.Private,
-				PvtSrvConnURL: conn.PrivateSrv,
-			})
-		}
-		for _, pe := range conn.PrivateEndpoint {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-				PvtConnURL:      pe.ConnectionString,
-				PvtSrvConnURL:   pe.SRVConnectionString,
-				PvtShardConnURL: pe.SRVShardOptimizedConnectionString,
-			})
-		}
-	}
-
-	return data, nil
+	return p.Endpoint.BuildConnData(ctx, r.Client, r.AtlasProvider, r.Log, p.User)
 }
 
 func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string) bool {

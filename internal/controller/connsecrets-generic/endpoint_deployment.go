@@ -1,3 +1,17 @@
+// Copyright 2025 MongoDB Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package connsecretsgeneric
 
 import (
@@ -10,7 +24,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -33,11 +46,9 @@ func (e DeploymentEndpoint) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
-func (e DeploymentEndpoint) GetConnStrings() *status.ConnectionStrings {
-	if e.obj == nil {
-		return nil
-	}
-	return e.obj.Status.ConnectionStrings
+func (e DeploymentEndpoint) GetProjectRef(ctx context.Context, r client.Reader) string {
+	ref, _ := e.GetProjectID(ctx, r)
+	return ref
 }
 
 func (e DeploymentEndpoint) GetProjectID(ctx context.Context, r client.Reader) (string, error) {
@@ -90,10 +101,14 @@ func (e DeploymentEndpoint) GetProjectName(ctx context.Context, r client.Reader,
 	return "", fmt.Errorf("project name not available")
 }
 
-// ---- indexer methods (ignore e.obj) ----
+// ---- indexer methods ----
 func (DeploymentEndpoint) ListObj() client.ObjectList { return &akov2.AtlasDeploymentList{} }
 
-func (DeploymentEndpoint) Selector(ids *ConnSecretIdentifiers) fields.Selector {
+func (DeploymentEndpoint) SelectorByProject(projectRef string) fields.Selector {
+	return fields.OneTermEqualSelector(indexer.AtlasDeploymentByProject, projectRef)
+}
+
+func (DeploymentEndpoint) SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDeploymentBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
 }
 
@@ -108,4 +123,37 @@ func (e DeploymentEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 		out = append(out, DeploymentEndpoint{obj: &l.Items[i], r: e.r})
 	}
 	return out, nil
+}
+
+func (e DeploymentEndpoint) BuildConnData(ctx context.Context, c client.Client, _ atlas.Provider, _ *zap.SugaredLogger, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
+	if user == nil || e.obj == nil {
+		return ConnSecretData{}, fmt.Errorf("invalid endpoint or user")
+	}
+	password, err := user.ReadPassword(ctx, c)
+	if err != nil {
+		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
+	}
+	data := ConnSecretData{
+		DBUserName: user.Spec.Username,
+		Password:   password,
+	}
+
+	conn := e.obj.Status.ConnectionStrings
+	data.ConnURL = conn.Standard
+	data.SrvConnURL = conn.StandardSrv
+	if conn.Private != "" {
+		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
+			PvtConnURL:    conn.Private,
+			PvtSrvConnURL: conn.PrivateSrv,
+		})
+	}
+	for _, pe := range conn.PrivateEndpoint {
+		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
+			PvtConnURL:      pe.ConnectionString,
+			PvtSrvConnURL:   pe.SRVConnectionString,
+			PvtShardConnURL: pe.SRVShardOptimizedConnectionString,
+		})
+	}
+
+	return data, nil
 }
