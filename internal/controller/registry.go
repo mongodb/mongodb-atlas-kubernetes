@@ -42,7 +42,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlassearchindexconfig"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasstream"
 	integrations "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasthirdpartyintegrations"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	connsecretsgeneric "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connsecrets-generic"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
@@ -129,7 +129,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 
 	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(c, ap, r.deletionProtection, r.logger, r.globalSecretRef, r.reapplySupport)
 	reconcilers = append(reconcilers, newCtrlStateReconciler(integrationsReconciler))
-	reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
+	reconcilers = append(reconcilers, connsecretsgeneric.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
 
 	if version.IsExperimental() {
 		// Add experimental controllers here
