@@ -1,12 +1,3 @@
-package indexer
-
-import (
-	"go.uber.org/zap"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-)
-
 // Copyright 2025 MongoDB Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +11,15 @@ import (
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+package indexer
+
+import (
+	"go.uber.org/zap"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+)
 
 const (
 	AtlasOrgSettingsBySecretsIndex = "atlasorgsettings.spec.connectionSecretRef"
