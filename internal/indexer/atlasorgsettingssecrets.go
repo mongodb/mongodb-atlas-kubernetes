@@ -25,39 +25,10 @@ const (
 	AtlasOrgSettingsBySecretsIndex = "atlasorgsettings.spec.connectionSecretRef"
 )
 
-type AtlasOrgSettingsByConnectionSecretIndexer struct {
-	logger *zap.SugaredLogger
-}
-
 func NewAtlasOrgSettingsByConnectionSecretIndexer(logger *zap.Logger) *LocalCredentialIndexer {
 	return NewLocalCredentialsIndexer(AtlasOrgSettingsBySecretsIndex, &akov2.AtlasOrgSettings{}, logger)
 }
 
-//	func (*AtlasOrgSettingsByConnectionSecretIndexer) Object() client.Object {
-//		return &akov2.AtlasProject{}
-//	}
-//
-//	func (*AtlasOrgSettingsByConnectionSecretIndexer) Name() string {
-//		return AtlasOrgSettingsBySecretsIndex
-//	}
-//
-//	func (i *AtlasOrgSettingsByConnectionSecretIndexer) Keys(object client.Object) []string {
-//		if reflect.TypeOf(object) != reflect.TypeOf(&akov2.AtlasOrgSettings{}) {
-//			i.logger.Errorf("expected %T but got %T", &akov2.AtlasOrgSettings{}, object)
-//			return nil
-//		}
-//
-//		orgSettings, ok := object.(*akov2.AtlasOrgSettings)
-//		if !ok {
-//			return nil
-//		}
-//
-//		if orgSettings.Spec.ConnectionSecretRef == nil {
-//			return nil
-//		}
-//
-//		return []string{orgSettings.Spec.ConnectionSecretRef.Name}
-//	}
 func AtlasOrgSettingsRequest(list *akov2.AtlasOrgSettingsList) []reconcile.Request {
 	requests := make([]reconcile.Request, 0, len(list.Items))
 	for _, item := range list.Items {
