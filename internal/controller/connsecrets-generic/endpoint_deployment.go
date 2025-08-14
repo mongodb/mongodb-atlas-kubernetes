@@ -32,7 +32,6 @@ type DeploymentEndpoint struct {
 	r   *ConnSecretReconciler
 }
 
-// ---- instance methods ----
 func (e DeploymentEndpoint) GetName() string {
 	if e.obj == nil {
 		return ""
@@ -44,8 +43,8 @@ func (e DeploymentEndpoint) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
-func (e DeploymentEndpoint) GetProjectRef(ctx context.Context) string {
-	return "PROJECTID"
+func (e DeploymentEndpoint) GetScopeType() akov2.ScopeType {
+	return akov2.DeploymentScopeType
 }
 
 func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
@@ -55,14 +54,14 @@ func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	if e.obj.Spec.ExternalProjectRef != nil && e.obj.Spec.ExternalProjectRef.ID != "" {
 		return e.obj.Spec.ExternalProjectRef.ID, nil
 	}
-	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" {
+	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" && e.r != nil && e.r.Client != nil {
 		proj := &akov2.AtlasProject{}
-		if err := e.r.Client.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.ProjectRef.Name), proj); err != nil {
+		key := e.obj.Spec.ProjectRef.GetObject(e.obj.GetNamespace())
+		if err := e.r.Client.Get(ctx, *key, proj); err != nil {
 			return "", err
 		}
 		return proj.ID(), nil
 	}
-
 	return "", fmt.Errorf("project ID not available")
 }
 
@@ -70,16 +69,17 @@ func (e DeploymentEndpoint) GetProjectName(ctx context.Context) (string, error) 
 	if e.obj == nil {
 		return "", fmt.Errorf("nil deployment")
 	}
-	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" {
+	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" && e.r != nil && e.r.Client != nil {
 		proj := &akov2.AtlasProject{}
-		if err := e.r.Client.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.ProjectRef.Name), proj); err != nil {
+		key := e.obj.Spec.ProjectRef.GetObject(e.obj.GetNamespace())
+		if err := e.r.Client.Get(ctx, *key, proj); err != nil {
 			return "", err
 		}
 		if proj.Spec.Name != "" {
 			return kube.NormalizeIdentifier(proj.Spec.Name), nil
 		}
 	}
-	// SDK fallback (optional)
+
 	if e.r != nil {
 		cfg, err := e.r.ResolveConnectionConfig(ctx, e.obj)
 		if err != nil {
@@ -98,7 +98,6 @@ func (e DeploymentEndpoint) GetProjectName(ctx context.Context) (string, error) 
 	return "", fmt.Errorf("project name not available")
 }
 
-// ---- indexer methods ----
 func (DeploymentEndpoint) ListObj() client.ObjectList { return &akov2.AtlasDeploymentList{} }
 
 func (DeploymentEndpoint) SelectorByProject(projectRef string) fields.Selector {
@@ -116,7 +115,6 @@ func (e DeploymentEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 	}
 	out := make([]Endpoint, 0, len(l.Items))
 	for i := range l.Items {
-		// wrap each item as an Endpoint object
 		out = append(out, DeploymentEndpoint{obj: &l.Items[i], r: e.r})
 	}
 	return out, nil

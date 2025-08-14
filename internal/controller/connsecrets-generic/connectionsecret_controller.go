@@ -43,6 +43,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
@@ -52,13 +53,13 @@ type ConnSecretReconciler struct {
 	Scheme           *runtime.Scheme
 	EventRecorder    record.EventRecorder
 	GlobalPredicates []predicate.Predicate
-	EndpointKinds    []Endpoint // Register all kinds of endpoints
+	EndpointKinds    []Endpoint
 }
 
 type Endpoint interface {
 	GetName() string
 	IsReady() bool
-	GetProjectRef(ctx context.Context) string
+	GetScopeType() akov2.ScopeType
 	GetProjectID(ctx context.Context) (string, error)
 	GetProjectName(ctx context.Context) (string, error)
 
@@ -78,6 +79,7 @@ type ConnSecretPair struct {
 
 func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
+	r.Log.Infof("Start reconciliation for %s\n", req.NamespacedName.String())
 
 	ids, err := r.LoadIdentifiers(ctx, req.NamespacedName)
 	if err != nil {
@@ -92,11 +94,9 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	pair, err := r.LoadPair(ctx, ids)
 	if err != nil {
 		switch {
-		case errors.Is(err, ErrNoPairedResourcesFound):
-			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
-		case errors.Is(err, ErrNoEndpointFound), errors.Is(err, ErrNoUserFound):
+		case errors.Is(err, ErrMissingPairing):
 			return r.handleDelete(ctx, req, ids, pair)
-		case errors.Is(err, ErrManyEndpoints), errors.Is(err, ErrManyUsers):
+		case errors.Is(err, ErrAmbiguousPairing):
 			return workflow.Terminate("", err).ReconcileResult()
 		default:
 			return workflow.Terminate("", err).ReconcileResult()
@@ -114,11 +114,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return r.handleDelete(ctx, req, ids, pair)
 	}
 
-	if pair.Endpoint == nil {
-		return r.handleDelete(ctx, req, ids, pair)
-	}
-
-	if !allowsByScopes(pair.User, pair.Endpoint.GetName()) {
+	if !allowsByScopes(pair.User, pair.Endpoint.GetName(), pair.Endpoint.GetScopeType()) {
 		r.Log.Infow("invalid scope; scheduling deletion", "reason", workflow.ConnSecretInvalidScopes)
 		return r.handleDelete(ctx, req, ids, pair)
 	}
@@ -181,9 +177,10 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 	var reqs []reconcile.Request
 	for _, ep := range endpoints {
 		for _, u := range users {
-			if !allowsByScopes(&u, ep.GetName()) {
+			if !allowsByScopes(&u, ep.GetName(), ep.GetScopeType()) {
 				continue
 			}
+
 			name := CreateInternalFormat(projectID, ep.GetName(), u.Spec.Username)
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: types.NamespacedName{Namespace: u.Namespace, Name: name},
@@ -193,16 +190,27 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 	return reqs
 }
 
-func (r *ConnSecretReconciler) ResolveProjectId(ctx context.Context, ref akov2.ProjectDualReference, parentNamespace string) (string, string, error) {
+func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string, epType akov2.ScopeType) bool {
+	scopes := u.GetScopes(epType)
+	total_len := len(u.GetScopes(akov2.DataLakeScopeType)) + len(u.GetScopes(akov2.DeploymentScopeType))
+	if total_len == 0 || stringutil.Contains(scopes, epName) {
+		return true
+	}
+
+	return false
+}
+
+func (r *ConnSecretReconciler) parseProject(ctx context.Context, ref akov2.ProjectDualReference, userns string) (string, string, error) {
 	if ref.ExternalProjectRef != nil && ref.ExternalProjectRef.ID != "" {
 		return "", ref.ExternalProjectRef.ID, nil
 	}
 	if ref.ProjectRef != nil && ref.ProjectRef.Name != "" {
 		project := &akov2.AtlasProject{}
-		if err := r.Client.Get(ctx, *ref.ProjectRef.GetObject(parentNamespace), project); err != nil {
+		key := ref.ProjectRef.GetObject(userns)
+		if err := r.Client.Get(ctx, *key, project); err != nil {
 			return "", "", fmt.Errorf("failed to resolve projectRef: %w", err)
 		}
-		return ref.ProjectRef.GetObject(parentNamespace).String(), project.ID(), nil
+		return key.String(), project.ID(), nil
 	}
 	return "", "", fmt.Errorf("missing both external and internal project references")
 }
@@ -210,11 +218,13 @@ func (r *ConnSecretReconciler) ResolveProjectId(ctx context.Context, ref akov2.P
 func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, projectRef string, projectID string) ([]Endpoint, error) {
 	var out []Endpoint
 	for _, kind := range r.EndpointKinds {
-		ref := kind.GetProjectRef(ctx)
-		if ref == "PROJECTID" {
-			ref = projectID // ProjectID used by deployment
+		var ref string
+		// Federation uses the projectRef as index key wheres Deployment uses projectID!
+		scopeType := kind.GetScopeType()
+		if scopeType == akov2.DeploymentScopeType {
+			ref = projectID
 		} else {
-			ref = projectRef // ProjectRef used by federation
+			ref = projectRef
 		}
 
 		list := kind.ListObj()
@@ -266,7 +276,7 @@ func (r *ConnSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj c
 	if !ok {
 		return nil
 	}
-	projectRef, projectID, err := r.ResolveProjectId(ctx, u.Spec.ProjectDualReference, u.GetNamespace())
+	projectRef, projectID, err := r.parseProject(ctx, u.Spec.ProjectDualReference, u.GetNamespace())
 	if err != nil {
 		return nil
 	}
@@ -299,7 +309,7 @@ func NewConnectionSecretReconciler(
 		GlobalPredicates: predicates,
 	}
 
-	// Register kinds to try (order matters)
+	// Register all the endpoint types
 	r.EndpointKinds = []Endpoint{
 		DeploymentEndpoint{r: r},
 		FederationEndpoint{r: r},

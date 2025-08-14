@@ -34,7 +34,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 )
 
 const (
@@ -55,11 +54,8 @@ const (
 )
 
 var (
-	ErrNoPairedResourcesFound = errors.New("no paired resources found")
-	ErrNoEndpointFound        = errors.New("no endpoint found")
-	ErrNoUserFound            = errors.New("no user found")
-	ErrManyEndpoints          = errors.New("multiple endpoints found")
-	ErrManyUsers              = errors.New("multiple users found")
+	ErrMissingPairing   = errors.New("missing user/endpoint")
+	ErrAmbiguousPairing = errors.New("multiple users/endpoints with the same name found")
 )
 
 type ConnSecretIdentifiers struct {
@@ -150,33 +146,24 @@ func (r *ConnSecretReconciler) LoadIdentifiers(ctx context.Context, req types.Na
 	}, nil
 }
 
-func isMissingIndex(err error) bool {
-	if err == nil {
-		return false
-	}
-	s := strings.ToLower(err.Error())
-	return strings.Contains(s, "index with name") && strings.Contains(s, "does not exist")
-}
-
 func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIdentifiers) (*ConnSecretPair, error) {
 	compositeUserKey := ids.ProjectID + "-" + ids.DatabaseUsername
+
 	users := &akov2.AtlasDatabaseUserList{}
 	if err := r.Client.List(ctx, users, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserBySpecUsernameAndProjectID, compositeUserKey),
 	}); err != nil {
 		return nil, err
 	}
+	usersCount := len(users.Items)
 
 	totalEndpoints := 0
 	var selected Endpoint
 	for _, kind := range r.EndpointKinds {
 		list := kind.ListObj()
 		if err := r.Client.List(ctx, list, &client.ListOptions{FieldSelector: kind.SelectorByProjectAndName(ids)}); err != nil {
-			if !isMissingIndex(err) {
-				return nil, err
-			}
+			return nil, err
 		}
-
 		eps, err := kind.ExtractList(list)
 		if err != nil {
 			return nil, err
@@ -187,32 +174,72 @@ func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIden
 		totalEndpoints += len(eps)
 	}
 
-	switch {
-	case totalEndpoints > 1:
-		return nil, ErrManyEndpoints
-	case len(users.Items) > 1:
-		return nil, ErrManyUsers
-	case totalEndpoints == 0 && len(users.Items) == 0:
-		return nil, ErrNoPairedResourcesFound
-	case totalEndpoints == 0:
+	// AmbiguousPairing (more than 1 of either resource)
+	if usersCount > 1 || totalEndpoints > 1 {
+		return nil, ErrAmbiguousPairing
+	}
+
+	// Exactly one of each (OK case)
+	if usersCount == 1 && totalEndpoints == 1 {
 		return &ConnSecretPair{
 			ProjectID: ids.ProjectID,
 			User:      &users.Items[0],
-			Endpoint:  nil,
-		}, ErrNoEndpointFound
-	case len(users.Items) == 0:
+			Endpoint:  selected,
+		}, nil
+	}
+
+	// MissingPairing (one or both missing)
+	if usersCount == 0 && totalEndpoints == 0 {
+		return nil, ErrMissingPairing
+	}
+	if usersCount == 0 {
 		return &ConnSecretPair{
 			ProjectID: ids.ProjectID,
 			User:      nil,
 			Endpoint:  selected,
-		}, ErrNoUserFound
+		}, ErrMissingPairing
 	}
-
 	return &ConnSecretPair{
 		ProjectID: ids.ProjectID,
 		User:      &users.Items[0],
-		Endpoint:  selected,
-	}, nil
+		Endpoint:  nil,
+	}, ErrMissingPairing
+}
+
+func (r *ConnSecretReconciler) resolveProject(
+	ctx context.Context,
+	ids *ConnSecretIdentifiers,
+	pair *ConnSecretPair,
+) (string, error) {
+	if ids != nil && ids.ProjectName != "" {
+		return ids.ProjectName, nil
+	}
+
+	if pair == nil {
+		return "", fmt.Errorf("project name cannot be resolved")
+	}
+
+	var err error
+	var projectName string
+	if pair.Endpoint != nil {
+		projectName, err = pair.Endpoint.GetProjectName(ctx)
+		if projectName != "" {
+			return projectName, nil
+		}
+	}
+
+	if pair.User != nil {
+		if name, uerr := r.GetUserProjectName(ctx, pair.User); name != "" {
+			return name, nil
+		} else if err == nil {
+			err = uerr
+		}
+	}
+
+	if err == nil {
+		err = fmt.Errorf("project name cannot be resolved")
+	}
+	return "", err
 }
 
 func (r *ConnSecretReconciler) handleDelete(
@@ -222,25 +249,15 @@ func (r *ConnSecretReconciler) handleDelete(
 	pair *ConnSecretPair,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-	projectName := ids.ProjectName
-	var err error
-
-	if projectName == "" {
-		if pair == nil || pair.Endpoint == nil {
-			err = fmt.Errorf("endpoint is nil; cannot resolve project name for delete")
-			log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
-			return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
-		}
-		projectName, err = pair.Endpoint.GetProjectName(ctx) // no shadowing
-		if projectName == "" {
-			err = fmt.Errorf("project name is empty")
-		}
-		if err != nil {
-			log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
-			return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
-		}
+	if pair == nil {
+		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 	}
 
+	projectName, err := r.resolveProject(ctx, ids, pair)
+	if err != nil {
+		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
+		return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
+	}
 	log.Debugw("project name resolved for delete")
 
 	name := CreateK8sFormat(projectName, ids.ClusterName, ids.DatabaseUsername)
@@ -271,27 +288,13 @@ func (r *ConnSecretReconciler) handleUpsert(
 	ids *ConnSecretIdentifiers,
 	pair *ConnSecretPair,
 ) (ctrl.Result, error) {
-	var err error
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-	projectName := ids.ProjectName
 
-	if projectName == "" {
-		if pair == nil || pair.Endpoint == nil {
-			err = fmt.Errorf("endpoint is nil; cannot resolve project name")
-			log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
-			return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
-		}
-
-		projectName, err = pair.Endpoint.GetProjectName(ctx)
-		if projectName == "" {
-			err = fmt.Errorf("project name is empty")
-		}
-		if err != nil {
-			log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
-			return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
-		}
+	projectName, err := r.resolveProject(ctx, ids, pair)
+	if err != nil {
+		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
+		return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
 	}
-
 	ids.ProjectName = projectName
 	log.Debugw("project name resolved for upsert", "projectName", projectName)
 
@@ -419,13 +422,4 @@ func CreateURL(connURL, username, password string) (string, error) {
 	}
 	u.User = url.UserPassword(username, password)
 	return u.String(), nil
-}
-
-func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string) bool {
-	scopes := u.GetScopes(akov2.DeploymentScopeType)
-	if len(scopes) == 0 || stringutil.Contains(scopes, epName) {
-		return true
-	}
-
-	return false
 }

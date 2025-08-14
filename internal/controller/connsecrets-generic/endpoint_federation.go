@@ -17,6 +17,7 @@ package connsecretsgeneric
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -35,7 +36,6 @@ type FederationEndpoint struct {
 	r   *ConnSecretReconciler
 }
 
-// ---- instance methods ----
 func (e FederationEndpoint) GetName() string {
 	if e.obj == nil {
 		return ""
@@ -47,17 +47,17 @@ func (e FederationEndpoint) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
-func (e FederationEndpoint) GetProjectRef(ctx context.Context) string {
-	return "PROJECTREF"
+func (e FederationEndpoint) GetScopeType() akov2.ScopeType {
+	return akov2.DataLakeScopeType
 }
-
 func (e FederationEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil federation")
 	}
 	if e.obj.Spec.Project.Name != "" {
 		proj := &akov2.AtlasProject{}
-		if err := e.r.Client.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.Project.Name), proj); err != nil {
+		key := e.obj.Spec.Project.GetObject(e.obj.GetNamespace())
+		if err := e.r.Client.Get(ctx, *key, proj); err != nil {
 			return "", err
 		}
 		return proj.ID(), nil
@@ -72,7 +72,8 @@ func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) 
 	}
 	if e.obj.Spec.Project.Name != "" {
 		proj := &akov2.AtlasProject{}
-		if err := e.r.Client.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.Project.Name), proj); err != nil {
+		key := e.obj.Spec.Project.GetObject(e.obj.GetNamespace())
+		if err := e.r.Client.Get(ctx, *key, proj); err != nil {
 			return "", err
 		}
 		if proj.Spec.Name != "" {
@@ -83,7 +84,6 @@ func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) 
 	return "", fmt.Errorf("project name not available")
 }
 
-// ---- indexer methods ----
 func (FederationEndpoint) ListObj() client.ObjectList { return &akov2.AtlasDataFederationList{} }
 
 func (FederationEndpoint) SelectorByProject(projectRef string) fields.Selector {
@@ -119,6 +119,7 @@ func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 	if err := e.r.Client.Get(ctx, e.obj.AtlasProjectObjectKey(), project); err != nil {
 		return ConnSecretData{}, err
 	}
+
 	connectionConfig, err := reconciler.GetConnectionConfig(ctx, e.r.Client, project.ConnectionSecretObjectKey(), &e.r.GlobalSecretRef)
 	if err != nil {
 		return ConnSecretData{}, err
@@ -137,14 +138,19 @@ func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 	if len(df.Hostnames) == 0 {
 		return ConnSecretData{}, fmt.Errorf("no DF hostnames")
 	}
-	urls := make([]string, 0, len(df.Hostnames))
-	for _, host := range df.Hostnames {
-		urls = append(urls, fmt.Sprintf("mongodb://%s:%s@%s?ssl=true", user.Spec.Username, password, host))
+
+	// mongodb://host1,host2,hoss3/user@password.com
+	hostlist := strings.Join(df.Hostnames, ",")
+	u := &url.URL{
+		Scheme:   "mongodb",
+		Host:     hostlist,
+		Path:     "/",
+		RawQuery: "ssl=true",
 	}
 
 	return ConnSecretData{
 		DBUserName: user.Spec.Username,
 		Password:   password,
-		ConnURL:    strings.Join(urls, ","),
+		ConnURL:    u.String(),
 	}, nil
 }
