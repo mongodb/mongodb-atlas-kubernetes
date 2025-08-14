@@ -19,13 +19,11 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -49,17 +47,17 @@ func (e FederationEndpoint) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
-func (e FederationEndpoint) GetProjectRef(ctx context.Context, r client.Reader) string {
-	return e.obj.Spec.Project.Name
+func (e FederationEndpoint) GetProjectRef(ctx context.Context) string {
+	return "PROJECTREF"
 }
 
-func (e FederationEndpoint) GetProjectID(ctx context.Context, r client.Reader) (string, error) {
+func (e FederationEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil federation")
 	}
 	if e.obj.Spec.Project.Name != "" {
 		proj := &akov2.AtlasProject{}
-		if err := r.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.Project.Name), proj); err != nil {
+		if err := e.r.Client.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.Project.Name), proj); err != nil {
 			return "", err
 		}
 		return proj.ID(), nil
@@ -68,13 +66,13 @@ func (e FederationEndpoint) GetProjectID(ctx context.Context, r client.Reader) (
 	return "", fmt.Errorf("project ID not available")
 }
 
-func (e FederationEndpoint) GetProjectName(ctx context.Context, r client.Reader, provider atlas.Provider, log *zap.SugaredLogger) (string, error) {
+func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil federation")
 	}
 	if e.obj.Spec.Project.Name != "" {
 		proj := &akov2.AtlasProject{}
-		if err := r.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.Project.Name), proj); err != nil {
+		if err := e.r.Client.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.Project.Name), proj); err != nil {
 			return "", err
 		}
 		if proj.Spec.Name != "" {
@@ -108,26 +106,24 @@ func (e FederationEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 	return out, nil
 }
 
-func (e FederationEndpoint) BuildConnData(ctx context.Context, c client.Client, provider atlas.Provider, log *zap.SugaredLogger, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
+func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
 	if user == nil || e.obj == nil {
 		return ConnSecretData{}, fmt.Errorf("invalid endpoint or user")
 	}
-	password, err := user.ReadPassword(ctx, c)
+	password, err := user.ReadPassword(ctx, e.r.Client)
 	if err != nil {
 		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
 	}
 
 	project := &akov2.AtlasProject{}
-	if err := c.Get(ctx, e.obj.AtlasProjectObjectKey(), project); err != nil {
+	if err := e.r.Client.Get(ctx, e.obj.AtlasProjectObjectKey(), project); err != nil {
 		return ConnSecretData{}, err
 	}
-
-	connectionConfig, err := reconciler.GetConnectionConfig(ctx, c, project.ConnectionSecretObjectKey(), &e.r.GlobalSecretRef)
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, e.r.Client, project.ConnectionSecretObjectKey(), &e.r.GlobalSecretRef)
 	if err != nil {
 		return ConnSecretData{}, err
 	}
-
-	clientSet, err := e.r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, log)
+	clientSet, err := e.r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, e.r.Log)
 	if err != nil {
 		return ConnSecretData{}, err
 	}
@@ -142,8 +138,8 @@ func (e FederationEndpoint) BuildConnData(ctx context.Context, c client.Client, 
 		return ConnSecretData{}, fmt.Errorf("no DF hostnames")
 	}
 	urls := make([]string, 0, len(df.Hostnames))
-	for _, h := range df.Hostnames {
-		urls = append(urls, fmt.Sprintf("mongodb://%s:%s@%s?ssl=true", user.Spec.Username, password, h))
+	for _, host := range df.Hostnames {
+		urls = append(urls, fmt.Sprintf("mongodb://%s:%s@%s?ssl=true", user.Spec.Username, password, host))
 	}
 
 	return ConnSecretData{

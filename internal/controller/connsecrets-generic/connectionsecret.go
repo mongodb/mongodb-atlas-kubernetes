@@ -150,6 +150,14 @@ func (r *ConnSecretReconciler) LoadIdentifiers(ctx context.Context, req types.Na
 	}, nil
 }
 
+func isMissingIndex(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "index with name") && strings.Contains(s, "does not exist")
+}
+
 func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIdentifiers) (*ConnSecretPair, error) {
 	compositeUserKey := ids.ProjectID + "-" + ids.DatabaseUsername
 	users := &akov2.AtlasDatabaseUserList{}
@@ -164,8 +172,11 @@ func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIden
 	for _, kind := range r.EndpointKinds {
 		list := kind.ListObj()
 		if err := r.Client.List(ctx, list, &client.ListOptions{FieldSelector: kind.SelectorByProjectAndName(ids)}); err != nil {
-			return nil, err
+			if !isMissingIndex(err) {
+				return nil, err
+			}
 		}
+
 		eps, err := kind.ExtractList(list)
 		if err != nil {
 			return nil, err
@@ -211,14 +222,23 @@ func (r *ConnSecretReconciler) handleDelete(
 	pair *ConnSecretPair,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
+	projectName := ids.ProjectName
+	var err error
 
-	projectName, err := pair.Endpoint.GetProjectName(ctx, r.Client, r.AtlasProvider, r.Log)
 	if projectName == "" {
-		err = fmt.Errorf("project name is empty")
-	}
-	if err != nil {
-		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
-		return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
+		if pair == nil || pair.Endpoint == nil {
+			err = fmt.Errorf("endpoint is nil; cannot resolve project name for delete")
+			log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
+			return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
+		}
+		projectName, err = pair.Endpoint.GetProjectName(ctx) // no shadowing
+		if projectName == "" {
+			err = fmt.Errorf("project name is empty")
+		}
+		if err != nil {
+			log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
+			return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
+		}
 	}
 
 	log.Debugw("project name resolved for delete")
@@ -251,20 +271,31 @@ func (r *ConnSecretReconciler) handleUpsert(
 	ids *ConnSecretIdentifiers,
 	pair *ConnSecretPair,
 ) (ctrl.Result, error) {
+	var err error
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
+	projectName := ids.ProjectName
 
-	projectName, err := pair.Endpoint.GetProjectName(ctx, r.Client, r.AtlasProvider, r.Log)
 	if projectName == "" {
-		err = fmt.Errorf("project name is empty")
-	}
-	if err != nil {
-		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
-		return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
-	}
-	ids.ProjectName = projectName
-	log.Debugw("project name resolved for upsert")
+		if pair == nil || pair.Endpoint == nil {
+			err = fmt.Errorf("endpoint is nil; cannot resolve project name")
+			log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
+			return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
+		}
 
-	data, err := r.buildConnectionData(ctx, pair)
+		projectName, err = pair.Endpoint.GetProjectName(ctx)
+		if projectName == "" {
+			err = fmt.Errorf("project name is empty")
+		}
+		if err != nil {
+			log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
+			return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
+		}
+	}
+
+	ids.ProjectName = projectName
+	log.Debugw("project name resolved for upsert", "projectName", projectName)
+
+	data, err := pair.Endpoint.BuildConnData(ctx, pair.User)
 	if err != nil {
 		log.Errorw("failed to build connection data", "reason", workflow.ConnSecretFailedToBuildData, "error", err)
 		return workflow.Terminate(workflow.ConnSecretFailedToBuildData, err).ReconcileResult()
@@ -388,14 +419,6 @@ func CreateURL(connURL, username, password string) (string, error) {
 	}
 	u.User = url.UserPassword(username, password)
 	return u.String(), nil
-}
-
-func (r *ConnSecretReconciler) buildConnectionData(ctx context.Context, p *ConnSecretPair) (ConnSecretData, error) {
-	if p == nil || p.User == nil || p.Endpoint == nil {
-		return ConnSecretData{}, fmt.Errorf("invalid pair: nil user or endpoint")
-	}
-
-	return p.Endpoint.BuildConnData(ctx, r.Client, r.AtlasProvider, r.Log, p.User)
 }
 
 func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string) bool {

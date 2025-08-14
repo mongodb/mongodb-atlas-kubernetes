@@ -18,13 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
@@ -46,12 +44,11 @@ func (e DeploymentEndpoint) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
-func (e DeploymentEndpoint) GetProjectRef(ctx context.Context, r client.Reader) string {
-	ref, _ := e.GetProjectID(ctx, r)
-	return ref
+func (e DeploymentEndpoint) GetProjectRef(ctx context.Context) string {
+	return "PROJECTID"
 }
 
-func (e DeploymentEndpoint) GetProjectID(ctx context.Context, r client.Reader) (string, error) {
+func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil deployment")
 	}
@@ -60,7 +57,7 @@ func (e DeploymentEndpoint) GetProjectID(ctx context.Context, r client.Reader) (
 	}
 	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" {
 		proj := &akov2.AtlasProject{}
-		if err := r.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.ProjectRef.Name), proj); err != nil {
+		if err := e.r.Client.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.ProjectRef.Name), proj); err != nil {
 			return "", err
 		}
 		return proj.ID(), nil
@@ -69,13 +66,13 @@ func (e DeploymentEndpoint) GetProjectID(ctx context.Context, r client.Reader) (
 	return "", fmt.Errorf("project ID not available")
 }
 
-func (e DeploymentEndpoint) GetProjectName(ctx context.Context, r client.Reader, provider atlas.Provider, log *zap.SugaredLogger) (string, error) {
+func (e DeploymentEndpoint) GetProjectName(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil deployment")
 	}
 	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" {
 		proj := &akov2.AtlasProject{}
-		if err := r.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.ProjectRef.Name), proj); err != nil {
+		if err := e.r.Client.Get(ctx, kube.ObjectKey(e.obj.Namespace, e.obj.Spec.ProjectRef.Name), proj); err != nil {
 			return "", err
 		}
 		if proj.Spec.Name != "" {
@@ -88,7 +85,7 @@ func (e DeploymentEndpoint) GetProjectName(ctx context.Context, r client.Reader,
 		if err != nil {
 			return "", err
 		}
-		sdk, err := e.r.AtlasProvider.SdkClientSet(ctx, cfg.Credentials, log)
+		sdk, err := e.r.AtlasProvider.SdkClientSet(ctx, cfg.Credentials, e.r.Log)
 		if err != nil {
 			return "", err
 		}
@@ -125,11 +122,11 @@ func (e DeploymentEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 	return out, nil
 }
 
-func (e DeploymentEndpoint) BuildConnData(ctx context.Context, c client.Client, _ atlas.Provider, _ *zap.SugaredLogger, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
+func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
 	if user == nil || e.obj == nil {
 		return ConnSecretData{}, fmt.Errorf("invalid endpoint or user")
 	}
-	password, err := user.ReadPassword(ctx, c)
+	password, err := user.ReadPassword(ctx, e.r.Client)
 	if err != nil {
 		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
 	}

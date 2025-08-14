@@ -58,16 +58,16 @@ type ConnSecretReconciler struct {
 type Endpoint interface {
 	GetName() string
 	IsReady() bool
-	GetProjectRef(ctx context.Context, r client.Reader) string
-	GetProjectID(ctx context.Context, r client.Reader) (string, error)
-	GetProjectName(ctx context.Context, r client.Reader, provider atlas.Provider, log *zap.SugaredLogger) (string, error)
+	GetProjectRef(ctx context.Context) string
+	GetProjectID(ctx context.Context) (string, error)
+	GetProjectName(ctx context.Context) (string, error)
 
 	ListObj() client.ObjectList
 	ExtractList(client.ObjectList) ([]Endpoint, error)
 	SelectorByProject(projectRef string) fields.Selector
 	SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector
 
-	BuildConnData(ctx context.Context, c client.Client, provider atlas.Provider, log *zap.SugaredLogger, user *akov2.AtlasDatabaseUser) (ConnSecretData, error)
+	BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error)
 }
 
 type ConnSecretPair struct {
@@ -151,6 +151,16 @@ func (r *ConnSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValida
 			)),
 		).
 		Watches(
+			&akov2.AtlasDataFederation{},
+			handler.EnqueueRequestsFromMapFunc(r.newEndpointMapFunc),
+			builder.WithPredicates(predicate.Or(
+				watch.ReadyTransitionPredicate(func(d *akov2.AtlasDataFederation) bool {
+					return api.HasReadyCondition(d.Status.Conditions)
+				}),
+				predicate.GenerationChangedPredicate{},
+			)),
+		).
+		Watches(
 			&akov2.AtlasDatabaseUser{},
 			handler.EnqueueRequestsFromMapFunc(r.newDatabaseUserMapFunc),
 			builder.WithPredicates(predicate.Or(
@@ -183,27 +193,33 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 	return reqs
 }
 
-func (r *ConnSecretReconciler) ResolveProjectId(ctx context.Context, ref akov2.ProjectDualReference, parentNamespace string) (string, error) {
+func (r *ConnSecretReconciler) ResolveProjectId(ctx context.Context, ref akov2.ProjectDualReference, parentNamespace string) (string, string, error) {
 	if ref.ExternalProjectRef != nil && ref.ExternalProjectRef.ID != "" {
-		return ref.ExternalProjectRef.ID, nil
+		return "", ref.ExternalProjectRef.ID, nil
 	}
 	if ref.ProjectRef != nil && ref.ProjectRef.Name != "" {
 		project := &akov2.AtlasProject{}
 		if err := r.Client.Get(ctx, *ref.ProjectRef.GetObject(parentNamespace), project); err != nil {
-			return "", fmt.Errorf("failed to resolve projectRef: %w", err)
+			return "", "", fmt.Errorf("failed to resolve projectRef: %w", err)
 		}
-		return project.ID(), nil
+		return ref.ProjectRef.GetObject(parentNamespace).String(), project.ID(), nil
 	}
-	return "", fmt.Errorf("missing both external and internal project references")
+	return "", "", fmt.Errorf("missing both external and internal project references")
 }
 
-func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, projectID string) ([]Endpoint, error) {
+func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, projectRef string, projectID string) ([]Endpoint, error) {
 	var out []Endpoint
 	for _, kind := range r.EndpointKinds {
-		list := kind.ListObj()
+		ref := kind.GetProjectRef(ctx)
+		if ref == "PROJECTID" {
+			ref = projectID // ProjectID used by deployment
+		} else {
+			ref = projectRef // ProjectRef used by federation
+		}
 
+		list := kind.ListObj()
 		if err := r.Client.List(ctx, list, &client.ListOptions{
-			FieldSelector: kind.SelectorByProject(projectID),
+			FieldSelector: kind.SelectorByProject(ref),
 		}); err != nil {
 			return nil, err
 		}
@@ -224,16 +240,17 @@ func (r *ConnSecretReconciler) newEndpointMapFunc(ctx context.Context, obj clien
 	switch o := obj.(type) {
 	case *akov2.AtlasDeployment:
 		ep = DeploymentEndpoint{obj: o, r: r}
-	// case *akov2.AtlasDataFederation:
-	// 	ep = FederationEndpoint{obj: o, r: r}
+	case *akov2.AtlasDataFederation:
+		ep = FederationEndpoint{obj: o, r: r}
 	default:
 		return nil
 	}
 
-	projectID, err := ep.GetProjectID(ctx, r.Client)
+	projectID, err := ep.GetProjectID(ctx)
 	if err != nil || projectID == "" {
 		return nil
 	}
+
 	users := &akov2.AtlasDatabaseUserList{}
 	if err := r.Client.List(ctx, users, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProject, projectID),
@@ -249,12 +266,13 @@ func (r *ConnSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj c
 	if !ok {
 		return nil
 	}
-	projectID, err := r.ResolveProjectId(ctx, u.Spec.ProjectDualReference, u.GetNamespace())
-	if err != nil || projectID == "" {
+	projectRef, projectID, err := r.ResolveProjectId(ctx, u.Spec.ProjectDualReference, u.GetNamespace())
+	if err != nil {
 		return nil
 	}
+
 	// The user should connect to all endpoint types
-	endpoints, err := r.listEndpointsByProject(ctx, projectID)
+	endpoints, err := r.listEndpointsByProject(ctx, projectRef, projectID)
 	if err != nil {
 		return nil
 	}
@@ -283,8 +301,8 @@ func NewConnectionSecretReconciler(
 
 	// Register kinds to try (order matters)
 	r.EndpointKinds = []Endpoint{
-		DeploymentEndpoint{r: r}, // obj=nil; used for discovery
-		// FederationEndpoint{r: r}, // obj=nil; used for discovery
+		DeploymentEndpoint{r: r},
+		FederationEndpoint{r: r},
 	}
 
 	return r
