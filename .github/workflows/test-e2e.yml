@@ -16,7 +16,7 @@ jobs:
     outputs:
       test_matrix: ${{ steps.compute.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Compute K8s matrix/versions for testing
         id: compute
@@ -34,7 +34,7 @@ jobs:
     env:
       REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       
@@ -111,7 +111,7 @@ jobs:
             "networkpeering-controller",
           ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       
@@ -180,7 +180,7 @@ jobs:
         k8s: ${{ fromJson(needs.prepare-e2e.outputs.test_matrix) }}
         test: ["helm-ns", "helm-update", "helm-wide"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
     

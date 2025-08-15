@@ -31,7 +31,7 @@ jobs:
       e2e_gov_matrix: ${{ steps.set-matrix.outputs.e2e_gov_matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.head_ref }}
 
@@ -122,7 +122,7 @@ jobs:
       REPOSITORY: ${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
@@ -166,7 +166,7 @@ jobs:
       GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
@@ -228,7 +228,7 @@ jobs:
     name: "integration: ${{ matrix.test }}"
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -270,7 +270,7 @@ jobs:
 
       - name: Checkout if cache repo files missed
         if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
@@ -381,7 +381,7 @@ jobs:
 
       - name: Checkout if cache repo files missed
         if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
