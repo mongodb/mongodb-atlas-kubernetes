@@ -61,14 +61,13 @@ func (e FederationEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	}
 	if e.obj.Spec.Project.Name != "" {
 		proj := &akov2.AtlasProject{}
-		key := e.obj.Spec.Project.GetObject(e.obj.GetNamespace())
-		if err := e.r.Client.Get(ctx, *key, proj); err != nil {
+		if err := e.r.Client.Get(ctx, e.obj.AtlasProjectObjectKey(), proj); err != nil {
 			return "", err
 		}
 		return proj.ID(), nil
 	}
 
-	return "", fmt.Errorf("project ID not available")
+	return "", ErrUnresolvedProjectID
 }
 
 // GetProjectName returns the parent project's name (only by getting K8s AtlasProject)
@@ -78,8 +77,7 @@ func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) 
 	}
 	if e.obj.Spec.Project.Name != "" {
 		proj := &akov2.AtlasProject{}
-		key := e.obj.Spec.Project.GetObject(e.obj.GetNamespace())
-		if err := e.r.Client.Get(ctx, *key, proj); err != nil {
+		if err := e.r.Client.Get(ctx, e.obj.AtlasProjectObjectKey(), proj); err != nil {
 			return "", err
 		}
 		if proj.Spec.Name != "" {
@@ -87,7 +85,7 @@ func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) 
 		}
 	}
 
-	return "", fmt.Errorf("project name not available")
+	return "", ErrUnresolvedProjectName
 }
 
 // Defines the list type
@@ -120,7 +118,7 @@ func (e FederationEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 // AtlasDataFederation uses SDK calls for getting the hostnames
 func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
 	if user == nil || e.obj == nil {
-		return ConnSecretData{}, fmt.Errorf("invalid endpoint or user")
+		return ConnSecretData{}, ErrMissingPairing
 	}
 	password, err := user.ReadPassword(ctx, e.r.Client)
 	if err != nil {

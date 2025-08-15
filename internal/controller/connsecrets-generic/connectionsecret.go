@@ -54,10 +54,12 @@ const (
 )
 
 var (
-	ErrInternalFormatErr = errors.New("identifiers could not be loaded from internal format")
-	ErrK8SFormatErr      = errors.New("identifiers could not be loaded from k8s format")
-	ErrMissingPairing    = errors.New("missing user/endpoint")
-	ErrAmbiguousPairing  = errors.New("multiple users/endpoints with the same name found")
+	ErrInternalFormatErr     = errors.New("identifiers could not be loaded from internal format")
+	ErrK8SFormatErr          = errors.New("identifiers could not be loaded from k8s format")
+	ErrMissingPairing        = errors.New("missing user/endpoint")
+	ErrAmbiguousPairing      = errors.New("multiple users/endpoints with the same name found")
+	ErrUnresolvedProjectID   = errors.New("could not resolve the project id")
+	ErrUnresolvedProjectName = errors.New("could not resolve the project name")
 )
 
 // ConnnSecretIdentifiers stores all the necessary information that will
@@ -239,7 +241,7 @@ func (r *ConnSecretReconciler) resolveProjectName(
 
 	// project name resolution requires at least on parent to be available
 	if pair == nil {
-		return "", fmt.Errorf("project name cannot be resolved")
+		return "", ErrUnresolvedProjectName
 	}
 
 	var err error
@@ -262,7 +264,7 @@ func (r *ConnSecretReconciler) resolveProjectName(
 	}
 
 	if err == nil {
-		err = fmt.Errorf("project name cannot be resolved")
+		err = ErrUnresolvedProjectName
 	}
 	return "", err
 }
@@ -275,10 +277,6 @@ func (r *ConnSecretReconciler) handleDelete(
 	pair *ConnSecretPair,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-
-	if pair == nil {
-		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
-	}
 
 	// project name is required for metadata.name
 	projectName, err := r.resolveProjectName(ctx, ids, pair)
@@ -377,16 +375,16 @@ func (r *ConnSecretReconciler) ensureSecret(
 		if apiErrors.IsAlreadyExists(err) {
 			current := &corev1.Secret{}
 			if err := r.Client.Get(ctx, client.ObjectKeyFromObject(secret), current); err != nil {
-				log.Errorw("failed to fetch existing secret", "reason", workflow.ConnSecretFailedToGetSecret, "error", err)
+				log.Errorw("failed to fetch existing secret", "error", err)
 				return err
 			}
 			secret.ResourceVersion = current.ResourceVersion
 			if err := r.Client.Update(ctx, secret); err != nil {
-				log.Errorw("failed to update secret", "reason", workflow.ConnSecretFailedToUpdateSecret, "error", err)
+				log.Errorw("failed to update secret", "error", err)
 				return err
 			}
 		} else {
-			log.Errorw("failed to create secret", "reason", workflow.ConnSecretFailedToCreateSecret, "error", err)
+			log.Errorw("failed to create secret", "error", err)
 			return err
 		}
 	}

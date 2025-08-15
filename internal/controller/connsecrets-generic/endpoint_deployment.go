@@ -60,13 +60,12 @@ func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	}
 	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" && e.r != nil && e.r.Client != nil {
 		proj := &akov2.AtlasProject{}
-		key := e.obj.Spec.ProjectRef.GetObject(e.obj.GetNamespace())
-		if err := e.r.Client.Get(ctx, *key, proj); err != nil {
+		if err := e.r.Client.Get(ctx, e.obj.AtlasProjectObjectKey(), proj); err != nil {
 			return "", err
 		}
 		return proj.ID(), nil
 	}
-	return "", fmt.Errorf("project ID not available")
+	return "", ErrUnresolvedProjectID
 }
 
 // GetProjectName returns the parent project's name (either by getting K8s AtlasProject or SDK calls)
@@ -76,8 +75,7 @@ func (e DeploymentEndpoint) GetProjectName(ctx context.Context) (string, error) 
 	}
 	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" && e.r != nil && e.r.Client != nil {
 		proj := &akov2.AtlasProject{}
-		key := e.obj.Spec.ProjectRef.GetObject(e.obj.GetNamespace())
-		if err := e.r.Client.Get(ctx, *key, proj); err != nil {
+		if err := e.r.Client.Get(ctx, e.obj.AtlasProjectObjectKey(), proj); err != nil {
 			return "", err
 		}
 		if proj.Spec.Name != "" {
@@ -100,7 +98,7 @@ func (e DeploymentEndpoint) GetProjectName(ctx context.Context) (string, error) 
 		}
 		return kube.NormalizeIdentifier(ap.Name), nil
 	}
-	return "", fmt.Errorf("project name not available")
+	return "", ErrUnresolvedProjectName
 }
 
 // Defines the list type
@@ -133,7 +131,7 @@ func (e DeploymentEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 // AtlasDeployment stores connection strings in the status field
 func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
 	if user == nil || e.obj == nil {
-		return ConnSecretData{}, fmt.Errorf("invalid endpoint or user")
+		return ConnSecretData{}, ErrMissingPairing
 	}
 	password, err := user.ReadPassword(ctx, e.r.Client)
 	if err != nil {
@@ -142,6 +140,10 @@ func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 	data := ConnSecretData{
 		DBUserName: user.Spec.Username,
 		Password:   password,
+	}
+
+	if e.obj.Status.ConnectionStrings == nil {
+		return data, nil
 	}
 
 	conn := e.obj.Status.ConnectionStrings

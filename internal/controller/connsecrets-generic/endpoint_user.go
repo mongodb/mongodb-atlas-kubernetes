@@ -30,8 +30,7 @@ func (r *ConnSecretReconciler) GetUserProjectName(ctx context.Context, user *ako
 
 	if user.Spec.ProjectRef != nil && user.Spec.ProjectRef.Name != "" {
 		proj := &akov2.AtlasProject{}
-		key := user.Spec.ProjectRef.GetObject(user.GetNamespace())
-		if err := r.Client.Get(ctx, *key, proj); err != nil {
+		if err := r.Client.Get(ctx, user.AtlasProjectObjectKey(), proj); err != nil {
 			return "", err
 		}
 		if proj.Spec.Name != "" {
@@ -39,21 +38,21 @@ func (r *ConnSecretReconciler) GetUserProjectName(ctx context.Context, user *ako
 		}
 	}
 
-	if r != nil {
-		cfg, err := r.ResolveConnectionConfig(ctx, user)
-		if err != nil {
-			return "", err
-		}
-		sdk, err := r.AtlasProvider.SdkClientSet(ctx, cfg.Credentials, r.Log)
-		if err != nil {
-			return "", err
-		}
-		ap, err := r.ResolveProject(ctx, sdk.SdkClient20250312002, user)
-		if err != nil {
-			return "", err
-		}
-		return kube.NormalizeIdentifier(ap.Name), nil
+	cfg, err := r.ResolveConnectionConfig(ctx, user)
+	if err != nil {
+		return "", err
+	}
+	sdk, err := r.AtlasProvider.SdkClientSet(ctx, cfg.Credentials, r.Log)
+	if err != nil {
+		return "", err
+	}
+	ap, err := r.ResolveProject(ctx, sdk.SdkClient20250312002, user)
+	if err != nil {
+		return "", err
+	}
+	if ap.Name == "" {
+		return "", fmt.Errorf("project name not available")
 	}
 
-	return "", fmt.Errorf("project name not available")
+	return kube.NormalizeIdentifier(ap.Name), nil
 }

@@ -130,7 +130,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Paired resource must be ready
 	if !(pair.User.IsDatabaseUserReady() && pair.Endpoint.IsReady()) {
 		log.Debugw("waiting on paired resource to be ready")
-		return workflow.InProgress(workflow.ConnSecretNotReady, "not ready").ReconcileResult()
+		return workflow.InProgress(workflow.ConnSecretNotReady, "resources not ready").ReconcileResult()
 	}
 
 	return r.handleUpsert(ctx, req, ids, pair)
@@ -182,11 +182,10 @@ func (r *ConnSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValida
 		Complete(r)
 }
 
-// TODO: change this function according to Helders feedback
 func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string, epType akov2.ScopeType) bool {
-	scopes := u.GetScopes(epType)
-	total_len := len(u.GetScopes(akov2.DataLakeScopeType)) + len(u.GetScopes(akov2.DeploymentScopeType))
-	if total_len == 0 || stringutil.Contains(scopes, epName) {
+	scopes := u.Spec.Scopes
+	filtered_scopes := u.GetScopes(epType)
+	if len(scopes) == 0 || stringutil.Contains(filtered_scopes, epName) {
 		return true
 	}
 
