@@ -36,6 +36,7 @@ type FederationEndpoint struct {
 	r   *ConnSecretReconciler
 }
 
+// GetName resolves the endpoints name from the spec
 func (e FederationEndpoint) GetName() string {
 	if e.obj == nil {
 		return ""
@@ -43,13 +44,17 @@ func (e FederationEndpoint) GetName() string {
 	return e.obj.Spec.Name
 }
 
+// IsReady returns true if the endpoint is ready
 func (e FederationEndpoint) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
+// GetScopeType returns the scope type of the endpoint to match with the ones from AtlasDatabaseUser
 func (e FederationEndpoint) GetScopeType() akov2.ScopeType {
 	return akov2.DataLakeScopeType
 }
+
+// GetProjectID resolves parent project's id (only ProjectRef)
 func (e FederationEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil federation")
@@ -66,6 +71,7 @@ func (e FederationEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	return "", fmt.Errorf("project ID not available")
 }
 
+// GetProjectName returns the parent project's name (only by getting K8s AtlasProject)
 func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil federation")
@@ -84,16 +90,20 @@ func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) 
 	return "", fmt.Errorf("project name not available")
 }
 
+// Defines the list type
 func (FederationEndpoint) ListObj() client.ObjectList { return &akov2.AtlasDataFederationList{} }
 
+// Defines the selector to use for indexer when trying to retrieve all endpoints by project
 func (FederationEndpoint) SelectorByProject(projectRef string) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDataFederationByProject, projectRef)
 }
 
+// Defines the selector to use for indexer when trying to retrieve all endpoints by project and spec name
 func (FederationEndpoint) SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDataFederationBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
 }
 
+// ExtractList creates a list of Endpoint types to preserve the abstraction
 func (e FederationEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error) {
 	l, ok := ol.(*akov2.AtlasDataFederationList)
 	if !ok {
@@ -106,6 +116,8 @@ func (e FederationEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 	return out, nil
 }
 
+// BuildConnData defines the specific function/way for building the ConnSecretData given this type of endpoint
+// AtlasDataFederation uses SDK calls for getting the hostnames
 func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
 	if user == nil || e.obj == nil {
 		return ConnSecretData{}, fmt.Errorf("invalid endpoint or user")
@@ -139,7 +151,6 @@ func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 		return ConnSecretData{}, fmt.Errorf("no DF hostnames")
 	}
 
-	// mongodb://host1,host2,hoss3/user@password.com
 	hostlist := strings.Join(df.Hostnames, ",")
 	u := &url.URL{
 		Scheme:   "mongodb",

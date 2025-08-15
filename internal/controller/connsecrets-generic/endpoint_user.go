@@ -22,10 +22,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
 
+// GetUserProjectName retrives the project name from the AtlasDatabaseUser (either by getting K8s AtlasProject or SDK calls)
 func (r *ConnSecretReconciler) GetUserProjectName(ctx context.Context, user *akov2.AtlasDatabaseUser) (string, error) {
 	if user == nil {
-		return "", fmt.Errorf("nil deployment")
+		return "", fmt.Errorf("nil user")
 	}
+
 	if user.Spec.ProjectRef != nil && user.Spec.ProjectRef.Name != "" {
 		proj := &akov2.AtlasProject{}
 		key := user.Spec.ProjectRef.GetObject(user.GetNamespace())

@@ -78,9 +78,6 @@ type ConnSecretData struct {
 	SrvConnURL      string
 	PrivateConnURLs []PrivateLinkConnURLs
 }
-
-// PrivateLinkConnURLs holds all Private Link connection strings for a single endpoint set.
-// Multiple entries allow for multiple private link configurations per deployment.
 type PrivateLinkConnURLs struct {
 	PvtConnURL      string
 	PvtSrvConnURL   string
@@ -286,7 +283,7 @@ func (r *ConnSecretReconciler) handleDelete(
 	// project name is required for metadata.name
 	projectName, err := r.resolveProjectName(ctx, ids, pair)
 	if err != nil {
-		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
+		log.Errorw("failed to resolve project name", "error", err)
 		return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
 	}
 	name := CreateK8sFormat(projectName, ids.ClusterName, ids.DatabaseUsername)
@@ -297,7 +294,7 @@ func (r *ConnSecretReconciler) handleDelete(
 		},
 	}
 
-	// delete from K8s
+	// delete secret in k8s
 	if err := r.Client.Delete(ctx, secret); err != nil {
 		if apiErrors.IsNotFound(err) {
 			log.Debugw("no secret to delete; already gone")
@@ -321,26 +318,27 @@ func (r *ConnSecretReconciler) handleUpsert(
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
 
+	// project name is required for metadata.name
 	projectName, err := r.resolveProjectName(ctx, ids, pair)
 	if err != nil {
-		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
+		log.Errorw("failed to resolve project name", "error", err)
 		return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
 	}
 	ids.ProjectName = projectName
 	log.Debugw("project name resolved for upsert", "projectName", projectName)
 
+	// create the connection data that will populate secret.stringData
 	data, err := pair.Endpoint.BuildConnData(ctx, pair.User)
 	if err != nil {
-		log.Errorw("failed to build connection data", "reason", workflow.ConnSecretFailedToBuildData, "error", err)
+		log.Errorw("failed to build connection data", "error", err)
 		return workflow.Terminate(workflow.ConnSecretFailedToBuildData, err).ReconcileResult()
 	}
 	log.Debugw("connection data built")
-
 	if err := r.ensureSecret(ctx, ids, pair, data); err != nil {
 		return workflow.Terminate(workflow.ConnSecretFailedToCreateSecret, err).ReconcileResult()
 	}
 
-	log.Infow("secret upserted", "reason", workflow.ConnSecretUpsert)
+	log.Infow("connection secret upserted")
 	return workflow.OK().ReconcileResult()
 }
 
@@ -362,16 +360,19 @@ func (r *ConnSecretReconciler) ensureSecret(
 		},
 	}
 
+	// fills the secret.stringData with the information stored in ConnSecretData
 	if err := fillConnSecretData(secret, ids, data); err != nil {
 		log.Errorw("failed to fill secret data", "reason", workflow.ConnSecretFailedToFillData, "error", err)
 		return err
 	}
 
+	// adds the owner to be the AtlasDatabaseUser for garbage collecting
 	if err := controllerutil.SetControllerReference(pair.User, secret, r.Scheme); err != nil {
 		log.Errorw("failed to set controller owner", "reason", workflow.ConnSecretFailedToSetOwnerReferences, "error", err)
 		return err
 	}
 
+	// upsert secret in k8s
 	if err := r.Client.Create(ctx, secret); err != nil {
 		if apiErrors.IsAlreadyExists(err) {
 			current := &corev1.Secret{}
@@ -392,25 +393,26 @@ func (r *ConnSecretReconciler) ensureSecret(
 	return nil
 }
 
+// fillConnSecretData converts the ConnSecretData into secret.stringData
 func fillConnSecretData(secret *corev1.Secret, ids *ConnSecretIdentifiers, data ConnSecretData) error {
 	var err error
 	username := data.DBUserName
 	password := data.Password
 
-	if data.ConnURL, err = CreateURL(data.ConnURL, username, password); err != nil {
+	if data.ConnURL, err = createURL(data.ConnURL, username, password); err != nil {
 		return err
 	}
-	if data.SrvConnURL, err = CreateURL(data.SrvConnURL, username, password); err != nil {
+	if data.SrvConnURL, err = createURL(data.SrvConnURL, username, password); err != nil {
 		return err
 	}
 	for i, pe := range data.PrivateConnURLs {
-		if data.PrivateConnURLs[i].PvtConnURL, err = CreateURL(pe.PvtConnURL, username, password); err != nil {
+		if data.PrivateConnURLs[i].PvtConnURL, err = createURL(pe.PvtConnURL, username, password); err != nil {
 			return err
 		}
-		if data.PrivateConnURLs[i].PvtSrvConnURL, err = CreateURL(pe.PvtSrvConnURL, username, password); err != nil {
+		if data.PrivateConnURLs[i].PvtSrvConnURL, err = createURL(pe.PvtSrvConnURL, username, password); err != nil {
 			return err
 		}
-		if data.PrivateConnURLs[i].PvtShardConnURL, err = CreateURL(pe.PvtShardConnURL, username, password); err != nil {
+		if data.PrivateConnURLs[i].PvtShardConnURL, err = createURL(pe.PvtShardConnURL, username, password); err != nil {
 			return err
 		}
 	}
@@ -443,11 +445,12 @@ func fillConnSecretData(secret *corev1.Secret, ids *ConnSecretIdentifiers, data 
 	return nil
 }
 
-func CreateURL(connURL, username, password string) (string, error) {
-	if connURL == "" {
+// createURL creates the connection urls given a hostname, user, and password
+func createURL(hostname, username, password string) (string, error) {
+	if hostname == "" {
 		return "", nil
 	}
-	u, err := url.Parse(connURL)
+	u, err := url.Parse(hostname)
 	if err != nil {
 		return "", err
 	}
