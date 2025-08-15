@@ -15,7 +15,7 @@
 package model
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 )
 
 type AtlasRoles = string
