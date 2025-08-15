@@ -53,9 +53,10 @@ type ConnSecretReconciler struct {
 	Scheme           *runtime.Scheme
 	EventRecorder    record.EventRecorder
 	GlobalPredicates []predicate.Predicate
-	EndpointKinds    []Endpoint
+	EndpointKinds    []Endpoint // Endpoints are generic
 }
 
+// Each endpoint would have to implement this interface (e.g. AtlasDeployment, AtlasDataFederation)
 type Endpoint interface {
 	GetName() string
 	IsReady() bool
@@ -71,6 +72,7 @@ type Endpoint interface {
 	BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error)
 }
 
+// Each connection secret needs a paired resource: User and Endpoint
 type ConnSecretPair struct {
 	ProjectID string
 	User      *akov2.AtlasDatabaseUser
@@ -78,52 +80,59 @@ type ConnSecretPair struct {
 }
 
 func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-	r.Log.Infof("Start reconciliation for %s\n", req.NamespacedName.String())
+	log := r.Log.With("namespace", req.Namespace, "name", req.Name)
+	log.Info("reconciliation started")
 
-	ids, err := r.LoadIdentifiers(ctx, req.NamespacedName)
+	// Parse the request and load up the identifiers
+	ids, err := r.loadIdentifiers(ctx, req.NamespacedName)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
-			log.Debugw("connectionsecret not found; assuming deleted")
+			log.Debugw("Connection secret not found; assuming deleted")
 			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 		}
-		log.Errorw("failed to parse connectionsecret request", "reason", workflow.ConnSecretInvalidName, "error", err)
-		return workflow.Terminate("", err).ReconcileResult()
+		log.Errorw("failed to parse connection secret request", "error", err)
+		return workflow.Terminate(workflow.ConnSecretInvalidName, err).ReconcileResult()
 	}
 
-	pair, err := r.LoadPair(ctx, ids)
+	// Load the paired resource
+	pair, err := r.loadPair(ctx, ids)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrMissingPairing):
+			log.Debugw("paired resource is missing; scheduling deletion of connection secrets")
 			return r.handleDelete(ctx, req, ids, pair)
 		case errors.Is(err, ErrAmbiguousPairing):
-			return workflow.Terminate("", err).ReconcileResult()
+			log.Errorw("failed to load paired resources; ambigous parent resources", "error", err)
+			return workflow.Terminate(workflow.ConnSecretAmbiguousResources, err).ReconcileResult()
 		default:
+			log.Errorw("failed to load paired resource", "error", err)
 			return workflow.Terminate("", err).ReconcileResult()
 		}
 	}
 
+	// Check if user is expired
 	expired, err := timeutil.IsExpired(pair.User.Spec.DeleteAfterDate)
 	if err != nil {
+		log.Errorw("failed to check expiration date on user", "error", err)
 		return workflow.Terminate(workflow.ConnSecretCheckExpirationFailed, err).ReconcileResult()
 	}
 	if expired {
-		if pair.Endpoint == nil {
-			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
-		}
+		log.Debugw("user is expired; scheduling deletion of connection secrets")
 		return r.handleDelete(ctx, req, ids, pair)
 	}
 
+	// Check that scopes are still valid
 	if !allowsByScopes(pair.User, pair.Endpoint.GetName(), pair.Endpoint.GetScopeType()) {
-		r.Log.Infow("invalid scope; scheduling deletion", "reason", workflow.ConnSecretInvalidScopes)
+		log.Infow("invalid scope; scheduling deletion of connection secrets")
 		return r.handleDelete(ctx, req, ids, pair)
 	}
 
+	// Paired resource must be ready
 	if !(pair.User.IsDatabaseUserReady() && pair.Endpoint.IsReady()) {
+		log.Debugw("waiting on paired resource to be ready")
 		return workflow.InProgress(workflow.ConnSecretNotReady, "not ready").ReconcileResult()
 	}
 
-	r.Log.Infow("creating/updating connection secret", "reason", workflow.ConnSecretUpsert)
 	return r.handleUpsert(ctx, req, ids, pair)
 }
 
@@ -173,6 +182,17 @@ func (r *ConnSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValida
 		Complete(r)
 }
 
+// TODO: change this function according to Helders feedback
+func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string, epType akov2.ScopeType) bool {
+	scopes := u.GetScopes(epType)
+	total_len := len(u.GetScopes(akov2.DataLakeScopeType)) + len(u.GetScopes(akov2.DeploymentScopeType))
+	if total_len == 0 || stringutil.Contains(scopes, epName) {
+		return true
+	}
+
+	return false
+}
+
 func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string, endpoints []Endpoint, users []akov2.AtlasDatabaseUser) []reconcile.Request {
 	var reqs []reconcile.Request
 	for _, ep := range endpoints {
@@ -190,16 +210,7 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 	return reqs
 }
 
-func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string, epType akov2.ScopeType) bool {
-	scopes := u.GetScopes(epType)
-	total_len := len(u.GetScopes(akov2.DataLakeScopeType)) + len(u.GetScopes(akov2.DeploymentScopeType))
-	if total_len == 0 || stringutil.Contains(scopes, epName) {
-		return true
-	}
-
-	return false
-}
-
+// TODO: create indexers for DataFederation by projectID
 func (r *ConnSecretReconciler) parseProject(ctx context.Context, ref akov2.ProjectDualReference, userns string) (string, string, error) {
 	if ref.ExternalProjectRef != nil && ref.ExternalProjectRef.ID != "" {
 		return "", ref.ExternalProjectRef.ID, nil
@@ -215,6 +226,7 @@ func (r *ConnSecretReconciler) parseProject(ctx context.Context, ref akov2.Proje
 	return "", "", fmt.Errorf("missing both external and internal project references")
 }
 
+// listEndpointsByProject retrives all of the Endpoints that live under an AtlasProject
 func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, projectRef string, projectID string) ([]Endpoint, error) {
 	var out []Endpoint
 	for _, kind := range r.EndpointKinds {
@@ -245,8 +257,11 @@ func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, proje
 	return out, nil
 }
 
+// newEndpointMapFunc maps an Endpoint to requests by fetching all AtlasDatabaseUsers and creating a request for each
 func (r *ConnSecretReconciler) newEndpointMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
 	var ep Endpoint
+
+	// Case on the type of endpoint
 	switch o := obj.(type) {
 	case *akov2.AtlasDeployment:
 		ep = DeploymentEndpoint{obj: o, r: r}
@@ -271,6 +286,7 @@ func (r *ConnSecretReconciler) newEndpointMapFunc(ctx context.Context, obj clien
 	return r.generateConnectionSecretRequests(projectID, []Endpoint{ep}, users.Items)
 }
 
+// newDatabaseUserMapFunc maps an AtlasDatabaseUser to requests by fetching all endpoints and creating a request for each
 func (r *ConnSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
 	u, ok := obj.(*akov2.AtlasDatabaseUser)
 	if !ok {
@@ -281,7 +297,6 @@ func (r *ConnSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj c
 		return nil
 	}
 
-	// The user should connect to all endpoint types
 	endpoints, err := r.listEndpointsByProject(ctx, projectRef, projectID)
 	if err != nil {
 		return nil

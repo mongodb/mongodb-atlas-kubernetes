@@ -54,10 +54,14 @@ const (
 )
 
 var (
-	ErrMissingPairing   = errors.New("missing user/endpoint")
-	ErrAmbiguousPairing = errors.New("multiple users/endpoints with the same name found")
+	ErrInternalFormatErr = errors.New("identifiers could not be loaded from internal format")
+	ErrK8SFormatErr      = errors.New("identifiers could not be loaded from k8s format")
+	ErrMissingPairing    = errors.New("missing user/endpoint")
+	ErrAmbiguousPairing  = errors.New("multiple users/endpoints with the same name found")
 )
 
+// ConnnSecretIdentifiers stores all the necessary information that will
+// be needed to identiy and get a K8s connection secret
 type ConnSecretIdentifiers struct {
 	ProjectID        string
 	ProjectName      string
@@ -65,6 +69,8 @@ type ConnSecretIdentifiers struct {
 	DatabaseUsername string
 }
 
+// ConnectionData contains all connection information required to populate
+// the Kubernetes Secret, including standard and SRV URLs and optional Private Link URLs.
 type ConnSecretData struct {
 	DBUserName      string
 	Password        string
@@ -73,6 +79,8 @@ type ConnSecretData struct {
 	PrivateConnURLs []PrivateLinkConnURLs
 }
 
+// PrivateLinkConnURLs holds all Private Link connection strings for a single endpoint set.
+// Multiple entries allow for multiple private link configurations per deployment.
 type PrivateLinkConnURLs struct {
 	PvtConnURL      string
 	PvtSrvConnURL   string
@@ -97,24 +105,37 @@ func CreateInternalFormat(projectID string, clusterName string, databaseUsername
 	}, InternalSeparator)
 }
 
-func (r *ConnSecretReconciler) LoadIdentifiers(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
-	// === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>
+// loadIdentifiers determines whether the request name is internal or K8s format
+// and extracts ProjectID, ClusterName, and DatabaseUsername.
+func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	if strings.Contains(req.Name, InternalSeparator) {
-		parts := strings.Split(req.Name, InternalSeparator)
-		if len(parts) != 3 {
-			return nil, fmt.Errorf("internal format expected 3 parts separated by %q", InternalSeparator)
-		}
-		if parts[0] == "" || parts[1] == "" || parts[2] == "" {
-			return nil, fmt.Errorf("internal format got empty value in one or more parts")
-		}
-		return &ConnSecretIdentifiers{
-			ProjectID:        parts[0],
-			ClusterName:      parts[1],
-			DatabaseUsername: parts[2],
-		}, nil
+		return r.indetifiersFromInternalName(req)
 	}
 
-	// === K8s format: <ProjectName>-<ClusterName>-<DatabaseUserName>
+	return r.indentifiersFromK8s(ctx, req)
+}
+
+// indetifiersFromInternalName loads the identifiers for the internal format
+// === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>
+func (r *ConnSecretReconciler) indetifiersFromInternalName(req types.NamespacedName) (*ConnSecretIdentifiers, error) {
+	parts := strings.Split(req.Name, InternalSeparator)
+	if len(parts) != 3 {
+		return nil, ErrInternalFormatErr
+	}
+	if parts[0] == "" || parts[1] == "" || parts[2] == "" {
+		return nil, ErrInternalFormatErr
+	}
+	return &ConnSecretIdentifiers{
+		ProjectID:        parts[0],
+		ClusterName:      parts[1],
+		DatabaseUsername: parts[2],
+	}, nil
+}
+
+// indentifiersFromSecret loads the identifiers for the k8s format
+// === K8s format: <ProjectName>-<ClusterName>-<DatabaseUserName>
+// K8s secret must exists in the cluster
+func (r *ConnSecretReconciler) indentifiersFromK8s(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	var secret corev1.Secret
 	if err := r.Client.Get(ctx, req, &secret); err != nil {
 		return nil, err
@@ -123,21 +144,19 @@ func (r *ConnSecretReconciler) LoadIdentifiers(ctx context.Context, req types.Na
 	projectID, hasProject := labels[ProjectLabelKey]
 	clusterName, hasCluster := labels[ClusterLabelKey]
 	if !hasProject || !hasCluster {
-		return nil, fmt.Errorf("k8s format got a missing required label(s)")
+		return nil, ErrK8SFormatErr
 	}
 	if projectID == "" || clusterName == "" {
-		return nil, fmt.Errorf("k8s format got label present but empty")
+		return nil, ErrK8SFormatErr
 	}
-
 	sep := fmt.Sprintf("-%s-", clusterName)
-	parts := strings.SplitN(req.Name, sep, 2)
+	parts := strings.Split(req.Name, sep)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("k8s format expected to separate across -%s-", clusterName)
+		return nil, ErrK8SFormatErr
 	}
 	if parts[0] == "" || parts[1] == "" {
-		return nil, fmt.Errorf("k8s format got empty value in one or more parts")
+		return nil, ErrK8SFormatErr
 	}
-
 	return &ConnSecretIdentifiers{
 		ProjectID:        projectID,
 		ProjectName:      parts[0],
@@ -146,9 +165,12 @@ func (r *ConnSecretReconciler) LoadIdentifiers(ctx context.Context, req types.Na
 	}, nil
 }
 
-func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIdentifiers) (*ConnSecretPair, error) {
+// loadPair creates the paired resource that contains the parent AtlasDatabaseUser and the Endpoint.
+// Endpoint could be AtlasDeployment or AtlasDataFederation
+func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIdentifiers) (*ConnSecretPair, error) {
 	compositeUserKey := ids.ProjectID + "-" + ids.DatabaseUsername
 
+	// Retrieve the AtlasDatabaseUser using the defined indexers
 	users := &akov2.AtlasDatabaseUserList{}
 	if err := r.Client.List(ctx, users, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserBySpecUsernameAndProjectID, compositeUserKey),
@@ -157,6 +179,7 @@ func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIden
 	}
 	usersCount := len(users.Items)
 
+	// Retrieve the Endpoints using the defined indexers
 	totalEndpoints := 0
 	var selected Endpoint
 	for _, kind := range r.EndpointKinds {
@@ -206,7 +229,9 @@ func (r *ConnSecretReconciler) LoadPair(ctx context.Context, ids *ConnSecretIden
 	}, ErrMissingPairing
 }
 
-func (r *ConnSecretReconciler) resolveProject(
+// resolveProject attempts to find the project name, required for creating connection secrets
+// as it is used in metadata.name
+func (r *ConnSecretReconciler) resolveProjectName(
 	ctx context.Context,
 	ids *ConnSecretIdentifiers,
 	pair *ConnSecretPair,
@@ -215,12 +240,14 @@ func (r *ConnSecretReconciler) resolveProject(
 		return ids.ProjectName, nil
 	}
 
+	// project name resolution requires at least on parent to be available
 	if pair == nil {
 		return "", fmt.Errorf("project name cannot be resolved")
 	}
 
 	var err error
 	var projectName string
+	// Try resolving from the Endpoint if present
 	if pair.Endpoint != nil {
 		projectName, err = pair.Endpoint.GetProjectName(ctx)
 		if projectName != "" {
@@ -228,6 +255,7 @@ func (r *ConnSecretReconciler) resolveProject(
 		}
 	}
 
+	// Fallback, try resolving from the User if present
 	if pair.User != nil {
 		if name, uerr := r.GetUserProjectName(ctx, pair.User); name != "" {
 			return name, nil
@@ -242,6 +270,7 @@ func (r *ConnSecretReconciler) resolveProject(
 	return "", err
 }
 
+// handleDelete ensures that the connection secret from the paired resource and identifiers will get deleted
 func (r *ConnSecretReconciler) handleDelete(
 	ctx context.Context,
 	req ctrl.Request,
@@ -249,17 +278,17 @@ func (r *ConnSecretReconciler) handleDelete(
 	pair *ConnSecretPair,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
+
 	if pair == nil {
 		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 	}
 
-	projectName, err := r.resolveProject(ctx, ids, pair)
+	// project name is required for metadata.name
+	projectName, err := r.resolveProjectName(ctx, ids, pair)
 	if err != nil {
 		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretUnresolvedProjectName, "error", err)
 		return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
 	}
-	log.Debugw("project name resolved for delete")
-
 	name := CreateK8sFormat(projectName, ids.ClusterName, ids.DatabaseUsername)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -268,6 +297,7 @@ func (r *ConnSecretReconciler) handleDelete(
 		},
 	}
 
+	// delete from K8s
 	if err := r.Client.Delete(ctx, secret); err != nil {
 		if apiErrors.IsNotFound(err) {
 			log.Debugw("no secret to delete; already gone")
@@ -277,11 +307,12 @@ func (r *ConnSecretReconciler) handleDelete(
 		return workflow.Terminate(workflow.ConnSecretFailedDeletion, err).ReconcileResult()
 	}
 
-	log.Infow("secret deleted", "reason", workflow.ConnSecretDeleted)
+	log.Debugw("connection secret deleted")
 	r.EventRecorder.Event(secret, corev1.EventTypeNormal, "Deleted", "ConnectionSecret deleted")
 	return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 }
 
+// handleUpsert ensures that the connection secret from the paired resource and identifiers will be upserted
 func (r *ConnSecretReconciler) handleUpsert(
 	ctx context.Context,
 	req ctrl.Request,
@@ -290,7 +321,7 @@ func (r *ConnSecretReconciler) handleUpsert(
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
 
-	projectName, err := r.resolveProject(ctx, ids, pair)
+	projectName, err := r.resolveProjectName(ctx, ids, pair)
 	if err != nil {
 		log.Errorw("failed to resolve project name", "reason", workflow.ConnSecretFailedToResolveProjectName, "error", err)
 		return workflow.Terminate(workflow.ConnSecretFailedToResolveProjectName, err).ReconcileResult()
