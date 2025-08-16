@@ -17,8 +17,6 @@ package connectionsecret
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -36,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
@@ -48,101 +47,120 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
-type ConnectionSecretReconciler struct {
+type ConnSecretReconciler struct {
 	reconciler.AtlasReconciler
 	Scheme           *runtime.Scheme
-	GlobalPredicates []predicate.Predicate
 	EventRecorder    record.EventRecorder
+	GlobalPredicates []predicate.Predicate
+	EndpointKinds    []Endpoint // Endpoints are generic
 }
 
-func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// Parses the request name and fills up the identifiers: ProjectID, ClusterName, DatabaseUsername
-	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-	log.Debugw("reconcile started")
+// Each endpoint would have to implement this interface (e.g. AtlasDeployment, AtlasDataFederation)
+type Endpoint interface {
+	GetName() string
+	IsReady() bool
+	GetScopeType() akov2.ScopeType
+	GetProjectID(ctx context.Context) (string, error)
+	GetProjectName(ctx context.Context) (string, error)
 
-	ids, err := r.loadRequestIdentifiers(ctx, req.NamespacedName)
+	ListObj() client.ObjectList
+	ExtractList(client.ObjectList) ([]Endpoint, error)
+	SelectorByProject(projectID string) fields.Selector
+	SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector
+
+	BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error)
+}
+
+// Each connection secret needs a paired resource: User and Endpoint
+type ConnSecretPair struct {
+	ProjectID string
+	User      *akov2.AtlasDatabaseUser
+	Endpoint  Endpoint
+}
+
+func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := r.Log.With("namespace", req.Namespace, "name", req.Name)
+	log.Info("reconciliation started")
+
+	// Parse the request and load up the identifiers
+	ids, err := r.loadIdentifiers(ctx, req.NamespacedName)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
-			log.Debugw("connectionsecret not found; assuming deleted")
+			log.Debugw("Connection secret not found; assuming deleted")
 			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 		}
-		log.Errorw("failed to parse connectionsecret request", "reason", workflow.ConnSecretInvalidName, "error", err)
+		log.Errorw("failed to parse connection secret request", "error", err)
 		return workflow.Terminate(workflow.ConnSecretInvalidName, err).ReconcileResult()
 	}
 
-	log.Debugw("identifiers loaded")
-
-	// Loads the pair of AtlasDeployment and AtlasDatabaseUser via the indexers
-	pair, err := r.loadPairedResources(ctx, ids)
+	// Load the paired resource
+	pair, err := r.loadPair(ctx, ids)
 	if err != nil {
 		switch {
-		// This means there's no owner resources; the secret will be garbage collected
-		case errors.Is(err, ErrNoPairedResourcesFound):
-			log.Debugw("no paired resources found")
-			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
-
-		// This means an owner from the pair was deleted; the secret will be forcefully removed
-		case errors.Is(err, ErrNoDeploymentFound), errors.Is(err, ErrNoUserFound):
-			log.Infow("paired resource missing; scheduling deletion", "reason", workflow.ConnSecretOwnerMissing)
+		case errors.Is(err, ErrMissingPairing):
+			log.Debugw("paired resource is missing; scheduling deletion of connection secrets")
 			return r.handleDelete(ctx, req, ids, pair)
-
-		case errors.Is(err, ErrManyDeployments), errors.Is(err, ErrManyUsers):
-			log.Errorw("ambiguous pairing; multiple matches", "reason", workflow.ConnSecretAmbiguousResources, "error", err)
-			return workflow.Terminate(workflow.ConnSecretAmbiguousResources, err).ReconcileResult()
-
+		case errors.Is(err, ErrAmbiguousPairing):
+			log.Errorw("failed to load paired resources; ambigous parent resources", "error", err)
+			return workflow.Terminate(workflow.ConnSecretPairNotLoaded, err).ReconcileResult()
 		default:
-			log.Errorw("failed to load paired resources", "reason", workflow.ConnSecretInvalidResources, "error", err)
-			return workflow.Terminate(workflow.ConnSecretInvalidResources, err).ReconcileResult()
+			log.Errorw("failed to load paired resource", "error", err)
+			return workflow.Terminate(workflow.ConnSecretPairNotLoaded, err).ReconcileResult()
 		}
 	}
 
-	log.Debugw("paired resources loaded")
-
-	// If the user expired, delete connection secret
+	// Check if user is expired
 	expired, err := timeutil.IsExpired(pair.User.Spec.DeleteAfterDate)
 	if err != nil {
-		log.Errorw("failed to check expiration date", "reason", workflow.ConnSecretCheckExpirationFailed, "error", err)
-		return workflow.Terminate(workflow.ConnSecretCheckExpirationFailed, err).ReconcileResult()
+		log.Errorw("failed to check expiration date on user", "error", err)
+		return workflow.Terminate(workflow.ConnSecretUserExpired, err).ReconcileResult()
 	}
 	if expired {
-		log.Infow("user expired; scheduling deletion", "reason", workflow.ConnSecretUserExpired)
+		log.Debugw("user is expired; scheduling deletion of connection secrets")
 		return r.handleDelete(ctx, req, ids, pair)
 	}
 
-	// If the scope became invalid, delete connection secret
-	if invalidScopes(pair) {
-		log.Infow("invalid scope; scheduling deletion", "reason", workflow.ConnSecretInvalidScopes)
+	// Check that scopes are still valid
+	if !allowsByScopes(pair.User, pair.Endpoint.GetName(), pair.Endpoint.GetScopeType()) {
+		log.Infow("invalid scope; scheduling deletion of connection secrets")
 		return r.handleDelete(ctx, req, ids, pair)
 	}
 
-	// Checks that AtlasDeployment and AtlasDatabaseUser are ready before proceeding
-	if ready, notReady := isReady(pair); !ready {
-		log.Debugw("waiting for paired resources to become ready", "notReady", strings.Join(notReady, ","))
-		return workflow.InProgress(workflow.ConnSecretNotReady, fmt.Sprintf("Not ready: %s", strings.Join(notReady, ", "))).ReconcileResult()
+	// Paired resource must be ready
+	if !(pair.User.IsDatabaseUserReady() && pair.Endpoint.IsReady()) {
+		log.Debugw("waiting on paired resource to be ready")
+		return workflow.InProgress(workflow.ConnSecretNotReady, "resources not ready").ReconcileResult()
 	}
 
-	// Create or update the k8s connection secret
-	log.Infow("creating/updating connection secret", "reason", workflow.ConnSecretUpsert)
 	return r.handleUpsert(ctx, req, ids, pair)
 }
 
-func (r *ConnectionSecretReconciler) For() (client.Object, builder.Predicates) {
-	preds := append(
-		r.GlobalPredicates,
-		watch.SecretLabelPredicate(TypeLabelKey, ProjectLabelKey, ClusterLabelKey),
-	)
+func (r *ConnSecretReconciler) For() (client.Object, builder.Predicates) {
+	preds := append(r.GlobalPredicates, watch.SecretLabelPredicate(TypeLabelKey, ProjectLabelKey, ClusterLabelKey))
 	return &corev1.Secret{}, builder.WithPredicates(preds...)
 }
 
-func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
+func (r *ConnSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("ConnectionSecret").
 		For(r.For()).
 		Watches(
 			&akov2.AtlasDeployment{},
-			handler.EnqueueRequestsFromMapFunc(r.newDeploymentMapFunc),
+			handler.EnqueueRequestsFromMapFunc(r.newEndpointMapFunc),
 			builder.WithPredicates(predicate.Or(
-				watch.ReadyTransitionPredicate((*akov2.AtlasDeployment).IsDeploymentReady),
+				watch.ReadyTransitionPredicate(func(d *akov2.AtlasDeployment) bool {
+					return api.HasReadyCondition(d.Status.Conditions)
+				}),
+				predicate.GenerationChangedPredicate{},
+			)),
+		).
+		Watches(
+			&akov2.AtlasDataFederation{},
+			handler.EnqueueRequestsFromMapFunc(r.newEndpointMapFunc),
+			builder.WithPredicates(predicate.Or(
+				watch.ReadyTransitionPredicate(func(d *akov2.AtlasDataFederation) bool {
+					return api.HasReadyCondition(d.Status.Conditions)
+				}),
 				predicate.GenerationChangedPredicate{},
 			)),
 		).
@@ -150,7 +168,9 @@ func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 			&akov2.AtlasDatabaseUser{},
 			handler.EnqueueRequestsFromMapFunc(r.newDatabaseUserMapFunc),
 			builder.WithPredicates(predicate.Or(
-				watch.ReadyTransitionPredicate((*akov2.AtlasDatabaseUser).IsDatabaseUserReady),
+				watch.ReadyTransitionPredicate(func(u *akov2.AtlasDatabaseUser) bool {
+					return api.HasReadyCondition(u.Status.Conditions)
+				}),
 				predicate.GenerationChangedPredicate{},
 			)),
 		).
@@ -161,84 +181,103 @@ func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 		Complete(r)
 }
 
-func (r *ConnectionSecretReconciler) generateConnectionSecretRequests(
-	projectID string,
-	deployments []akov2.AtlasDeployment,
-	users []akov2.AtlasDatabaseUser,
-) []reconcile.Request {
-	var requests []reconcile.Request
-	for _, d := range deployments {
+func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string, epType akov2.ScopeType) bool {
+	scopes := u.Spec.Scopes
+	filtered_scopes := u.GetScopes(epType)
+	if len(scopes) == 0 || stringutil.Contains(filtered_scopes, epName) {
+		return true
+	}
+
+	return false
+}
+
+func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string, endpoints []Endpoint, users []akov2.AtlasDatabaseUser) []reconcile.Request {
+	var reqs []reconcile.Request
+	for _, ep := range endpoints {
 		for _, u := range users {
-			scopes := u.GetScopes(akov2.DeploymentScopeType)
-			if len(scopes) != 0 && !stringutil.Contains(scopes, d.GetDeploymentName()) {
+			if !allowsByScopes(&u, ep.GetName(), ep.GetScopeType()) {
 				continue
 			}
 
-			requestName := CreateInternalFormat(projectID, d.GetDeploymentName(), u.Spec.Username)
-			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: u.Namespace, // connection secrets always live in the namespace of the user
-					Name:      requestName,
-				},
+			name := CreateInternalFormat(projectID, ep.GetName(), u.Spec.Username)
+			reqs = append(reqs, reconcile.Request{
+				NamespacedName: types.NamespacedName{Namespace: u.Namespace, Name: name},
 			})
 		}
 	}
-	return requests
+	return reqs
 }
 
-func (r *ConnectionSecretReconciler) ResolveProjectId(ctx context.Context, ref akov2.ProjectDualReference, parentNamespace string) (string, error) {
-	if ref.ExternalProjectRef != nil && ref.ExternalProjectRef.ID != "" {
-		return ref.ExternalProjectRef.ID, nil
-	}
-	if ref.ProjectRef != nil && ref.ProjectRef.Name != "" {
-		project := &akov2.AtlasProject{}
-		if err := r.Client.Get(ctx, *ref.ProjectRef.GetObject(parentNamespace), project); err != nil {
-			return "", fmt.Errorf("failed to resolve projectRef from deployment: %w", err)
+// TODO: create indexers for DataFederation by projectID
+
+// listEndpointsByProject retrives all of the Endpoints that live under an AtlasProject
+func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, projectID string) ([]Endpoint, error) {
+	var out []Endpoint
+	for _, kind := range r.EndpointKinds {
+		list := kind.ListObj()
+		if err := r.Client.List(ctx, list, &client.ListOptions{
+			FieldSelector: kind.SelectorByProject(projectID),
+		}); err != nil {
+			return nil, err
 		}
-		return project.ID(), nil
+
+		eps, err := kind.ExtractList(list)
+		if err != nil {
+			return nil, err
+		}
+
+		out = append(out, eps...)
 	}
-	return "", fmt.Errorf("missing both external and internal project references")
+
+	return out, nil
 }
 
-func (r *ConnectionSecretReconciler) newDeploymentMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
-	deployment, ok := obj.(*akov2.AtlasDeployment)
-	if !ok {
-		r.Log.Warnf("watching AtlasDeployment but got %T", obj)
+// newEndpointMapFunc maps an Endpoint to requests by fetching all AtlasDatabaseUsers and creating a request for each
+func (r *ConnSecretReconciler) newEndpointMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
+	var ep Endpoint
+
+	// Case on the type of endpoint
+	switch o := obj.(type) {
+	case *akov2.AtlasDeployment:
+		ep = DeploymentEndpoint{obj: o, r: r}
+	case *akov2.AtlasDataFederation:
+		ep = FederationEndpoint{obj: o, r: r}
+	default:
 		return nil
 	}
-	projectID, err := r.ResolveProjectId(ctx, deployment.Spec.ProjectDualReference, deployment.GetNamespace())
-	if err != nil {
-		r.Log.Errorw("Unable to resolve projectID for deployment", "error", err)
+
+	projectID, err := ep.GetProjectID(ctx)
+	if err != nil || projectID == "" {
 		return nil
 	}
+
 	users := &akov2.AtlasDatabaseUserList{}
 	if err := r.Client.List(ctx, users, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProject, projectID),
 	}); err != nil {
-		r.Log.Errorf("failed to list AtlasDatabaseUsers: %v", err)
 		return nil
 	}
-	return r.generateConnectionSecretRequests(projectID, []akov2.AtlasDeployment{*deployment}, users.Items)
+
+	return r.generateConnectionSecretRequests(projectID, []Endpoint{ep}, users.Items)
 }
-func (r *ConnectionSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
+
+// newDatabaseUserMapFunc maps an AtlasDatabaseUser to requests by fetching all endpoints and creating a request for each
+func (r *ConnSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
 	user, ok := obj.(*akov2.AtlasDatabaseUser)
 	if !ok {
-		r.Log.Warnf("watching AtlasDatabaseUser but got %T", obj)
 		return nil
 	}
-	projectID, err := r.ResolveProjectId(ctx, user.Spec.ProjectDualReference, user.GetNamespace())
+	projectID, err := r.getUserProjectID(ctx, user)
 	if err != nil {
-		r.Log.Errorw("Unable to resolve projectID for user", "error", err)
 		return nil
 	}
-	deployments := &akov2.AtlasDeploymentList{}
-	if err := r.Client.List(ctx, deployments, &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDeploymentByProject, projectID),
-	}); err != nil {
-		r.Log.Errorf("failed to list AtlasDeployments: %v", err)
+
+	endpoints, err := r.listEndpointsByProject(ctx, projectID)
+	if err != nil {
 		return nil
 	}
-	return r.generateConnectionSecretRequests(projectID, deployments.Items, []akov2.AtlasDatabaseUser{*user})
+
+	return r.generateConnectionSecretRequests(projectID, endpoints, []akov2.AtlasDatabaseUser{*user})
 }
 
 func NewConnectionSecretReconciler(
@@ -247,8 +286,8 @@ func NewConnectionSecretReconciler(
 	atlasProvider atlas.Provider,
 	logger *zap.Logger,
 	globalSecretRef types.NamespacedName,
-) *ConnectionSecretReconciler {
-	return &ConnectionSecretReconciler{
+) *ConnSecretReconciler {
+	r := &ConnSecretReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
 			Log:             logger.Named("controllers").Named("ConnectionSecret").Sugar(),
@@ -259,4 +298,12 @@ func NewConnectionSecretReconciler(
 		EventRecorder:    c.GetEventRecorderFor("ConnectionSecret"),
 		GlobalPredicates: predicates,
 	}
+
+	// Register all the endpoint types
+	r.EndpointKinds = []Endpoint{
+		DeploymentEndpoint{r: r},
+		FederationEndpoint{r: r},
+	}
+
+	return r
 }
