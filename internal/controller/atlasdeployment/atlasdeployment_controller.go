@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,7 +40,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
@@ -238,34 +236,10 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
 ) error {
 	ctx.Log.Infow("-> Starting AtlasDeployment deletion", "spec", deploymentInAKO)
 
-	err := r.deleteConnectionStrings(ctx, deploymentInAKO)
-	if err != nil {
-		return err
-	}
-
-	err = deploymentService.DeleteDeployment(ctx.Context, deploymentInAtlas)
+	err := deploymentService.DeleteDeployment(ctx.Context, deploymentInAtlas)
 	if err != nil {
 		ctx.Log.Errorw("Cannot delete Atlas deployment", "error", err)
 		return err
-	}
-
-	return nil
-}
-
-func (r *AtlasDeploymentReconciler) deleteConnectionStrings(ctx *workflow.Context, deployment deployment.Deployment) error {
-	// We always remove the connection secrets even if the deployment is not removed from Atlas
-	secrets, err := connectionsecret.ListByDeploymentName(ctx.Context, r.Client, "", deployment.GetProjectID(), deployment.GetName())
-	if err != nil {
-		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
-	}
-
-	for i := range secrets {
-		if err := r.Client.Delete(ctx.Context, &secrets[i]); err != nil {
-			if k8serrors.IsNotFound(err) {
-				continue
-			}
-			ctx.Log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
-		}
 	}
 
 	return nil

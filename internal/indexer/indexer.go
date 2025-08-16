@@ -54,6 +54,7 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasDatabaseUserByProjectIndexer(ctx, c.GetClient(), logger),
 		NewAtlasDatabaseUserBySpecUsernameIndexer(ctx, c.GetClient(), logger),
 		NewAtlasDataFederationByProjectIndexer(logger),
+		NewAtlasDataFederationBySpecNameIndexer(ctx, c.GetClient(), logger),
 		NewAtlasDeploymentByProjectIndexer(ctx, c.GetClient(), logger),
 		NewAtlasDeploymentBySpecNameIndexer(ctx, c.GetClient(), logger),
 		NewAtlasCustomRoleByCredentialIndexer(logger),
