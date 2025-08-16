@@ -193,3 +193,26 @@ const (
 	NetworkPeeringConnectionPending  ConditionReason = "NetworkPeeringConnectionPending"
 	NetworkPeeringConnectionClosing  ConditionReason = "NetworkPeeringConnectionClosing"
 )
+
+// ConnectionSecret reasons
+const (
+	ConnSecretInvalidName                ConditionReason = "ConnSecretInvalidName"
+	ConnSecretAmbiguousResources         ConditionReason = "ConnSecretAmbiguousResources"
+	ConnSecretInvalidResources           ConditionReason = "ConnSecretInvalidResources"
+	ConnSecretOwnerMissing               ConditionReason = "ConnSecretOwnerMissing"
+	ConnSecretUnresolvedProjectName      ConditionReason = "ConnSecretUnresolvedProjectName"
+	ConnSecretFailedToResolveProjectName ConditionReason = "ConnSecretFailedToResolveProjectName"
+	ConnSecretFailedToBuildData          ConditionReason = "ConnSecretFailedToBuildData"
+	ConnSecretFailedToFillData           ConditionReason = "ConnSecretFailedToFillData"
+	ConnSecretFailedToSetOwnerReferences ConditionReason = "ConnSecretFailedToSetOwnerReferences"
+	ConnSecretFailedToGetSecret          ConditionReason = "ConnSecretFailedToGetSecret"
+	ConnSecretFailedToCreateSecret       ConditionReason = "ConnSecretFailedToCreateSecret"
+	ConnSecretFailedToUpdateSecret       ConditionReason = "ConnSecretFailedToUpdateSecret"
+	ConnSecretFailedDeletion             ConditionReason = "ConnSecretFailedDeletion"
+	ConnSecretNotReady                   ConditionReason = "ConnSecretNotReady"
+	ConnSecretUpsert                     ConditionReason = "ConnSecretUpsert"
+	ConnSecretDeleted                    ConditionReason = "ConnSecretDeleted"
+	ConnSecretUserExpired                ConditionReason = "ConnSecretUserExpired"
+	ConnSecretInvalidScopes              ConditionReason = "ConnSecretInvalidScopes"
+	ConnSecretCheckExpirationFailed      ConditionReason = "ConnSecretCheckExpirationFailed"
+)

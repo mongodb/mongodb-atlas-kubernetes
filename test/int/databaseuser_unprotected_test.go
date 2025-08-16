@@ -826,7 +826,7 @@ func buildConnectionURL(connURL, userName, password string) string {
 		return ""
 	}
 
-	u, err := connectionsecret.AddCredentialsToConnectionURL(connURL, userName, password)
+	u, err := connectionsecret.CreateURL(connURL, userName, password)
 	Expect(err).NotTo(HaveOccurred())
 	return u
 }
