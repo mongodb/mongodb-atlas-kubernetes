@@ -139,10 +139,6 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult()
 	}
 
-	if result = r.ensureConnectionSecrets(ctx, dataFederationService, project, dataFederation); !result.IsOk() {
-		return result.ReconcileResult()
-	}
-
 	if dataFederation.GetDeletionTimestamp().IsZero() {
 		if !customresource.HaveFinalizer(dataFederation, customresource.FinalizerLabel) {
 			err = r.Client.Get(context, kube.ObjectKeyFromObject(dataFederation), dataFederation)

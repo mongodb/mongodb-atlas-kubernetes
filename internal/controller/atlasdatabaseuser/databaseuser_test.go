@@ -47,6 +47,7 @@ import (
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
@@ -693,7 +694,6 @@ func TestDbuLifeCycle(t *testing.T) {
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
 				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
-				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
 
 				return service
 			},
@@ -1213,7 +1213,6 @@ func TestUpdate(t *testing.T) {
 			dService: func() deployment.AtlasDeploymentsService {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
 				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
-				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
 
 				return service
 			},
@@ -1659,43 +1658,6 @@ func TestReadiness(t *testing.T) {
 					WithMessageRegexp("0 out of 1 deployments have applied database user changes"),
 			},
 		},
-		"failed to create connection secrets": {
-			wantErr: true,
-			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					Username: "user1",
-					PasswordSecret: &common.ResourceRef{
-						Name: "user-pass",
-					},
-					Scopes: []akov2.ScopeSpec{
-						{
-							Name: "cluster2",
-							Type: akov2.DeploymentScopeType,
-						},
-					},
-				},
-			},
-			dService: func() deployment.AtlasDeploymentsService {
-				service := translation.NewAtlasDeploymentsServiceMock(t)
-				service.EXPECT().ListDeploymentNames(context.Background(), "").
-					Return([]string{"cluster1", "cluster2"}, nil)
-				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
-					Return(true, nil)
-				service.EXPECT().ListDeploymentConnections(context.Background(), "").
-					Return(nil, errors.New("failed to list cluster connections"))
-
-				return service
-			},
-			expectedConditions: []api.Condition{
-				api.FalseCondition(api.DatabaseUserReadyType).
-					WithReason(string(workflow.DatabaseUserConnectionSecretsNotCreated)).
-					WithMessageRegexp("failed to list cluster connections"),
-			},
-		},
 		"resource is ready": {
 			dbUser: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1721,8 +1683,6 @@ func TestReadiness(t *testing.T) {
 					Return([]string{"cluster1", "cluster2"}, nil)
 				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
 					Return(true, nil)
-				service.EXPECT().ListDeploymentConnections(context.Background(), "").
-					Return([]deployment.Connection{}, nil)
 
 				return service
 			},
@@ -2127,7 +2087,7 @@ func TestIsExpired(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			expired, err := isExpired(tt.dbUser)
+			expired, err := timeutil.IsExpired(tt.dbUser.Spec.DeleteAfterDate)
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.expected, expired)
 		})
