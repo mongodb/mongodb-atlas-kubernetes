@@ -83,6 +83,8 @@ jobs:
       - validate-manifests
       - check-licenses
       - cloud-tests-filter
+    if: |
+      github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true'
     uses: ./.github/workflows/tests-e2e2.yaml
     secrets: inherit
 
