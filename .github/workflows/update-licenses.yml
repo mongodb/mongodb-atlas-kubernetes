@@ -27,7 +27,7 @@ jobs:
       JWT_RSA_PEM_KEY_BASE64: ${{ secrets.AKO_RELEASER_RSA_KEY_BASE64 }}
     steps:
       - name: Checkout AKO repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ env.BRANCH }}
       - name: Generate GitHub App Token

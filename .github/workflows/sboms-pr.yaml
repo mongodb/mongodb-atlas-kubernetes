@@ -23,7 +23,7 @@ jobs:
       VERSION: ${{ inputs.version }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.13.0
