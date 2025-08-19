@@ -18,6 +18,8 @@ import (
 	"strings"
 )
 
+// some dummy comment, will not be merged
+
 const (
 	featurePrefix    = "FEATURE_"
 	featureSeparator = "="
