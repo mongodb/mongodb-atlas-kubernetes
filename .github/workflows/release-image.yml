@@ -245,12 +245,16 @@ jobs:
 
           git config --global user.name "release-bot[bot]"
           git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
-
+          
+          # Create release directory
           mkdir -p "$RELEASE_DIR"
           cp -rf deploy "$RELEASE_DIR/"
           cp -rf bundle "$RELEASE_DIR/"
           cp -rf helm-charts "$RELEASE_DIR/"
           cp bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
+
+          # Update Helm Charts versions in main
+          ./scripts/bump-helm-chart-version.sh
 
           git fetch origin
           git checkout -f -b "$BRANCH" origin/main
