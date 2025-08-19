@@ -400,7 +400,20 @@ func Test_loadPair(t *testing.T) {
 			}
 
 			r := createDummyEnv(t, all)
-			r.EndpointKinds = []Endpoint{DeploymentEndpoint{r: r}, FederationEndpoint{r: r}}
+			r.EndpointKinds = []Endpoint{
+				DeploymentEndpoint{
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				},
+				FederationEndpoint{
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				},
+			}
 
 			ids := &ConnSecretIdentifiers{
 				ProjectID:        projectID,
@@ -482,7 +495,10 @@ func Test_resolveProjectName(t *testing.T) {
 			pair: &ConnSecretPair{
 				ProjectID: projectID,
 				Endpoint: DeploymentEndpoint{
-					r: r,
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
 					obj: &akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep", Namespace: ns},
 						Spec: akov2.AtlasDeploymentSpec{
@@ -534,8 +550,11 @@ func Test_resolveProjectName(t *testing.T) {
 			pair: &ConnSecretPair{
 				ProjectID: projectID,
 				Endpoint: DeploymentEndpoint{
-					r:   r,
-					obj: createDummyDeployment(t),
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+					obj:             createDummyDeployment(t),
 				},
 			},
 			want: want{
@@ -595,7 +614,13 @@ func Test_handleDelete(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	dep := createDummyDeployment(t)
 	user := createDummyUser(t)
-	depEndpoint := DeploymentEndpoint{r: r, obj: dep}
+	depEndpoint := DeploymentEndpoint{
+		k8s:             r.Client,
+		provider:        r.AtlasProvider,
+		globalSecretRef: r.GlobalSecretRef,
+		log:             r.Log,
+		obj:             dep,
+	}
 
 	tests := map[string]testCase{
 		"fail: projects with no parents cannot be directly deleted": {
@@ -705,7 +730,13 @@ func Test_handleUpsert(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	dep := createDummyDeployment(t)
 	user := createDummyUser(t)
-	depEndpoint := DeploymentEndpoint{r: r, obj: dep}
+	depEndpoint := DeploymentEndpoint{
+		k8s:             r.Client,
+		provider:        r.AtlasProvider,
+		globalSecretRef: r.GlobalSecretRef,
+		log:             r.Log,
+		obj:             dep,
+	}
 
 	tests := map[string]testCase{
 		"fail: upserting requires project resolution": {

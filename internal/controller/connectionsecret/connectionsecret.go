@@ -37,20 +37,20 @@ import (
 )
 
 const (
-	InternalSeparator string = "$"
+	InternalSeparator = "$"
 
-	ProjectLabelKey string = "atlas.mongodb.com/project-id"
-	ClusterLabelKey string = "atlas.mongodb.com/cluster-name"
-	TypeLabelKey           = "atlas.mongodb.com/type"
-	CredLabelVal           = "credentials"
+	ProjectLabelKey = "atlas.mongodb.com/project-id"
+	ClusterLabelKey = "atlas.mongodb.com/cluster-name"
+	TypeLabelKey    = "atlas.mongodb.com/type"
+	CredLabelVal    = "credentials"
 
-	userNameKey     string = "username"
-	passwordKey     string = "password"
-	standardKey     string = "connectionStringStandard"
-	standardKeySrv  string = "connectionStringStandardSrv"
-	privateKey      string = "connectionStringPrivate"
-	privateSrvKey   string = "connectionStringPrivateSrv"
-	privateShardKey string = "connectionStringPrivateShard"
+	userNameKey     = "username"
+	passwordKey     = "password"
+	standardKey     = "connectionStringStandard"
+	standardKeySrv  = "connectionStringStandardSrv"
+	privateKey      = "connectionStringPrivate"
+	privateSrvKey   = "connectionStringPrivateSrv"
+	privateShardKey = "connectionStringPrivateShard"
 )
 
 var (
@@ -108,15 +108,15 @@ func CreateInternalFormat(projectID string, clusterName string, databaseUsername
 // and extracts ProjectID, ClusterName, and DatabaseUsername.
 func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	if strings.Contains(req.Name, InternalSeparator) {
-		return r.indetifiersFromInternalName(req)
+		return r.identifiersFromInternalName(req)
 	}
 
-	return r.indentifiersFromK8s(ctx, req)
+	return r.identifiersFromK8s(ctx, req)
 }
 
 // indetifiersFromInternalName loads the identifiers for the internal format
 // === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>
-func (r *ConnSecretReconciler) indetifiersFromInternalName(req types.NamespacedName) (*ConnSecretIdentifiers, error) {
+func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	parts := strings.Split(req.Name, InternalSeparator)
 	if len(parts) != 3 {
 		return nil, ErrInternalFormatErr
@@ -134,7 +134,7 @@ func (r *ConnSecretReconciler) indetifiersFromInternalName(req types.NamespacedN
 // indentifiersFromSecret loads the identifiers for the k8s format
 // === K8s format: <ProjectName>-<ClusterName>-<DatabaseUserName>
 // K8s secret must exists in the cluster
-func (r *ConnSecretReconciler) indentifiersFromK8s(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
+func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	var secret corev1.Secret
 	if err := r.Client.Get(ctx, req, &secret); err != nil {
 		return nil, err

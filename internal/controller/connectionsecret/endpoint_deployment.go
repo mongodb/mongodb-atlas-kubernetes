@@ -18,18 +18,97 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 type DeploymentEndpoint struct {
-	obj *akov2.AtlasDeployment
-	r   *ConnSecretReconciler
+	obj             *akov2.AtlasDeployment
+	k8s             client.Client
+	provider        atlas.Provider
+	globalSecretRef client.ObjectKey
+	log             *zap.SugaredLogger
+}
+
+// resolveProjectIDByKey returns the project id from the key
+func resolveProjectIDByKey(ctx context.Context, c client.Client, key client.ObjectKey) (string, error) {
+	proj := &akov2.AtlasProject{}
+	if err := c.Get(ctx, key, proj); err != nil {
+		return "", err
+	}
+	if proj.ID() == "" {
+		return "", ErrUnresolvedProjectID
+	}
+	return proj.ID(), nil
+}
+
+// resolveProjectNameByKey returns the project name from the key
+func resolveProjectNameByKey(ctx context.Context, c client.Client, key client.ObjectKey) (string, error) {
+	proj := &akov2.AtlasProject{}
+	if err := c.Get(ctx, key, proj); err != nil {
+		return "", err
+	}
+	if proj.Spec.Name == "" {
+		return "", ErrUnresolvedProjectName
+	}
+	return kube.NormalizeIdentifier(proj.Spec.Name), nil
+}
+
+// resolveProjectNameBySDK returns the project name from SDL
+func resolveProjectNameBySDK(
+	ctx context.Context,
+	c client.Client,
+	provider atlas.Provider,
+	log *zap.SugaredLogger,
+	globalSecretRef client.ObjectKey,
+	referrer project.ProjectReferrerObject,
+) (string, error) {
+	pdr := referrer.ProjectDualRef()
+
+	var secretRef *client.ObjectKey
+	if pdr.ConnectionSecret != nil && pdr.ConnectionSecret.Name != "" {
+		if obj, ok := any(referrer).(client.Object); ok {
+			key := client.ObjectKeyFromObject(obj)
+			key.Name = pdr.ConnectionSecret.Name
+			secretRef = &key
+		} else {
+			key := client.ObjectKey{Namespace: referrer.GetNamespace(), Name: pdr.ConnectionSecret.Name}
+			secretRef = &key
+		}
+	}
+
+	cfg, err := reconciler.GetConnectionConfig(ctx, c, secretRef, &globalSecretRef)
+	if err != nil {
+		return "", err
+	}
+
+	if pdr.ExternalProjectRef == nil || pdr.ExternalProjectRef.ID == "" {
+		return "", ErrUnresolvedProjectName
+	}
+
+	cs, err := provider.SdkClientSet(ctx, cfg.Credentials, log)
+	if err != nil {
+		return "", err
+	}
+
+	svc := project.NewProjectAPIService(cs.SdkClient20250312002.ProjectsApi)
+	prj, err := svc.GetProject(ctx, pdr.ExternalProjectRef.ID)
+	if err != nil {
+		return "", err
+	}
+	if prj.Name == "" {
+		return "", ErrUnresolvedProjectName
+	}
+	return kube.NormalizeIdentifier(prj.Name), nil
 }
 
 // GetName resolves the endpoints name from the spec
@@ -59,9 +138,8 @@ func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
 		return e.obj.Spec.ExternalProjectRef.ID, nil
 	}
 	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" {
-		return e.r.resolveProjectIDByKey(ctx, e.obj.AtlasProjectObjectKey())
+		return resolveProjectIDByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
 	}
-
 	return "", ErrUnresolvedProjectID
 }
 
@@ -71,23 +149,10 @@ func (e DeploymentEndpoint) GetProjectName(ctx context.Context) (string, error) 
 		return "", fmt.Errorf("nil deployment")
 	}
 	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" {
-		return e.r.resolveProjectNameByKey(ctx, e.obj.AtlasProjectObjectKey())
+		return resolveProjectNameByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
 	}
-
-	if e.r != nil {
-		cfg, err := e.r.ResolveConnectionConfig(ctx, e.obj)
-		if err != nil {
-			return "", err
-		}
-		sdk, err := e.r.AtlasProvider.SdkClientSet(ctx, cfg.Credentials, e.r.Log)
-		if err != nil {
-			return "", err
-		}
-		ap, err := e.r.ResolveProject(ctx, sdk.SdkClient20250312002, e.obj)
-		if err != nil {
-			return "", err
-		}
-		return kube.NormalizeIdentifier(ap.Name), nil
+	if e.obj.Spec.ConnectionSecret != nil && e.obj.Spec.ConnectionSecret.Name != "" {
+		return resolveProjectNameBySDK(ctx, e.k8s, e.provider, e.log, e.globalSecretRef, e.obj)
 	}
 	return "", ErrUnresolvedProjectName
 }
@@ -113,7 +178,13 @@ func (e DeploymentEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 	}
 	out := make([]Endpoint, 0, len(l.Items))
 	for i := range l.Items {
-		out = append(out, DeploymentEndpoint{obj: &l.Items[i], r: e.r})
+		out = append(out, DeploymentEndpoint{
+			obj:             &l.Items[i],
+			k8s:             e.k8s,
+			provider:        e.provider,
+			globalSecretRef: e.globalSecretRef,
+			log:             e.log,
+		})
 	}
 	return out, nil
 }
@@ -124,7 +195,7 @@ func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 	if user == nil || e.obj == nil {
 		return ConnSecretData{}, ErrMissingPairing
 	}
-	password, err := user.ReadPassword(ctx, e.r.Client)
+	password, err := user.ReadPassword(ctx, e.k8s)
 	if err != nil {
 		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
 	}

@@ -20,19 +20,24 @@ import (
 	"net/url"
 	"strings"
 
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 )
 
 type FederationEndpoint struct {
-	obj *akov2.AtlasDataFederation
-	r   *ConnSecretReconciler
+	obj             *akov2.AtlasDataFederation
+	k8s             client.Client
+	provider        atlas.Provider
+	globalSecretRef client.ObjectKey
+	log             *zap.SugaredLogger
 }
 
 // GetName resolves the endpoints name from the spec
@@ -59,9 +64,8 @@ func (e FederationEndpoint) GetProjectID(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("nil federation")
 	}
 	if e.obj.Spec.Project.Name != "" {
-		return e.r.resolveProjectIDByKey(ctx, e.obj.AtlasProjectObjectKey())
+		return resolveProjectIDByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
 	}
-
 	return "", ErrUnresolvedProjectID
 }
 
@@ -71,9 +75,8 @@ func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) 
 		return "", fmt.Errorf("nil federation")
 	}
 	if e.obj.Spec.Project.Name != "" {
-		return e.r.resolveProjectNameByKey(ctx, e.obj.AtlasProjectObjectKey())
+		return resolveProjectNameByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
 	}
-
 	return "", ErrUnresolvedProjectName
 }
 
@@ -98,7 +101,13 @@ func (e FederationEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 	}
 	out := make([]Endpoint, 0, len(l.Items))
 	for i := range l.Items {
-		out = append(out, FederationEndpoint{obj: &l.Items[i], r: e.r})
+		out = append(out, FederationEndpoint{
+			obj:             &l.Items[i],
+			k8s:             e.k8s,
+			provider:        e.provider,
+			globalSecretRef: e.globalSecretRef,
+			log:             e.log,
+		})
 	}
 	return out, nil
 }
@@ -109,20 +118,23 @@ func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 	if user == nil || e.obj == nil {
 		return ConnSecretData{}, ErrMissingPairing
 	}
-	password, err := user.ReadPassword(ctx, e.r.Client)
+	password, err := user.ReadPassword(ctx, e.k8s)
 	if err != nil {
 		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
 	}
 
 	project := &akov2.AtlasProject{}
-	if err := e.r.Client.Get(ctx, e.obj.AtlasProjectObjectKey(), project); err != nil {
+	if err := e.k8s.Get(ctx, e.obj.AtlasProjectObjectKey(), project); err != nil {
 		return ConnSecretData{}, err
 	}
-	connectionConfig, err := reconciler.GetConnectionConfig(ctx, e.r.Client, project.ConnectionSecretObjectKey(), &e.r.GlobalSecretRef)
+
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, e.k8s, project.ConnectionSecretObjectKey(), &e.globalSecretRef)
 	if err != nil {
 		return ConnSecretData{}, err
 	}
-	clientSet, err := e.r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, e.r.Log)
+
+	// make sure logger is non-nil; provider uses it
+	clientSet, err := e.provider.SdkClientSet(ctx, connectionConfig.Credentials, e.log)
 	if err != nil {
 		return ConnSecretData{}, err
 	}

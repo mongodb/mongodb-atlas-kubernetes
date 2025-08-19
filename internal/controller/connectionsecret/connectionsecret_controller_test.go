@@ -159,7 +159,19 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			}
 
 			r := createDummyEnv(t, all)
-			r.EndpointKinds = []Endpoint{DeploymentEndpoint{r: r}, FederationEndpoint{r: r}}
+			r.EndpointKinds = []Endpoint{
+				DeploymentEndpoint{
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				},
+				FederationEndpoint{k8s: r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				},
+			}
 
 			req := ctrl.Request{
 				NamespacedName: types.NamespacedName{
@@ -291,14 +303,20 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 	r := createDummyEnv(t, nil)
 
 	depA := DeploymentEndpoint{
-		r: r,
+		k8s:             r.Client,
+		provider:        r.AtlasProvider,
+		globalSecretRef: r.GlobalSecretRef,
+		log:             r.Log,
 		obj: &akov2.AtlasDeployment{
 			ObjectMeta: metav1.ObjectMeta{Name: "test-depl", Namespace: "test-ns"},
 			Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "my-depl-name"}},
 		},
 	}
 	df1 := FederationEndpoint{
-		r: r,
+		k8s:             r.Client,
+		provider:        r.AtlasProvider,
+		globalSecretRef: r.GlobalSecretRef,
+		log:             r.Log,
 		obj: &akov2.AtlasDataFederation{
 			ObjectMeta: metav1.ObjectMeta{Name: "test-df", Namespace: "test-ns"},
 			Spec:       akov2.DataFederationSpec{Name: "my-df-name"},
@@ -449,7 +467,20 @@ func Test_newEndpointMapFunc(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := createDummyEnv(t, tc.objs)
-			r.EndpointKinds = []Endpoint{DeploymentEndpoint{r: r}, FederationEndpoint{r: r}}
+			r.EndpointKinds = []Endpoint{
+				DeploymentEndpoint{
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				},
+				FederationEndpoint{
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				},
+			}
 
 			reqs := r.newEndpointMapFunc(context.Background(), tc.obj)
 
@@ -518,7 +549,20 @@ func Test_newDatabaseUserMapFunc(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			all := append([]client.Object{tc.user}, tc.objs...)
 			r := createDummyEnv(t, all)
-			r.EndpointKinds = []Endpoint{DeploymentEndpoint{r: r}, FederationEndpoint{r: r}}
+			r.EndpointKinds = []Endpoint{
+				DeploymentEndpoint{
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				},
+				FederationEndpoint{
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				},
+			}
 
 			reqs := r.newDatabaseUserMapFunc(context.Background(), tc.user)
 
