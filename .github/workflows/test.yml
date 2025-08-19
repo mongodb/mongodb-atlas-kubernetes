@@ -8,7 +8,7 @@ on:
       - 'main'
     paths-ignore:
       - 'docs/**'
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
     branches:
       - '**'
@@ -35,6 +35,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     # Contributions do NOT run any testing by default, a label is needed to allow testing
+    # This check makes pull_request_target envent triggering by contributions safe
     if: |
       github.event.pull_request.base.repo.full_name == github.event.pull_request.head.repo.full_name ||
       contains(github.event.pull_request.labels.*.name, 'safe-to-test') ||
