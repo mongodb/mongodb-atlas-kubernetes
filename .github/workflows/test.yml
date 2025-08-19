@@ -76,6 +76,13 @@ jobs:
       - run-tests
     uses: ./.github/workflows/cloud-tests-filter.yml
 
+  tests-selectable:
+    needs:
+      - lint
+      - unit-tests
+    uses: ./.github/workflows/tests-selectable.yaml
+    secrets: inherit
+
   e2e2:
     needs:
       - lint
