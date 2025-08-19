@@ -8,8 +8,7 @@ name: Tests-selectable
 # Tests in the ./e2e directory are considered a GOV test ONLY IF their labels contain "atlas-gov" and executed in a separate job
 
 on:
-  pull_request:
-    types: [opened, synchronize, labeled, unlabeled]
+  workflow_call:
   workflow_dispatch:
     inputs:
       testLabels:
