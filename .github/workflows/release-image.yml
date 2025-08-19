@@ -260,7 +260,7 @@ jobs:
           git checkout -f -b "$BRANCH" origin/main
           git push -f origin "$BRANCH"
 
-          git add -f "$RELEASE_DIR"
+          git add -f "$RELEASE_DIR" helm-charts
           scripts/create-signed-commit.sh
 
           gh pr create \
