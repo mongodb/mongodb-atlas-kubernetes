@@ -77,7 +77,7 @@ jobs:
           NIGHTLY_MATRIX: "[\"nightly-core\",\"nightly-integration\",\"nightly-flex2dedicated\"]"
         run: |
           # Nightly runs all tests, overriding PR labels as '["test/e2e2/*"]'
-          if [ "${{ github.ref }}" == "refs/heads/main" ];then
+          if [ "${{ github.ref }}" == "refs/heads/main" && "${{ github.event_name }}" == "schedule" ];then
             PR_LABELS='["test/e2e2/*"]'
             echo "Nightly runs all tests"
           fi
