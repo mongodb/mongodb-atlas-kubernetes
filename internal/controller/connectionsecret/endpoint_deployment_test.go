@@ -137,13 +137,22 @@ func TestDeploymentEndpoint_GetProjectID(t *testing.T) {
 		wantErr  bool
 	}{
 		"fail: nil deployment": {
-			endpoint: DeploymentEndpoint{obj: nil, r: r},
-			wantErr:  true,
+			endpoint: DeploymentEndpoint{
+				obj:             nil,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
+			},
+			wantErr: true,
 		},
 		"fail: project ref missing": {
 			endpoint: DeploymentEndpoint{
-				obj: &akov2.AtlasDeployment{Spec: akov2.AtlasDeploymentSpec{}},
-				r:   r,
+				obj:             &akov2.AtlasDeployment{Spec: akov2.AtlasDeploymentSpec{}},
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
 			},
 			wantErr: true,
 		},
@@ -160,17 +169,32 @@ func TestDeploymentEndpoint_GetProjectID(t *testing.T) {
 						},
 					},
 				},
-				r: r,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
 			},
 			wantErr: true,
 		},
 		"success: external project ID": {
-			endpoint: DeploymentEndpoint{obj: deplsdk, r: r},
-			want:     "test-project-id",
+			endpoint: DeploymentEndpoint{
+				obj:             deplsdk,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
+			},
+			want: "test-project-id",
 		},
 		"success: k8s project ref": {
-			endpoint: DeploymentEndpoint{obj: depl, r: r},
-			want:     "test-project-id",
+			endpoint: DeploymentEndpoint{
+				obj:             depl,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
+			},
+			want: "test-project-id",
 		},
 	}
 
@@ -198,23 +222,44 @@ func TestDeploymentEndpoint_GetProjectName(t *testing.T) {
 		wantErr  bool
 	}{
 		"fail: nil deployment": {
-			endpoint: DeploymentEndpoint{obj: nil, r: r},
-			wantErr:  true,
+			endpoint: DeploymentEndpoint{
+				obj:             nil,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
+			},
+			wantErr: true,
 		},
 		"fail: neither k8s nor SDK available": {
 			endpoint: DeploymentEndpoint{
-				obj: &akov2.AtlasDeployment{Spec: akov2.AtlasDeploymentSpec{}},
-				r:   r,
+				obj:             &akov2.AtlasDeployment{Spec: akov2.AtlasDeploymentSpec{}},
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
 			},
 			wantErr: true,
 		},
 		"success: k8s project ref returns normalized name": {
-			endpoint: DeploymentEndpoint{obj: depl, r: r},
-			want:     "my-project-name",
+			endpoint: DeploymentEndpoint{
+				obj:             depl,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
+			},
+			want: "my-project-name",
 		},
 		"success: SDK fallback when project.Spec.Name empty": {
-			endpoint: DeploymentEndpoint{obj: deplsdk, r: r},
-			want:     "my-project-name",
+			endpoint: DeploymentEndpoint{
+				obj:             deplsdk,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
+			},
+			want: "my-project-name",
 		},
 	}
 
@@ -263,7 +308,12 @@ func TestDeploymentEndpoint_ExtractList(t *testing.T) {
 		},
 	}
 
-	e := DeploymentEndpoint{r: r}
+	e := DeploymentEndpoint{
+		k8s:             r.Client,
+		provider:        r.AtlasProvider,
+		globalSecretRef: r.GlobalSecretRef,
+		log:             r.Log,
+	}
 	out, err := e.ExtractList(list)
 	assert.NoError(t, err)
 	if assert.Len(t, out, 2) {
@@ -345,7 +395,13 @@ func TestDeploymentEndpoint_BuildConnData(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			e := DeploymentEndpoint{obj: tc.endpoint, r: r}
+			e := DeploymentEndpoint{
+				obj:             tc.endpoint,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
+			}
 			got, err := e.BuildConnData(context.Background(), tc.user)
 			if tc.wantErr {
 				assert.Error(t, err)

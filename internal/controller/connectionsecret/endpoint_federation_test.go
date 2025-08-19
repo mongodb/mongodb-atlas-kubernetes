@@ -73,8 +73,11 @@ func runFederationProjectTest[T any](t *testing.T, method func(FederationEndpoin
 	}{
 		"fail: nil federation": {
 			endpoint: FederationEndpoint{
-				obj: nil,
-				r:   r,
+				obj:             nil,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
 			},
 			wantErr: true,
 		},
@@ -89,16 +92,23 @@ func runFederationProjectTest[T any](t *testing.T, method func(FederationEndpoin
 						Name: "mising-proj",
 					},
 				},
-				r: r,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
 			},
 			wantErr: true,
 		},
 		"success": {
 			endpoint: FederationEndpoint{
-				obj: df,
-				r:   r,
+				obj:             df,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
 			},
-			want: wantField},
+			want: wantField,
+		},
 	}
 
 	for name, tc := range tests {
@@ -203,7 +213,12 @@ func TestFederationEndpoint_ExtractList(t *testing.T) {
 		},
 	}
 
-	e := FederationEndpoint{r: r}
+	e := FederationEndpoint{
+		k8s:             r.Client,
+		provider:        r.AtlasProvider,
+		globalSecretRef: r.GlobalSecretRef,
+		log:             r.Log,
+	}
 	out, err := e.ExtractList(dfList)
 	assert.NoError(t, err)
 	if assert.Len(t, out, 2) {
@@ -296,7 +311,13 @@ func TestFederationEndpoint_BuildConnData(t *testing.T) {
 			if tc.override != nil {
 				tc.override(r)
 			}
-			e := FederationEndpoint{obj: tc.endpoint, r: r}
+			e := FederationEndpoint{
+				obj:             tc.endpoint,
+				k8s:             r.Client,
+				provider:        r.AtlasProvider,
+				globalSecretRef: r.GlobalSecretRef,
+				log:             r.Log,
+			}
 			got, err := e.BuildConnData(context.Background(), tc.user)
 			if tc.wantErr {
 				assert.Error(t, err)

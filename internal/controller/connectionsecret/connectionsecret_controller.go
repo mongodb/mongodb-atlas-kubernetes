@@ -239,9 +239,20 @@ func (r *ConnSecretReconciler) newEndpointMapFunc(ctx context.Context, obj clien
 	// Case on the type of endpoint
 	switch o := obj.(type) {
 	case *akov2.AtlasDeployment:
-		ep = DeploymentEndpoint{obj: o, r: r}
+		ep = DeploymentEndpoint{
+			obj: o, k8s: r.Client,
+			provider:        r.AtlasProvider,
+			globalSecretRef: r.GlobalSecretRef,
+			log:             r.Log,
+		}
 	case *akov2.AtlasDataFederation:
-		ep = FederationEndpoint{obj: o, r: r}
+		ep = FederationEndpoint{
+			obj:             o,
+			k8s:             r.Client,
+			provider:        r.AtlasProvider,
+			globalSecretRef: r.GlobalSecretRef,
+			log:             r.Log,
+		}
 	default:
 		return nil
 	}
@@ -301,8 +312,18 @@ func NewConnectionSecretReconciler(
 
 	// Register all the endpoint types
 	r.EndpointKinds = []Endpoint{
-		DeploymentEndpoint{r: r},
-		FederationEndpoint{r: r},
+		DeploymentEndpoint{
+			k8s:             r.Client,
+			provider:        r.AtlasProvider,
+			globalSecretRef: r.GlobalSecretRef,
+			log:             r.Log,
+		},
+		FederationEndpoint{
+			k8s:             r.Client,
+			provider:        r.AtlasProvider,
+			globalSecretRef: r.GlobalSecretRef,
+			log:             r.Log,
+		},
 	}
 
 	return r
