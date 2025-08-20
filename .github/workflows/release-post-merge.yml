@@ -5,9 +5,10 @@
 name: "[DEPRECATED] Create Release"
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  # Disable deprecated workflow
+  # push:
+  #   tags:
+  #     - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_call:
     inputs:
       tag:
