@@ -1,0 +1,33 @@
+run:
+  timeout: 3m
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - gochecknoinits
+    - gofmt
+    - revive # replaces golint for now
+    - misspell
+    - exportloopref
+    - unparam
+
+linters-settings:
+  staticcheck:
+    checks:
+    - all
+
+issues:
+  exclude-rules:
+    # this requires renaming all unused parameters, we'd rather leave a preferred
+    # placeholder name in place when implementing an interface etc.
+    # we can revisit this later, right now it's generating a lot of new warnings
+    # after upgrading golangci-lint
+    - text: "^unused-parameter: .*"
+      linters:
+        - revive
