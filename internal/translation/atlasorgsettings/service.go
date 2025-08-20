@@ -39,10 +39,10 @@ func NewAtlasOrgSettingsService(api admin.OrganizationsApi) AtlasOrgSettingsServ
 func (a *AtlasOrgSettingsServiceImpl) Get(ctx context.Context, orgID string) (*AtlasOrgSettings, error) {
 	resp, httpResp, err := a.orgSettingsAPI.GetOrganizationSettings(ctx, orgID).Execute()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get AtlasOrgSettings: %w", err)
 	}
 	if httpResp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get AtlasOrgSettings: %w", err)
+		return nil, fmt.Errorf("failed to get AtlasOrgSettings: expected status code 200. Got: %d", httpResp.StatusCode)
 	}
 
 	return NewFromAtlas(orgID, resp), nil

@@ -126,7 +126,7 @@ func TestAtlasOrgSettingsService_Get(t *testing.T) {
 				ErrFakeAPIFailure,
 			),
 			expected:      nil,
-			expectedError: ErrFakeAPIFailure,
+			expectedError: fmt.Errorf("failed to get AtlasOrgSettings: %w", ErrFakeAPIFailure),
 		},
 		{
 			title: "non-200 status code with no error returns error",
