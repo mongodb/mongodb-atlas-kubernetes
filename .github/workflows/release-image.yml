@@ -16,6 +16,13 @@ on:
         required: false
         default: "latest"
         type: string
+      release_type:
+        description: "Official releases post to official registries, otherwise post to pre-release registries"
+        required: true
+        default: official-release
+        options:
+        - official-release
+        - pre-release
 
 permissions:
   contents: write
@@ -59,28 +66,51 @@ jobs:
       - name: Echo resolved commit
         run: |
           echo "Resolved commit: ${{ needs.image2commit.outputs.commit_sha }}"
+        
+  # Computes the release repo depending on release_type
+  # official-release is mongodb/mongodb-atlas-kubernetes-operator
+  # pre-release is mongodb/mongodb-atlas-kubernetes-operator-prerelease
+  compute-repo:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TYPE: ${{ github.event.inputs.release_type }}
+    outputs:
+      repo: ${{ steps.compute.outputs.repo }}
+    steps:
+     - name: Compute
+       id: compute
+       run: |
+          if [ "${RELEASE_TYPE}" == "official-release" ]; then
+            echo "Setting official release repo mongodb/mongodb-atlas-kubernetes-operator"
+            echo "repo=mongodb/mongodb-atlas-kubernetes-operator" | tee -a $GITHUB_OUTPUT
+          else
+            echo "Setting pre-release repo mongodb/mongodb-atlas-kubernetes-operator-prerelease"
+            echo "repo=mongodb/mongodb-atlas-kubernetes-operator-prerelease" | tee -a $GITHUB_OUTPUT
+          fi
 
   # Release-image: Created and uploads a release for the specified operator version given in the image_sha
   # Note, with new releases, all the release artifacts will be stored within docs/releases/{version}
   release-image:
     runs-on: ubuntu-latest
     environment: release
-    needs: image2commit
+    needs:
+    - image2commit
+    - compute-repo
     env:
       VERSION: ${{ github.event.inputs.version }}
       RELEASE_TAG: v${{ github.event.inputs.version }}
       AUTHORS: ${{ github.event.inputs.authors }}
       IMAGE_SHA: ${{ github.event.inputs.image_sha }}
       DOCKER_SIGNATURE_REPO: docker.io/mongodb/signatures
-      DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      DOCKER_RELEASE_REPO: mongodb/${{ needs.compute-repo.outputs.repo }}
       DOCKER_PRERELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      QUAY_RELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator
+      QUAY_RELEASE_REPO: quay.io/${{ needs.compute-repo.outputs.repo }}
       QUAY_PRERELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       PROMOTED_TAG: promoted-${{ github.event.inputs.image_sha }}
       CERTIFIED_TAG: ${{ github.event.inputs.version }}-certified
-      DOCKER_IMAGE_URL: mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
-      QUAY_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}
-      QUAY_CERTIFIED_IMAGE_URL: quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ github.event.inputs.version }}-certified
+      DOCKER_IMAGE_URL: ${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}
+      QUAY_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}
+      QUAY_CERTIFIED_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}-certified
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
