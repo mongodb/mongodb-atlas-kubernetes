@@ -1572,6 +1572,9 @@ spec:
                       Can only contain ASCII letters, numbers, and hyphens.
                     pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
+                    x-kubernetes-validations:
+                    - message: Name cannot be modified after deployment creation
+                      rule: self == oldSelf
                   paused:
                     description: Flag that indicates whether the deployment should
                       be paused.
@@ -2289,6 +2292,12 @@ spec:
                 - name
                 - providerSettings
                 type: object
+              upgradeToDedicated:
+                description: |2-
+                   upgradeToDedicated, when set to true, triggers the migration from a Flex to a
+                   Dedicated cluster. The user MUST provide the new dedicated cluster configuration.
+                   This flag is ignored if the cluster is already dedicated.
+                type: boolean
             type: object
             x-kubernetes-validations:
             - message: must define only one project reference through externalProjectRef
@@ -4501,6 +4510,9 @@ spec:
                 description: Name is the name of the Project that is created in Atlas
                   by the Operator if it doesn't exist yet.
                 type: string
+                x-kubernetes-validations:
+                - message: Name cannot be modified after project creation
+                  rule: self == oldSelf
               networkPeers:
                 description: NetworkPeers is a list of Network Peers configured for
                   the current Project.
