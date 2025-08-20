@@ -1,29 +1,27 @@
 package plugins
 
 import (
-	"github.com/getkin/kin-openapi/openapi3"
 	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"github.com/mongodb/atlas2crd/pkg/processor"
 )
 
 type AtlasSdkVersionPlugin struct {
-	NoOp
-	crd         *apiextensions.CustomResourceDefinition
 	definitions map[string]configv1alpha1.OpenAPIDefinition
-}
-
-func NewAtlasSdkVersionPlugin(crd *apiextensions.CustomResourceDefinition, definitions map[string]configv1alpha1.OpenAPIDefinition) *AtlasSdkVersionPlugin {
-	return &AtlasSdkVersionPlugin{
-		crd:         crd,
-		definitions: definitions,
-	}
 }
 
 func (p *AtlasSdkVersionPlugin) Name() string {
 	return "atlas_sdk_version"
 }
 
-func (p *AtlasSdkVersionPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
+func (p *AtlasSdkVersionPlugin) Process(input processor.Input) error {
+	i, ok := input.(*processor.MappingInput)
+	if !ok {
+		return nil // No operation to perform
+	}
+
+	mappingConfig := i.MappingConfig
+	extensionsSchema := i.ExtensionsSchema
+
 	pkg := p.definitions[mappingConfig.OpenAPIRef.Name].Package
 	if pkg == "" {
 		return nil
@@ -37,4 +35,10 @@ func (p *AtlasSdkVersionPlugin) ProcessMapping(g Generator, mappingConfig *confi
 	extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion].Value.Extensions = extensions
 
 	return nil
+}
+
+func NewAtlasSdkVersionPlugin(definitions map[string]configv1alpha1.OpenAPIDefinition) *AtlasSdkVersionPlugin {
+	return &AtlasSdkVersionPlugin{
+		definitions: definitions,
+	}
 }

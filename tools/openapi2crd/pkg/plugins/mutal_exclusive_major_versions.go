@@ -2,50 +2,53 @@ package plugins
 
 import (
 	"fmt"
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"strings"
+
+	"github.com/mongodb/atlas2crd/pkg/processor"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
 // (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))
-type MutualExclusiveMajorVersions struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
-}
+type MutualExclusiveMajorVersions struct{}
 
-var _ Plugin = &MutualExclusiveMajorVersions{}
-
-func NewMutualExclusiveMajorVersions(crd *apiextensions.CustomResourceDefinition) *MutualExclusiveMajorVersions {
-	return &MutualExclusiveMajorVersions{
-		crd: crd,
-	}
-}
-
-func (s *MutualExclusiveMajorVersions) Name() string {
+func (m *MutualExclusiveMajorVersions) Name() string {
 	return "mutual_exclusive_major_versions"
 }
 
-func (m *MutualExclusiveMajorVersions) ProcessCRD(g Generator, crdConfig *configv1alpha1.CRDConfig) error {
+func (m *MutualExclusiveMajorVersions) Process(input processor.Input) error {
+	i, ok := input.(*processor.CRDInput)
+
+	if !ok {
+		return nil // no operation performed
+	}
+
+	crd := i.CRD
+	crdConfig := i.CRDConfig
+
 	if len(crdConfig.Mappings) <= 1 {
 		return nil
 	}
 
-	majorVersions := make([]string, 0, len(crdConfig.Mappings))
+	versions := make([]string, 0, len(crdConfig.Mappings))
 	for _, mapping := range crdConfig.Mappings {
-		majorVersions = append(majorVersions, mapping.MajorVersion)
+		versions = append(versions, mapping.MajorVersion)
 	}
 
-	cel := mutualExclusiveCEL(majorVersions)
-	specProps := m.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"]
+	cel := mutualExclusiveCEL(versions)
+	specProps := crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"]
 	specProps.XValidations = apiextensions.ValidationRules{
 		{
 			Rule:    cel,
-			Message: fmt.Sprintf(`Only one of the following entries can be set: %q`, strings.Join(majorVersions, ", ")),
+			Message: fmt.Sprintf(`Only one of the following entries can be set: %q`, strings.Join(versions, ", ")),
 		},
 	}
-	m.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"] = specProps
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"] = specProps
 
 	return nil
+}
+
+func NewMutualExclusiveMajorVersions() *MutualExclusiveMajorVersions {
+	return &MutualExclusiveMajorVersions{}
 }
 
 func mutualExclusiveCEL(fields []string) string {

@@ -2,30 +2,29 @@ package plugins
 
 import (
 	"fmt"
-	"github.com/getkin/kin-openapi/openapi3"
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"strings"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/mongodb/atlas2crd/pkg/processor"
 )
 
-type EntryPlugin struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
-}
+type EntryPlugin struct{}
 
-var _ Plugin = &EntryPlugin{}
-
-func NewEntryPlugin(crd *apiextensions.CustomResourceDefinition) *EntryPlugin {
-	return &EntryPlugin{
-		crd: crd,
-	}
-}
-
-func (s *EntryPlugin) Name() string {
+func (p *EntryPlugin) Name() string {
 	return "entry"
 }
 
-func (s *EntryPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
+func (p *EntryPlugin) Process(input processor.Input) error {
+	i, ok := input.(*processor.MappingInput)
+	if !ok {
+		return nil // No operation to perform
+	}
+
+	mappingConfig := i.MappingConfig
+	openApiSpec := i.OpenAPISpec
+	extensionsSchema := i.ExtensionsSchema
+	crd := i.CRD
+
 	var entrySchema *openapi3.SchemaRef
 	switch {
 	case mappingConfig.EntryMapping.Schema != "":
@@ -47,11 +46,15 @@ func (s *EntryPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.
 	}
 
 	if entrySchema != nil {
-		entryProps := g.ConvertProperty(entrySchema, extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion].Value.Properties["entry"], &mappingConfig.EntryMapping, 0)
+		entryProps := i.Converter.Convert(entrySchema, extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion].Value.Properties["entry"], &mappingConfig.EntryMapping, 0)
 
-		entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", s.crd.Spec.Names.Singular, s.crd.Spec.Names.Plural)
-		s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion].Properties["entry"] = *entryProps
+		entryProps.Description = fmt.Sprintf("The entry fields of the %v resource spec. These fields can be set for creating and updating %v.", crd.Spec.Names.Singular, crd.Spec.Names.Plural)
+		crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion].Properties["entry"] = *entryProps
 	}
 
 	return nil
+}
+
+func NewEntryPlugin() *EntryPlugin {
+	return &EntryPlugin{}
 }

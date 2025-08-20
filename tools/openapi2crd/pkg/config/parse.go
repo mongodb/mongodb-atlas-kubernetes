@@ -2,8 +2,10 @@ package config
 
 import (
 	"fmt"
-	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+
 	"sigs.k8s.io/yaml"
+
+	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 )
 
 func Parse(raw []byte) (*v1alpha1.Config, error) {

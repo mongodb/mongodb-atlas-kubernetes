@@ -2,29 +2,27 @@ package plugins
 
 import (
 	"fmt"
+
 	"github.com/getkin/kin-openapi/openapi3"
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"github.com/mongodb/atlas2crd/pkg/processor"
 )
 
-type StatusPlugin struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
-}
+type StatusPlugin struct{}
 
-var _ Plugin = &StatusPlugin{}
-
-func NewStatusPlugin(crd *apiextensions.CustomResourceDefinition) *StatusPlugin {
-	return &StatusPlugin{
-		crd: crd,
-	}
-}
-
-func (s *StatusPlugin) Name() string {
+func (p *StatusPlugin) Name() string {
 	return "status"
 }
 
-func (s *StatusPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
+func (p *StatusPlugin) Process(input processor.Input) error {
+	i, ok := input.(*processor.MappingInput)
+	if !ok {
+		return nil // No operation to perform
+	}
+
+	mappingConfig := i.MappingConfig
+	crd := i.CRD
+	openApiSpec := i.OpenAPISpec
+
 	if mappingConfig.StatusMapping.Schema == "" {
 		return nil
 	}
@@ -34,11 +32,15 @@ func (s *StatusPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1
 		return fmt.Errorf("status schema %q not found in openapi spec", mappingConfig.StatusMapping.Schema)
 	}
 
-	statusProps := g.ConvertProperty(statusSchema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.StatusMapping, 0)
-	statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", s.crd.Spec.Names.Singular, mappingConfig.MajorVersion)
+	statusProps := i.Converter.Convert(statusSchema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.StatusMapping, 0)
 	if statusProps != nil {
-		s.crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mappingConfig.MajorVersion] = *statusProps
+		statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", crd.Spec.Names.Singular, mappingConfig.MajorVersion)
+		crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mappingConfig.MajorVersion] = *statusProps
 	}
 
 	return nil
+}
+
+func NewStatusPlugin() *StatusPlugin {
+	return &StatusPlugin{}
 }

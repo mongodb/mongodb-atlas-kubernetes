@@ -1,31 +1,35 @@
 package plugins
 
 import (
-	"github.com/getkin/kin-openapi/openapi3"
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"slices"
+
+	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/atlas2crd/pkg/processor"
 )
 
-type SkippedProperties struct {
-	NoOp
-}
+type SkippedProperties struct{}
 
-func NewSkippedPropertiesPlugin() *SkippedProperties {
-	return &SkippedProperties{}
-}
-
-func (s *SkippedProperties) Name() string {
+func (p *SkippedProperties) Name() string {
 	return "skipped_properties"
 }
 
-func (n *SkippedProperties) ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+func (p *SkippedProperties) Process(input processor.Input) error {
+	i, ok := input.(processor.PropertyInput)
+	if !ok {
+		return nil
+	}
+	propertyConfig := i.PropertyConfig
+	props := i.KubeSchema
+	propertySchema := i.OpenAPISchema
+	path := i.Path
+
 	if isSkippedField(path, propertyConfig) {
+		props = nil
 		return nil
 	}
 
 	if propertyConfig == nil || len(propertyConfig.Filters.SkipProperties) == 0 {
-		return props
+		return nil
 	}
 
 	requiredPaths := make(map[string]string)
@@ -46,7 +50,11 @@ func (n *SkippedProperties) ProcessProperty(g Generator, propertyConfig *configv
 
 	slices.Sort(props.Required)
 
-	return props
+	return nil
+}
+
+func NewSkippedPropertiesPlugin() *SkippedProperties {
+	return &SkippedProperties{}
 }
 
 func isSkippedField(path []string, mapping *configv1alpha1.PropertyMapping) bool {
@@ -62,24 +70,5 @@ func isSkippedField(path []string, mapping *configv1alpha1.PropertyMapping) bool
 		}
 	}
 
-	return false
-}
-
-func removeJsonPathEntries(source, entries []string) []string {
-	filtered := []string{}
-	for _, s := range source {
-		if !contains(entries, "$."+s) {
-			filtered = append(filtered, s)
-		}
-	}
-	return filtered
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
 	return false
 }

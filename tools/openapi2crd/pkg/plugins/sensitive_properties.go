@@ -2,27 +2,32 @@ package plugins
 
 import (
 	"fmt"
-	"github.com/getkin/kin-openapi/openapi3"
+
 	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/atlas2crd/pkg/processor"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
-type SensitiveProperties struct {
-	NoOp
-}
+type SensitiveProperties struct{}
 
-func NewSensitivePropertiesPlugin() *SensitiveProperties {
-	return &SensitiveProperties{}
-}
-
-func (s *SensitiveProperties) Name() string {
+func (p *SensitiveProperties) Name() string {
 	return "sensitive_properties"
 }
 
-func (n *SensitiveProperties) ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+func (p *SensitiveProperties) Process(input processor.Input) error {
+	i, ok := input.(processor.PropertyInput)
+	if !ok {
+		return nil
+	}
+	propertyConfig := i.PropertyConfig
+	props := i.KubeSchema
+	propertySchema := i.OpenAPISchema
+	extensionsSchema := i.ExtensionsSchema
+	path := i.Path
+
 	if !isSensitiveField(path, propertyConfig) {
-		return props
+		return nil
 	}
 
 	props.ID = path[len(path)-1] + "SecretRef"
@@ -61,7 +66,11 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, propertyConfig *confi
 		},
 	}
 
-	return props
+	return nil
+}
+
+func NewSensitivePropertiesPlugin() *SensitiveProperties {
+	return &SensitiveProperties{}
 }
 
 func isSensitiveField(path []string, mapping *configv1alpha1.PropertyMapping) bool {

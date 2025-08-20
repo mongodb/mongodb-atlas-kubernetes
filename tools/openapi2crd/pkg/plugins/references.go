@@ -3,33 +3,32 @@ package plugins
 import (
 	"errors"
 	"fmt"
-	"github.com/getkin/kin-openapi/openapi3"
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"slices"
 	"strings"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/mongodb/atlas2crd/pkg/processor"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-type References struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
-}
-
-var _ Plugin = &References{}
-
-func NewReferencesPlugin(crd *apiextensions.CustomResourceDefinition) *References {
-	return &References{
-		crd: crd,
-	}
-}
+type References struct{}
 
 func (r *References) Name() string {
 	return "references"
 }
 
-func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
-	majorVersionSpec := r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion]
+func (r *References) Process(input processor.Input) error {
+	i, ok := input.(*processor.MappingInput)
+	if !ok {
+		return nil // No operation to perform
+	}
+
+	mappingConfig := i.MappingConfig
+	crd := i.CRD
+	extensionsSchema := i.ExtensionsSchema
+
+	majorVersionSpec := crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion]
 
 	for _, ref := range mappingConfig.ParametersMapping.References {
 		var refProp apiextensions.JSONSchemaProps
@@ -61,7 +60,7 @@ func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.C
 		slices.Sort(majorVersionSpec.Required)
 
 		majorVersionSpec.Properties[ref.Name] = refProp
-		r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion] = majorVersionSpec
+		crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion] = majorVersionSpec
 
 		schema := openapi3.NewSchema()
 		schema.Extensions = map[string]interface{}{}
@@ -79,4 +78,8 @@ func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.C
 	}
 
 	return nil
+}
+
+func NewReferencesPlugin() *References {
+	return &References{}
 }

@@ -2,37 +2,39 @@ package plugins
 
 import (
 	"fmt"
+	"strings"
+
 	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/atlas2crd/pkg/processor"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
-	"strings"
 )
 
-type CrdPlugin struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
-}
+type CrdPlugin struct{}
 
-func (c CrdPlugin) Name() string {
+func (cp *CrdPlugin) Name() string {
 	return "crd"
 }
 
-func NewCrdPlugin(crd *apiextensions.CustomResourceDefinition) *CrdPlugin {
-	return &CrdPlugin{
-		crd: crd,
-	}
-}
+func (cp *CrdPlugin) Process(input processor.Input) error {
+	i, ok := input.(*processor.CRDInput)
 
-func (p *CrdPlugin) ProcessCRD(g Generator, crdConfig *configv1alpha1.CRDConfig) error {
+	if !ok {
+		return nil // no operation performed
+	}
+
+	crd := i.CRD
+	crdConfig := i.CRDConfig
+
 	pluralGvk, singularGvk := guessKindToResource(crdConfig.GVK)
 
-	p.crd.ObjectMeta = v1.ObjectMeta{
+	crd.ObjectMeta = v1.ObjectMeta{
 		Name: fmt.Sprintf("%s.%s", pluralGvk.Resource, pluralGvk.Group),
 	}
 
-	p.crd.Spec = apiextensions.CustomResourceDefinitionSpec{
+	crd.Spec = apiextensions.CustomResourceDefinitionSpec{
 		Group: pluralGvk.Group,
 		Scope: apiextensions.NamespaceScoped,
 		Names: apiextensions.CustomResourceDefinitionNames{
@@ -73,7 +75,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		},
 	}
 
-	p.crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties["conditions"] = apiextensions.JSONSchemaProps{
+	crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties["conditions"] = apiextensions.JSONSchemaProps{
 		Type:        "array",
 		Description: "Represents the latest available observations of a resource's current state.",
 		Items: &apiextensions.JSONSchemaPropsOrArray{
@@ -96,23 +98,27 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		XListType: ptr.To("map"),
 	}
 
-	p.crd.Status.StoredVersions = []string{}
+	crd.Status.StoredVersions = []string{}
 
 	// enable status subresource
-	p.crd.Spec.Subresources = &apiextensions.CustomResourceSubresources{
+	crd.Spec.Subresources = &apiextensions.CustomResourceSubresources{
 		Status: &apiextensions.CustomResourceSubresourceStatus{},
 	}
 
-	p.crd.Spec.Names.Categories = crdConfig.Categories
-	p.crd.Spec.Names.ShortNames = crdConfig.ShortNames
+	crd.Spec.Names.Categories = crdConfig.Categories
+	crd.Spec.Names.ShortNames = crdConfig.ShortNames
 
-	for _, version := range p.crd.Spec.Versions {
+	for _, version := range crd.Spec.Versions {
 		if version.Storage {
-			p.crd.Status.StoredVersions = append(p.crd.Status.StoredVersions, version.Name)
+			crd.Status.StoredVersions = append(crd.Status.StoredVersions, version.Name)
 		}
 	}
 
 	return nil
+}
+
+func NewCrdPlugin() *CrdPlugin {
+	return &CrdPlugin{}
 }
 
 func majorVersions(crdConfig *configv1alpha1.CRDConfig) []string {

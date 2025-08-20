@@ -1,34 +1,34 @@
 package plugins
 
 import (
-	"github.com/getkin/kin-openapi/openapi3"
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"slices"
+
+	"github.com/mongodb/atlas2crd/pkg/processor"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-type ReadOnlyProperties struct {
-	NoOp
-}
+type ReadOnlyProperties struct{}
 
-var _ Plugin = &ReadOnlyProperties{}
-
-func NewReadOnlyPropertiesPlugin() *ReadOnlyProperties {
-	return &ReadOnlyProperties{}
-}
-
-func (s *ReadOnlyProperties) Name() string {
+func (p *ReadOnlyProperties) Name() string {
 	return "read_only_properties"
 }
 
-func (n *ReadOnlyProperties) ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
+func (p *ReadOnlyProperties) Process(input processor.Input) error {
+	i, ok := input.(processor.PropertyInput)
+	if !ok {
+		return nil
+	}
+	propertyConfig := i.PropertyConfig
+	props := i.KubeSchema
+	propertySchema := i.OpenAPISchema
+	path := i.Path
+
 	if propertyConfig == nil || !propertyConfig.Filters.ReadOnly {
-		return props
+		return nil
 	}
 
 	if propertySchema.ReadOnly {
-		return props
+		return nil
 	}
 
 	required := sets.New(propertySchema.Required...)
@@ -42,8 +42,13 @@ func (n *ReadOnlyProperties) ProcessProperty(g Generator, propertyConfig *config
 
 	// ignore root
 	if len(path) == 1 {
-		return props
+		return nil
 	}
 
+	props = nil
 	return nil
+}
+
+func NewReadOnlyPropertiesPlugin() *ReadOnlyProperties {
+	return &ReadOnlyProperties{}
 }
