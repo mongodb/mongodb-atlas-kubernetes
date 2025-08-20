@@ -102,7 +102,7 @@ jobs:
       AUTHORS: ${{ github.event.inputs.authors }}
       IMAGE_SHA: ${{ github.event.inputs.image_sha }}
       DOCKER_SIGNATURE_REPO: docker.io/mongodb/signatures
-      DOCKER_RELEASE_REPO: mongodb/${{ needs.compute-repo.outputs.repo }}
+      DOCKER_RELEASE_REPO: ${{ needs.compute-repo.outputs.repo }}
       DOCKER_PRERELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       QUAY_RELEASE_REPO: quay.io/${{ needs.compute-repo.outputs.repo }}
       QUAY_PRERELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
@@ -194,7 +194,7 @@ jobs:
         uses: ./.github/actions/certify-openshift-images
         with:
           registry: quay.io
-          repository: mongodb/mongodb-atlas-kubernetes-operator
+          repository: ${{ needs.compute-repo.outputs.repo }}
           version: ${{ env.CERTIFIED_TAG }}
           registry_password: ${{ secrets.QUAY_PASSWORD }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
