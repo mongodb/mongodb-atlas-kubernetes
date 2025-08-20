@@ -49,8 +49,7 @@ type serviceBuilderFunc func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettings
 type AtlasOrgSettingsHandler struct {
 	ctrlstate.StateHandler[akov2.AtlasOrgSettings]
 	reconciler.AtlasReconciler
-	deletionProtection bool
-	serviceBuilder     serviceBuilderFunc
+	serviceBuilder serviceBuilderFunc
 }
 
 func NewAtlasOrgSettingsReconciler(
@@ -58,7 +57,6 @@ func NewAtlasOrgSettingsReconciler(
 	atlasProvider atlas.Provider,
 	logger *zap.Logger,
 	globalSecretRef client.ObjectKey,
-	deletionProtection bool,
 	reapplySupport bool,
 ) *ctrlstate.Reconciler[akov2.AtlasOrgSettings] {
 	orgSettingsHandler := &AtlasOrgSettingsHandler{
@@ -68,7 +66,6 @@ func NewAtlasOrgSettingsReconciler(
 			Log:             logger.Named("controllers").Named("AtlasOrgSettings").Sugar(),
 			GlobalSecretRef: globalSecretRef,
 		},
-		deletionProtection: deletionProtection,
 		serviceBuilder: func(clientSet *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 			return atlasorgsettings.NewAtlasOrgSettingsService(clientSet.SdkClient20250312006.OrganizationsApi)
 		},

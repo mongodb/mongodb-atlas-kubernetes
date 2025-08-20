@@ -68,7 +68,6 @@ func TestNewAtlasOrgSettingsReconciler(t *testing.T) {
 		atlasProvider,
 		logger,
 		client.ObjectKey{Name: globalSecretRef.Name, Namespace: globalSecretRef.Namespace},
-		true,
 		false,
 	)
 
@@ -101,7 +100,6 @@ func TestSetupWithManager(t *testing.T) {
 			Log:             &zap.SugaredLogger{},
 			GlobalSecretRef: client.ObjectKey{},
 		},
-		deletionProtection: false,
 		serviceBuilder: func(clientSet *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 			return nil
 		},
@@ -226,7 +224,6 @@ func TestAtlasOrgSettingsHandler_NewReconcileContext(t *testing.T) {
 				},
 			},
 		},
-		deletionProtection: false,
 		serviceBuilder: func(clientSet *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 			return nil
 		},
@@ -250,32 +247,6 @@ func TestAtlasOrgSettingsHandler_ServiceBuilder(t *testing.T) {
 	service := handler.serviceBuilder(clientSet)
 
 	assert.Nil(t, service)
-}
-
-func TestAtlasOrgSettingsHandler_DeletionProtection(t *testing.T) {
-	testCases := []struct {
-		name               string
-		deletionProtection bool
-	}{
-		{
-			name:               "deletion protection enabled",
-			deletionProtection: true,
-		},
-		{
-			name:               "deletion protection disabled",
-			deletionProtection: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			handler := &AtlasOrgSettingsHandler{
-				deletionProtection: tc.deletionProtection,
-			}
-
-			assert.Equal(t, tc.deletionProtection, handler.deletionProtection)
-		})
-	}
 }
 
 type fakeManager struct {

@@ -127,7 +127,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
 	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
 
-	orgSettingsReconciler := atlasorgsettings.NewAtlasOrgSettingsReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, r.reapplySupport)
+	orgSettingsReconciler := atlasorgsettings.NewAtlasOrgSettingsReconciler(c, ap, r.logger, r.globalSecretRef, r.reapplySupport)
 	reconcilers = append(reconcilers, newCtrlStateReconciler(orgSettingsReconciler))
 	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(c, ap, r.deletionProtection, r.logger, r.globalSecretRef, r.reapplySupport)
 	reconcilers = append(reconcilers, newCtrlStateReconciler(integrationsReconciler))
