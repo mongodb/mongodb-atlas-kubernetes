@@ -233,7 +233,7 @@ func TestAtlasOrgSettingsHandler_NewReconcileContext(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	req, err := handler.newReconcileContext(ctx, orgSettings)
+	req, err := handler.newReconcileRequest(ctx, orgSettings)
 
 	require.NoError(t, err)
 	assert.NotNil(t, req)

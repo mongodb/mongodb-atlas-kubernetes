@@ -299,7 +299,7 @@ func TestNewReconcileContext(t *testing.T) {
 				serviceBuilder: tt.serviceBuilder,
 			}
 
-			reconcileCtx, err := h.newReconcileContext(ctx, tt.input)
+			reconcileCtx, err := h.newReconcileRequest(ctx, tt.input)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Nil(t, reconcileCtx)

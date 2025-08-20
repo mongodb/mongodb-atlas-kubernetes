@@ -33,7 +33,7 @@ type reconcileRequest struct {
 	aos *akov2.AtlasOrgSettings
 }
 
-func (h *AtlasOrgSettingsHandler) newReconcileContext(ctx context.Context, aos *akov2.AtlasOrgSettings) (*reconcileRequest, error) {
+func (h *AtlasOrgSettingsHandler) newReconcileRequest(ctx context.Context, aos *akov2.AtlasOrgSettings) (*reconcileRequest, error) {
 	var objKey *client.ObjectKey
 	if aos.Spec.ConnectionSecretRef != nil && aos.Spec.ConnectionSecretRef.Name != "" {
 		objKey = &client.ObjectKey{
@@ -59,7 +59,7 @@ func (h *AtlasOrgSettingsHandler) newReconcileContext(ctx context.Context, aos *
 
 func (h *AtlasOrgSettingsHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState,
 	aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
-	reconcileCtx, err := h.newReconcileContext(ctx, aos)
+	reconcileCtx, err := h.newReconcileRequest(ctx, aos)
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to create reconcile context: %w", err))
 	}
