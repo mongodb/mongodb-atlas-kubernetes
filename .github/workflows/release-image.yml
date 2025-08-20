@@ -18,8 +18,7 @@ on:
         type: string
       release_type:
         description: "Official releases post to official registries, otherwise post to pre-release registries"
-        required: true
-        default: official-release
+        type: choice
         options:
         - official-release
         - pre-release
