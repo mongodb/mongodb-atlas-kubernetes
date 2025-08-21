@@ -66,10 +66,7 @@ var _ = Describe("AtlasOrgSettings", Label("atlas-org-settings"), func() {
 				Name: utils.RandomName("org-settings-strict"),
 			},
 			Spec: akov2.AtlasOrgSettingsSpec{
-				OrgID: "",
-				ConnectionSecretRef: &api.LocalObjectReference{
-					Name: "my-atlas-key",
-				},
+				OrgID:                                  "",
 				ApiAccessListRequired:                  pointer.MakePtr(true),
 				GenAIFeaturesEnabled:                   pointer.MakePtr(false),
 				MultiFactorAuthRequired:                pointer.MakePtr(true),
