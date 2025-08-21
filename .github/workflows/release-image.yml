@@ -253,14 +253,15 @@ jobs:
           cp -rf helm-charts "$RELEASE_DIR/"
           cp bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
 
-          # Update Helm Charts versions in main
-          ./scripts/bump-helm-chart-version.sh
-
           git fetch origin
           git checkout -f -b "$BRANCH" origin/main
           git push -f origin "$BRANCH"
 
-          git add -f "$RELEASE_DIR" helm-charts
+          # Update Helm Charts & Deploy on main
+          cp -r "$RELEASE_DIR/helm-charts" .
+          cp -r "$RELEASE_DIR/deploy" .
+
+          git add -f "$RELEASE_DIR" helm-charts deploy
           scripts/create-signed-commit.sh
 
           gh pr create \
