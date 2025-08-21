@@ -1,0 +1,25 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasDeployment
+metadata:
+  name: my-test-cluster2
+spec:
+  projectRef:
+    name: my-project
+  deploymentSpec:
+    clusterType: REPLICASET
+    name: rand-dep-a1b2c
+    clusterType: REPLICASET
+    backupEnabled: true
+    mongoDBMajorVersion: "7.0"
+    replicationSpecs:
+      - zoneName: "Zone 1"
+        regionConfigs:
+          - providerName: AWS
+            regionName: US_EAST_1
+            priority: 7
+            electableSpecs:
+              instanceSize: M10
+              nodeCount: 3
+    tags:
+      - key: team
+        value: atlas-operator
