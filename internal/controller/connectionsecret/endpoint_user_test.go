@@ -266,12 +266,12 @@ func Test_getUserProjectName(t *testing.T) {
 		},
 		"success: k8s project ref success returns normalized name by reference": {
 			user:     user,
-			wantName: "my-project-name",
+			wantName: "My Project Name",
 			wantErr:  false,
 		},
 		"success: k8s project ref success returns normalized name by sdk": {
 			user:     usersdk,
-			wantName: "my-project-name",
+			wantName: "My Project Name",
 			wantErr:  false,
 		},
 	}

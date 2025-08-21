@@ -249,7 +249,7 @@ func TestDeploymentEndpoint_GetProjectName(t *testing.T) {
 				globalSecretRef: r.GlobalSecretRef,
 				log:             r.Log,
 			},
-			want: "my-project-name",
+			want: "My Project Name",
 		},
 		"success: SDK fallback when project.Spec.Name empty": {
 			endpoint: DeploymentEndpoint{
@@ -259,7 +259,7 @@ func TestDeploymentEndpoint_GetProjectName(t *testing.T) {
 				globalSecretRef: r.GlobalSecretRef,
 				log:             r.Log,
 			},
-			want: "my-project-name",
+			want: "My Project Name",
 		},
 	}
 

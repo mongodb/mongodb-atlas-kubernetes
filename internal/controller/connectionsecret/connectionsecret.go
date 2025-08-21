@@ -114,7 +114,7 @@ func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.Na
 	return r.identifiersFromK8s(ctx, req)
 }
 
-// indetifiersFromInternalName loads the identifiers for the internal format
+// identifiersFromInternalName loads the identifiers for the internal format
 // === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>
 func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	parts := strings.Split(req.Name, InternalSeparator)
@@ -131,7 +131,7 @@ func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedN
 	}, nil
 }
 
-// indentifiersFromSecret loads the identifiers for the k8s format
+// identifiersFromK8s loads the identifiers for the k8s format
 // === K8s format: <ProjectName>-<ClusterName>-<DatabaseUserName>
 // K8s secret must exists in the cluster
 func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
@@ -250,14 +250,14 @@ func (r *ConnSecretReconciler) resolveProjectName(
 	if pair.Endpoint != nil {
 		projectName, err = pair.Endpoint.GetProjectName(ctx)
 		if projectName != "" {
-			return projectName, nil
+			return kube.NormalizeIdentifier(projectName), nil
 		}
 	}
 
 	// Fallback, try resolving from the User if present
 	if pair.User != nil {
 		if name, uerr := r.getUserProjectName(ctx, pair.User); name != "" {
-			return name, nil
+			return kube.NormalizeIdentifier(name), nil
 		} else if err == nil {
 			err = uerr
 		}

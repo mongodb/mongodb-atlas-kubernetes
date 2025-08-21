@@ -27,7 +27,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
@@ -60,7 +59,7 @@ func resolveProjectNameByKey(ctx context.Context, c client.Client, key client.Ob
 	if proj.Spec.Name == "" {
 		return "", ErrUnresolvedProjectName
 	}
-	return kube.NormalizeIdentifier(proj.Spec.Name), nil
+	return proj.Spec.Name, nil
 }
 
 // resolveProjectNameBySDK returns the project name from SDL
@@ -108,7 +107,7 @@ func resolveProjectNameBySDK(
 	if prj.Name == "" {
 		return "", ErrUnresolvedProjectName
 	}
-	return kube.NormalizeIdentifier(prj.Name), nil
+	return prj.Name, nil
 }
 
 // GetName resolves the endpoints name from the spec

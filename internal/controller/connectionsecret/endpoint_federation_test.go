@@ -177,7 +177,7 @@ func TestFederationEndpoint_GetProjectName(t *testing.T) {
 		func(fe FederationEndpoint) (string, error) {
 			return fe.GetProjectName(context.Background())
 		},
-		"my-project-name",
+		"My Project Name",
 	)
 }
 
