@@ -80,7 +80,7 @@ jobs:
         run: |
           # Nightly runs all tests, overriding PR labels as '["test/e2e2/*"]'
           if [ "${GITHUB_REF}" == "refs/heads/main" ] && [ "${EVENT_NAME}" == "schedule" ];then
-            PR_LABELS="${NIGHTLY_MATRIX}"
+            PR_LABELS='["test/e2e2/*"]'
             echo "Nightly runs all tests"
           fi
           echo PR_LABELS="${PR_LABELS}"
