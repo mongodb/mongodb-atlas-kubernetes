@@ -3,7 +3,7 @@ name: Test
 on:
   schedule:
     - cron: '0 0 * * 1-5' # Run a nightly test 
-    - cron: '10 16 * * *' # Run soon (16:10)
+    - cron: '0 * * * *' # every hour
   push:
     branches:
       - 'main'
