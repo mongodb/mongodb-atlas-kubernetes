@@ -1,0 +1,24 @@
+# permissions for end users to edit atlasorgsettings.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasorgsettings-editor-role
+rules:
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasorgsettings
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasorgsettings/status
+    verbs:
+      - get

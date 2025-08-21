@@ -23,7 +23,8 @@ import (
 	"strings"
 
 	"github.com/mongodb-forks/digest"
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	v20250312002 "go.mongodb.org/atlas-sdk/v20250312002/admin"
+	v20250312006 "go.mongodb.org/atlas-sdk/v20250312006/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -44,7 +45,8 @@ type Provider interface {
 }
 
 type ClientSet struct {
-	SdkClient20250312002 *admin.APIClient
+	SdkClient20250312002 *v20250312002.APIClient
+	SdkClient20250312006 *v20250312006.APIClient
 }
 
 type ProductionProvider struct {
@@ -131,16 +133,25 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 
 	httpClient := &http.Client{Transport: transport}
 
-	clientv20250312002, err := admin.NewClient(
-		admin.UseBaseURL(p.domain),
-		admin.UseHTTPClient(httpClient),
-		admin.UseUserAgent(operatorUserAgent()))
+	clientv20250312002, err := v20250312002.NewClient(
+		v20250312002.UseBaseURL(p.domain),
+		v20250312002.UseHTTPClient(httpClient),
+		v20250312002.UseUserAgent(operatorUserAgent()))
+	if err != nil {
+		return nil, err
+	}
+
+	clientv20250312006, err := v20250312006.NewClient(
+		v20250312006.UseBaseURL(p.domain),
+		v20250312006.UseHTTPClient(httpClient),
+		v20250312006.UseUserAgent(operatorUserAgent()))
 	if err != nil {
 		return nil, err
 	}
 
 	return &ClientSet{
 		SdkClient20250312002: clientv20250312002,
+		SdkClient20250312006: clientv20250312006,
 	}, nil
 }
 

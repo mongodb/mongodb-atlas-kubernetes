@@ -364,6 +364,15 @@ func TeamListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]by
 	return yaml.Marshal(teamList)
 }
 
+func AtlasOrgSettingsListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
+	orgSettingsList := &akov2.AtlasOrgSettingsList{}
+	err := k8sClient.List(ctx, orgSettingsList, client.InNamespace(ns))
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(orgSettingsList)
+}
+
 func DeploymentListYml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
 	deploymentList := &akov2.AtlasDeploymentList{}
 	err := k8sClient.List(ctx, deploymentList, client.InNamespace(ns))

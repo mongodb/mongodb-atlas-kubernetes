@@ -242,6 +242,19 @@ func SaveTeamsToFile(ctx context.Context, k8sClient client.Client, ns string) er
 	return nil
 }
 
+func SaveAtlasOrgSettingsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+	yaml, err := k8s.AtlasOrgSettingsListYaml(ctx, k8sClient, ns)
+	if err != nil {
+		return fmt.Errorf("error getting AtlasOrgSettings list: %w", err)
+	}
+	path := fmt.Sprintf("output/%s/%s.yaml", ns, "atlasorgsettings")
+	err = utils.SaveToFile(path, yaml)
+	if err != nil {
+		return fmt.Errorf("error saving AtlasOrgSettings to file: %w", err)
+	}
+	return nil
+}
+
 func SaveDeploymentsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
 	yaml, err := k8s.DeploymentListYml(ctx, k8sClient, ns)
 	if err != nil {
