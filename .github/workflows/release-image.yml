@@ -245,7 +245,8 @@ jobs:
 
           git config --global user.name "release-bot[bot]"
           git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
-
+          
+          # Create release directory
           mkdir -p "$RELEASE_DIR"
           cp -rf deploy "$RELEASE_DIR/"
           cp -rf bundle "$RELEASE_DIR/"
@@ -256,7 +257,11 @@ jobs:
           git checkout -f -b "$BRANCH" origin/main
           git push -f origin "$BRANCH"
 
-          git add -f "$RELEASE_DIR"
+          # Update Helm Charts & Deploy on main
+          cp -r "$RELEASE_DIR/helm-charts" .
+          cp -r "$RELEASE_DIR/deploy" .
+
+          git add -f "$RELEASE_DIR" helm-charts deploy
           scripts/create-signed-commit.sh
 
           gh pr create \
