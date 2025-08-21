@@ -70,6 +70,7 @@ jobs:
   # official-release is mongodb/mongodb-atlas-kubernetes-operator
   # pre-release is mongodb/mongodb-atlas-kubernetes-operator-prerelease
   compute-repo:
+    name: Compute target repos
     runs-on: ubuntu-latest
     env:
       RELEASE_TYPE: ${{ github.event.inputs.release_type }}
@@ -90,6 +91,7 @@ jobs:
   # Release-image: Created and uploads a release for the specified operator version given in the image_sha
   # Note, with new releases, all the release artifacts will be stored within docs/releases/{version}
   release-image:
+    name: Release images
     runs-on: ubuntu-latest
     environment: release
     needs:
@@ -191,6 +193,7 @@ jobs:
 
       - name: Certify Openshift images
         uses: ./.github/actions/certify-openshift-images
+        if: github.event.inputs.release_type == 'official-release'
         with:
           registry: quay.io
           repository: ${{ needs.compute-repo.outputs.repo }}
