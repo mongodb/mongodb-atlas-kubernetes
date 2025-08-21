@@ -64,6 +64,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 	dbUserName1 := "db-user1"
 	dbUserName2 := "db-user2"
 	dbUserName3 := "db-user3"
+	dfName := "df-1"
 	testProject := &akov2.AtlasProject{}
 	testDeployment := &akov2.AtlasDeployment{}
 	testDBUser1 := &akov2.AtlasDatabaseUser{}
@@ -667,6 +668,122 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
+		It("Adds connection secret for data federation", Label("datafederation-user-add-secret"), func() {
+			var testDF *akov2.AtlasDataFederation
+
+			By("Creating a data federation", func() {
+				testDF = akov2.NewDataFederationInstance(projectName, dfName, testNamespace.Name)
+				Expect(k8sClient.Create(context.Background(), testDF)).To(Succeed())
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, testDF, api.TrueCondition(api.ReadyType))
+				}).WithTimeout(20 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
+			By("Creating two users (one DF-scoped, one global)", func() {
+				sec1 := buildPasswordSecret(testNamespace.Name, "df-user-pass-1", DBUserPassword)
+				Expect(k8sClient.Create(context.Background(), &sec1)).To(Succeed())
+				testDBUser1 = akov2.NewDBUser(testNamespace.Name, dbUserName1, dbUserName1, projectName).
+					WithPasswordSecret("df-user-pass-1").
+					WithScope(akov2.DataLakeScopeType, dfName).
+					WithRole("readWriteAnyDatabase", "admin", "")
+				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
+
+				sec2 := buildPasswordSecret(testNamespace.Name, "df-user-pass-2", DBUserPassword2)
+				Expect(k8sClient.Create(context.Background(), &sec2)).To(Succeed())
+				testDBUser2 = akov2.NewDBUser(testNamespace.Name, dbUserName2, dbUserName2, projectName).
+					WithPasswordSecret("df-user-pass-2").
+					WithRole("readWriteAnyDatabase", "admin", "")
+				Expect(k8sClient.Create(context.Background(), testDBUser2)).To(Succeed())
+
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType)) &&
+						resources.CheckCondition(k8sClient, testDBUser2, api.TrueCondition(api.ReadyType))
+				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
+			By("Expecting 3 connection secrets and validating them (u1: DF, u2: DF and deployment)", func() {
+				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 3)
+				validateFederationSecret(k8sClient, *testProject, *testDF, *testDBUser1)
+				validateFederationSecret(k8sClient, *testProject, *testDF, *testDBUser2)
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
+			})
+
+			By("Changing first user scope to all", func() {
+				var err error
+				testDBUser1, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser1), func(u *akov2.AtlasDatabaseUser) {
+					u.Spec.Scopes = nil
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
+				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
+			By("Expecting 4 connection secrets and validating them", func() {
+				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 4)
+				validateFederationSecret(k8sClient, *testProject, *testDF, *testDBUser1)
+				validateFederationSecret(k8sClient, *testProject, *testDF, *testDBUser2)
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
+			})
+
+			By("Deleting first user", func() {
+				deleteSecret(testDBUser1)
+				Expect(k8sClient.Delete(context.Background(), testDBUser1)).To(Succeed())
+
+				u1DepSecret := connectionsecret.CreateK8sFormat(projectName, testDeployment.GetDeploymentName(), dbUserName1)
+				u1DfSecret := connectionsecret.CreateK8sFormat(projectName, dfName, dbUserName1)
+
+				Eventually(checkSecretsDontExist(testNamespace.Name, []string{u1DepSecret, u1DfSecret})).
+					WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 2)
+				validateFederationSecret(k8sClient, *testProject, *testDF, *testDBUser2)
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
+			})
+
+			By("Changing remaining user scope to deployment only", func() {
+				var err error
+				testDBUser2, err = retry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(testDBUser2), func(u *akov2.AtlasDatabaseUser) {
+					u.ClearScopes().WithScope(akov2.DeploymentScopeType, testDeployment.GetDeploymentName())
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() bool {
+					return resources.CheckCondition(k8sClient, testDBUser2, api.TrueCondition(api.ReadyType))
+				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
+			By("Expecting 1 connection secret and validating it (u2: deployment only)", func() {
+				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 1)
+				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
+
+				u2DfSecret := connectionsecret.CreateK8sFormat(projectName, dfName, dbUserName2)
+				Eventually(checkSecretsDontExist(testNamespace.Name, []string{u2DfSecret})).
+					WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
+			By("Deleting the remaining user and expecting 0 connection secrets", func() {
+				deleteSecret(testDBUser2)
+				Expect(k8sClient.Delete(context.Background(), testDBUser2)).To(Succeed())
+
+				u2DepSecret := connectionsecret.CreateK8sFormat(projectName, testDeployment.GetDeploymentName(), dbUserName2)
+				u2DfSecret := connectionsecret.CreateK8sFormat(projectName, dfName, dbUserName2)
+
+				Eventually(checkSecretsDontExist(testNamespace.Name, []string{u2DepSecret, u2DfSecret})).
+					WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 0)
+			})
+
+			By("Deleting the data federation", func() {
+				Expect(k8sClient.Delete(context.Background(), testDF)).To(Succeed())
+				Expect(deleteAtlasDataFederation(testProject.ID(), dfName)).To(Succeed())
+
+				Eventually(checkAtlasDataFederationRemoved(testProject.ID(), dfName)).
+					WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
+			})
+		})
+
 		It("Skips reconciliations.", Label("user-skip-reconciliation"), func() {
 			By("Creating a database user", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
@@ -806,6 +923,23 @@ func validateSecret(k8sClient client.Client, project akov2.AtlasProject, deploym
 	Expect(secret.Labels).To(Equal(expectedLabels))
 
 	return secret
+}
+
+func validateFederationSecret(k8sClient client.Client, project akov2.AtlasProject, df akov2.AtlasDataFederation, user akov2.AtlasDatabaseUser) {
+	secret := corev1.Secret{}
+	username := user.Spec.Username
+	secretName := connectionsecret.CreateK8sFormat(project.Spec.Name, df.Spec.Name, username)
+	Expect(k8sClient.Get(context.Background(), kube.ObjectKey(project.Namespace, secretName), &secret)).To(Succeed())
+
+	expectedLabels := map[string]string{
+		"atlas.mongodb.com/project-id":   project.ID(),
+		"atlas.mongodb.com/cluster-name": df.Spec.Name,
+		connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+	}
+
+	Expect(secret.Labels).To(Equal(expectedLabels))
+	Expect(secret.Data).To(HaveKey("username"))
+	Expect(secret.Data).To(HaveKey("password"))
 }
 
 func checkNumberOfConnectionSecrets(k8sClient client.Client, project akov2.AtlasProject, namespace string, length int) {

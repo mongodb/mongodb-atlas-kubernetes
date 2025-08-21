@@ -1,0 +1,19 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasDatabaseUser
+metadata:
+  name: my-database-user1
+  namespace: mongodb-atlas-system
+spec:
+  projectRef:
+    name: my-project
+    namespace: mongodb-atlas-system
+  databaseName: admin
+  scopes:
+    - type: CLUSTER
+      name: test-deployment
+  roles:
+    - databaseName: admin
+      roleName: readWriteAnyDatabase
+  username: theuserx4
+  passwordSecretRef:
+    name: the-user-password
