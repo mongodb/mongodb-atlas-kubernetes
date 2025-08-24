@@ -289,6 +289,7 @@ generate: ${GO_SOURCES} ## Generate code
 ifdef EXPERIMENTAL
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
 endif
+	mockery
 	$(MAKE) fmt
 
 .PHONY: check-missing-files
