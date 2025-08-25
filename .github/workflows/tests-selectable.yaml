@@ -32,7 +32,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.head_ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.event.pull_request.head.sha }}
 
       - name: Setup GO
         uses: actions/setup-go@v5
