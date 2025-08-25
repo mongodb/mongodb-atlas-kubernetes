@@ -586,16 +586,8 @@ func TestHandlerMethods(t *testing.T) {
 			name:        "HandleInitial",
 			handlerFunc: (*AtlasOrgSettingsHandler).HandleInitial,
 			expectedResult: ctrlstate.Result{
-				NextState: "Created",
-				StateMsg:  "Updated.",
-			},
-		},
-		{
-			name:        "HandleCreated",
-			handlerFunc: (*AtlasOrgSettingsHandler).HandleCreated,
-			expectedResult: ctrlstate.Result{
 				NextState: "Updated",
-				StateMsg:  "Updated.",
+				StateMsg:  "Updated AtlasOrgSettings.",
 			},
 		},
 		{

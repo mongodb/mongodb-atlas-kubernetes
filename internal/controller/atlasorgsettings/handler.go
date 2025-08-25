@@ -91,11 +91,7 @@ func (h *AtlasOrgSettingsHandler) unmanage(orgID string) (ctrlstate.Result, erro
 }
 
 func (h *AtlasOrgSettingsHandler) HandleInitial(ctx context.Context, aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateInitial, state.StateCreated, aos)
-}
-
-func (h *AtlasOrgSettingsHandler) HandleCreated(ctx context.Context, aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateCreated, state.StateUpdated, aos)
+	return result.NextState(state.StateUpdated, "Updated AtlasOrgSettings.")
 }
 
 func (h *AtlasOrgSettingsHandler) HandleUpdated(ctx context.Context, aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
