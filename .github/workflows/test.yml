@@ -73,7 +73,6 @@ jobs:
     uses: ./.github/workflows/check-licenses.yml
   
   cloud-tests-filter:
-    if: github.event.pull_request.head.repo.fork == false
     needs:
       - run-tests
     uses: ./.github/workflows/cloud-tests-filter.yml
