@@ -153,6 +153,10 @@ type AdvancedDeploymentSpec struct {
 	// A list of atlas search indexes configuration for the current deployment
 	// +optional
 	SearchIndexes []SearchIndex `json:"searchIndexes,omitempty"`
+	// Config Server Management Mode for creating or updating a sharded cluster.
+	// +kubebuilder:validation:Enum=ATLAS_MANAGED;FIXED_TO_DEDICATED
+	// +optional
+	ConfigServerManagementMode string `json:"configServerManagementMode,omitempty"`
 }
 
 func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymentSpec {
