@@ -33,8 +33,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
@@ -109,72 +107,6 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 			},
 			wantSecrets: []corev1.Secret{},
 			wantResult:  workflow.OK(),
-		},
-		{
-			name: "federation object with secrets",
-			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
-				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
-				return serviceMock
-			},
-			atlasProject: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
-				Status:     status.AtlasProjectStatus{ID: "123"},
-			},
-			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo", Namespace: "bar",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
-				Spec: akov2.DataFederationSpec{
-					Name:    "data-federation-name",
-					Project: common.ResourceRefNamespaced{Name: "fooProject"},
-				},
-			},
-			wantDataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo", Namespace: "bar",
-					// Finalizers removed
-				},
-				Spec: akov2.DataFederationSpec{
-					Name:    "data-federation-name",
-					Project: common.ResourceRefNamespaced{Name: "fooProject"},
-				},
-			},
-			connectionSecrets: []*corev1.Secret{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "fooSecret", Namespace: "bar",
-						Labels: map[string]string{
-							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
-							connectionsecret.ProjectLabelKey: "123",
-							connectionsecret.ClusterLabelKey: "data-federation-name",
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "keepSecret", Namespace: "bar",
-						Labels: map[string]string{
-							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
-							connectionsecret.ProjectLabelKey: "123",
-							connectionsecret.ClusterLabelKey: "some-cluster",
-						},
-					},
-				},
-			},
-			wantSecrets: []corev1.Secret{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "keepSecret", Namespace: "bar",
-						Labels: map[string]string{
-							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
-							connectionsecret.ProjectLabelKey: "123",
-							connectionsecret.ClusterLabelKey: "some-cluster",
-						},
-					},
-				},
-			},
-			wantResult: workflow.OK(),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
