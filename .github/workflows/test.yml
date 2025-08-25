@@ -8,8 +8,8 @@ on:
       - 'main'
     paths-ignore:
       - 'docs/**'
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled]
     branches:
       - '**'
     paths-ignore:
@@ -34,12 +34,14 @@ jobs:
   run-tests:
     name: Run Tests
     runs-on: ubuntu-latest
-    # Contributions do NOT run any testing by default, a label is needed to allow testing
+    # Contributions do NOT run any testing by default
+    # A label is needed to allow testing after every contributor code post
+    # This check makes pull_request_target event triggering by contributions safe
     if: |
       github.event.pull_request.base.repo.full_name == github.event.pull_request.head.repo.full_name ||
-      contains(github.event.pull_request.labels.*.name, 'safe-to-test') ||
-      contains(github.event.pull_request.labels.*.name, 'cloud-tests') ||
-      contains(github.event.pull_request.labels.*.name, 'retest')
+      github.event.label.name == 'safe-to-test' ||
+      github.event.label.name == 'cloud-tests' ||
+      github.event.label.name == 'retest'
     steps:
       - name: allowed message
         run: echo "Allowed to run tests"
