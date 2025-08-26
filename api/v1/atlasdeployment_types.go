@@ -836,5 +836,8 @@ func (c *AtlasDeployment) AtlasName() string {
 	if c.Spec.ServerlessSpec != nil {
 		return c.Spec.ServerlessSpec.Name
 	}
+	if c.Spec.FlexSpec != nil {
+		return c.Spec.FlexSpec.Name
+	}
 	return ""
 }

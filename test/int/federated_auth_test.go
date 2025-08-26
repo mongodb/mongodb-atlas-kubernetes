@@ -118,14 +118,17 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 				atlasRoleAssignments := atlasRole.GetRoleAssignments()
 				for j := range atlasRoleAssignments {
 					atlasRS := atlasRoleAssignments[j]
-					project, _, err := atlasClient.ProjectsApi.GetProject(ctx, atlasRS.GetGroupId()).Execute()
-					Expect(err).NotTo(HaveOccurred())
-					Expect(project).NotTo(BeNil())
-
 					newRS := akov2.RoleAssignment{
-						ProjectName: project.Name,
-						Role:        atlasRS.GetRole(),
+						Role: atlasRS.GetRole(),
 					}
+
+					if groupId := atlasRS.GetGroupId(); groupId != "" {
+						project, _, err := atlasClient.ProjectsApi.GetProject(ctx, atlasRS.GetGroupId()).Execute()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(project).NotTo(BeNil())
+						newRS.ProjectName = project.GetName()
+					}
+
 					newRole.RoleAssignments = append(newRole.RoleAssignments, newRS)
 				}
 				roles = append(roles, newRole)
