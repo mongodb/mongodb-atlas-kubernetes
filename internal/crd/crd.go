@@ -1,6 +1,7 @@
 package crd
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -22,23 +23,16 @@ const (
 	OpenAPIBoolean = "boolean"
 )
 
-type CRD2GoHook interface {
-	Name() string
-	FromOpenAPIType(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, error)
-}
+var (
+	// ErrNotApplied means the hook did nothing as the CRDType did not apply to this hook
+	ErrNotApplied = errors.New("hook does not apply")
+)
 
-var hooks = []CRD2GoHook {
-	&SampleEmptyHook{},
-}
+type FromOpenAPITypeFunc func(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error)
 
-type SampleEmptyHook struct {}
-
-func (s *SampleEmptyHook) Name() string {
-	return "SampleEmptyHook"
-}
-
-func (s *SampleEmptyHook) FromOpenAPIType(td *gotype.TypeDict, crdType *CRDType)  (*gotype.GoType, error) {
-	return nil, nil
+var Hooks = []FromOpenAPITypeFunc{
+	UnstructuredHookFn,
+	DictHookFn,
 }
 
 type CRDType struct {
@@ -48,24 +42,25 @@ type CRDType struct {
 }
 
 // FromOpenAPIType converts an OpenAPI schema to a GoType
-func FromOpenAPIType(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, error) {
+func FromOpenAPIType(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
 	for _, hook := range hooks {
 		if hook == nil {
 			continue
 		}
-		gt, err := hook.FromOpenAPIType(td, crdType)
+		gt, err := hook(td, hooks, crdType)
+		if errors.Is(err, ErrNotApplied) {
+			continue
+		}
 		if err != nil {
-			return nil, fmt.Errorf("hook %q failed: %w", hook.Name(), err)
+			return nil, fmt.Errorf("hook failed: %w", err)
 		}
-		if gt != nil {
-			return gt, nil
-		}
+		return gt, nil
 	}
 	switch crdType.Schema.Type {
 	case OpenAPIObject:
-		return fromOpenAPIObject(td, crdType)
+		return fromOpenAPIStruct(td, hooks, crdType)
 	case OpenAPIArray:
-		return fromOpenAPIArray(td, crdType)
+		return fromOpenAPIArray(td, hooks, crdType)
 	case OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean:
 		return fromOpenAPIFormattedType(crdType.Schema)
 	default:
@@ -73,25 +68,13 @@ func FromOpenAPIType(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, err
 	}
 }
 
-// fromOpenAPIObject converts an OpenAPI object schema into  unstructured JSON,
-// a map or a GoType struct
-func fromOpenAPIObject(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, error) {
-	if isUnstructured(crdType.Schema) {
-		return gotype.JSONType, nil
-	}
-	if isDict(crdType.Schema) {
-		return fromOpenAPIDict(td, crdType)
-	}
-	return fromOpenAPIStruct(td, crdType)
-}
-
 // fromOpenAPIStruct converts and OpenAPI object to a GoType struct
-func fromOpenAPIStruct(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, error) {
+func fromOpenAPIStruct(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
 	fields := []*gotype.GoField{}
 	fieldsParents := append(crdType.Parents, crdType.Name)
 	for _, key := range orderedkeys(crdType.Schema.Properties) {
 		props := crdType.Schema.Properties[key]
-		fieldType, err := FromOpenAPIType(td, &CRDType{
+		fieldType, err := FromOpenAPIType(td, hooks, &CRDType{
 			Name:    key,
 			Parents: fieldsParents,
 			Schema:  &props,
@@ -111,14 +94,14 @@ func fromOpenAPIStruct(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, e
 }
 
 // fromOpenAPIArray converts an OpenAPI array schema to a GoType array
-func fromOpenAPIArray(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, error) {
+func fromOpenAPIArray(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
 	if crdType.Schema.Items == nil {
 		return nil, fmt.Errorf("array %s has no items", crdType.Name)
 	}
 	if crdType.Schema.Items.Schema == nil {
 		return nil, fmt.Errorf("array %s has no items schema", crdType.Name)
 	}
-	elementType, err := FromOpenAPIType(td, &CRDType{
+	elementType, err := FromOpenAPIType(td, hooks, &CRDType{
 		Name:   crdType.Name,
 		Schema: crdType.Schema.Items.Schema,
 	})
@@ -129,23 +112,6 @@ func fromOpenAPIArray(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, er
 		return nil, fmt.Errorf("failed to rename element type under %s: %w", crdType.Name, err)
 	}
 	return gotype.NewArray(elementType), nil
-}
-
-// fromOpenAPIDict converts an OpenAPI dictionary to a GoType map
-func fromOpenAPIDict(td *gotype.TypeDict, crdType *CRDType) (*gotype.GoType, error) {
-	elemType := gotype.JSONType
-	if crdType.Schema.AdditionalProperties.Schema != nil {
-		var err error
-		elemType, err = FromOpenAPIType(td, &CRDType{
-			Name:    crdType.Name,
-			Parents: crdType.Parents,
-			Schema:  crdType.Schema.AdditionalProperties.Schema,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to check map value type: %w", err)
-		}
-	}
-	return &gotype.GoType{Name: gotype.MapKind, Kind: gotype.MapKind, Element: elemType}, nil
 }
 
 // fromOpenAPIFormattedType converts some OpenAPI formatted primitives to a hardwired GoType,
@@ -189,14 +155,6 @@ func fromOpenAPIPrimitive(kind string) (*gotype.GoType, error) {
 		return nil, fmt.Errorf("failed to parse OpenAPI kind %s: %w", kind, err)
 	}
 	return gotype.NewPrimitive(goTypeName, goTypeName), nil
-}
-
-func isUnstructured(schema *apiextensionsv1.JSONSchemaProps) bool {
-	return (len(schema.Properties) == 0 && schema.XPreserveUnknownFields != nil && *schema.XPreserveUnknownFields == true)
-}
-
-func isDict(schema *apiextensionsv1.JSONSchemaProps) bool {
-	return schema.AdditionalProperties != nil
 }
 
 // openAPIKindtoGoType converts an OpenAPI kind to a Go type

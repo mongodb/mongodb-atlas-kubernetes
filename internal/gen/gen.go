@@ -68,7 +68,7 @@ func generateCRDRootObject(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.V
 // generateCRDSpec generates the spec of the CRD
 func generateCRDSpec(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.VersionedCRD) error {
 	specSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["spec"]
-	spec, err := crd.FromOpenAPIType(td, &crd.CRDType{
+	spec, err := crd.FromOpenAPIType(td, crd.Hooks, &crd.CRDType{
 		Name:    versionedCRD.SpecTypename(),
 		Parents: []string{versionedCRD.Kind},
 		Schema:  &specSchema,
@@ -87,7 +87,7 @@ func generateCRDSpec(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.Version
 // generateCRDStatus generates the spec of the CRD
 func generateCRDStatus(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.VersionedCRD) error {
 	statusSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["status"]
-	status, err := crd.FromOpenAPIType(td, &crd.CRDType{
+	status, err := crd.FromOpenAPIType(td, crd.Hooks, &crd.CRDType{
 		Name:    versionedCRD.StatusTypename(),
 		Parents: []string{versionedCRD.Kind},
 		Schema:  &statusSchema,
