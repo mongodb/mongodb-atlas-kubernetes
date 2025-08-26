@@ -19,15 +19,6 @@ func DatetimeHookFn(td *gotype.TypeDict, _ []FromOpenAPITypeFunc, crdType *CRDTy
 		crdType.Schema.Type, crdType.Schema.Format, ErrNotApplied)
 }
 
-func oneOf(s string, options ...string) bool {
-	for _, opt := range options {
-		if s == opt {
-			return true
-		}
-	}
-	return false
-}
-
 // TODO: might need to support other formats
 // - bsonobjectid: a bson object ID, i.e. a 24 characters hex string
 // - uri: an URI as parsed by Golang net/url.ParseRequestURI
