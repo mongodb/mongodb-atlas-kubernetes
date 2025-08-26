@@ -21,10 +21,10 @@ const (
 
 var (
 	// ErrNotProcessed means the hook did nothing as the CRDType did not apply to this hook
-	ErrNotProcessed = errors.New("hook not processed")
+	ErrNotProcessed = errors.New("hook not")
 )
 
-type FromOpenAPITypeFunc func(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error)
+type OpenAPI2GoHook func(td *gotype.TypeDict, hooks []OpenAPI2GoHook, crdType *CRDType) (*gotype.GoType, error)
 
 type CRDType struct {
 	Name    string
@@ -33,7 +33,7 @@ type CRDType struct {
 }
 
 // FromOpenAPIType converts an OpenAPI schema to a GoType
-func FromOpenAPIType(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
+func FromOpenAPIType(td *gotype.TypeDict, hooks []OpenAPI2GoHook, crdType *CRDType) (*gotype.GoType, error) {
 	for _, hook := range hooks {
 		if hook == nil {
 			continue
