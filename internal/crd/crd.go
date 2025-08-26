@@ -34,6 +34,7 @@ var Hooks = []FromOpenAPITypeFunc{
 	UnstructuredHookFn,
 	DictHookFn,
 	DatetimeHookFn,
+	PrimitiveHookFn,
 }
 
 type CRDType struct {
@@ -62,8 +63,6 @@ func FromOpenAPIType(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *
 		return fromOpenAPIStruct(td, hooks, crdType)
 	case OpenAPIArray:
 		return fromOpenAPIArray(td, hooks, crdType)
-	case OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean:
-		return fromOpenAPIPrimitive(crdType.Schema.Type)
 	default:
 		return nil, fmt.Errorf("unsupported Open API type %q", crdType.Name)
 	}
@@ -115,31 +114,6 @@ func fromOpenAPIArray(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType 
 	return gotype.NewArray(elementType), nil
 }
 
-// fromOpenAPIPrimitive converts an OpenAPI primitive type to a GoType
-func fromOpenAPIPrimitive(kind string) (*gotype.GoType, error) {
-	goTypeName, err := openAPIKindtoGoType(kind)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse OpenAPI kind %s: %w", kind, err)
-	}
-	return gotype.NewPrimitive(goTypeName, goTypeName), nil
-}
-
-// openAPIKindtoGoType converts an OpenAPI kind to a Go type
-func openAPIKindtoGoType(kind string) (string, error) {
-	switch kind {
-	case OpenAPIString:
-		return gotype.StringKind, nil
-	case OpenAPIInteger:
-		return gotype.IntKind, nil
-	case OpenAPINumber:
-		return gotype.FloatKind, nil
-	case OpenAPIBoolean:
-		return gotype.BoolKind, nil
-	default:
-		return "", fmt.Errorf("unsupported Open API kind %s", kind)
-	}
-}
-
 // orderedkeys returns a sorted slice of keys from the given map
 func orderedkeys[T any](m map[string]T) []string {
 	keys := make([]string, 0, len(m))
@@ -160,4 +134,13 @@ func KnownTypes() []*gotype.GoType {
 
 func CRD2Filename(crd *apiextensionsv1.CustomResourceDefinition) string {
 	return fmt.Sprintf("%s.go", strings.ToLower(crd.Spec.Names.Kind))
+}
+
+func oneOf(s string, options ...string) bool {
+	for _, opt := range options {
+		if s == opt {
+			return true
+		}
+	}
+	return false
 }
