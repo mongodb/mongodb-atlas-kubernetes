@@ -7,7 +7,7 @@ import (
 	"github.com/josvazg/crd2go/internal/gotype"
 )
 
-func DatetimeHookFn(td *gotype.TypeDict, _ []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+func DatetimeHookFn(td *gotype.TypeDict, _ []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	if !crd.IsPrimitive(crdType) || !crd.IsDateTimeFormat(crdType) {
 		return nil, fmt.Errorf("%s is not a date time (format is %s): %w",
 			crdType.Schema.Type, crdType.Schema.Format, crd.ErrNotProcessed)
