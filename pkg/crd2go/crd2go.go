@@ -54,7 +54,7 @@ func GenerateToDir(cfg *config.Config) error {
 	req := gotype.Request{
 		CoreConfig:   cfg.CoreConfig,
 		CodeWriterFn: CodeFileForCRDAtPath(cfg.Output),
-		TypeDict:     gotype.NewTypeDict(cfg.Renames, crd.KnownTypes()...),
+		TypeDict:     gotype.NewTypeDict(cfg.Renames, gotype.KnownTypes()...),
 	}
 	return Generate(&req, in)
 }

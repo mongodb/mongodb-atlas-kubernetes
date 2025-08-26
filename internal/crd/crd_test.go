@@ -235,7 +235,7 @@ func TestBuildOpenAPIType(t *testing.T) {
 }
 
 func TestBuiltInFormat2Type(t *testing.T) {
-	td := gotype.NewTypeDict(nil, crd.KnownTypes()...)
+	td := gotype.NewTypeDict(nil, gotype.KnownTypes()...)
 	crdTimeType := &crd.CRDType{
 		Name:    "time",
 		Parents: []string{},
@@ -251,7 +251,7 @@ func TestBuiltInFormat2Type(t *testing.T) {
 		Kind: "opaque",
 		Import: &config.ImportInfo{
 			Alias: "metav1",
-			Path: "k8s.io/apimachinery/pkg/apis/meta/v1",
+			Path:  "k8s.io/apimachinery/pkg/apis/meta/v1",
 		},
 	}
 	assert.Equal(t, want, got)
@@ -264,7 +264,7 @@ func TestConditionsMatch(t *testing.T) {
 	}{
 		{
 			title: "match conditions with a known type",
-			td:    gotype.NewTypeDict(nil, crd.KnownTypes()...),
+			td:    gotype.NewTypeDict(nil, gotype.KnownTypes()...),
 		},
 		{
 			title: "match conditions with renames and imports",
@@ -295,7 +295,7 @@ func TestConditionsMatch(t *testing.T) {
 							Kind: "opaque",
 							Import: &config.ImportInfo{
 								Alias: "metav1",
-								Path: "k8s.io/apimachinery/pkg/apis/meta/v1",
+								Path:  "k8s.io/apimachinery/pkg/apis/meta/v1",
 							},
 						},
 					},
@@ -340,7 +340,7 @@ func TestConditionsMatch(t *testing.T) {
 							Kind: "opaque",
 							Import: &config.ImportInfo{
 								Alias: "metav1",
-								Path: "k8s.io/apimachinery/pkg/apis/meta/v1",
+								Path:  "k8s.io/apimachinery/pkg/apis/meta/v1",
 							},
 						},
 					},

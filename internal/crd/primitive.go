@@ -9,14 +9,14 @@ import (
 // PrimitiveHookFn converts an OpenAPI primitive type to a GoType
 func PrimitiveHookFn(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
 	kind := crdType.Schema.Type
-	if oneOf(kind, OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean) {
-		goTypeName, err := openAPIKindtoGoType(kind)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse OpenAPI kind %s: %w", kind, err)
-		}
-		return gotype.NewPrimitive(goTypeName, goTypeName), nil
+	if !oneOf(kind, OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean) {
+		return nil, fmt.Errorf("%s is not a primitive type: %w", kind, ErrNotApplied)
 	}
-	return nil, fmt.Errorf("%s is not a primitive type: %w", crdType.Schema.Type, ErrNotApplied)
+	goTypeName, err := openAPIKindtoGoType(kind)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse OpenAPI kind %s: %w", kind, err)
+	}
+	return gotype.NewPrimitive(goTypeName, goTypeName), nil
 }
 
 // openAPIKindtoGoType converts an OpenAPI kind to a Go type

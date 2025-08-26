@@ -3,15 +3,12 @@ package crd
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"slices"
 	"strings"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/josvazg/crd2go/internal/gotype"
-	"github.com/josvazg/crd2go/k8s"
 )
 
 const (
@@ -35,6 +32,8 @@ var Hooks = []FromOpenAPITypeFunc{
 	DictHookFn,
 	DatetimeHookFn,
 	PrimitiveHookFn,
+	StructHookFn,
+	ArrayHookFn,
 }
 
 type CRDType struct {
@@ -58,60 +57,7 @@ func FromOpenAPIType(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *
 		}
 		return gt, nil
 	}
-	switch crdType.Schema.Type {
-	case OpenAPIObject:
-		return fromOpenAPIStruct(td, hooks, crdType)
-	case OpenAPIArray:
-		return fromOpenAPIArray(td, hooks, crdType)
-	default:
-		return nil, fmt.Errorf("unsupported Open API type %q", crdType.Name)
-	}
-}
-
-// fromOpenAPIStruct converts and OpenAPI object to a GoType struct
-func fromOpenAPIStruct(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
-	fields := []*gotype.GoField{}
-	fieldsParents := append(crdType.Parents, crdType.Name)
-	for _, key := range orderedkeys(crdType.Schema.Properties) {
-		props := crdType.Schema.Properties[key]
-		fieldType, err := FromOpenAPIType(td, hooks, &CRDType{
-			Name:    key,
-			Parents: fieldsParents,
-			Schema:  &props,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse %s type: %w", key, err)
-		}
-		field := gotype.NewGoFieldWithKey(key, key, fieldType)
-		field.Comment = props.Description
-		field.Required = slices.Contains(crdType.Schema.Required, key)
-		if err := td.RenameField(field, fieldsParents); err != nil {
-			return nil, fmt.Errorf("failed to rename field %v: %w", field, err)
-		}
-		fields = append(fields, field)
-	}
-	return gotype.NewStruct(crdType.Name, fields), nil
-}
-
-// fromOpenAPIArray converts an OpenAPI array schema to a GoType array
-func fromOpenAPIArray(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
-	if crdType.Schema.Items == nil {
-		return nil, fmt.Errorf("array %s has no items", crdType.Name)
-	}
-	if crdType.Schema.Items.Schema == nil {
-		return nil, fmt.Errorf("array %s has no items schema", crdType.Name)
-	}
-	elementType, err := FromOpenAPIType(td, hooks, &CRDType{
-		Name:   crdType.Name,
-		Schema: crdType.Schema.Items.Schema,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse array %s element type: %w", crdType.Name, err)
-	}
-	if err := td.RenameType(crdType.Parents, elementType); err != nil {
-		return nil, fmt.Errorf("failed to rename element type under %s: %w", crdType.Name, err)
-	}
-	return gotype.NewArray(elementType), nil
+	return nil, fmt.Errorf("unsupported Open API type %q", crdType.Name)
 }
 
 // orderedkeys returns a sorted slice of keys from the given map
@@ -122,14 +68,6 @@ func orderedkeys[T any](m map[string]T) []string {
 	}
 	slices.Sort(keys)
 	return keys
-}
-
-func KnownTypes() []*gotype.GoType {
-	return []*gotype.GoType{
-		gotype.MustTypeFrom(reflect.TypeOf(k8s.LocalReference{})),
-		gotype.MustTypeFrom(reflect.TypeOf(k8s.Reference{})),
-		gotype.SetAlias(gotype.MustTypeFrom(reflect.TypeOf(metav1.Condition{})), "metav1"),
-	}
 }
 
 func CRD2Filename(crd *apiextensionsv1.CustomResourceDefinition) string {
