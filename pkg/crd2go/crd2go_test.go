@@ -7,11 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/gen"
 	"github.com/josvazg/crd2go/internal/gotype"
-	"github.com/josvazg/crd2go/pkg/crd2go"
 	"github.com/josvazg/crd2go/pkg/config"
+	"github.com/josvazg/crd2go/pkg/crd2go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -109,7 +108,7 @@ func newWriteNopCloser(w io.Writer) io.WriteCloser {
 }
 
 func preloadedTypes() []*gotype.GoType {
-	return append(crd.KnownTypes(), reservedTypeNames(extraReserved)...)
+	return append(gotype.KnownTypes(), reservedTypeNames(extraReserved)...)
 }
 
 func reservedTypeNames(reservedNames []string) []*gotype.GoType {
