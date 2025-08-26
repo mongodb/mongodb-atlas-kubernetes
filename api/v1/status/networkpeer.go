@@ -15,7 +15,7 @@
 package status
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 )
