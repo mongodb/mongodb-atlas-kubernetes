@@ -3,6 +3,10 @@ package gotype
 import (
 	"fmt"
 	"reflect"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/josvazg/crd2go/k8s"
 )
 
 var (
@@ -26,4 +30,12 @@ func toBuiltInType(t reflect.Type) *GoType {
 		return gt
 	}
 	return nil
+}
+
+func KnownTypes() []*GoType {
+	return []*GoType{
+		MustTypeFrom(reflect.TypeOf(k8s.LocalReference{})),
+		MustTypeFrom(reflect.TypeOf(k8s.Reference{})),
+		SetAlias(MustTypeFrom(reflect.TypeOf(metav1.Condition{})), "metav1"),
+	}
 }
