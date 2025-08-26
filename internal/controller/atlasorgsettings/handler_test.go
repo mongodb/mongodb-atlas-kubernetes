@@ -501,7 +501,7 @@ func TestUnmanage(t *testing.T) {
 			orgID: fakeOrgID,
 			expected: ctrlstate.Result{
 				NextState: "Deleted",
-				StateMsg:  fmt.Sprintf("unmanaged AtlasOrgSettings for orgID %s.", fakeOrgID),
+				StateMsg:  fmt.Sprintf("Unmanaged AtlasOrgSettings for orgID %s.", fakeOrgID),
 			},
 		},
 		{
@@ -509,7 +509,7 @@ func TestUnmanage(t *testing.T) {
 			orgID: "another-org-id",
 			expected: ctrlstate.Result{
 				NextState: "Deleted",
-				StateMsg:  "unmanaged AtlasOrgSettings for orgID another-org-id.",
+				StateMsg:  "Unmanaged AtlasOrgSettings for orgID another-org-id.",
 			},
 		},
 		{
@@ -517,7 +517,7 @@ func TestUnmanage(t *testing.T) {
 			orgID: "",
 			expected: ctrlstate.Result{
 				NextState: "Deleted",
-				StateMsg:  "unmanaged AtlasOrgSettings for orgID .",
+				StateMsg:  "Unmanaged AtlasOrgSettings for orgID .",
 			},
 		},
 		{
@@ -525,7 +525,7 @@ func TestUnmanage(t *testing.T) {
 			orgID: "org-with-special-chars!@#$%",
 			expected: ctrlstate.Result{
 				NextState: "Deleted",
-				StateMsg:  "unmanaged AtlasOrgSettings for orgID org-with-special-chars!@#$%.",
+				StateMsg:  "Unmanaged AtlasOrgSettings for orgID org-with-special-chars!@#$%.",
 			},
 		},
 	}
@@ -618,7 +618,7 @@ func TestHandlerMethods(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, ctrlstate.Result{
 			NextState: "Deleted",
-			StateMsg:  fmt.Sprintf("unmanaged AtlasOrgSettings for orgID %s.", fakeOrgID),
+			StateMsg:  fmt.Sprintf("Unmanaged AtlasOrgSettings for orgID %s.", fakeOrgID),
 		}, got)
 	})
 }
