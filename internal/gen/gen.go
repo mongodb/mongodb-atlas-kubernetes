@@ -8,6 +8,7 @@ import (
 
 	"github.com/dave/jennifer/jen"
 	"github.com/josvazg/crd2go/internal/crd"
+	"github.com/josvazg/crd2go/internal/crd/hooks"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -68,7 +69,7 @@ func generateCRDRootObject(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.V
 // generateCRDSpec generates the spec of the CRD
 func generateCRDSpec(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.VersionedCRD) error {
 	specSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["spec"]
-	spec, err := crd.FromOpenAPIType(td, crd.Hooks, &crd.CRDType{
+	spec, err := crd.FromOpenAPIType(td, hooks.Hooks, &crd.CRDType{
 		Name:    versionedCRD.SpecTypename(),
 		Parents: []string{versionedCRD.Kind},
 		Schema:  &specSchema,
@@ -87,7 +88,7 @@ func generateCRDSpec(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.Version
 // generateCRDStatus generates the spec of the CRD
 func generateCRDStatus(f *jen.File, td *gotype.TypeDict, versionedCRD *crd.VersionedCRD) error {
 	statusSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["status"]
-	status, err := crd.FromOpenAPIType(td, crd.Hooks, &crd.CRDType{
+	status, err := crd.FromOpenAPIType(td, hooks.Hooks, &crd.CRDType{
 		Name:    versionedCRD.StatusTypename(),
 		Parents: []string{versionedCRD.Kind},
 		Schema:  &statusSchema,
