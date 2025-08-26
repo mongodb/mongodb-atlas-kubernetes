@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/josvazg/crd2go/internal/crd"
+	"github.com/josvazg/crd2go/internal/crd/hooks"
 	"github.com/josvazg/crd2go/internal/debug"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/k8s"
@@ -200,7 +201,7 @@ func TestBuildOpenAPIType(t *testing.T) {
 			},
 		},
 	}
-	goType, err := crd.FromOpenAPIType(td, crd.Hooks, crdRootType)
+	goType, err := crd.FromOpenAPIType(td, hooks.Hooks, crdRootType)
 	assert.NoError(t, err)
 	assert.NotNil(t, goType)
 
@@ -244,7 +245,7 @@ func TestBuiltInFormat2Type(t *testing.T) {
 			Format: "date-time",
 		},
 	}
-	got, err := crd.FromOpenAPIType(td, crd.Hooks, crdTimeType)
+	got, err := crd.FromOpenAPIType(td, hooks.Hooks, crdTimeType)
 	require.NoError(t, err)
 	want := &gotype.GoType{
 		Name: "Time",

@@ -3,7 +3,6 @@ package crd
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -21,20 +20,11 @@ const (
 )
 
 var (
-	// ErrNotApplied means the hook did nothing as the CRDType did not apply to this hook
-	ErrNotApplied = errors.New("hook does not apply")
+	// ErrNotProcessed means the hook did nothing as the CRDType did not apply to this hook
+	ErrNotProcessed = errors.New("hook not processed")
 )
 
 type FromOpenAPITypeFunc func(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error)
-
-var Hooks = []FromOpenAPITypeFunc{
-	UnstructuredHookFn,
-	DictHookFn,
-	DatetimeHookFn,
-	PrimitiveHookFn,
-	StructHookFn,
-	ArrayHookFn,
-}
 
 type CRDType struct {
 	Name    string
@@ -49,7 +39,7 @@ func FromOpenAPIType(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *
 			continue
 		}
 		gt, err := hook(td, hooks, crdType)
-		if errors.Is(err, ErrNotApplied) {
+		if errors.Is(err, ErrNotProcessed) {
 			continue
 		}
 		if err != nil {
@@ -60,21 +50,19 @@ func FromOpenAPIType(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *
 	return nil, fmt.Errorf("unsupported Open API type %q", crdType.Name)
 }
 
-// orderedkeys returns a sorted slice of keys from the given map
-func orderedkeys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	slices.Sort(keys)
-	return keys
-}
-
 func CRD2Filename(crd *apiextensionsv1.CustomResourceDefinition) string {
 	return fmt.Sprintf("%s.go", strings.ToLower(crd.Spec.Names.Kind))
 }
 
-func oneOf(s string, options ...string) bool {
+func IsPrimitive(crdType *CRDType) bool {
+	return matchesAny(crdType.Schema.Type, OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean)
+}
+
+func IsDateTimeFormat(crdType *CRDType) bool {
+	return matchesAny(crdType.Schema.Format, "datetime", "date-time")
+}
+
+func matchesAny(s string, options ...string) bool {
 	for _, opt := range options {
 		if s == opt {
 			return true

@@ -1,22 +1,18 @@
-package crd
+package hooks
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/gotype"
 )
 
-func DatetimeHookFn(td *gotype.TypeDict, _ []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
-	if crdType.Schema.Format != "" {
-		log.Print("hey")
+func DatetimeHookFn(td *gotype.TypeDict, _ []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+	if !crd.IsPrimitive(crdType) || !crd.IsDateTimeFormat(crdType) {
+		return nil, fmt.Errorf("%s is not a date time (format is %s): %w",
+			crdType.Schema.Type, crdType.Schema.Format, crd.ErrNotProcessed)
 	}
-	if oneOf(crdType.Schema.Type, OpenAPIString, OpenAPIInteger, OpenAPINumber, OpenAPIBoolean) &&
-		oneOf(crdType.Schema.Format, "datetime", "date-time") {
-		return gotype.TimeType, nil
-	}
-	return nil, fmt.Errorf("%s is not a date time (format is %s): %w",
-		crdType.Schema.Type, crdType.Schema.Format, ErrNotApplied)
+	return gotype.TimeType, nil
 }
 
 // TODO: might need to support other formats

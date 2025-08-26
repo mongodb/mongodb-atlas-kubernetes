@@ -1,15 +1,16 @@
-package crd
+package hooks
 
 import (
 	"fmt"
 
+	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/gotype"
 )
 
 // ArrayHookFn converts an OpenAPI array schema to a GoType array
-func ArrayHookFn(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDType) (*gotype.GoType, error) {
-	if crdType.Schema.Type != OpenAPIArray {
-		return nil, fmt.Errorf("%s is not an array: %w", crdType.Schema.Type, ErrNotApplied)
+func ArrayHookFn(td *gotype.TypeDict, hooks []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+	if crdType.Schema.Type != crd.OpenAPIArray {
+		return nil, fmt.Errorf("%s is not an array: %w", crdType.Schema.Type, crd.ErrNotProcessed)
 	}
 	if crdType.Schema.Items == nil {
 		return nil, fmt.Errorf("array %s has no items", crdType.Name)
@@ -17,7 +18,7 @@ func ArrayHookFn(td *gotype.TypeDict, hooks []FromOpenAPITypeFunc, crdType *CRDT
 	if crdType.Schema.Items.Schema == nil {
 		return nil, fmt.Errorf("array %s has no items schema", crdType.Name)
 	}
-	elementType, err := FromOpenAPIType(td, hooks, &CRDType{
+	elementType, err := crd.FromOpenAPIType(td, hooks, &crd.CRDType{
 		Name:   crdType.Name,
 		Schema: crdType.Schema.Items.Schema,
 	})
