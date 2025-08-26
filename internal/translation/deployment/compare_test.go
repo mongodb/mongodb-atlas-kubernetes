@@ -640,6 +640,18 @@ func TestSpecAreEqual(t *testing.T) {
 				EncryptionAtRestProvider: pointer.MakePtr("NONE"),
 			},
 		},
+		"should return false when config server management are different": {
+			ako: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ConfigServerManagementMode: "ATLAS_MANAGED",
+					},
+				},
+			},
+			atlas: &admin.ClusterDescription20240805{
+				ConfigServerManagementMode: pointer.MakePtr("FIXED_TO_DEDICATED"),
+			},
+		},
 		"should return false when mongodb version are different": {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{

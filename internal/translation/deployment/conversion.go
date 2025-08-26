@@ -598,6 +598,7 @@ func clusterFromAtlas(clusterDesc *admin.ClusterDescription20240805) *Cluster {
 			TerminationProtectionEnabled: clusterDesc.GetTerminationProtectionEnabled(),
 			SearchNodes:                  nil,
 			SearchIndexes:                nil,
+			ConfigServerManagementMode:   clusterDesc.GetConfigServerManagementMode(),
 		},
 	}
 	normalizeClusterDeployment(cluster)
@@ -625,6 +626,7 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
+		ConfigServerManagementMode:   pointer.MakePtrOrNil(cluster.ConfigServerManagementMode),
 	}
 }
 
@@ -643,6 +645,7 @@ func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
+		ConfigServerManagementMode:   pointer.MakePtrOrNil(cluster.ConfigServerManagementMode),
 	}
 }
 
@@ -1293,5 +1296,6 @@ func flexUpgradeToAtlas(cluster *Cluster) *admin.AtlasTenantClusterUpgradeReques
 		RootCertType:                 pointer.MakePtrOrNil(spec.RootCertType),
 		Tags:                         tag.ToAtlas(spec.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(spec.TerminationProtectionEnabled),
+		ConfigServerManagementMode:   pointer.MakePtrOrNil(spec.ConfigServerManagementMode),
 	}
 }
