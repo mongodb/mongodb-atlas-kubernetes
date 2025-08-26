@@ -200,7 +200,7 @@ func TestBuildOpenAPIType(t *testing.T) {
 			},
 		},
 	}
-	goType, err := crd.FromOpenAPIType(td, crdRootType)
+	goType, err := crd.FromOpenAPIType(td, crd.Hooks, crdRootType)
 	assert.NoError(t, err)
 	assert.NotNil(t, goType)
 
@@ -244,14 +244,14 @@ func TestBuiltInFormat2Type(t *testing.T) {
 			Format: "date-time",
 		},
 	}
-	got, err := crd.FromOpenAPIType(td, crdTimeType)
+	got, err := crd.FromOpenAPIType(td, crd.Hooks, crdTimeType)
 	require.NoError(t, err)
 	want := &gotype.GoType{
 		Name: "Time",
 		Kind: "opaque",
 		Import: &config.ImportInfo{
-			"metav1",
-			"k8s.io/apimachinery/pkg/apis/meta/v1",
+			Alias: "metav1",
+			Path: "k8s.io/apimachinery/pkg/apis/meta/v1",
 		},
 	}
 	assert.Equal(t, want, got)
@@ -294,8 +294,8 @@ func TestConditionsMatch(t *testing.T) {
 							Name: "Time",
 							Kind: "opaque",
 							Import: &config.ImportInfo{
-								"metav1",
-								"k8s.io/apimachinery/pkg/apis/meta/v1",
+								Alias: "metav1",
+								Path: "k8s.io/apimachinery/pkg/apis/meta/v1",
 							},
 						},
 					},
@@ -339,8 +339,8 @@ func TestConditionsMatch(t *testing.T) {
 							Name: "Time",
 							Kind: "opaque",
 							Import: &config.ImportInfo{
-								"metav1",
-								"k8s.io/apimachinery/pkg/apis/meta/v1",
+								Alias: "metav1",
+								Path: "k8s.io/apimachinery/pkg/apis/meta/v1",
 							},
 						},
 					},
