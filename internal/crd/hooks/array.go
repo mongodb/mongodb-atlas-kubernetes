@@ -8,7 +8,7 @@ import (
 )
 
 // ArrayHookFn converts an OpenAPI array schema to a GoType array
-func ArrayHookFn(td *gotype.TypeDict, hooks []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+func ArrayHookFn(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	if crdType.Schema.Type != crd.OpenAPIArray {
 		return nil, fmt.Errorf("%s is not an array: %w", crdType.Schema.Type, crd.ErrNotProcessed)
 	}

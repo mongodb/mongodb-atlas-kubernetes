@@ -8,7 +8,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-func DictHookFn(td *gotype.TypeDict, hooks []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+func DictHookFn(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	if !isDict(crdType.Schema) {
 		return nil, fmt.Errorf("%s is not a dictionary (additionalProperties is %v): %w",
 			crdType.Schema.Type, crdType.Schema.AdditionalProperties, crd.ErrNotProcessed)
@@ -17,7 +17,7 @@ func DictHookFn(td *gotype.TypeDict, hooks []crd.FromOpenAPITypeFunc, crdType *c
 }
 
 // fromOpenAPIDict converts an OpenAPI dictionary to a GoType map
-func fromOpenAPIDict(td *gotype.TypeDict, hooks []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+func fromOpenAPIDict(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	elemType := gotype.JSONType
 	if crdType.Schema.AdditionalProperties.Schema != nil {
 		var err error

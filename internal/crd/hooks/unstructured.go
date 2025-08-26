@@ -9,7 +9,7 @@ import (
 	"github.com/josvazg/crd2go/internal/gotype"
 )
 
-func UnstructuredHookFn(td *gotype.TypeDict, _ []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+func UnstructuredHookFn(td *gotype.TypeDict, _ []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	if crdType.Schema.Type != crd.OpenAPIObject || !isUnstructured(crdType.Schema) {
 		return nil, fmt.Errorf("%s is not unstructured (has %d properties and x-preserve-unknown-fields is %v): %w",
 			crdType.Schema.Type, len(crdType.Schema.Properties), crdType.Schema.XPreserveUnknownFields, crd.ErrNotProcessed)

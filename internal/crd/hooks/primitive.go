@@ -8,7 +8,7 @@ import (
 )
 
 // PrimitiveHookFn converts an OpenAPI primitive type to a GoType
-func PrimitiveHookFn(td *gotype.TypeDict, hooks []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+func PrimitiveHookFn(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	if !crd.IsPrimitive(crdType) {
 		return nil, fmt.Errorf("%s is not a primitive type: %w", crdType.Schema.Type, crd.ErrNotProcessed)
 	}

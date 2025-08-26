@@ -9,7 +9,7 @@ import (
 )
 
 // StructHookFn converts and OpenAPI object to a GoType struct
-func StructHookFn(td *gotype.TypeDict, hooks []crd.FromOpenAPITypeFunc, crdType *crd.CRDType) (*gotype.GoType, error) {
+func StructHookFn(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	if crdType.Schema.Type != crd.OpenAPIObject {
 		return nil, fmt.Errorf("%s is not an object: %w", crdType.Schema.Type, crd.ErrNotProcessed)
 	}
