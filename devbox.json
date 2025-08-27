@@ -6,11 +6,13 @@
     "vscodium@latest",
     "kubernetes-controller-tools@latest",
     "gh@latest",
-    "gotestsum@latest"
+    "gotestsum@latest",
+    "gci@latest"
   ],
   "shell": {
     "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
+      "echo 'Welcome to devbox!' > /dev/null",
+      "alias gofmt-gci='gci write --skip-generated -s standard -s default -s localmodule .'"
     ],
     "scripts": {
       "test": [

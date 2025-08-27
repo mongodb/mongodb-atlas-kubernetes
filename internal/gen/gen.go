@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/dave/jennifer/jen"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/crd/hooks"
 	"github.com/josvazg/crd2go/internal/gotype"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
