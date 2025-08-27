@@ -24,5 +24,10 @@ jobs:
     - name: Build
       run: go build -v ./...
 
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.13.0
+      with:
+        enable-cache: 'true'
+
     - name: Test
-      run: go test -v ./...
+      run: devbox run -- 'gotestsum -- -v -coverpkg=./...  ./...'

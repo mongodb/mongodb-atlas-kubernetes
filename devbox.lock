@@ -101,6 +101,54 @@
         }
       }
     },
+    "gotestsum@latest": {
+      "last_modified": "2025-07-28T17:09:23Z",
+      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#gotestsum",
+      "source": "devbox-search",
+      "version": "1.12.3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/swq60xs4jg3wfcamp4p6wzz6qn3c8qvx-gotestsum-1.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/swq60xs4jg3wfcamp4p6wzz6qn3c8qvx-gotestsum-1.12.3"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7haic4cb3kamhn8wm6gl4apgj3pcmbra-gotestsum-1.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/7haic4cb3kamhn8wm6gl4apgj3pcmbra-gotestsum-1.12.3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gkfzawlv13c7as7nyvcyylc22n1a2kfq-gotestsum-1.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gkfzawlv13c7as7nyvcyylc22n1a2kfq-gotestsum-1.12.3"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/lpk7zks194p1l7580176rssghrklj81q-gotestsum-1.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/lpk7zks194p1l7580176rssghrklj81q-gotestsum-1.12.3"
+        }
+      }
+    },
     "kubernetes-controller-tools@latest": {
       "last_modified": "2025-07-13T22:45:35Z",
       "resolved": "github:NixOS/nixpkgs/a421ac6595024edcfbb1ef950a3712b89161c359#kubernetes-controller-tools",
