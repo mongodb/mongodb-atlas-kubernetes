@@ -10,11 +10,16 @@ import (
 )
 
 const (
+	// visit https://github.com/s-urbaniak/atlas2crd/blob/main/crds.yaml
 	CRDsURL = "https://raw.githubusercontent.com/s-urbaniak/atlas2crd/refs/heads/main/crds.yaml?token=%s"
 
-	crdsFile = "internal/crd2go/samples/crds.yaml"
+	samplesDir = "pkg/crd2go/samples/"
 
-	targetDir = "internal/crd2go/samples/v1"
+	crdsFile = samplesDir + "crds.yaml"
+
+	targetDir = samplesDir + "v1"
+
+	controllerGenPaths = "./" + targetDir
 )
 
 func main() {
@@ -40,7 +45,7 @@ func updateSamples() error {
 	}
 
 	log.Print("Generating Go deep copy code...")
-	if err := run("controller-gen", "object", "paths=\"./pkg/translate/samples/v1\""); err != nil {
+	if err := run("controller-gen", "object", fmt.Sprintf("paths=%q", controllerGenPaths)); err != nil {
 		return fmt.Errorf("failed to generate Go deep copy code: %w", err)
 	}
 	return nil
