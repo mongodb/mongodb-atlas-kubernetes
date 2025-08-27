@@ -5,15 +5,16 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/crd/hooks"
 	"github.com/josvazg/crd2go/internal/debug"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/k8s"
 	"github.com/josvazg/crd2go/pkg/config"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func TestRenameType(t *testing.T) {

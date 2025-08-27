@@ -6,9 +6,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/josvazg/crd2go/pkg/config"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/josvazg/crd2go/pkg/config"
 )
 
 const (
