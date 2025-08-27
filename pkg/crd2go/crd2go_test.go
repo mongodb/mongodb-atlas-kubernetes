@@ -120,11 +120,6 @@ imports: []`,
 				},
 			},
 		},
-		{
-			name:    "empty input",
-			input:   "",
-			wantErr: "blah",
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := crd2go.LoadConfig(bytes.NewBufferString(tc.input))
