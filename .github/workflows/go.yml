@@ -29,5 +29,10 @@ jobs:
       with:
         enable-cache: 'true'
 
+    - name: Lint
+      run: |
+        echo "Did you run gofmt-gci?"
+        devbox run -- 'gofmt-gci && git diff-index --name-only HEAD && git diff-index --quiet HEAD --'
+
     - name: Test
       run: devbox run -- 'gotestsum -- -v -coverpkg=./...  ./...'
