@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "gci@latest": {
+      "last_modified": "2025-08-05T11:35:34Z",
+      "resolved": "github:NixOS/nixpkgs/a683adc19ff5228af548c6539dbc3440509bfed3#gci",
+      "source": "devbox-search",
+      "version": "0.13.7",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7b3sg0y429lrs0911z4niarpbfjr56jg-gci-0.13.7",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/7b3sg0y429lrs0911z4niarpbfjr56jg-gci-0.13.7"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/3vhs0z22yjhb74i5gd37mjmzh3rnp6jy-gci-0.13.7",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/3vhs0z22yjhb74i5gd37mjmzh3rnp6jy-gci-0.13.7"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/aspm12m99q4hvk0knzdhkzcwci76pay8-gci-0.13.7",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/aspm12m99q4hvk0knzdhkzcwci76pay8-gci-0.13.7"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/93ma260h6rj5c47hrn0bajd5d4kc8kfs-gci-0.13.7",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/93ma260h6rj5c47hrn0bajd5d4kc8kfs-gci-0.13.7"
+        }
+      }
+    },
     "gh@latest": {
       "last_modified": "2025-07-24T15:00:16Z",
       "resolved": "github:NixOS/nixpkgs/b74a30dbc0a72e20df07d43109339f780b439291#gh",
