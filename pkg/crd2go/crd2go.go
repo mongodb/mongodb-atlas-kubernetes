@@ -10,11 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/gen"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/pkg/config"
-	"gopkg.in/yaml.v3"
 )
 
 func LoadConfig(r io.Reader) (*config.Config, error) {

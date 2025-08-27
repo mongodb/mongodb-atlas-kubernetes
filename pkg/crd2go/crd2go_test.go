@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/josvazg/crd2go/internal/gen"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/pkg/config"
 	"github.com/josvazg/crd2go/pkg/crd2go"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 //go:embed samples/*
@@ -70,6 +71,71 @@ func TestRefs(t *testing.T) {
 	for key, buf := range buffers {
 		want := readTestFile(t, filepath.Join("samples", "refs", "v1", key))
 		require.Equal(t, want, buf.String())
+	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		input   string
+		want    *config.Config
+		wantErr string
+	}{
+		{
+			name:  "empty config",
+			input: "{}",
+			want:  &config.Config{},
+		},
+		{
+			name: "defaults is empty lists and maps",
+			input: `skipList: []
+reserved: []
+renames: {}
+imports: []`,
+			want: &config.Config{
+				CoreConfig: config.CoreConfig{
+					Reserved: []string{},
+					SkipList: []string{},
+					Renames:  map[string]string{},
+					Imports:  []config.ImportedTypeConfig{},
+				},
+			},
+		},
+		{
+			name: "just input and output",
+			input: `input: ./pkg/crd2go/samples/crds.yaml
+output: ./pkg/crd2go/samples/v1
+skipList: []
+reserved: []
+renames: {}
+imports: []`,
+			want: &config.Config{
+				Input:  "./pkg/crd2go/samples/crds.yaml",
+				Output: "./pkg/crd2go/samples/v1",
+				CoreConfig: config.CoreConfig{
+					Reserved: []string{},
+					SkipList: []string{},
+					Renames:  map[string]string{},
+					Imports:  []config.ImportedTypeConfig{},
+				},
+			},
+		},
+		{
+			name:    "empty input",
+			input:   "",
+			wantErr: "blah",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := crd2go.LoadConfig(bytes.NewBufferString(tc.input))
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, cfg)
+			} else {
+				require.Nil(t, cfg)
+				assert.ErrorContains(t, err, tc.wantErr)
+			}
+		})
 	}
 }
 
