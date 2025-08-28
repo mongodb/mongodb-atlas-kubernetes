@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,13 +24,13 @@ func LoadConfig(r io.Reader) (*config.Config, error) {
 	}
 	cfg := config.Config{}
 	if err = yaml.Unmarshal(yml, &cfg); err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		return nil, fmt.Errorf("Failed to load configuration: %v", err)
 	}
 	return &cfg, nil
 }
 
-// CodeFileForCRDAtPath creates a file writer for the given CRD at the specified directory
-func CodeFileForCRDAtPath(dir string) config.CodeWriterFunc {
+// CodeWriterAtPath creates a file writer for the given CRD at the specified directory
+func CodeWriterAtPath(dir string) config.CodeWriterFunc {
 	return func(filename string, overwrite bool) (io.WriteCloser, error) {
 		srcFile := filepath.Join(dir, filename)
 		flags := os.O_CREATE | os.O_EXCL | os.O_WRONLY
@@ -54,7 +53,7 @@ func GenerateToDir(cfg *config.Config) error {
 	}
 	req := gotype.Request{
 		CoreConfig:   cfg.CoreConfig,
-		CodeWriterFn: CodeFileForCRDAtPath(cfg.Output),
+		CodeWriterFn: CodeWriterAtPath(cfg.Output),
 		TypeDict:     gotype.NewTypeDict(cfg.Renames, gotype.KnownTypes()...),
 	}
 	return Generate(&req, in)

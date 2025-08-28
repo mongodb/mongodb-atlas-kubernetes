@@ -3,7 +3,9 @@ package crd2go_test
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"io"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -120,9 +122,23 @@ imports: []`,
 				},
 			},
 		},
+		{
+			name:    "bad yaml",
+			input:   "this is not a good YAML config",
+			wantErr: "cannot unmarshal",
+		},
+		{
+			name:    "no input fails",
+			input:   "",
+			wantErr: "fake error",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg, err := crd2go.LoadConfig(bytes.NewBufferString(tc.input))
+			inputReader := newFakeFailureReader()
+			if tc.input != "" {
+				inputReader = bytes.NewBufferString(tc.input)
+			}
+			cfg, err := crd2go.LoadConfig(inputReader)
 			if tc.wantErr == "" {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want, cfg)
@@ -132,6 +148,26 @@ imports: []`,
 			}
 		})
 	}
+}
+
+func TestCodeFileForCRDAtPath(t *testing.T) {
+	tmpDir, err := os.MkdirTemp(".", "test-code-file-for-crd-path")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	cwFn := crd2go.CodeWriterAtPath(tmpDir)
+	require.NotNil(t, cwFn)
+
+	w1, err := cwFn("testfile.go", false)
+	assert.NoError(t, err)
+	defer w1.Close()
+
+	w2, err := cwFn("testfile.go", true)
+	assert.NoError(t, err)
+	defer w2.Close()
+
+	_, err = cwFn("..", true)
+	assert.ErrorContains(t, err, "failed to create file")
 }
 
 func readTestFile(t *testing.T, path string) string {
@@ -182,4 +218,14 @@ func reservedTypeNames(reservedNames []string) []*gotype.GoType {
 
 func ReserveTypeName(name string) *gotype.GoType {
 	return gotype.NewOpaqueType(name)
+}
+
+type fakeFailureReader struct{}
+
+func (ffr *fakeFailureReader) Read(buf []byte) (int, error) {
+	return 0, errors.New("fake error")
+}
+
+func newFakeFailureReader() io.Reader {
+	return &fakeFailureReader{}
 }
