@@ -61,3 +61,18 @@ func MustParseISO8601(dateTime string) time.Time {
 func FormatISO8601(dateTime time.Time) string {
 	return dateTime.Format("2006-01-02T15:04:05.999Z")
 }
+
+// IsExpired parses the given ISO8601 date string and returns whether it is before now.
+// Returns an error if the string cannot be parsed.
+func IsExpired(deleteAfterDate string) (bool, error) {
+	if deleteAfterDate == "" {
+		return false, nil
+	}
+
+	deleteAfter, err := ParseISO8601(deleteAfterDate)
+	if err != nil {
+		return false, err
+	}
+
+	return deleteAfter.Before(time.Now()), nil
+}

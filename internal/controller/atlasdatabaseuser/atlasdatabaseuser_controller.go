@@ -39,7 +39,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
@@ -141,12 +140,7 @@ func (r *AtlasDatabaseUserReconciler) terminate(
 }
 
 // unmanage remove finalizer and release resource
-func (r *AtlasDatabaseUserReconciler) unmanage(ctx *workflow.Context, projectID string, atlasDatabaseUser *akov2.AtlasDatabaseUser) (ctrl.Result, error) {
-	err := connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, projectID, atlasDatabaseUser.Spec.Username, *atlasDatabaseUser, r.Log)
-	if err != nil {
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
-	}
-
+func (r *AtlasDatabaseUserReconciler) unmanage(ctx *workflow.Context, atlasDatabaseUser *akov2.AtlasDatabaseUser) (ctrl.Result, error) {
 	if customresource.HaveFinalizer(atlasDatabaseUser, customresource.FinalizerLabel) {
 		err := customresource.ManageFinalizer(ctx.Context, r.Client, atlasDatabaseUser, customresource.UnsetFinalizer)
 		if err != nil {
