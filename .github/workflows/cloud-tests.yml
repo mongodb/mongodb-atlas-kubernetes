@@ -4,8 +4,8 @@ on:
   workflow_call:
 
 concurrency:
-    group: cloud-tests-${{ github.ref == 'refs/heads/main' && 'main' || github.actor || github.triggering_actor }}
-    cancel-in-progress: true
+  group: cloud-tests-${{ (github.ref == 'refs/heads/main' && github.event == 'schedule' && 'nightly') || (github.ref == 'refs/heads/main' && github.event == 'push' && 'merge') || github.actor || github.triggering_actor }}
+  cancel-in-progress: true
 
 jobs:
   allowed:
