@@ -15,8 +15,11 @@
 package v1
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 
@@ -139,4 +142,45 @@ func TestServerlessMetricThreshold(t *testing.T) {
 			require.Equal(t, tt.equal, tt.akoData.IsEqual(tt.atlasData))
 		})
 	}
+}
+
+func TestAlertConfigurationToAtlas(t *testing.T) {
+	t.Run("Can convert Alert Configuration to Atlas", func(t *testing.T) {
+		in := AlertConfiguration{
+			EventTypeName:    "TEST_EVENT",
+			SeverityOverride: "CRITICAL",
+			Enabled:          true,
+		}
+
+		out, err := in.ToAtlas()
+		require.NoError(t, err)
+
+		want := admin.GroupAlertsConfig{}
+		want.SetEventTypeName("TEST_EVENT")
+		want.SetSeverityOverride("CRITICAL")
+		want.SetMatchers([]admin.StreamsMatcher{})
+		want.SetNotifications([]admin.AlertsNotificationRootForGroup{})
+		want.SetEnabled(true)
+
+		assert.True(t, reflect.DeepEqual(*out, want), cmp.Diff(*out, want))
+	})
+
+	t.Run("Without SeverityOverride", func(t *testing.T) {
+		in := AlertConfiguration{
+			EventTypeName: "TEST_EVENT_NO_SEVERITY_OVERRIDE",
+			Enabled:       true,
+		}
+
+		out, err := in.ToAtlas()
+		require.NoError(t, err)
+		require.NotNil(t, out)
+
+		want := admin.GroupAlertsConfig{}
+		want.SetEventTypeName("TEST_EVENT_NO_SEVERITY_OVERRIDE")
+		want.SetEnabled(true)
+		want.SetMatchers([]admin.StreamsMatcher{})
+		want.SetNotifications([]admin.AlertsNotificationRootForGroup{})
+
+		assert.True(t, reflect.DeepEqual(*out, want), cmp.Diff(*out, want))
+	})
 }

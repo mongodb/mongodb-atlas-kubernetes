@@ -41,11 +41,16 @@ type AlertConfiguration struct {
 	Notifications []Notification `json:"notifications,omitempty"`
 	// MetricThreshold  causes an alert to be triggered.
 	MetricThreshold *MetricThreshold `json:"metricThreshold,omitempty"`
+	// SeverityOverride optionally overrides the default severity level for an alert.
+	// +optional
+	// +kubebuilder:validation:Enum=INFO;WARNING;ERROR;CRITICAL
+	SeverityOverride string `json:"severityOverride,omitempty"`
 }
 
 func (in AlertConfiguration) Key() string {
 	return strconv.FormatBool(in.Enabled) +
 		in.EventTypeName + "|" +
+		in.SeverityOverride + "|" +
 		internalcmp.SliceKey(in.Matchers) + "|" +
 		internalcmp.PointerKey(in.Threshold) + "|" +
 		internalcmp.SliceKey(in.Notifications) + "|" +
@@ -60,6 +65,9 @@ func (in *AlertConfiguration) ToAtlas() (*admin.GroupAlertsConfig, error) {
 	result := admin.NewGroupAlertsConfig()
 	result.SetEnabled(in.Enabled)
 	result.SetEventTypeName(in.EventTypeName)
+	if in.SeverityOverride != "" {
+		result.SetSeverityOverride(in.SeverityOverride)
+	}
 
 	matchers := make([]admin.StreamsMatcher, 0, len(in.Matchers))
 	for _, m := range in.Matchers {
