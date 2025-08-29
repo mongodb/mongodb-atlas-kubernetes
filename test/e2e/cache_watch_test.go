@@ -204,7 +204,7 @@ var _ = Describe("Reconciles test:", func() {
 							Type:    "ProjectReady",
 							Status:  "False",
 							Reason:  "ProjectNotCreatedInAtlas",
-							Message: "An invalid group ID byName was specified",
+							Message: "groupName is empty and must be specified",
 						}
 						By("Verify Kubernetes status got the expected error", func() {
 							Eventually(func(g Gomega) bool {

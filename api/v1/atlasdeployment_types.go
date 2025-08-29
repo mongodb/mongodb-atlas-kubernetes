@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -835,6 +835,9 @@ func (c *AtlasDeployment) AtlasName() string {
 	}
 	if c.Spec.ServerlessSpec != nil {
 		return c.Spec.ServerlessSpec.Name
+	}
+	if c.Spec.FlexSpec != nil {
+		return c.Spec.FlexSpec.Name
 	}
 	return ""
 }

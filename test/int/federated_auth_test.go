@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -118,14 +118,17 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 				atlasRoleAssignments := atlasRole.GetRoleAssignments()
 				for j := range atlasRoleAssignments {
 					atlasRS := atlasRoleAssignments[j]
-					project, _, err := atlasClient.ProjectsApi.GetProject(ctx, atlasRS.GetGroupId()).Execute()
-					Expect(err).NotTo(HaveOccurred())
-					Expect(project).NotTo(BeNil())
-
 					newRS := akov2.RoleAssignment{
-						ProjectName: project.Name,
-						Role:        atlasRS.GetRole(),
+						Role: atlasRS.GetRole(),
 					}
+
+					if groupId := atlasRS.GetGroupId(); groupId != "" {
+						project, _, err := atlasClient.ProjectsApi.GetProject(ctx, atlasRS.GetGroupId()).Execute()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(project).NotTo(BeNil())
+						newRS.ProjectName = project.GetName()
+					}
+
 					newRole.RoleAssignments = append(newRole.RoleAssignments, newRS)
 				}
 				roles = append(roles, newRole)
