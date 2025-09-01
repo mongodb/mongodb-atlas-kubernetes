@@ -343,6 +343,10 @@ func computeAutoscalingConfigAreEqual(desired, current *akov2.ComputeSpec) bool 
 		return false
 	}
 
+	if desired.PredictiveEnabled != nil && !areEqual(desired.PredictiveEnabled, current.PredictiveEnabled) {
+		return false
+	}
+
 	return true
 }
 

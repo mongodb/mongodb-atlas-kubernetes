@@ -289,6 +289,10 @@ spec:
                                           if "autoScaling.compute.scaleDownEnabled"
                                           : true.'
                                         type: string
+                                      predictiveEnabled:
+                                        description: Flag that indicates whether predictive
+                                          instance size auto-scaling is enabled.
+                                        type: boolean
                                       scaleDownEnabled:
                                         description: 'Flag that indicates whether
                                           the deployment tier may scale down. Atlas
@@ -820,6 +824,10 @@ spec:
                                   Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled"
                                   : true.'
                                 type: string
+                              predictiveEnabled:
+                                description: Flag that indicates whether predictive
+                                  instance size auto-scaling is enabled.
+                                type: boolean
                               scaleDownEnabled:
                                 description: 'Flag that indicates whether the deployment
                                   tier may scale down. Atlas requires this parameter
