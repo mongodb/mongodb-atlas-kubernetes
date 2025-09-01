@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/josvazg/crd2go/internal/gen"
+	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/pkg/config"
 	"github.com/josvazg/crd2go/pkg/crd2go"
@@ -38,7 +38,7 @@ func TestGenerateFromCRDs(t *testing.T) {
 		CodeWriterFn: BufferForCRD(buffers),
 		TypeDict:     gotype.NewTypeDict(nil, preloadedTypes()...),
 		CoreConfig: config.CoreConfig{
-			Version:  gen.FirstVersion,
+			Version:  crd.FirstVersion,
 			SkipList: disabledKinds,
 		},
 	}
@@ -61,7 +61,7 @@ func TestRefs(t *testing.T) {
 		CodeWriterFn: BufferForCRD(buffers),
 		TypeDict:     gotype.NewTypeDict(nil, preloadedTypes()...),
 		CoreConfig: config.CoreConfig{
-			Version:  gen.FirstVersion,
+			Version:  crd.FirstVersion,
 			SkipList: disabledKinds,
 		},
 	}

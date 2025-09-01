@@ -11,6 +11,10 @@ import (
 )
 
 const (
+	FirstVersion = ""
+)
+
+const (
 	OpenAPIObject  = "object"
 	OpenAPIArray   = "array"
 	OpenAPIString  = "string"
@@ -50,8 +54,8 @@ func FromOpenAPIType(td *gotype.TypeDict, hooks []OpenAPI2GoHook, crdType *CRDTy
 	return nil, fmt.Errorf("unsupported Open API type %q", crdType.Name)
 }
 
-func CRD2Filename(crd *apiextensionsv1.CustomResourceDefinition) string {
-	return fmt.Sprintf("%s.go", strings.ToLower(crd.Spec.Names.Kind))
+func Kind2Filename(kind string) string {
+	return fmt.Sprintf("%s.go", strings.ToLower(kind))
 }
 
 func IsPrimitive(crdType *CRDType) bool {
