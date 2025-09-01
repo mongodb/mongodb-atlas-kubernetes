@@ -26,10 +26,6 @@ on:
           - "true"
           - "false"
 
-concurrency:
-  group: test-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
-
 jobs:
   run-tests:
     name: Run Tests
