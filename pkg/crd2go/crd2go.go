@@ -12,8 +12,9 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/josvazg/crd2go/internal/crd"
-	"github.com/josvazg/crd2go/internal/gen"
+	"github.com/josvazg/crd2go/internal/crd/hooks"
 	"github.com/josvazg/crd2go/internal/gotype"
+	"github.com/josvazg/crd2go/internal/render"
 	"github.com/josvazg/crd2go/pkg/config"
 )
 
@@ -78,8 +79,11 @@ func Generate(req *gotype.Request, r io.Reader) error {
 		}
 	}
 	if len(groupsVersions) == 1 {
-		if err := gen.GenerateGroupVersionFiles(req, group, version); err != nil {
-			return fmt.Errorf("failed to generate files for group version '%s/%s': %w", group, version, err)
+		if err := render.Default.RenderDoc(req, group, version); err != nil {
+			return fmt.Errorf("failed to generate the doc.go file for group version '%s/%s': %w", group, version, err)
+		}
+		if err := render.Default.RenderSchema(req, group, version); err != nil {
+			return fmt.Errorf("failed to generate the schema.go file for group version '%s/%s': %w", group, version, err)
 		}
 	}
 	return nil
@@ -97,7 +101,6 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 	for _, importType := range req.Imports {
 		preloaded = append(preloaded, gotype.NewAutoImportType(&importType))
 	}
-	overwrite := true
 	generatedGVRs := []string{}
 	generated := false
 	scanner := bufio.NewScanner(r)
@@ -116,11 +119,6 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 		if in(req.SkipList, crdSchema.Spec.Names.Kind) {
 			continue
 		}
-		w, err := req.CodeWriterFn(crd.CRD2Filename(crdSchema), overwrite)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get writer for CRD %s: %w", crdSchema.Name, err)
-		}
-		defer w.Close()
 		versionedCRD := crd.SelectVersion(&crdSchema.Spec, req.Version)
 		if versionedCRD == nil {
 			if req.Version == "" {
@@ -128,12 +126,21 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 			}
 			return nil, fmt.Errorf("no version %q to generate code from", req.Version)
 		}
-		stmt, err := gen.GenerateCRD(req.TypeDict, versionedCRD)
+		spec, status, err := buildCRDSpecAndStatus(req, versionedCRD)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate CRD code: %w", err)
+			return nil, fmt.Errorf("could not build CRD types: %w", err)
 		}
-		if _, err := w.Write(([]byte)(stmt.GoString())); err != nil {
-			return nil, fmt.Errorf("failed to write Go code: %w", err)
+
+		renderReq := render.CRDRenderRequest{
+			Request:  *req,
+			Filename: crd.Kind2Filename(versionedCRD.Kind),
+			Version:  versionedCRD.Version.Name,
+			Kind:     versionedCRD.Kind,
+			Spec:     spec,
+			Status:   status,
+		}
+		if err := render.Default.RenderCRD(&renderReq); err != nil {
+			return nil, fmt.Errorf("failed to generate CRD code: %w", err)
 		}
 		generated = true
 		gvr := fmt.Sprintf("%s/%s/%s",
@@ -141,6 +148,32 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 		gvr = strings.TrimPrefix(gvr, "/")
 		generatedGVRs = append(generatedGVRs, gvr)
 	}
+}
+
+// TODO: could build the root object here but would have to expand gotype to support
+// embedded fields
+func buildCRDSpecAndStatus(req *gotype.Request, versionedCRD *crd.VersionedCRD) (*gotype.GoType, *gotype.GoType, error) {
+	req.TypeDict.Add(gotype.NewStruct(versionedCRD.Kind, nil)) // reserve the name of the root type not to be taken
+	specSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["spec"]
+	spec, err := crd.FromOpenAPIType(req.TypeDict, hooks.Hooks, &crd.CRDType{
+		Name:    versionedCRD.SpecTypename(),
+		Parents: []string{versionedCRD.Kind},
+		Schema:  &specSchema,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate spec type: %w", err)
+	}
+
+	statusSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["status"]
+	status, err := crd.FromOpenAPIType(req.TypeDict, hooks.Hooks, &crd.CRDType{
+		Name:    versionedCRD.StatusTypename(),
+		Parents: []string{versionedCRD.Kind},
+		Schema:  &statusSchema,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate status type: %w", err)
+	}
+	return spec, status, nil
 }
 
 func in[T comparable](list []T, target T) bool {
