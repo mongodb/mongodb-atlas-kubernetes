@@ -1611,6 +1611,11 @@ func (in *AtlasProjectSpec) DeepCopyInto(out *AtlasProjectSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.RegionalizedPrivateEndpoint != nil {
+		in, out := &in.RegionalizedPrivateEndpoint, &out.RegionalizedPrivateEndpoint
+		*out = new(project.RegionalizedPrivateEndpoint)
+		**out = **in
+	}
 	if in.CloudProviderAccessRoles != nil {
 		in, out := &in.CloudProviderAccessRoles, &out.CloudProviderAccessRoles
 		*out = make([]CloudProviderAccessRole, len(*in))
