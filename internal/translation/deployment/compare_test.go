@@ -1874,10 +1874,11 @@ func TestAutoscalingConfigAreEqual(t *testing.T) {
 					Enabled: pointer.MakePtr(true),
 				},
 				Compute: &akov2.ComputeSpec{
-					Enabled:          pointer.MakePtr(true),
-					ScaleDownEnabled: pointer.MakePtr(true),
-					MinInstanceSize:  "M10",
-					MaxInstanceSize:  "M40",
+					Enabled:           pointer.MakePtr(true),
+					ScaleDownEnabled:  pointer.MakePtr(true),
+					MinInstanceSize:   "M10",
+					MaxInstanceSize:   "M40",
+					PredictiveEnabled: pointer.MakePtr(true),
 				},
 			},
 			atlasAutoscaling: &akov2.AdvancedAutoScalingSpec{
@@ -1885,10 +1886,11 @@ func TestAutoscalingConfigAreEqual(t *testing.T) {
 					Enabled: pointer.MakePtr(true),
 				},
 				Compute: &akov2.ComputeSpec{
-					Enabled:          pointer.MakePtr(true),
-					ScaleDownEnabled: pointer.MakePtr(true),
-					MinInstanceSize:  "M10",
-					MaxInstanceSize:  "M40",
+					Enabled:           pointer.MakePtr(true),
+					ScaleDownEnabled:  pointer.MakePtr(true),
+					MinInstanceSize:   "M10",
+					MaxInstanceSize:   "M40",
+					PredictiveEnabled: pointer.MakePtr(true),
 				},
 			},
 			expected: true,
@@ -2010,6 +2012,14 @@ func TestComputeAutoscalingConfigAreEqual(t *testing.T) {
 				MaxInstanceSize: "M10",
 			},
 		},
+		"should return false when predictive autoscaling has changed": {
+			akoAutoscaling: &akov2.ComputeSpec{
+				PredictiveEnabled: pointer.MakePtr(true),
+			},
+			atlasAutoscaling: &akov2.ComputeSpec{
+				PredictiveEnabled: pointer.MakePtr(false),
+			},
+		},
 		"should return true when autoscaling enabled flags are unset": {
 			akoAutoscaling: &akov2.ComputeSpec{
 				MinInstanceSize: "M10",
@@ -2025,16 +2035,18 @@ func TestComputeAutoscalingConfigAreEqual(t *testing.T) {
 		},
 		"should return true when autoscaling are equal": {
 			akoAutoscaling: &akov2.ComputeSpec{
-				Enabled:          pointer.MakePtr(true),
-				ScaleDownEnabled: pointer.MakePtr(true),
-				MinInstanceSize:  "M10",
-				MaxInstanceSize:  "M40",
+				Enabled:           pointer.MakePtr(true),
+				ScaleDownEnabled:  pointer.MakePtr(true),
+				MinInstanceSize:   "M10",
+				MaxInstanceSize:   "M40",
+				PredictiveEnabled: pointer.MakePtr(true),
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				Enabled:          pointer.MakePtr(true),
-				ScaleDownEnabled: pointer.MakePtr(true),
-				MinInstanceSize:  "M10",
-				MaxInstanceSize:  "M40",
+				Enabled:           pointer.MakePtr(true),
+				ScaleDownEnabled:  pointer.MakePtr(true),
+				MinInstanceSize:   "M10",
+				MaxInstanceSize:   "M40",
+				PredictiveEnabled: pointer.MakePtr(true),
 			},
 			expected: true,
 		},
