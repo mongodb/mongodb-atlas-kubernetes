@@ -24,4 +24,5 @@ jobs:
             -ignore "**/*.md" \
             -ignore "**/*.yaml" \
             -ignore "**/*.yml" \
-            -ignore "**/*Dockerfile" .
+            -ignore "**/*Dockerfile" \
+            -ignore "**/*.nix" .
