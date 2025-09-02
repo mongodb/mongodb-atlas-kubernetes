@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type DataFederation struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DataFederationSpec   `json:"spec,omitempty"`
+	Spec DataFederationSpec `json:"spec,omitempty"`
+
 	Status DataFederationStatus `json:"status,omitempty"`
 }
 

@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type GroupAlertsConfig struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GroupAlertsConfigSpec   `json:"spec,omitempty"`
+	Spec GroupAlertsConfigSpec `json:"spec,omitempty"`
+
 	Status GroupAlertsConfigStatus `json:"status,omitempty"`
 }
 

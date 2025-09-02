@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type BackupSchedule struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BackupScheduleSpec   `json:"spec,omitempty"`
+	Spec BackupScheduleSpec `json:"spec,omitempty"`
+
 	Status BackupScheduleStatus `json:"status,omitempty"`
 }
 

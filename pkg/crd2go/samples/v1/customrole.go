@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type CustomRole struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CustomRoleSpec   `json:"spec,omitempty"`
+	Spec CustomRoleSpec `json:"spec,omitempty"`
+
 	Status CustomRoleStatus `json:"status,omitempty"`
 }
 

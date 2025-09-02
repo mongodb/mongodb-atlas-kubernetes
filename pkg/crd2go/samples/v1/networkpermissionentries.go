@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type NetworkPermissionEntries struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NetworkPermissionEntriesSpec   `json:"spec,omitempty"`
+	Spec NetworkPermissionEntriesSpec `json:"spec,omitempty"`
+
 	Status NetworkPermissionEntriesStatus `json:"status,omitempty"`
 }
 

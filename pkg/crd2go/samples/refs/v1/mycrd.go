@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type MyCRD struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   MyCRDSpec   `json:"spec,omitempty"`
+	Spec MyCRDSpec `json:"spec,omitempty"`
+
 	Status MyCRDStatus `json:"status,omitempty"`
 }
 

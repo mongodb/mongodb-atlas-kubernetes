@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type BackupCompliancePolicy struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BackupCompliancePolicySpec   `json:"spec,omitempty"`
+	Spec BackupCompliancePolicySpec `json:"spec,omitempty"`
+
 	Status BackupCompliancePolicyStatus `json:"status,omitempty"`
 }
 

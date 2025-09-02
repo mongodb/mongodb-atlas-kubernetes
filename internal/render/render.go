@@ -9,8 +9,7 @@ type CRDRenderRequest struct {
 	Filename string
 	Version string
 	Kind string
-	Spec *gotype.GoType
-	Status *gotype.GoType
+	Type *gotype.GoType
 }
 
 type CRD2GoRenderer interface {
