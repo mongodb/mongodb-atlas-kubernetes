@@ -7,5 +7,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: controller
-  newName: mongodb/mongodb-atlas-kubernetes-operator
-  newTag: 2.9.1
+  newName: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+  newTag: 2.10.1-prerelease-charts-30-ge23da3d1-dirty

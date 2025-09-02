@@ -90,12 +90,16 @@ spec:
       kind: AtlasNetworkPeering
       name: atlasnetworkpeerings.atlas.mongodb.com
       version: v1
-    - description: "The AtlasPrivateEndpoint custom resource definition (CRD) defines
-        a desired [Private Endpoint](https://www.mongodb.com/docs/atlas/security-private-endpoint/#std-label-private-endpoint-overview)
-        configuration for an Atlas project. It allows a private connection between
-        your cloud provider and Atlas that doesn't send information through a public
-        network. \n You can use private endpoints to create a unidirectional connection
-        to Atlas clusters from your virtual network."
+    - displayName: Atlas Org Settings
+      kind: AtlasOrgSettings
+      name: atlasorgsettings.atlas.mongodb.com
+      version: v1
+    - description: |-
+        The AtlasPrivateEndpoint custom resource definition (CRD) defines a desired [Private Endpoint](https://www.mongodb.com/docs/atlas/security-private-endpoint/#std-label-private-endpoint-overview) configuration for an Atlas project.
+        It allows a private connection between your cloud provider and Atlas that doesn't send information through a public network.
+
+
+        You can use private endpoints to create a unidirectional connection to Atlas clusters from your virtual network.
       displayName: Atlas Private Endpoint
       kind: AtlasPrivateEndpoint
       name: atlasprivateendpoints.atlas.mongodb.com
