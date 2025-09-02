@@ -40,8 +40,6 @@ test/e2e/output/
 node_modules
 tmp/
 
-# ready to work samples
-deploy/
 
 # ignore tool binaries
 tools/clean/clean
