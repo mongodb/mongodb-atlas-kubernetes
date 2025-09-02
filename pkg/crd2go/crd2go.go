@@ -126,9 +126,9 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 			}
 			return nil, fmt.Errorf("no version %q to generate code from", req.Version)
 		}
-		spec, status, err := buildCRDSpecAndStatus(req, versionedCRD)
+		goCRD, err := buildCRDType(req, versionedCRD)
 		if err != nil {
-			return nil, fmt.Errorf("could not build CRD types: %w", err)
+			return nil, fmt.Errorf("could not build CRD type: %w", err)
 		}
 
 		renderReq := render.CRDRenderRequest{
@@ -136,8 +136,7 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 			Filename: crd.Kind2Filename(versionedCRD.Kind),
 			Version:  versionedCRD.Version.Name,
 			Kind:     versionedCRD.Kind,
-			Spec:     spec,
-			Status:   status,
+			Type:     goCRD,
 		}
 		if err := render.Default.RenderCRD(&renderReq); err != nil {
 			return nil, fmt.Errorf("failed to generate CRD code: %w", err)
@@ -150,9 +149,7 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 	}
 }
 
-// TODO: could build the root object here but would have to expand gotype to support
-// embedded fields
-func buildCRDSpecAndStatus(req *gotype.Request, versionedCRD *crd.VersionedCRD) (*gotype.GoType, *gotype.GoType, error) {
+func buildCRDType(req *gotype.Request, versionedCRD *crd.VersionedCRD) (*gotype.GoType, error) {
 	req.TypeDict.Add(gotype.NewStruct(versionedCRD.Kind, nil)) // reserve the name of the root type not to be taken
 	specSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["spec"]
 	spec, err := crd.FromOpenAPIType(req.TypeDict, hooks.Hooks, &crd.CRDType{
@@ -161,7 +158,7 @@ func buildCRDSpecAndStatus(req *gotype.Request, versionedCRD *crd.VersionedCRD) 
 		Schema:  &specSchema,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate spec type: %w", err)
+		return nil, fmt.Errorf("failed to generate spec type: %w", err)
 	}
 
 	statusSchema := versionedCRD.Version.Schema.OpenAPIV3Schema.Properties["status"]
@@ -171,9 +168,28 @@ func buildCRDSpecAndStatus(req *gotype.Request, versionedCRD *crd.VersionedCRD) 
 		Schema:  &statusSchema,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate status type: %w", err)
+		return nil, fmt.Errorf("failed to generate status type: %w", err)
 	}
-	return spec, status, nil
+	return combineSpecAndStatus(versionedCRD.Kind, spec, status)
+}
+
+func combineSpecAndStatus(kind string, spec, status *gotype.GoType) (*gotype.GoType, error) {
+	metav1Package := config.ImportInfo{
+		Alias: "metav1", Path: "k8s.io/apimachinery/pkg/apis/meta/v1",
+	}
+	typeMeta := gotype.NewAutoImportType(&config.ImportedTypeConfig{
+		ImportInfo: metav1Package, Name: "TypeMeta",
+	})
+	objectMeta := gotype.NewAutoImportType(&config.ImportedTypeConfig{
+		ImportInfo: metav1Package, Name: "ObjectMeta",
+	})
+	goCRD := gotype.NewStruct(kind, []*gotype.GoField{
+		gotype.NewEmbeddedField(typeMeta).WithOptions(gotype.Required(true), gotype.JSONTag(",inline")),
+		gotype.NewEmbeddedField(objectMeta).WithOptions(gotype.Required(true), gotype.JSONTag("metadata,omitempty")),
+		gotype.NewGoField("Spec", spec).WithOptions(gotype.Required(true), gotype.JSONTag("spec,omitempty")),
+		gotype.NewGoField("Status", status).WithOptions(gotype.Required(true), gotype.JSONTag("status,omitempty")),
+	})
+	return goCRD, nil
 }
 
 func in[T comparable](list []T, target T) bool {

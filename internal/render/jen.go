@@ -40,12 +40,12 @@ func (jr JenRenderer) RenderSchema(req *gotype.Request, group, version string) e
 func (jr JenRenderer) RenderCRD(req *CRDRenderRequest) error {
 	f := jen.NewFile(req.Version)
 	renderCRDFileHeader(f, req.Kind)
-	renderCRDRootObject(f, req)
-	if err := renderGoType(f, req.TypeDict, req.Spec); err != nil {
-		return fmt.Errorf("failed to generate spec: %w", err)
-	}
-	if err := renderGoType(f, req.TypeDict, req.Status); err != nil {
-		return fmt.Errorf("failed to generate status: %w", err)
+
+	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object")
+	f.Comment("+kubebuilder:object:root=true").Line()
+
+	if err := renderGoType(f, req.TypeDict, req.Type); err != nil {
+		return fmt.Errorf("failed to generate CRD type for %q: %w", req.Kind, err)
 	}
 	renderCRDListObject(f, req.Kind)
 
@@ -71,19 +71,6 @@ func renderCRDFileHeader(f *jen.File, kind string) {
 		jen.Id("SchemeBuilder").Dot("Register").Params(
 			jen.Op("&").Id(kind+"List").Values(),
 		),
-	)
-}
-
-// renderCRDRootObject generates the root object for the CRD
-func renderCRDRootObject(f *jen.File, req *CRDRenderRequest) {
-	f.Comment("+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object")
-	f.Comment("+kubebuilder:object:root=true").Line()
-	f.Type().Id(req.Kind).Struct(
-		jen.Qual(metav1Package, "TypeMeta").Tag(map[string]string{"json": ",inline"}),
-		jen.Qual(metav1Package, "ObjectMeta").Tag(map[string]string{"json": "metadata,omitempty"}),
-		jen.Line(),
-		jen.Id("Spec").Id(req.Spec.Name).Tag(map[string]string{"json": "spec,omitempty"}),
-		jen.Id("Status").Id(req.Status.Name).Tag(map[string]string{"json": "status,omitempty"}),
 	)
 }
 
@@ -228,6 +215,13 @@ func generateSubtype(f *jen.File, td *gotype.TypeDict, t *gotype.GoType) (*jen.S
 
 // generateField generates Go code for a field in a struct
 func generateField(f *jen.File, field *gotype.GoField) (jen.Code, error) {
+	fieldCode := jen.Null()
+	if field.Comment != "" {
+		fieldCode = generateFieldComment(fieldCode, field.Name, field.Comment)
+	}
+	if !field.IsEmbedded() {
+		fieldCode = fieldCode.Id(field.Name)
+	}
 	if field.GoType == nil {
 		return nil, fmt.Errorf("field %q has no Go type", field.Name)
 	}
@@ -235,11 +229,7 @@ func generateField(f *jen.File, field *gotype.GoField) (jen.Code, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate field type: %w", err)
 	}
-	fieldCode := jen.Null()
-	if field.Comment != "" {
-		fieldCode = generateFieldComment(fieldCode, field.Name, field.Comment)
-	}
-	return fieldCode.Id(field.Name).Add(typeRefCode).Add(generateJSONTag(field)).Line(), nil
+	return fieldCode.Add(typeRefCode).Add(generateJSONTag(field)).Line(), nil
 }
 
 // generateFieldComment generates a comment for a field in a struct
@@ -288,9 +278,12 @@ func generateTypeRef(f *jen.File, t *gotype.GoType) *jen.Statement {
 
 // generateJSONTag generates a JSON tag for a field in a struct
 func generateJSONTag(f *gotype.GoField) *jen.Statement {
-	jsTag := fmt.Sprintf("%s,omitempty", f.Key)
-	if f.Required {
-		jsTag = fmt.Sprintf("%s", f.Key)
+	jsTag := f.CustomJSONTag
+	if jsTag == "" {
+		jsTag = fmt.Sprintf("%s,omitempty", f.Key)
+		if f.Required {
+			jsTag = fmt.Sprintf("%s", f.Key)
+		}
 	}
 	return jen.Tag(map[string]string{"json": jsTag})
 }

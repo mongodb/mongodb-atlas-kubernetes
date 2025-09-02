@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type SampleDataset struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SampleDatasetSpec   `json:"spec,omitempty"`
+	Spec SampleDatasetSpec `json:"spec,omitempty"`
+
 	Status SampleDatasetStatus `json:"status,omitempty"`
 }
 
