@@ -21,7 +21,6 @@ import (
 )
 
 func TestAddCredentialsToConnectionURL(t *testing.T) {
-
 	testCases := []struct {
 		name          string
 		connURL       string
