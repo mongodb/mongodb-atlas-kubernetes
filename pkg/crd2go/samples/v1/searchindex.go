@@ -17,10 +17,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type SearchIndex struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SearchIndexSpec   `json:"spec,omitempty"`
+	Spec SearchIndexSpec `json:"spec,omitempty"`
+
 	Status SearchIndexStatus `json:"status,omitempty"`
 }
 
