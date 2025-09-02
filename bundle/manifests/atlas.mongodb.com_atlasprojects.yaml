@@ -750,6 +750,9 @@ spec:
                 description: Name is the name of the Project that is created in Atlas
                   by the Operator if it doesn't exist yet.
                 type: string
+                x-kubernetes-validations:
+                - message: Name cannot be modified after project creation
+                  rule: self == oldSelf
               networkPeers:
                 description: NetworkPeers is a list of Network Peers configured for
                   the current Project.
