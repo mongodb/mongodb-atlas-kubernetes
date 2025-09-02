@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type NetworkPeeringConnection struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NetworkPeeringConnectionSpec   `json:"spec,omitempty"`
+	Spec NetworkPeeringConnectionSpec `json:"spec,omitempty"`
+
 	Status NetworkPeeringConnectionStatus `json:"status,omitempty"`
 }
 

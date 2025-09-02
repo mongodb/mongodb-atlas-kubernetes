@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type DatabaseUser struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DatabaseUserSpec   `json:"spec,omitempty"`
+	Spec DatabaseUserSpec `json:"spec,omitempty"`
+
 	Status DatabaseUserStatus `json:"status,omitempty"`
 }
 

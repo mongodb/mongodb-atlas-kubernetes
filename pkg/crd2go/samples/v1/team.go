@@ -13,10 +13,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type Team struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TeamSpec   `json:"spec,omitempty"`
+	Spec TeamSpec `json:"spec,omitempty"`
+
 	Status TeamStatus `json:"status,omitempty"`
 }
 

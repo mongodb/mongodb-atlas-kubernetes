@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type ThirdPartyIntegration struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ThirdPartyIntegrationSpec   `json:"spec,omitempty"`
+	Spec ThirdPartyIntegrationSpec `json:"spec,omitempty"`
+
 	Status ThirdPartyIntegrationStatus `json:"status,omitempty"`
 }
 

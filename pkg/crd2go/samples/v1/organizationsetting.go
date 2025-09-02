@@ -13,10 +13,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type OrganizationSetting struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   OrganizationSettingSpec   `json:"spec,omitempty"`
+	Spec OrganizationSettingSpec `json:"spec,omitempty"`
+
 	Status OrganizationSettingStatus `json:"status,omitempty"`
 }
 

@@ -16,10 +16,12 @@ func init() {
 // +kubebuilder:object:root=true
 
 type FlexCluster struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   FlexClusterSpec   `json:"spec,omitempty"`
+	Spec FlexClusterSpec `json:"spec,omitempty"`
+
 	Status FlexClusterStatus `json:"status,omitempty"`
 }
 
