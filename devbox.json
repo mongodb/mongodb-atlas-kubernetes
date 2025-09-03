@@ -6,7 +6,6 @@
     "vscodium@latest",
     "kubernetes-controller-tools@latest",
     "gh@latest",
-    "gotestsum@latest",
     "gci@latest"
   ],
   "shell": {
