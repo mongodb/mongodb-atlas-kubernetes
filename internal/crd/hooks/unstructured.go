@@ -18,5 +18,5 @@ func UnstructuredHookFn(td *gotype.TypeDict, _ []crd.OpenAPI2GoHook, crdType *cr
 }
 
 func isUnstructured(schema *apiextensionsv1.JSONSchemaProps) bool {
-	return (len(schema.Properties) == 0 && schema.XPreserveUnknownFields != nil && *schema.XPreserveUnknownFields == true)
+	return (len(schema.Properties) == 0 && schema.XPreserveUnknownFields != nil && *schema.XPreserveUnknownFields)
 }
