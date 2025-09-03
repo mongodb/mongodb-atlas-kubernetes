@@ -1,7 +1,6 @@
 package crd_test
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -11,7 +10,6 @@ import (
 
 	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/crd/hooks"
-	"github.com/josvazg/crd2go/internal/debug"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/k8s"
 	"github.com/josvazg/crd2go/pkg/config"
@@ -229,10 +227,6 @@ func TestBuildOpenAPIType(t *testing.T) {
 		gotype.NewGoField("SimpleNumber", gotype.NewPrimitive("float64", "float64")),
 		gotype.NewGoField("SimpleInteger", gotype.NewPrimitive("int", "int")),
 	})
-
-	fmt.Printf("Generated GoType: %s\n", debug.JSONize(goType))
-	fmt.Printf("Expected GoType: %s\n", debug.JSONize(expectedType))
-
 	assert.Equal(t, expectedType, goType)
 }
 
