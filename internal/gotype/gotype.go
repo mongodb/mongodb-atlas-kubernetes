@@ -135,7 +135,7 @@ func (gt *GoType) Signature() string {
 	if gt.Kind == ArrayKind {
 		return fmt.Sprintf("[%s]", gt.Element.Signature())
 	}
-	return fmt.Sprintf("%s", gt.Kind)
+	return gt.Kind
 }
 
 // BaseType returns the base type of the GoType.
