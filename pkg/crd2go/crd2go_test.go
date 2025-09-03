@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/josvazg/crd2go/internal/checkerr"
 	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/pkg/config"
@@ -153,18 +154,18 @@ imports: []`,
 func TestCodeFileForCRDAtPath(t *testing.T) {
 	tmpDir, err := os.MkdirTemp(".", "test-code-file-for-crd-path")
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	defer checkerr.CheckErr("removing test temp dir", func() error { return os.RemoveAll(tmpDir) })
 
 	cwFn := crd2go.CodeWriterAtPath(tmpDir)
 	require.NotNil(t, cwFn)
 
 	w1, err := cwFn("testfile.go", false)
 	assert.NoError(t, err)
-	defer w1.Close()
+	defer checkerr.CheckErr("closing 1st testfile.go", w1.Close)
 
 	w2, err := cwFn("testfile.go", true)
 	assert.NoError(t, err)
-	defer w2.Close()
+	defer checkerr.CheckErr("closing 2nd testfile.go", w2.Close)
 
 	_, err = cwFn("..", true)
 	assert.ErrorContains(t, err, "failed to create file")
@@ -174,7 +175,7 @@ func readTestFile(t *testing.T, path string) string {
 	t.Helper()
 	f, err := samples.Open(path)
 	require.NoError(t, err)
-	defer f.Close()
+	defer checkerr.CheckErr("closing test file", f.Close)
 
 	b, err := io.ReadAll(f)
 	require.NoError(t, err)

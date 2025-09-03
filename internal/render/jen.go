@@ -10,6 +10,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"github.com/josvazg/crd2go/internal/checkerr"
 	"github.com/josvazg/crd2go/internal/gotype"
 )
 
@@ -54,7 +55,7 @@ func (jr JenRenderer) RenderCRD(req *CRDRenderRequest) error {
 	if err != nil {
 		return fmt.Errorf("failed to get writer for %s: %w", req.Filename, err)
 	}
-	defer w.Close()
+	defer checkerr.CheckErr("closing generated Go code file", w.Close)
 	if err := f.Render(w); err != nil {
 		return fmt.Errorf("failed to write Go code: %w", err)
 	}
@@ -282,7 +283,7 @@ func generateJSONTag(f *gotype.GoField) *jen.Statement {
 	if jsTag == "" {
 		jsTag = fmt.Sprintf("%s,omitempty", f.Key)
 		if f.Required {
-			jsTag = fmt.Sprintf("%s", f.Key)
+			jsTag = f.Key
 		}
 	}
 	return jen.Tag(map[string]string{"json": jsTag})

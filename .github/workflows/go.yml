@@ -14,10 +14,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: '1.24'
 
@@ -27,17 +27,22 @@ jobs:
     - name: Test
       run: go test -race -cover -v ./...
 
-  lint:
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: v2.1
+
+  gci:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
+    - uses: actions/checkout@v5
+
     - name: Install devbox
       uses: jetify-com/devbox-install-action@v0.13.0
       with:
         enable-cache: 'true'
 
-    - name: Lint
+    - name: gci
       run: |
         echo "Did you run gofmt-gci?"
         devbox run -- 'gofmt-gci && git diff-index --name-only HEAD && git diff-index --quiet HEAD --'

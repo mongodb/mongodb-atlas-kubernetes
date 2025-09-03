@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/josvazg/crd2go/internal/checkerr"
 	"github.com/josvazg/crd2go/pkg/config"
 	"github.com/josvazg/crd2go/pkg/crd2go"
 )
@@ -29,7 +30,7 @@ func generate(input, output, config string) (*config.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open configuration file: %w", err)
 	}
-	defer f.Close()
+	defer checkerr.CheckErr("closing config file", f.Close)
 	cfg, err := crd2go.LoadConfig(f)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)

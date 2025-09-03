@@ -25,7 +25,7 @@ func LoadConfig(r io.Reader) (*config.Config, error) {
 	}
 	cfg := config.Config{}
 	if err = yaml.Unmarshal(yml, &cfg); err != nil {
-		return nil, fmt.Errorf("Failed to load configuration: %v", err)
+		return nil, fmt.Errorf("failed to load configuration: %v", err)
 	}
 	return &cfg, nil
 }
