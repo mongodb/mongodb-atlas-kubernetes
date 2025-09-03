@@ -257,11 +257,10 @@ jobs:
           git checkout -f -b "$BRANCH" origin/main
           git push -f origin "$BRANCH"
 
-          # Update Helm Charts & Deploy on main
+          # Update Helm Charts on main
           cp -r "$RELEASE_DIR/helm-charts" .
-          cp -r "$RELEASE_DIR/deploy" .
 
-          git add -f "$RELEASE_DIR" helm-charts deploy
+          git add -f "$RELEASE_DIR" helm-charts
           scripts/create-signed-commit.sh
 
           gh pr create \
