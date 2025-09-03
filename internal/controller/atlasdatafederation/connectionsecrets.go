@@ -16,6 +16,7 @@ package atlasdatafederation
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -44,9 +45,8 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 	connectionHosts := atlasDF.Hostnames
 
 	secrets := make([]string, 0)
-	for i := range databaseUsers.Items {
-		dbUser := databaseUsers.Items[i]
 
+	for _, dbUser := range databaseUsers.Items {
 		if !dbUserBelongsToProject(&dbUser, project) {
 			continue
 		}
@@ -76,7 +76,14 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 
 		var connURLs []string
 		for _, host := range connectionHosts {
-			connURLs = append(connURLs, fmt.Sprintf("mongodb://%s:%s@%s?ssl=true", dbUser.Spec.Username, password, host))
+			baseURL := fmt.Sprintf("mongodb://%s?ssl=true", host)
+			connURL, err := connectionsecret.AddCredentialsToConnectionURL(baseURL, dbUser.Spec.Username, password)
+			if err != nil {
+				ctx.Log.Debugw("Failed to construct connection URL", "host", host, "error", err)
+				continue
+			}
+			connURLs = append(connURLs, connURL)
+			ctx.Log.Debugw("Connection URL created", "url", connURL)
 		}
 
 		data := connectionsecret.ConnectionData{
@@ -115,4 +122,13 @@ func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, project *akov2.Atla
 	}
 
 	return true
+}
+
+func AddCredentialsToConnectionURL(connURL, userName, password string) (string, error) {
+	cs, err := url.Parse(connURL)
+	if err != nil {
+		return "", err
+	}
+	cs.User = url.UserPassword(userName, password)
+	return cs.String(), nil
 }
