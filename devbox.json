@@ -6,7 +6,8 @@
     "vscodium@latest",
     "kubernetes-controller-tools@latest",
     "gh@latest",
-    "gci@latest"
+    "gci@latest",
+    "golangci-lint@latest"
   ],
   "shell": {
     "init_hook": [
