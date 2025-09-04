@@ -237,16 +237,18 @@ func TestReconcile(t *testing.T) {
 	_ = corev1.AddToScheme(scheme)
 	addKnownTestTypes(scheme)
 
-	basePod := &dummyObject{
-		Pod: corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "mypod",
-				Namespace:  "default",
-				Generation: 1,
-			},
+	baseObj := &dummyObject{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "dummyObject",
+			APIVersion: "test.dummy.example.com/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "mypod",
+			Namespace:  "default",
+			Generation: 1,
 		},
 	}
-	podKey := types.NamespacedName{Name: "mypod", Namespace: "default"}
+	objKey := types.NamespacedName{Name: "mypod", Namespace: "default"}
 
 	tests := []struct {
 		name         string
@@ -258,7 +260,7 @@ func TestReconcile(t *testing.T) {
 	}{
 		{
 			name:        "get object error",
-			existingObj: basePod,
+			existingObj: baseObj,
 			interceptors: &interceptor.Funcs{
 				Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 					return errors.New("simulated get error")
@@ -271,10 +273,10 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name:        "object removed is fine",
-			existingObj: basePod,
+			existingObj: baseObj,
 			interceptors: &interceptor.Funcs{
 				Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-					return apierrors.NewNotFound(schema.GroupResource{Group: "", Resource: "pods"}, key.Name)
+					return apierrors.NewNotFound(schema.GroupResource{}, key.Name)
 				},
 			},
 			handleState: func(ctx context.Context, do *dummyObject) (Result, error) {
@@ -284,7 +286,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name:        "failed to set finalizer",
-			existingObj: basePod,
+			existingObj: baseObj,
 			handleState: func(ctx context.Context, do *dummyObject) (Result, error) {
 				return Result{NextState: "Initial"}, nil
 			},
@@ -297,7 +299,7 @@ func TestReconcile(t *testing.T) {
 		},
 		{
 			name:        "check state",
-			existingObj: basePod,
+			existingObj: baseObj,
 			handleState: func(ctx context.Context, do *dummyObject) (Result, error) {
 				return Result{NextState: "Initial"}, nil
 			},
@@ -309,6 +311,7 @@ func TestReconcile(t *testing.T) {
 			builder := fake.NewClientBuilder().WithScheme(scheme)
 			if tc.existingObj != nil {
 				builder = builder.WithObjects(tc.existingObj)
+				builder = builder.WithStatusSubresource(tc.existingObj)
 			}
 			if tc.interceptors != nil {
 				builder = builder.WithInterceptorFuncs(*tc.interceptors)
@@ -320,7 +323,7 @@ func TestReconcile(t *testing.T) {
 				reconciler: dummyReconciler,
 			}
 
-			req := ctrl.Request{NamespacedName: podKey}
+			req := ctrl.Request{NamespacedName: objKey}
 			result, err := r.Reconcile(context.Background(), req)
 			assertErrContains(t, tc.wantErr, err)
 			assert.Equal(t, tc.wantResult, result)
@@ -351,7 +354,7 @@ func TestReconcileState(t *testing.T) {
 			),
 			modify: func(t *dummyObject) {
 				// Simulate a state that should cause an error in ReconcileState
-				t.conditions[0].Reason = ""
+				t.Status.Conditions[0].Reason = ""
 			},
 			wantErr: "unsupported state \"\"",
 		},
@@ -490,32 +493,44 @@ func addKnownTestTypes(sch *runtime.Scheme) {
 }
 
 type dummyObject struct {
-	corev1.Pod
-	conditions []metav1.Condition
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Status            DummyStatus `json:"status,omitempty"`
+}
+
+type DummyStatus struct {
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 func newDummyObject(objMeta metav1.ObjectMeta, conditions []metav1.Condition) *dummyObject {
 	return &dummyObject{
-		Pod:        corev1.Pod{ObjectMeta: objMeta},
-		conditions: conditions,
+		ObjectMeta: objMeta,
+		Status:     DummyStatus{Conditions: conditions},
 	}
 }
 
+func (*dummyObject) GetObjectKind() schema.ObjectKind { return schema.EmptyObjectKind }
+
 func (do *dummyObject) GetConditions() []metav1.Condition {
-	return do.conditions
+	return do.Status.Conditions
+}
+
+func (do *dummyObject) DeepCopyObject() runtime.Object {
+	return do.DeepCopy()
 }
 
 func (do *dummyObject) DeepCopy() *dummyObject {
 	if do == nil {
 		return nil
 	}
-	conditions := make([]metav1.Condition, 0, len(do.conditions))
-	for _, condition := range do.conditions {
+	conditions := make([]metav1.Condition, 0, len(do.Status.Conditions))
+	for _, condition := range do.Status.Conditions {
 		conditions = append(conditions, *condition.DeepCopy())
 	}
 	return &dummyObject{
-		Pod:        *do.Pod.DeepCopy(),
-		conditions: conditions,
+		TypeMeta:   do.TypeMeta,
+		ObjectMeta: *do.ObjectMeta.DeepCopy(),
+		Status:     DummyStatus{Conditions: conditions},
 	}
 }
 
