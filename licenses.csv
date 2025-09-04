@@ -98,7 +98,7 @@ github.com/xdg-go/stringprep,https://github.com/xdg-go/stringprep/blob/v1.0.4/LI
 github.com/youmark/pkcs8,https://github.com/youmark/pkcs8/blob/a2c0da244d78/LICENSE,MIT
 github.com/yudai/gojsondiff,https://github.com/yudai/gojsondiff/blob/v1.0.0/LICENSE,MIT
 github.com/yudai/golcs,https://github.com/yudai/golcs/blob/ecda9a501e82/LICENSE,MIT
-go.mongodb.org/atlas-sdk/v20250312006,https://github.com/mongodb/atlas-sdk-go/blob/v20250312006.0.0/LICENSE,Apache-2.0
+go.mongodb.org/atlas-sdk/v20250312006,https://github.com/mongodb/atlas-sdk-go/blob/v20250312006.1.0/LICENSE,Apache-2.0
 go.mongodb.org/mongo-driver,https://github.com/mongodb/mongo-go-driver/blob/v1.17.4/LICENSE,Apache-2.0
 go.opentelemetry.io/auto/sdk,https://github.com/open-telemetry/opentelemetry-go-instrumentation/blob/sdk/v1.1.0/sdk/LICENSE,Apache-2.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc,https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/google.golang.org/grpc/otelgrpc/v0.61.0/instrumentation/google.golang.org/grpc/otelgrpc/LICENSE,Apache-2.0
