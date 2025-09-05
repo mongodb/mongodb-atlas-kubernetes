@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -16,6 +18,10 @@ import (
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/internal/render"
 	"github.com/josvazg/crd2go/pkg/config"
+)
+
+const (
+	ControllerGenCommand = "controller-gen"
 )
 
 func LoadConfig(r io.Reader) (*config.Config, error) {
@@ -57,7 +63,13 @@ func GenerateToDir(cfg *config.Config) error {
 		CodeWriterFn: CodeWriterAtPath(cfg.Output),
 		TypeDict:     gotype.NewTypeDict(cfg.Renames, gotype.KnownTypes()...),
 	}
-	return Generate(&req, in)
+	if err := Generate(&req, in); err != nil {
+		return fmt.Errorf("failed to generate CRD code: %w", err)
+	}
+	if cfg.DeepCopy.Generate != config.GenDeepCopyOff {
+		return GenDeepCopyCode(cfg)
+	}
+	return nil
 }
 
 // Generate will write files using the CodeWriterFunc
@@ -147,6 +159,33 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 		gvr = strings.TrimPrefix(gvr, "/")
 		generatedGVRs = append(generatedGVRs, gvr)
 	}
+}
+
+// GenDeepCopyCode will call controller-gen to generate deeo copy code
+// In Auto mode, the function does not fail if controller-gen is not in the path
+func GenDeepCopyCode(cfg *config.Config) error {
+	controllerGenCmd := ControllerGenCommand
+	if cfg.DeepCopy.Generate == config.GenDeepCopyAuto {
+		programPath, err := exec.LookPath(controllerGenCmd)
+		if err != nil {
+			log.Printf("GenDeepCopy Auto: skipping deep copy code generation as controller-gen is not in $PATH")
+			return nil
+		}
+		controllerGenCmd = programPath
+	}
+	if cfg.DeepCopy.ControllerGenPath != "" {
+		controllerGenCmd = cfg.DeepCopy.ControllerGenPath
+	}
+	cmd := exec.Command(controllerGenCmd, "object", fmt.Sprintf("paths=%q", cfg.Output))
+	out, err := cmd.CombinedOutput()
+	if len(out) > 0 {
+		log.Print("controller-gen output:\n", string(out))
+	}
+	if err != nil {
+		return fmt.Errorf("failed to generate deep copy code with controller-gen: %w %T", err, err)
+	}
+	log.Printf("generated deep copy code using controller-gen")
+	return nil
 }
 
 func buildCRDType(req *gotype.Request, versionedCRD *crd.VersionedCRD) (*gotype.GoType, error) {

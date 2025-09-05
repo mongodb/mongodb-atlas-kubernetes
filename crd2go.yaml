@@ -17,3 +17,8 @@ renames: {}
 # imports is a list of types to auto import instead of generating a local type,
 # might need to be used in conjuction with renames to enforce match by name
 imports: []
+
+# deepCopy controls the integration with controller-gen to generate deep copy code
+deepCopy:
+  generate: auto
+  # controllerGenPath: path/to/controller-gen ## customize as needed
