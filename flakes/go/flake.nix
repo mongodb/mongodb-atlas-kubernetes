@@ -1,7 +1,7 @@
 {
-  description = "A flake for Go 1.24.4";
+  description = "A flake for Go 1.25 versions";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = { self, nixpkgs, flake-utils }:
@@ -10,11 +10,11 @@
         pkgs = import nixpkgs { inherit system; };
       in
       {
-        packages.default = pkgs.go_1_24.overrideAttrs (old: {
-          version = "1.24.6";
+        packages.default = pkgs.go_1_25.overrideAttrs (old: {
+          version = "1.25.1";
           src = pkgs.fetchurl {
-            url = "https://golang.org/dl/go1.24.6.linux-amd64.tar.gz";
-            sha256 = "sha256-u8o3zDlcl0/6SJPuNYGa0j67J0Jt+Hr5LpOp7GbvhxI=";
+            url = "https://golang.org/dl/go1.25.1.linux-amd64.tar.gz";
+            sha256 = "sha256-dxag2UCg9q6OHzs/TzYpncU+MbFoQNvRcSVDEsQcoS4=";
           };
         });
       });
