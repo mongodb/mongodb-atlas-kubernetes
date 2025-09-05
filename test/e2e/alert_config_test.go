@@ -67,8 +67,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 			).WithProject(data.DefaultProject()),
 			[]akov2.AlertConfiguration{
 				{
-					EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
-					Enabled:       true,
+					EventTypeName:    "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
+					Enabled:          true,
+					SeverityOverride: "CRITICAL",
 					Threshold: &akov2.Threshold{
 						Operator:  "LESS_THAN",
 						Threshold: "1",
