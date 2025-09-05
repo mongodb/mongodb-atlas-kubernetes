@@ -7,6 +7,20 @@ import (
 // CodeWriterFunc is a function type that takes a CRD and returns a writer for the generated code
 type CodeWriterFunc func(filename string, overwrite bool) (io.WriteCloser, error)
 
+// GenDeepCopy controls how deep copy generation is handled
+type GenDeepCopy string
+
+const (
+	// GenDeepCopyAuto will run controller-gen if present in the path
+	GenDeepCopyAuto = "auto"
+
+	// GenDeepCopyOff will not try to controller-gen
+	GenDeepCopyOff = "off"
+
+	// GenDeepCopyForced will run controller-gen and fail if it fails in any way
+	GenDeepCopyForced = "forced"
+)
+
 // Config holds all CLI configurable parameters
 type Config struct {
 	CoreConfig `yaml:",inline"`
@@ -34,4 +48,10 @@ type CoreConfig struct {
 	SkipList []string             `yaml:"skipList"`
 	Renames  map[string]string    `yaml:"renames"`
 	Imports  []ImportedTypeConfig `yaml:"imports"`
+	DeepCopy DeepCopy             `yaml:"deepCopy"`
+}
+
+type DeepCopy struct {
+	Generate          GenDeepCopy `yaml:"generate"`
+	ControllerGenPath string      `yaml:"controllerGenPath"`
 }
