@@ -11,13 +11,13 @@ type CodeWriterFunc func(filename string, overwrite bool) (io.WriteCloser, error
 type GenDeepCopy string
 
 const (
-	// GenDeepCopyAuto will run controller-gen if present in the path
+	// GenDeepCopyAuto runs controller-gen when present in $PATH
 	GenDeepCopyAuto = "auto"
 
-	// GenDeepCopyOff will not try to controller-gen
+	// GenDeepCopyOff will skip controller-gen
 	GenDeepCopyOff = "off"
 
-	// GenDeepCopyForced will run controller-gen and fail if it fails in any way
+	// GenDeepCopyForced always runs controller-gen after CRD code generation
 	GenDeepCopyForced = "forced"
 )
 
