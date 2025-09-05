@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,6 +16,7 @@ import (
 	"github.com/josvazg/crd2go/internal/checkerr"
 	"github.com/josvazg/crd2go/internal/crd"
 	"github.com/josvazg/crd2go/internal/gotype"
+	"github.com/josvazg/crd2go/k8s"
 	"github.com/josvazg/crd2go/pkg/config"
 	"github.com/josvazg/crd2go/pkg/crd2go"
 )
@@ -206,7 +208,7 @@ func newWriteNopCloser(w io.Writer) io.WriteCloser {
 }
 
 func preloadedTypes() []*gotype.GoType {
-	return append(gotype.KnownTypes(), reservedTypeNames(extraReserved)...)
+	return append(testKnownTypes(), reservedTypeNames(extraReserved)...)
 }
 
 func reservedTypeNames(reservedNames []string) []*gotype.GoType {
@@ -229,4 +231,11 @@ func (ffr *fakeFailureReader) Read(buf []byte) (int, error) {
 
 func newFakeFailureReader() io.Reader {
 	return &fakeFailureReader{}
+}
+
+func testKnownTypes() []*gotype.GoType {
+	return append(gotype.KnownTypes(),
+		gotype.MustTypeFrom(reflect.TypeOf(k8s.LocalReference{})),
+		gotype.MustTypeFrom(reflect.TypeOf(k8s.Reference{})),
+	)
 }
