@@ -1,6 +1,6 @@
 module tools/scaffolder
 
-go 1.24.4
+go 1.25.1
 
 // replace github.com/josvazg/crd2go => ../crd2go
 
