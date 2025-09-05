@@ -751,10 +751,11 @@ func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) 
 
 		if compute.GetEnabled() {
 			autoscaling.Compute = &akov2.ComputeSpec{
-				Enabled:          compute.Enabled,
-				ScaleDownEnabled: compute.ScaleDownEnabled,
-				MinInstanceSize:  compute.GetMinInstanceSize(),
-				MaxInstanceSize:  compute.GetMaxInstanceSize(),
+				Enabled:           compute.Enabled,
+				ScaleDownEnabled:  compute.ScaleDownEnabled,
+				MinInstanceSize:   compute.GetMinInstanceSize(),
+				MaxInstanceSize:   compute.GetMaxInstanceSize(),
+				PredictiveEnabled: compute.PredictiveEnabled,
 			}
 		}
 
@@ -926,6 +927,10 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 
 			if spec.Compute.ScaleDownEnabled != nil && *spec.Compute.ScaleDownEnabled {
 				autoscaling.Compute.MinInstanceSize = &spec.Compute.MinInstanceSize
+			}
+
+			if spec.Compute.PredictiveEnabled != nil && *spec.Compute.PredictiveEnabled {
+				autoscaling.Compute.PredictiveEnabled = spec.Compute.PredictiveEnabled
 			}
 		}
 
