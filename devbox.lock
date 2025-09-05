@@ -577,6 +577,54 @@
         }
       }
     },
+    "go_1_25@latest": {
+      "last_modified": "2025-08-08T08:05:48Z",
+      "resolved": "github:NixOS/nixpkgs/a3f3e3f2c983e957af6b07a1db98bafd1f87b7a1#go_1_25",
+      "source": "devbox-search",
+      "version": "1.25rc3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/3h76v26b24dqxhd1i8gzcg8bwzxzmrhl-go-1.25rc3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/3h76v26b24dqxhd1i8gzcg8bwzxzmrhl-go-1.25rc3"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1sy3nfyahk3a3pg5x301jx96yxg8sw3y-go-1.25rc3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/1sy3nfyahk3a3pg5x301jx96yxg8sw3y-go-1.25rc3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/vh7db8clgyymv47wsddpw908bbf1dikm-go-1.25rc3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/vh7db8clgyymv47wsddpw908bbf1dikm-go-1.25rc3"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/nbq04hs95dpiwmfnqiky5l4z8azbqj6i-go-1.25rc3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/nbq04hs95dpiwmfnqiky5l4z8azbqj6i-go-1.25rc3"
+        }
+      }
+    },
     "golangci-lint@2.0.0": {
       "last_modified": "2025-03-25T17:32:05Z",
       "resolved": "github:NixOS/nixpkgs/25d1b84f5c90632a623c48d83a2faf156451e6b1#golangci-lint",
