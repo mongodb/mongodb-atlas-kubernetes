@@ -161,8 +161,8 @@ func GenerateStream(req *gotype.Request, r io.Reader) ([]string, error) {
 	}
 }
 
-// GenDeepCopyCode will call controller-gen to generate deeo copy code
-// In Auto mode, the function does not fail if controller-gen is not in the path
+// GenDeepCopyCode will call controller-gen to generate deep copy code
+// In Auto mode controller-gen is only called if the program is in the $PATH
 func GenDeepCopyCode(cfg *config.Config) error {
 	controllerGenCmd := ControllerGenCommand
 	if cfg.DeepCopy.Generate == config.GenDeepCopyAuto {
