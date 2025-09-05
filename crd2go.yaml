@@ -12,11 +12,18 @@ reserved: []
 
 # renames to apply before type name evaluation and de-duplication 
 # a matching key is replaced by the given value
-renames: {}
+renames:
+  GroupRef: LocalReference
 
 # imports is a list of types to auto import instead of generating a local type,
 # might need to be used in conjuction with renames to enforce match by name
-imports: []
+imports:
+  - name: LocalReference
+    alias: k8s
+    path: github.com/josvazg/crd2go/k8s
+  - name: Reference
+    alias: k8s
+    path: github.com/josvazg/crd2go/k8s
 
 # deepCopy controls the integration with controller-gen to generate deep copy code
 deepCopy:
