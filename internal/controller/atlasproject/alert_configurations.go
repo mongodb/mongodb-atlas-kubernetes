@@ -278,6 +278,9 @@ func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec ak
 	if alertConfigSpec.EventTypeName != atlasAlertConfig.GetEventTypeName() {
 		return false
 	}
+	if alertConfigSpec.SeverityOverride != atlasAlertConfig.GetSeverityOverride() {
+		return false
+	}
 	if atlasAlertConfig.Enabled == nil {
 		logger.Debugf("Alert configuration %s is not nil", atlasAlertConfig.GetId())
 		return false
