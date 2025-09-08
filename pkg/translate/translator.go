@@ -21,6 +21,14 @@ type StaticDependencies struct {
 	fallbackNamespace string
 }
 
+type depsBuilder struct {
+	StaticDependencies
+}
+
+func (db *depsBuilder) dependencies() []client.Object {
+	return []client.Object{}
+}
+
 // NewStaticDependencies creates a static set of find-able Kubernetes client.Objects
 func NewStaticDependencies(fallbackNamespace string, objs ...client.Object) StaticDependencies {
 	deps := map[string]client.Object{}
@@ -85,10 +93,14 @@ func FromAPI[S any, T any, P interface {
 	copyFields(versionedStatus, sourceUnstructured)
 	createField(targetUnstructured, versionedStatus, "status", t.sdk.version)
 
+	extraObjects, err := t.processKubeMappings(targetUnstructured)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process API mappings: %w", err)
+	}
 	if err := fromUnstructured(target, targetUnstructured); err != nil {
 		return nil, fmt.Errorf("failed set structured kubernetes object from unstructured: %w", err)
 	}
-	return []client.Object{target}, nil
+	return append([]client.Object{target}, extraObjects...), nil
 }
 
 // ToAPI translates a source Kubernetes spec into a target API structure
@@ -116,7 +128,7 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
 
-	if err := t.processMappings(value); err != nil {
+	if err := t.processAPIMappings(value); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
@@ -148,7 +160,44 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 	return nil
 }
 
-func (t *Translator) processMappings(spec map[string]any) error {
+func (t *Translator) processKubeMappings(obj map[string]any) ([]client.Object, error) {
+	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
+	if mappingsYML == "" {
+		return []client.Object{}, nil
+	}
+	mappings := map[string]any{}
+	yaml.Unmarshal([]byte(mappingsYML), mappings)
+
+	deps := depsBuilder{}
+	if err := t.processKubeMappingsAt(obj, mappings, &deps, "spec"); err != nil {
+		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
+	}
+	if err := t.processKubeMappingsAt(obj, mappings, &deps, "status"); err != nil {
+		return nil, fmt.Errorf("failed to map properties of status from API to Kubernetes: %w", err)
+	}
+	return deps.dependencies(), nil
+}
+
+func (t *Translator) processKubeMappingsAt(obj, mappings map[string]any, deps *depsBuilder, fieldName string) error {
+	props, err := accessField[map[string]any](mappings,
+		"properties", fieldName, "properties", t.sdk.version, "properties")
+	if errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to access the API mapping properties for the %s: %w", fieldName, err)
+	}
+	field, err := accessField[map[string]any](obj, fieldName, t.sdk.version)
+	if err != nil {
+		return fmt.Errorf("failed to access object's %s: %w", fieldName, err)
+	}
+	if err := processKubeProperties([]string{}, props, field, deps); err != nil {
+		return fmt.Errorf("failed to process properties from API into %s: %w", fieldName, err)
+	}
+	return nil
+}
+
+func (t *Translator) processAPIMappings(spec map[string]any) error {
 	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return nil
@@ -163,7 +212,7 @@ func (t *Translator) processMappings(spec map[string]any) error {
 	if err != nil {
 		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
 	}
-	return processProperties([]string{}, props, spec, t.deps)
+	return processAPIProperties([]string{}, props, spec, t.deps)
 }
 
 func findEntryPathInTarget(targetType reflect.Type) []string {

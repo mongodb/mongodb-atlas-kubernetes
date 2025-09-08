@@ -12,7 +12,26 @@ const (
 	SecretProperySelector = "$.data.#"
 )
 
-func processProperties(path []string, props, spec map[string]any, deps DependencyFinder) error {
+func processKubeProperties(path []string, props, spec map[string]any, deps *depsBuilder) error {
+	//extras := []client.Object{}
+	for key, prop := range props {
+		mapping, ok := (prop).(map[string]any)
+		if !ok {
+			continue
+		}
+		subPath := append(path, key)
+		if isReference(mapping) {
+			err := expandReference(subPath, mapping, spec, deps)
+			if err != nil {
+				return fmt.Errorf("failed to process reference: %w", err)
+			}
+			continue
+		}
+	}
+	return nil
+}
+
+func processAPIProperties(path []string, props, spec map[string]any, deps DependencyFinder) error {
 	for key, prop := range props {
 		mapping, ok := (prop).(map[string]any)
 		if !ok {
@@ -75,7 +94,7 @@ func processObjectMapping(path []string, mapping, spec map[string]any, deps Depe
 		if err != nil {
 			return fmt.Errorf("faild to access properties at %q: %w", path, err)
 		}
-		return processProperties(path, props, spec, deps)
+		return processAPIProperties(path, props, spec, deps)
 	}
 	if isReference(mapping) {
 		return processReference(path, mapping, spec, deps)

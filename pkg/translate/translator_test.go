@@ -41,6 +41,7 @@ func TestFromAPI(t *testing.T) {
 			name: "empty",
 			test: func(t *testing.T) {
 				input := admin2025.Group{
+					Created:      time.Date(2025, 1, 1, 1, 30, 15, 0, time.UTC),
 					ClusterCount: 0,
 					Id:           pointer.Get("6127378123219"),
 					Name:         "test-project",
@@ -81,7 +82,7 @@ func TestFromAPI(t *testing.T) {
 						},
 						Status: v1.GroupStatus{
 							V20250312: &v1.GroupStatusV20250312{
-								Created: "0001-01-01T00:00:00Z", // TODO: how to remove this?
+								Created: "2025-01-01T01:30:15Z",
 								Id:      pointer.Get("6127378123219"),
 							},
 						},

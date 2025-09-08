@@ -146,6 +146,10 @@ func isReference(obj map[string]any) bool {
 	return obj["x-kubernetes-mapping"] != nil && obj["x-openapi-mapping"] != nil
 }
 
+func expandReference(_ []string, _, _ map[string]any, _ *depsBuilder) error {
+	return nil
+}
+
 func processReference(path []string, mapping, spec map[string]any, deps DependencyFinder) error {
 	reference, err := accessField[map[string]any](spec, base(path))
 	if errors.Is(err, ErrNotFound) {
