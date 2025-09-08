@@ -12,24 +12,24 @@ import (
 var ErrNotFound = errors.New("not found")
 
 func toUnstructured(obj any) (map[string]any, error) {
-	yml, err := json.Marshal(obj)
+	js, err := json.Marshal(obj)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal object into YAML: %w", err)
+		return nil, fmt.Errorf("failed to marshal object into JSON: %w", err)
 	}
 	result := map[string]any{}
-	if err := json.Unmarshal(yml, &result); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal object YAML onto a map: %w", err)
+	if err := json.Unmarshal(js, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal object JSON onto a map: %w", err)
 	}
 	return result, nil
 }
 
 func fromUnstructured[T any](target *T, source map[string]any) error {
-	yml, err := json.Marshal(source)
+	js, err := json.Marshal(source)
 	if err != nil {
-		return fmt.Errorf("failed to marshal map into YAML: %w", err)
+		return fmt.Errorf("failed to marshal map into JSON: %w", err)
 	}
-	if err := json.Unmarshal(yml, target); err != nil {
-		return fmt.Errorf("failed to unmarshal map YAML onto object: %w", err)
+	if err := json.Unmarshal(js, target); err != nil {
+		return fmt.Errorf("failed to unmarshal map JSON onto object: %w", err)
 	}
 	return nil
 }
@@ -62,7 +62,9 @@ func createField[T any](obj map[string]any, value T, fields ...string) error {
 			}
 			current = next
 		} else {
-			current[fields[i]] = map[string]any{}
+			next := map[string]any{}
+			current[fields[i]] = next
+			current = next
 		}
 	}
 	lastField := fields[len(fields)-1]

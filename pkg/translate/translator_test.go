@@ -2,7 +2,8 @@ package translate_test
 
 import (
 	"bufio"
-	"embed"
+	"bytes"
+	_ "embed"
 	"fmt"
 	"testing"
 	"time"
@@ -28,18 +29,89 @@ const (
 	sdkVersion = "v20250312"
 )
 
-//go:embed samples/*
-var samples embed.FS
+//go:embed samples/crds.yaml
+var crdsYAMLBytes []byte
 
-// NetworkPermissions is a required sturct wrapper to match the API structure
-// TODO: do we need a mapping option? for this case a rename would suffice to
-// load the entry array field as results in a PaginatedNetworkAccess.
-// On the other hand, is extracting the whole list the proper way interact with the API?
-type NetworkPermissions struct {
-	Entry []admin2025.NetworkPermissionEntry `json:"entry"`
+func TestFromAPI(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		test func(t *testing.T)
+	}{
+		{
+			name: "empty",
+			test: func(t *testing.T) {
+				input := admin2025.Group{
+					ClusterCount: 0,
+					Id:           pointer.Get("6127378123219"),
+					Name:         "test-project",
+					OrgId:        "6129312312334",
+					Tags: &[]admin2025.ResourceTag{
+						{
+							Key:   "key0",
+							Value: "value0",
+						},
+						{
+							Key:   "key",
+							Value: "value",
+						},
+					},
+					WithDefaultAlertsSettings: pointer.Get(true),
+				}
+				target := v1.Group{}
+				want := []client.Object{
+					&v1.Group{
+						Spec: v1.GroupSpec{
+							V20250312: &v1.GroupSpecV20250312{
+								Entry: &v1.V20250312Entry{
+									Name:  "test-project",
+									OrgId: "6129312312334",
+									Tags: &[]v1.Tags{
+										{
+											Key:   "key0",
+											Value: "value0",
+										},
+										{
+											Key:   "key",
+											Value: "value",
+										},
+									},
+									WithDefaultAlertsSettings: pointer.Get(true),
+								},
+							},
+						},
+						Status: v1.GroupStatus{
+							V20250312: &v1.GroupStatusV20250312{
+								Created: "0001-01-01T00:00:00Z", // TODO: how to remove this?
+								Id:      pointer.Get("6127378123219"),
+							},
+						},
+					},
+				}
+				testFromAPI(t, "Group", &target, &input, want)
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.test(t)
+		})
+	}
 }
 
-func TestAllRefs(t *testing.T) {
+func testFromAPI[S any, T any, P interface {
+	*T
+	client.Object
+}](t *testing.T, kind string, target P, input *S, want []client.Object) {
+	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
+	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
+	require.NoError(t, err)
+	deps := translate.NewStaticDependencies("ns")
+	translator := translate.NewTranslator(crd, version, sdkVersion, deps)
+	results, err := translate.FromAPI(translator, target, input)
+	require.NoError(t, err)
+	assert.Equal(t, want, results)
+}
+
+func TestToAPIAllRefs(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		crd    string
@@ -332,9 +404,7 @@ func TestAllRefs(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			crdsYML, err := samples.Open("samples/crds.yaml")
-			require.NoError(t, err)
-			defer crdsYML.Close()
+			crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
 			deps := translate.NewStaticDependencies("ns", tc.deps...)
@@ -344,6 +414,14 @@ func TestAllRefs(t *testing.T) {
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}
+}
+
+// NetworkPermissions is a required struct wrapper to match the API structure
+// TODO: do we need a mapping option? for this case a rename would suffice to
+// load the entry array field as results in a PaginatedNetworkAccess.
+// On the other hand, is extracting the whole list the proper way interact with the API?
+type NetworkPermissions struct {
+	Entry []admin2025.NetworkPermissionEntry `json:"entry"`
 }
 
 type testToAPICase[T any] struct {
@@ -1713,35 +1791,20 @@ func TestToAPI(t *testing.T) {
 	} {
 		switch tc := gtc.(type) {
 		case testToAPICase[admin2025.DataProtectionSettings20231001]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.DiskBackupSnapshotSchedule20240805]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.ClusterDescription20240805]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.DataLakeTenant]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.CloudDatabaseUser]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.FlexClusterDescriptionCreate20241113]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.Group]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.GroupAlertsConfig]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.BaseNetworkPeeringConnectionSettings]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[NetworkPermissions]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.AtlasOrganization]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.OrganizationSettings]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.UserCustomDBRole]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.SearchIndexCreateRequest]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.Team]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.ThirdPartyIntegration]:
 			runTestToAPICase(t, tc)
 		default:
@@ -1752,9 +1815,7 @@ func TestToAPI(t *testing.T) {
 
 func runTestToAPICase[T any](t *testing.T, tc testToAPICase[T]) {
 	t.Run(tc.name, func(t *testing.T) {
-		crdsYML, err := samples.Open("samples/crds.yaml")
-		require.NoError(t, err)
-		defer crdsYML.Close()
+		crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 		crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 		require.NoError(t, err)
 		deps := translate.NewStaticDependencies("ns", tc.deps...)

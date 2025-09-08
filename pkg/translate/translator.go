@@ -56,7 +56,7 @@ type SDKInfo struct {
 }
 
 // NewTranslator creates a translator for a particular CRD and SDK version pairs,
-// and with a particular set of known Kubernetes dependencies 
+// and with a particular set of known Kubernetes dependencies
 func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, sdkVersion string, deps DependencyFinder) *Translator {
 	return &Translator{
 		crd:  CRDInfo{definition: crd, version: crdVersion},
@@ -65,9 +65,34 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	}
 }
 
-// ToAPI translates a source Kubernetes object, mostly the spec part, into a target API structure
+// FromAPI translaters a source API structure into a Kubernetes object
+func FromAPI[S any, T any, P interface {
+	*T
+	client.Object
+}](t *Translator, target P, source *S) ([]client.Object, error) {
+	sourceUnstructured, err := toUnstructured(source)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert API source value to unstructured: %w", err)
+	}
+
+	targetUnstructured := map[string]any{}
+
+	versionedSpec := map[string]any{}
+	copyFields(versionedSpec, sourceUnstructured)
+	createField(targetUnstructured, versionedSpec, "spec", t.sdk.version, "entry")
+
+	versionedStatus := map[string]any{}
+	copyFields(versionedStatus, sourceUnstructured)
+	createField(targetUnstructured, versionedStatus, "status", t.sdk.version)
+
+	if err := fromUnstructured(target, targetUnstructured); err != nil {
+		return nil, fmt.Errorf("failed set structured kubernetes object from unstructured: %w", err)
+	}
+	return []client.Object{target}, nil
+}
+
+// ToAPI translates a source Kubernetes spec into a target API structure
 func ToAPI[T any](t *Translator, target *T, source client.Object) error {
-	targetType := reflect.TypeOf(target).Elem()
 	specVersion := selectVersion(&t.crd.definition.Spec, t.crd.version)
 	kind := t.crd.definition.Spec.Names.Kind
 	props, err := getOpenAPIProperties(kind, specVersion)
@@ -83,7 +108,7 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 	}
 	unstructuredSrc, err := toUnstructured(source)
 	if err != nil {
-		return fmt.Errorf("failed to convert source value to unstructured: %w", err)
+		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
 	}
 	targetUnstructured := map[string]any{}
 	value, err := accessField[map[string]any](unstructuredSrc, "spec", t.sdk.version)
@@ -95,6 +120,7 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
+	targetType := reflect.TypeOf(target).Elem()
 	if targetType.Kind() != reflect.Struct {
 		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
 	}
