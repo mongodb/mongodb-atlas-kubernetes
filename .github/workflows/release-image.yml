@@ -256,7 +256,6 @@ jobs:
           cp -rf bundle "$RELEASE_DIR/"
           cp -rf helm-charts "$RELEASE_DIR/"
           cp bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
-          cp .licenses-gomod.sha256 "$RELEASE_DIR/"
           cp licenses.csv "$RELEASE_DIR/"
 
 
