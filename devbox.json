@@ -26,6 +26,7 @@
     "go-mockery@2",
     "docker-sbom@latest",
     "openshift@latest",
-    "gci@latest"
+    "gci@latest",
+    "gh@latest"
   ]
 }
