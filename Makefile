@@ -638,3 +638,14 @@ install-ako-helm:
 
 tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
 	cd tools/scandeprecation && go build .
+
+.PHONY: slack-deprecations
+slack-deprecations: tools/scandeprecation/scandeprecation ## slack a report
+ifndef GITHUB_TOKEN
+	echo "Getting GitHub token..."
+	$(eval GITHUB_TOKEN := $(shell $(MAKE) -s github-token))
+endif
+	@echo "Computing and sending deprecation report to Slack..."
+	RUN_ID=${gh run list -w Test -b main -e schedule --json databaseId | jq '.[0]'}
+	gh run view $RUN_ID --log | grep "javaMethod" | ./tools/scandeprecation/scandeprecations | \
+	./scripts/slackit.sh $(SLACK_WEBHOOK)
