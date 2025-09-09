@@ -16,38 +16,55 @@ type DependencyFinder interface {
 	Find(name, namespace string) client.Object
 }
 
-type StaticDependencies struct {
+type DependencyRepo interface {
+	DependencyFinder
+	Add(obj client.Object)
+	Added() []client.Object
+}
+
+type Dependencies struct {
 	deps              map[string]client.Object
+	added          []client.Object
 	fallbackNamespace string
 }
 
-type depsBuilder struct {
-	StaticDependencies
-}
-
-func (db *depsBuilder) dependencies() []client.Object {
-	return []client.Object{}
-}
-
-// NewStaticDependencies creates a static set of find-able Kubernetes client.Objects
-func NewStaticDependencies(fallbackNamespace string, objs ...client.Object) StaticDependencies {
+// NewDependencies creates a set of Kubernetes client.Objects
+func NewDependencies(fallbackNamespace string, objs ...client.Object) *Dependencies {
 	deps := map[string]client.Object{}
 	for _, obj := range objs {
 		deps[client.ObjectKeyFromObject(obj).String()] = obj
 	}
-	return StaticDependencies{
+	return &Dependencies{
 		deps:              deps,
+		added:          []client.Object{},
 		fallbackNamespace: fallbackNamespace,
 	}
 }
 
-// Find will reteieve the object with matching name and namespace if present in the static set
-func (sd StaticDependencies) Find(name, namespace string) client.Object {
+// Add appends an object to the added list and records it in the general set
+func (d *Dependencies) Find(name, namespace string) client.Object {
 	ns := namespace
-	if ns == SetFallbackNamespace {
-		ns = sd.fallbackNamespace
+	if ns == "" {
+		ns = d.fallbackNamespace
 	}
-	return sd.deps[client.ObjectKey{Name: name, Namespace: ns}.String()]
+	return d.deps[client.ObjectKey{Name: name, Namespace: ns}.String()]
+}
+
+// Add appends an object to the added list and records it in the general set
+func (d *Dependencies) Add(obj client.Object) {
+	d.deps[client.ObjectKeyFromObject(obj).String()] = obj
+	for i := range d.added {
+		if d.added[i].GetName() == obj.GetName() && d.added[i].GetNamespace() == obj.GetNamespace() {
+			d.added[i] = obj
+			return
+		}
+	}
+	d.added = append(d.added, obj)
+}
+
+// Added dumps an array of all dependencies added to the set after creation
+func (d *Dependencies) Added() []client.Object {
+	return d.added
 }
 
 // Translator allows to translate back and forth between a CRD schema version
@@ -55,7 +72,7 @@ func (sd StaticDependencies) Find(name, namespace string) client.Object {
 type Translator struct {
 	crd  CRDInfo
 	sdk  SDKInfo
-	deps DependencyFinder
+	deps DependencyRepo
 }
 
 // SDKInfo holds the SDK version information
@@ -65,7 +82,7 @@ type SDKInfo struct {
 
 // NewTranslator creates a translator for a particular CRD and SDK version pairs,
 // and with a particular set of known Kubernetes dependencies
-func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, sdkVersion string, deps DependencyFinder) *Translator {
+func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, sdkVersion string, deps DependencyRepo) *Translator {
 	return &Translator{
 		crd:  CRDInfo{definition: crd, version: crdVersion},
 		sdk:  SDKInfo{version: sdkVersion},
@@ -87,13 +104,20 @@ func FromAPI[S any, T any, P interface {
 
 	versionedSpec := map[string]any{}
 	copyFields(versionedSpec, sourceUnstructured)
-	createField(targetUnstructured, versionedSpec, "spec", t.sdk.version, "entry")
+	if err := createField(targetUnstructured, versionedSpec, "spec", t.sdk.version); err != nil {
+		return nil, fmt.Errorf("failed to create versioned spec object in unstructured target: %w", err)
+	}
+	versionedSpecEntry := map[string]any{}
+	copyFields(versionedSpecEntry, sourceUnstructured)
+	versionedSpec["entry"] = versionedSpecEntry
 
 	versionedStatus := map[string]any{}
 	copyFields(versionedStatus, sourceUnstructured)
-	createField(targetUnstructured, versionedStatus, "status", t.sdk.version)
+	if err := createField(targetUnstructured, versionedStatus, "status", t.sdk.version); err != nil {
+		return nil, fmt.Errorf("failed to create versioned status object in unsstructured target: %w", err)
+	}
 
-	extraObjects, err := t.processKubeMappings(targetUnstructured)
+	extraObjects, err := t.expandMappings(targetUnstructured)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process API mappings: %w", err)
 	}
@@ -128,7 +152,7 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
 
-	if err := t.processAPIMappings(value); err != nil {
+	if err := t.collapseMappings(value); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
@@ -160,7 +184,7 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 	return nil
 }
 
-func (t *Translator) processKubeMappings(obj map[string]any) ([]client.Object, error) {
+func (t *Translator) expandMappings(obj map[string]any) ([]client.Object, error) {
 	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return []client.Object{}, nil
@@ -168,36 +192,42 @@ func (t *Translator) processKubeMappings(obj map[string]any) ([]client.Object, e
 	mappings := map[string]any{}
 	yaml.Unmarshal([]byte(mappingsYML), mappings)
 
-	deps := depsBuilder{}
-	if err := t.processKubeMappingsAt(obj, mappings, &deps, "spec"); err != nil {
+	if err := t.expandMappingsAt(obj, mappings, "spec", t.sdk.version); err != nil {
 		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
 	}
-	if err := t.processKubeMappingsAt(obj, mappings, &deps, "status"); err != nil {
+	if err := t.expandMappingsAt(obj, mappings, "spec", t.sdk.version, "entry"); err != nil {
+		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
+	}
+	if err := t.expandMappingsAt(obj, mappings, "status", t.sdk.version); err != nil {
 		return nil, fmt.Errorf("failed to map properties of status from API to Kubernetes: %w", err)
 	}
-	return deps.dependencies(), nil
+	return t.deps.Added(), nil
 }
 
-func (t *Translator) processKubeMappingsAt(obj, mappings map[string]any, deps *depsBuilder, fieldName string) error {
-	props, err := accessField[map[string]any](mappings,
-		"properties", fieldName, "properties", t.sdk.version, "properties")
+func (t *Translator) expandMappingsAt(obj, mappings map[string]any, fields ...string) error {
+	expandedPath := []string{"properties"}
+	for _, field := range fields {
+		expandedPath = append(expandedPath, field, "properties")
+	}
+	props, err := accessField[map[string]any](mappings, expandedPath...)
 	if errors.Is(err, ErrNotFound) {
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("failed to access the API mapping properties for the %s: %w", fieldName, err)
+		return fmt.Errorf("failed to access the API mapping properties for %v: %w", expandedPath, err)
 	}
-	field, err := accessField[map[string]any](obj, fieldName, t.sdk.version)
+	field, err := accessField[map[string]any](obj, fields...)
 	if err != nil {
-		return fmt.Errorf("failed to access object's %s: %w", fieldName, err)
+		return fmt.Errorf("failed to access object's %v: %w", fields, err)
 	}
-	if err := processKubeProperties([]string{}, props, field, deps); err != nil {
-		return fmt.Errorf("failed to process properties from API into %s: %w", fieldName, err)
+	mapper := Mapper{deps: t.deps, expand: true}
+	if err := mapper.mapProperties([]string{}, props, field); err != nil {
+		return fmt.Errorf("failed to process properties from API into %v: %w", fields, err)
 	}
 	return nil
 }
 
-func (t *Translator) processAPIMappings(spec map[string]any) error {
+func (t *Translator) collapseMappings(spec map[string]any) error {
 	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return nil
@@ -212,7 +242,8 @@ func (t *Translator) processAPIMappings(spec map[string]any) error {
 	if err != nil {
 		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
 	}
-	return processAPIProperties([]string{}, props, spec, t.deps)
+	mapper := Mapper{deps: t.deps, expand: false}
+	return mapper.mapProperties([]string{}, props, spec)
 }
 
 func findEntryPathInTarget(targetType reflect.Type) []string {

@@ -5,15 +5,52 @@ import (
 	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type DecoderFunc func(any) (any, error)
 
-var decoders = map[string]DecoderFunc{
-	"v1/secrets": func(in any) (any, error) {
-		return base64Decode((in).(string))
-	},
+type PtrClientObj[P any] interface {
+	*P
+	client.Object
+}
+
+var (
+	decoders = map[string]DecoderFunc{
+		"v1/secrets": func(in any) (any, error) {
+			return base64Decode((in).(string))
+		},
+	}
+
+	supportedKubeObjects = map[string]func(obj map[string]any) (client.Object, error){
+		"v1/secrets": newKubeObjectFactory[corev1.Secret](),
+	}
+)
+
+// P is the struct type (e.g., corev1.Secret)
+// T is the pointer type (e.g., *corev1.Secret) that must implement client.Object
+func newKubeObjectFactory[P any, T PtrClientObj[P]]() func(map[string]any) (client.Object, error) {
+	return func(unstructured map[string]any) (client.Object, error) {
+		obj := new(P)
+		initializedObj, err := initObject(obj, unstructured)
+		if err != nil {
+			return nil, err
+		}
+		// Assert the concrete pointer type (*P) to the interface type.
+		// This is guaranteed to be safe because of our T interface{*P; client.Object} constraint.
+		return any(initializedObj).(client.Object), nil
+	}
+}
+
+func initObject[T any](obj *T, unstructured map[string]any) (*T, error) {
+	if unstructured != nil {
+		if err := fromUnstructured(obj, unstructured); err != nil {
+			return nil, err
+		}
+	}
+	return obj, nil
 }
 
 type refMapping struct {
@@ -133,6 +170,31 @@ func (km kubeMapping) fetchFromPropertySelectors(resource map[string]any, target
 	return nil, ErrNotFound
 }
 
+func (km kubeMapping) setAtPropertySelectors(resource map[string]any, target string, value any) error {
+	for _, selector := range km.PropertySelectors {
+		prop := selector
+		base := selector
+		if strings.HasSuffix(prop, ".#") {
+			prop = fmt.Sprintf("%s.%s", prop[:len(prop)-2], target)
+			base = prop[:len(prop)-2]
+		}
+		basePath := resolveXPath(base)
+		_, err := accessField[any](resource, basePath...)
+		if errors.Is(err, ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("failed to check base path %q: %w", base, err)
+		}
+		path := resolveXPath(prop)
+		if err := createField(resource, value, path...); err != nil {
+			return fmt.Errorf("failed to set value at %q: %w", path, err)
+		}
+		return nil
+	}
+	return ErrNotFound
+}
+
 type openAPIMapping struct {
 	Property string `json:"property"`
 	Type     string `json:"type"`
@@ -146,11 +208,43 @@ func isReference(obj map[string]any) bool {
 	return obj["x-kubernetes-mapping"] != nil && obj["x-openapi-mapping"] != nil
 }
 
-func expandReference(_ []string, _, _ map[string]any, _ *depsBuilder) error {
+func expandReference(deps DependencyRepo, path []string, mapping, obj map[string]any) error {
+	reference, err := accessField[map[string]any](obj, base(path))
+	if errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed accessing value at path %v: %w", path, err)
+	}
+	if len(reference) == 0 {
+		return nil
+	}
+	refMap := refMapping{}
+	if err := fromUnstructured(&refMap, mapping); err != nil {
+		return fmt.Errorf("failed to parse a reference mapping: %w", err)
+	}
+
+	value, err := refMap.XKubernetesMapping.fetchFromProperties(obj)
+	if err != nil {
+		return fmt.Errorf("failed to extract dependency value: %w", err)
+	}
+
+	gvr := refMap.XKubernetesMapping.GVR()
+	depUnstructured, err := unstructuredKubeObjectFor(gvr)
+	if err != nil {
+		return fmt.Errorf("failed to populate unstructured dependency: %w", err)
+	}
+	refMap.XKubernetesMapping.setAtPropertySelectors(depUnstructured, refMap.XOpenAPIMapping.Property, value)
+
+	dep, err := initializedKubeObjectFor(gvr, depUnstructured)
+	if err != nil {
+		return fmt.Errorf("failed to populate final dependency object: %w", err)
+	}
+	deps.Add(dep)
 	return nil
 }
 
-func processReference(path []string, mapping, spec map[string]any, deps DependencyFinder) error {
+func collapseReference(deps DependencyFinder, path []string, mapping, spec map[string]any) error {
 	reference, err := accessField[map[string]any](spec, base(path))
 	if errors.Is(err, ErrNotFound) {
 		return nil
@@ -180,4 +274,24 @@ func resolveXPath(xpath string) []string {
 		return asPath(xpath[1:])
 	}
 	return asPath(xpath)
+}
+
+func unstructuredKubeObjectFor(gvr string) (map[string]any, error) {
+	objCopy, err := kubeObjectFor(gvr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unstructured kube object for GVR %q: %w", gvr, err)
+	}
+	return toUnstructured(objCopy)
+}
+
+func kubeObjectFor(gvr string) (client.Object, error) {
+	return initializedKubeObjectFor(gvr, nil)
+}
+
+func initializedKubeObjectFor(gvr string, unstructuredData map[string]any) (client.Object, error) {
+	objFn, ok := supportedKubeObjects[gvr]
+	if !ok {
+		return nil, fmt.Errorf("unsupported kube object for GVR %q", gvr)
+	}
+	return objFn(unstructuredData)
 }

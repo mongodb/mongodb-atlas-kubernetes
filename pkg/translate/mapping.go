@@ -12,26 +12,12 @@ const (
 	SecretProperySelector = "$.data.#"
 )
 
-func processKubeProperties(path []string, props, spec map[string]any, deps *depsBuilder) error {
-	//extras := []client.Object{}
-	for key, prop := range props {
-		mapping, ok := (prop).(map[string]any)
-		if !ok {
-			continue
-		}
-		subPath := append(path, key)
-		if isReference(mapping) {
-			err := expandReference(subPath, mapping, spec, deps)
-			if err != nil {
-				return fmt.Errorf("failed to process reference: %w", err)
-			}
-			continue
-		}
-	}
-	return nil
+type Mapper struct {
+	deps   DependencyRepo
+	expand bool
 }
 
-func processAPIProperties(path []string, props, spec map[string]any, deps DependencyFinder) error {
+func (m *Mapper) mapProperties(path []string, props, obj map[string]any) error {
 	for key, prop := range props {
 		mapping, ok := (prop).(map[string]any)
 		if !ok {
@@ -39,13 +25,13 @@ func processAPIProperties(path []string, props, spec map[string]any, deps Depend
 		}
 		subPath := append(path, key)
 		if isReference(mapping) {
-			err := processReference(subPath, mapping, spec, deps)
+			err := m.mapReference(subPath, mapping, obj)
 			if err != nil {
 				return fmt.Errorf("failed to process reference: %w", err)
 			}
 			continue
 		}
-		rawField, ok, err := unstructured.NestedFieldNoCopy(spec, key)
+		rawField, ok, err := unstructured.NestedFieldNoCopy(obj, key)
 		if !ok {
 			continue
 		}
@@ -53,26 +39,26 @@ func processAPIProperties(path []string, props, spec map[string]any, deps Depend
 			return fmt.Errorf("failed to access %q: %w", key, err)
 		}
 		if arrayField, ok := (rawField).([]any); ok {
-			return processArrayMapping(subPath, mapping, arrayField, deps)
+			return m.mapArray(subPath, mapping, arrayField)
 		}
 		subSpec, ok := (rawField).(map[string]any)
 		if !ok {
 			return fmt.Errorf("unsupported mapping of type %T", rawField)
 		}
-		if err := processObjectMapping(subPath, mapping, subSpec, deps); err != nil {
+		if err := m.mapObject(subPath, mapping, subSpec); err != nil {
 			return fmt.Errorf("failed to process mapping %q: %w", key, err)
 		}
 	}
 	return nil
 }
 
-func processArrayMapping(path []string, mapping map[string]any, specs []any, deps DependencyFinder) error {
+func (m *Mapper) mapArray(path []string, mapping map[string]any, obj []any) error {
 	items, err := accessField[map[string]any](mapping, "items", "properties")
 	if err != nil {
 		return fmt.Errorf("failed to access %q: %w", base(path), err)
 	}
 	for key, item := range items {
-		spec := findByExistingKey(specs, key)
+		spec := findByExistingKey(obj, key)
 		if spec == nil {
 			continue
 		}
@@ -81,25 +67,32 @@ func processArrayMapping(path []string, mapping map[string]any, specs []any, dep
 			return fmt.Errorf("expected field %q at %v to be a map but was: %T", key, path, item)
 		}
 		subPath := append(path, key)
-		if err := processObjectMapping(subPath, mapping, spec, deps); err != nil {
+		if err := m.mapObject(subPath, mapping, spec); err != nil {
 			return fmt.Errorf("failed to map property from array item %q at %v: %w", key, path, err)
 		}
 	}
 	return nil
 }
 
-func processObjectMapping(path []string, mapping, spec map[string]any, deps DependencyFinder) error {
+func (m *Mapper) mapObject(path []string, mapping, obj map[string]any) error {
 	if mapping["properties"] != nil {
 		props, err := accessField[map[string]any](mapping, "properties")
 		if err != nil {
 			return fmt.Errorf("faild to access properties at %q: %w", path, err)
 		}
-		return processAPIProperties(path, props, spec, deps)
+		return m.mapProperties(path, props, obj)
 	}
 	if isReference(mapping) {
-		return processReference(path, mapping, spec, deps)
+		return m.mapReference(path, mapping, obj)
 	}
 	return fmt.Errorf("unsupported extension at %v with fields %v", path, fieldsOf(mapping))
+}
+
+func (m *Mapper) mapReference(path []string, mapping, obj map[string]any) error {
+	if m.expand {
+		return expandReference(m.deps, path, mapping, obj)
+	}
+	return collapseReference(m.deps, path, mapping, obj)
 }
 
 func findByExistingKey(list []any, key string) map[string]any {
