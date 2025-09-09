@@ -234,6 +234,10 @@ jobs:
       - name: Create SDLC report
         run: devbox run -- make gen-sdlc-checklist
 
+      - name: Generate licenses.csv
+        run: |
+          devbox run -- 'make build-licenses.csv'
+
       # Create PR on release branch with all updates generated
       - name: Create release pr with all updated artefacts
         env:
@@ -252,6 +256,9 @@ jobs:
           cp -rf bundle "$RELEASE_DIR/"
           cp -rf helm-charts "$RELEASE_DIR/"
           cp bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
+          cp .licenses-gomod.sha256 "$RELEASE_DIR/"
+          cp licenses.csv "$RELEASE_DIR/"
+
 
           git fetch origin
           git checkout -f -b "$BRANCH" origin/main
