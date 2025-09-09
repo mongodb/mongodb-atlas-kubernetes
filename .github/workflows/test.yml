@@ -67,7 +67,7 @@ jobs:
     needs:
       - run-tests
     uses: ./.github/workflows/check-licenses.yml
-  
+
   cloud-tests-filter:
     needs:
       - run-tests

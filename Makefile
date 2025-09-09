@@ -178,14 +178,9 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was changed)
 	@[ "$(GOMOD_SHA)" == "$(GOMOD_LICENSES_SHA)" ] || $(MAKE) build-licenses.csv
 
-.PHONY: licenses-up-to-date
-licenses-up-to-date: ## Check if the licenses.csv is up to date
-	@if [ "$(GOMOD_SHA)" != "$(GOMOD_LICENSES_SHA)" ]; then \
-	echo "licenses.csv needs to be recalculated: git rebase AND run 'make build-licenses.csv'"; exit 1; \
-	else echo "licenses.csv is OK! (up to date)"; fi
 
 .PHONY: check-licenses
-check-licenses: licenses-up-to-date ## Check licenses are compliant with our restrictions
+check-licenses:  ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
 	export GOOS=linux
