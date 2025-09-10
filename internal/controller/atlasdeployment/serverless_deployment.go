@@ -25,10 +25,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
-func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService,
-	akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Context, projectService project.ProjectService,
+	deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
 	akoServerless, ok := akoDeployment.(*deployment.Serverless)
 	if !ok {
 		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not a serverless cluster"))
@@ -58,6 +60,12 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Conte
 			}
 
 			return r.inProgress(ctx, akoServerless.GetCustomResource(), atlasServerless, workflow.DeploymentUpdating, "deployment is updating")
+		}
+		if !version.IsExperimental() {
+			err := r.ensureConnectionSecrets(ctx, projectService, akoServerless, atlasServerless.GetConnection())
+			if err != nil {
+				return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
+			}
 		}
 
 		// Note: Serverless Private endpoints keep theirs flows without translation layer (yet)

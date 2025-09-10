@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,6 +37,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
@@ -44,6 +46,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
@@ -137,6 +140,12 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult()
 	}
 
+	if !version.IsExperimental() {
+		if result = r.ensureConnectionSecrets(ctx, dataFederationService, project, dataFederation); !result.IsOk() {
+			return result.ReconcileResult()
+		}
+	}
+
 	if dataFederation.GetDeletionTimestamp().IsZero() {
 		if !customresource.HaveFinalizer(dataFederation, customresource.FinalizerLabel) {
 			err = r.Client.Get(context, kube.ObjectKeyFromObject(dataFederation), dataFederation)
@@ -176,6 +185,14 @@ func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log 
 		if customresource.IsResourcePolicyKeepOrDefault(dataFederation, r.ObjectDeletionProtection) {
 			log.Info("Not removing AtlasDataFederation from Atlas as per configuration")
 		} else {
+			if !version.IsExperimental() {
+				if err := r.deleteConnectionSecrets(ctx.Context, dataFederation); err != nil {
+					log.Errorf("failed to remove DataFederation connection secrets from Atlas: %s", err)
+					result := workflow.Terminate(workflow.Internal, err)
+					ctx.SetConditionFromResult(api.DataFederationReadyType, result)
+					return result
+				}
+			}
 			if err := r.deleteDataFederationFromAtlas(ctx.Context, service, dataFederation, project, log); err != nil {
 				log.Errorf("failed to remove DataFederation from Atlas: %s", err)
 				result := workflow.Terminate(workflow.Internal, err)
@@ -282,4 +299,33 @@ func NewAtlasDataFederationReconciler(
 		ObjectDeletionProtection: deletionProtection,
 		GlobalSecretRef:          globalSecretRef,
 	}
+}
+
+func (r *AtlasDataFederationReconciler) deleteConnectionSecrets(ctx context.Context, dataFederation *akov2.AtlasDataFederation) error {
+	log := r.Log.With("atlasdatafederation", kube.ObjectKeyFromObject(dataFederation))
+
+	project := &akov2.AtlasProject{}
+
+	if result := r.readProjectResource(ctx, dataFederation, project); !result.IsOk() {
+		return errors.New("cannot read project resource")
+	}
+
+	log = log.With("projectID", project.Status.ID, "dataFederationName", dataFederation.Spec.Name)
+
+	// We always remove the connection secrets even if the deployment is not removed from Atlas
+	secrets, err := connectionsecret.ListByDeploymentName(ctx, r.Client, dataFederation.Namespace, project.ID(), dataFederation.Spec.Name)
+	if err != nil {
+		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
+	}
+
+	for i := range secrets {
+		if err := r.Client.Delete(ctx, &secrets[i]); err != nil {
+			if k8serrors.IsNotFound(err) {
+				continue
+			}
+			log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
+		}
+	}
+
+	return nil
 }

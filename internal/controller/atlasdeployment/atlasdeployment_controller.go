@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,6 +41,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
@@ -49,6 +51,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
@@ -136,6 +140,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
 	workflowCtx.SdkClientSet = sdkClientSet
+	projectService := project.NewProjectAPIService(sdkClientSet.SdkClient20250312002.ProjectsApi)
 	deploymentService := deployment.NewAtlasDeployments(sdkClientSet.SdkClient20250312002.ClustersApi, sdkClientSet.SdkClient20250312002.ServerlessInstancesApi, sdkClientSet.SdkClient20250312002.GlobalClustersApi, sdkClientSet.SdkClient20250312002.FlexClustersApi, r.AtlasProvider.IsCloudGov())
 	atlasProject, err := r.ResolveProject(workflowCtx.Context, sdkClientSet.SdkClient20250312002, atlasDeployment)
 	if err != nil {
@@ -172,13 +177,13 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	switch {
 	case atlasDeployment.IsServerless():
-		return r.handleServerlessInstance(workflowCtx, deploymentService, deploymentInAKO, deploymentInAtlas)
+		return r.handleServerlessInstance(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
 
 	case atlasDeployment.IsFlex():
-		return r.handleFlexInstance(workflowCtx, deploymentService, deploymentInAKO, deploymentInAtlas)
+		return r.handleFlexInstance(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
 
 	case atlasDeployment.IsAdvancedDeployment():
-		return r.handleAdvancedDeployment(workflowCtx, deploymentService, deploymentInAKO, deploymentInAtlas)
+		return r.handleAdvancedDeployment(workflowCtx, projectService, deploymentService, deploymentInAKO, deploymentInAtlas)
 	}
 
 	return workflow.OK().ReconcileResult()
@@ -236,10 +241,36 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
 ) error {
 	ctx.Log.Infow("-> Starting AtlasDeployment deletion", "spec", deploymentInAKO)
 
+	if !version.IsExperimental() {
+		err := r.deleteConnectionStrings(ctx, deploymentInAKO)
+		if err != nil {
+			return err
+		}
+	}
+
 	err := deploymentService.DeleteDeployment(ctx.Context, deploymentInAtlas)
 	if err != nil {
 		ctx.Log.Errorw("Cannot delete Atlas deployment", "error", err)
 		return err
+	}
+
+	return nil
+}
+
+func (r *AtlasDeploymentReconciler) deleteConnectionStrings(ctx *workflow.Context, deployment deployment.Deployment) error {
+	// We always remove the connection secrets even if the deployment is not removed from Atlas
+	secrets, err := connectionsecret.ListByDeploymentName(ctx.Context, r.Client, "", deployment.GetProjectID(), deployment.GetName())
+	if err != nil {
+		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
+	}
+
+	for i := range secrets {
+		if err := r.Client.Delete(ctx.Context, &secrets[i]); err != nil {
+			if k8serrors.IsNotFound(err) {
+				continue
+			}
+			ctx.Log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
+		}
 	}
 
 	return nil

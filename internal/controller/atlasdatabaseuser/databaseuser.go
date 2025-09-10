@@ -24,6 +24,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
@@ -87,10 +88,20 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUser
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, false, err)
 	}
 	if expired {
-		ctx.SetConditionFromResult(api.DatabaseUserReadyType,
-			workflow.Terminate(workflow.DatabaseUserExpired, errors.New("an expired user cannot be managed")),
-		)
-		return r.unmanage(ctx, atlasDatabaseUser)
+		if !version.IsExperimental() {
+			err = connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, atlasProject.ID, atlasDatabaseUser.Spec.Username, *atlasDatabaseUser, r.Log)
+			if err != nil {
+				return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
+			}
+
+			ctx.SetConditionFromResult(api.DatabaseUserReadyType, workflow.Terminate(workflow.DatabaseUserExpired, errors.New("an expired user cannot be managed")))
+			return r.unmanage(ctx, atlasProject.ID, atlasDatabaseUser)
+		} else {
+			ctx.SetConditionFromResult(api.DatabaseUserReadyType,
+				workflow.Terminate(workflow.DatabaseUserExpired, errors.New("an expired user cannot be managed")),
+			)
+			return r.unmanage(ctx, atlasProject.ID, atlasDatabaseUser)
+		}
 	}
 
 	scopesAreValid, err := r.areDeploymentScopesValid(ctx, deploymentService, atlasProject.ID, atlasDatabaseUser)
@@ -112,7 +123,7 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUser
 	case dbUserExists && wasDeleted:
 		return r.delete(ctx, dbUserService, atlasProject.ID, atlasDatabaseUser)
 	default:
-		return r.unmanage(ctx, atlasDatabaseUser)
+		return r.unmanage(ctx, atlasProject.ID, atlasDatabaseUser)
 	}
 }
 
@@ -134,6 +145,12 @@ func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, dbUserServic
 	}
 
 	if wasRenamed(atlasDatabaseUser) {
+		if !version.IsExperimental() {
+			err = connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, projectID, atlasDatabaseUser.Status.UserName, *atlasDatabaseUser, r.Log)
+			if err != nil {
+				return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
+			}
+		}
 		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", atlasDatabaseUser.Spec.Username, "oldUserName", atlasDatabaseUser.Status.UserName)
 		if err = r.removeOldUser(ctx.Context, dbUserService, projectID, atlasDatabaseUser); err != nil {
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
@@ -173,7 +190,7 @@ func (r *AtlasDatabaseUserReconciler) delete(ctx *workflow.Context, dbUserServic
 	if customresource.IsResourcePolicyKeepOrDefault(atlasDatabaseUser, r.ObjectDeletionProtection) {
 		r.Log.Info("Not removing Atlas database user from Atlas as per configuration")
 
-		return r.unmanage(ctx, atlasDatabaseUser)
+		return r.unmanage(ctx, projectID, atlasDatabaseUser)
 	}
 
 	err := dbUserService.Delete(ctx.Context, atlasDatabaseUser.Spec.DatabaseName, projectID, atlasDatabaseUser.Spec.Username)
@@ -185,7 +202,7 @@ func (r *AtlasDatabaseUserReconciler) delete(ctx *workflow.Context, dbUserServic
 		r.Log.Info("Database user doesn't exist or is already deleted")
 	}
 
-	return r.unmanage(ctx, atlasDatabaseUser)
+	return r.unmanage(ctx, projectID, atlasDatabaseUser)
 }
 
 func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService,
@@ -194,7 +211,20 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymen
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
-
+	if !version.IsExperimental() {
+		removedOrphanSecrets, err := connectionsecret.ReapOrphanConnectionSecrets(
+			ctx.Context, r.Client, atlasProject.ID, atlasDatabaseUser.Namespace, allDeploymentNames)
+		if err != nil {
+			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
+		}
+		if len(removedOrphanSecrets) > 0 {
+			r.Log.Debugw("Removed orphan secrets bound to an non existent deployment",
+				"project", atlasProject.Name, "removed", len(removedOrphanSecrets))
+			for _, orphan := range removedOrphanSecrets {
+				r.Log.Debugw("Removed orphan", "secret", orphan)
+			}
+		}
+	}
 	deploymentsToCheck := allDeploymentNames
 	if atlasDatabaseUser.Spec.Scopes != nil {
 		deploymentsToCheck = filterScopeDeployments(atlasDatabaseUser, allDeploymentNames)
@@ -219,7 +249,13 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymen
 			fmt.Sprintf("%d out of %d deployments have applied database user changes", readyDeployments, len(deploymentsToCheck)),
 		)
 	}
-
+	if !version.IsExperimental() {
+		// TODO refactor connectionsecret package to follow state machine approach
+		result := connectionsecret.CreateOrUpdateConnectionSecrets(ctx, r.Client, deploymentService, r.EventRecorder, atlasProject, *atlasDatabaseUser)
+		if !result.IsOk() {
+			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotCreated, true, errors.New(result.GetMessage()))
+		}
+	}
 	return r.ready(ctx, atlasDatabaseUser, passwordVersion)
 }
 

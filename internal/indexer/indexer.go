@@ -53,8 +53,6 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasDeploymentByCredentialIndexer(logger),
 		NewAtlasDatabaseUserByProjectIndexer(ctx, c.GetClient(), logger),
 		NewAtlasDatabaseUserBySpecUsernameIndexer(ctx, c.GetClient(), logger),
-		NewAtlasDataFederationByProjectIDIndexer(ctx, c.GetClient(), logger),
-		NewAtlasDataFederationByProjectIndexer(logger),
 		NewAtlasDataFederationBySpecNameIndexer(ctx, c.GetClient(), logger),
 		NewAtlasDeploymentByProjectIndexer(ctx, c.GetClient(), logger),
 		NewAtlasDeploymentBySpecNameIndexer(ctx, c.GetClient(), logger),
@@ -76,6 +74,10 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 	)
 	if version.IsExperimental() {
 		// add experimental indexers here
+		indexers = append(indexers,
+			NewAtlasDataFederationByProjectIDIndexer(ctx, c.GetClient(), logger),
+			NewAtlasDataFederationByProjectIndexer(logger),
+		)
 	}
 	return Register(ctx, c, indexers...)
 }

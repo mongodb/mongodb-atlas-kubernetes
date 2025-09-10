@@ -33,27 +33,32 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 func TestDeleteConnectionSecrets(t *testing.T) {
 	for _, tc := range []struct {
-		name              string
-		service           func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService
-		atlasProject      *akov2.AtlasProject
-		dataFederation    *akov2.AtlasDataFederation
-		connectionSecrets []*corev1.Secret
+		experimentalShouldRun bool
+		name                  string
+		service               func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService
+		atlasProject          *akov2.AtlasProject
+		dataFederation        *akov2.AtlasDataFederation
+		connectionSecrets     []*corev1.Secret
 
 		wantDataFederation *akov2.AtlasDataFederation
 		wantSecrets        []corev1.Secret
 		wantResult         workflow.DeprecatedResult
 	}{
 		{
-			name: "no finalizer",
+			experimentalShouldRun: true,
+			name:                  "no finalizer",
 			dataFederation: &akov2.AtlasDataFederation{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"},
 			},
@@ -64,7 +69,8 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 			wantResult:  workflow.OK(),
 		},
 		{
-			name: "finalizer set and deletion protection is enabled",
+			experimentalShouldRun: true,
+			name:                  "finalizer set and deletion protection is enabled",
 			dataFederation: &akov2.AtlasDataFederation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo", Namespace: "bar",
@@ -83,7 +89,8 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 			wantResult:  workflow.OK(),
 		},
 		{
-			name: "federation object without secrets",
+			experimentalShouldRun: true,
+			name:                  "federation object without secrets",
 			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
 				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
 				return serviceMock
@@ -108,59 +115,128 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 			wantSecrets: []corev1.Secret{},
 			wantResult:  workflow.OK(),
 		},
+		{
+			experimentalShouldRun: false,
+			name:                  "federation object with secrets",
+			service: func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService {
+				serviceMock.EXPECT().Delete(context.Background(), mock.Anything, mock.Anything).Return(nil)
+				return serviceMock
+			},
+			atlasProject: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
+				Status:     status.AtlasProjectStatus{ID: "123"},
+			},
+			dataFederation: &akov2.AtlasDataFederation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo", Namespace: "bar",
+					Finalizers: []string{customresource.FinalizerLabel},
+				},
+				Spec: akov2.DataFederationSpec{
+					Name:    "data-federation-name",
+					Project: common.ResourceRefNamespaced{Name: "fooProject"},
+				},
+			},
+			wantDataFederation: &akov2.AtlasDataFederation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo", Namespace: "bar",
+					// Finalizers removed
+				},
+				Spec: akov2.DataFederationSpec{
+					Name:    "data-federation-name",
+					Project: common.ResourceRefNamespaced{Name: "fooProject"},
+				},
+			},
+			connectionSecrets: []*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "fooSecret", Namespace: "bar",
+						Labels: map[string]string{
+							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+							connectionsecret.ProjectLabelKey: "123",
+							connectionsecret.ClusterLabelKey: "data-federation-name",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "keepSecret", Namespace: "bar",
+						Labels: map[string]string{
+							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+							connectionsecret.ProjectLabelKey: "123",
+							connectionsecret.ClusterLabelKey: "some-cluster",
+						},
+					},
+				},
+			},
+			wantSecrets: []corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "keepSecret", Namespace: "bar",
+						Labels: map[string]string{
+							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+							connectionsecret.ProjectLabelKey: "123",
+							connectionsecret.ClusterLabelKey: "some-cluster",
+						},
+					},
+				},
+			},
+			wantResult: workflow.OK(),
+		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			logger := zaptest.NewLogger(t).Sugar()
-			ctx := &workflow.Context{
-				Context: context.Background(),
-				Log:     logger,
-			}
+		if !version.IsExperimental() || (tc.experimentalShouldRun && version.IsExperimental()) {
+			t.Run(tc.name, func(t *testing.T) {
+				logger := zaptest.NewLogger(t).Sugar()
+				ctx := &workflow.Context{
+					Context: context.Background(),
+					Log:     logger,
+				}
 
-			var objects []client.Object
-			if tc.atlasProject != nil {
-				objects = append(objects, tc.atlasProject)
-			}
-			if tc.dataFederation != nil {
-				objects = append(objects, tc.dataFederation)
-			}
-			for _, s := range tc.connectionSecrets {
-				objects = append(objects, s)
-			}
-			scheme := runtime.NewScheme()
-			utilruntime.Must(corev1.AddToScheme(scheme))
-			utilruntime.Must(akov2.AddToScheme(scheme))
-			fakeClient := fake.NewClientBuilder().
-				WithScheme(scheme).
-				WithObjects(objects...).
-				Build()
-			project := &akov2.AtlasProject{}
+				var objects []client.Object
+				if tc.atlasProject != nil {
+					objects = append(objects, tc.atlasProject)
+				}
+				if tc.dataFederation != nil {
+					objects = append(objects, tc.dataFederation)
+				}
+				for _, s := range tc.connectionSecrets {
+					objects = append(objects, s)
+				}
+				scheme := runtime.NewScheme()
+				utilruntime.Must(corev1.AddToScheme(scheme))
+				utilruntime.Must(akov2.AddToScheme(scheme))
+				fakeClient := fake.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(objects...).
+					Build()
+				project := &akov2.AtlasProject{}
 
-			r := &AtlasDataFederationReconciler{
-				Client: fakeClient,
-				Log:    logger,
-			}
+				r := &AtlasDataFederationReconciler{
+					Client: fakeClient,
+					Log:    logger,
+				}
 
-			var svc datafederation.DataFederationService
-			if tc.service != nil {
-				svc = tc.service(translation.NewDataFederationServiceMock(t))
-			}
-			gotResult := r.handleDelete(ctx, logger, tc.dataFederation, project, svc)
-			assert.Equal(t, tc.wantResult, gotResult)
+				var svc datafederation.DataFederationService
+				if tc.service != nil {
+					svc = tc.service(translation.NewDataFederationServiceMock(t))
+				}
+				gotResult := r.handleDelete(ctx, logger, tc.dataFederation, project, svc)
+				assert.Equal(t, tc.wantResult, gotResult)
 
-			gotDataFederation := &akov2.AtlasDataFederation{}
-			err := fakeClient.Get(ctx.Context, client.ObjectKeyFromObject(tc.dataFederation), gotDataFederation)
-			assert.NoError(t, err)
-			gotDataFederation.ResourceVersion = ""
-			assert.Equal(t, tc.wantDataFederation, gotDataFederation)
+				gotDataFederation := &akov2.AtlasDataFederation{}
+				err := fakeClient.Get(ctx.Context, client.ObjectKeyFromObject(tc.dataFederation), gotDataFederation)
+				assert.NoError(t, err)
+				gotDataFederation.ResourceVersion = ""
+				assert.Equal(t, tc.wantDataFederation, gotDataFederation)
 
-			gotSecrets := &corev1.SecretList{}
-			err = fakeClient.List(ctx.Context, gotSecrets)
-			for i := range gotSecrets.Items {
-				gotSecrets.Items[i].ResourceVersion = ""
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, tc.wantSecrets, gotSecrets.Items)
-		})
+				gotSecrets := &corev1.SecretList{}
+				err = fakeClient.List(ctx.Context, gotSecrets)
+				for i := range gotSecrets.Items {
+					gotSecrets.Items[i].ResourceVersion = ""
+				}
+				assert.NoError(t, err)
+				assert.Equal(t, tc.wantSecrets, gotSecrets.Items)
+			})
+		}
 	}
 }
 

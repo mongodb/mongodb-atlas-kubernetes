@@ -37,6 +37,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 func TestHandleFlexInstance(t *testing.T) {
@@ -291,8 +292,8 @@ func TestHandleFlexInstance(t *testing.T) {
 			}
 
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Flex)
-			result, err := reconciler.handleFlexInstance(workflowCtx, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
-
+			var projectService project.ProjectService
+			result, err := reconciler.handleFlexInstance(workflowCtx, projectService, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
 			assert.Equal(t, tt.expectedResult, workflowRes{
 				res: result,
 				err: err,

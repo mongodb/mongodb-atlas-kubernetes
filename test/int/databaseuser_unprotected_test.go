@@ -37,8 +37,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/experimentalconnectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
@@ -731,8 +731,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				deleteSecret(testDBUser1)
 				Expect(k8sClient.Delete(context.Background(), testDBUser1)).To(Succeed())
 
-				u1DepSecret := connectionsecret.CreateK8sFormat(projectName, testDeployment.GetDeploymentName(), dbUserName1)
-				u1DfSecret := connectionsecret.CreateK8sFormat(projectName, dfName, dbUserName1)
+				u1DepSecret := experimentalconnectionsecret.CreateK8sFormat(projectName, testDeployment.GetDeploymentName(), dbUserName1)
+				u1DfSecret := experimentalconnectionsecret.CreateK8sFormat(projectName, dfName, dbUserName1)
 
 				Eventually(checkSecretsDontExist(testNamespace.Name, []string{u1DepSecret, u1DfSecret})).
 					WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
@@ -757,7 +757,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 1)
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
 
-				u2DfSecret := connectionsecret.CreateK8sFormat(projectName, dfName, dbUserName2)
+				u2DfSecret := experimentalconnectionsecret.CreateK8sFormat(projectName, dfName, dbUserName2)
 				Eventually(checkSecretsDontExist(testNamespace.Name, []string{u2DfSecret})).
 					WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 			})
@@ -766,8 +766,8 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				deleteSecret(testDBUser2)
 				Expect(k8sClient.Delete(context.Background(), testDBUser2)).To(Succeed())
 
-				u2DepSecret := connectionsecret.CreateK8sFormat(projectName, testDeployment.GetDeploymentName(), dbUserName2)
-				u2DfSecret := connectionsecret.CreateK8sFormat(projectName, dfName, dbUserName2)
+				u2DepSecret := experimentalconnectionsecret.CreateK8sFormat(projectName, testDeployment.GetDeploymentName(), dbUserName2)
+				u2DfSecret := experimentalconnectionsecret.CreateK8sFormat(projectName, dfName, dbUserName2)
 
 				Eventually(checkSecretsDontExist(testNamespace.Name, []string{u2DepSecret, u2DfSecret})).
 					WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
@@ -883,7 +883,7 @@ func buildPasswordSecret(namespace, name, password string) corev1.Secret {
 			Name:      name,
 			Namespace: namespace,
 			Labels: map[string]string{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				experimentalconnectionsecret.TypeLabelKey: experimentalconnectionsecret.CredLabelVal,
 			},
 		},
 		StringData: map[string]string{"password": password},
@@ -915,9 +915,9 @@ func validateSecret(k8sClient client.Client, project akov2.AtlasProject, deploym
 		"password":                    []byte(password),
 	}
 	expectedLabels := map[string]string{
-		"atlas.mongodb.com/project-id":   project.ID(),
-		"atlas.mongodb.com/cluster-name": deployment.GetDeploymentName(),
-		connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+		"atlas.mongodb.com/project-id":            project.ID(),
+		"atlas.mongodb.com/cluster-name":          deployment.GetDeploymentName(),
+		experimentalconnectionsecret.TypeLabelKey: experimentalconnectionsecret.CredLabelVal,
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
@@ -928,13 +928,13 @@ func validateSecret(k8sClient client.Client, project akov2.AtlasProject, deploym
 func validateFederationSecret(k8sClient client.Client, project akov2.AtlasProject, df akov2.AtlasDataFederation, user akov2.AtlasDatabaseUser) {
 	secret := corev1.Secret{}
 	username := user.Spec.Username
-	secretName := connectionsecret.CreateK8sFormat(project.Spec.Name, df.Spec.Name, username)
+	secretName := experimentalconnectionsecret.CreateK8sFormat(project.Spec.Name, df.Spec.Name, username)
 	Expect(k8sClient.Get(context.Background(), kube.ObjectKey(project.Namespace, secretName), &secret)).To(Succeed())
 
 	expectedLabels := map[string]string{
-		"atlas.mongodb.com/project-id":   project.ID(),
-		"atlas.mongodb.com/cluster-name": df.Spec.Name,
-		connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+		"atlas.mongodb.com/project-id":            project.ID(),
+		"atlas.mongodb.com/cluster-name":          df.Spec.Name,
+		experimentalconnectionsecret.TypeLabelKey: experimentalconnectionsecret.CredLabelVal,
 	}
 
 	Expect(secret.Labels).To(Equal(expectedLabels))
@@ -960,7 +960,7 @@ func buildConnectionURL(connURL, userName, password string) string {
 		return ""
 	}
 
-	u, err := connectionsecret.CreateURL(connURL, userName, password)
+	u, err := experimentalconnectionsecret.CreateURL(connURL, userName, password)
 	Expect(err).NotTo(HaveOccurred())
 	return u
 }

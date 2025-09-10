@@ -25,10 +25,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
-func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService,
-	akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
+func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, projectService project.ProjectService,
+	deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
 	akoFlex, ok := akoDeployment.(*deployment.Flex)
 	if !ok {
 		return r.terminate(ctx, workflow.Internal, errors.New("deployment in AKO is not a flex cluster"))
@@ -59,7 +61,12 @@ func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, de
 
 			return r.inProgress(ctx, akoFlex.GetCustomResource(), atlasFlex, workflow.DeploymentUpdating, "deployment is updating")
 		}
-
+		if !version.IsExperimental() {
+			err := r.ensureConnectionSecrets(ctx, projectService, akoFlex, atlasFlex.GetConnection())
+			if err != nil {
+				return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
+			}
+		}
 		err := customresource.ApplyLastConfigApplied(ctx.Context, akoFlex.GetCustomResource(), r.Client)
 		if err != nil {
 			return r.terminate(ctx, workflow.Internal, err)
