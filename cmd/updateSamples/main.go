@@ -71,7 +71,7 @@ func mustGetenv(name string) string {
 	return value
 }
 
-func run(command string, args ... string) error {
+func run(command string, args ...string) error {
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

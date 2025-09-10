@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/josvazg/akotranslate/internal/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	admin2025 "go.mongodb.org/atlas-sdk/v20250312005/admin"
+
+	"github.com/josvazg/akotranslate/internal/pointer"
 )
 
 type testStruct struct {

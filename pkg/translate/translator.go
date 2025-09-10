@@ -38,7 +38,6 @@ func NewDependencies(mainObj client.Object, objs ...client.Object) *Dependencies
 	}
 }
 
-
 // MainObject retried the main object for this dependecny repository
 func (d *Dependencies) MainObject() client.Object {
 	return d.mainObj

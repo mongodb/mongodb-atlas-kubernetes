@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/josvazg/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	admin2025 "go.mongodb.org/atlas-sdk/v20250312005/admin"
@@ -20,7 +21,6 @@ import (
 	"github.com/josvazg/akotranslate/internal/pointer"
 	"github.com/josvazg/akotranslate/pkg/translate"
 	v1 "github.com/josvazg/akotranslate/pkg/translate/samples/v1"
-	"github.com/josvazg/crd2go/k8s"
 )
 
 const (
@@ -238,7 +238,7 @@ func TestFromAPI(t *testing.T) {
 				want := []client.Object{
 					&v1.GroupAlertsConfig{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "groupalertscfg",
+							Name:      "groupalertscfg",
 							Namespace: "ns",
 						},
 						Spec: v1.GroupAlertsConfigSpec{
