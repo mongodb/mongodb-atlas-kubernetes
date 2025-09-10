@@ -53,21 +53,21 @@ func TestToAndFromUnstructured(t *testing.T) {
 		YesNo:     true,
 		Text:      "some text",
 		Data:      2.4,
-		Timestamp: time.Now().Round(time.Nanosecond),
+		Timestamp: time.Now().UTC().Round(time.Nanosecond),
 		SubStruct: []subStruct{
 			{
 				SubID:   15,
 				YesNo:   true,
 				Text:    "more text",
 				Data:    0.67,
-				TheTime: time.Now().Add(-24 * 7 * time.Hour).Round(time.Nanosecond),
+				TheTime: time.Now().Add(-24 * 7 * time.Hour).UTC().Round(time.Nanosecond),
 			},
 			{
 				SubID:   14,
 				YesNo:   false,
 				Text:    "and even more text",
 				Data:    1.67,
-				TheTime: time.Now().Add(-24 * 15 * time.Hour).Round(time.Nanosecond),
+				TheTime: time.Now().Add(-24 * 15 * time.Hour).UTC().Round(time.Nanosecond),
 			},
 		},
 	}
