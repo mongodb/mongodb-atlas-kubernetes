@@ -283,6 +283,15 @@ spec:
                             type: object
                         type: object
                       type: array
+                    severityOverride:
+                      description: SeverityOverride optionally overrides the default
+                        severity level for an alert.
+                      enum:
+                      - INFO
+                      - WARNING
+                      - ERROR
+                      - CRITICAL
+                      type: string
                     threshold:
                       description: Threshold  causes an alert to be triggered.
                       properties:
@@ -1223,6 +1232,9 @@ spec:
                     resolved:
                       description: When the alert was closed. Only present if the
                         status is CLOSED.
+                      type: string
+                    severityOverride:
+                      description: Severity of the alert.
                       type: string
                     sourceTypeName:
                       description: For alerts of the type BACKUP, the type of server

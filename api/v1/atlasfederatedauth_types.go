@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -67,9 +67,9 @@ func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID ma
 
 	for i := range f.RoleMappings {
 		roleMapping := &f.RoleMappings[i]
-		atlasRoleAssignments := make([]admin.RoleAssignment, 0, len(roleMapping.RoleAssignments))
+		atlasRoleAssignments := make([]admin.ConnectedOrgConfigRoleAssignment, 0, len(roleMapping.RoleAssignments))
 		for j := range roleMapping.RoleAssignments {
-			atlasRoleAssignment := admin.RoleAssignment{}
+			atlasRoleAssignment := admin.ConnectedOrgConfigRoleAssignment{}
 			roleAssignment := &roleMapping.RoleAssignments[j]
 			if roleAssignment.ProjectName != "" {
 				id, ok := projectNameToID[roleAssignment.ProjectName]

@@ -286,6 +286,7 @@ func clearProjectToCompare(prj *akov2.AtlasProject) *akov2.AtlasProject {
 	// ignore the resourceVersion and the last applied config, compared separately
 	delete(copy.Annotations, customresource.AnnotationLastAppliedConfiguration)
 	copy.ResourceVersion = ""
+	copy.TypeMeta = metav1.TypeMeta{}
 	return copy
 }
 
@@ -309,7 +310,7 @@ func TestPatchLastConfigAppliedErrors(t *testing.T) {
 			title:        "empty struct cannot be patched",
 			object:       &akov2.AtlasProject{},
 			spec:         &struct{}{},
-			wantErrorMsg: "failed to patch resource:  \"\" is invalid: metadata.name: Required value: name is required",
+			wantErrorMsg: "AtlasProject.atlas.mongodb.com \"\" is invalid: metadata.name: Required value: name is required",
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {

@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -949,6 +949,129 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 					WithMessageRegexp("Cluster upgrade to dedicated instance initiated in Atlas. The process may take several minutes"),
 			},
 		},
+		"enable autoscaling with predictive autoscaling": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "test",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M20",
+											NodeCount:    pointer.MakePtr(3),
+										},
+										AutoScaling: &akov2.AdvancedAutoScalingSpec{
+											Compute: &akov2.ComputeSpec{
+												Enabled:           pointer.MakePtr(true),
+												ScaleDownEnabled:  pointer.MakePtr(false),
+												MinInstanceSize:   "M20",
+												MaxInstanceSize:   "M40",
+												PredictiveEnabled: pointer.MakePtr(true),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: &deployment.Cluster{
+				ProjectID: "project-id",
+				State:     "IDLE",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:        "cluster0",
+					ClusterType: "REPLICASET",
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_WEST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M20",
+										NodeCount:    pointer.MakePtr(3),
+									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
+											Enabled: pointer.MakePtr(false),
+										},
+										DiskGB: &akov2.DiskGB{
+											Enabled: pointer.MakePtr(false),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+
+				service.EXPECT().UpdateDeployment(context.Background(), mock.AnythingOfType("*deployment.Cluster")).
+					Return(
+						&deployment.Cluster{
+							ProjectID: "project-id",
+							State:     "UPDATING",
+							AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+								Name:        "cluster0",
+								ClusterType: "REPLICASET",
+								ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+									{
+										RegionConfigs: []*akov2.AdvancedRegionConfig{
+											{
+												ProviderName: "AWS",
+												RegionName:   "US_WEST_1",
+												Priority:     pointer.MakePtr(7),
+												ElectableSpecs: &akov2.Specs{
+													InstanceSize: "M20",
+													NodeCount:    pointer.MakePtr(3),
+												},
+												AutoScaling: &akov2.AdvancedAutoScalingSpec{
+													Compute: &akov2.ComputeSpec{
+														Enabled:           pointer.MakePtr(true),
+														ScaleDownEnabled:  pointer.MakePtr(false),
+														MinInstanceSize:   "M20",
+														MaxInstanceSize:   "M40",
+														PredictiveEnabled: pointer.MakePtr(true),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						nil,
+					)
+
+				return service
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: workflowRes{
+				res: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+				err: nil,
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.DeploymentUpdating)).
+					WithMessageRegexp("deployment is updating"),
+			},
+		},
 	}
 
 	for name, tt := range tests {
@@ -970,7 +1093,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				Context: context.Background(),
 				Log:     logger,
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312002: tt.sdkMock(),
+					SdkClient20250312006: tt.sdkMock(),
 				},
 			}
 

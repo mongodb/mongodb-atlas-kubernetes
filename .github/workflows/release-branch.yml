@@ -56,6 +56,12 @@ jobs:
       run: |
         devbox run -- 'VERSION=${{ env.VERSION }} ./scripts/bump-helm-chart-version.sh'
 
+    - name: Generate licenses.csv
+      run: |
+        devbox run -- 'make build-licenses.csv'
+        git add .licenses-gomod.sha256
+        git add licenses.csv
+
     - name: Create branch and push it
       id: generate_branch
       env:

@@ -8,8 +8,8 @@ on:
       - 'main'
     paths-ignore:
       - 'docs/**'
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled]
     branches:
       - '**'
     paths-ignore:
@@ -26,20 +26,18 @@ on:
           - "true"
           - "false"
 
-concurrency:
-  group: test-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
-
 jobs:
   run-tests:
     name: Run Tests
     runs-on: ubuntu-latest
-    # Contributions do NOT run any testing by default, a label is needed to allow testing
+    # Contributions do NOT run any testing by default
+    # A label is needed to allow testing after every contributor code post
+    # This check makes pull_request_target event triggering by contributions safe
     if: |
       github.event.pull_request.base.repo.full_name == github.event.pull_request.head.repo.full_name ||
-      contains(github.event.pull_request.labels.*.name, 'safe-to-test') ||
-      contains(github.event.pull_request.labels.*.name, 'cloud-tests') ||
-      contains(github.event.pull_request.labels.*.name, 'retest')
+      github.event.label.name == 'safe-to-test' ||
+      github.event.label.name == 'cloud-tests' ||
+      github.event.label.name == 'retest'
     steps:
       - name: allowed message
         run: echo "Allowed to run tests"
@@ -69,9 +67,8 @@ jobs:
     needs:
       - run-tests
     uses: ./.github/workflows/check-licenses.yml
-  
+
   cloud-tests-filter:
-    if: github.event.pull_request.head.repo.fork == false
     needs:
       - run-tests
     uses: ./.github/workflows/cloud-tests-filter.yml
@@ -80,6 +77,9 @@ jobs:
     needs:
       - lint
       - unit-tests
+      - validate-manifests
+      - check-licenses
+      - cloud-tests-filter
     uses: ./.github/workflows/tests-selectable.yaml
     secrets: inherit
 
@@ -114,6 +114,6 @@ jobs:
       - check-licenses
       - e2e2
       - cloud-tests
-    if: github.ref_name == 'main'
+    if: github.ref_name == 'main' && github.event_name != 'pull_request_target' && github.event_name != 'pull_request'
     uses: ./.github/workflows/promote-image.yml
     secrets: inherit

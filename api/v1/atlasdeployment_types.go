@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -153,6 +153,10 @@ type AdvancedDeploymentSpec struct {
 	// A list of atlas search indexes configuration for the current deployment
 	// +optional
 	SearchIndexes []SearchIndex `json:"searchIndexes,omitempty"`
+	// Config Server Management Mode for creating or updating a sharded cluster.
+	// +kubebuilder:validation:Enum=ATLAS_MANAGED;FIXED_TO_DEDICATED
+	// +optional
+	ConfigServerManagementMode string `json:"configServerManagementMode,omitempty"`
 }
 
 func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymentSpec {
@@ -349,6 +353,10 @@ type ComputeSpec struct {
 	// Maximum instance size to which your deployment can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.
 	// +optional
 	MaxInstanceSize string `json:"maxInstanceSize,omitempty"`
+
+	// Flag that indicates whether predictive instance size auto-scaling is enabled.
+	// +optional
+	PredictiveEnabled *bool `json:"predictiveEnabled,omitempty"`
 }
 
 type ProcessArgs struct {
@@ -835,6 +843,9 @@ func (c *AtlasDeployment) AtlasName() string {
 	}
 	if c.Spec.ServerlessSpec != nil {
 		return c.Spec.ServerlessSpec.Name
+	}
+	if c.Spec.FlexSpec != nil {
+		return c.Spec.FlexSpec.Name
 	}
 	return ""
 }

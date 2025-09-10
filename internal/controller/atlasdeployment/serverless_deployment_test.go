@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
-	"go.mongodb.org/atlas-sdk/v20250312002/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -947,7 +947,7 @@ func TestHandleServerlessInstance(t *testing.T) {
 				Context: ctx,
 				Log:     logger.Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312002: tt.sdkMock(),
+					SdkClient20250312006: tt.sdkMock(),
 				},
 			}
 

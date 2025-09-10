@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -598,6 +598,7 @@ func clusterFromAtlas(clusterDesc *admin.ClusterDescription20240805) *Cluster {
 			TerminationProtectionEnabled: clusterDesc.GetTerminationProtectionEnabled(),
 			SearchNodes:                  nil,
 			SearchIndexes:                nil,
+			ConfigServerManagementMode:   clusterDesc.GetConfigServerManagementMode(),
 		},
 	}
 	normalizeClusterDeployment(cluster)
@@ -625,6 +626,7 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
+		ConfigServerManagementMode:   pointer.MakePtrOrNil(cluster.ConfigServerManagementMode),
 	}
 }
 
@@ -643,6 +645,7 @@ func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
+		ConfigServerManagementMode:   pointer.MakePtrOrNil(cluster.ConfigServerManagementMode),
 	}
 }
 
@@ -748,10 +751,11 @@ func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) 
 
 		if compute.GetEnabled() {
 			autoscaling.Compute = &akov2.ComputeSpec{
-				Enabled:          compute.Enabled,
-				ScaleDownEnabled: compute.ScaleDownEnabled,
-				MinInstanceSize:  compute.GetMinInstanceSize(),
-				MaxInstanceSize:  compute.GetMaxInstanceSize(),
+				Enabled:           compute.Enabled,
+				ScaleDownEnabled:  compute.ScaleDownEnabled,
+				MinInstanceSize:   compute.GetMinInstanceSize(),
+				MaxInstanceSize:   compute.GetMaxInstanceSize(),
+				PredictiveEnabled: compute.PredictiveEnabled,
 			}
 		}
 
@@ -923,6 +927,10 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 
 			if spec.Compute.ScaleDownEnabled != nil && *spec.Compute.ScaleDownEnabled {
 				autoscaling.Compute.MinInstanceSize = &spec.Compute.MinInstanceSize
+			}
+
+			if spec.Compute.PredictiveEnabled != nil && *spec.Compute.PredictiveEnabled {
+				autoscaling.Compute.PredictiveEnabled = spec.Compute.PredictiveEnabled
 			}
 		}
 
@@ -1293,5 +1301,6 @@ func flexUpgradeToAtlas(cluster *Cluster) *admin.AtlasTenantClusterUpgradeReques
 		RootCertType:                 pointer.MakePtrOrNil(spec.RootCertType),
 		Tags:                         tag.ToAtlas(spec.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(spec.TerminationProtectionEnabled),
+		ConfigServerManagementMode:   pointer.MakePtrOrNil(spec.ConfigServerManagementMode),
 	}
 }

@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -638,6 +638,18 @@ func TestSpecAreEqual(t *testing.T) {
 			},
 			atlas: &admin.ClusterDescription20240805{
 				EncryptionAtRestProvider: pointer.MakePtr("NONE"),
+			},
+		},
+		"should return false when config server management are different": {
+			ako: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ConfigServerManagementMode: "ATLAS_MANAGED",
+					},
+				},
+			},
+			atlas: &admin.ClusterDescription20240805{
+				ConfigServerManagementMode: pointer.MakePtr("FIXED_TO_DEDICATED"),
 			},
 		},
 		"should return false when mongodb version are different": {
@@ -1862,10 +1874,11 @@ func TestAutoscalingConfigAreEqual(t *testing.T) {
 					Enabled: pointer.MakePtr(true),
 				},
 				Compute: &akov2.ComputeSpec{
-					Enabled:          pointer.MakePtr(true),
-					ScaleDownEnabled: pointer.MakePtr(true),
-					MinInstanceSize:  "M10",
-					MaxInstanceSize:  "M40",
+					Enabled:           pointer.MakePtr(true),
+					ScaleDownEnabled:  pointer.MakePtr(true),
+					MinInstanceSize:   "M10",
+					MaxInstanceSize:   "M40",
+					PredictiveEnabled: pointer.MakePtr(true),
 				},
 			},
 			atlasAutoscaling: &akov2.AdvancedAutoScalingSpec{
@@ -1873,10 +1886,11 @@ func TestAutoscalingConfigAreEqual(t *testing.T) {
 					Enabled: pointer.MakePtr(true),
 				},
 				Compute: &akov2.ComputeSpec{
-					Enabled:          pointer.MakePtr(true),
-					ScaleDownEnabled: pointer.MakePtr(true),
-					MinInstanceSize:  "M10",
-					MaxInstanceSize:  "M40",
+					Enabled:           pointer.MakePtr(true),
+					ScaleDownEnabled:  pointer.MakePtr(true),
+					MinInstanceSize:   "M10",
+					MaxInstanceSize:   "M40",
+					PredictiveEnabled: pointer.MakePtr(true),
 				},
 			},
 			expected: true,
@@ -1998,6 +2012,14 @@ func TestComputeAutoscalingConfigAreEqual(t *testing.T) {
 				MaxInstanceSize: "M10",
 			},
 		},
+		"should return false when predictive autoscaling has changed": {
+			akoAutoscaling: &akov2.ComputeSpec{
+				PredictiveEnabled: pointer.MakePtr(true),
+			},
+			atlasAutoscaling: &akov2.ComputeSpec{
+				PredictiveEnabled: pointer.MakePtr(false),
+			},
+		},
 		"should return true when autoscaling enabled flags are unset": {
 			akoAutoscaling: &akov2.ComputeSpec{
 				MinInstanceSize: "M10",
@@ -2013,16 +2035,18 @@ func TestComputeAutoscalingConfigAreEqual(t *testing.T) {
 		},
 		"should return true when autoscaling are equal": {
 			akoAutoscaling: &akov2.ComputeSpec{
-				Enabled:          pointer.MakePtr(true),
-				ScaleDownEnabled: pointer.MakePtr(true),
-				MinInstanceSize:  "M10",
-				MaxInstanceSize:  "M40",
+				Enabled:           pointer.MakePtr(true),
+				ScaleDownEnabled:  pointer.MakePtr(true),
+				MinInstanceSize:   "M10",
+				MaxInstanceSize:   "M40",
+				PredictiveEnabled: pointer.MakePtr(true),
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				Enabled:          pointer.MakePtr(true),
-				ScaleDownEnabled: pointer.MakePtr(true),
-				MinInstanceSize:  "M10",
-				MaxInstanceSize:  "M40",
+				Enabled:           pointer.MakePtr(true),
+				ScaleDownEnabled:  pointer.MakePtr(true),
+				MinInstanceSize:   "M10",
+				MaxInstanceSize:   "M40",
+				PredictiveEnabled: pointer.MakePtr(true),
 			},
 			expected: true,
 		},

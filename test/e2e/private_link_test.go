@@ -46,7 +46,7 @@ type privateEndpoint struct {
 	region   string
 }
 
-var _ = Describe("UserLogin", Label("privatelink"), FlakeAttempts(3), func() {
+var _ = Describe("UserLogin", Label("privatelink"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
 
@@ -146,9 +146,9 @@ var _ = Describe("UserLogin", Label("privatelink"), FlakeAttempts(3), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-gpc-1]: User has project which was updated with 1 GCP PrivateEndpoint", Label("privatelink-gpc-1"),
+		Entry("Test[privatelink-gcp-1]: User has project which was updated with 1 GCP PrivateEndpoint", Label("privatelink-gcp-1"),
 			model.DataProvider(
-				"privatelink-gpc-1",
+				"privatelink-gcp-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},

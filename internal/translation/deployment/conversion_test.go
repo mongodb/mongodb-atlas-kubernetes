@@ -21,7 +21,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -150,6 +150,7 @@ func TestNewDeployment(t *testing.T) {
 							},
 						},
 						TerminationProtectionEnabled: true,
+						ConfigServerManagementMode:   "ATLAS_MANAGED",
 						Labels: []common.LabelSpec{
 							{
 								Key:   "name",
@@ -213,6 +214,7 @@ func TestNewDeployment(t *testing.T) {
 						},
 					},
 					TerminationProtectionEnabled: true,
+					ConfigServerManagementMode:   "ATLAS_MANAGED",
 					Labels: []common.LabelSpec{
 						{
 							Key:   "name",
@@ -268,6 +270,7 @@ func TestNewDeployment(t *testing.T) {
 								},
 							},
 							TerminationProtectionEnabled: true,
+							ConfigServerManagementMode:   "ATLAS_MANAGED",
 							Labels: []common.LabelSpec{
 								{
 									Key:   "name",

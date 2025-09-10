@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.mongodb.org/atlas-sdk/v20250312002/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
@@ -79,6 +79,8 @@ type AlertConfiguration struct {
 	Threshold *Threshold `json:"threshold,omitempty"`
 	// Notifications are sending when an alert condition is detected.
 	Notifications []Notification `json:"notifications,omitempty"`
+	// Severity of the alert.
+	SeverityOverride string `json:"severityOverride,omitempty"`
 }
 
 type Notification struct {
@@ -211,12 +213,13 @@ type Matcher struct {
 
 func ParseAlertConfiguration(alertConfiguration admin.GroupAlertsConfig, logger *zap.SugaredLogger) AlertConfiguration {
 	status := AlertConfiguration{
-		ID:            alertConfiguration.GetId(),
-		GroupID:       alertConfiguration.GetGroupId(),
-		EventTypeName: alertConfiguration.GetEventTypeName(),
-		Created:       timeutil.FormatISO8601(alertConfiguration.GetCreated()),
-		Updated:       timeutil.FormatISO8601(alertConfiguration.GetUpdated()),
-		Enabled:       alertConfiguration.Enabled,
+		ID:               alertConfiguration.GetId(),
+		GroupID:          alertConfiguration.GetGroupId(),
+		EventTypeName:    alertConfiguration.GetEventTypeName(),
+		Created:          timeutil.FormatISO8601(alertConfiguration.GetCreated()),
+		Updated:          timeutil.FormatISO8601(alertConfiguration.GetUpdated()),
+		Enabled:          alertConfiguration.Enabled,
+		SeverityOverride: alertConfiguration.GetSeverityOverride(),
 	}
 
 	if unstructuredMatchers, ok := alertConfiguration.GetMatchersOk(); ok {

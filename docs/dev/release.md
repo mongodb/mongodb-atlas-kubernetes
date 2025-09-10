@@ -71,6 +71,7 @@ image_sha: latest
 Once triggered:
 
 - A release PR is created that adds a new `release/<version>` directory (containing `deploy/`, `helm-charts/`, and `bundle/` directories)
+- The directories `deploy/` and `helm-charts/` are also updated at the root of the repository with the same contents as in the `release/<version>`. This is because both the [helm charts repository](https://github.com/mongodb/helm-charts/) and the [Kubernetes CLI plugin|https://github.com/mongodb/atlas-cli-plugin-kubernetes] require the versions referenced in there to be the source of truth for the latest release matching the tagged version.
 - A Git tag of the form `v<version>` is created and pushed on GitHub
 - A GitHub release is published with:
   - Zipped `all-in-one.yml`
