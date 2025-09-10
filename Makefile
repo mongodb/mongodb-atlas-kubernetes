@@ -95,7 +95,7 @@ GO_SOURCES = $(shell find . -type f -name '*.go' -not -path './vendor/*')
 # Defaults for make run
 OPERATOR_POD_NAME = mongodb-atlas-operator
 OPERATOR_NAMESPACE = mongodb-atlas-system
-ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
+ATLAS_DOMAIN = https://cloud.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
 # Envtest configuration params
@@ -262,8 +262,13 @@ manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 ifdef EXPERIMENTAL
-	controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds
+	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
+	controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds; \
+	else \
+	echo "No YAML files found in internal/next-crds, skipping apply."; \
+	fi
 endif
+
 
 .PHONY: lint
 lint: ## Run the lint against the code
@@ -554,7 +559,11 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 install-crds: ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
 ifdef EXPERIMENTAL
-	kubectl apply -f internal/next-crds/*.yaml
+	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
+	kubectl apply -f internal/next-crds/*.yaml; \
+	else \
+	echo "No YAML files found in internal/next-crds, skipping apply."; \
+	fi
 endif
 
 .PHONY: set-namespace
