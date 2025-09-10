@@ -2,10 +2,7 @@ module github.com/josvazg/akotranslate
 
 go 1.25.1
 
-replace github.com/josvazg/crd2go => ../crd2go
-
 require (
-	github.com/josvazg/crd2go v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.10.0
 	go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0
 	gopkg.in/yaml.v3 v3.0.1

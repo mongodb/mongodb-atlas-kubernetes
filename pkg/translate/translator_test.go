@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/josvazg/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	admin2025 "go.mongodb.org/atlas-sdk/v20250312005/admin"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/josvazg/akotranslate/internal/crds"
 	"github.com/josvazg/akotranslate/internal/pointer"
+	"github.com/josvazg/akotranslate/pkg/k8s"
 	"github.com/josvazg/akotranslate/pkg/translate"
 	v1 "github.com/josvazg/akotranslate/pkg/translate/samples/v1"
 )
