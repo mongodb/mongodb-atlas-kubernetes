@@ -16,30 +16,58 @@ type DependencyFinder interface {
 	Find(name, namespace string) client.Object
 }
 
-type StaticDependencies struct {
+type DependencyRepo interface {
+	DependencyFinder
+	Add(obj client.Object)
+	Added() []client.Object
+}
+
+type Dependencies struct {
 	deps              map[string]client.Object
+	added             []client.Object
 	fallbackNamespace string
 }
 
-// NewStaticDependencies creates a static set of find-able Kubernetes client.Objects
-func NewStaticDependencies(fallbackNamespace string, objs ...client.Object) StaticDependencies {
+// NewDependencies creates a set of Kubernetes client.Objects
+func NewDependencies(fallbackNamespace string, objs ...client.Object) *Dependencies {
 	deps := map[string]client.Object{}
 	for _, obj := range objs {
 		deps[client.ObjectKeyFromObject(obj).String()] = obj
 	}
-	return StaticDependencies{
+	return &Dependencies{
 		deps:              deps,
+		added:             []client.Object{},
 		fallbackNamespace: fallbackNamespace,
 	}
 }
 
-// Find will reteieve the object with matching name and namespace if present in the static set
-func (sd StaticDependencies) Find(name, namespace string) client.Object {
+// Add appends an object to the added list and records it in the general set
+func (d *Dependencies) Find(name, namespace string) client.Object {
 	ns := namespace
 	if ns == SetFallbackNamespace {
-		ns = sd.fallbackNamespace
+		ns = d.fallbackNamespace
 	}
-	return sd.deps[client.ObjectKey{Name: name, Namespace: ns}.String()]
+	return d.deps[client.ObjectKey{Name: name, Namespace: ns}.String()]
+}
+
+// Add appends an object to the added list and records it in the general set
+func (d *Dependencies) Add(obj client.Object) {
+	if obj.GetNamespace() == SetFallbackNamespace {
+		obj.SetNamespace(d.fallbackNamespace)
+	}
+	d.deps[client.ObjectKeyFromObject(obj).String()] = obj
+	for i := range d.added {
+		if d.added[i].GetName() == obj.GetName() && d.added[i].GetNamespace() == obj.GetNamespace() {
+			d.added[i] = obj
+			return
+		}
+	}
+	d.added = append(d.added, obj)
+}
+
+// Added dumps an array of all dependencies added to the set after creation
+func (d *Dependencies) Added() []client.Object {
+	return d.added
 }
 
 // Translator allows to translate back and forth between a CRD schema version
@@ -47,7 +75,7 @@ func (sd StaticDependencies) Find(name, namespace string) client.Object {
 type Translator struct {
 	crd  CRDInfo
 	sdk  SDKInfo
-	deps DependencyFinder
+	deps DependencyRepo
 }
 
 // SDKInfo holds the SDK version information
@@ -56,8 +84,8 @@ type SDKInfo struct {
 }
 
 // NewTranslator creates a translator for a particular CRD and SDK version pairs,
-// and with a particular set of known Kubernetes dependencies 
-func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, sdkVersion string, deps DependencyFinder) *Translator {
+// and with a particular set of known Kubernetes dependencies
+func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, sdkVersion string, deps DependencyRepo) *Translator {
 	return &Translator{
 		crd:  CRDInfo{definition: crd, version: crdVersion},
 		sdk:  SDKInfo{version: sdkVersion},
@@ -65,9 +93,48 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	}
 }
 
-// ToAPI translates a source Kubernetes object, mostly the spec part, into a target API structure
+// PtrClientObj is a pointer type implementing client.Object
+type PtrClientObj[T any] interface {
+	*T
+	client.Object
+}
+
+// FromAPI translaters a source API structure into a Kubernetes object
+func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S) ([]client.Object, error) {
+	sourceUnstructured, err := toUnstructured(source)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert API source value to unstructured: %w", err)
+	}
+
+	targetUnstructured := map[string]any{}
+
+	versionedSpec := map[string]any{}
+	copyFields(versionedSpec, sourceUnstructured)
+	if err := createField(targetUnstructured, versionedSpec, "spec", t.sdk.version); err != nil {
+		return nil, fmt.Errorf("failed to create versioned spec object in unstructured target: %w", err)
+	}
+	versionedSpecEntry := map[string]any{}
+	copyFields(versionedSpecEntry, sourceUnstructured)
+	versionedSpec["entry"] = versionedSpecEntry
+
+	versionedStatus := map[string]any{}
+	copyFields(versionedStatus, sourceUnstructured)
+	if err := createField(targetUnstructured, versionedStatus, "status", t.sdk.version); err != nil {
+		return nil, fmt.Errorf("failed to create versioned status object in unsstructured target: %w", err)
+	}
+
+	extraObjects, err := t.expandMappings(targetUnstructured)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process API mappings: %w", err)
+	}
+	if err := fromUnstructured(target, targetUnstructured); err != nil {
+		return nil, fmt.Errorf("failed set structured kubernetes object from unstructured: %w", err)
+	}
+	return append([]client.Object{target}, extraObjects...), nil
+}
+
+// ToAPI translates a source Kubernetes spec into a target API structure
 func ToAPI[T any](t *Translator, target *T, source client.Object) error {
-	targetType := reflect.TypeOf(target).Elem()
 	specVersion := selectVersion(&t.crd.definition.Spec, t.crd.version)
 	kind := t.crd.definition.Spec.Names.Kind
 	props, err := getOpenAPIProperties(kind, specVersion)
@@ -83,7 +150,7 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 	}
 	unstructuredSrc, err := toUnstructured(source)
 	if err != nil {
-		return fmt.Errorf("failed to convert source value to unstructured: %w", err)
+		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
 	}
 	targetUnstructured := map[string]any{}
 	value, err := accessField[map[string]any](unstructuredSrc, "spec", t.sdk.version)
@@ -91,10 +158,11 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
 
-	if err := t.processMappings(value); err != nil {
+	if err := t.collapseMappings(value); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
+	targetType := reflect.TypeOf(target).Elem()
 	if targetType.Kind() != reflect.Struct {
 		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
 	}
@@ -122,7 +190,50 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 	return nil
 }
 
-func (t *Translator) processMappings(spec map[string]any) error {
+func (t *Translator) expandMappings(obj map[string]any) ([]client.Object, error) {
+	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
+	if mappingsYML == "" {
+		return []client.Object{}, nil
+	}
+	mappings := map[string]any{}
+	yaml.Unmarshal([]byte(mappingsYML), mappings)
+
+	if err := t.expandMappingsAt(obj, mappings, "spec", t.sdk.version); err != nil {
+		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
+	}
+	if err := t.expandMappingsAt(obj, mappings, "spec", t.sdk.version, "entry"); err != nil {
+		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
+	}
+	if err := t.expandMappingsAt(obj, mappings, "status", t.sdk.version); err != nil {
+		return nil, fmt.Errorf("failed to map properties of status from API to Kubernetes: %w", err)
+	}
+	return t.deps.Added(), nil
+}
+
+func (t *Translator) expandMappingsAt(obj, mappings map[string]any, fields ...string) error {
+	expandedPath := []string{"properties"}
+	for _, field := range fields {
+		expandedPath = append(expandedPath, field, "properties")
+	}
+	props, err := accessField[map[string]any](mappings, expandedPath...)
+	if errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to access the API mapping properties for %v: %w", expandedPath, err)
+	}
+	field, err := accessField[map[string]any](obj, fields...)
+	if err != nil {
+		return fmt.Errorf("failed to access object's %v: %w", fields, err)
+	}
+	mapper := Mapper{deps: t.deps, expand: true}
+	if err := mapper.mapProperties([]string{}, props, field); err != nil {
+		return fmt.Errorf("failed to process properties from API into %v: %w", fields, err)
+	}
+	return nil
+}
+
+func (t *Translator) collapseMappings(spec map[string]any) error {
 	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return nil
@@ -137,7 +248,8 @@ func (t *Translator) processMappings(spec map[string]any) error {
 	if err != nil {
 		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
 	}
-	return processProperties([]string{}, props, spec, t.deps)
+	mapper := Mapper{deps: t.deps, expand: false}
+	return mapper.mapProperties([]string{}, props, spec)
 }
 
 func findEntryPathInTarget(targetType reflect.Type) []string {

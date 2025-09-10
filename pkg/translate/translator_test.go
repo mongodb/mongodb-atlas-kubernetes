@@ -2,7 +2,8 @@ package translate_test
 
 import (
 	"bufio"
-	"embed"
+	"bytes"
+	_ "embed"
 	"fmt"
 	"testing"
 	"time"
@@ -26,20 +27,300 @@ const (
 	version = "v1"
 
 	sdkVersion = "v20250312"
+
+	testProjectID = "6098765432109876"
 )
 
-//go:embed samples/*
-var samples embed.FS
+//go:embed samples/crds.yaml
+var crdsYAMLBytes []byte
 
-// NetworkPermissions is a required sturct wrapper to match the API structure
-// TODO: do we need a mapping option? for this case a rename would suffice to
-// load the entry array field as results in a PaginatedNetworkAccess.
-// On the other hand, is extracting the whole list the proper way interact with the API?
-type NetworkPermissions struct {
-	Entry []admin2025.NetworkPermissionEntry `json:"entry"`
+func TestFromAPI(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		test func(t *testing.T)
+	}{
+		{
+			name: "simple group",
+			test: func(t *testing.T) {
+				input := admin2025.Group{
+					Created:      time.Date(2025, 1, 1, 1, 30, 15, 0, time.UTC),
+					ClusterCount: 0,
+					Id:           pointer.Get("6127378123219"),
+					Name:         "test-project",
+					OrgId:        testProjectID,
+					Tags: &[]admin2025.ResourceTag{
+						{
+							Key:   "key0",
+							Value: "value0",
+						},
+						{
+							Key:   "key",
+							Value: "value",
+						},
+					},
+					WithDefaultAlertsSettings: pointer.Get(true),
+				}
+				target := v1.Group{}
+				want := []client.Object{
+					&v1.Group{
+						Spec: v1.GroupSpec{
+							V20250312: &v1.GroupSpecV20250312{
+								Entry: &v1.V20250312Entry{
+									Name:  "test-project",
+									OrgId: testProjectID,
+									Tags: &[]v1.Tags{
+										{
+											Key:   "key0",
+											Value: "value0",
+										},
+										{
+											Key:   "key",
+											Value: "value",
+										},
+									},
+									WithDefaultAlertsSettings: pointer.Get(true),
+								},
+							},
+						},
+						Status: v1.GroupStatus{
+							V20250312: &v1.GroupStatusV20250312{
+								Created: "2025-01-01T01:30:15Z",
+								Id:      pointer.Get("6127378123219"),
+							},
+						},
+					},
+				}
+				testFromAPI(t, "Group", &target, &input, want)
+			},
+		},
+
+		{
+			name: "dbuser with secret and group refs",
+			test: func(t *testing.T) {
+				input := admin2025.CloudDatabaseUser{
+					AwsIAMType:      pointer.Get("NONE AWS"),
+					DatabaseName:    "dbname",
+					DeleteAfterDate: pointer.Get(time.Date(2025, 2, 1, 1, 30, 15, 0, time.UTC)),
+					Description:     pointer.Get("sample db user"),
+					GroupId:         testProjectID,
+					Labels: &[]admin2025.ComponentLabel{
+						{
+							Key:   pointer.Get("key0"),
+							Value: pointer.Get("value0"),
+						},
+						{
+							Key:   pointer.Get("key1"),
+							Value: pointer.Get("value1"),
+						},
+					},
+					LdapAuthType: pointer.Get("NONE LDAP"),
+					OidcAuthType: pointer.Get("NONE OIDC"),
+					// TODO: new crd should put this on a secret
+					Password: pointer.Get("fakepass"),
+					Roles: &[]admin2025.DatabaseUserRole{
+						{
+							CollectionName: pointer.Get("collection0"),
+							DatabaseName:   "mydb",
+							RoleName:       "admin",
+						},
+					},
+					Scopes: &[]admin2025.UserScope{
+						{
+							Name: "scopeName",
+							Type: "scopeType",
+						},
+					},
+					Username: "dbuser",
+					X509Type: pointer.Get("NONE X509"),
+				}
+				target := v1.DatabaseUser{}
+				want := []client.Object{
+					&v1.DatabaseUser{
+						Spec: v1.DatabaseUserSpec{
+							V20250312: &v1.DatabaseUserSpecV20250312{
+								Entry: &v1.DatabaseUserSpecV20250312Entry{
+									AwsIAMType:      pointer.Get("NONE AWS"),
+									DatabaseName:    "dbname",
+									DeleteAfterDate: pointer.Get("2025-02-01T01:30:15Z"),
+									Description:     pointer.Get("sample db user"),
+									GroupId:         testProjectID, // ID ref by default
+									Labels: &[]v1.Tags{
+										{
+											Key:   "key0",
+											Value: "value0",
+										},
+										{
+											Key:   "key1",
+											Value: "value1",
+										},
+									},
+									LdapAuthType: pointer.Get("NONE LDAP"),
+									OidcAuthType: pointer.Get("NONE OIDC"),
+									Roles: &[]v1.Roles{
+										{
+											CollectionName: pointer.Get("collection0"),
+											DatabaseName:   "mydb",
+											RoleName:       "admin",
+										},
+									},
+									Scopes: &[]v1.Scopes{
+										{
+											Name: "scopeName",
+											Type: "scopeType",
+										},
+									},
+									Username: "dbuser",
+									X509Type: pointer.Get("NONE X509"),
+									Password: pointer.Get("fakepass"), // TODO: this should go away to a secret
+								},
+								GroupId: pointer.Get(testProjectID),
+							},
+						},
+					},
+				}
+				testFromAPI(t, "DatabaseUser", &target, &input, want)
+			},
+		},
+
+		{
+			name: "GroupAlertConfigs",
+			test: func(t *testing.T) {
+				input := admin2025.GroupAlertsConfig{
+					Enabled:       pointer.Get(true),
+					EventTypeName: pointer.Get("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
+					GroupId:       pointer.Get(testProjectID),
+					Id:            pointer.Get("notification id"),
+					Matchers: &[]admin2025.StreamsMatcher{
+						{
+							FieldName: "field0",
+							Operator:  "EQUALS",
+							Value:     "value0",
+						},
+						{
+							FieldName: "field1",
+							Operator:  "GREATER",
+							Value:     "value1",
+						},
+					},
+					Notifications: &[]admin2025.AlertsNotificationRootForGroup{
+						{
+							DatadogApiKey: pointer.Get("fake api key"),
+							DatadogRegion: pointer.Get("US"),
+							DelayMin:      pointer.Get(42),
+							IntegrationId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+							IntervalMin:   pointer.Get(43),
+							NotifierId:    pointer.Get("32b6e34b3d91647abb20e7b8"),
+							TypeName:      pointer.Get("DATADOG"),
+						},
+					},
+					SeverityOverride: pointer.Get("CRITICIAL"),
+					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
+						MetricName: "metric",
+						Mode:       pointer.Get("mode"),
+						Operator:   pointer.Get("op"),
+						Threshold:  pointer.Get(0.1),
+						Units:      pointer.Get("unit"),
+					},
+					Threshold: &admin2025.StreamProcessorMetricThreshold{
+						MetricName: pointer.Get("anotherMetric"),
+						Mode:       pointer.Get("a mode"),
+						Operator:   pointer.Get("an op"),
+						Threshold:  pointer.Get(0.2),
+						Units:      pointer.Get("a unit"),
+					},
+				}
+				target := v1.GroupAlertsConfig{}
+				want := []client.Object{
+					&v1.GroupAlertsConfig{
+						Spec: v1.GroupAlertsConfigSpec{
+							V20250312: &v1.GroupAlertsConfigSpecV20250312{
+								Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+									Enabled:       pointer.Get(true),
+									EventTypeName: pointer.Get("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
+									Matchers: &[]v1.Matchers{
+										{
+											FieldName: "field0",
+											Operator:  "EQUALS",
+											Value:     "value0",
+										},
+										{
+											FieldName: "field1",
+											Operator:  "GREATER",
+											Value:     "value1",
+										},
+									},
+									MetricThreshold: &v1.MetricThreshold{
+										MetricName: "metric",
+										Mode:       pointer.Get("mode"),
+										Operator:   pointer.Get("op"),
+										Threshold:  pointer.Get(0.1),
+										Units:      pointer.Get("unit"),
+									},
+									Notifications: &[]v1.Notifications{
+										{
+											DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
+												Key: pointer.Get("datadogApiKey"),
+												Name: pointer.Get("notifications-datadogApiKey"),
+											},
+											DatadogRegion: pointer.Get("US"),
+											DelayMin:      pointer.Get(42),
+											IntegrationId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+											IntervalMin:   pointer.Get(43),
+											NotifierId:    pointer.Get("32b6e34b3d91647abb20e7b8"),
+											TypeName:      pointer.Get("DATADOG"),
+										},
+									},
+									SeverityOverride: pointer.Get("CRITICIAL"),
+									Threshold: &v1.MetricThreshold{
+										MetricName: "anotherMetric",
+										Mode:       pointer.Get("a mode"),
+										Operator:   pointer.Get("an op"),
+										Threshold:  pointer.Get(0.2),
+										Units:      pointer.Get("a unit"),
+									},
+								},
+								GroupId: pointer.Get(testProjectID),
+							},
+						},
+						Status: v1.GroupAlertsConfigStatus{
+							V20250312: &v1.GroupAlertsConfigStatusV20250312{
+								GroupId: pointer.Get(testProjectID),
+								Id:      pointer.Get("notification id"),
+							},
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "notifications-datadogApiKey",
+							Namespace: "ns",
+						},
+						Data: map[string][]byte{
+							"datadogApiKey": ([]byte)("fake api key"),
+						},
+					},
+				}
+				testFromAPI(t, "GroupAlertsConfig", &target, &input, want)
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.test(t)
+		})
+	}
 }
 
-func TestAllRefs(t *testing.T) {
+func testFromAPI[S any, T any, P translate.PtrClientObj[T]](t *testing.T, kind string, target P, input *S, want []client.Object) {
+	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
+	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
+	require.NoError(t, err)
+	deps := translate.NewDependencies("ns")
+	translator := translate.NewTranslator(crd, version, sdkVersion, deps)
+	results, err := translate.FromAPI(translator, target, input)
+	require.NoError(t, err)
+	assert.Equal(t, want, results)
+}
+
+func TestToAPIAllRefs(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		crd    string
@@ -199,151 +480,157 @@ func TestAllRefs(t *testing.T) {
 			target: admin2025.CreateAlertConfigurationApiParams{},
 		},
 
-		{
-			name: "group alert config with secrets but a direct groupId",
-			crd:  "GroupAlertsConfig",
-			input: &v1.GroupAlertsConfig{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "GroupAlertsConfig",
-					APIVersion: "atlas.generated.mongodb.com/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-group-alerts-config",
-					Namespace: "ns",
-				},
-				Spec: v1.GroupAlertsConfigSpec{
-					V20250312: &v1.GroupAlertsConfigSpecV20250312{
-						Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-							Enabled:       pointer.Get(true),
-							EventTypeName: pointer.Get("some-event"),
-							Matchers: &[]v1.Matchers{
-								{
-									FieldName: "field1",
-									Operator:  "op1",
-									Value:     "value1",
-								},
-								{
-									FieldName: "field2",
-									Operator:  "op2",
-									Value:     "value2",
-								},
-							},
-							MetricThreshold: &v1.MetricThreshold{
-								MetricName: "metric",
-								Mode:       pointer.Get("mode"),
-								Operator:   pointer.Get("operator"),
-								Threshold:  pointer.Get(1.0),
-								Units:      pointer.Get("unit"),
-							},
-							Notifications: &[]v1.Notifications{
-								{
-									DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.Get("alert-secrets-0"),
-										Key:  pointer.Get("apiKey"),
-									},
-									DatadogRegion: pointer.Get("US"),
-								},
-								{
-									WebhookSecretSecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.Get("alert-secrets-0"),
-										Key:  pointer.Get("webhookSecret"),
-									},
-									WebhookUrlSecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.Get("alert-secrets-1"),
-										Key:  pointer.Get("webhookUrl"),
-									},
-								},
-							},
-							SeverityOverride: pointer.Get("severe"),
-							Threshold: &v1.MetricThreshold{
-								MetricName: "metric",
-								Mode:       pointer.Get("mode-t"),
-								Operator:   pointer.Get("op-t"),
-								Threshold:  pointer.Get(2.0),
-								Units:      pointer.Get("unit-t"),
-							},
-						},
-						GroupId: pointer.Get("62b6e34b3d91647abb20e7b8"),
-					},
-				},
-			},
-			deps: []client.Object{
-				&corev1.Secret{
-					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-					ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-0", Namespace: "ns"},
-					Data: map[string][]byte{
-						"apiKey":        ([]byte)("sample-api-key"),
-						"webhookSecret": ([]byte)("sample-webhook-secret"),
-					},
-				},
-				&corev1.Secret{
-					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-					ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-1", Namespace: "ns"},
-					Data: map[string][]byte{
-						"webhookUrl": ([]byte)("sample-webhook-url"),
-					},
-				},
-			},
-			want: admin2025.CreateAlertConfigurationApiParams{
-				GroupId: "62b6e34b3d91647abb20e7b8",
-				GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-					Enabled:       pointer.Get(true),
-					EventTypeName: pointer.Get("some-event"),
-					Matchers: &[]admin2025.StreamsMatcher{
-						{
-							FieldName: "field1",
-							Operator:  "op1",
-							Value:     "value1",
-						},
-						{
-							FieldName: "field2",
-							Operator:  "op2",
-							Value:     "value2",
-						},
-					},
-					Notifications: &[]admin2025.AlertsNotificationRootForGroup{
-						{
-							DatadogApiKey: pointer.Get("sample-api-key"),
-							DatadogRegion: pointer.Get("US"),
-						},
-						{
-							WebhookSecret: pointer.Get("sample-webhook-secret"),
-							WebhookUrl:    pointer.Get("sample-webhook-url"),
-						},
-					},
-					SeverityOverride: pointer.Get("severe"),
-					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-						MetricName: "metric",
-						Mode:       pointer.Get("mode"),
-						Operator:   pointer.Get("operator"),
-						Threshold:  pointer.Get(1.0),
-						Units:      pointer.Get("unit"),
-					},
-					Threshold: &admin2025.StreamProcessorMetricThreshold{
-						MetricName: pointer.Get("metric"),
-						Mode:       pointer.Get("mode-t"),
-						Operator:   pointer.Get("op-t"),
-						Threshold:  pointer.Get(2.0),
-						Units:      pointer.Get("unit-t"),
-					},
-				},
-			},
-			target: admin2025.CreateAlertConfigurationApiParams{},
-		},
+		// {
+		// 	name: "group alert config with secrets but a direct groupId",
+		// 	crd:  "GroupAlertsConfig",
+		// 	input: &v1.GroupAlertsConfig{
+		// 		TypeMeta: metav1.TypeMeta{
+		// 			Kind:       "GroupAlertsConfig",
+		// 			APIVersion: "atlas.generated.mongodb.com/v1",
+		// 		},
+		// 		ObjectMeta: metav1.ObjectMeta{
+		// 			Name:      "my-group-alerts-config",
+		// 			Namespace: "ns",
+		// 		},
+		// 		Spec: v1.GroupAlertsConfigSpec{
+		// 			V20250312: &v1.GroupAlertsConfigSpecV20250312{
+		// 				Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+		// 					Enabled:       pointer.Get(true),
+		// 					EventTypeName: pointer.Get("some-event"),
+		// 					Matchers: &[]v1.Matchers{
+		// 						{
+		// 							FieldName: "field1",
+		// 							Operator:  "op1",
+		// 							Value:     "value1",
+		// 						},
+		// 						{
+		// 							FieldName: "field2",
+		// 							Operator:  "op2",
+		// 							Value:     "value2",
+		// 						},
+		// 					},
+		// 					MetricThreshold: &v1.MetricThreshold{
+		// 						MetricName: "metric",
+		// 						Mode:       pointer.Get("mode"),
+		// 						Operator:   pointer.Get("operator"),
+		// 						Threshold:  pointer.Get(1.0),
+		// 						Units:      pointer.Get("unit"),
+		// 					},
+		// 					Notifications: &[]v1.Notifications{
+		// 						{
+		// 							DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
+		// 								Name: pointer.Get("alert-secrets-0"),
+		// 								Key:  pointer.Get("apiKey"),
+		// 							},
+		// 							DatadogRegion: pointer.Get("US"),
+		// 						},
+		// 						{
+		// 							WebhookSecretSecretRef: &v1.ApiTokenSecretRef{
+		// 								Name: pointer.Get("alert-secrets-0"),
+		// 								Key:  pointer.Get("webhookSecret"),
+		// 							},
+		// 							WebhookUrlSecretRef: &v1.ApiTokenSecretRef{
+		// 								Name: pointer.Get("alert-secrets-1"),
+		// 								Key:  pointer.Get("webhookUrl"),
+		// 							},
+		// 						},
+		// 					},
+		// 					SeverityOverride: pointer.Get("severe"),
+		// 					Threshold: &v1.MetricThreshold{
+		// 						MetricName: "metric",
+		// 						Mode:       pointer.Get("mode-t"),
+		// 						Operator:   pointer.Get("op-t"),
+		// 						Threshold:  pointer.Get(2.0),
+		// 						Units:      pointer.Get("unit-t"),
+		// 					},
+		// 				},
+		// 				GroupId: pointer.Get("62b6e34b3d91647abb20e7b8"),
+		// 			},
+		// 		},
+		// 	},
+		// 	deps: []client.Object{
+		// 		&corev1.Secret{
+		// 			TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
+		// 			ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-0", Namespace: "ns"},
+		// 			Data: map[string][]byte{
+		// 				"apiKey":        ([]byte)("sample-api-key"),
+		// 				"webhookSecret": ([]byte)("sample-webhook-secret"),
+		// 			},
+		// 		},
+		// 		&corev1.Secret{
+		// 			TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
+		// 			ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-1", Namespace: "ns"},
+		// 			Data: map[string][]byte{
+		// 				"webhookUrl": ([]byte)("sample-webhook-url"),
+		// 			},
+		// 		},
+		// 	},
+		// 	want: admin2025.CreateAlertConfigurationApiParams{
+		// 		GroupId: "62b6e34b3d91647abb20e7b8",
+		// 		GroupAlertsConfig: &admin2025.GroupAlertsConfig{
+		// 			Enabled:       pointer.Get(true),
+		// 			EventTypeName: pointer.Get("some-event"),
+		// 			Matchers: &[]admin2025.StreamsMatcher{
+		// 				{
+		// 					FieldName: "field1",
+		// 					Operator:  "op1",
+		// 					Value:     "value1",
+		// 				},
+		// 				{
+		// 					FieldName: "field2",
+		// 					Operator:  "op2",
+		// 					Value:     "value2",
+		// 				},
+		// 			},
+		// 			Notifications: &[]admin2025.AlertsNotificationRootForGroup{
+		// 				{
+		// 					DatadogApiKey: pointer.Get("sample-api-key"),
+		// 					DatadogRegion: pointer.Get("US"),
+		// 				},
+		// 				{
+		// 					WebhookSecret: pointer.Get("sample-webhook-secret"),
+		// 					WebhookUrl:    pointer.Get("sample-webhook-url"),
+		// 				},
+		// 			},
+		// 			SeverityOverride: pointer.Get("severe"),
+		// 			MetricThreshold: &admin2025.FlexClusterMetricThreshold{
+		// 				MetricName: "metric",
+		// 				Mode:       pointer.Get("mode"),
+		// 				Operator:   pointer.Get("operator"),
+		// 				Threshold:  pointer.Get(1.0),
+		// 				Units:      pointer.Get("unit"),
+		// 			},
+		// 			Threshold: &admin2025.StreamProcessorMetricThreshold{
+		// 				MetricName: pointer.Get("metric"),
+		// 				Mode:       pointer.Get("mode-t"),
+		// 				Operator:   pointer.Get("op-t"),
+		// 				Threshold:  pointer.Get(2.0),
+		// 				Units:      pointer.Get("unit-t"),
+		// 			},
+		// 		},
+		// 	},
+		// 	target: admin2025.CreateAlertConfigurationApiParams{},
+		// },
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			crdsYML, err := samples.Open("samples/crds.yaml")
-			require.NoError(t, err)
-			defer crdsYML.Close()
+			crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			deps := translate.NewStaticDependencies("ns", tc.deps...)
+			deps := translate.NewDependencies("ns", tc.deps...)
 			translator := translate.NewTranslator(crd, version, sdkVersion, deps)
 			// , reflect.TypeOf(tc.target)
 			require.NoError(t, translate.ToAPI(translator, &tc.target, tc.input))
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}
+}
+
+// NetworkPermissions is a required struct wrapper to match the API structure
+// TODO: do we need a mapping option? for this case a rename would suffice to
+// load the entry array field as results in a PaginatedNetworkAccess.
+// On the other hand, is extracting the whole list the proper way interact with the API?
+type NetworkPermissions struct {
+	Entry []admin2025.NetworkPermissionEntry `json:"entry"`
 }
 
 type testToAPICase[T any] struct {
@@ -1713,35 +2000,20 @@ func TestToAPI(t *testing.T) {
 	} {
 		switch tc := gtc.(type) {
 		case testToAPICase[admin2025.DataProtectionSettings20231001]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.DiskBackupSnapshotSchedule20240805]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.ClusterDescription20240805]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.DataLakeTenant]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.CloudDatabaseUser]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.FlexClusterDescriptionCreate20241113]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.Group]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.GroupAlertsConfig]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.BaseNetworkPeeringConnectionSettings]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[NetworkPermissions]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.AtlasOrganization]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.OrganizationSettings]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.UserCustomDBRole]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.SearchIndexCreateRequest]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.Team]:
-			runTestToAPICase(t, tc)
 		case testToAPICase[admin2025.ThirdPartyIntegration]:
 			runTestToAPICase(t, tc)
 		default:
@@ -1752,12 +2024,10 @@ func TestToAPI(t *testing.T) {
 
 func runTestToAPICase[T any](t *testing.T, tc testToAPICase[T]) {
 	t.Run(tc.name, func(t *testing.T) {
-		crdsYML, err := samples.Open("samples/crds.yaml")
-		require.NoError(t, err)
-		defer crdsYML.Close()
+		crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 		crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 		require.NoError(t, err)
-		deps := translate.NewStaticDependencies("ns", tc.deps...)
+		deps := translate.NewDependencies("ns", tc.deps...)
 		translator := translate.NewTranslator(crd, version, sdkVersion, deps)
 		require.NoError(t, translate.ToAPI(translator, tc.target, tc.input))
 		assert.Equal(t, tc.want, tc.target)

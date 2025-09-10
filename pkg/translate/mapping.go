@@ -12,7 +12,12 @@ const (
 	SecretProperySelector = "$.data.#"
 )
 
-func processProperties(path []string, props, spec map[string]any, deps DependencyFinder) error {
+type Mapper struct {
+	deps   DependencyRepo
+	expand bool
+}
+
+func (m *Mapper) mapProperties(path []string, props, obj map[string]any) error {
 	for key, prop := range props {
 		mapping, ok := (prop).(map[string]any)
 		if !ok {
@@ -20,13 +25,13 @@ func processProperties(path []string, props, spec map[string]any, deps Dependenc
 		}
 		subPath := append(path, key)
 		if isReference(mapping) {
-			err := processReference(subPath, mapping, spec, deps)
+			err := m.mapReference(subPath, key, mapping, obj)
 			if err != nil {
 				return fmt.Errorf("failed to process reference: %w", err)
 			}
 			continue
 		}
-		rawField, ok, err := unstructured.NestedFieldNoCopy(spec, key)
+		rawField, ok, err := unstructured.NestedFieldNoCopy(obj, key)
 		if !ok {
 			continue
 		}
@@ -34,53 +39,78 @@ func processProperties(path []string, props, spec map[string]any, deps Dependenc
 			return fmt.Errorf("failed to access %q: %w", key, err)
 		}
 		if arrayField, ok := (rawField).([]any); ok {
-			return processArrayMapping(subPath, mapping, arrayField, deps)
+			return m.mapArray(subPath, mapping, arrayField)
 		}
 		subSpec, ok := (rawField).(map[string]any)
 		if !ok {
 			return fmt.Errorf("unsupported mapping of type %T", rawField)
 		}
-		if err := processObjectMapping(subPath, mapping, subSpec, deps); err != nil {
+		if err := m.mapObject(subPath, key, mapping, subSpec); err != nil {
 			return fmt.Errorf("failed to process mapping %q: %w", key, err)
 		}
 	}
 	return nil
 }
 
-func processArrayMapping(path []string, mapping map[string]any, specs []any, deps DependencyFinder) error {
-	items, err := accessField[map[string]any](mapping, "items", "properties")
+func (m *Mapper) mapArray(path []string, mapping map[string]any, list []any) error {
+	mapItems, err := accessField[map[string]any](mapping, "items", "properties")
 	if err != nil {
 		return fmt.Errorf("failed to access %q: %w", base(path), err)
 	}
-	for key, item := range items {
-		spec := findByExistingKey(specs, key)
-		if spec == nil {
+	for mapName, mapItem := range mapItems {
+		mapping, ok := (mapItem).(map[string]any)
+		if !ok {
+			return fmt.Errorf("expected field %q at %v to be a map but was: %T", mapName, path, mapItem)
+		}
+		key, entry := entryMatchingMapping(mapName, mapping, list, m.expand)
+		if entry == nil {
 			continue
 		}
-		mapping, ok := (item).(map[string]any)
-		if !ok {
-			return fmt.Errorf("expected field %q at %v to be a map but was: %T", key, path, item)
-		}
 		subPath := append(path, key)
-		if err := processObjectMapping(subPath, mapping, spec, deps); err != nil {
+		if err := m.mapObject(subPath, mapName, mapping, entry); err != nil {
 			return fmt.Errorf("failed to map property from array item %q at %v: %w", key, path, err)
 		}
 	}
 	return nil
 }
 
-func processObjectMapping(path []string, mapping, spec map[string]any, deps DependencyFinder) error {
+func (m *Mapper) mapObject(path []string, mapName string, mapping, obj map[string]any) error {
 	if mapping["properties"] != nil {
 		props, err := accessField[map[string]any](mapping, "properties")
 		if err != nil {
-			return fmt.Errorf("faild to access properties at %q: %w", path, err)
+			return fmt.Errorf("failEd to access properties at %q: %w", path, err)
 		}
-		return processProperties(path, props, spec, deps)
+		return m.mapProperties(path, props, obj)
 	}
 	if isReference(mapping) {
-		return processReference(path, mapping, spec, deps)
+		return m.mapReference(path, mapName, mapping, obj)
 	}
 	return fmt.Errorf("unsupported extension at %v with fields %v", path, fieldsOf(mapping))
+}
+
+func (m *Mapper) mapReference(path []string, mappingName string, mapping, obj map[string]any) error {
+	rm := refMapping{}
+	if err := fromUnstructured(&rm, mapping); err != nil {
+		return fmt.Errorf("failed to parse a reference mapping: %w", err)
+	}
+	ref := newRef(mappingName, &rm)
+	if m.expand {
+		return ref.Expand(m.deps, path, obj)
+	}
+	return ref.Collapse(m.deps, path, obj)
+}
+
+func entryMatchingMapping(mapName string, mapping map[string]any, list []any, expand bool) (string, map[string]any) {
+	key := mapName
+	if expand {
+		refMap := refMapping{}
+		if err := fromUnstructured(&refMap, mapping); err != nil {
+			return "", nil // not a ref, cannot reverse mapping dfrom API property name
+		}
+		path := resolveXPath(refMap.XOpenAPIMapping.Property)
+		key = base(path)
+	}
+	return key, findByExistingKey(list, key)
 }
 
 func findByExistingKey(list []any, key string) map[string]any {

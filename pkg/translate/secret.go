@@ -12,3 +12,7 @@ func base64Decode(value string) (string, error) {
 	}
 	return string(bytes), nil
 }
+
+func base64Encode(value string) (string, error) {
+	return base64.StdEncoding.EncodeToString(([]byte)(value)), nil
+}
