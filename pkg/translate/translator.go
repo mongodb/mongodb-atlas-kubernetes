@@ -24,7 +24,7 @@ type DependencyRepo interface {
 
 type Dependencies struct {
 	deps              map[string]client.Object
-	added          []client.Object
+	added             []client.Object
 	fallbackNamespace string
 }
 
@@ -36,7 +36,7 @@ func NewDependencies(fallbackNamespace string, objs ...client.Object) *Dependenc
 	}
 	return &Dependencies{
 		deps:              deps,
-		added:          []client.Object{},
+		added:             []client.Object{},
 		fallbackNamespace: fallbackNamespace,
 	}
 }
@@ -44,7 +44,7 @@ func NewDependencies(fallbackNamespace string, objs ...client.Object) *Dependenc
 // Add appends an object to the added list and records it in the general set
 func (d *Dependencies) Find(name, namespace string) client.Object {
 	ns := namespace
-	if ns == "" {
+	if ns == SetFallbackNamespace {
 		ns = d.fallbackNamespace
 	}
 	return d.deps[client.ObjectKey{Name: name, Namespace: ns}.String()]
@@ -52,6 +52,9 @@ func (d *Dependencies) Find(name, namespace string) client.Object {
 
 // Add appends an object to the added list and records it in the general set
 func (d *Dependencies) Add(obj client.Object) {
+	if obj.GetNamespace() == SetFallbackNamespace {
+		obj.SetNamespace(d.fallbackNamespace)
+	}
 	d.deps[client.ObjectKeyFromObject(obj).String()] = obj
 	for i := range d.added {
 		if d.added[i].GetName() == obj.GetName() && d.added[i].GetNamespace() == obj.GetNamespace() {
@@ -90,11 +93,14 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	}
 }
 
-// FromAPI translaters a source API structure into a Kubernetes object
-func FromAPI[S any, T any, P interface {
+// PtrClientObj is a pointer type implementing client.Object
+type PtrClientObj[T any] interface {
 	*T
 	client.Object
-}](t *Translator, target P, source *S) ([]client.Object, error) {
+}
+
+// FromAPI translaters a source API structure into a Kubernetes object
+func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S) ([]client.Object, error) {
 	sourceUnstructured, err := toUnstructured(source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert API source value to unstructured: %w", err)
