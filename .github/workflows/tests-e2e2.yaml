@@ -30,7 +30,7 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.event.pull_request.head.sha }}
 
       - name: Setup GO
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
 

@@ -119,7 +119,7 @@ jobs:
             echo "devbox-build=false" >> $GITHUB_OUTPUT
           fi
       - name: Set up Go (Non Devbox)
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         if: steps.check-devbox.outputs.devbox-build == 'false'
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
