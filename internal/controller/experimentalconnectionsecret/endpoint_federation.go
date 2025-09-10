@@ -139,7 +139,7 @@ func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 		return ConnSecretData{}, err
 	}
 
-	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312002.DataFederationApi)
+	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312006.DataFederationApi)
 	df, err := dataFederationService.Get(ctx, project.ID(), e.obj.Spec.Name)
 	if err != nil {
 		return ConnSecretData{}, fmt.Errorf("atlas DF get: %w", err)

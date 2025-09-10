@@ -99,7 +99,7 @@ func resolveProjectNameBySDK(
 		return "", err
 	}
 
-	svc := project.NewProjectAPIService(cs.SdkClient20250312002.ProjectsApi)
+	svc := project.NewProjectAPIService(cs.SdkClient20250312006.ProjectsApi)
 	prj, err := svc.GetProject(ctx, pdr.ExternalProjectRef.ID)
 	if err != nil {
 		return "", err
