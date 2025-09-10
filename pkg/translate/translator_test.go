@@ -229,9 +229,18 @@ func TestFromAPI(t *testing.T) {
 						Units:      pointer.Get("a unit"),
 					},
 				}
-				target := v1.GroupAlertsConfig{}
+				target := v1.GroupAlertsConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "groupalertscfg",
+						Namespace: "ns",
+					},
+				}
 				want := []client.Object{
 					&v1.GroupAlertsConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "groupalertscfg",
+							Namespace: "ns",
+						},
 						Spec: v1.GroupAlertsConfigSpec{
 							V20250312: &v1.GroupAlertsConfigSpecV20250312{
 								Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
@@ -259,8 +268,8 @@ func TestFromAPI(t *testing.T) {
 									Notifications: &[]v1.Notifications{
 										{
 											DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-												Key: pointer.Get("datadogApiKey"),
-												Name: pointer.Get("notifications-datadogApiKey"),
+												Key:  pointer.Get("datadogApiKey"),
+												Name: pointer.Get("groupalertscfg-notifications-datadogApiKey"),
 											},
 											DatadogRegion: pointer.Get("US"),
 											DelayMin:      pointer.Get(42),
@@ -291,7 +300,7 @@ func TestFromAPI(t *testing.T) {
 					},
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "notifications-datadogApiKey",
+							Name:      "groupalertscfg-notifications-datadogApiKey",
 							Namespace: "ns",
 						},
 						Data: map[string][]byte{
@@ -313,7 +322,7 @@ func testFromAPI[S any, T any, P translate.PtrClientObj[T]](t *testing.T, kind s
 	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	deps := translate.NewDependencies("ns")
+	deps := translate.NewDependencies(target)
 	translator := translate.NewTranslator(crd, version, sdkVersion, deps)
 	results, err := translate.FromAPI(translator, target, input)
 	require.NoError(t, err)
@@ -616,7 +625,7 @@ func TestToAPIAllRefs(t *testing.T) {
 			crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			deps := translate.NewDependencies("ns", tc.deps...)
+			deps := translate.NewDependencies(tc.input, tc.deps...)
 			translator := translate.NewTranslator(crd, version, sdkVersion, deps)
 			// , reflect.TypeOf(tc.target)
 			require.NoError(t, translate.ToAPI(translator, &tc.target, tc.input))
@@ -1927,9 +1936,12 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 		testToAPICase[admin2025.ThirdPartyIntegration]{
-			name: "third part integration all fields",
+			name: "third party integration all fields",
 			crd:  "ThirdPartyIntegration",
 			input: &v1.ThirdPartyIntegration{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "ns",
+				},
 				Spec: v1.ThirdPartyIntegrationSpec{
 					V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
 						IntegrationType: "ANY",
@@ -2027,7 +2039,7 @@ func runTestToAPICase[T any](t *testing.T, tc testToAPICase[T]) {
 		crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 		crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 		require.NoError(t, err)
-		deps := translate.NewDependencies("ns", tc.deps...)
+		deps := translate.NewDependencies(tc.input, tc.deps...)
 		translator := translate.NewTranslator(crd, version, sdkVersion, deps)
 		require.NoError(t, translate.ToAPI(translator, tc.target, tc.input))
 		assert.Equal(t, tc.want, tc.target)
