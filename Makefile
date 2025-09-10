@@ -95,7 +95,7 @@ GO_SOURCES = $(shell find . -type f -name '*.go' -not -path './vendor/*')
 # Defaults for make run
 OPERATOR_POD_NAME = mongodb-atlas-operator
 OPERATOR_NAMESPACE = mongodb-atlas-system
-ATLAS_DOMAIN = https://cloud.mongodb.com/
+ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
 # Envtest configuration params
@@ -265,10 +265,9 @@ ifdef EXPERIMENTAL
 	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
 	controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds; \
 	else \
-	echo "No YAML files found in internal/next-crds, skipping apply."; \
+	echo "No experimental CRDs found, skipping apply."; \
 	fi
 endif
-
 
 .PHONY: lint
 lint: ## Run the lint against the code
@@ -562,7 +561,7 @@ ifdef EXPERIMENTAL
 	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
 	kubectl apply -f internal/next-crds/*.yaml; \
 	else \
-	echo "No YAML files found in internal/next-crds, skipping apply."; \
+	echo "No experimental CRDs found, skipping apply."; \
 	fi
 endif
 
