@@ -231,7 +231,7 @@ bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
 	cp bin/$(TARGET_OS)/$(TARGET_ARCH)/manager $@
 
 .PHONY: manager
-manager: generate fmt vet bin/manager recompute-licenses ## Build manager binary
+manager: generate fmt vet bin/manager ## Build manager binary
 
 .PHONY: install
 install: manifests ## Install CRDs from a cluster
