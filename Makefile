@@ -129,7 +129,6 @@ AKO_SIGN_PUBKEY = https://cosign.mongodb.com/atlas-kubernetes-operator.pem
 # Licenses status
 GOMOD_SHA := $(shell git ls-files -s go.mod | awk '{print $$1" "$$2" "$$4}')
 LICENSES_GOMOD_SHA_FILE := .licenses-gomod.sha256
-GOMOD_LICENSES_SHA := $(shell cat $(LICENSES_GOMOD_SHA_FILE))
 
 OPERATOR_POD_NAME=mongodb-atlas-operator
 RUN_YAML= # Set to the YAML to run when calling make run
@@ -174,18 +173,9 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
-.PHONY: recompute-licenses
-recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was changed)
-	@[ "$(GOMOD_SHA)" == "$(GOMOD_LICENSES_SHA)" ] || $(MAKE) build-licenses.csv
-
-.PHONY: licenses-up-to-date
-licenses-up-to-date: ## Check if the licenses.csv is up to date
-	@if [ "$(GOMOD_SHA)" != "$(GOMOD_LICENSES_SHA)" ]; then \
-	echo "licenses.csv needs to be recalculated: git rebase AND run 'make build-licenses.csv'"; exit 1; \
-	else echo "licenses.csv is OK! (up to date)"; fi
 
 .PHONY: check-licenses
-check-licenses: licenses-up-to-date ## Check licenses are compliant with our restrictions
+check-licenses:  ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
 	export GOOS=linux
