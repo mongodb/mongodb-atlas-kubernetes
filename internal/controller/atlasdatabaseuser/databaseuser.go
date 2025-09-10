@@ -151,6 +151,7 @@ func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, dbUserServic
 				return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
 			}
 		}
+
 		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", atlasDatabaseUser.Spec.Username, "oldUserName", atlasDatabaseUser.Status.UserName)
 		if err = r.removeOldUser(ctx.Context, dbUserService, projectID, atlasDatabaseUser); err != nil {
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
@@ -225,6 +226,7 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymen
 			}
 		}
 	}
+
 	deploymentsToCheck := allDeploymentNames
 	if atlasDatabaseUser.Spec.Scopes != nil {
 		deploymentsToCheck = filterScopeDeployments(atlasDatabaseUser, allDeploymentNames)
@@ -256,6 +258,7 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymen
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotCreated, true, errors.New(result.GetMessage()))
 		}
 	}
+
 	return r.ready(ctx, atlasDatabaseUser, passwordVersion)
 }
 

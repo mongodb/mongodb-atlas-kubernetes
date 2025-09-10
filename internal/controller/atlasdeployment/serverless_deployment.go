@@ -61,6 +61,7 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Conte
 
 			return r.inProgress(ctx, akoServerless.GetCustomResource(), atlasServerless, workflow.DeploymentUpdating, "deployment is updating")
 		}
+
 		if !version.IsExperimental() {
 			err := r.ensureConnectionSecrets(ctx, projectService, akoServerless, atlasServerless.GetConnection())
 			if err != nil {

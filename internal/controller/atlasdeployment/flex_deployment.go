@@ -61,12 +61,14 @@ func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, pr
 
 			return r.inProgress(ctx, akoFlex.GetCustomResource(), atlasFlex, workflow.DeploymentUpdating, "deployment is updating")
 		}
+
 		if !version.IsExperimental() {
 			err := r.ensureConnectionSecrets(ctx, projectService, akoFlex, atlasFlex.GetConnection())
 			if err != nil {
 				return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 			}
 		}
+
 		err := customresource.ApplyLastConfigApplied(ctx.Context, akoFlex.GetCustomResource(), r.Client)
 		if err != nil {
 			return r.terminate(ctx, workflow.Internal, err)

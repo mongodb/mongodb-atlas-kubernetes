@@ -294,6 +294,7 @@ func TestHandleFlexInstance(t *testing.T) {
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Flex)
 			var projectService project.ProjectService
 			result, err := reconciler.handleFlexInstance(workflowCtx, projectService, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
+
 			assert.Equal(t, tt.expectedResult, workflowRes{
 				res: result,
 				err: err,

@@ -146,6 +146,7 @@ func (r *AtlasDatabaseUserReconciler) unmanage(ctx *workflow.Context, projectID 
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
 	}
+
 	if customresource.HaveFinalizer(atlasDatabaseUser, customresource.FinalizerLabel) {
 		err := customresource.ManageFinalizer(ctx.Context, r.Client, atlasDatabaseUser, customresource.UnsetFinalizer)
 		if err != nil {

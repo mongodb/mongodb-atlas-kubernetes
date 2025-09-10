@@ -153,6 +153,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		return r.terminate(ctx, workflow.Internal, fmt.Errorf("unknown deployment state: %s", atlasCluster.GetState()))
 	}
 }
+
 func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, projectService project.ProjectService, deploymentInAKO deployment.Deployment, connection *status.ConnectionStrings) error {
 	databaseUsers := &akov2.AtlasDatabaseUserList{}
 	listOpts := &client.ListOptions{
@@ -228,6 +229,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 
 	return nil
 }
+
 func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context, deploymentService deployment.AtlasDeploymentsService, deploymentInAKO, deploymentInAtlas *deployment.Cluster) transitionFn {
 	if deploymentInAKO.IsTenant() {
 		return nil
