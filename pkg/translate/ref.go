@@ -130,6 +130,9 @@ func (ref *namedRef) Collapse(deps DependencyRepo, path []string, obj map[string
 		key = base(targetPath)
 	}
 	value, err := ref.XKubernetesMapping.FetchReferencedValue(key, reference, deps)
+	if err != nil {
+		return fmt.Errorf("failed to fetch referenced value %s: %w", key, err)
+	}
 	return createField(obj, value, targetPath...)
 }
 
