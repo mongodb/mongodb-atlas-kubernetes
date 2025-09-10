@@ -136,7 +136,6 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	if version.IsExperimental() {
 		// Add experimental controllers here
 		reconcilers = append(reconcilers, experimentalconnectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
-
 	}
 	r.reconcilers = reconcilers
 }

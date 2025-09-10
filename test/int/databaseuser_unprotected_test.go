@@ -56,6 +56,7 @@ const (
 	DBUserPassword2     = "H@lla#!"
 )
 
+// nolint
 var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "protection-disabled"), Ordered, func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
@@ -250,7 +251,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser1)).Should(Succeed())
 
-				err := tryWrite(testProject.ID(), *testDeployment, *testDBUser1, "test", "operatortest")
+				err := tryWrite(testProject.ID(), *testDeployment, *testDBUser1, "firstTest", "firstoperatortest")
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(MatchRegexp("user is not allowed"))
 			})
@@ -273,7 +274,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 				Expect(tryConnect(testProject.ID(), *testDeployment, *testDBUser1)).Should(Succeed())
 
-				Expect(tryWrite(testProject.ID(), *testDeployment, *testDBUser1, "test", "operatortest")).To(Succeed())
+				Expect(tryWrite(testProject.ID(), *testDeployment, *testDBUser1, "secondTest", "secondoperatortest")).To(Succeed())
 			})
 
 			By("Deleting database user", func() {
