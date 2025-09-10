@@ -3,7 +3,7 @@
 package v1
 
 import (
-	k8s "github.com/josvazg/crd2go/k8s"
+	"github.com/josvazg/akotranslate/pkg/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

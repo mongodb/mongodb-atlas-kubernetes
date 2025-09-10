@@ -55,7 +55,7 @@ func downloadTo(url, filename string) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to create file %s: %w", filename, err)
 	}
-	defer f.Close()
+	defer checkErr("closing download file", f.Close)
 	n, err := io.Copy(f, rsp.Body)
 	if err != nil {
 		return n, fmt.Errorf("failed to write downloaded data to file %s: %w", filename, err)
@@ -71,9 +71,15 @@ func mustGetenv(name string) string {
 	return value
 }
 
-func run(command string, args ... string) error {
+func run(command string, args ...string) error {
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func checkErr(msg string, fn func() error) {
+	if err := fn(); err != nil {
+		log.Printf("failed %s: %v", msg, err)
+	}
 }

@@ -38,7 +38,6 @@ func NewDependencies(mainObj client.Object, objs ...client.Object) *Dependencies
 	}
 }
 
-
 // MainObject retried the main object for this dependecny repository
 func (d *Dependencies) MainObject() client.Object {
 	return d.mainObj
@@ -194,12 +193,14 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 }
 
 func (t *Translator) expandMappings(obj map[string]any) ([]client.Object, error) {
-	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
+	mappingsYML := t.crd.definition.Annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return []client.Object{}, nil
 	}
 	mappings := map[string]any{}
-	yaml.Unmarshal([]byte(mappingsYML), mappings)
+	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
+	}
 
 	if err := t.expandMappingsAt(obj, mappings, "spec", t.sdk.version); err != nil {
 		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
@@ -237,12 +238,14 @@ func (t *Translator) expandMappingsAt(obj, mappings map[string]any, fields ...st
 }
 
 func (t *Translator) collapseMappings(spec map[string]any) error {
-	mappingsYML := t.crd.definition.ObjectMeta.Annotations[APIMAppingsAnnotation]
+	mappingsYML := t.crd.definition.Annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return nil
 	}
 	mappings := map[string]any{}
-	yaml.Unmarshal([]byte(mappingsYML), mappings)
+	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
+		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
+	}
 	props, err := accessField[map[string]any](mappings,
 		"properties", "spec", "properties", t.sdk.version, "properties")
 	if errors.Is(err, ErrNotFound) {

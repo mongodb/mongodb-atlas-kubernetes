@@ -3,12 +3,13 @@
   "packages": [
     "go@latest",
     "vscodium@latest",
-    "kubernetes-controller-tools@latest",
-    "gh@latest"
+    "gci@latest",
+    "golangci-lint@latest"
   ],
   "shell": {
     "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
+      "echo 'Welcome to devbox!' > /dev/null",
+      "alias gofmt-gci='gci write --skip-generated -s standard -s default -s localmodule .'"
     ],
     "scripts": {
       "test": [
