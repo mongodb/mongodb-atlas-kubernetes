@@ -78,7 +78,7 @@ func (m *Mapper) mapObject(path []string, mapName string, mapping, obj map[strin
 	if mapping["properties"] != nil {
 		props, err := accessField[map[string]any](mapping, "properties")
 		if err != nil {
-			return fmt.Errorf("failEd to access properties at %q: %w", path, err)
+			return fmt.Errorf("failed to access properties at %q: %w", path, err)
 		}
 		return m.mapProperties(path, props, obj)
 	}

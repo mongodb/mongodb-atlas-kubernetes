@@ -269,7 +269,7 @@ func TestFromAPI(t *testing.T) {
 										{
 											DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
 												Key:  pointer.Get("datadogApiKey"),
-												Name: pointer.Get("groupalertscfg-notifications-datadogApiKey"),
+												Name: pointer.Get("groupalertscfg-notifications-datadogapikey"),
 											},
 											DatadogRegion: pointer.Get("US"),
 											DelayMin:      pointer.Get(42),
@@ -300,7 +300,7 @@ func TestFromAPI(t *testing.T) {
 					},
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "groupalertscfg-notifications-datadogApiKey",
+							Name:      "groupalertscfg-notifications-datadogapikey",
 							Namespace: "ns",
 						},
 						Data: map[string][]byte{
@@ -309,6 +309,78 @@ func TestFromAPI(t *testing.T) {
 					},
 				}
 				testFromAPI(t, "GroupAlertsConfig", &target, &input, want)
+			},
+		},
+
+		{
+			name: "ThirdPartyIntegration",
+			test: func(t *testing.T) {
+				input := admin2025.ThirdPartyIntegration{
+					Id:          pointer.Get("SomeID"),
+					Type:        pointer.Get("SLACK"),
+					ApiToken:    pointer.Get("some fake api token"),
+					ChannelName: pointer.Get("alert-channel"),
+					TeamName:    pointer.Get("some-team"),
+				}
+				target := v1.ThirdPartyIntegration{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "3rdparty-slack",
+						Namespace: "ns",
+					},
+					Spec: v1.ThirdPartyIntegrationSpec{
+						V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
+							// TODO: is this a valid trick?
+							// This API struct, unlike others, does NOT include the Group ID
+							// it is part of the parameters, but not the response
+							GroupId: pointer.Get(testProjectID),
+							// TODO: similarly to the Group ID the IntegrationType would
+							// be the aparameter thet corresponds with "type" in the response
+							// but there is no indication of such semantics from the CRD
+							IntegrationType: "SLACK",
+						},
+					},
+				}
+				want := []client.Object{
+					&v1.ThirdPartyIntegration{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "3rdparty-slack",
+							Namespace: "ns",
+						},
+						Spec: v1.ThirdPartyIntegrationSpec{
+							V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
+								Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
+									Type: pointer.Get("SLACK"),
+									ApiTokenSecretRef: &v1.ApiTokenSecretRef{
+										Name: pointer.Get("3rdparty-slack-apitoken"),
+										Key:  pointer.Get("apiToken"),
+									},
+									ChannelName: pointer.Get("alert-channel"),
+									TeamName:    pointer.Get("some-team"),
+								},
+								// Pre-existing from input
+								GroupId: pointer.Get(string(testProjectID)),
+								// Pre-existing from input
+								IntegrationType: "SLACK",
+							},
+						},
+						Status: v1.ThirdPartyIntegrationStatus{
+							V20250312: &v1.ThirdPartyIntegrationStatusV20250312{
+								Id:   pointer.Get("SomeID"),
+								Type: pointer.Get("SLACK"),
+							},
+						},
+					},
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "3rdparty-slack-apitoken",
+							Namespace: "ns",
+						},
+						Data: map[string][]byte{
+							"apiToken": ([]byte)("some fake api token"),
+						},
+					},
+				}
+				testFromAPI(t, "ThirdPartyIntegration", &target, &input, want)
 			},
 		},
 	} {
@@ -650,7 +722,6 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "sample backup compliance policy",
 			test: func(t *testing.T) {
-				kind := "BackupCompliancePolicy"
 				input := &v1.BackupCompliancePolicy{
 					Spec: v1.BackupCompliancePolicySpec{
 						V20250312: &v1.BackupCompliancePolicySpecV20250312{
@@ -720,14 +791,13 @@ func TestToAPI(t *testing.T) {
 						},
 					},
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "BackupCompliancePolicy", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "backup schedule all fields",
 			test: func(t *testing.T) {
-				kind := "BackupSchedule"
 				input := &v1.BackupSchedule{
 					Spec: v1.BackupScheduleSpec{
 						V20250312: &v1.BackupScheduleSpecV20250312{
@@ -866,14 +936,13 @@ func TestToAPI(t *testing.T) {
 					UseOrgAndGroupNamesInExportPrefix: pointer.Get(true),
 					ClusterName:                       pointer.Get("cluster-name"),
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "BackupSchedule", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "cluster all fields",
 			test: func(t *testing.T) {
-				kind := "Cluster"
 				input := &v1.Cluster{
 					Spec: v1.ClusterSpec{
 						V20250312: &v1.ClusterSpecV20250312{
@@ -1189,14 +1258,13 @@ func TestToAPI(t *testing.T) {
 					VersionReleaseSystem:         pointer.Get("Atlas"),
 					GroupId:                      pointer.Get("32b6e34b3d91647abb20e7b8"),
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "Cluster", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "data federation all fields",
 			test: func(t *testing.T) {
-				kind := "DataFederation"
 				input := &v1.DataFederation{
 					Spec: v1.DataFederationSpec{
 						V20250312: &v1.DataFederationSpecV20250312{
@@ -1368,14 +1436,13 @@ func TestToAPI(t *testing.T) {
 						},
 					},
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "DataFederation", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "sample database user",
 			test: func(t *testing.T) {
-				kind := "DatabaseUser"
 				input := &v1.DatabaseUser{
 					Spec: v1.DatabaseUserSpec{
 						V20250312: &v1.DatabaseUserSpecV20250312{
@@ -1430,14 +1497,13 @@ func TestToAPI(t *testing.T) {
 					},
 					X509Type: pointer.Get("x509-type"),
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "DatabaseUser", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "flex cluster with all fields",
 			test: func(t *testing.T) {
-				kind := "FlexCluster"
 				input := &v1.FlexCluster{
 					Spec: v1.FlexClusterSpec{
 						V20250312: &v1.FlexClusterSpecV20250312{
@@ -1470,14 +1536,13 @@ func TestToAPI(t *testing.T) {
 					},
 					TerminationProtectionEnabled: pointer.Get(true),
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "FlexCluster", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "simple group",
 			test: func(t *testing.T) {
-				kind := "Group"
 				input := &v1.Group{
 					Spec: v1.GroupSpec{
 						V20250312: &v1.GroupSpecV20250312{
@@ -1505,14 +1570,13 @@ func TestToAPI(t *testing.T) {
 						{Key: "key", Value: "value"},
 					},
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "Group", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "group alert config with project and credential references",
 			test: func(t *testing.T) {
-				kind := "GroupAlertsConfig"
 				input := &v1.GroupAlertsConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "ns",
@@ -1610,14 +1674,13 @@ func TestToAPI(t *testing.T) {
 					GroupId:          pointer.Get("60965432187654321"),
 					SeverityOverride: pointer.Get("some-severity-override"),
 				}
-				testToAPI(t, kind, input, objs, target, want)
+				testToAPI(t, "GroupAlertsConfig", input, objs, target, want)
 			},
 		},
 
 		{
 			name: "sample network peering connection",
 			test: func(t *testing.T) {
-				kind := "NetworkPeeringConnection"
 				input := &v1.NetworkPeeringConnection{
 					Spec: v1.NetworkPeeringConnectionSpec{
 						V20250312: &v1.NetworkPeeringConnectionSpecV20250312{
@@ -1654,14 +1717,13 @@ func TestToAPI(t *testing.T) {
 					GcpProjectId:        pointer.Get("azure-subcription-id"),
 					NetworkName:         pointer.Get("net-name"),
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "NetworkPeeringConnection", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "network permission entries all fields",
 			test: func(t *testing.T) {
-				kind := "NetworkPermissionEntries"
 				input := &v1.NetworkPermissionEntries{
 					Spec: v1.NetworkPermissionEntriesSpec{
 						V20250312: &v1.NetworkPermissionEntriesSpecV20250312{
@@ -1690,14 +1752,13 @@ func TestToAPI(t *testing.T) {
 						},
 					},
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "NetworkPermissionEntries", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "sample organization",
 			test: func(t *testing.T) {
-				kind := "Organization"
 				input := &v1.Organization{
 					Spec: v1.OrganizationSpec{
 						V20250312: &v1.V20250312{
@@ -1719,14 +1780,13 @@ func TestToAPI(t *testing.T) {
 					Name:                      "org-name",
 					SkipDefaultAlertsSettings: pointer.Get(true),
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "Organization", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "Organization setting with all fields",
 			test: func(t *testing.T) {
-				kind := "OrganizationSetting"
 				input := &v1.OrganizationSetting{
 					Spec: v1.OrganizationSettingSpec{
 						V20250312: &v1.OrganizationSettingSpecV20250312{
@@ -1753,14 +1813,13 @@ func TestToAPI(t *testing.T) {
 					SecurityContact:                        pointer.Get("contact-info"),
 					StreamsCrossGroupEnabled:               pointer.Get(true),
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "OrganizationSetting", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "customrole with all fields",
 			test: func(t *testing.T) {
-				kind := "CustomRole"
 				input :=
 					&v1.CustomRole{
 						Spec: v1.CustomRoleSpec{
@@ -1829,7 +1888,7 @@ func TestToAPI(t *testing.T) {
 						},
 					},
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "CustomRole", input, nil, target, want)
 			},
 		},
 
@@ -1852,7 +1911,6 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "searchindex create request fields",
 			test: func(t *testing.T) {
-				kind := "SearchIndex"
 				input := &v1.SearchIndex{
 					Spec: v1.SearchIndexSpec{
 						V20250312: &v1.SearchIndexSpecV20250312{
@@ -1964,15 +2022,13 @@ func TestToAPI(t *testing.T) {
 						},
 					},
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "SearchIndex", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "team all fields",
-
 			test: func(t *testing.T) {
-				kind := "Team"
 				input := &v1.Team{
 					Spec: v1.TeamSpec{
 						V20250312: &v1.TeamSpecV20250312{
@@ -1991,14 +2047,13 @@ func TestToAPI(t *testing.T) {
 						"user1", "user2",
 					},
 				}
-				testToAPI(t, kind, input, nil, target, want)
+				testToAPI(t, "Team", input, nil, target, want)
 			},
 		},
 
 		{
 			name: "third party integration all fields",
 			test: func(t *testing.T) {
-				kind := "ThirdPartyIntegration"
 				input := &v1.ThirdPartyIntegration{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "ns",
@@ -2069,7 +2124,7 @@ func TestToAPI(t *testing.T) {
 						},
 					},
 				}
-				testToAPI(t, kind, input, objs, target, want)
+				testToAPI(t, "ThirdPartyIntegration", input, objs, target, want)
 			},
 		},
 	} {
