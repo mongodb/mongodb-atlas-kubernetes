@@ -17,6 +17,7 @@ import (
 	"github.com/josvazg/crd2go/internal/crd/hooks"
 	"github.com/josvazg/crd2go/internal/gotype"
 	"github.com/josvazg/crd2go/internal/render"
+	"github.com/josvazg/crd2go/internal/run"
 	"github.com/josvazg/crd2go/pkg/config"
 )
 
@@ -176,12 +177,7 @@ func GenDeepCopyCode(cfg *config.Config) error {
 	if cfg.DeepCopy.ControllerGenPath != "" {
 		controllerGenCmd = cfg.DeepCopy.ControllerGenPath
 	}
-	cmd := exec.Command(controllerGenCmd, "object", fmt.Sprintf("paths=%q", cfg.Output))
-	out, err := cmd.CombinedOutput()
-	if len(out) > 0 {
-		log.Print("controller-gen output:\n", string(out))
-	}
-	if err != nil {
+	if err := run.Run(controllerGenCmd, "object", fmt.Sprintf("paths=%q", cfg.Output)); err != nil {
 		return fmt.Errorf("failed to generate deep copy code with controller-gen: %w %T", err, err)
 	}
 	log.Printf("generated deep copy code using controller-gen")
