@@ -1,2 +1,2 @@
 # ako2api
-AKO 2 API (and back) translation library PoC
+AKO 2 Atlas API (and back) translation library PoC
