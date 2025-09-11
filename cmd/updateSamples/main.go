@@ -6,22 +6,20 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 
 	"github.com/josvazg/crd2go/internal/checkerr"
+	"github.com/josvazg/crd2go/internal/run"
 )
 
 const (
 	// visit https://github.com/s-urbaniak/atlas2crd/blob/main/crds.yaml
 	CRDsURL = "https://raw.githubusercontent.com/s-urbaniak/atlas2crd/refs/heads/main/crds.yaml?token=%s"
 
-	samplesDir = "pkg/crd2go/samples/"
+	samplesDir = "./pkg/crd2go/samples/"
 
 	crdsFile = samplesDir + "crds.yaml"
 
 	targetDir = samplesDir + "v1"
-
-	controllerGenPaths = "./" + targetDir
 )
 
 func main() {
@@ -42,13 +40,8 @@ func updateSamples() error {
 
 	log.Printf("Generating Go structs from CRDs to %s...", targetDir)
 	crd2go := mustGetenv("CRD2GO_BIN")
-	if err := run(crd2go, "-input", crdsFile, "-output", targetDir); err != nil {
+	if err := run.Run(crd2go, "-input", crdsFile, "-output", targetDir); err != nil {
 		return fmt.Errorf("failed to generate CRDs Go structs: %w", err)
-	}
-
-	log.Print("Generating Go deep copy code...")
-	if err := run("controller-gen", "object", fmt.Sprintf("paths=%q", controllerGenPaths)); err != nil {
-		return fmt.Errorf("failed to generate Go deep copy code: %w", err)
 	}
 	return nil
 }
@@ -57,6 +50,9 @@ func downloadTo(url, filename string) (int64, error) {
 	rsp, err := http.Get(url)
 	if err != nil {
 		return 0, fmt.Errorf("failed to download from %s: %w", url, err)
+	}
+	if rsp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("failed to request %s with status: %q", url, rsp.Status)
 	}
 	f, err := os.Create(filename)
 	if err != nil {
@@ -76,11 +72,4 @@ func mustGetenv(name string) string {
 		panic(fmt.Errorf("%s env var must be set", name))
 	}
 	return value
-}
-
-func run(command string, args ...string) error {
-	cmd := exec.Command(command, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
