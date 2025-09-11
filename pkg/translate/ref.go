@@ -8,7 +8,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	v1 "github.com/josvazg/akotranslate/pkg/translate/samples/v1"
 )
 
 type EncodeDecodeFunc func(any) (any, error)
@@ -26,8 +29,11 @@ var (
 		},
 	}
 
+	optionalExpansions = []string{"groupRef"}
+
 	supportedKubeObjects = map[string]func(obj map[string]any) (client.Object, error){
-		"v1/secrets": newKubeObjectFactory[corev1.Secret](),
+		"v1/secrets":                            newKubeObjectFactory[corev1.Secret](),
+		"atlas.generated.mongodb.com/v1/groups": newKubeObjectFactory[v1.Group](),
 	}
 )
 
@@ -71,7 +77,8 @@ func newRef(name string, rm *refMapping) *namedRef {
 	return &namedRef{name: name, refMapping: rm}
 }
 
-func (ref *namedRef) Expand(deps DependencyRepo, path []string, obj map[string]any) error {
+func (ref *namedRef) Expand(deps DependencyRepo, pathHint []string, obj map[string]any) error {
+	path := ref.pathToExpand(pathHint)
 	rawValue, err := accessField[any](obj, base(path))
 	if errors.Is(err, ErrNotFound) {
 		return nil
@@ -91,6 +98,9 @@ func (ref *namedRef) Expand(deps DependencyRepo, path []string, obj map[string]a
 	}
 	dep, err := ref.XKubernetesMapping.setAtPropertySelectors(gvr, depUnstructured, ref.XOpenAPIMapping.Property, value)
 	if err != nil {
+		if ref.isExpansionOptional() {
+			return nil
+		}
 		return fmt.Errorf("failed to populate final dependency object: %w", err)
 	}
 	dep.SetName(ref.Name(deps.MainObject().GetName(), path))
@@ -105,11 +115,22 @@ func (ref *namedRef) Expand(deps DependencyRepo, path []string, obj map[string]a
 	return nil
 }
 
+func (ref *namedRef) pathToExpand(pathHint []string) []string {
+	path := make([]string, len(pathHint))
+	copy(path, pathHint)
+	path[len(path)-1] = base(resolveXPath(ref.XOpenAPIMapping.Property))
+	return path
+}
+
+func (ref *namedRef) isExpansionOptional() bool {
+	return slices.Contains(optionalExpansions, ref.name)
+}
+
 func (ref *namedRef) Name(prefix string, path []string) string {
 	if path[0] == "entry" {
 		path = path[1:]
 	}
-	return strings.Join(append([]string{prefix}, path...), "-")
+	return strings.ToLower(strings.Join(append([]string{prefix}, path...), "-"))
 }
 
 func (ref *namedRef) Collapse(deps DependencyRepo, path []string, obj map[string]any) error {
