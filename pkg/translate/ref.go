@@ -19,13 +19,13 @@ type EncodeDecodeFunc func(any) (any, error)
 var (
 	decoders = map[string]EncodeDecodeFunc{
 		"v1/secrets": func(in any) (any, error) {
-			return base64Decode((in).(string))
+			return secretDecode((in).(string))
 		},
 	}
 
 	encoders = map[string]EncodeDecodeFunc{
 		"v1/secrets": func(in any) (any, error) {
-			return base64Encode((in).(string))
+			return secretEncode((in).(string))
 		},
 	}
 
