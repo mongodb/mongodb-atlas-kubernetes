@@ -145,6 +145,8 @@ HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
 HELM_AKO_NAMESPACE = $(OPERATOR_NAMESPACE)
 
+GH_RUN_ID=$(shell gh run list -w Test -b main -e schedule -s success --json databaseId | jq '.[0] | .databaseId')
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -638,14 +640,9 @@ install-ako-helm:
 
 tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
 	cd tools/scandeprecation && go build .
+	cd tools/scandeprecation/github_jobs && go build .
 
 .PHONY: slack-deprecations
 slack-deprecations: tools/scandeprecation/scandeprecation ## slack a report
-ifndef GITHUB_TOKEN
-	echo "Getting GitHub token..."
-	$(eval GITHUB_TOKEN := $(shell $(MAKE) -s github-token))
-endif
 	@echo "Computing and sending deprecation report to Slack..."
-	RUN_ID=${gh run list -w Test -b main -e schedule --json databaseId | jq '.[0]'}
-	gh run view $RUN_ID --log | grep "javaMethod" | ./tools/scandeprecation/scandeprecations | \
-	./scripts/slackit.sh $(SLACK_WEBHOOK)
+	GH_RUN_ID=$(GH_RUN_ID) ./tools/scandeprecation/github_jobs/github_jobs | grep "javaMethod" | ./tools/scandeprecation/scandeprecations
