@@ -1,0 +1,205 @@
+## AKO Project
+# apiVersion: atlas.mongodb.com/v1
+# kind: AtlasProject
+# metadata:
+#   name: foo
+#   namespace: foo
+# spec:
+#   name: project-curated
+#   regionUsageRestrictions: NONE
+#   withDefaultAlertsSettings: true
+#   customRoles:
+#     - inheritedRoles:
+#         - database: admin
+#           name: backup
+#       name: BackupAdmin
+#     - inheritedRoles:
+#         - database: admin
+#           name: enableSharding
+#       name: NewAdmin
+#   projectIpAccessList:
+#     - cidrBlock: 0.0.0.0/1
+#       comment: Everyone has access. For the test purpose only.
+#     - cidrBlock: 128.0.0.0/1
+#       comment: Everyone has access. For the test purpose only.
+#---
+#apiVersion: atlas.generated.mongodb.com/v1
+#kind: Group
+#metadata:
+#  name: project1
+#  namespace: default
+#spec:
+#  v20231115:
+#    entry:
+#      name: "project1"
+#      orgId: "655dfe3e401cb80283fef781"
+#      regionUsageRestrictions: "NONE"
+#      withDefaultAlertsSettings: true
+#---
+# apiVersion: atlas.generated.mongodb.com/v1
+# kind: FlexCluster
+# metadata:
+#   name: flex
+#   namespace: foo
+# spec:
+#   v20241113:
+#     parameters:
+#       groupId: "67e7bdb269f4d26772d3d97b"
+#     entry:
+#       name: "flex"
+#       providerSettings:
+#         backingProviderName: "AWS"
+#         regionName: "US_EAST_1"
+#       terminationProtectionEnabled: false
+# ---
+# apiVersion: atlas.generated.mongodb.com/v1
+# kind: NetworkPermissionEntries
+# metadata:
+#   name: foo
+#   namespace: default
+# spec:
+#   v20250312:
+#     groupId: "67e7bdb269f4d26772d3d97b"
+#     entry:
+#     - cidrBlock: "0.0.0.0/1"
+#       comment: "Everyone has access. For the test purpose only."
+#     - cidrBlock: "128.0.0.0/1"
+#       comment: "Everyone has access. For the test purpose only."
+# # ---
+# # apiVersion: atlas.generated.mongodb.com/v1
+# # kind: UserCustomDBRole
+# # metadata:
+# #   name: new-admin
+# #   namespace: foo
+# # spec:
+# #   v20231115:
+# #     parameters:
+# #       groupId: "67d02fa9a2ae5373a4bb106e"
+# #     entry:
+# #       inheritedRoles:
+# #         - db: "admin"
+# #           role: "enableSharding"
+# #       roleName: "NewAdmin"
+# # ---
+# # apiVersion: atlas.generated.mongodb.com/v1
+# # kind: UserCustomDBRole
+# # metadata:
+# #   name: backup-admin
+# #   namespace: foo
+# # spec:
+# #   v20231115:
+# #     parameters:
+# #       groupId: "67d02fa9a2ae5373a4bb106e"
+# #     entry:
+# #       inheritedRoles:
+# #         - db: "admin"
+# #           role: "backup"
+# #       roleName: "BackupAdmin"
+# ---
+#apiVersion: atlas.generated.mongodb.com/v1
+#kind: Cluster
+#metadata:
+# name: test-clusters
+# namespace: default
+#spec:
+# v20231115:
+#   groupId: "67eba33e19737947a3db382b"
+#   entry:
+#     backupEnabled: false
+#     clusterType: "REPLICASET"
+#     encryptionAtRestProvider: "NONE"
+#     mongoDBMajorVersion: "7.0"
+#     name: "test-cluster"
+#     paused: false
+#     pitEnabled: false
+#     replicationSpecs:
+#       - numShards: 1
+#         regionConfigs:
+#           - electableSpecs:
+#               ebsVolumeType: "STANDARD"
+#               instanceSize: "M10"
+#               nodeCount: 3
+#             priority: 7
+#             providerName: "AWS"
+#             regionName: "US_EAST_1"
+#             autoScaling:
+#               compute:
+#                 enabled: false
+#               diskGB:
+#                 enabled: false
+#         zoneName: "Zone 1"
+#     rootCertType: "ISRGROOTX1"
+#     versionReleaseSystem: "LTS"
+#---
+#apiVersion: atlas.generated.mongodb.com/v1
+#kind: GroupAlertsConfig
+#metadata:
+#  name: example-datadog-alert
+#  namespace: default
+#spec:
+#  v20241113:
+#    entry:
+#      notifications:
+#        - typeName: DATADOG
+#          datadogApiKeyRef:
+#            name: data-dog
+#            key: .data.datadogApiKey
+
+#apiVersion: atlas.generated.mongodb.com/v1
+#kind: ThirdPartyIntegration
+#metadata:
+#  name: sample-webhook-integration
+#spec:
+#  v20250312:
+#    integrationType: WEBHOOK
+#    groupId: 32b6e34b3d91647abb20e7b8
+#    entry:
+#      type: WEBHOOK
+#      urlSecretRef:
+#        name: webhook-secret
+#        key: url
+#      enabled: true
+
+#  v20241113:
+#    integrationType: WEBHOOK
+#    groupId: 32b6e34b3d91647abb20e7b8
+#    entry:
+#      type: WEBHOOK
+#      urlSecretRef:
+#        name: webhook-secret
+#        key: url
+#      enabled: true
+
+apiVersion: atlas.generated.mongodb.com/v1
+kind: SearchIndex
+metadata:
+  name: sample-search-index
+spec:
+  v20250312:
+    clusterName: my-atlas-cluster
+    groupId: "32b6e34b3d91647abb20e7b8"
+    entry:
+      name: custom-analyzer-index
+      database: mydatabase
+      collectionName: products
+      analyzers:
+        - name: custom-text-analyzer
+          tokenizer:
+            type: standard
+          tokenFilters:
+            - type: lowercase
+            - type: stopword
+              tokens:
+                - "the"
+                - "and"
+                - "or"
+            - type: snowballStemmer
+              language: english
+            - type: shingle
+              maxShingleSize: 3
+              minShingleSize: 2
+              outputUnigrams: false
+      mappings:
+        dynamic: true
+        fields:
+          boo: blub
