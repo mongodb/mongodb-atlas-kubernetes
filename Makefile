@@ -145,6 +145,8 @@ HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
 HELM_AKO_NAMESPACE = $(OPERATOR_NAMESPACE)
 
+GH_RUN_ID=$(shell gh run list -w Test -b main -e schedule -s success --json databaseId | jq '.[0] | .databaseId')
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -635,3 +637,12 @@ install-ako-helm:
 	--set subobjectDeletionProtection=false \
 	--namespace=$(HELM_AKO_NAMESPACE) --create-namespace
 	kubectl get crds
+
+tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
+	cd tools/scandeprecation && go build .
+	cd tools/scandeprecation/github_jobs && go build .
+
+.PHONY: slack-deprecations
+slack-deprecations: tools/scandeprecation/scandeprecation ## slack a report
+	@echo "Computing and sending deprecation report to Slack..."
+	GH_RUN_ID=$(GH_RUN_ID) ./tools/scandeprecation/github_jobs/github_jobs | grep "javaMethod" | ./tools/scandeprecation/scandeprecations
