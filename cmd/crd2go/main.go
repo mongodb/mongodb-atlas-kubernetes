@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/josvazg/crd2go/internal/checkerr"
-	"github.com/josvazg/crd2go/pkg/config"
-	"github.com/josvazg/crd2go/pkg/crd2go"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/checkerr"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/crd2go"
 )
 
 func main() {

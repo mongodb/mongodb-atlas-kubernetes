@@ -6,10 +6,10 @@ import (
 	"sort"
 	"strings"
 
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
+
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-
-	"github.com/josvazg/crd2go/pkg/config"
 )
 
 const (
@@ -26,7 +26,7 @@ const (
 	AutoImportKind  = "autoImport"
 )
 
-const PACKAGE_BASE = "github.com/josvazg/crd2go"
+const PACKAGE_BASE = "mongodb/mongodb-atlas-kubernetes/tools/crd2go"
 
 // GoType represents a Go type, which can be a primitive type, a struct, or an array.
 // It is used in conjunbction with TypeDict to track and ensure unique type names.
