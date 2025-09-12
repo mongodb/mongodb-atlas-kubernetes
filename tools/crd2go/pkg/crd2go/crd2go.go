@@ -11,14 +11,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd/hooks"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/render"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/run"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
 
-	"github.com/josvazg/crd2go/internal/crd"
-	"github.com/josvazg/crd2go/internal/crd/hooks"
-	"github.com/josvazg/crd2go/internal/gotype"
-	"github.com/josvazg/crd2go/internal/render"
-	"github.com/josvazg/crd2go/internal/run"
-	"github.com/josvazg/crd2go/pkg/config"
+	"gopkg.in/yaml.v3"
 )
 
 const (

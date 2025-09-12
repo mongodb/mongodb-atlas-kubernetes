@@ -6,12 +6,12 @@ import (
 	"os"
 	"strings"
 
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/checkerr"
+	"mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
+
 	"github.com/dave/jennifer/jen"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-
-	"github.com/josvazg/crd2go/internal/checkerr"
-	"github.com/josvazg/crd2go/internal/gotype"
 )
 
 const (
