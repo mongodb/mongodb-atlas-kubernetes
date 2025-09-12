@@ -260,7 +260,7 @@ lint: ## Run the lint against the code
 	golangci-lint run --timeout 10m
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
-	gci write -s standard -s default -s localmodule $(GO_SOURCES)
+	gci write -s standard -s default -s localmodule api cmd internal pkg scripts test
 	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: fmt
