@@ -193,3 +193,17 @@ const (
 	NetworkPeeringConnectionPending  ConditionReason = "NetworkPeeringConnectionPending"
 	NetworkPeeringConnectionClosing  ConditionReason = "NetworkPeeringConnectionClosing"
 )
+
+// ConnectionSecret reasons
+const (
+	ConnSecretInvalidName                ConditionReason = "ConnSecretInvalidName"
+	ConnSecretPairNotLoaded              ConditionReason = "ConnSecretPairNotLoaded"
+	ConnSecretUserExpired                ConditionReason = "ConnSecretUserExpired"
+	ConnSecretNotReady                   ConditionReason = "ConnSecretNotReady"
+	ConnSecretUnresolvedProjectName      ConditionReason = "ConnSecretUnresolvedProjectName"
+	ConnSecretFailedToBuildData          ConditionReason = "ConnSecretFailedToBuildData"
+	ConnSecretFailedToFillData           ConditionReason = "ConnSecretFailedToFillData"
+	ConnSecretFailedDeletion             ConditionReason = "ConnSecretFailedDeletion"
+	ConnSecretFailedToUpsertSecret       ConditionReason = "ConnSecretFailedToUpsertSecret"
+	ConnSecretFailedToSetOwnerReferences ConditionReason = "ConnSecretFailedToSetOwnerReferences"
+)

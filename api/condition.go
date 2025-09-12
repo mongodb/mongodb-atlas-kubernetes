@@ -177,6 +177,15 @@ func HasConditionType(typ ConditionType, source []Condition) bool {
 	return false
 }
 
+func HasReadyCondition(conditions []Condition) bool {
+	for _, c := range conditions {
+		if c.Type == ReadyType && c.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
 // EnsureConditionExists adds or updates the condition in the copy of a 'source' slice
 func EnsureConditionExists(condition Condition, source []Condition) []Condition {
 	condition.LastTransitionTime = metav1.Now()
