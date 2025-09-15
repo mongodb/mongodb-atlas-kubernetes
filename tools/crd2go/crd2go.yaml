@@ -1,0 +1,31 @@
+# input CRD schemas in YAML format
+input: ./pkg/crd2go/samples/crds.yaml
+
+# output directory to egenrate Go code
+output: ./pkg/crd2go/samples/v1
+
+# list of CRDs to skip by Kind name
+skipList: []
+
+# list of reserved Type names to avioid using
+reserved: []
+
+# renames to apply before type name evaluation and de-duplication 
+# a matching key is replaced by the given value
+renames:
+  GroupRef: LocalReference
+
+# imports is a list of types to auto import instead of generating a local type,
+# might need to be used in conjuction with renames to enforce match by name
+imports:
+  - name: LocalReference
+    alias: k8s
+    path: github.com/josvazg/crd2go/k8s
+  - name: Reference
+    alias: k8s
+    path: github.com/josvazg/crd2go/k8s
+
+# deepCopy controls the integration with controller-gen to generate deep copy code
+deepCopy:
+  generate: auto
+  # controllerGenPath: path/to/controller-gen ## customize as needed
