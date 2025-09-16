@@ -25,4 +25,5 @@ jobs:
             -ignore "**/*.yaml" \
             -ignore "**/*.yml" \
             -ignore "**/*.nix" \
+            -ignore "tools/**" \
             -ignore "**/*Dockerfile" .
