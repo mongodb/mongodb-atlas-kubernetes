@@ -26,7 +26,7 @@ import (
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/josvazg/akotranslate/pkg/translate/samples/v1"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/translate/samples/v1"
 )
 
 type EncodeDecodeFunc func(any) (any, error)

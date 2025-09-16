@@ -3,8 +3,8 @@ package hooks
 import (
 	"fmt"
 
-	"github.com/josvazg/crd2go/internal/crd"
-	"github.com/josvazg/crd2go/internal/gotype"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
 )
 
 // PrimitiveHookFn converts an OpenAPI primitive type to a GoType
