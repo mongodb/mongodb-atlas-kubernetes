@@ -1,0 +1,45 @@
+package plugins
+
+import (
+	"fmt"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+)
+
+type StatusPlugin struct {
+	NoOp
+	crd *apiextensions.CustomResourceDefinition
+}
+
+var _ Plugin = &StatusPlugin{}
+
+func NewStatusPlugin(crd *apiextensions.CustomResourceDefinition) *StatusPlugin {
+	return &StatusPlugin{
+		crd: crd,
+	}
+}
+
+func (s *StatusPlugin) Name() string {
+	return "status"
+}
+
+func (s *StatusPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
+	if mappingConfig.StatusMapping.Schema == "" {
+		return nil
+	}
+
+	statusSchema, ok := openApiSpec.Components.Schemas[mappingConfig.StatusMapping.Schema]
+	if !ok {
+		return fmt.Errorf("status schema %q not found in openapi spec", mappingConfig.StatusMapping.Schema)
+	}
+
+	statusProps := g.ConvertProperty(statusSchema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.StatusMapping, 0)
+	statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", s.crd.Spec.Names.Singular, mappingConfig.MajorVersion)
+	if statusProps != nil {
+		s.crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mappingConfig.MajorVersion] = *statusProps
+	}
+
+	return nil
+}

@@ -1,0 +1,32 @@
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Group
+metadata:
+  name: project1
+  namespace: default
+  annotations:
+    mongodb.com/managementPolicy: Import
+    mongodb.com/external-id: 67eba33e19737947a3db382b
+
+---
+
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Cluster
+metadata:
+  name: cluster0
+  namespace: default
+  annotations:
+    mongodb.com/managementPolicy: Import
+    mongodb.com/external-group-id: 67eba33e19737947a3db382b
+    mongodb.com/external-name: Cluster0
+
+---
+
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Cluster
+metadata:
+  name: test-m10
+  namespace: default
+  annotations:
+    mongodb.com/managementPolicy: Import
+    mongodb.com/external-group-id: 67eba33e19737947a3db382b
+    mongodb.com/external-name: test-m10
