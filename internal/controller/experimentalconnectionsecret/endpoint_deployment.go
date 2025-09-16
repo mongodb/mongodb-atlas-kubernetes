@@ -25,9 +25,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
 
 type DeploymentEndpoint struct {
@@ -50,64 +48,11 @@ func resolveProjectIDByKey(ctx context.Context, c client.Client, key client.Obje
 	return proj.ID(), nil
 }
 
-// resolveProjectNameByKey returns the project name from the key
-func resolveProjectNameByKey(ctx context.Context, c client.Client, key client.ObjectKey) (string, error) {
-	proj := &akov2.AtlasProject{}
-	if err := c.Get(ctx, key, proj); err != nil {
-		return "", err
+func (e DeploymentEndpoint) GetConnectionType() string {
+	if e.obj == nil {
+		return ""
 	}
-	if proj.Spec.Name == "" {
-		return "", ErrUnresolvedProjectName
-	}
-	return proj.Spec.Name, nil
-}
-
-// resolveProjectNameBySDK returns the project name from SDL
-func resolveProjectNameBySDK(
-	ctx context.Context,
-	c client.Client,
-	provider atlas.Provider,
-	log *zap.SugaredLogger,
-	globalSecretRef client.ObjectKey,
-	referrer project.ProjectReferrerObject,
-) (string, error) {
-	pdr := referrer.ProjectDualRef()
-
-	var secretRef *client.ObjectKey
-	if pdr.ConnectionSecret != nil && pdr.ConnectionSecret.Name != "" {
-		if obj, ok := any(referrer).(client.Object); ok {
-			key := client.ObjectKeyFromObject(obj)
-			key.Name = pdr.ConnectionSecret.Name
-			secretRef = &key
-		} else {
-			key := client.ObjectKey{Namespace: referrer.GetNamespace(), Name: pdr.ConnectionSecret.Name}
-			secretRef = &key
-		}
-	}
-
-	cfg, err := reconciler.GetConnectionConfig(ctx, c, secretRef, &globalSecretRef)
-	if err != nil {
-		return "", err
-	}
-
-	if pdr.ExternalProjectRef == nil || pdr.ExternalProjectRef.ID == "" {
-		return "", ErrUnresolvedProjectName
-	}
-
-	cs, err := provider.SdkClientSet(ctx, cfg.Credentials, log)
-	if err != nil {
-		return "", err
-	}
-
-	svc := project.NewProjectAPIService(cs.SdkClient20250312006.ProjectsApi)
-	prj, err := svc.GetProject(ctx, pdr.ExternalProjectRef.ID)
-	if err != nil {
-		return "", err
-	}
-	if prj.Name == "" {
-		return "", ErrUnresolvedProjectName
-	}
-	return prj.Name, nil
+	return "deployment"
 }
 
 // GetName resolves the endpoints name from the spec
@@ -140,20 +85,6 @@ func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
 		return resolveProjectIDByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
 	}
 	return "", ErrUnresolvedProjectID
-}
-
-// GetProjectName returns the parent project's name (either by getting K8s AtlasProject or SDK calls)
-func (e DeploymentEndpoint) GetProjectName(ctx context.Context) (string, error) {
-	if e.obj == nil {
-		return "", fmt.Errorf("nil deployment")
-	}
-	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" {
-		return resolveProjectNameByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
-	}
-	if e.obj.Spec.ConnectionSecret != nil && e.obj.Spec.ConnectionSecret.Name != "" {
-		return resolveProjectNameBySDK(ctx, e.k8s, e.provider, e.log, e.globalSecretRef, e.obj)
-	}
-	return "", ErrUnresolvedProjectName
 }
 
 // Defines the list type
@@ -191,38 +122,96 @@ func (e DeploymentEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 // BuildConnData defines the specific function/way for building the ConnSecretData given this type of endpoint
 // AtlasDeployment stores connection strings in the status field
 func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
+	// Step 1: Log basic input details
 	if user == nil || e.obj == nil {
+		e.log.Errorw("BuildConnData called with nil Deployment or user",
+			"DeploymentEndpoint", e.obj,
+			"AtlasDatabaseUser", user,
+		)
 		return ConnSecretData{}, ErrMissingPairing
 	}
+
+	e.log.Debugw("Starting BuildConnData",
+		"Username", user.Spec.Username,
+		"DeploymentName", e.obj.GetDeploymentName(),
+	)
+
+	// Step 2: Read the user's password and log outcome
 	password, err := user.ReadPassword(ctx, e.k8s)
 	if err != nil {
+		e.log.Errorw("Failed to read password for user",
+			"Username", user.Spec.Username,
+			"Error", err,
+		)
 		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
 	}
+
+	e.log.Debugw("Successfully read password for user",
+		"Username", user.Spec.Username,
+		"PasswordPresent", len(password) > 0,
+	)
+
+	// Initialize ConnSecretData with DBUserName and Password
 	data := ConnSecretData{
 		DBUserName: user.Spec.Username,
 		Password:   password,
 	}
 
+	// Step 3: Check and handle connection strings
 	if e.obj.Status.ConnectionStrings == nil {
+		e.log.Warn("ConnectionStrings is nil for Deployment", "DeploymentName", e.obj.GetDeploymentName())
 		return data, nil
 	}
 
+	e.log.Debugw("ConnectionStrings found for Deployment",
+		"DeploymentName", e.obj.GetDeploymentName(),
+		"ConnectionStrings", e.obj.Status.ConnectionStrings,
+	)
+
 	conn := e.obj.Status.ConnectionStrings
+
+	// Standard and SRV connection strings
 	data.ConnURL = conn.Standard
 	data.SrvConnURL = conn.StandardSrv
+
+	e.log.Debugw("Standard/SRV connection strings",
+		"StandardConnURL", data.ConnURL,
+		"SrvConnURL", data.SrvConnURL,
+	)
+
+	// Private connection strings
 	if conn.Private != "" {
+		e.log.Debugw("Private connection string detected",
+			"PrivateConnURL", conn.Private,
+			"PrivateSrvConnURL", conn.PrivateSrv,
+		)
 		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
 			PvtConnURL:    conn.Private,
 			PvtSrvConnURL: conn.PrivateSrv,
 		})
 	}
+
+	// Iterate through PrivateEndpoint connection strings
 	for _, pe := range conn.PrivateEndpoint {
+		e.log.Debugw("PrivateEndpoint connection string detected",
+			"PvtConnURL", pe.ConnectionString,
+			"PvtSrvConnURL", pe.SRVConnectionString,
+			"PvtShardConnURL", pe.SRVShardOptimizedConnectionString,
+		)
 		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
 			PvtConnURL:      pe.ConnectionString,
 			PvtSrvConnURL:   pe.SRVConnectionString,
 			PvtShardConnURL: pe.SRVShardOptimizedConnectionString,
 		})
 	}
+
+	// Step 4: Log final data construction (success path)
+	e.log.Infow("ConnSecretData built successfully",
+		"Username", data.DBUserName,
+		"StandardConnURL", data.ConnURL,
+		"SrvConnURL", data.SrvConnURL,
+		"NumPrivateConnURLs", len(data.PrivateConnURLs),
+	)
 
 	return data, nil
 }

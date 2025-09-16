@@ -48,6 +48,13 @@ func (e FederationEndpoint) GetName() string {
 	return e.obj.Spec.Name
 }
 
+func (e FederationEndpoint) GetConnectionType() string {
+	if e.obj == nil {
+		return ""
+	}
+	return "data-federation"
+}
+
 // IsReady returns true if the endpoint is ready
 func (e FederationEndpoint) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
@@ -67,17 +74,6 @@ func (e FederationEndpoint) GetProjectID(ctx context.Context) (string, error) {
 		return resolveProjectIDByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
 	}
 	return "", ErrUnresolvedProjectID
-}
-
-// GetProjectName returns the parent project's name (only by getting K8s AtlasProject)
-func (e FederationEndpoint) GetProjectName(ctx context.Context) (string, error) {
-	if e.obj == nil {
-		return "", fmt.Errorf("nil federation")
-	}
-	if e.obj.Spec.Project.Name != "" {
-		return resolveProjectNameByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
-	}
-	return "", ErrUnresolvedProjectName
 }
 
 // Defines the list type
@@ -112,44 +108,53 @@ func (e FederationEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error
 	return out, nil
 }
 
-// BuildConnData defines the specific function/way for building the ConnSecretData given this type of endpoint
-// AtlasDataFederation uses SDK calls for getting the hostnames
+// BuildConnData builds the ConnSecretData for this endpoint type
 func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
 	if user == nil || e.obj == nil {
+		e.log.Error("BuildConnData called with nil user or federation endpoint")
 		return ConnSecretData{}, ErrMissingPairing
 	}
+	e.log.Debugw("Starting BuildConnData", "Username", user.Spec.Username, "FederationEndpoint", e.obj.Spec.Name)
+
 	password, err := user.ReadPassword(ctx, e.k8s)
 	if err != nil {
+		e.log.Errorw("Failed to read password for user", "Username", user.Spec.Username, "Error", err)
 		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
 	}
 
 	project := &akov2.AtlasProject{}
 	if err := e.k8s.Get(ctx, e.obj.AtlasProjectObjectKey(), project); err != nil {
+		e.log.Errorw("Failed to fetch project for FederationEndpoint", "Error", err)
 		return ConnSecretData{}, err
 	}
 
 	connectionConfig, err := reconciler.GetConnectionConfig(ctx, e.k8s, project.ConnectionSecretObjectKey(), &e.globalSecretRef)
 	if err != nil {
+		e.log.Errorw("Failed to fetch connection config for project", "ProjectID", project.ID(), "Error", err)
 		return ConnSecretData{}, err
 	}
 
-	// make sure logger is non-nil; provider uses it
 	clientSet, err := e.provider.SdkClientSet(ctx, connectionConfig.Credentials, e.log)
 	if err != nil {
+		e.log.Errorw("Failed to create SDK client set", "Error", err)
 		return ConnSecretData{}, err
 	}
 
 	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312006.DataFederationApi)
 	df, err := dataFederationService.Get(ctx, project.ID(), e.obj.Spec.Name)
 	if err != nil {
+		e.log.Errorw("Failed to fetch Federation data from Atlas", "ProjectID", project.ID(), "FederationName", e.obj.Spec.Name, "Error", err)
 		return ConnSecretData{}, fmt.Errorf("atlas DF get: %w", err)
 	}
 
 	if len(df.Hostnames) == 0 {
+		e.log.Errorw("No hostnames found for FederationEndpoint", "FederationName", e.obj.Spec.Name)
 		return ConnSecretData{}, fmt.Errorf("no DF hostnames")
 	}
 
 	hostlist := strings.Join(df.Hostnames, ",")
+	e.log.Debugw("Building connection URL for FederationEndpoint", "Hostlist", hostlist)
+
 	u := &url.URL{
 		Scheme:   "mongodb",
 		Host:     hostlist,
@@ -157,9 +162,16 @@ func (e FederationEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 		RawQuery: "ssl=true",
 	}
 
-	return ConnSecretData{
+	connData := ConnSecretData{
 		DBUserName: user.Spec.Username,
 		Password:   password,
 		ConnURL:    u.String(),
-	}, nil
+	}
+
+	e.log.Infow("Connection data built successfully",
+		"DBUserName", connData.DBUserName,
+		"ConnURL", connData.ConnURL,
+		"PasswordIsSet", len(connData.Password) > 0,
+	)
+	return connData, nil
 }

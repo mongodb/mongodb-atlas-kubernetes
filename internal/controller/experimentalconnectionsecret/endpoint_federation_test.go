@@ -172,15 +172,6 @@ func TestFederationEndpoint_GetProjectID(t *testing.T) {
 	)
 }
 
-func TestFederationEndpoint_GetProjectName(t *testing.T) {
-	runFederationProjectTest(t,
-		func(fe FederationEndpoint) (string, error) {
-			return fe.GetProjectName(context.Background())
-		},
-		"My Project Name",
-	)
-}
-
 func TestFederationEndpoint_ListObj(t *testing.T) {
 	e := FederationEndpoint{}
 	list := e.ListObj()

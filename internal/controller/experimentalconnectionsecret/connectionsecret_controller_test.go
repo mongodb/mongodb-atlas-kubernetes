@@ -48,27 +48,26 @@ func TestConnectionSecretReconcile(t *testing.T) {
 	user := createDummyUser(t)
 
 	tests := map[string]testCase{
-		"fail: could not load identifiers": {
+		"fail: could not load identifiers 1": {
 			reqName: "my-project$cluster",
 			expectedResult: func() (ctrl.Result, error) {
 				return workflow.Terminate("InvalidConnectionSecretName", ErrInternalFormatErr).ReconcileResult()
 			},
 		},
+		"fail: could not load identifiers 2": {
+			reqName: "my-project$cluster$theuser",
+			expectedResult: func() (ctrl.Result, error) {
+				return workflow.Terminate("InvalidConnectionSecretName", ErrInternalFormatErr).ReconcileResult()
+			},
+		},
 		"success: could not find secret with k8s format; assume deleted": {
-			reqName: "test-project-id-cluster1-admin",
+			reqName: "connection-442423",
 			expectedResult: func() (ctrl.Result, error) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 			},
 		},
-		"success: missing both parent resources; garbage collect secret": {
-			reqName:          "test-project-id$cluster1$admin",
-			expectedDeletion: true,
-			expectedResult: func() (ctrl.Result, error) {
-				return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, ErrUnresolvedProjectName).ReconcileResult()
-			},
-		},
 		"success: only one available resource from the pair, trigger delete": {
-			reqName:          "test-project-id$cluster1$admin",
+			reqName:          "test-project-id$cluster1$admin$deployment",
 			user:             user,
 			expectedDeletion: true,
 			expectedResult: func() (ctrl.Result, error) {
@@ -76,7 +75,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			},
 		},
 		"success: invalid scopes; trigger delete": {
-			reqName:    "test-project-id$cluster1$admin",
+			reqName:    "test-project-id$cluster1$admin$deployment",
 			deployment: depl,
 			user: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
@@ -99,7 +98,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			},
 		},
 		"success: expired user; trigger delete": {
-			reqName:    "test-project-id$cluster1$admin",
+			reqName:    "test-project-id$cluster1$admin$deployment",
 			deployment: depl,
 			user: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
@@ -117,7 +116,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			},
 		},
 		"requque: resources are not ready yet": {
-			reqName:    "test-project-id$cluster1$admin",
+			reqName:    "test-project-id$cluster1$admin$deployment",
 			deployment: depl,
 			user: &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
@@ -138,7 +137,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			},
 		},
 		"success: pair ready; trigger upsert": {
-			reqName:        "test-project-id$cluster1$admin",
+			reqName:        "test-project-id$cluster1$admin$deployment",
 			deployment:     depl,
 			user:           user,
 			expectedUpdate: true,
@@ -193,9 +192,8 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			if tc.expectedUpdate {
 				ids, err := r.loadIdentifiers(context.Background(), req.NamespacedName)
 				require.NoError(t, err)
-				ids.ProjectName = "my-project-name"
 
-				expectedName := CreateK8sFormat(ids.ProjectName, ids.ClusterName, ids.DatabaseUsername)
+				expectedName := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, ids.ConnectionType)
 				var outputSecret corev1.Secret
 				getErr := r.Client.Get(context.Background(), types.NamespacedName{
 					Namespace: "test-ns",
@@ -208,7 +206,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				ids, err := r.loadIdentifiers(context.Background(), req.NamespacedName)
 				require.NoError(t, err)
 
-				expectedName := CreateK8sFormat(ids.ProjectName, ids.ClusterName, ids.DatabaseUsername)
+				expectedName := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, ids.ConnectionType)
 				var check corev1.Secret
 				getErr := r.Client.Get(context.Background(), types.NamespacedName{
 					Namespace: "test-ns",
@@ -355,8 +353,8 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 			endpoints: []Endpoint{depA, df1},
 			users:     []akov2.AtlasDatabaseUser{userNoScopes},
 			expect: []types.NamespacedName{
-				{Namespace: ns1, Name: "proj-1$my-depl-name$user1"},
-				{Namespace: ns1, Name: "proj-1$my-df-name$user1"},
+				{Namespace: ns1, Name: "proj-1$my-depl-name$user1$deployment"},
+				{Namespace: ns1, Name: "proj-1$my-df-name$user1$data-federation"},
 			},
 		},
 		"deployment scoping filters correctly": {
@@ -364,7 +362,7 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 			endpoints: []Endpoint{depA, df1},
 			users:     []akov2.AtlasDatabaseUser{userDepScopedMatch, userDepScopedNoMatch},
 			expect: []types.NamespacedName{
-				{Namespace: ns2, Name: "proj-1$my-depl-name$user2"},
+				{Namespace: ns2, Name: "proj-1$my-depl-name$user2$deployment"},
 			},
 		},
 		"data lake scoping filters correctly with mixed users": {
@@ -372,9 +370,9 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 			endpoints: []Endpoint{depA, df1},
 			users:     []akov2.AtlasDatabaseUser{userNoScopes, userDfScopedMatch},
 			expect: []types.NamespacedName{
-				{Namespace: ns1, Name: "proj-1$my-depl-name$user1"},
-				{Namespace: ns1, Name: "proj-1$my-df-name$user1"},
-				{Namespace: ns1, Name: "proj-1$my-df-name$user4"},
+				{Namespace: ns1, Name: "proj-1$my-depl-name$user1$deployment"},
+				{Namespace: ns1, Name: "proj-1$my-df-name$user1$data-federation"},
+				{Namespace: ns1, Name: "proj-1$my-df-name$user4$data-federation"},
 			},
 		},
 	}
@@ -450,16 +448,16 @@ func Test_newEndpointMapFunc(t *testing.T) {
 			objs: []client.Object{depl, userNoScopes, userScopedDep, userScopedDf, userOtherProject},
 			obj:  depl,
 			expect: []types.NamespacedName{
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "admin")},
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "user2")},
+				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "admin", "deployment")},
+				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "user2", "deployment")},
 			},
 		},
 		"datafederation maps only users in same project and allowed by scopes": {
 			objs: []client.Object{df, userNoScopes, userScopedDf, userScopedDep, userOtherProject},
 			obj:  df,
 			expect: []types.NamespacedName{
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "admin")},
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "user3")},
+				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "admin", "data-federation")},
+				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "user3", "data-federation")},
 			},
 		},
 	}
@@ -531,16 +529,16 @@ func Test_newDatabaseUserMapFunc(t *testing.T) {
 			objs: []client.Object{depl, df},
 			user: userNoScopes,
 			expect: []types.NamespacedName{
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "admin")},
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "admin")},
+				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "admin", "deployment")},
+				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "admin", "data-federation")},
 			},
 		},
 		"user with scopes; only matching endpoints in same project": {
 			objs: []client.Object{depl, df},
 			user: userScoped,
 			expect: []types.NamespacedName{
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "user")},
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "user")},
+				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "user", "deployment")},
+				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "user", "data-federation")},
 			},
 		},
 	}

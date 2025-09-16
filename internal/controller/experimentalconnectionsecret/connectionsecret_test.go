@@ -16,100 +16,70 @@ package experimentalconnectionsecret
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
-
-func Test_createK8sFormat(t *testing.T) {
-	tests := map[string]struct {
-		projectName      string
-		clusterName      string
-		databaseUsername string
-		expected         string
-	}{
-		"normal values": {
-			projectName:      "MyProject",
-			clusterName:      "MyCluster",
-			databaseUsername: "AdminUser",
-			expected:         "myproject-mycluster-adminuser",
-		},
-		"already normalized": {
-			projectName:      "proj",
-			clusterName:      "cluster",
-			databaseUsername: "user",
-			expected:         "proj-cluster-user",
-		},
-		"values with spaces and caps": {
-			projectName:      "Proj A",
-			clusterName:      "Cluster B",
-			databaseUsername: "Admin X",
-			expected:         "proj-a-cluster-b-admin-x",
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			actual := CreateK8sFormat(tc.projectName, tc.clusterName, tc.databaseUsername)
-			assert.Equal(t, tc.expected, actual)
-		})
-	}
-}
 
 func TestCreateInternalFormat(t *testing.T) {
 	tests := map[string]struct {
 		projectID        string
 		clusterName      string
 		databaseUsername string
+		connectionType   string
 		expected         string
 	}{
 		"normal values": {
 			projectID:        "proj123",
 			clusterName:      "ClusterOne",
 			databaseUsername: "DBUser",
-			expected:         "proj123$clusterone$dbuser",
+			connectionType:   "deployment",
+			expected:         "proj123$clusterone$dbuser$deployment",
 		},
 		"cluster and user already normalized": {
 			projectID:        "id456",
 			clusterName:      "cluster",
 			databaseUsername: "user",
-			expected:         "id456$cluster$user",
+			connectionType:   "deployment",
+			expected:         "id456$cluster$user$deployment",
 		},
 		"values with spaces": {
 			projectID:        "id789",
 			clusterName:      "CL X",
 			databaseUsername: "U X",
-			expected:         "id789$cl-x$u-x",
+			connectionType:   "data-federation",
+			expected:         "id789$cl-x$u-x$data-federation",
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := CreateInternalFormat(tc.projectID, tc.clusterName, tc.databaseUsername)
+			actual := CreateInternalFormat(tc.projectID, tc.clusterName, tc.databaseUsername, tc.connectionType)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }
 
 func Test_loadIdentifiers(t *testing.T) {
+	uniqueID := strings.ToLower(uuid.New().String()[0:6])
 	type want struct {
 		projectID        string
-		projectName      string
 		clusterName      string
 		databaseUsername string
+		connectionType   string
 		err              error
 	}
 
@@ -119,8 +89,13 @@ func Test_loadIdentifiers(t *testing.T) {
 		secret  *corev1.Secret
 		want    want
 	}{
-		"fail: internal format-invalid parts count": {
+		"fail: internal format-invalid parts count 1": {
 			reqName: "only" + InternalSeparator + "two",
+			ns:      "default",
+			want:    want{err: ErrInternalFormatErr},
+		},
+		"fail: internal format-invalid parts count 2": {
+			reqName: "only" + InternalSeparator + "only" + InternalSeparator + "three",
 			ns:      "default",
 			want:    want{err: ErrInternalFormatErr},
 		},
@@ -130,13 +105,13 @@ func Test_loadIdentifiers(t *testing.T) {
 			want:    want{err: ErrInternalFormatErr},
 		},
 		"success: internal format": {
-			reqName: "proj123" + InternalSeparator + "mycluster" + InternalSeparator + "theuser",
+			reqName: uniqueID + InternalSeparator + "mycluster" + InternalSeparator + "theuser" + InternalSeparator + "deployment",
 			ns:      "default",
 			want: want{
-				projectID:        "proj123",
-				projectName:      "",
+				projectID:        uniqueID,
 				clusterName:      "mycluster",
 				databaseUsername: "theuser",
+				connectionType:   "deployment",
 				err:              nil,
 			},
 		},
@@ -198,23 +173,27 @@ func Test_loadIdentifiers(t *testing.T) {
 			want: want{err: ErrK8SFormatErr},
 		},
 		"success: k8s format": {
-			reqName: "myproj-mycluster-admin",
+			reqName: "connection-42424",
 			ns:      "test-ns",
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "myproj-mycluster-admin",
+					Name:      "connection-42424",
 					Namespace: "test-ns",
 					Labels: map[string]string{
-						ProjectLabelKey: "test-project-id",
-						ClusterLabelKey: "mycluster",
+						ProjectLabelKey:      uniqueID,
+						ClusterLabelKey:      "mycluster",
+						DatabaseUserLabelKey: "theuser",
+					},
+					Annotations: map[string]string{
+						ConnectionTypelKey: "deployment",
 					},
 				},
 			},
 			want: want{
-				projectID:        "test-project-id",
-				projectName:      "myproj",
+				projectID:        uniqueID,
 				clusterName:      "mycluster",
-				databaseUsername: "admin",
+				databaseUsername: "theuser",
+				connectionType:   "deployment",
 				err:              nil,
 			},
 		},
@@ -242,9 +221,9 @@ func Test_loadIdentifiers(t *testing.T) {
 			assert.NoError(t, err)
 			if assert.NotNil(t, got) {
 				assert.Equal(t, tc.want.projectID, got.ProjectID)
-				assert.Equal(t, tc.want.projectName, got.ProjectName)
 				assert.Equal(t, tc.want.clusterName, got.ClusterName)
 				assert.Equal(t, tc.want.databaseUsername, got.DatabaseUsername)
+				assert.Equal(t, tc.want.connectionType, got.ConnectionType)
 			}
 		})
 	}
@@ -460,138 +439,6 @@ func Test_loadPair(t *testing.T) {
 	}
 }
 
-func Test_resolveProjectName(t *testing.T) {
-	const (
-		ns        = "test-ns"
-		projectID = "test-project-id"
-	)
-
-	type want struct {
-		projectName string
-		err         error
-	}
-
-	r := createDummyEnv(t, nil)
-	var notFoundErr = apiErrors.NewNotFound(
-		schema.GroupResource{Group: "atlas.mongodb.com", Resource: "atlasprojects"},
-		"missing-proj",
-	)
-
-	tests := map[string]struct {
-		ids  *ConnSecretIdentifiers
-		pair *ConnSecretPair
-		want want
-	}{
-		"fail: nil pair and ids without projectName": {
-			ids:  &ConnSecretIdentifiers{ProjectID: projectID},
-			pair: nil,
-			want: want{
-				projectName: "",
-				err:         ErrUnresolvedProjectName,
-			},
-		},
-		"fail: cannot resolve from endpoint; no user": {
-			ids: &ConnSecretIdentifiers{ProjectID: projectID},
-			pair: &ConnSecretPair{
-				ProjectID: projectID,
-				Endpoint: DeploymentEndpoint{
-					k8s:             r.Client,
-					provider:        r.AtlasProvider,
-					globalSecretRef: r.GlobalSecretRef,
-					log:             r.Log,
-					obj: &akov2.AtlasDeployment{
-						ObjectMeta: metav1.ObjectMeta{Name: "dep", Namespace: ns},
-						Spec: akov2.AtlasDeploymentSpec{
-							ProjectDualReference: akov2.ProjectDualReference{
-								ProjectRef: &common.ResourceRefNamespaced{Name: "missing-proj"},
-							},
-						},
-					},
-				},
-				User: nil,
-			},
-			want: want{
-				projectName: "",
-				err:         notFoundErr,
-			},
-		},
-		"fail: cannot resolve from user; no endpoint": {
-			ids: &ConnSecretIdentifiers{ProjectID: projectID},
-			pair: &ConnSecretPair{
-				ProjectID: projectID,
-				User: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{Name: "u", Namespace: ns},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						ProjectDualReference: akov2.ProjectDualReference{
-							ProjectRef: &common.ResourceRefNamespaced{Name: "missing-proj"},
-						},
-					},
-				},
-				Endpoint: nil,
-			},
-			want: want{
-				projectName: "",
-				err:         notFoundErr,
-			},
-		},
-		"success: ids carries projectName": {
-			ids: &ConnSecretIdentifiers{
-				ProjectID:   projectID,
-				ProjectName: "my-project-name",
-			},
-			pair: nil,
-			want: want{
-				projectName: "my-project-name",
-				err:         nil,
-			},
-		},
-		"success: resolve from endpoint": {
-			ids: &ConnSecretIdentifiers{ProjectID: projectID},
-			pair: &ConnSecretPair{
-				ProjectID: projectID,
-				Endpoint: DeploymentEndpoint{
-					k8s:             r.Client,
-					provider:        r.AtlasProvider,
-					globalSecretRef: r.GlobalSecretRef,
-					log:             r.Log,
-					obj:             createDummyDeployment(t),
-				},
-			},
-			want: want{
-				projectName: "my-project-name",
-				err:         nil,
-			},
-		},
-		"success: resolve from user": {
-			ids: &ConnSecretIdentifiers{ProjectID: projectID},
-			pair: &ConnSecretPair{
-				ProjectID: projectID,
-				User:      createDummyUser(t),
-				Endpoint:  nil,
-			},
-			want: want{
-				projectName: "my-project-name",
-				err:         nil,
-			},
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			got, err := r.resolveProjectName(context.Background(), tc.ids, tc.pair)
-
-			if tc.want.err != nil {
-				assert.Equal(t, tc.want.err, err)
-				assert.Equal(t, "", got)
-				return
-			}
-
-			assert.NoError(t, err)
-			assert.Equal(t, tc.want.projectName, got)
-		})
-	}
-}
-
 func Test_handleDelete(t *testing.T) {
 	type expectedResult struct {
 		expectedResult ctrl.Result
@@ -599,10 +446,10 @@ func Test_handleDelete(t *testing.T) {
 	}
 
 	const (
-		cluster     = "cluster1"
-		username    = "admin"
-		projectID   = "test-project-id"
-		projectName = "my-project-name"
+		cluster        = "cluster1"
+		username       = "admin"
+		projectID      = "test-project-id"
+		connectionType = "deployment"
 	)
 
 	type testCase struct {
@@ -612,42 +459,14 @@ func Test_handleDelete(t *testing.T) {
 	}
 
 	r := createDummyEnv(t, nil)
-	dep := createDummyDeployment(t)
-	user := createDummyUser(t)
-	depEndpoint := DeploymentEndpoint{
-		k8s:             r.Client,
-		provider:        r.AtlasProvider,
-		globalSecretRef: r.GlobalSecretRef,
-		log:             r.Log,
-		obj:             dep,
-	}
 
 	tests := map[string]testCase{
-		"fail: projects with no parents cannot be directly deleted": {
-			ids: ConnSecretIdentifiers{
-				ClusterName:      cluster,
-				DatabaseUsername: username,
-			},
-			pair: ConnSecretPair{
-				ProjectID: projectID,
-				User:      nil,
-				Endpoint:  nil,
-			},
-			result: expectedResult{
-				expectedResult: ctrl.Result{},
-				expectedError:  ErrUnresolvedProjectName,
-			},
-		},
 		"success: no secret present beforehand": {
 			ids: ConnSecretIdentifiers{
-				ProjectName:      "missing-proj",
+				ProjectID:        "missing-proj",
 				ClusterName:      cluster,
 				DatabaseUsername: username,
-			},
-			pair: ConnSecretPair{
-				ProjectID: projectID,
-				User:      user,
-				Endpoint:  depEndpoint,
+				ConnectionType:   connectionType,
 			},
 			result: expectedResult{
 				expectedResult: ctrl.Result{},
@@ -656,14 +475,10 @@ func Test_handleDelete(t *testing.T) {
 		},
 		"success: delete existing secret": {
 			ids: ConnSecretIdentifiers{
-				ProjectName:      projectName,
+				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
-			},
-			pair: ConnSecretPair{
-				ProjectID: projectID,
-				User:      user,
-				Endpoint:  depEndpoint,
+				ConnectionType:   connectionType,
 			},
 			result: expectedResult{
 				expectedResult: ctrl.Result{},
@@ -681,7 +496,7 @@ func Test_handleDelete(t *testing.T) {
 				},
 			}
 
-			res, err := r.handleDelete(context.Background(), req, &tc.ids, &tc.pair)
+			res, err := r.handleDelete(context.Background(), req, &tc.ids)
 			assert.Equal(t, tc.result.expectedResult, res)
 
 			if tc.result.expectedError != nil {
@@ -694,13 +509,8 @@ func Test_handleDelete(t *testing.T) {
 				return
 			}
 
-			resolvedProjectName := tc.ids.ProjectName
-			if resolvedProjectName == "" {
-				resolvedProjectName, _ = tc.pair.Endpoint.GetProjectName(context.Background())
-			}
-
 			var s corev1.Secret
-			secretName := CreateK8sFormat(resolvedProjectName, tc.ids.ClusterName, tc.ids.DatabaseUsername)
+			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.ClusterName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
 			getErr := r.Client.Get(context.Background(), types.NamespacedName{Namespace: "test-ns", Name: secretName}, &s)
 			require.True(t, apiErrors.IsNotFound(getErr), "expected secret %s to be deleted", secretName)
 		})
@@ -714,11 +524,11 @@ func Test_handleUpsert(t *testing.T) {
 	}
 
 	const (
-		ns          = "test-ns"
-		cluster     = "cluster1"
-		username    = "admin"
-		projectID   = "test-project-id"
-		projectName = "my-project-name"
+		ns             = "test-ns"
+		cluster        = "cluster1"
+		username       = "admin"
+		projectID      = "test-project-id"
+		connectionType = "deployment"
 	)
 
 	type testCase struct {
@@ -739,26 +549,12 @@ func Test_handleUpsert(t *testing.T) {
 	}
 
 	tests := map[string]testCase{
-		"fail: upserting requires project resolution": {
-			ids: ConnSecretIdentifiers{
-				ClusterName:      cluster,
-				DatabaseUsername: username,
-			},
-			pair: ConnSecretPair{
-				ProjectID: projectID,
-				User:      nil,
-				Endpoint:  nil,
-			},
-			result: expectedResult{
-				expectedResult: ctrl.Result{},
-				expectedError:  ErrUnresolvedProjectName,
-			},
-		},
 		"fail: cannot build data": {
 			ids: ConnSecretIdentifiers{
-				ProjectName:      projectName,
+				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
+				ConnectionType:   connectionType,
 			},
 			pair: ConnSecretPair{
 				ProjectID: projectID,
@@ -772,10 +568,10 @@ func Test_handleUpsert(t *testing.T) {
 		},
 		"success: upsert secret": {
 			ids: ConnSecretIdentifiers{
-				ProjectName:      projectName,
+				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
-				ProjectID:        projectID,
+				ConnectionType:   connectionType,
 			},
 			pair: ConnSecretPair{
 				ProjectID: projectID,
@@ -808,13 +604,9 @@ func Test_handleUpsert(t *testing.T) {
 			if tc.pair.Endpoint == nil || tc.pair.User == nil {
 				return
 			}
-			resolvedProjectName := tc.ids.ProjectName
-			if resolvedProjectName == "" {
-				resolvedProjectName, _ = tc.pair.Endpoint.GetProjectName(context.Background())
-			}
 
 			var s corev1.Secret
-			secretName := CreateK8sFormat(resolvedProjectName, tc.ids.ClusterName, tc.ids.DatabaseUsername)
+			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.ClusterName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
 			require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: ns, Name: secretName}, &s))
 
 			require.Equal(t, CredLabelVal, s.Labels[TypeLabelKey])
@@ -833,11 +625,11 @@ func Test_ensureSecret(t *testing.T) {
 	}
 
 	const (
-		ns          = "test-ns"
-		cluster     = "cluster1"
-		username    = "admin"
-		projectID   = "test-project-id"
-		projectName = "my-project-name"
+		ns             = "test-ns"
+		cluster        = "cluster1"
+		username       = "admin"
+		projectID      = "test-project-id"
+		connectionType = "deployment"
 	)
 
 	r := createDummyEnv(t, nil)
@@ -872,9 +664,9 @@ func Test_ensureSecret(t *testing.T) {
 		"fail: invalid URL bubbles up and prevents creation": {
 			ids: ConnSecretIdentifiers{
 				ProjectID:        projectID,
-				ProjectName:      projectName,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
+				ConnectionType:   connectionType,
 			},
 			pair: ConnSecretPair{User: user},
 			data: ConnSecretData{
@@ -887,9 +679,9 @@ func Test_ensureSecret(t *testing.T) {
 		"success: create with private endpoints": {
 			ids: ConnSecretIdentifiers{
 				ProjectID:        projectID,
-				ProjectName:      "new-project-name",
 				ClusterName:      cluster,
 				DatabaseUsername: username,
+				ConnectionType:   connectionType,
 			},
 			pair:   ConnSecretPair{User: user},
 			data:   connData,
@@ -898,9 +690,9 @@ func Test_ensureSecret(t *testing.T) {
 		"success: update existing secret": {
 			ids: ConnSecretIdentifiers{
 				ProjectID:        projectID,
-				ProjectName:      projectName,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
+				ConnectionType:   connectionType,
 			},
 			pair:   ConnSecretPair{User: user},
 			data:   connData,
@@ -917,7 +709,7 @@ func Test_ensureSecret(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			secretName := CreateK8sFormat(tc.ids.ProjectName, tc.ids.ClusterName, tc.ids.DatabaseUsername)
+			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.ClusterName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
 			var s corev1.Secret
 			getErr := r.Client.Get(context.Background(), types.NamespacedName{Namespace: ns, Name: secretName}, &s)
 			require.NoError(t, getErr)

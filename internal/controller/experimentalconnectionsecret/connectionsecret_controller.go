@@ -61,7 +61,7 @@ type Endpoint interface {
 	IsReady() bool
 	GetScopeType() akov2.ScopeType
 	GetProjectID(ctx context.Context) (string, error)
-	GetProjectName(ctx context.Context) (string, error)
+	GetConnectionType() string
 
 	ListObj() client.ObjectList
 	ExtractList(client.ObjectList) ([]Endpoint, error)
@@ -99,7 +99,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		switch {
 		case errors.Is(err, ErrMissingPairing):
 			log.Debugw("paired resource is missing; scheduling deletion of connection secrets")
-			return r.handleDelete(ctx, req, ids, pair)
+			return r.handleDelete(ctx, req, ids)
 		case errors.Is(err, ErrAmbiguousPairing):
 			log.Errorw("failed to load paired resources; ambigous parent resources", "error", err)
 			return workflow.Terminate(workflow.ConnSecretPairNotLoaded, err).ReconcileResult()
@@ -117,13 +117,13 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	if expired {
 		log.Debugw("user is expired; scheduling deletion of connection secrets")
-		return r.handleDelete(ctx, req, ids, pair)
+		return r.handleDelete(ctx, req, ids)
 	}
 
 	// Check that scopes are still valid
 	if !allowsByScopes(pair.User, pair.Endpoint.GetName(), pair.Endpoint.GetScopeType()) {
 		log.Infow("invalid scope; scheduling deletion of connection secrets")
-		return r.handleDelete(ctx, req, ids, pair)
+		return r.handleDelete(ctx, req, ids)
 	}
 
 	// Paired resource must be ready
@@ -136,7 +136,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 func (r *ConnSecretReconciler) For() (client.Object, builder.Predicates) {
-	preds := append(r.GlobalPredicates, watch.SecretLabelPredicate(TypeLabelKey, ProjectLabelKey, ClusterLabelKey))
+	preds := append(r.GlobalPredicates, watch.SecretLabelPredicate(TypeLabelKey, ProjectLabelKey, ClusterLabelKey, DatabaseUserLabelKey))
 	return &corev1.Secret{}, builder.WithPredicates(preds...)
 }
 
@@ -199,7 +199,7 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 				continue
 			}
 
-			name := CreateInternalFormat(projectID, ep.GetName(), u.Spec.Username)
+			name := CreateInternalFormat(projectID, ep.GetName(), u.Spec.Username, ep.GetConnectionType())
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: types.NamespacedName{Namespace: u.Namespace, Name: name},
 			})

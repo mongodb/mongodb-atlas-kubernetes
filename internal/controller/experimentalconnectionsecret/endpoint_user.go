@@ -31,17 +31,3 @@ func (r *ConnSecretReconciler) getUserProjectID(ctx context.Context, user *akov2
 	}
 	return resolveProjectIDByKey(ctx, r.Client, user.AtlasProjectObjectKey())
 }
-
-// GetUserProjectName retrives the project name from the AtlasDatabaseUser (either by getting K8s AtlasProject or SDK calls)
-func (r *ConnSecretReconciler) getUserProjectName(ctx context.Context, user *akov2.AtlasDatabaseUser) (string, error) {
-	if user == nil {
-		return "", fmt.Errorf("nil user")
-	}
-	if user.Spec.ProjectRef != nil && user.Spec.ProjectRef.Name != "" {
-		return resolveProjectNameByKey(ctx, r.Client, user.AtlasProjectObjectKey())
-	}
-	if user.Spec.ConnectionSecret != nil && user.Spec.ConnectionSecret.Name != "" {
-		return resolveProjectNameBySDK(ctx, r.Client, r.AtlasProvider, r.Log, r.GlobalSecretRef, user)
-	}
-	return "", ErrUnresolvedProjectName
-}

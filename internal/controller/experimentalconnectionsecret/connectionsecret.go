@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"net/url"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -39,10 +41,12 @@ import (
 const (
 	InternalSeparator = "$"
 
-	ProjectLabelKey = "atlas.mongodb.com/project-id"
-	ClusterLabelKey = "atlas.mongodb.com/cluster-name"
-	TypeLabelKey    = "atlas.mongodb.com/type"
-	CredLabelVal    = "credentials"
+	ProjectLabelKey      = "atlas.mongodb.com/project-id"
+	ClusterLabelKey      = "atlas.mongodb.com/cluster-name"
+	TypeLabelKey         = "atlas.mongodb.com/type"
+	DatabaseUserLabelKey = "atlas.mongodb.com/database-user-name"
+	ConnectionTypelKey   = "atlas.mongodb.com/connection-type"
+	CredLabelVal         = "credentials"
 
 	userNameKey     = "username"
 	passwordKey     = "password"
@@ -54,21 +58,20 @@ const (
 )
 
 var (
-	ErrInternalFormatErr     = errors.New("identifiers could not be loaded from internal format")
-	ErrK8SFormatErr          = errors.New("identifiers could not be loaded from k8s format")
-	ErrMissingPairing        = errors.New("missing user/endpoint")
-	ErrAmbiguousPairing      = errors.New("multiple users/endpoints with the same name found")
-	ErrUnresolvedProjectID   = errors.New("could not resolve the project id")
-	ErrUnresolvedProjectName = errors.New("could not resolve the project name")
+	ErrInternalFormatErr   = errors.New("identifiers could not be loaded from internal format")
+	ErrK8SFormatErr        = errors.New("identifiers could not be loaded from k8s format")
+	ErrMissingPairing      = errors.New("missing user/endpoint")
+	ErrAmbiguousPairing    = errors.New("multiple users/endpoints with the same name found")
+	ErrUnresolvedProjectID = errors.New("could not resolve the project id")
 )
 
 // ConnnSecretIdentifiers stores all the necessary information that will
 // be needed to identiy and get a K8s connection secret
 type ConnSecretIdentifiers struct {
 	ProjectID        string
-	ProjectName      string
 	ClusterName      string
 	DatabaseUsername string
+	ConnectionType   string
 }
 
 // ConnectionData contains all connection information required to populate
@@ -86,21 +89,13 @@ type PrivateLinkConnURLs struct {
 	PvtShardConnURL string
 }
 
-// CreateK8sFormat returns the Secret name in the Kubernetes naming format: <projectName>-<clusterName>-<username>
-func CreateK8sFormat(projectName string, clusterName string, databaseUsername string) string {
-	return strings.Join([]string{
-		kube.NormalizeIdentifier(projectName),
-		kube.NormalizeIdentifier(clusterName),
-		kube.NormalizeIdentifier(databaseUsername),
-	}, "-")
-}
-
 // CreateInternalFormat returns the Secret name in the internal format used by watchers: <projectID>$<clusterName>$<username>
-func CreateInternalFormat(projectID string, clusterName string, databaseUsername string) string {
+func CreateInternalFormat(projectID string, clusterName string, databaseUsername string, connectionType string) string {
 	return strings.Join([]string{
 		projectID,
 		kube.NormalizeIdentifier(clusterName),
 		kube.NormalizeIdentifier(databaseUsername),
+		kube.NormalizeIdentifier(connectionType),
 	}, InternalSeparator)
 }
 
@@ -110,57 +105,52 @@ func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.Na
 	if strings.Contains(req.Name, InternalSeparator) {
 		return r.identifiersFromInternalName(req)
 	}
-
 	return r.identifiersFromK8s(ctx, req)
 }
 
-// identifiersFromInternalName loads the identifiers for the internal format
-// === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>
+// identifiersFromInternalName parses identifiers from the internal format.
+// === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>$<ConnectionType>
 func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	parts := strings.Split(req.Name, InternalSeparator)
-	if len(parts) != 3 {
+	if len(parts) != 4 {
 		return nil, ErrInternalFormatErr
 	}
-	if parts[0] == "" || parts[1] == "" || parts[2] == "" {
+	if parts[0] == "" || parts[1] == "" || parts[2] == "" || parts[3] == "" {
 		return nil, ErrInternalFormatErr
 	}
 	return &ConnSecretIdentifiers{
 		ProjectID:        parts[0],
 		ClusterName:      parts[1],
 		DatabaseUsername: parts[2],
+		ConnectionType:   parts[3],
 	}, nil
 }
 
-// identifiersFromK8s loads the identifiers for the k8s format
-// === K8s format: <ProjectName>-<ClusterName>-<DatabaseUserName>
-// K8s secret must exists in the cluster
+// identifiersFromK8s retrieves identifiers from labels and annotations instead of parsing the secret name in Kubernetes format.
+// === K8s format: Use labels/annotations to extract metadata.
 func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
 	var secret corev1.Secret
 	if err := r.Client.Get(ctx, req, &secret); err != nil {
 		return nil, err
 	}
 	labels := secret.GetLabels()
+	annotations := secret.GetAnnotations()
+
 	projectID, hasProject := labels[ProjectLabelKey]
 	clusterName, hasCluster := labels[ClusterLabelKey]
-	if !hasProject || !hasCluster {
-		return nil, ErrK8SFormatErr
-	}
-	if projectID == "" || clusterName == "" {
-		return nil, ErrK8SFormatErr
-	}
-	sep := fmt.Sprintf("-%s-", clusterName)
-	parts := strings.Split(req.Name, sep)
-	if len(parts) != 2 {
-		return nil, ErrK8SFormatErr
-	}
-	if parts[0] == "" || parts[1] == "" {
-		return nil, ErrK8SFormatErr
+	databaseUsername, hasUser := labels[DatabaseUserLabelKey]
+	connectionType, hasConnectionType := annotations[ConnectionTypelKey]
+
+	// Validate required fields
+	if !hasProject || !hasCluster || !hasUser || !hasConnectionType || projectID == "" || clusterName == "" || databaseUsername == "" || connectionType == "" {
+		err := ErrK8SFormatErr
+		return nil, err
 	}
 	return &ConnSecretIdentifiers{
 		ProjectID:        projectID,
-		ProjectName:      parts[0],
 		ClusterName:      clusterName,
-		DatabaseUsername: parts[1],
+		DatabaseUsername: databaseUsername,
+		ConnectionType:   connectionType,
 	}, nil
 }
 
@@ -228,64 +218,15 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIden
 	}, ErrMissingPairing
 }
 
-// resolveProject attempts to find the project name, required for creating connection secrets
-// as it is used in metadata.name
-func (r *ConnSecretReconciler) resolveProjectName(
-	ctx context.Context,
-	ids *ConnSecretIdentifiers,
-	pair *ConnSecretPair,
-) (string, error) {
-	if ids != nil && ids.ProjectName != "" {
-		return ids.ProjectName, nil
-	}
-
-	// project name resolution requires at least on parent to be available
-	if pair == nil {
-		return "", ErrUnresolvedProjectName
-	}
-
-	var err error
-	var projectName string
-	// Try resolving from the Endpoint if present
-	if pair.Endpoint != nil {
-		projectName, err = pair.Endpoint.GetProjectName(ctx)
-		if projectName != "" {
-			return kube.NormalizeIdentifier(projectName), nil
-		}
-	}
-
-	// Fallback, try resolving from the User if present
-	if pair.User != nil {
-		if name, uerr := r.getUserProjectName(ctx, pair.User); name != "" {
-			return kube.NormalizeIdentifier(name), nil
-		} else if err == nil {
-			err = uerr
-		}
-	}
-
-	if err == nil {
-		err = ErrUnresolvedProjectName
-	}
-	return "", err
-}
-
 // handleDelete ensures that the connection secret from the paired resource and identifiers will get deleted
 func (r *ConnSecretReconciler) handleDelete(
 	ctx context.Context,
 	req ctrl.Request,
 	ids *ConnSecretIdentifiers,
-	pair *ConnSecretPair,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
 
-	// project name is required for metadata.name
-	projectName, err := r.resolveProjectName(ctx, ids, pair)
-	if err != nil {
-		log.Errorw("failed to resolve project name", "error", err)
-		return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
-	}
-
-	name := CreateK8sFormat(projectName, ids.ClusterName, ids.DatabaseUsername)
+	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, ids.ConnectionType)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -316,16 +257,7 @@ func (r *ConnSecretReconciler) handleUpsert(
 	pair *ConnSecretPair,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-
-	// project name is required for metadata.name
-	projectName, err := r.resolveProjectName(ctx, ids, pair)
-	if err != nil {
-		log.Errorw("failed to resolve project name", "error", err)
-		return workflow.Terminate(workflow.ConnSecretUnresolvedProjectName, err).ReconcileResult()
-	}
-	ids.ProjectName = projectName
-	log.Debugw("project name resolved for upsert", "projectName", projectName)
-
+	log.Debugw("Starting handleUpsert", "ConnSecretIdentifiers", ids, "AtlasDatabaseUser", pair.User)
 	// create the connection data that will populate secret.stringData
 	data, err := pair.Endpoint.BuildConnData(ctx, pair.User)
 	if err != nil {
@@ -349,9 +281,11 @@ func (r *ConnSecretReconciler) ensureSecret(
 	data ConnSecretData,
 ) error {
 	namespace := pair.User.GetNamespace()
-	log := r.Log.With("ns", namespace, "project", ids.ProjectName)
+	log := r.Log.With("ns", namespace, "project", ids.ProjectID)
 
-	name := CreateK8sFormat(ids.ProjectName, ids.ClusterName, ids.DatabaseUsername)
+	endpointType := ids.ConnectionType
+	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, endpointType)
+
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -359,19 +293,19 @@ func (r *ConnSecretReconciler) ensureSecret(
 		},
 	}
 
-	// fills the secret.stringData with the information stored in ConnSecretData
-	if err := fillConnSecretData(secret, ids, data); err != nil {
+	// Fills the secret.stringData with the information stored in ConnSecretData
+	if err := fillConnSecretData(secret, ids, data, endpointType); err != nil {
 		log.Errorw("failed to fill secret data", "reason", workflow.ConnSecretFailedToFillData, "error", err)
 		return err
 	}
 
-	// adds the owner to be the AtlasDatabaseUser for garbage collecting
+	// Add the owner to be the AtlasDatabaseUser for garbage collection
 	if err := controllerutil.SetControllerReference(pair.User, secret, r.Scheme); err != nil {
 		log.Errorw("failed to set controller owner", "reason", workflow.ConnSecretFailedToSetOwnerReferences, "error", err)
 		return err
 	}
 
-	// upsert secret in k8s
+	// Upsert the secret in Kubernetes
 	if err := r.Client.Create(ctx, secret); err != nil {
 		if apiErrors.IsAlreadyExists(err) {
 			current := &corev1.Secret{}
@@ -393,7 +327,7 @@ func (r *ConnSecretReconciler) ensureSecret(
 }
 
 // fillConnSecretData converts the ConnSecretData into secret.stringData
-func fillConnSecretData(secret *corev1.Secret, ids *ConnSecretIdentifiers, data ConnSecretData) error {
+func fillConnSecretData(secret *corev1.Secret, ids *ConnSecretIdentifiers, data ConnSecretData, endpointType string) error {
 	var err error
 	username := data.DBUserName
 	password := data.Password
@@ -417,9 +351,14 @@ func fillConnSecretData(secret *corev1.Secret, ids *ConnSecretIdentifiers, data 
 	}
 
 	secret.Labels = map[string]string{
-		TypeLabelKey:    CredLabelVal,
-		ProjectLabelKey: ids.ProjectID,
-		ClusterLabelKey: ids.ClusterName,
+		TypeLabelKey:         CredLabelVal,
+		ProjectLabelKey:      ids.ProjectID,
+		ClusterLabelKey:      ids.ClusterName,
+		DatabaseUserLabelKey: ids.DatabaseUsername,
+	}
+
+	secret.Annotations = map[string]string{
+		ConnectionTypelKey: endpointType,
 	}
 
 	secret.Data = map[string][]byte{
@@ -455,4 +394,21 @@ func CreateURL(hostname, username, password string) (string, error) {
 	}
 	u.User = url.UserPassword(username, password)
 	return u.String(), nil
+}
+
+// ComputeHash generates a hash based on key connection metadata for immutable secret naming
+func ComputeHash(projectID, clusterName, userName, endpointType string) string {
+	hashInput := fmt.Sprintf("%s-%s-%s-%s", projectID, clusterName, userName, endpointType)
+	hasher := fnv.New64a()
+
+	hasher.Write([]byte(hashInput))
+	rawHash := hasher.Sum64()
+
+	encodedHash := rand.SafeEncodeString(fmt.Sprint(rawHash))
+	return encodedHash
+}
+
+func K8sConnectionSecretName(projectID, clusterName, userName, endpointType string) string {
+	hash := ComputeHash(projectID, clusterName, userName, endpointType)
+	return fmt.Sprintf("connection-%s", hash)
 }
