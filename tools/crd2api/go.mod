@@ -1,4 +1,4 @@
-module github.com/josvazg/akotranslate
+module github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api
 
 go 1.24.7
 

@@ -3,7 +3,7 @@
 package v1
 
 import (
-	"github.com/josvazg/akotranslate/pkg/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	admin2025 "go.mongodb.org/atlas-sdk/v20250312005/admin"
 
-	"github.com/josvazg/akotranslate/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/internal/pointer"
 )
 
 type testStruct struct {

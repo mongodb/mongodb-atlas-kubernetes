@@ -31,11 +31,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/josvazg/akotranslate/internal/crds"
-	"github.com/josvazg/akotranslate/internal/pointer"
-	"github.com/josvazg/akotranslate/pkg/k8s"
-	"github.com/josvazg/akotranslate/pkg/translate"
-	v1 "github.com/josvazg/akotranslate/pkg/translate/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/internal/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/translate"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/translate/samples/v1"
 )
 
 const (
