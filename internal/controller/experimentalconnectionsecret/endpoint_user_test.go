@@ -196,27 +196,3 @@ func createDummyUser(t *testing.T) *akov2.AtlasDatabaseUser {
 
 	return user
 }
-
-func createDummyUserSDK(t *testing.T) *akov2.AtlasDatabaseUser {
-	t.Helper()
-
-	user := &akov2.AtlasDatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-user",
-			Namespace: "test-ns",
-		},
-		Spec: akov2.AtlasDatabaseUserSpec{
-			ProjectDualReference: akov2.ProjectDualReference{
-				ExternalProjectRef: &akov2.ExternalProjectReference{ID: "test-project-id"},
-				ConnectionSecret:   &api.LocalObjectReference{Name: "sdk-creds"},
-			},
-		},
-		Status: status.AtlasDatabaseUserStatus{
-			Common: api.Common{
-				Conditions: []api.Condition{{Type: api.ReadyType, Status: corev1.ConditionTrue}},
-			},
-		},
-	}
-
-	return user
-}
