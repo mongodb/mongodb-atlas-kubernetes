@@ -1,4 +1,4 @@
-module github.com/mongodb/atlas2crd
+module tools/openapi2crd
 
 go 1.24
 

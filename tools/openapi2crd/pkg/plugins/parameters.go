@@ -2,9 +2,10 @@ package plugins
 
 import (
 	"fmt"
+
 	"github.com/getkin/kin-openapi/openapi3"
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 type ParametersPlugin struct {

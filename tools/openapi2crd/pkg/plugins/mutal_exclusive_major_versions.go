@@ -2,9 +2,10 @@ package plugins
 
 import (
 	"fmt"
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"strings"
+
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 // (has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))

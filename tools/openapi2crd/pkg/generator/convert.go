@@ -15,14 +15,13 @@ limitations under the License.
 package generator
 
 import (
-	"k8s.io/utils/ptr"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stoewer/go-strcase"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-
-	configv1alpha1 "github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
+	"k8s.io/utils/ptr"
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 // SchemaPropsToJSONProps converts openapi3.Schema to a JSONProps

@@ -17,14 +17,15 @@ package generator
 import (
 	"context"
 	"fmt"
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mongodb/atlas2crd/pkg/apis/config/v1alpha1"
-	"github.com/mongodb/atlas2crd/pkg/atlas"
-	"github.com/mongodb/atlas2crd/pkg/config"
-	"github.com/mongodb/atlas2crd/pkg/plugins"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"log"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"sigs.k8s.io/yaml"
+	"tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"tools/openapi2crd/pkg/atlas"
+	"tools/openapi2crd/pkg/config"
+	"tools/openapi2crd/pkg/plugins"
 )
 
 type Generator struct {

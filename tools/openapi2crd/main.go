@@ -6,11 +6,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mongodb/atlas2crd/pkg/config"
-	"github.com/mongodb/atlas2crd/pkg/exporter"
-	"github.com/mongodb/atlas2crd/pkg/generator"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"tools/openapi2crd/pkg/config"
+	"tools/openapi2crd/pkg/exporter"
+	"tools/openapi2crd/pkg/generator"
 )
 
 const (
