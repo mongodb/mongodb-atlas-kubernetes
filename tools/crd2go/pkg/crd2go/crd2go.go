@@ -13,12 +13,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/josvazg/crd2go/internal/crd"
-	"github.com/josvazg/crd2go/internal/crd/hooks"
-	"github.com/josvazg/crd2go/internal/gotype"
-	"github.com/josvazg/crd2go/internal/render"
-	"github.com/josvazg/crd2go/internal/run"
-	"github.com/josvazg/crd2go/pkg/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd/hooks"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/render"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/run"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
 )
 
 const (

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/josvazg/crd2go/internal/crd"
-	"github.com/josvazg/crd2go/internal/gotype"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
 )
 
 // StructHookFn converts and OpenAPI object to a GoType struct

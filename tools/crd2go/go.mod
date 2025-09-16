@@ -1,4 +1,4 @@
-module github.com/josvazg/crd2go
+module github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go
 
 go 1.24.3
 

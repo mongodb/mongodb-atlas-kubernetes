@@ -1,15 +1,15 @@
 package render
 
 import (
-	"github.com/josvazg/crd2go/internal/gotype"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
 )
 
 type CRDRenderRequest struct {
 	gotype.Request
 	Filename string
-	Version string
-	Kind string
-	Type *gotype.GoType
+	Version  string
+	Kind     string
+	Type     *gotype.GoType
 }
 
 type CRD2GoRenderer interface {

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/josvazg/crd2go/internal/checkerr"
-	"github.com/josvazg/crd2go/internal/run"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/checkerr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/run"
 )
 
 const (

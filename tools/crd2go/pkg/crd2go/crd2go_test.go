@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/josvazg/crd2go/internal/checkerr"
-	"github.com/josvazg/crd2go/internal/crd"
-	"github.com/josvazg/crd2go/internal/gotype"
-	"github.com/josvazg/crd2go/k8s"
-	"github.com/josvazg/crd2go/pkg/config"
-	"github.com/josvazg/crd2go/pkg/crd2go"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/checkerr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/crd2go"
 )
 
 //go:embed samples/*

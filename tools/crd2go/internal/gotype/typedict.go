@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/josvazg/crd2go/pkg/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
 )
 
 // TypeDict is a dictionary of Go types, used to track and ensure unique type names.

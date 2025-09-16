@@ -5,7 +5,7 @@
 package v1
 
 import (
-	"github.com/josvazg/crd2go/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
