@@ -11,6 +11,10 @@ updates:
       - "josvazg"
       - "roothorp"
       - "s-urbaniak"
+    groups:
+      kubernetes:
+        patterns:
+          - "k8s.io*"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
