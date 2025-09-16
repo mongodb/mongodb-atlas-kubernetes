@@ -1,0 +1,77 @@
+# CRD2Go CI
+name: CRD2Go CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'tools/crd2go/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'tools/crd2go/**'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{github.event.pull_request.head.sha}}
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build
+      working-directory: ./tools/crd2go
+      run: go build -v ./...
+
+    - name: Test
+      working-directory: ./tools/crd2go
+      run: go test -race -cover -v ./...
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: v2.1
+        working-directory: ./tools/crd2go
+
+  gci:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{github.event.pull_request.head.sha}}
+
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.13.0
+      with:
+        project-path: ./tools/crd2go
+        enable-cache: 'true'
+
+    - name: gci
+      working-directory: ./tools/crd2go
+      run: |
+        echo "Did you run gofmt-gci?"
+        devbox run -- 'gci write --skip-generated -s standard -s default -s localmodule . && git diff-index --name-only HEAD && git diff-index --quiet HEAD --'
+
+  licenses:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{github.event.pull_request.head.sha}}
+
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.13.0
+      with:
+        project-path: ./tools/crd2go
+        enable-cache: 'true'
+
+    - name: Check license headers
+      working-directory: ./tools/crd2go
+      run: |
+        devbox run -- 'addlicense -check -l apache -c "MongoDB Inc" -ignore "**/*.md" -ignore "**/*.yaml" -ignore "**/*.yml" -ignore "**/*.nix" -ignore ".devbox/**" .'
