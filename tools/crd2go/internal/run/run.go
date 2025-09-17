@@ -16,16 +16,30 @@
 package run
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 )
 
 func Run(command string, args ...string) error {
 	log.Printf("Running:\n  %s %s", command, strings.Join(args, " "))
-	cmd := exec.Command(command, args...)
+	ctx := cancellableContext()
+	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func cancellableContext() context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	go func() {
+		<-sigChan
+		cancel()
+	}()
+	return ctx
 }

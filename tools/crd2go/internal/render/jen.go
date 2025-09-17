@@ -119,7 +119,7 @@ func renderDocFile(req *gotype.Request, group, version string) error {
 	overwrite := false
 	wc, err := req.CodeWriterFn("doc.go", overwrite)
 	if err != nil {
-		return fmt.Errorf("failed to prepare doc.go for writting: %w", err)
+		return fmt.Errorf("failed to prepare doc.go for writing: %w", err)
 	}
 	if err := f.Render(wc); err != nil {
 		return fmt.Errorf("failed to write Go code to doc.go: %w", err)
@@ -153,7 +153,7 @@ func renderSchemeFile(req *gotype.Request, group, version string) error {
 	overwrite := true
 	wc, err := req.CodeWriterFn("scheme.go", overwrite)
 	if err != nil {
-		return fmt.Errorf("failed to prepare scheme.go for writting: %w", err)
+		return fmt.Errorf("failed to prepare scheme.go for writing: %w", err)
 	}
 	if err := f.Render(wc); err != nil {
 		return fmt.Errorf("failed to write Go code to scheme.go: %w", err)
@@ -241,10 +241,7 @@ func generateField(f *jen.File, field *gotype.GoField) (jen.Code, error) {
 	if field.GoType == nil {
 		return nil, fmt.Errorf("field %q has no Go type", field.Name)
 	}
-	typeRefCode, err := qualifyRequired(generateTypeRef(f, field.GoType), field.Required)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate field type: %w", err)
-	}
+	typeRefCode := qualifyRequired(generateTypeRef(f, field.GoType), field.Required)
 	return fieldCode.Add(typeRefCode).Add(generateJSONTag(field)).Line(), nil
 }
 
@@ -259,11 +256,11 @@ func generateFieldComment(code *jen.Statement, name, comment string) *jen.Statem
 }
 
 // qualifyRequired qualifies the type reference based on whether the field is required
-func qualifyRequired(typeRef *jen.Statement, required bool) (*jen.Statement, error) {
+func qualifyRequired(typeRef *jen.Statement, required bool) *jen.Statement {
 	if required {
-		return typeRef, nil
+		return typeRef
 	}
-	return jen.Op("*").Add(typeRef), nil
+	return jen.Op("*").Add(typeRef)
 }
 
 // generateTypeRef generates a type reference for a given GoType

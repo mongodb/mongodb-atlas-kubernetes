@@ -169,7 +169,9 @@ imports: []`,
 }
 
 func TestCodeFileForCRDAtPath(t *testing.T) {
-	tmpDir, err := os.MkdirTemp(".", "test-code-file-for-crd-path")
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	tmpDir, err := os.MkdirTemp(cwd, "test-code-file-for-crd-path")
 	require.NoError(t, err)
 	defer checkerr.CheckErr("removing test temp dir", func() error { return os.RemoveAll(tmpDir) })
 
@@ -185,6 +187,9 @@ func TestCodeFileForCRDAtPath(t *testing.T) {
 	defer checkerr.CheckErr("closing 2nd testfile.go", w2.Close)
 
 	_, err = cwFn("..", true)
+	assert.ErrorContains(t, err, "unsafe file path")
+
+	_, err = cwFn("Bad/name", true)
 	assert.ErrorContains(t, err, "failed to create file")
 }
 
