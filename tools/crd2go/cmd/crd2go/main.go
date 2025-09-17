@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/checkerr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/fileinput"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/crd2go"
 )
@@ -41,7 +42,7 @@ func main() {
 }
 
 func generate(input, output, config string) (*config.Config, error) {
-	f, err := os.Open(config)
+	f, err := os.Open(fileinput.MustBeSafe(config))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open configuration file: %w", err)
 	}

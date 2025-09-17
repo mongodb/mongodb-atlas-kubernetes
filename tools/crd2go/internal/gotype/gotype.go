@@ -96,7 +96,7 @@ func NewAutoImportType(importType *config.ImportedTypeConfig) *GoType {
 	}
 }
 
-// AddImportInfo allows to attach teh import information to a type
+// AddImportInfo allows to attach the import information to a type
 func AddImportInfo(gt *GoType, alias, packagePath string) *GoType {
 	effectiveAlias := alias
 	if effectiveAlias == "" {
