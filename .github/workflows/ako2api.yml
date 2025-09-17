@@ -1,0 +1,74 @@
+# AKO2API CI
+name: AKO2API CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'tools/ako2api/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'tools/ako2api/**'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{github.event.pull_request.head.sha}}
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build
+      working-directory: ./tools/ako2api
+      run: go build -v ./...
+
+    - name: Test
+      working-directory: ./tools/ako2api
+      run: go test -race -cover -v ./...
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: v2.1
+        working-directory: ./tools/ako2api
+
+  gci:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{github.event.pull_request.head.sha}}
+
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.13.0
+      with:
+        project-path: ./tools/ako2api
+        enable-cache: 'true'
+
+    - name: gci
+      working-directory: ./tools/ako2api
+      run: devbox run -- 'mage gci'
+
+  addlicense:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{github.event.pull_request.head.sha}}
+
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.13.0
+      with:
+        project-path: ./tools/ako2api
+        enable-cache: 'true'
+
+    - name: Check license headers
+      working-directory: ./tools/ako2api
+      run: devbox run -- 'mage addlicense'
