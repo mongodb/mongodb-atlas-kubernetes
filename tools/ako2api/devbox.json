@@ -4,7 +4,9 @@
     "go@latest",
     "vscodium@latest",
     "gci@latest",
-    "golangci-lint@latest"
+    "golangci-lint@latest",
+    "addlicense@latest",
+    "mage@latest"
   ],
   "shell": {
     "init_hook": [

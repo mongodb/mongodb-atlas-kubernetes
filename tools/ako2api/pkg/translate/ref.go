@@ -40,7 +40,7 @@ var (
 
 	encoders = map[string]EncodeDecodeFunc{
 		"v1/secrets": func(in any) (any, error) {
-			return secretEncode((in).(string))
+			return secretEncode((in).(string)), nil
 		},
 	}
 
@@ -229,7 +229,7 @@ func (km kubeMapping) FetchReferencedValue(target string, reference map[string]a
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return nil, fmt.Errorf("failed to resolve reference properties: %w", err)
 	}
-	if err == ErrNotFound {
+	if errors.Is(err, ErrNotFound) {
 		var err error
 		value, err = km.fetchFromPropertySelectors(resourceMap, target)
 		if errors.Is(err, ErrNotFound) {

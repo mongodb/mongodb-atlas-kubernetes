@@ -28,6 +28,6 @@ func secretDecode(value string) (string, error) {
 	return string(bytes), nil
 }
 
-func secretEncode(value string) (string, error) {
-	return base64.StdEncoding.EncodeToString(([]byte)(value)), nil
+func secretEncode(value string) string {
+	return base64.StdEncoding.EncodeToString(([]byte)(value))
 }
