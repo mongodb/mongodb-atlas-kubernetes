@@ -4,6 +4,7 @@ go 1.24.3
 
 require (
 	github.com/dave/jennifer v1.7.1
+	github.com/magefile/mage v1.15.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/text v0.24.0
 	gopkg.in/yaml.v3 v3.0.1

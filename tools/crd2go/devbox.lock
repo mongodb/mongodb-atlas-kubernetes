@@ -365,6 +365,54 @@
         }
       }
     },
+    "mage@latest": {
+      "last_modified": "2025-07-28T17:09:23Z",
+      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#mage",
+      "source": "devbox-search",
+      "version": "1.15.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ckcxxf6r85zndgx4rh3x3g570sysczf2-mage-1.15.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/ckcxxf6r85zndgx4rh3x3g570sysczf2-mage-1.15.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1xln1pdk907lxm25dpdvx1xmp1rh43pd-mage-1.15.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/1xln1pdk907lxm25dpdvx1xmp1rh43pd-mage-1.15.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gwwj202lbp3smjdmnff18xr4fm439sn4-mage-1.15.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gwwj202lbp3smjdmnff18xr4fm439sn4-mage-1.15.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/8jyy6nrmi505iczgi7d19gddqk00qqc9-mage-1.15.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/8jyy6nrmi505iczgi7d19gddqk00qqc9-mage-1.15.0"
+        }
+      }
+    },
     "vscodium@latest": {
       "last_modified": "2025-04-07T13:23:10Z",
       "resolved": "github:NixOS/nixpkgs/b0b4b5f8f621bfe213b8b21694bab52ecfcbf30b#vscodium",

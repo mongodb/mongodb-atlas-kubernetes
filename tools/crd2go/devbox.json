@@ -8,7 +8,8 @@
     "gh@latest",
     "gci@latest",
     "golangci-lint@latest",
-    "addlicense@latest"
+    "addlicense@latest",
+    "mage@latest",
   ],
   "shell": {
     "init_hook": [
