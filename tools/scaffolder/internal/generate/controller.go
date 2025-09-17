@@ -27,10 +27,9 @@ const (
 	pkgCtrlState = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
-// FromConfig generates controllers and handlers based on the parsed configuration
-func FromConfig(configPath, crdKind string) error {
-	// Parse config using the new ParseConfig function
-	parsedConfig, err := ParseAtlas2CRDConfig(configPath, crdKind)
+// FromConfig generates controllers and handlers based on the parsed CRD result file
+func FromConfig(resultPath, crdKind string) error {
+	parsedConfig, err := ParseCRDConfig(resultPath, crdKind)
 	if err != nil {
 		return err
 	}
@@ -64,23 +63,29 @@ func FromConfig(configPath, crdKind string) error {
 	return nil
 }
 
-// PrintCRDs displays available CRDs from the config file
-func PrintCRDs(configPath string) error {
-	crds, err := ListCRDs(configPath)
+// PrintCRDs displays available CRDs from the result file
+func PrintCRDs(resultPath string) error {
+	crdInfos, err := ListCRDs(resultPath)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Available CRDs in %s:\n\n", configPath)
-	for _, crd := range crds {
-		fmt.Printf("Kind: %s\n", crd.GVK.Kind)
-		fmt.Printf("  Group: %s\n", crd.GVK.Group)
-		fmt.Printf("  Version: %s\n", crd.GVK.Version)
+	fmt.Printf("Available CRDs in %s:\n\n", resultPath)
+	for _, crd := range crdInfos {
+		fmt.Printf("Kind: %s\n", crd.Kind)
+		fmt.Printf("  Group: %s\n", crd.Group)
+		fmt.Printf("  Version: %s\n", crd.Version)
 		if len(crd.ShortNames) > 0 {
 			fmt.Printf("  Short Names: %s\n", strings.Join(crd.ShortNames, ", "))
 		}
 		if len(crd.Categories) > 0 {
 			fmt.Printf("  Categories: %s\n", strings.Join(crd.Categories, ", "))
+		}
+		if len(crd.Versions) > 0 {
+			fmt.Printf("  SDK Versions:\n")
+			for _, version := range crd.Versions {
+				fmt.Printf("    %s: %s\n", version.Version, version.AtlasSDKVersion)
+			}
 		}
 		fmt.Println()
 	}
@@ -109,7 +114,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 
 	// Service builder types for each version
 	for _, mapping := range mappings {
-		versionSuffix := mapping.Mapping.MajorVersion
+		versionSuffix := mapping.Version
 		f.Type().Id("serviceBuilderFunc"+versionSuffix).Func().Params(
 			jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "ClientSet"),
 		).Qual(fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/%s%s", atlasResourceName, versionSuffix), "Atlas"+resourceName+"Service")
@@ -123,7 +128,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 
 	// Service builder for each version
 	for _, mapping := range mappings {
-		versionSuffix := mapping.Mapping.MajorVersion
+		versionSuffix := mapping.Version
 		handlerFields = append(handlerFields, jen.Id("serviceBuilder"+versionSuffix).Id("serviceBuilderFunc"+versionSuffix))
 	}
 
@@ -148,7 +153,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	}
 
 	for _, mapping := range mappings {
-		versionSuffix := mapping.Mapping.MajorVersion
+		versionSuffix := mapping.Version
 		serviceBuilderValues[jen.Id("serviceBuilder"+versionSuffix)] = jen.Func().Params(jen.Id("clientSet").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "ClientSet")).Qual(fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/%s%s", atlasResourceName, versionSuffix), "Atlas"+resourceName+"Service").Block(
 			jen.Return(jen.Qual(fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/%s%s", atlasResourceName, versionSuffix), "NewAtlas"+resourceName+"Service").Call(jen.Id("clientSet").Dot("SdkClient" + versionSuffix + "006").Dot(atlasAPI))),
 		)
@@ -176,7 +181,7 @@ func generateHandlerFileWithMultipleVersions(dir, controllerName, resourceName s
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
 
 	for _, mapping := range mappings {
-		versionSuffix := mapping.Mapping.MajorVersion
+		versionSuffix := mapping.Version
 		translationPkg := fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/%s%s", atlasResourceName, versionSuffix)
 		f.ImportAlias(translationPkg, atlasResourceName+versionSuffix)
 	}
@@ -196,7 +201,7 @@ func generateHandlerFileWithMultipleVersions(dir, controllerName, resourceName s
 		jen.Var().Id("version").String(),
 		jen.BlockFunc(func(g *jen.Group) {
 			for _, mapping := range mappings {
-				versionSuffix := mapping.Mapping.MajorVersion
+				versionSuffix := mapping.Version
 				// Capitalize first letter of version (e.g., v20250312 -> V20250312)
 				capitalizedVersion := strings.ToUpper(string(versionSuffix[0])) + versionSuffix[1:]
 				g.If(jen.Id(strings.ToLower("a" + resourceName)).Dot("Spec").Dot(capitalizedVersion).Op("!=").Nil()).Block(
@@ -216,7 +221,7 @@ func generateHandlerFileWithMultipleVersions(dir, controllerName, resourceName s
 		jen.Comment("Return appropriate service for version"),
 		jen.Switch(jen.Id("version")).BlockFunc(func(g *jen.Group) {
 			for _, mapping := range mappings {
-				versionSuffix := mapping.Mapping.MajorVersion
+				versionSuffix := mapping.Version
 				g.Case(jen.Lit(versionSuffix)).Block(
 					jen.Return(jen.Id("h").Dot("serviceBuilder" + versionSuffix).Call(jen.Id("clientSet")).Op(",").Nil()),
 				)

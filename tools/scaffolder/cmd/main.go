@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	configPath string
-	crdKind    string
-	listCRDs   bool
+	inputPath string
+	crdKind   string
+	listCRDs  bool
 )
 
 func main() {
@@ -19,21 +19,21 @@ func main() {
 		Use:   "ako-controller-scaffolder",
 		Short: "Generate Kubernetes controllers for MongoDB Atlas CRDs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if configPath == "" {
-				return fmt.Errorf("--config is required")
+			if inputPath == "" {
+				return fmt.Errorf("--input is required")
 			}
 
 			if listCRDs {
-				return generate.PrintCRDs(configPath)
+				return generate.PrintCRDs(inputPath)
 			}
 
-			return generate.FromConfig(configPath, crdKind)
+			return generate.FromConfig(inputPath, crdKind)
 		},
 	}
 
-	rootCmd.Flags().StringVar(&configPath, "config", "", "Path to atlas2crd config file (required)")
+	rootCmd.Flags().StringVar(&inputPath, "input", "", "Path to openapi2crd result.yaml file (required)")
 	rootCmd.Flags().StringVar(&crdKind, "crd", "", "CRD kind to generate controller for")
-	rootCmd.Flags().BoolVar(&listCRDs, "list", false, "List available CRDs from config file")
+	rootCmd.Flags().BoolVar(&listCRDs, "list", false, "List available CRDs from result file")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
