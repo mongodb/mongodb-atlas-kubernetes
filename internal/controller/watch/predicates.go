@@ -95,6 +95,10 @@ func ReadyTransitionPredicate[T any](ready ReadyFunc[T]) predicate.Predicate {
 		GenericFunc: func(e event.GenericEvent) bool { return false },
 		DeleteFunc:  func(e event.DeleteEvent) bool { return true },
 		UpdateFunc: func(e event.UpdateEvent) bool {
+			if e.ObjectNew == nil || e.ObjectOld == nil {
+				return false
+			}
+
 			newObj, ok := e.ObjectNew.(T)
 			if !ok {
 				return false

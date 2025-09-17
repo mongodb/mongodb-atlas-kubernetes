@@ -129,7 +129,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 			},
 		},
-		"requque: resources are not ready yet": {
+		"re-enque: resources are not ready yet": {
 			reqName:    "test-project-id$cluster1$admin$deployment",
 			deployment: depl,
 			user: &akov2.AtlasDatabaseUser{

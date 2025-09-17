@@ -632,6 +632,7 @@ func Test_ensureSecret(t *testing.T) {
 
 	r := createDummyEnv(t, nil)
 	dbUser := createDummyUser(t)
+	dep := createDummyDeployment(t)
 
 	connData := ConnSecretData{
 		DBUserName: username,
@@ -652,6 +653,14 @@ func Test_ensureSecret(t *testing.T) {
 		},
 	}
 
+	depEndpoint := DeploymentEndpoint{
+		k8s:             r.Client,
+		provider:        r.AtlasProvider,
+		globalSecretRef: r.GlobalSecretRef,
+		log:             r.Log,
+		obj:             dep,
+	}
+
 	tests := map[string]struct {
 		ids      ConnSecretIdentifiers
 		secrets  []client.Object
@@ -668,7 +677,7 @@ func Test_ensureSecret(t *testing.T) {
 				ConnectionType:   connectionType,
 			},
 			user:     dbUser,
-			endpoint: nil,
+			endpoint: depEndpoint,
 			data: ConnSecretData{
 				DBUserName: username,
 				Password:   "test-pass",
@@ -684,7 +693,7 @@ func Test_ensureSecret(t *testing.T) {
 				ConnectionType:   connectionType,
 			},
 			user:     dbUser,
-			endpoint: nil,
+			endpoint: depEndpoint,
 			data:     connData,
 			result:   expectedResult{expectedError: nil},
 		},
@@ -696,7 +705,7 @@ func Test_ensureSecret(t *testing.T) {
 				ConnectionType:   connectionType,
 			},
 			user:     dbUser,
-			endpoint: nil,
+			endpoint: depEndpoint,
 			data:     connData,
 			result:   expectedResult{expectedError: nil},
 		},

@@ -401,13 +401,3 @@ func K8sConnectionSecretName(projectID, clusterName, userName, endpointType stri
 	hash := ComputeHash(projectID, clusterName, userName, endpointType)
 	return fmt.Sprintf("connection-%s", hash)
 }
-
-func (r *ConnSecretReconciler) getUserProjectID(ctx context.Context, user *akov2.AtlasDatabaseUser) (string, error) {
-	if user == nil {
-		return "", fmt.Errorf("nil user")
-	}
-	if user.Spec.ExternalProjectRef != nil && user.Spec.ExternalProjectRef.ID != "" {
-		return user.Spec.ExternalProjectRef.ID, nil
-	}
-	return resolveProjectIDByKey(ctx, r.Client, user.AtlasProjectObjectKey())
-}

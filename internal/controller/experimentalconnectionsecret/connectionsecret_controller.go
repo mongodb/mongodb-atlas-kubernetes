@@ -17,6 +17,7 @@ package experimentalconnectionsecret
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -77,13 +78,18 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Parse the request and load up the identifiers
 	ids, err := r.loadIdentifiers(ctx, req.NamespacedName)
-	if err != nil {
-		if apiErrors.IsNotFound(err) {
-			log.Debugw("Connection secret not found; assuming deleted")
-			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
-		}
-		log.Errorw("failed to parse connection secret request", "error", err)
+
+	errOccurred := err != nil
+	objectNotFound := errOccurred && apiErrors.IsNotFound(err)
+	failedToProcess := errOccurred && !objectNotFound
+
+	switch {
+	case failedToProcess:
+		log.Errorw("Failed to process request", "error", err)
 		return workflow.Terminate(workflow.ConnSecretInvalidName, err).ReconcileResult()
+	case objectNotFound:
+		log.Debugw("Connection secret not found; assuming deletion")
+		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 	}
 
 	// Load the paired resource
@@ -200,8 +206,6 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 	}
 	return reqs
 }
-
-// TODO: create indexers for DataFederation by projectID
 
 // listEndpointsByProject retrives all of the Endpoints that live under an AtlasProject
 func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, projectID string) ([]Endpoint, error) {
@@ -320,4 +324,14 @@ func NewConnectionSecretReconciler(
 	}
 
 	return r
+}
+
+func (r *ConnSecretReconciler) getUserProjectID(ctx context.Context, user *akov2.AtlasDatabaseUser) (string, error) {
+	if user == nil {
+		return "", fmt.Errorf("nil user")
+	}
+	if user.Spec.ExternalProjectRef != nil && user.Spec.ExternalProjectRef.ID != "" {
+		return user.Spec.ExternalProjectRef.ID, nil
+	}
+	return resolveProjectIDByKey(ctx, r.Client, user.AtlasProjectObjectKey())
 }
