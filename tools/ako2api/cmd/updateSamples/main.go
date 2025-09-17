@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 const (
@@ -62,11 +64,21 @@ func updateSamples() error {
 }
 
 func downloadTo(url, filename string) (int64, error) {
+	// #nosec G107 URL is safe as we are just adding a token, it cannot be re-pathed
+	//nolint:noctx
 	rsp, err := http.Get(url)
 	if err != nil {
 		return 0, fmt.Errorf("failed to download from %s: %w", url, err)
 	}
-	f, err := os.Create(filename)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get working directory: %w", err)
+	}
+	safeFilename := filepath.Clean(filename)
+	if !strings.HasPrefix(safeFilename, cwd) {
+		return 0, fmt.Errorf("unsafe filename input %q", filename)
+	}
+	f, err := os.Create(safeFilename)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create file %s: %w", filename, err)
 	}
@@ -87,6 +99,7 @@ func mustGetenv(name string) string {
 }
 
 func run(command string, args ...string) error {
+	//nolint:noctx
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

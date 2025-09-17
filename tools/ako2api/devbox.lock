@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "addlicense@latest": {
+      "last_modified": "2025-07-28T17:09:23Z",
+      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#addlicense",
+      "source": "devbox-search",
+      "version": "1.1.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/r3lhc2n8xj5ns43zrfdx1d4rsk6l0zgy-addlicense-1.1.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/r3lhc2n8xj5ns43zrfdx1d4rsk6l0zgy-addlicense-1.1.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/smjx8fp2r6ikxr6fv6vd9nws8j546hs3-addlicense-1.1.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/smjx8fp2r6ikxr6fv6vd9nws8j546hs3-addlicense-1.1.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gpfw7kfm0rm4gcpnz2cgkb3d4zxyn32s-addlicense-1.1.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gpfw7kfm0rm4gcpnz2cgkb3d4zxyn32s-addlicense-1.1.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/mxb6kb1b7lfklzmz020m0rdf7ppn0608-addlicense-1.1.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/mxb6kb1b7lfklzmz020m0rdf7ppn0608-addlicense-1.1.1"
+        }
+      }
+    },
     "gci@latest": {
       "last_modified": "2025-08-05T11:35:34Z",
       "resolved": "github:NixOS/nixpkgs/a683adc19ff5228af548c6539dbc3440509bfed3#gci",
@@ -50,8 +98,8 @@
       }
     },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "last_modified": "2025-09-05T01:14:44Z",
-      "resolved": "github:NixOS/nixpkgs/ca77296380960cd497a765102eeb1356eb80fed0?lastModified=1757034884&narHash=sha256-PgLSZDBEWUHpfTRfFyklmiiLBE1i1aGCtz4eRA3POao%3D"
+      "last_modified": "2025-09-16T13:27:06Z",
+      "resolved": "github:NixOS/nixpkgs/08b8f92ac6354983f5382124fef6006cade4a1c1?lastModified=1758029226&narHash=sha256-TjqVmbpoCqWywY9xIZLTf6ANFvDCXdctCjoYuYPYdMI%3D"
     },
     "go@latest": {
       "last_modified": "2025-07-28T17:09:23Z",

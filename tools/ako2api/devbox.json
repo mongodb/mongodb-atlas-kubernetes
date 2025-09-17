@@ -5,6 +5,7 @@
     "vscodium@latest",
     "gci@latest",
     "golangci-lint@latest",
+    "addlicense@latest",
     "mage@latest"
   ],
   "shell": {

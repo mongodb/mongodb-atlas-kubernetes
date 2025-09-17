@@ -955,6 +955,7 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 
+		//nolint:dupl
 		{
 			name: "cluster all fields",
 			test: func(t *testing.T) {
@@ -1277,6 +1278,7 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 
+		//nolint:dupl
 		{
 			name: "data federation all fields",
 			test: func(t *testing.T) {
