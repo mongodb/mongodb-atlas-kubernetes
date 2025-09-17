@@ -156,7 +156,7 @@ func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types
 
 // loadPair creates the paired resource that contains the parent AtlasDatabaseUser and the Endpoint.
 // Endpoint could be AtlasDeployment or AtlasDataFederation
-func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIdentifiers) (*ConnSecretPair, error) {
+func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIdentifiers) (*akov2.AtlasDatabaseUser, Endpoint, error) {
 	compositeUserKey := ids.ProjectID + "-" + ids.DatabaseUsername
 
 	// Retrieve the AtlasDatabaseUser using the defined indexers
@@ -164,7 +164,7 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIden
 	if err := r.Client.List(ctx, users, &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserBySpecUsernameAndProjectID, compositeUserKey),
 	}); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	usersCount := len(users.Items)
 
@@ -174,11 +174,11 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIden
 	for _, kind := range r.EndpointKinds {
 		list := kind.ListObj()
 		if err := r.Client.List(ctx, list, &client.ListOptions{FieldSelector: kind.SelectorByProjectAndName(ids)}); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		eps, err := kind.ExtractList(list)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if len(eps) == 1 {
 			selected = eps[0]
@@ -188,34 +188,22 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIden
 
 	// AmbiguousPairing (more than 1 of either resource)
 	if usersCount > 1 || totalEndpoints > 1 {
-		return nil, ErrAmbiguousPairing
+		return nil, nil, ErrAmbiguousPairing
 	}
 
 	// Exactly one of each (OK case)
 	if usersCount == 1 && totalEndpoints == 1 {
-		return &ConnSecretPair{
-			ProjectID: ids.ProjectID,
-			User:      &users.Items[0],
-			Endpoint:  selected,
-		}, nil
+		return &users.Items[0], selected, nil
 	}
 
 	// MissingPairing (one or both missing)
 	if usersCount == 0 && totalEndpoints == 0 {
-		return nil, ErrMissingPairing
+		return nil, nil, ErrMissingPairing
 	}
 	if usersCount == 0 {
-		return &ConnSecretPair{
-			ProjectID: ids.ProjectID,
-			User:      nil,
-			Endpoint:  selected,
-		}, ErrMissingPairing
+		return nil, selected, ErrMissingPairing
 	}
-	return &ConnSecretPair{
-		ProjectID: ids.ProjectID,
-		User:      &users.Items[0],
-		Endpoint:  nil,
-	}, ErrMissingPairing
+	return &users.Items[0], nil, ErrMissingPairing
 }
 
 // handleDelete ensures that the connection secret from the paired resource and identifiers will get deleted
@@ -254,18 +242,19 @@ func (r *ConnSecretReconciler) handleUpsert(
 	ctx context.Context,
 	req ctrl.Request,
 	ids *ConnSecretIdentifiers,
-	pair *ConnSecretPair,
+	user *akov2.AtlasDatabaseUser,
+	endpoint Endpoint,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-	log.Debugw("Starting handleUpsert", "ConnSecretIdentifiers", ids, "AtlasDatabaseUser", pair.User)
+	log.Debugw("Starting handleUpsert", "ConnSecretIdentifiers", ids, "AtlasDatabaseUser", user)
 	// create the connection data that will populate secret.stringData
-	data, err := pair.Endpoint.BuildConnData(ctx, pair.User)
+	data, err := endpoint.BuildConnData(ctx, user)
 	if err != nil {
 		log.Errorw("failed to build connection data", "error", err)
 		return workflow.Terminate(workflow.ConnSecretFailedToBuildData, err).ReconcileResult()
 	}
 	log.Debugw("connection data built")
-	if err := r.ensureSecret(ctx, ids, pair, data); err != nil {
+	if err := r.ensureSecret(ctx, ids, user, endpoint, data); err != nil {
 		return workflow.Terminate(workflow.ConnSecretFailedToUpsertSecret, err).ReconcileResult()
 	}
 
@@ -277,14 +266,14 @@ func (r *ConnSecretReconciler) handleUpsert(
 func (r *ConnSecretReconciler) ensureSecret(
 	ctx context.Context,
 	ids *ConnSecretIdentifiers,
-	pair *ConnSecretPair,
+	user *akov2.AtlasDatabaseUser,
+	endpoint Endpoint,
 	data ConnSecretData,
 ) error {
-	namespace := pair.User.GetNamespace()
+	namespace := user.GetNamespace()
 	log := r.Log.With("ns", namespace, "project", ids.ProjectID)
 
-	endpointType := ids.ConnectionType
-	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, endpointType)
+	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, endpoint.GetConnectionType())
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -294,13 +283,13 @@ func (r *ConnSecretReconciler) ensureSecret(
 	}
 
 	// Fills the secret.stringData with the information stored in ConnSecretData
-	if err := fillConnSecretData(secret, ids, data, endpointType); err != nil {
+	if err := fillConnSecretData(secret, ids, data, endpoint.GetConnectionType()); err != nil {
 		log.Errorw("failed to fill secret data", "reason", workflow.ConnSecretFailedToFillData, "error", err)
 		return err
 	}
 
 	// Add the owner to be the AtlasDatabaseUser for garbage collection
-	if err := controllerutil.SetControllerReference(pair.User, secret, r.Scheme); err != nil {
+	if err := controllerutil.SetControllerReference(user, secret, r.Scheme); err != nil {
 		log.Errorw("failed to set controller owner", "reason", workflow.ConnSecretFailedToSetOwnerReferences, "error", err)
 		return err
 	}
@@ -411,4 +400,14 @@ func ComputeHash(projectID, clusterName, userName, endpointType string) string {
 func K8sConnectionSecretName(projectID, clusterName, userName, endpointType string) string {
 	hash := ComputeHash(projectID, clusterName, userName, endpointType)
 	return fmt.Sprintf("connection-%s", hash)
+}
+
+func (r *ConnSecretReconciler) getUserProjectID(ctx context.Context, user *akov2.AtlasDatabaseUser) (string, error) {
+	if user == nil {
+		return "", fmt.Errorf("nil user")
+	}
+	if user.Spec.ExternalProjectRef != nil && user.Spec.ExternalProjectRef.ID != "" {
+		return user.Spec.ExternalProjectRef.ID, nil
+	}
+	return resolveProjectIDByKey(ctx, r.Client, user.AtlasProjectObjectKey())
 }

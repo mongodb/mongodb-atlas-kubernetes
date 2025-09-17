@@ -71,13 +71,6 @@ type Endpoint interface {
 	BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error)
 }
 
-// Each connection secret needs a paired resource: User and Endpoint
-type ConnSecretPair struct {
-	ProjectID string
-	User      *akov2.AtlasDatabaseUser
-	Endpoint  Endpoint
-}
-
 func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("namespace", req.Namespace, "name", req.Name)
 	log.Info("reconciliation started")
@@ -94,7 +87,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Load the paired resource
-	pair, err := r.loadPair(ctx, ids)
+	user, endpoint, err := r.loadPair(ctx, ids)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrMissingPairing):
@@ -110,7 +103,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Check if user is expired
-	expired, err := timeutil.IsExpired(pair.User.Spec.DeleteAfterDate)
+	expired, err := timeutil.IsExpired(user.Spec.DeleteAfterDate)
 	if err != nil {
 		log.Errorw("failed to check expiration date on user", "error", err)
 		return workflow.Terminate(workflow.ConnSecretUserExpired, err).ReconcileResult()
@@ -121,18 +114,18 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Check that scopes are still valid
-	if !allowsByScopes(pair.User, pair.Endpoint.GetName(), pair.Endpoint.GetScopeType()) {
+	if !allowsByScopes(user, endpoint.GetName(), endpoint.GetScopeType()) {
 		log.Infow("invalid scope; scheduling deletion of connection secrets")
 		return r.handleDelete(ctx, req, ids)
 	}
 
 	// Paired resource must be ready
-	if !(pair.User.IsDatabaseUserReady() && pair.Endpoint.IsReady()) {
+	if !(api.HasReadyCondition(user.Status.Conditions) && endpoint.IsReady()) {
 		log.Debugw("waiting on paired resource to be ready")
 		return workflow.InProgress(workflow.ConnSecretNotReady, "resources not ready").ReconcileResult()
 	}
 
-	return r.handleUpsert(ctx, req, ids, pair)
+	return r.handleUpsert(ctx, req, ids, user, endpoint)
 }
 
 func (r *ConnSecretReconciler) For() (client.Object, builder.Predicates) {

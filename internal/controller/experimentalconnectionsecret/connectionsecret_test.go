@@ -400,7 +400,7 @@ func Test_loadPair(t *testing.T) {
 				DatabaseUsername: tc.databaseUsername,
 			}
 
-			pair, err := r.loadPair(context.Background(), ids)
+			user, endpoint, err := r.loadPair(context.Background(), ids)
 
 			if tc.expectedErr != nil {
 				assert.ErrorIs(t, err, tc.expectedErr)
@@ -409,32 +409,34 @@ func Test_loadPair(t *testing.T) {
 			}
 
 			if tc.expectedPairNil {
-				assert.Nil(t, pair)
+				assert.Nil(t, user)
+				assert.Nil(t, endpoint)
 				return
 			}
 
 			if tc.expectUserNil {
-				assert.Nil(t, pair.User)
+				assert.Nil(t, user)
 			} else {
-				if assert.NotNil(t, pair.User) {
-					assert.Equal(t, tc.databaseUsername, pair.User.Spec.Username)
+				if assert.NotNil(t, user) {
+					assert.Equal(t, tc.databaseUsername, user.Spec.Username)
 				}
 			}
 			if tc.expectEpNil {
-				assert.Nil(t, pair.Endpoint)
+				assert.Nil(t, endpoint)
 			} else {
-				assert.NotNil(t, pair.Endpoint)
+				assert.NotNil(t, endpoint)
 			}
-			assert.Equal(t, projectID, pair.ProjectID)
+			// assert.Equal(t, projectID, pair.ProjectID)
 
 			missIDs := &ConnSecretIdentifiers{
 				ProjectID:        otherProjectID,
 				ClusterName:      tc.clusterName,
 				DatabaseUsername: tc.databaseUsername,
 			}
-			missPair, missErr := r.loadPair(context.Background(), missIDs)
+			missUser, missEndpoint, missErr := r.loadPair(context.Background(), missIDs)
 			assert.ErrorIs(t, missErr, ErrMissingPairing)
-			assert.Nil(t, missPair)
+			assert.Nil(t, missUser)
+			assert.Nil(t, missEndpoint)
 		})
 	}
 }
@@ -453,9 +455,10 @@ func Test_handleDelete(t *testing.T) {
 	)
 
 	type testCase struct {
-		ids    ConnSecretIdentifiers
-		pair   ConnSecretPair
-		result expectedResult
+		ids      ConnSecretIdentifiers
+		result   expectedResult
+		user     *akov2.AtlasDatabaseUser
+		endpoint Endpoint
 	}
 
 	r := createDummyEnv(t, nil)
@@ -505,7 +508,7 @@ func Test_handleDelete(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if tc.pair.Endpoint == nil && tc.pair.User == nil {
+			if tc.endpoint == nil && tc.user == nil {
 				return
 			}
 
@@ -532,14 +535,15 @@ func Test_handleUpsert(t *testing.T) {
 	)
 
 	type testCase struct {
-		ids    ConnSecretIdentifiers
-		pair   ConnSecretPair
-		result expectedResult
+		ids      ConnSecretIdentifiers
+		result   expectedResult
+		user     *akov2.AtlasDatabaseUser
+		endpoint Endpoint
 	}
 
 	r := createDummyEnv(t, nil)
 	dep := createDummyDeployment(t)
-	user := createDummyUser(t)
+	dbuser := createDummyUser(t)
 	depEndpoint := DeploymentEndpoint{
 		k8s:             r.Client,
 		provider:        r.AtlasProvider,
@@ -556,11 +560,8 @@ func Test_handleUpsert(t *testing.T) {
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			pair: ConnSecretPair{
-				ProjectID: projectID,
-				User:      nil,
-				Endpoint:  depEndpoint,
-			},
+			user:     nil,
+			endpoint: depEndpoint,
 			result: expectedResult{
 				expectedResult: ctrl.Result{},
 				expectedError:  ErrMissingPairing,
@@ -573,11 +574,8 @@ func Test_handleUpsert(t *testing.T) {
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			pair: ConnSecretPair{
-				ProjectID: projectID,
-				User:      user,
-				Endpoint:  depEndpoint,
-			},
+			user:     dbuser,
+			endpoint: depEndpoint,
 			result: expectedResult{
 				expectedResult: ctrl.Result{},
 				expectedError:  nil,
@@ -591,7 +589,7 @@ func Test_handleUpsert(t *testing.T) {
 				NamespacedName: types.NamespacedName{Namespace: ns, Name: "any"},
 			}
 
-			res, err := r.handleUpsert(context.Background(), req, &tc.ids, &tc.pair)
+			res, err := r.handleUpsert(context.Background(), req, &tc.ids, tc.user, tc.endpoint)
 			assert.Equal(t, tc.result.expectedResult, res)
 
 			if tc.result.expectedError != nil {
@@ -601,7 +599,7 @@ func Test_handleUpsert(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if tc.pair.Endpoint == nil || tc.pair.User == nil {
+			if tc.endpoint == nil || tc.user == nil {
 				return
 			}
 
@@ -633,7 +631,7 @@ func Test_ensureSecret(t *testing.T) {
 	)
 
 	r := createDummyEnv(t, nil)
-	user := createDummyUser(t)
+	dbUser := createDummyUser(t)
 
 	connData := ConnSecretData{
 		DBUserName: username,
@@ -655,11 +653,12 @@ func Test_ensureSecret(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		ids     ConnSecretIdentifiers
-		pair    ConnSecretPair
-		secrets []client.Object
-		data    ConnSecretData
-		result  expectedResult
+		ids      ConnSecretIdentifiers
+		secrets  []client.Object
+		data     ConnSecretData
+		result   expectedResult
+		user     *akov2.AtlasDatabaseUser
+		endpoint Endpoint
 	}{
 		"fail: invalid URL bubbles up and prevents creation": {
 			ids: ConnSecretIdentifiers{
@@ -668,7 +667,8 @@ func Test_ensureSecret(t *testing.T) {
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			pair: ConnSecretPair{User: user},
+			user:     dbUser,
+			endpoint: nil,
 			data: ConnSecretData{
 				DBUserName: username,
 				Password:   "test-pass",
@@ -683,9 +683,10 @@ func Test_ensureSecret(t *testing.T) {
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			pair:   ConnSecretPair{User: user},
-			data:   connData,
-			result: expectedResult{expectedError: nil},
+			user:     dbUser,
+			endpoint: nil,
+			data:     connData,
+			result:   expectedResult{expectedError: nil},
 		},
 		"success: update existing secret": {
 			ids: ConnSecretIdentifiers{
@@ -694,15 +695,16 @@ func Test_ensureSecret(t *testing.T) {
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			pair:   ConnSecretPair{User: user},
-			data:   connData,
-			result: expectedResult{expectedError: nil},
+			user:     dbUser,
+			endpoint: nil,
+			data:     connData,
+			result:   expectedResult{expectedError: nil},
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := r.ensureSecret(context.Background(), &tc.ids, &tc.pair, tc.data)
+			err := r.ensureSecret(context.Background(), &tc.ids, tc.user, tc.endpoint, tc.data)
 			if tc.result.expectedError != nil {
 				require.Error(t, err)
 				return

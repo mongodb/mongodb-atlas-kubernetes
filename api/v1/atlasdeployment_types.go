@@ -481,10 +481,6 @@ func (c *AtlasDeployment) GetReplicationSetID() string {
 	return ""
 }
 
-func (c *AtlasDeployment) IsDeploymentReady() bool {
-	return api.HasReadyCondition(c.Status.Conditions)
-}
-
 // +kubebuilder:object:root=true
 
 // AtlasDeploymentList contains a list of AtlasDeployment
