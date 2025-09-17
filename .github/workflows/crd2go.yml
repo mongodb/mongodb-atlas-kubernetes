@@ -54,11 +54,9 @@ jobs:
 
     - name: gci
       working-directory: ./tools/crd2go
-      run: |
-        echo "Did you run gofmt-gci?"
-        devbox run -- 'gci write --skip-generated -s standard -s default -s localmodule . && git diff-index --name-only HEAD && git diff-index --quiet HEAD --'
+      run: devbox run -- 'mage gci'
 
-  licenses:
+  addlicense:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
@@ -73,5 +71,4 @@ jobs:
 
     - name: Check license headers
       working-directory: ./tools/crd2go
-      run: |
-        devbox run -- 'addlicense -check -l apache -c "MongoDB Inc" -ignore "**/*.md" -ignore "**/*.yaml" -ignore "**/*.yml" -ignore "**/*.nix" -ignore ".devbox/**" .'
+      run: devbox run -- 'mage addlicense'
