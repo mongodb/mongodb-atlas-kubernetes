@@ -9,8 +9,10 @@ require (
 	// github.com/josvazg/crd2go v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.10.1
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.34.0
+	k8s.io/apimachinery v0.34.1
 )
+
+require k8s.io/apiextensions-apiserver v0.34.1
 
 require (
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
