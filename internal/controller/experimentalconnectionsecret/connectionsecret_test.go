@@ -543,7 +543,7 @@ func Test_handleUpsert(t *testing.T) {
 
 	r := createDummyEnv(t, nil)
 	dep := createDummyDeployment(t)
-	dbuser := createDummyUser(t)
+	dbuser := createDummyUser(t, "test-user")
 	depEndpoint := DeploymentEndpoint{
 		k8s:             r.Client,
 		provider:        r.AtlasProvider,
@@ -631,7 +631,7 @@ func Test_ensureSecret(t *testing.T) {
 	)
 
 	r := createDummyEnv(t, nil)
-	dbUser := createDummyUser(t)
+	dbUser := createDummyUser(t, "test-user")
 	dep := createDummyDeployment(t)
 
 	connData := ConnSecretData{

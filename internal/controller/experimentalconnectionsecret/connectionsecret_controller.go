@@ -85,7 +85,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	switch {
 	case failedToProcess:
-		log.Errorw("Failed to process request", "error", err)
+		log.Errorw("Failed to parse request", "error", err)
 		return workflow.Terminate(workflow.ConnSecretInvalidName, err).ReconcileResult()
 	case objectNotFound:
 		log.Debugw("Connection secret not found; assuming deletion")

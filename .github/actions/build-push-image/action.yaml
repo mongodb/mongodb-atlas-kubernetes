@@ -67,11 +67,13 @@ runs:
       run: devbox run -- go mod download
       shell: bash
 
-    - name: Build all platforms (Devbox)
-      env:
-        VERSION: ${{ inputs.version }}
-      run: devbox run -- 'make all-platforms'
-      shell: bash
+    - name: Build all platforms (Devbox)  
+      if: contains(github.event.pull_request.labels.*.name, 'experimental')  
+      env:  
+        VERSION: ${{ inputs.version }}  
+        experimental: "true"  
+      run: devbox run -- 'make all-platforms'  
+      shell: bash  
 
     - name: Login to docker registry
       if: ${{ inputs.push_to_docker == 'true' }}

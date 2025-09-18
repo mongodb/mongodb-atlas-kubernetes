@@ -224,7 +224,7 @@ func TestFederationEndpoint_ExtractList(t *testing.T) {
 func TestFederationEndpoint_BuildConnData(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	df := createDummyFederation(t)
-	user := createDummyUser(t)
+	user := createDummyUser(t, "test-user")
 
 	userNoPass := &akov2.AtlasDatabaseUser{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-user-nopass", Namespace: "test-ns"},

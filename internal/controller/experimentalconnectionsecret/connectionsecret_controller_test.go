@@ -51,15 +51,16 @@ import (
 func TestConnectionSecretReconcile(t *testing.T) {
 	type testCase struct {
 		reqName          string
-		deployment       *akov2.AtlasDeployment
-		user             *akov2.AtlasDatabaseUser
+		deployment       *[]akov2.AtlasDeployment
+		user             *[]akov2.AtlasDatabaseUser
 		expectedDeletion bool
 		expectedUpdate   bool
 		expectedResult   func() (ctrl.Result, error)
 	}
 
 	depl := createDummyDeployment(t)
-	user := createDummyUser(t)
+	user := createDummyUser(t, "test-user")
+	secondUser := createDummyUser(t, "test-user-second")
 
 	tests := map[string]testCase{
 		"fail: could not load identifiers 1": {
@@ -82,30 +83,40 @@ func TestConnectionSecretReconcile(t *testing.T) {
 		},
 		"success: only one available resource from the pair, trigger delete": {
 			reqName:          "test-project-id$cluster1$admin$deployment",
-			user:             user,
+			user:             &[]akov2.AtlasDatabaseUser{*user},
 			expectedDeletion: true,
 			expectedResult: func() (ctrl.Result, error) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 			},
 		},
+		"fail: ambigous pair": {
+			reqName:          "test-project-id$cluster1$admin$deployment",
+			user:             &[]akov2.AtlasDatabaseUser{*user, *secondUser},
+			expectedDeletion: true,
+			expectedResult: func() (ctrl.Result, error) {
+				return workflow.Terminate("ConnSecretPairNotLoaded", ErrAmbiguousPairing).
+					ReconcileResult()
+			},
+		},
 		"success: invalid scopes; trigger delete": {
 			reqName:    "test-project-id$cluster1$admin$deployment",
-			deployment: depl,
-			user: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-user",
-					Namespace: "test-ns",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					Username: "admin",
-					Scopes: []akov2.ScopeSpec{
-						{
-							Name: "df",
-							Type: akov2.DataLakeScopeType,
+			deployment: &[]akov2.AtlasDeployment{*depl},
+			user: &[]akov2.AtlasDatabaseUser{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-user",
+						Namespace: "test-ns",
+					},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						Username: "admin",
+						Scopes: []akov2.ScopeSpec{
+							{
+								Name: "df",
+								Type: akov2.DataLakeScopeType,
+							},
 						},
 					},
-				},
-			},
+				}},
 			expectedDeletion: true,
 			expectedResult: func() (ctrl.Result, error) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
@@ -113,15 +124,17 @@ func TestConnectionSecretReconcile(t *testing.T) {
 		},
 		"success: expired user; trigger delete": {
 			reqName:    "test-project-id$cluster1$admin$deployment",
-			deployment: depl,
-			user: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "admin",
-					Namespace: "test-ns",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					Username:        "admin",
-					DeleteAfterDate: time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339),
+			deployment: &[]akov2.AtlasDeployment{*depl},
+			user: &[]akov2.AtlasDatabaseUser{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "admin",
+						Namespace: "test-ns",
+					},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						Username:        "admin",
+						DeleteAfterDate: time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339),
+					},
 				},
 			},
 			expectedDeletion: true,
@@ -131,18 +144,20 @@ func TestConnectionSecretReconcile(t *testing.T) {
 		},
 		"re-enque: resources are not ready yet": {
 			reqName:    "test-project-id$cluster1$admin$deployment",
-			deployment: depl,
-			user: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-user",
-					Namespace: "test-ns",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{
-					Username:       "admin",
-					PasswordSecret: &common.ResourceRef{Name: "user-pass"},
-					ProjectDualReference: akov2.ProjectDualReference{
-						ExternalProjectRef: &akov2.ExternalProjectReference{ID: "test-project-id"},
-						ConnectionSecret:   &api.LocalObjectReference{Name: "sdk-creds"},
+			deployment: &[]akov2.AtlasDeployment{*depl},
+			user: &[]akov2.AtlasDatabaseUser{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-user",
+						Namespace: "test-ns",
+					},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						Username:       "admin",
+						PasswordSecret: &common.ResourceRef{Name: "user-pass"},
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{ID: "test-project-id"},
+							ConnectionSecret:   &api.LocalObjectReference{Name: "sdk-creds"},
+						},
 					},
 				},
 			},
@@ -152,8 +167,8 @@ func TestConnectionSecretReconcile(t *testing.T) {
 		},
 		"success: pair ready; trigger upsert": {
 			reqName:        "test-project-id$cluster1$admin$deployment",
-			deployment:     depl,
-			user:           user,
+			deployment:     &[]akov2.AtlasDeployment{*depl},
+			user:           &[]akov2.AtlasDatabaseUser{*user},
 			expectedUpdate: true,
 			expectedResult: func() (ctrl.Result, error) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
@@ -164,11 +179,19 @@ func TestConnectionSecretReconcile(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			var all []client.Object
+
+			// If `tc.deployment` is not nil, append its contents to `all`
 			if tc.deployment != nil {
-				all = append(all, tc.deployment)
+				for _, dep := range *tc.deployment { // Dereferencing the pointer to iterate over the slice
+					all = append(all, &dep) // Adding individual deployments to `all`
+				}
 			}
+
+			// If `tc.user` is not nil, append its contents to `all`
 			if tc.user != nil {
-				all = append(all, tc.user)
+				for _, usr := range *tc.user { // Dereferencing the pointer to iterate over the slice
+					all = append(all, &usr) // Adding individual users to `all`
+				}
 			}
 
 			r := createDummyEnv(t, all)
@@ -425,7 +448,7 @@ func Test_newEndpointMapFunc(t *testing.T) {
 
 	depl := createDummyDeployment(t)
 	df := createDummyFederation(t)
-	userNoScopes := createDummyUser(t)
+	userNoScopes := createDummyUser(t, "test-user")
 
 	userScopedDep := &akov2.AtlasDatabaseUser{
 		ObjectMeta: metav1.ObjectMeta{Name: "u2", Namespace: "test-ns"},
@@ -522,7 +545,7 @@ func Test_newDatabaseUserMapFunc(t *testing.T) {
 
 	depl := createDummyDeployment(t)
 	df := createDummyFederation(t)
-	userNoScopes := createDummyUser(t)
+	userNoScopes := createDummyUser(t, "test-user")
 
 	userScoped := &akov2.AtlasDatabaseUser{
 		ObjectMeta: metav1.ObjectMeta{Name: "u2", Namespace: "test-ns"},
@@ -718,12 +741,12 @@ func createDummyEnv(t *testing.T, objs []client.Object) *ConnSecretReconciler {
 	return r
 }
 
-func createDummyUser(t *testing.T) *akov2.AtlasDatabaseUser {
+func createDummyUser(t *testing.T, kubernetesUsername string) *akov2.AtlasDatabaseUser {
 	t.Helper()
 
 	user := &akov2.AtlasDatabaseUser{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-user",
+			Name:      kubernetesUsername,
 			Namespace: "test-ns",
 		},
 		Spec: akov2.AtlasDatabaseUserSpec{
