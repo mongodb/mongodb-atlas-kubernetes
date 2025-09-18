@@ -340,7 +340,6 @@ func TestHandleDatabaseUser(t *testing.T) {
 }
 
 func TestDbuLifeCycle(t *testing.T) {
-
 	deletionTime := metav1.Now()
 	tests := map[string]struct {
 		dbUserInAKO        *akov2.AtlasDatabaseUser

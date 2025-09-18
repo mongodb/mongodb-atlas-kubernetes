@@ -43,7 +43,6 @@ import (
 )
 
 func TestDeleteConnectionSecrets(t *testing.T) {
-
 	for _, tc := range []struct {
 		name              string
 		service           func(serviceMock *translation.DataFederationServiceMock) datafederation.DataFederationService
