@@ -19,5 +19,6 @@ WEBHOOK=${1}
 
 if [ -z "${MESSAGE}" ]; then
   exit
+fi
 
 curl -X POST -d "{\"text\":\"${MESSAGE}\"}" "${WEBHOOK}"
