@@ -21,8 +21,8 @@ set -euo pipefail
 supported_releases() {
     local all_versions
     local last_three_minor_version
-    all_versions=$(git tag -l | grep '^v[0-9]*\.[0-9]*\.[0-9]*$' | sort -ru)
-    last_three_minor_version=$(git tag -l | grep '^v[0-9]*\.[0-9]*\.[0-9]*$' | awk -F. '{print $1 "." $2}' | sort -ru | head -3)
+    all_versions=$(git tag -l | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr)
+    last_three_minor_version=$(git tag -l | sort -Vr | grep '\.0$' | head -n 3 | cut -d '.' -f 1,2)
     echo "${all_versions}" | grep "${last_three_minor_version}" | sed 's/^v//'
 }
 
