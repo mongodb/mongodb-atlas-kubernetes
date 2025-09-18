@@ -46,6 +46,7 @@ tools/clean/clean
 tools/makejwt/makejwt
 tools/metrics/metrics
 tools/scandeprecation/scandeprecations
+tools/githubjobs/githubjobs
 
 # ignore the ako.siging key local copy
 ako.pem

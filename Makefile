@@ -638,11 +638,14 @@ install-ako-helm:
 	--namespace=$(HELM_AKO_NAMESPACE) --create-namespace
 	kubectl get crds
 
+tools/githubjobs/githubjobs: tools/githubjobs/*.go
+	cd tools/githubjobs && go build .
+
 tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
 	cd tools/scandeprecation && go build .
-	cd tools/scandeprecation/github_jobs && go build .
+
 
 .PHONY: slack-deprecations
-slack-deprecations: tools/scandeprecation/scandeprecation ## slack a report
+slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githubjobs
 	@echo "Computing and sending deprecation report to Slack..."
-	GH_RUN_ID=$(GH_RUN_ID) ./tools/scandeprecation/github_jobs/github_jobs | grep "javaMethod" | ./tools/scandeprecation/scandeprecations
+	GH_RUN_ID=$(GH_RUN_ID) ./tools/githubjobs/githubjobs | grep "javaMethod" | ./tools/scandeprecation/scandeprecations | ./scripts/slackit.sh $(SLACK_WEBHOOK)

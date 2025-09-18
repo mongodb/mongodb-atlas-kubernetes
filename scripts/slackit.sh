@@ -16,4 +16,8 @@
 set -euo pipefail
 MESSAGE=$(cat)
 WEBHOOK=${1}
+
+if [ -z "${MESSAGE}" ]; then
+  exit
+
 curl -X POST -d "{\"text\":\"${MESSAGE}\"}" "${WEBHOOK}"

@@ -53,6 +53,8 @@ func main() {
 
 		// Last element is the JSON "body" of the log line
 		example = split[len(split)-1]
+		example = strings.Replace(example, "***", "{", 1)
+		example = strings.Replace(example, "***", "}", 1)
 
 		res := DeprecationResponse{}
 		err = json.Unmarshal([]byte(example), &res)
@@ -65,6 +67,7 @@ func main() {
 
 	// Quit out if there is no deprecations logged
 	if len(responses) == 0 {
+		log.Info("no responses found")
 		os.Exit(0)
 	}
 

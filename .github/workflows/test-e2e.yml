@@ -69,8 +69,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: test
     env:
-      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
       AKO_DEPRECATION_WARNINGS: true
     strategy:
       fail-fast: false
