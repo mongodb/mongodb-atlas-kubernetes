@@ -93,6 +93,7 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUser
 		if err != nil {
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
 		}
+
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, workflow.Terminate(workflow.DatabaseUserExpired, errors.New("an expired user cannot be managed")))
 		return r.unmanage(ctx, atlasProject.ID, atlasDatabaseUser)
 	}
@@ -203,6 +204,7 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymen
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
+
 	removedOrphanSecrets, err := connectionsecret.ReapOrphanConnectionSecrets(
 		ctx.Context, r.Client, atlasProject.ID, atlasDatabaseUser.Namespace, allDeploymentNames)
 	if err != nil {
@@ -302,10 +304,6 @@ func (r *AtlasDatabaseUserReconciler) removeOldUser(ctx context.Context, dbUserS
 	return err
 }
 
-func hasChanged(databaseUserInAKO, databaseUserInAtlas *dbuser.User, currentPassVersion, passVersion string) bool {
-	return !dbuser.EqualSpecs(databaseUserInAKO, databaseUserInAtlas) || currentPassVersion != passVersion
-}
-
 func isExpired(atlasDatabaseUser *akov2.AtlasDatabaseUser) (bool, error) {
 	if atlasDatabaseUser.Spec.DeleteAfterDate == "" {
 		return false, nil
@@ -321,6 +319,10 @@ func isExpired(atlasDatabaseUser *akov2.AtlasDatabaseUser) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func hasChanged(databaseUserInAKO, databaseUserInAtlas *dbuser.User, currentPassVersion, passVersion string) bool {
+	return !dbuser.EqualSpecs(databaseUserInAKO, databaseUserInAtlas) || currentPassVersion != passVersion
 }
 
 func wasRenamed(atlasDatabaseUser *akov2.AtlasDatabaseUser) bool {

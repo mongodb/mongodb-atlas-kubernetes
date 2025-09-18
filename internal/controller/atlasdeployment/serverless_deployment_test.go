@@ -954,6 +954,7 @@ func TestHandleServerlessInstance(t *testing.T) {
 			deploymentInAKO := deployment.NewDeployment("project-id", tt.atlasDeployment).(*deployment.Serverless)
 			var projectService project.ProjectService
 			result, err := reconciler.handleServerlessInstance(workflowCtx, projectService, tt.deploymentService(), deploymentInAKO, tt.deploymentInAtlas)
+			//require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, workflowRes{
 				res: result,
 				err: err,

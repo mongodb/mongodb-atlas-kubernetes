@@ -47,7 +47,6 @@ import (
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
@@ -695,6 +694,7 @@ func TestDbuLifeCycle(t *testing.T) {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
 				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
 				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
+
 				return service
 			},
 			expectedResult: ctrl.Result{},
@@ -847,6 +847,7 @@ func TestDbuLifeCycle(t *testing.T) {
 		})
 	}
 }
+
 func TestCreate(t *testing.T) {
 	tests := map[string]struct {
 		dbUserInAKO        *akov2.AtlasDatabaseUser
@@ -1092,7 +1093,6 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-
 	tests := map[string]struct {
 		dbUserInAKO        *akov2.AtlasDatabaseUser
 		dbUserSecret       *corev1.Secret
@@ -1214,6 +1214,7 @@ func TestUpdate(t *testing.T) {
 				service := translation.NewAtlasDeploymentsServiceMock(t)
 				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
 				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
+
 				return service
 			},
 			expectedResult: ctrl.Result{},
@@ -1554,7 +1555,6 @@ func TestDelete(t *testing.T) {
 }
 
 func TestReadiness(t *testing.T) {
-
 	tests := map[string]struct {
 		dbUser             *akov2.AtlasDatabaseUser
 		dService           func() deployment.AtlasDeploymentsService
@@ -2127,7 +2127,7 @@ func TestIsExpired(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			expired, err := timeutil.IsExpired(tt.dbUser.Spec.DeleteAfterDate)
+			expired, err := isExpired(tt.dbUser)
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.expected, expired)
 		})
