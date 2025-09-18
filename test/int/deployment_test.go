@@ -40,8 +40,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -1615,7 +1615,7 @@ func createConnectionSecret() *corev1.Secret {
 			Name:      ConnectionSecretName,
 			Namespace: namespace.Name,
 			Labels: map[string]string{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 		},
 		StringData: secretData(),

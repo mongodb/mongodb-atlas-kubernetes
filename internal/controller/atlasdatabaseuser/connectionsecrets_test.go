@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connectionsecret_test
+package atlasdatabaseuser
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 )
 
 const (
@@ -72,7 +72,7 @@ func TestReapOrphanConnectionSecrets(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().
 				WithScheme(scheme).
 				WithObjects(tc.objects...).Build()
-			removedOrphans, err := connectionsecret.ReapOrphanConnectionSecrets(
+			removedOrphans, err := ReapOrphanConnectionSecrets(
 				context.Background(),
 				fakeClient,
 				testProjectID,
@@ -96,9 +96,9 @@ func matchingSecrets() []client.Object {
 				Name:      "secret1",
 				Namespace: testNamespace,
 				Labels: map[string]string{
-					connectionsecret.ClusterLabelKey: "cluster1",
-					connectionsecret.ProjectLabelKey: testProjectID,
-					connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+					secretservice.ClusterLabelKey: "cluster1",
+					secretservice.ProjectLabelKey: testProjectID,
+					secretservice.TypeLabelKey:    secretservice.CredLabelVal,
 				},
 			},
 		},
@@ -108,9 +108,9 @@ func matchingSecrets() []client.Object {
 				Name:      "secret2",
 				Namespace: testNamespace,
 				Labels: map[string]string{
-					connectionsecret.ClusterLabelKey: "serverless2",
-					connectionsecret.ProjectLabelKey: testProjectID,
-					connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+					secretservice.ClusterLabelKey: "serverless2",
+					secretservice.ProjectLabelKey: testProjectID,
+					secretservice.TypeLabelKey:    secretservice.CredLabelVal,
 				},
 			},
 		},
@@ -124,9 +124,9 @@ func nonMatchingSecrets() []client.Object {
 				Name:      "secret3",
 				Namespace: testNamespace,
 				Labels: map[string]string{
-					connectionsecret.ClusterLabelKey: "cluster3",
-					connectionsecret.ProjectLabelKey: testProjectID,
-					connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+					secretservice.ClusterLabelKey: "cluster3",
+					secretservice.ProjectLabelKey: testProjectID,
+					secretservice.TypeLabelKey:    secretservice.CredLabelVal,
 				},
 			},
 		},
@@ -136,9 +136,9 @@ func nonMatchingSecrets() []client.Object {
 				Name:      "secret4",
 				Namespace: testNamespace,
 				Labels: map[string]string{
-					connectionsecret.ClusterLabelKey: "serverless4",
-					connectionsecret.ProjectLabelKey: testProjectID,
-					connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+					secretservice.ClusterLabelKey: "serverless4",
+					secretservice.ProjectLabelKey: testProjectID,
+					secretservice.TypeLabelKey:    secretservice.CredLabelVal,
 				},
 			},
 		},

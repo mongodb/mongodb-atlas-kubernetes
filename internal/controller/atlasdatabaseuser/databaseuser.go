@@ -25,7 +25,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
@@ -89,7 +88,7 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUser
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, false, err)
 	}
 	if expired {
-		err = connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, atlasProject.ID, atlasDatabaseUser.Spec.Username, *atlasDatabaseUser, r.Log)
+		err = RemoveStaleSecretsByUserName(ctx.Context, r.Client, atlasProject.ID, atlasDatabaseUser.Spec.Username, *atlasDatabaseUser, r.Log)
 		if err != nil {
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
 		}
@@ -139,7 +138,7 @@ func (r *AtlasDatabaseUserReconciler) create(ctx *workflow.Context, dbUserServic
 	}
 
 	if wasRenamed(atlasDatabaseUser) {
-		err = connectionsecret.RemoveStaleSecretsByUserName(ctx.Context, r.Client, projectID, atlasDatabaseUser.Status.UserName, *atlasDatabaseUser, r.Log)
+		err = RemoveStaleSecretsByUserName(ctx.Context, r.Client, projectID, atlasDatabaseUser.Status.UserName, *atlasDatabaseUser, r.Log)
 		if err != nil {
 			return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotDeleted, true, err)
 		}
@@ -205,7 +204,7 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymen
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
 	}
 
-	removedOrphanSecrets, err := connectionsecret.ReapOrphanConnectionSecrets(
+	removedOrphanSecrets, err := ReapOrphanConnectionSecrets(
 		ctx.Context, r.Client, atlasProject.ID, atlasDatabaseUser.Namespace, allDeploymentNames)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.Internal, true, err)
@@ -244,7 +243,7 @@ func (r *AtlasDatabaseUserReconciler) readiness(ctx *workflow.Context, deploymen
 	}
 
 	// TODO refactor connectionsecret package to follow state machine approach
-	result := connectionsecret.CreateOrUpdateConnectionSecrets(ctx, r.Client, deploymentService, r.EventRecorder, atlasProject, *atlasDatabaseUser)
+	result := CreateOrUpdateConnectionSecrets(ctx, r.Client, deploymentService, r.EventRecorder, atlasProject, *atlasDatabaseUser)
 	if !result.IsOk() {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserConnectionSecretsNotCreated, true, errors.New(result.GetMessage()))
 	}

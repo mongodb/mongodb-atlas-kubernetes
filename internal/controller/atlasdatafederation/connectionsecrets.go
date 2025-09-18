@@ -24,7 +24,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
@@ -77,7 +77,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 		var connURLs []string
 		for _, host := range connectionHosts {
 			baseURL := fmt.Sprintf("mongodb://%s?ssl=true", host)
-			connURL, err := connectionsecret.AddCredentialsToConnectionURL(baseURL, dbUser.Spec.Username, password)
+			connURL, err := secretservice.AddCredentialsToConnectionURL(baseURL, dbUser.Spec.Username, password)
 			if err != nil {
 				ctx.Log.Debugw("Failed to construct connection URL", "host", host, "error", err)
 				continue
@@ -86,7 +86,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 			ctx.Log.Debugw("Connection URL created", "url", connURL)
 		}
 
-		data := connectionsecret.ConnectionData{
+		data := secretservice.ConnectionData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
 			ConnURL:    strings.Join(connURLs, ","),
@@ -94,7 +94,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 
 		ctx.Log.Debugw("Creating a connection Secret", "data", data)
 
-		secretName, err := connectionsecret.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), df.Spec.Name, data)
+		secretName, err := secretservice.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), df.Spec.Name, data)
 		if err != nil {
 			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err)
 		}

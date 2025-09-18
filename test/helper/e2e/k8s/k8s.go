@@ -35,7 +35,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
@@ -239,7 +239,7 @@ func CreateUserSecret(ctx context.Context, k8sClient client.Client, secret, name
 		},
 	}
 	secretObj.SetLabels(map[string]string{
-		connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+		secretservice.TypeLabelKey: secretservice.CredLabelVal,
 	})
 	err := k8sClient.Create(ctx, secretObj)
 	if err != nil {
@@ -253,21 +253,21 @@ func CreateDefaultSecret(ctx context.Context, k8sClient client.Client, name, ns 
 }
 
 func CreateSecret(ctx context.Context, k8sClient client.Client, publicKey, privateKey, name, ns string) error {
-	connectionSecret := corev1.Secret{
+	secretservice := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: ns,
 			Labels: map[string]string{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 		},
 		StringData: map[string]string{"orgId": os.Getenv("MCLI_ORG_ID"), "publicApiKey": publicKey, "privateApiKey": privateKey},
 	}
-	err := k8sClient.Create(ctx, &connectionSecret)
+	err := k8sClient.Create(ctx, &secretservice)
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return fmt.Errorf("error creating secret: %w", err)
 	}
-	err = k8sClient.Update(ctx, &connectionSecret)
+	err = k8sClient.Update(ctx, &secretservice)
 	if err != nil {
 		return fmt.Errorf("error updating existing secret: %w", err)
 	}
@@ -326,7 +326,7 @@ func CreateCertificateX509(ctx context.Context, k8sClient client.Client, name, n
 		},
 	}
 	certificateSecret.Labels = map[string]string{
-		connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+		secretservice.TypeLabelKey: secretservice.CredLabelVal,
 	}
 	err = k8sClient.Create(ctx, certificateSecret)
 	if err != nil {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connectionsecret
+package atlasdatabaseuser
 
 import (
 	"context"
@@ -31,13 +31,15 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 )
 
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 
 func ReapOrphanConnectionSecrets(ctx context.Context, k8sClient client.Client, projectID, namespace string, projectDeploymentNames []string) ([]string, error) {
 	secretList := &corev1.SecretList{}
-	labelSelector := labels.SelectorFromSet(labels.Set{TypeLabelKey: CredLabelVal, ProjectLabelKey: projectID})
+	labelSelector := labels.SelectorFromSet(labels.Set{secretservice.TypeLabelKey: secretservice.CredLabelVal, secretservice.ProjectLabelKey: projectID})
 	err := k8sClient.List(context.Background(), secretList, &client.ListOptions{
 		LabelSelector: labelSelector,
 		Namespace:     namespace,
@@ -48,7 +50,7 @@ func ReapOrphanConnectionSecrets(ctx context.Context, k8sClient client.Client, p
 
 	removedOrphanSecrets := []string{}
 	for _, secret := range secretList.Items {
-		clusterName, ok := secret.Labels[ClusterLabelKey]
+		clusterName, ok := secret.Labels[secretservice.ClusterLabelKey]
 		if !ok {
 			continue
 		}
@@ -98,7 +100,7 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err)
 		}
-		data := ConnectionData{
+		data := secretservice.ConnectionData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
 			ConnURL:    di.ConnURL,
@@ -107,7 +109,7 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 		FillPrivateConns(di, &data)
 
 		var secretName string
-		if secretName, err = Ensure(ctx.Context, k8sClient, dbUser.Namespace, project.Name, project.ID, di.Name, data); err != nil {
+		if secretName, err = secretservice.Ensure(ctx.Context, k8sClient, dbUser.Namespace, project.Name, project.ID, di.Name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err)
 		}
 		secrets = append(secrets, secretName)
@@ -146,12 +148,12 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 	if len(scopes) == 0 {
 		return nil
 	}
-	secrets, err := ListByUserName(ctx.Context, k8sClient, user.Namespace, projectID, user.Spec.Username)
+	secrets, err := secretservice.ListByUserName(ctx.Context, k8sClient, user.Namespace, projectID, user.Spec.Username)
 	if err != nil {
 		return err
 	}
 	for i, s := range secrets {
-		deployment, ok := s.Labels[ClusterLabelKey]
+		deployment, ok := s.Labels[secretservice.ClusterLabelKey]
 		if !ok {
 			continue
 		}
@@ -167,7 +169,7 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 
 // RemoveStaleSecretsByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
 func RemoveStaleSecretsByUserName(ctx context.Context, k8sClient client.Client, projectID, userName string, user akov2.AtlasDatabaseUser, log *zap.SugaredLogger) error {
-	secrets, err := ListByUserName(ctx, k8sClient, user.Namespace, projectID, userName)
+	secrets, err := secretservice.ListByUserName(ctx, k8sClient, user.Namespace, projectID, userName)
 	if err != nil {
 		return err
 	}
@@ -188,9 +190,9 @@ func RemoveStaleSecretsByUserName(ctx context.Context, k8sClient client.Client, 
 	return lastError
 }
 
-func FillPrivateConns(conn deployment.Connection, data *ConnectionData) {
+func FillPrivateConns(conn deployment.Connection, data *secretservice.ConnectionData) {
 	if conn.PrivateURL != "" {
-		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
+		data.PrivateConnURLs = append(data.PrivateConnURLs, secretservice.PrivateLinkConnURLs{
 			PvtConnURL:    conn.PrivateURL,
 			PvtSrvConnURL: conn.SrvPrivateURL,
 		})
@@ -198,13 +200,13 @@ func FillPrivateConns(conn deployment.Connection, data *ConnectionData) {
 
 	if conn.Serverless {
 		for _, pe := range conn.PrivateEndpoints {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
+			data.PrivateConnURLs = append(data.PrivateConnURLs, secretservice.PrivateLinkConnURLs{
 				PvtSrvConnURL: pe.ServerURL,
 			})
 		}
 	} else {
 		for _, pe := range conn.PrivateEndpoints {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
+			data.PrivateConnURLs = append(data.PrivateConnURLs, secretservice.PrivateLinkConnURLs{
 				PvtConnURL:      pe.URL,
 				PvtSrvConnURL:   pe.ServerURL,
 				PvtShardConnURL: pe.ShardURL,

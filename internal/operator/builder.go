@@ -41,7 +41,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
@@ -191,7 +191,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		cacheOpts.ByObject = map[client.Object]cache.ByObject{
 			&corev1.Secret{}: {
 				Label: labels.SelectorFromSet(labels.Set{
-					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					secretservice.TypeLabelKey: secretservice.CredLabelVal,
 				}),
 			},
 		}

@@ -37,8 +37,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
@@ -766,7 +766,7 @@ func buildPasswordSecret(namespace, name, password string) corev1.Secret {
 			Name:      name,
 			Namespace: namespace,
 			Labels: map[string]string{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 		},
 		StringData: map[string]string{"password": password},
@@ -800,7 +800,7 @@ func validateSecret(k8sClient client.Client, project akov2.AtlasProject, deploym
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   project.ID(),
 		"atlas.mongodb.com/cluster-name": deployment.GetDeploymentName(),
-		connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
+		secretservice.TypeLabelKey:       secretservice.CredLabelVal,
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
@@ -826,7 +826,7 @@ func buildConnectionURL(connURL, userName, password string) string {
 		return ""
 	}
 
-	u, err := connectionsecret.AddCredentialsToConnectionURL(connURL, userName, password)
+	u, err := secretservice.AddCredentialsToConnectionURL(connURL, userName, password)
 	Expect(err).NotTo(HaveOccurred())
 	return u
 }
