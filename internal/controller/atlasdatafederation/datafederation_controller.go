@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
@@ -140,10 +139,8 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult()
 	}
 
-	if !version.IsExperimental() {
-		if result = r.ensureConnectionSecrets(ctx, dataFederationService, project, dataFederation); !result.IsOk() {
-			return result.ReconcileResult()
-		}
+	if result = r.ensureConnectionSecrets(ctx, dataFederationService, project, dataFederation); !result.IsOk() {
+		return result.ReconcileResult()
 	}
 
 	if dataFederation.GetDeletionTimestamp().IsZero() {
@@ -185,13 +182,11 @@ func (r *AtlasDataFederationReconciler) handleDelete(ctx *workflow.Context, log 
 		if customresource.IsResourcePolicyKeepOrDefault(dataFederation, r.ObjectDeletionProtection) {
 			log.Info("Not removing AtlasDataFederation from Atlas as per configuration")
 		} else {
-			if !version.IsExperimental() {
-				if err := r.deleteConnectionSecrets(ctx.Context, dataFederation); err != nil {
-					log.Errorf("failed to remove DataFederation connection secrets from Atlas: %s", err)
-					result := workflow.Terminate(workflow.Internal, err)
-					ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-					return result
-				}
+			if err := r.deleteConnectionSecrets(ctx.Context, dataFederation); err != nil {
+				log.Errorf("failed to remove DataFederation connection secrets from Atlas: %s", err)
+				result := workflow.Terminate(workflow.Internal, err)
+				ctx.SetConditionFromResult(api.DataFederationReadyType, result)
+				return result
 			}
 			if err := r.deleteDataFederationFromAtlas(ctx.Context, service, dataFederation, project, log); err != nil {
 				log.Errorf("failed to remove DataFederation from Atlas: %s", err)

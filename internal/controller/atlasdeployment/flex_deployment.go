@@ -26,7 +26,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, projectService project.ProjectService,
@@ -62,14 +61,12 @@ func (r *AtlasDeploymentReconciler) handleFlexInstance(ctx *workflow.Context, pr
 			return r.inProgress(ctx, akoFlex.GetCustomResource(), atlasFlex, workflow.DeploymentUpdating, "deployment is updating")
 		}
 
-		if !version.IsExperimental() {
-			err := r.ensureConnectionSecrets(ctx, projectService, akoFlex, atlasFlex.GetConnection())
-			if err != nil {
-				return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
-			}
+		err := r.ensureConnectionSecrets(ctx, projectService, akoFlex, atlasFlex.GetConnection())
+		if err != nil {
+			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
-		err := customresource.ApplyLastConfigApplied(ctx.Context, akoFlex.GetCustomResource(), r.Client)
+		err = customresource.ApplyLastConfigApplied(ctx.Context, akoFlex.GetCustomResource(), r.Client)
 		if err != nil {
 			return r.terminate(ctx, workflow.Internal, err)
 		}

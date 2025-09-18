@@ -36,7 +36,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 const FreeTier = "M0"
@@ -96,11 +95,10 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		if transition != nil {
 			return transition(workflow.DeploymentAdvancedOptionsReady)
 		}
-		if !version.IsExperimental() {
-			err := r.ensureConnectionSecrets(ctx, projectService, akoCluster, atlasCluster.GetConnection())
-			if err != nil {
-				return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
-			}
+
+		err := r.ensureConnectionSecrets(ctx, projectService, akoCluster, atlasCluster.GetConnection())
+		if err != nil {
+			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
 		var results []workflow.DeprecatedResult
@@ -137,7 +135,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 				return r.transitionFromResult(ctx, deploymentService, akoCluster.GetProjectID(), akoCluster.GetCustomResource(), results[i])(workflow.Internal)
 			}
 		}
-		err := customresource.ApplyLastConfigApplied(ctx.Context, akoCluster.GetCustomResource(), r.Client)
+		err = customresource.ApplyLastConfigApplied(ctx.Context, akoCluster.GetCustomResource(), r.Client)
 		if err != nil {
 			return r.terminate(ctx, workflow.Internal, err)
 		}

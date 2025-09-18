@@ -26,7 +26,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Context, projectService project.ProjectService,
@@ -62,11 +61,9 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Conte
 			return r.inProgress(ctx, akoServerless.GetCustomResource(), atlasServerless, workflow.DeploymentUpdating, "deployment is updating")
 		}
 
-		if !version.IsExperimental() {
-			err := r.ensureConnectionSecrets(ctx, projectService, akoServerless, atlasServerless.GetConnection())
-			if err != nil {
-				return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
-			}
+		err := r.ensureConnectionSecrets(ctx, projectService, akoServerless, atlasServerless.GetConnection())
+		if err != nil {
+			return r.terminate(ctx, workflow.DeploymentConnectionSecretsNotCreated, err)
 		}
 
 		// Note: Serverless Private endpoints keep theirs flows without translation layer (yet)
@@ -79,7 +76,7 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Conte
 			return r.terminate(ctx, workflow.ServerlessPrivateEndpointFailed, errors.New(result.GetMessage()))
 		}
 
-		err := customresource.ApplyLastConfigApplied(ctx.Context, akoServerless.GetCustomResource(), r.Client)
+		err = customresource.ApplyLastConfigApplied(ctx.Context, akoServerless.GetCustomResource(), r.Client)
 		if err != nil {
 			return r.terminate(ctx, workflow.Internal, err)
 		}

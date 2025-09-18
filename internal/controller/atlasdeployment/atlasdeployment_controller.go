@@ -52,7 +52,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
@@ -241,14 +240,12 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
 ) error {
 	ctx.Log.Infow("-> Starting AtlasDeployment deletion", "spec", deploymentInAKO)
 
-	if !version.IsExperimental() {
-		err := r.deleteConnectionStrings(ctx, deploymentInAKO)
-		if err != nil {
-			return err
-		}
+	err := r.deleteConnectionStrings(ctx, deploymentInAKO)
+	if err != nil {
+		return err
 	}
 
-	err := deploymentService.DeleteDeployment(ctx.Context, deploymentInAtlas)
+	err = deploymentService.DeleteDeployment(ctx.Context, deploymentInAtlas)
 	if err != nil {
 		ctx.Log.Errorw("Cannot delete Atlas deployment", "error", err)
 		return err

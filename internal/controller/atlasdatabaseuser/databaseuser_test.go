@@ -341,516 +341,510 @@ func TestHandleDatabaseUser(t *testing.T) {
 }
 
 func TestDbuLifeCycle(t *testing.T) {
-	experimentalStates := []string{"true", "false"}
 
-	for _, isExperimental := range experimentalStates {
-		version.Experimental = isExperimental
-		deletionTime := metav1.Now()
-		tests := map[string]struct {
-			dbUserInAKO        *akov2.AtlasDatabaseUser
-			dbUserSecret       *corev1.Secret
-			dbUserService      func() dbuser.AtlasUsersService
-			dService           func() deployment.AtlasDeploymentsService
-			expectedResult     ctrl.Result
-			wantErr            bool
-			expectedConditions []api.Condition
-		}{
-			"failed to get user in atlas": {
-				wantErr: true,
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "888",
-					},
+	deletionTime := metav1.Now()
+	tests := map[string]struct {
+		dbUserInAKO        *akov2.AtlasDatabaseUser
+		dbUserSecret       *corev1.Secret
+		dbUserService      func() dbuser.AtlasUsersService
+		dService           func() deployment.AtlasDeploymentsService
+		expectedResult     ctrl.Result
+		wantErr            bool
+		expectedConditions []api.Condition
+	}{
+		"failed to get user in atlas": {
+			wantErr: true,
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
 					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
+					DatabaseName: "admin",
 				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").
-						Return(nil, errors.New("failed to get user"))
-
-					return service
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.Internal)).
-						WithMessageRegexp("failed to get user"),
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "888",
 				},
 			},
-			"failed to check user is expired": { //nolint:dupl
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName:    "admin",
-						DeleteAfterDate: "wrong-date",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "888",
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
-
-					return service
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedResult: ctrl.Result{},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserInvalidSpec)).
-						WithMessageRegexp("parsing time \"wrong-date\" as \"2006-01-02T15:04:05.999Z\": cannot parse \"wrong-date\" as \"2006\""),
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
 				},
 			},
-			"user is expired": { //nolint:dupl
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName:    "admin",
-						DeleteAfterDate: "2021-05-30T13:45:30Z",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "888",
-					},
-				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").
+					Return(nil, errors.New("failed to get user"))
 
-					return service
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.Internal)).
+					WithMessageRegexp("failed to get user"),
+			},
+		},
+		"failed to check user is expired": { //nolint:dupl
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName:    "admin",
+					DeleteAfterDate: "wrong-date",
 				},
-				expectedResult: ctrl.Result{},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserExpired)).
-						WithMessageRegexp("an expired user cannot be managed"),
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "888",
 				},
 			},
-			"failed to validate scope": {
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-						Scopes: []akov2.ScopeSpec{
-							{
-								Name: "cluster1",
-								Type: akov2.DeploymentScopeType,
-							},
-						},
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "888",
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
-
-					return service
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ClusterExists(context.Background(), "", "cluster1").
-						Return(false, errors.New("failed to check cluster exists"))
-
-					return service
-				},
-				expectedResult: ctrl.Result{},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserInvalidSpec)).
-						WithMessageRegexp("failed to check cluster exists"),
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
 				},
 			},
-			"deployment scope is invalid": {
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-						Scopes: []akov2.ScopeSpec{
-							{
-								Name: "cluster1",
-								Type: akov2.DeploymentScopeType,
-							},
-						},
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "888",
-					},
-				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
 
-					return service
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedResult: ctrl.Result{},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserInvalidSpec)).
+					WithMessageRegexp("parsing time \"wrong-date\" as \"2006-01-02T15:04:05.999Z\": cannot parse \"wrong-date\" as \"2006\""),
+			},
+		},
+		"user is expired": { //nolint:dupl
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ClusterExists(context.Background(), "", "cluster1").
-						Return(false, nil)
-
-					return service
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName:    "admin",
+					DeleteAfterDate: "2021-05-30T13:45:30Z",
 				},
-				expectedResult: ctrl.Result{},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserInvalidSpec)).
-						WithMessageRegexp("\"scopes\" field refer to one or more deployments that don't exist"),
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "888",
 				},
 			},
-			"create an user": {
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
-					service.EXPECT().Create(context.Background(), mock.AnythingOfType("*dbuser.User")).Return(nil)
-
-					return service
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)).
-						WithMessageRegexp("Clusters are scheduled to handle database users updates"),
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
 				},
 			},
-			"update an user": {
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
+
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedResult: ctrl.Result{},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserExpired)).
+					WithMessageRegexp("an expired user cannot be managed"),
+			},
+		},
+		"failed to validate scope": {
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
 					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
+					DatabaseName: "admin",
+					Scopes: []akov2.ScopeSpec{
+						{
+							Name: "cluster1",
+							Type: akov2.DeploymentScopeType,
 						},
-						DatabaseName: "admin",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "999",
 					},
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "888",
+				},
+			},
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").
-						Return(
-							&dbuser.User{
-								AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
-									Username: "user1",
-									PasswordSecret: &common.ResourceRef{
-										Name: "user-pass",
-									},
-									DatabaseName: "admin",
-									Scopes:       []akov2.ScopeSpec{},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
+				},
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
+
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ClusterExists(context.Background(), "", "cluster1").
+					Return(false, errors.New("failed to check cluster exists"))
+
+				return service
+			},
+			expectedResult: ctrl.Result{},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserInvalidSpec)).
+					WithMessageRegexp("failed to check cluster exists"),
+			},
+		},
+		"deployment scope is invalid": {
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+					Scopes: []akov2.ScopeSpec{
+						{
+							Name: "cluster1",
+							Type: akov2.DeploymentScopeType,
+						},
+					},
+				},
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "888",
+				},
+			},
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
+				},
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
+
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ClusterExists(context.Background(), "", "cluster1").
+					Return(false, nil)
+
+				return service
+			},
+			expectedResult: ctrl.Result{},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserInvalidSpec)).
+					WithMessageRegexp("\"scopes\" field refer to one or more deployments that don't exist"),
+			},
+		},
+		"create an user": {
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
+				},
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").Return(nil, nil)
+				service.EXPECT().Create(context.Background(), mock.AnythingOfType("*dbuser.User")).Return(nil)
+
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)).
+					WithMessageRegexp("Clusters are scheduled to handle database users updates"),
+			},
+		},
+		"update an user": {
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "999",
+				},
+			},
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
+				},
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").
+					Return(
+						&dbuser.User{
+							AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
+								Username: "user1",
+								PasswordSecret: &common.ResourceRef{
+									Name: "user-pass",
 								},
+								DatabaseName: "admin",
+								Scopes:       []akov2.ScopeSpec{},
 							},
-							nil,
-						)
+						},
+						nil,
+					)
 
-					return service
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
+				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
+				return service
+			},
+			expectedResult: ctrl.Result{},
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.DatabaseUserReadyType),
+			},
+		},
+		"delete an user": {
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "user1",
+					Namespace:         "default",
+					Finalizers:        []string{"mongodbatlas/finalizer"},
+					DeletionTimestamp: &deletionTime,
 				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
-					if !version.IsExperimental() {
-						service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
-					}
-					return service
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
 				},
-				expectedResult: ctrl.Result{},
-				expectedConditions: []api.Condition{
-					api.TrueCondition(api.ReadyType),
-					api.TrueCondition(api.DatabaseUserReadyType),
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "999",
 				},
 			},
-			"delete an user": {
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "user1",
-						Namespace:         "default",
-						Finalizers:        []string{"mongodbatlas/finalizer"},
-						DeletionTimestamp: &deletionTime,
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "999",
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
 				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").
-						Return(
-							&dbuser.User{
-								AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
-									Username: "user1",
-									PasswordSecret: &common.ResourceRef{
-										Name: "user-pass",
-									},
-									DatabaseName: "admin",
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").
+					Return(
+						&dbuser.User{
+							AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
+								Username: "user1",
+								PasswordSecret: &common.ResourceRef{
+									Name: "user-pass",
 								},
+								DatabaseName: "admin",
 							},
-							nil,
-						)
-					service.EXPECT().Delete(context.Background(), "admin", "", "user1").Return(nil)
-
-					return service
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedResult: ctrl.Result{},
-			},
-			"unmanage an user": {
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "user1",
-						Namespace:         "default",
-						Finalizers:        []string{"mongodbatlas/finalizer"},
-						DeletionTimestamp: &deletionTime,
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
 						},
-						DatabaseName: "admin",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "999",
-					},
-				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Get(context.Background(), "admin", "", "user1").
-						Return(nil, nil)
+						nil,
+					)
+				service.EXPECT().Delete(context.Background(), "admin", "", "user1").Return(nil)
 
-					return service
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedResult: ctrl.Result{},
+				return service
 			},
-		}
-
-		for name, tt := range tests {
-			t.Run(name, func(t *testing.T) {
-				testScheme := runtime.NewScheme()
-				assert.NoError(t, akov2.AddToScheme(testScheme))
-				assert.NoError(t, corev1.AddToScheme(testScheme))
-				k8sClient := fake.NewClientBuilder().
-					WithScheme(testScheme).
-					WithObjects(tt.dbUserInAKO).
-					WithStatusSubresource(tt.dbUserInAKO)
-
-				if tt.dbUserSecret != nil {
-					k8sClient.WithObjects(tt.dbUserSecret)
-				}
-
-				logger := zaptest.NewLogger(t).Sugar()
-				r := AtlasDatabaseUserReconciler{
-					AtlasReconciler: reconciler.AtlasReconciler{
-						Client: k8sClient.Build(),
-						Log:    logger,
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedResult: ctrl.Result{},
+		},
+		"unmanage an user": {
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "user1",
+					Namespace:         "default",
+					Finalizers:        []string{"mongodbatlas/finalizer"},
+					DeletionTimestamp: &deletionTime,
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
 					},
-				}
-				ctx := &workflow.Context{
-					Context: context.Background(),
-					Log:     logger,
-				}
+					DatabaseName: "admin",
+				},
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "999",
+				},
+			},
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
+				},
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Get(context.Background(), "admin", "", "user1").
+					Return(nil, nil)
 
-				result, err := r.dbuLifeCycle(ctx, tt.dbUserService(), tt.dService(), tt.dbUserInAKO, &project.Project{})
-				if tt.wantErr {
-					assert.Error(t, err)
-				} else {
-					assert.NoError(t, err)
-				}
-				assert.Equal(t, tt.expectedResult, result)
-				assert.True(
-					t,
-					cmp.Equal(
-						tt.expectedConditions,
-						ctx.Conditions(),
-						cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
-					),
-				)
-			})
-		}
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedResult: ctrl.Result{},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tt.dbUserInAKO).
+				WithStatusSubresource(tt.dbUserInAKO)
+
+			if tt.dbUserSecret != nil {
+				k8sClient.WithObjects(tt.dbUserSecret)
+			}
+
+			logger := zaptest.NewLogger(t).Sugar()
+			r := AtlasDatabaseUserReconciler{
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: k8sClient.Build(),
+					Log:    logger,
+				},
+			}
+			ctx := &workflow.Context{
+				Context: context.Background(),
+				Log:     logger,
+			}
+
+			result, err := r.dbuLifeCycle(ctx, tt.dbUserService(), tt.dService(), tt.dbUserInAKO, &project.Project{})
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedResult, result)
+			assert.True(
+				t,
+				cmp.Equal(
+					tt.expectedConditions,
+					ctx.Conditions(),
+					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+				),
+			)
+		})
 	}
 }
 func TestCreate(t *testing.T) {
@@ -1098,295 +1092,289 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	experimentalStates := []string{"true", "false"}
 
-	for _, isExperimental := range experimentalStates {
-		version.Experimental = isExperimental
-		tests := map[string]struct {
-			dbUserInAKO        *akov2.AtlasDatabaseUser
-			dbUserSecret       *corev1.Secret
-			dbUserInAtlas      *dbuser.User
-			dbUserService      func() dbuser.AtlasUsersService
-			dService           func() deployment.AtlasDeploymentsService
-			expectedResult     ctrl.Result
-			wantErr            bool
-			expectedConditions []api.Condition
-		}{
-			"failed to read user password": {
-				wantErr: true,
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
+	tests := map[string]struct {
+		dbUserInAKO        *akov2.AtlasDatabaseUser
+		dbUserSecret       *corev1.Secret
+		dbUserInAtlas      *dbuser.User
+		dbUserService      func() dbuser.AtlasUsersService
+		dService           func() deployment.AtlasDeploymentsService
+		expectedResult     ctrl.Result
+		wantErr            bool
+		expectedConditions []api.Condition
+	}{
+		"failed to read user password": {
+			wantErr: true,
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
 					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					return translation.NewAtlasUsersServiceMock(t)
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.Internal)).
-						WithMessageRegexp("secrets \"user-pass\" not found"),
 				},
 			},
-			"failed to convert to internal user": {
-				wantErr: true,
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DeleteAfterDate: "wrong-date",
-					},
+			dbUserService: func() dbuser.AtlasUsersService {
+				return translation.NewAtlasUsersServiceMock(t)
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.Internal)).
+					WithMessageRegexp("secrets \"user-pass\" not found"),
+			},
+		},
+		"failed to convert to internal user": {
+			wantErr: true,
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
 					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					return translation.NewAtlasUsersServiceMock(t)
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.Internal)).
-						WithMessageRegexp("failed to create internal user type: failed to parse \"wrong-date\" to an ISO date: parsing time \"wrong-date\" as \"2006-01-02T15:04:05.999Z\": cannot parse \"wrong-date\" as \"2006\""),
+					DeleteAfterDate: "wrong-date",
 				},
 			},
-			"user hasn't change": {
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "999",
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserInAtlas: &dbuser.User{
-					AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-						Scopes:       []akov2.ScopeSpec{},
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					return translation.NewAtlasUsersServiceMock(t)
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
-					if !version.IsExperimental() {
-						service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
-					}
-					return service
-				},
-				expectedResult: ctrl.Result{},
-				expectedConditions: []api.Condition{
-					api.TrueCondition(api.ReadyType),
-					api.TrueCondition(api.DatabaseUserReadyType),
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
 				},
 			},
-			"failed to update user": {
-				wantErr: true,
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "888",
-					},
+			dbUserService: func() dbuser.AtlasUsersService {
+				return translation.NewAtlasUsersServiceMock(t)
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.Internal)).
+					WithMessageRegexp("failed to create internal user type: failed to parse \"wrong-date\" to an ISO date: parsing time \"wrong-date\" as \"2006-01-02T15:04:05.999Z\": cannot parse \"wrong-date\" as \"2006\""),
+			},
+		},
+		"user hasn't change": {
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
 					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
+					DatabaseName: "admin",
 				},
-				dbUserInAtlas: &dbuser.User{
-					AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Update(context.Background(), mock.AnythingOfType("*dbuser.User")).
-						Return(errors.New("failed to update user"))
-
-					return service
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserNotUpdatedInAtlas)).
-						WithMessageRegexp("failed to update user"),
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "999",
 				},
 			},
-			"update user": {
-				dbUserInAKO: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-					},
-					Status: status.AtlasDatabaseUserStatus{
-						PasswordVersion: "888",
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 				},
-				dbUserSecret: &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user-pass",
-						Namespace: "default",
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
-					},
-					Data: map[string][]byte{
-						"password": []byte("Passw0rd!"),
-					},
-				},
-				dbUserInAtlas: &dbuser.User{
-					AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						DatabaseName: "admin",
-					},
-				},
-				dbUserService: func() dbuser.AtlasUsersService {
-					service := translation.NewAtlasUsersServiceMock(t)
-					service.EXPECT().Update(context.Background(), mock.AnythingOfType("*dbuser.User")).Return(nil)
-
-					return service
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					return translation.NewAtlasDeploymentsServiceMock(t)
-				},
-				expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)).
-						WithMessageRegexp("Clusters are scheduled to handle database users updates"),
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
 				},
 			},
-		}
-
-		for name, tt := range tests {
-			t.Run(name, func(t *testing.T) {
-				testScheme := runtime.NewScheme()
-				assert.NoError(t, akov2.AddToScheme(testScheme))
-				assert.NoError(t, corev1.AddToScheme(testScheme))
-				k8sClient := fake.NewClientBuilder().
-					WithScheme(testScheme).
-					WithObjects(tt.dbUserInAKO).
-					WithStatusSubresource(tt.dbUserInAKO)
-
-				if tt.dbUserSecret != nil {
-					k8sClient.WithObjects(tt.dbUserSecret)
-				}
-
-				logger := zaptest.NewLogger(t).Sugar()
-				r := AtlasDatabaseUserReconciler{
-					AtlasReconciler: reconciler.AtlasReconciler{
-						Client: k8sClient.Build(),
-						Log:    logger,
+			dbUserInAtlas: &dbuser.User{
+				AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
 					},
-				}
-				ctx := &workflow.Context{
-					Context: context.Background(),
-					Log:     logger,
-				}
+					DatabaseName: "admin",
+					Scopes:       []akov2.ScopeSpec{},
+				},
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				return translation.NewAtlasUsersServiceMock(t)
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").Return([]string{}, nil)
+				service.EXPECT().ListDeploymentConnections(context.Background(), "").Return([]deployment.Connection{}, nil)
+				return service
+			},
+			expectedResult: ctrl.Result{},
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.DatabaseUserReadyType),
+			},
+		},
+		"failed to update user": {
+			wantErr: true,
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "888",
+				},
+			},
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
+				},
+			},
+			dbUserInAtlas: &dbuser.User{
+				AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Update(context.Background(), mock.AnythingOfType("*dbuser.User")).
+					Return(errors.New("failed to update user"))
 
-				result, err := r.update(ctx, tt.dbUserService(), tt.dService(), &project.Project{}, tt.dbUserInAKO, tt.dbUserInAtlas)
-				if tt.wantErr {
-					assert.Error(t, err)
-				} else {
-					assert.NoError(t, err)
-				}
-				assert.Equal(t, tt.expectedResult, result)
-				assert.True(
-					t,
-					cmp.Equal(
-						tt.expectedConditions,
-						ctx.Conditions(),
-						cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
-					),
-				)
-			})
-		}
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserNotUpdatedInAtlas)).
+					WithMessageRegexp("failed to update user"),
+			},
+		},
+		"update user": {
+			dbUserInAKO: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+				Status: status.AtlasDatabaseUserStatus{
+					PasswordVersion: "888",
+				},
+			},
+			dbUserSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-pass",
+					Namespace: "default",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
+				},
+				Data: map[string][]byte{
+					"password": []byte("Passw0rd!"),
+				},
+			},
+			dbUserInAtlas: &dbuser.User{
+				AtlasDatabaseUserSpec: &akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					DatabaseName: "admin",
+				},
+			},
+			dbUserService: func() dbuser.AtlasUsersService {
+				service := translation.NewAtlasUsersServiceMock(t)
+				service.EXPECT().Update(context.Background(), mock.AnythingOfType("*dbuser.User")).Return(nil)
+
+				return service
+			},
+			dService: func() deployment.AtlasDeploymentsService {
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)).
+					WithMessageRegexp("Clusters are scheduled to handle database users updates"),
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tt.dbUserInAKO).
+				WithStatusSubresource(tt.dbUserInAKO)
+
+			if tt.dbUserSecret != nil {
+				k8sClient.WithObjects(tt.dbUserSecret)
+			}
+
+			logger := zaptest.NewLogger(t).Sugar()
+			r := AtlasDatabaseUserReconciler{
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: k8sClient.Build(),
+					Log:    logger,
+				},
+			}
+			ctx := &workflow.Context{
+				Context: context.Background(),
+				Log:     logger,
+			}
+
+			result, err := r.update(ctx, tt.dbUserService(), tt.dService(), &project.Project{}, tt.dbUserInAKO, tt.dbUserInAtlas)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedResult, result)
+			assert.True(
+				t,
+				cmp.Equal(
+					tt.expectedConditions,
+					ctx.Conditions(),
+					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+				),
+			)
+		})
 	}
 }
 
@@ -1566,237 +1554,224 @@ func TestDelete(t *testing.T) {
 }
 
 func TestReadiness(t *testing.T) {
-	experimentalStates := []string{"true", "false"}
 
-	for _, isExperimental := range experimentalStates {
-		version.Experimental = isExperimental
-		tests := map[string]struct {
-			experimentalShouldRun bool
-			dbUser                *akov2.AtlasDatabaseUser
-			dService              func() deployment.AtlasDeploymentsService
-			expectedResult        ctrl.Result
-			wantErr               bool
-			expectedConditions    []api.Condition
-		}{
-			"failed to list cluster names": {
-				experimentalShouldRun: true,
-				wantErr:               true,
-				dbUser: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-					},
+	tests := map[string]struct {
+		dbUser             *akov2.AtlasDatabaseUser
+		dService           func() deployment.AtlasDeploymentsService
+		expectedResult     ctrl.Result
+		wantErr            bool
+		expectedConditions []api.Condition
+	}{
+		"failed to list cluster names": {
+			wantErr: true,
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ListDeploymentNames(context.Background(), "").
-						Return(nil, errors.New("failed to list cluster names"))
-
-					return service
-				},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.Internal)).
-						WithMessageRegexp("failed to list cluster names"),
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
 				},
 			},
-			"failed to check deployment status": {
-				experimentalShouldRun: true,
-				wantErr:               true,
-				dbUser: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						Scopes: []akov2.ScopeSpec{
-							{
-								Name: "cluster2",
-								Type: akov2.DeploymentScopeType,
-							},
-						},
-					},
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ListDeploymentNames(context.Background(), "").
-						Return([]string{"cluster1", "cluster2"}, nil)
-					service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
-						Return(false, errors.New("failed to check status"))
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
+					Return(nil, errors.New("failed to list cluster names"))
 
-					return service
+				return service
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.Internal)).
+					WithMessageRegexp("failed to list cluster names"),
+			},
+		},
+		"failed to check deployment status": {
+			wantErr: true,
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.Internal)).
-						WithMessageRegexp("failed to check status"),
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					Scopes: []akov2.ScopeSpec{
+						{
+							Name: "cluster2",
+							Type: akov2.DeploymentScopeType,
+						},
+					},
 				},
 			},
-			"deployments are in progress": {
-				dbUser: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						Scopes: []akov2.ScopeSpec{
-							{
-								Name: "cluster2",
-								Type: akov2.DeploymentScopeType,
-							},
-						},
-					},
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ListDeploymentNames(context.Background(), "").
-						Return([]string{"cluster1", "cluster2"}, nil)
-					service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
-						Return(false, nil)
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
+					Return([]string{"cluster1", "cluster2"}, nil)
+				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
+					Return(false, errors.New("failed to check status"))
 
-					return service
+				return service
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.Internal)).
+					WithMessageRegexp("failed to check status"),
+			},
+		},
+		"deployments are in progress": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)).
-						WithMessageRegexp("0 out of 1 deployments have applied database user changes"),
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					Scopes: []akov2.ScopeSpec{
+						{
+							Name: "cluster2",
+							Type: akov2.DeploymentScopeType,
+						},
+					},
 				},
 			},
-			"failed to create connection secrets": {
-				experimentalShouldRun: false,
-				wantErr:               true,
-				dbUser: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						Scopes: []akov2.ScopeSpec{
-							{
-								Name: "cluster2",
-								Type: akov2.DeploymentScopeType,
-							},
-						},
-					},
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ListDeploymentNames(context.Background(), "").
-						Return([]string{"cluster1", "cluster2"}, nil)
-					service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
-						Return(true, nil)
-					service.EXPECT().ListDeploymentConnections(context.Background(), "").
-						Return(nil, errors.New("failed to list cluster connections"))
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
+					Return([]string{"cluster1", "cluster2"}, nil)
+				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
+					Return(false, nil)
 
-					return service
+				return service
+			},
+			expectedResult: ctrl.Result{RequeueAfter: workflow.DefaultRetry},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)).
+					WithMessageRegexp("0 out of 1 deployments have applied database user changes"),
+			},
+		},
+		"failed to create connection secrets": {
+			wantErr: true,
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				expectedConditions: []api.Condition{
-					api.FalseCondition(api.DatabaseUserReadyType).
-						WithReason(string(workflow.DatabaseUserConnectionSecretsNotCreated)).
-						WithMessageRegexp("failed to list cluster connections"),
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					Scopes: []akov2.ScopeSpec{
+						{
+							Name: "cluster2",
+							Type: akov2.DeploymentScopeType,
+						},
+					},
 				},
 			},
-			"resource is ready": {
-				experimentalShouldRun: true,
-				dbUser: &akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "user1",
-						Namespace: "default",
-					},
-					Spec: akov2.AtlasDatabaseUserSpec{
-						Username: "user1",
-						PasswordSecret: &common.ResourceRef{
-							Name: "user-pass",
-						},
-						Scopes: []akov2.ScopeSpec{
-							{
-								Name: "cluster2",
-								Type: akov2.DeploymentScopeType,
-							},
-						},
-					},
-				},
-				dService: func() deployment.AtlasDeploymentsService {
-					service := translation.NewAtlasDeploymentsServiceMock(t)
-					service.EXPECT().ListDeploymentNames(context.Background(), "").
-						Return([]string{"cluster1", "cluster2"}, nil)
-					service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
-						Return(true, nil)
-					if !version.IsExperimental() {
-						service.EXPECT().ListDeploymentConnections(context.Background(), "").
-							Return([]deployment.Connection{}, nil)
-					}
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
+					Return([]string{"cluster1", "cluster2"}, nil)
+				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
+					Return(true, nil)
+				service.EXPECT().ListDeploymentConnections(context.Background(), "").
+					Return(nil, errors.New("failed to list cluster connections"))
 
-					return service
+				return service
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DatabaseUserReadyType).
+					WithReason(string(workflow.DatabaseUserConnectionSecretsNotCreated)).
+					WithMessageRegexp("failed to list cluster connections"),
+			},
+		},
+		"resource is ready": {
+			dbUser: &akov2.AtlasDatabaseUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user1",
+					Namespace: "default",
 				},
-				expectedResult: ctrl.Result{},
-				expectedConditions: []api.Condition{
-					api.TrueCondition(api.ReadyType),
-					api.TrueCondition(api.DatabaseUserReadyType),
+				Spec: akov2.AtlasDatabaseUserSpec{
+					Username: "user1",
+					PasswordSecret: &common.ResourceRef{
+						Name: "user-pass",
+					},
+					Scopes: []akov2.ScopeSpec{
+						{
+							Name: "cluster2",
+							Type: akov2.DeploymentScopeType,
+						},
+					},
 				},
 			},
-		}
+			dService: func() deployment.AtlasDeploymentsService {
+				service := translation.NewAtlasDeploymentsServiceMock(t)
+				service.EXPECT().ListDeploymentNames(context.Background(), "").
+					Return([]string{"cluster1", "cluster2"}, nil)
+				service.EXPECT().DeploymentIsReady(context.Background(), "", "cluster2").
+					Return(true, nil)
+				service.EXPECT().ListDeploymentConnections(context.Background(), "").
+					Return([]deployment.Connection{}, nil)
 
-		for name, tt := range tests {
-			if !version.IsExperimental() || (tt.experimentalShouldRun && version.IsExperimental()) {
-				t.Run(name, func(t *testing.T) {
-					testScheme := runtime.NewScheme()
-					assert.NoError(t, akov2.AddToScheme(testScheme))
-					assert.NoError(t, corev1.AddToScheme(testScheme))
-					k8sClient := fake.NewClientBuilder().
-						WithScheme(testScheme).
-						WithObjects(tt.dbUser).
-						WithStatusSubresource(tt.dbUser).
-						Build()
-					logger := zaptest.NewLogger(t).Sugar()
-					r := AtlasDatabaseUserReconciler{
-						AtlasReconciler: reconciler.AtlasReconciler{
-							Client: k8sClient,
-							Log:    logger,
-						},
-					}
-					ctx := &workflow.Context{
-						Context: context.Background(),
-						Log:     logger,
-					}
+				return service
+			},
+			expectedResult: ctrl.Result{},
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.DatabaseUserReadyType),
+			},
+		},
+	}
 
-					result, err := r.readiness(ctx, tt.dService(), &project.Project{}, tt.dbUser, "999")
-					if tt.wantErr {
-						assert.Error(t, err)
-					} else {
-						assert.NoError(t, err)
-					}
-					assert.Equal(t, tt.expectedResult, result)
-					assert.True(
-						t,
-						cmp.Equal(
-							tt.expectedConditions,
-							ctx.Conditions(),
-							cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
-						),
-					)
-				})
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(tt.dbUser).
+				WithStatusSubresource(tt.dbUser).
+				Build()
+			logger := zaptest.NewLogger(t).Sugar()
+			r := AtlasDatabaseUserReconciler{
+				AtlasReconciler: reconciler.AtlasReconciler{
+					Client: k8sClient,
+					Log:    logger,
+				},
 			}
-		}
+			ctx := &workflow.Context{
+				Context: context.Background(),
+				Log:     logger,
+			}
+
+			result, err := r.readiness(ctx, tt.dService(), &project.Project{}, tt.dbUser, "999")
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedResult, result)
+			assert.True(
+				t,
+				cmp.Equal(
+					tt.expectedConditions,
+					ctx.Conditions(),
+					cmpopts.IgnoreFields(api.Condition{}, "LastTransitionTime"),
+				),
+			)
+		})
 	}
 }
 
