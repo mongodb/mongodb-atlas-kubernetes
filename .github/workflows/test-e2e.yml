@@ -68,6 +68,8 @@ jobs:
     needs: [prepare-e2e]
     runs-on: ubuntu-latest
     environment: test
+    env:
+      AKO_DEPRECATION_WARNINGS: true
     strategy:
       fail-fast: false
       matrix:
