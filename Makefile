@@ -277,8 +277,6 @@ generate: ${GO_SOURCES} ## Generate code
 ifdef EXPERIMENTAL
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
 endif
-	go version
-	go install github.com/vektra/mockery/v2@v2.53.5
 	mockery
 	$(MAKE) fmt
 
