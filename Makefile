@@ -145,6 +145,8 @@ HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
 HELM_AKO_NAMESPACE = $(OPERATOR_NAMESPACE)
 
+GO_BIN := $(shell go env GOPATH)/bin
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -278,7 +280,7 @@ ifdef EXPERIMENTAL
 	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
 endif
 	go install github.com/vektra/mockery/v2@v2.53.5
-	mockery
+	$(GO_BIN)/mockery
 	$(MAKE) fmt
 
 .PHONY: check-missing-files
