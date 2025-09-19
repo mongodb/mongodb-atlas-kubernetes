@@ -29,6 +29,8 @@ import (
 // If the command fails to run, the given test is being failed immediately.
 func RunCommand(t *testing.T, name string, args ...string) io.Reader {
 	var result bytes.Buffer
+	// disabling linter: no need to pass context on a helper
+	// nolint:noctx
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = &result
 	cmd.Stderr = &result
