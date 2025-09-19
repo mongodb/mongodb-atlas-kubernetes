@@ -31,7 +31,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
@@ -47,7 +47,7 @@ const (
 	AtlasThirdPartyIntegrationsCRDName = "atlasthirdpartyintegrations.atlas.mongodb.com"
 )
 
-var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("nightly-integration", "integrations-ctlr"), func() {
+var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctlr"), func() {
 	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
@@ -238,7 +238,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("ni
 				Name:      "victor-ops-secret",
 				Namespace: testNamespace.Name,
 				Labels: map[string]string{
-					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					secretservice.TypeLabelKey: secretservice.CredLabelVal,
 				},
 			},
 			Data: map[string][]byte{

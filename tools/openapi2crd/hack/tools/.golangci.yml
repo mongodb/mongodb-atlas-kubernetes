@@ -1,0 +1,48 @@
+# Copyright 2025 MongoDB Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+run:
+  timeout: 3m
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - gochecknoinits
+    - gofmt
+    - revive # replaces golint for now
+    - misspell
+    - exportloopref
+    - unparam
+
+linters-settings:
+  staticcheck:
+    checks:
+    - all
+
+issues:
+  exclude-rules:
+    # this requires renaming all unused parameters, we'd rather leave a preferred
+    # placeholder name in place when implementing an interface etc.
+    # we can revisit this later, right now it's generating a lot of new warnings
+    # after upgrading golangci-lint
+    - text: "^unused-parameter: .*"
+      linters:
+        - revive

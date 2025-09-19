@@ -8,12 +8,14 @@ on:
       - 'main'
     paths-ignore:
       - 'docs/**'
+      - 'tools/**'
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled]
     branches:
       - '**'
     paths-ignore:
       - 'docs/**'
+      - 'tools/**'
   merge_group:
   workflow_dispatch:
     inputs:
@@ -25,6 +27,9 @@ on:
         options:
           - "true"
           - "false"
+    paths-ignore:
+      - 'docs/**'
+      - 'tools/**'
 
 jobs:
   run-tests:

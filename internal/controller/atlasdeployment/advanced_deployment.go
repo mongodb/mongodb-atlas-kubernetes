@@ -28,8 +28,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
@@ -187,21 +187,21 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 			return err
 		}
 
-		data := connectionsecret.ConnectionData{
+		data := secretservice.ConnectionData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
 			ConnURL:    connection.Standard,
 			SrvConnURL: connection.StandardSrv,
 		}
 		if connection.Private != "" {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, connectionsecret.PrivateLinkConnURLs{
+			data.PrivateConnURLs = append(data.PrivateConnURLs, secretservice.PrivateLinkConnURLs{
 				PvtConnURL:    connection.Private,
 				PvtSrvConnURL: connection.PrivateSrv,
 			})
 		}
 
 		for _, pe := range connection.PrivateEndpoint {
-			data.PrivateConnURLs = append(data.PrivateConnURLs, connectionsecret.PrivateLinkConnURLs{
+			data.PrivateConnURLs = append(data.PrivateConnURLs, secretservice.PrivateLinkConnURLs{
 				PvtConnURL:      pe.ConnectionString,
 				PvtSrvConnURL:   pe.SRVConnectionString,
 				PvtShardConnURL: pe.SRVShardOptimizedConnectionString,
@@ -214,7 +214,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 		}
 
 		ctx.Log.Debugw("Creating a connection Secret", "data", data)
-		secretName, err := connectionsecret.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Name, deploymentInAKO.GetProjectID(), deploymentInAKO.GetName(), data)
+		secretName, err := secretservice.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Name, deploymentInAKO.GetProjectID(), deploymentInAKO.GetName(), data)
 		if err != nil {
 			return err
 		}

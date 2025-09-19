@@ -37,7 +37,7 @@ const (
 	AtlasProjectCRDName = "atlasprojects.atlas.mongodb.com"
 )
 
-var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("nightly-core", "ako-start-stop"), func() {
+var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start-stop"), func() {
 	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
