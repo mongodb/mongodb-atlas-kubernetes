@@ -537,54 +537,6 @@
       "last_modified": "2025-09-16T13:27:06Z",
       "resolved": "github:NixOS/nixpkgs/08b8f92ac6354983f5382124fef6006cade4a1c1?lastModified=1758029226&narHash=sha256-TjqVmbpoCqWywY9xIZLTf6ANFvDCXdctCjoYuYPYdMI%3D#golangci-lint"
     },
-    "go-mockery@2": {
-      "last_modified": "2025-07-13T22:45:35Z",
-      "resolved": "github:NixOS/nixpkgs/a421ac6595024edcfbb1ef950a3712b89161c359#go-mockery",
-      "source": "devbox-search",
-      "version": "2.53.3",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/gymm44dbi3sp824ghj28z7xdp5y0z8ij-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/gymm44dbi3sp824ghj28z7xdp5y0z8ij-go-mockery-2.53.3"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/7almddm7x5spkllll4avz0fd19slcvvj-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/7almddm7x5spkllll4avz0fd19slcvvj-go-mockery-2.53.3"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/xxd8ynzjqi4v0jahgzs9k45mj0ymcsns-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/xxd8ynzjqi4v0jahgzs9k45mj0ymcsns-go-mockery-2.53.3"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/p7cdcd71qnf8k6h1fyrsx42a768w02c2-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/p7cdcd71qnf8k6h1fyrsx42a768w02c2-go-mockery-2.53.3"
-        }
-      }
-    },
     "gotests@latest": {
       "last_modified": "2025-07-28T17:09:23Z",
       "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#gotests",
