@@ -111,7 +111,8 @@ func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Oper
 		return NewEmbeddedOperator(run.Run, cmdArgs)
 	}
 	cmdLine := append(operatorCommand(), cmdArgs...)
-	//nolint:gosec
+	// disabling linter: no need to pass context on a helper
+	// nolint:gosec,noctx
 	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
 
 	// works around  https://github.com/golang/go/issues/40467

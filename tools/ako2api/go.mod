@@ -1,6 +1,6 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api
 
-go 1.24.7
+go 1.25.1
 
 require (
 	github.com/stretchr/testify v1.10.0

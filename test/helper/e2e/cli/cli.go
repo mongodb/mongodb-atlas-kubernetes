@@ -35,6 +35,8 @@ func ExecuteWithoutWriter(command string, args ...string) *gexec.Session {
 }
 
 func ExecuteCommand(reporter io.Writer, command string, args ...string) *gexec.Session {
+	// disabling linter: no need to pass context on a helper
+	// nolint:noctx
 	cmd := exec.Command(command, args...)
 	session, _ := gexec.Start(cmd, reporter, reporter)
 	return session
