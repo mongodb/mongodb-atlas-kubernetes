@@ -17,12 +17,13 @@ set -eou pipefail
 
 git config --global --add safe.directory /github/workspace
 
-# Get the full commit hash and shorten to 7 characters
+commit_id=$(git rev-parse --short HEAD)
+
+# If commit passed shorten to 8 characters
 full_commit_sha="${INPUT_COMMIT_SHA:-}"
-if [ -z "$full_commit_sha" ]; then
-  full_commit_sha=$(git rev-parse HEAD)
+if [ -n "$full_commit_sha" ]; then
+  commit_id=$(echo "$full_commit_sha" | cut -c1-8)
 fi
-commit_id=$(echo "$full_commit_sha" | cut -c1-7)
 
 # Get the full branch name
 branch_name="${INPUT_BRANCH_NAME:-}"

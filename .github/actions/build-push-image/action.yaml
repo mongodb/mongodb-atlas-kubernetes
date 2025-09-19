@@ -1,22 +1,11 @@
 name: Build Container Image
 description: Builds the operator container image for the given architecture
 inputs:
-  get-existing-cache:
-    description: 'Get cache from the previous build'
-    required: false
-    default: 'false'
   platforms:
     description: The list of platforms for which the image will be built
     required: true
   version:
-    description: The version of the operator will be built
-    required: true
-  certified_version:
-    description: The certified version of the operator will be built
-    default: ''
-    required: false
-  repository:
-    description: The name of repository to build image
+    description: The version of the operator binary will be built
     required: true
   file:
     description: Name of the dockerfile relative to context
@@ -24,10 +13,10 @@ inputs:
     default: Dockerfile
   docker_username:
     description: The username to access the docker registry
-    required: true
+    required: false
   docker_password:
     description: The password to access the docker registry
-    required: true
+    required: false
   push_to_docker:
     description: Push image to docker.io
     required: false

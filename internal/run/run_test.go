@@ -15,15 +15,21 @@
 package run
 
 import (
+	"bytes"
 	"flag"
+	"fmt"
+	"io"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 func Test_configureDeletionProtection(t *testing.T) {
@@ -329,4 +335,34 @@ func TestParseConfiguration(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+func TestRunVersion(t *testing.T) {
+	t.Run("should display version information", func(t *testing.T) {
+		originalStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		version.Version = "1.2.3"
+		version.GitCommit = "abc123"
+		version.BuildTime = "2024-01-01T00:00:00Z"
+		runVersion()
+
+		require.NoError(t, w.Close())
+		os.Stdout = originalStdout
+
+		// 5. Read the captured output from the pipe's reader
+		var buf bytes.Buffer
+		_, err := io.Copy(&buf, r)
+		require.NoError(t, err)
+
+		expected := fmt.Sprintf(`Version     : 1.2.3
+GitCommit   : abc123
+GoVersion   : %s
+Platform    : %s/%s
+BuildTime   : 2024-01-01T00:00:00Z
+Experimental: false
+`, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		assert.Equal(t, expected, buf.String())
+	})
 }

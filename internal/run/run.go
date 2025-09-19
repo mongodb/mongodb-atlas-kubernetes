@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -28,7 +29,7 @@ import (
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"k8s.io/apimachinery/pkg/runtime"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -58,7 +59,7 @@ const (
 )
 
 func Run(ctx context.Context, fs *flag.FlagSet, args []string) error {
-	akoScheme := runtime.NewScheme()
+	akoScheme := apiruntime.NewScheme()
 	utilruntime.Must(scheme.AddToScheme(akoScheme))
 	utilruntime.Must(akov2.AddToScheme(akoScheme))
 
@@ -157,7 +158,7 @@ func parseConfiguration(fs *flag.FlagSet, args []string) (Config, error) {
 	}
 
 	if *appVersion {
-		fmt.Println(version.Version)
+		runVersion()
 		os.Exit(0)
 	}
 
@@ -293,5 +294,40 @@ func configureDeletionProtection(fs *flag.FlagSet, config *Config) {
 		default:
 			config.SubObjectDeletionProtection = subobjectDeletionProtectionDefault
 		}
+	}
+}
+
+func runVersion() {
+	v := map[string]string{
+		"Version":      version.Version,
+		"GitCommit":    version.GitCommit,
+		"GoVersion":    runtime.Version(),
+		"Platform":     fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		"BuildTime":    version.BuildTime,
+		"Experimental": version.Experimental,
+	}
+	orderedKeys := []string{
+		"Version",
+		"GitCommit",
+		"GoVersion",
+		"Platform",
+		"BuildTime",
+		"Experimental",
+	}
+
+	maxKeyLength := 0
+	for k := range v {
+		if len(k) > maxKeyLength {
+			maxKeyLength = len(k)
+		}
+	}
+
+	// Create the format string dynamically
+	// e.g., "%-12s: %s\n"
+	format := fmt.Sprintf("%%-%ds: %%s\n", maxKeyLength)
+
+	for _, key := range orderedKeys {
+		value := v[key]
+		fmt.Printf(format, key, value)
 	}
 }
