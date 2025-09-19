@@ -47,22 +47,12 @@ func main() {
 	out.WriteString("|Type|Java Method|Date|\n|------|------|------|\n")
 
 	for scanner.Scan() {
-		example := scanner.Text()
-		// Non-JSON logs mean we split by tabs
-		split := strings.Split(example, "\t")
-
-		// Last element is the JSON "body" of the log line
-		example = split[len(split)-1]
-		example = strings.Replace(example, "***", "{", 1)
-		example = strings.Replace(example, "***", "}", 1)
-
-		res := DeprecationResponse{}
-		err = json.Unmarshal([]byte(example), &res)
+		line, err := parseLogLine(scanner.Text())
 		if err != nil {
-			log.Warn("failed to unmarshal JSON", zap.Error(err))
+			log.Warn(err.Error())
 			continue
 		}
-		responses = append(responses, res)
+		responses = append(responses, line)
 	}
 
 	// Quit out if there is no deprecations logged
@@ -90,4 +80,20 @@ func main() {
 
 	// Print to stdout
 	fmt.Println(out.String())
+}
+
+func parseLogLine(line string) (DeprecationResponse, error) {
+	// Non-JSON logs mean we split by tabs
+	split := strings.Split(line, "\t")
+	fmt.Println(split)
+
+	// Last element is the JSON "body" of the log line
+	line = split[len(split)-1]
+	line = strings.Replace(line, "***", "{", 1)
+	line = strings.Replace(line, "***", "}", 1)
+
+	res := DeprecationResponse{}
+	err := json.Unmarshal([]byte(line), &res)
+
+	return res, err
 }

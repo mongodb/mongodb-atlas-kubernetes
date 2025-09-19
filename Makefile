@@ -642,7 +642,7 @@ tools/githubjobs/githubjobs: tools/githubjobs/*.go
 	cd tools/githubjobs && go build .
 
 tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
-	cd tools/scandeprecation && go build .
+	cd tools/scandeprecation && go test . && go build .
 
 
 .PHONY: slack-deprecations
