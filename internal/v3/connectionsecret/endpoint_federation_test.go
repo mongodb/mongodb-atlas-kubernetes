@@ -172,13 +172,6 @@ func TestFederationEndpoint_GetProjectID(t *testing.T) {
 	)
 }
 
-func TestFederationEndpoint_ListObj(t *testing.T) {
-	e := FederationEndpoint{}
-	list := e.ListObj()
-	_, ok := list.(*akov2.AtlasDataFederationList)
-	assert.True(t, ok)
-}
-
 func TestFederationEndpoint_SelectorByProject(t *testing.T) {
 	e := FederationEndpoint{}
 	s := e.SelectorByProject("p123")
@@ -192,33 +185,6 @@ func TestFederationEndpoint_SelectorByProjectAndName(t *testing.T) {
 	s := e.SelectorByProjectAndName(ids)
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDataFederationBySpecNameAndProjectID: "pX-dfY"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDataFederationBySpecNameAndProjectID: "pX-dfZ"}))
-}
-
-func TestFederationEndpoint_ExtractList(t *testing.T) {
-	r := createDummyEnv(t, nil)
-
-	dfList := &akov2.AtlasDataFederationList{
-		Items: []akov2.AtlasDataFederation{
-			{Spec: akov2.DataFederationSpec{Name: "a"}},
-			{Spec: akov2.DataFederationSpec{Name: "b"}},
-		},
-	}
-
-	e := FederationEndpoint{
-		k8s:             r.Client,
-		provider:        r.AtlasProvider,
-		globalSecretRef: r.GlobalSecretRef,
-		log:             r.Log,
-	}
-	out, err := e.ExtractList(dfList)
-	assert.NoError(t, err)
-	if assert.Len(t, out, 2) {
-		assert.Equal(t, "a", out[0].GetName())
-		assert.Equal(t, "b", out[1].GetName())
-	}
-
-	_, err = e.ExtractList(&akov2.AtlasProjectList{})
-	assert.Error(t, err)
 }
 
 func TestFederationEndpoint_BuildConnData(t *testing.T) {

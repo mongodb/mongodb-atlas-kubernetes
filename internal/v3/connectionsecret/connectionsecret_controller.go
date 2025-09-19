@@ -62,13 +62,8 @@ type Endpoint interface {
 	IsReady() bool
 	GetScopeType() akov2.ScopeType
 	GetProjectID(ctx context.Context) (string, error)
-	GetConnectionType() string
-
-	ListObj() client.ObjectList
-	ExtractList(client.ObjectList) ([]Endpoint, error)
 	SelectorByProject(projectID string) fields.Selector
 	SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector
-
 	BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error)
 }
 
@@ -198,7 +193,15 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 				continue
 			}
 
-			name := CreateInternalFormat(projectID, ep.GetName(), u.Spec.Username, ep.GetConnectionType())
+			var connectionType string
+			switch ep.(type) {
+			case FederationEndpoint:
+				connectionType = "data-federation"
+			case DeploymentEndpoint:
+				connectionType = "deployment"
+			}
+
+			name := CreateInternalFormat(projectID, ep.GetName(), u.Spec.Username, connectionType)
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: types.NamespacedName{Namespace: u.Namespace, Name: name},
 			})
@@ -207,23 +210,48 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 	return reqs
 }
 
-// listEndpointsByProject retrives all of the Endpoints that live under an AtlasProject
+// listEndpointsByProject retrieves all of the Endpoints that live under an AtlasProject
 func (r *ConnSecretReconciler) listEndpointsByProject(ctx context.Context, projectID string) ([]Endpoint, error) {
 	var out []Endpoint
+
 	for _, kind := range r.EndpointKinds {
-		list := kind.ListObj()
-		if err := r.Client.List(ctx, list, &client.ListOptions{
-			FieldSelector: kind.SelectorByProject(projectID),
-		}); err != nil {
-			return nil, err
-		}
+		switch kind.(type) {
+		case FederationEndpoint:
+			list := &akov2.AtlasDataFederationList{}
+			if err := r.Client.List(ctx, list, &client.ListOptions{
+				FieldSelector: kind.SelectorByProject(projectID),
+			}); err != nil {
+				return nil, err
+			}
 
-		eps, err := kind.ExtractList(list)
-		if err != nil {
-			return nil, err
-		}
+			for i := range list.Items {
+				out = append(out, FederationEndpoint{
+					obj:             &list.Items[i],
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				})
+			}
 
-		out = append(out, eps...)
+		case DeploymentEndpoint:
+			list := &akov2.AtlasDeploymentList{}
+			if err := r.Client.List(ctx, list, &client.ListOptions{
+				FieldSelector: kind.SelectorByProject(projectID),
+			}); err != nil {
+				return nil, err
+			}
+
+			for i := range list.Items {
+				out = append(out, DeploymentEndpoint{
+					obj:             &list.Items[i],
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				})
+			}
+		}
 	}
 
 	return out, nil

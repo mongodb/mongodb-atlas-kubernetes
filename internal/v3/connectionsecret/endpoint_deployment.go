@@ -48,13 +48,6 @@ func resolveProjectIDByKey(ctx context.Context, c client.Client, key client.Obje
 	return proj.ID(), nil
 }
 
-func (e DeploymentEndpoint) GetConnectionType() string {
-	if e.obj == nil {
-		return ""
-	}
-	return "deployment"
-}
-
 // GetName resolves the endpoints name from the spec
 func (e DeploymentEndpoint) GetName() string {
 	if e.obj == nil {
@@ -87,9 +80,6 @@ func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	return "", ErrUnresolvedProjectID
 }
 
-// Defines the list type
-func (DeploymentEndpoint) ListObj() client.ObjectList { return &akov2.AtlasDeploymentList{} }
-
 // Defines the selector to use for indexer when trying to retrieve all endpoints by project
 func (DeploymentEndpoint) SelectorByProject(projectID string) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDeploymentByProject, projectID)
@@ -98,25 +88,6 @@ func (DeploymentEndpoint) SelectorByProject(projectID string) fields.Selector {
 // Defines the selector to use for indexer when trying to retrieve all endpoints by project and spec name
 func (DeploymentEndpoint) SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDeploymentBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
-}
-
-// ExtractList creates a list of Endpoint types to preserve the abstraction
-func (e DeploymentEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error) {
-	l, ok := ol.(*akov2.AtlasDeploymentList)
-	if !ok {
-		return nil, fmt.Errorf("unexpected list type %T", ol)
-	}
-	out := make([]Endpoint, 0, len(l.Items))
-	for i := range l.Items {
-		out = append(out, DeploymentEndpoint{
-			obj:             &l.Items[i],
-			k8s:             e.k8s,
-			provider:        e.provider,
-			globalSecretRef: e.globalSecretRef,
-			log:             e.log,
-		})
-	}
-	return out, nil
 }
 
 // BuildConnData defines the specific function/way for building the ConnSecretData given this type of endpoint

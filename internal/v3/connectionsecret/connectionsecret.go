@@ -162,28 +162,59 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIden
 	// Retrieve the AtlasDatabaseUser using the defined indexers
 	users := &akov2.AtlasDatabaseUserList{}
 	if err := r.Client.List(ctx, users, &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserBySpecUsernameAndProjectID, compositeUserKey),
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasDatabaseUserBySpecUsernameAndProjectID,
+			compositeUserKey,
+		),
 	}); err != nil {
 		return nil, nil, err
 	}
 	usersCount := len(users.Items)
 
-	// Retrieve the Endpoints using the defined indexers
+	// Retrieve Endpoints using the defined indexers
 	totalEndpoints := 0
 	var selected Endpoint
 	for _, kind := range r.EndpointKinds {
-		list := kind.ListObj()
-		if err := r.Client.List(ctx, list, &client.ListOptions{FieldSelector: kind.SelectorByProjectAndName(ids)}); err != nil {
-			return nil, nil, err
+		switch kind.(type) {
+		case FederationEndpoint:
+			list := &akov2.AtlasDataFederationList{}
+			if err := r.Client.List(ctx, list, &client.ListOptions{
+				FieldSelector: kind.SelectorByProjectAndName(ids),
+			}); err != nil {
+				return nil, nil, err
+			}
+
+			if len(list.Items) == 1 {
+				selected = FederationEndpoint{
+					obj:             &list.Items[0],
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				}
+			}
+			totalEndpoints += len(list.Items)
+
+		case DeploymentEndpoint:
+			// Handle DeploymentEndpoint
+			list := &akov2.AtlasDeploymentList{}
+			if err := r.Client.List(ctx, list, &client.ListOptions{
+				FieldSelector: kind.SelectorByProjectAndName(ids),
+			}); err != nil {
+				return nil, nil, err
+			}
+
+			if len(list.Items) == 1 {
+				selected = DeploymentEndpoint{
+					obj:             &list.Items[0],
+					k8s:             r.Client,
+					provider:        r.AtlasProvider,
+					globalSecretRef: r.GlobalSecretRef,
+					log:             r.Log,
+				}
+			}
+			totalEndpoints += len(list.Items)
 		}
-		eps, err := kind.ExtractList(list)
-		if err != nil {
-			return nil, nil, err
-		}
-		if len(eps) == 1 {
-			selected = eps[0]
-		}
-		totalEndpoints += len(eps)
 	}
 
 	// AmbiguousPairing (more than 1 of either resource)
@@ -196,7 +227,7 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIden
 		return &users.Items[0], selected, nil
 	}
 
-	// MissingPairing (one or both missing)
+	// Handle missing pairing cases
 	if usersCount == 0 && totalEndpoints == 0 {
 		return nil, nil, ErrMissingPairing
 	}
@@ -273,7 +304,15 @@ func (r *ConnSecretReconciler) ensureSecret(
 	namespace := user.GetNamespace()
 	log := r.Log.With("ns", namespace, "project", ids.ProjectID)
 
-	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, endpoint.GetConnectionType())
+	var connectionType string
+	switch endpoint.(type) {
+	case FederationEndpoint:
+		connectionType = "data-federation"
+	case DeploymentEndpoint:
+		connectionType = "deployment"
+	}
+
+	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, connectionType)
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -283,7 +322,7 @@ func (r *ConnSecretReconciler) ensureSecret(
 	}
 
 	// Fills the secret.stringData with the information stored in ConnSecretData
-	if err := fillConnSecretData(secret, ids, data, endpoint.GetConnectionType()); err != nil {
+	if err := fillConnSecretData(secret, ids, data, connectionType); err != nil {
 		log.Errorw("failed to fill secret data", "reason", workflow.ConnSecretFailedToFillData, "error", err)
 		return err
 	}

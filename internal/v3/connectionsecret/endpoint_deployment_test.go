@@ -211,13 +211,6 @@ func TestDeploymentEndpoint_GetProjectID(t *testing.T) {
 	}
 }
 
-func TestDeploymentEndpoint_ListObj(t *testing.T) {
-	e := DeploymentEndpoint{}
-	l := e.ListObj()
-	_, ok := l.(*akov2.AtlasDeploymentList)
-	assert.True(t, ok)
-}
-
 func TestDeploymentEndpoint_SelectorByProject(t *testing.T) {
 	e := DeploymentEndpoint{}
 	s := e.SelectorByProject("p-1")
@@ -231,33 +224,6 @@ func TestDeploymentEndpoint_SelectorByProjectAndName(t *testing.T) {
 	s := e.SelectorByProjectAndName(ids)
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDeploymentBySpecNameAndProjectID: "pX-cY"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDeploymentBySpecNameAndProjectID: "pX-cZ"}))
-}
-
-func TestDeploymentEndpoint_ExtractList(t *testing.T) {
-	r := createDummyEnv(t, nil)
-
-	list := &akov2.AtlasDeploymentList{
-		Items: []akov2.AtlasDeployment{
-			{Spec: akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "a"}}},
-			{Spec: akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "b"}}},
-		},
-	}
-
-	e := DeploymentEndpoint{
-		k8s:             r.Client,
-		provider:        r.AtlasProvider,
-		globalSecretRef: r.GlobalSecretRef,
-		log:             r.Log,
-	}
-	out, err := e.ExtractList(list)
-	assert.NoError(t, err)
-	if assert.Len(t, out, 2) {
-		assert.Equal(t, "a", out[0].GetName())
-		assert.Equal(t, "b", out[1].GetName())
-	}
-
-	_, err = e.ExtractList(&akov2.AtlasProjectList{})
-	assert.Error(t, err)
 }
 
 func TestDeploymentEndpoint_BuildConnData(t *testing.T) {

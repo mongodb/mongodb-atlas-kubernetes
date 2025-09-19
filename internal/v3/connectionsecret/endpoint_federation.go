@@ -48,13 +48,6 @@ func (e FederationEndpoint) GetName() string {
 	return e.obj.Spec.Name
 }
 
-func (e FederationEndpoint) GetConnectionType() string {
-	if e.obj == nil {
-		return ""
-	}
-	return "data-federation"
-}
-
 // IsReady returns true if the endpoint is ready
 func (e FederationEndpoint) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
@@ -76,9 +69,6 @@ func (e FederationEndpoint) GetProjectID(ctx context.Context) (string, error) {
 	return "", ErrUnresolvedProjectID
 }
 
-// Defines the list type
-func (FederationEndpoint) ListObj() client.ObjectList { return &akov2.AtlasDataFederationList{} }
-
 // Defines the selector to use for indexer when trying to retrieve all endpoints by project
 func (FederationEndpoint) SelectorByProject(projectID string) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDataFederationByProjectID, projectID)
@@ -87,25 +77,6 @@ func (FederationEndpoint) SelectorByProject(projectID string) fields.Selector {
 // Defines the selector to use for indexer when trying to retrieve all endpoints by project and spec name
 func (FederationEndpoint) SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDataFederationBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
-}
-
-// ExtractList creates a list of Endpoint types to preserve the abstraction
-func (e FederationEndpoint) ExtractList(ol client.ObjectList) ([]Endpoint, error) {
-	l, ok := ol.(*akov2.AtlasDataFederationList)
-	if !ok {
-		return nil, fmt.Errorf("unexpected list type %T", ol)
-	}
-	out := make([]Endpoint, 0, len(l.Items))
-	for i := range l.Items {
-		out = append(out, FederationEndpoint{
-			obj:             &l.Items[i],
-			k8s:             e.k8s,
-			provider:        e.provider,
-			globalSecretRef: e.globalSecretRef,
-			log:             e.log,
-		})
-	}
-	return out, nil
 }
 
 // BuildConnData builds the ConnSecretData for this endpoint type
