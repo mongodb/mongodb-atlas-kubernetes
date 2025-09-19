@@ -169,7 +169,6 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "========================================"
 	export GOOS=linux
 	export GOARCH=amd64
-	GOTOOLCHAIN=local \
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
@@ -180,7 +179,6 @@ check-licenses:  ## Check licenses are compliant with our restrictions
 	@echo "============================================"
 	export GOOS=linux
 	export GOARCH=amd64
-	GOTOOLCHAIN=local \
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
