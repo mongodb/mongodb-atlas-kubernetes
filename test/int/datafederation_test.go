@@ -29,8 +29,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -58,7 +58,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 				Name:      ConnectionSecretName,
 				Namespace: namespace.Name,
 				Labels: map[string]string{
-					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					secretservice.TypeLabelKey: secretservice.CredLabelVal,
 				},
 			},
 			StringData: secretData(),

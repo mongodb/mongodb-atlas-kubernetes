@@ -34,8 +34,8 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -145,9 +145,9 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "fooSecret", Namespace: "bar",
 						Labels: map[string]string{
-							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
-							connectionsecret.ProjectLabelKey: "123",
-							connectionsecret.ClusterLabelKey: "data-federation-name",
+							secretservice.TypeLabelKey:    secretservice.CredLabelVal,
+							secretservice.ProjectLabelKey: "123",
+							secretservice.ClusterLabelKey: "data-federation-name",
 						},
 					},
 				},
@@ -155,9 +155,9 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "keepSecret", Namespace: "bar",
 						Labels: map[string]string{
-							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
-							connectionsecret.ProjectLabelKey: "123",
-							connectionsecret.ClusterLabelKey: "some-cluster",
+							secretservice.TypeLabelKey:    secretservice.CredLabelVal,
+							secretservice.ProjectLabelKey: "123",
+							secretservice.ClusterLabelKey: "some-cluster",
 						},
 					},
 				},
@@ -167,9 +167,9 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "keepSecret", Namespace: "bar",
 						Labels: map[string]string{
-							connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
-							connectionsecret.ProjectLabelKey: "123",
-							connectionsecret.ClusterLabelKey: "some-cluster",
+							secretservice.TypeLabelKey:    secretservice.CredLabelVal,
+							secretservice.ProjectLabelKey: "123",
+							secretservice.ClusterLabelKey: "some-cluster",
 						},
 					},
 				},

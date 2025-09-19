@@ -41,9 +41,9 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
@@ -256,7 +256,7 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
 
 func (r *AtlasDeploymentReconciler) deleteConnectionStrings(ctx *workflow.Context, deployment deployment.Deployment) error {
 	// We always remove the connection secrets even if the deployment is not removed from Atlas
-	secrets, err := connectionsecret.ListByDeploymentName(ctx.Context, r.Client, "", deployment.GetProjectID(), deployment.GetName())
+	secrets, err := secretservice.ListByDeploymentName(ctx.Context, r.Client, "", deployment.GetProjectID(), deployment.GetName())
 	if err != nil {
 		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
 	}

@@ -29,7 +29,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
@@ -315,7 +315,7 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config", 
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "datadog-creds",
 			Labels: map[string]string{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 		},
 		Data: map[string][]byte{

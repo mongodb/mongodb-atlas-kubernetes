@@ -33,7 +33,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
@@ -103,7 +103,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					Name:      "pager-duty-service-key",
 					Namespace: testData.Resources.Namespace,
 					Labels: map[string]string{
-						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+						secretservice.TypeLabelKey: secretservice.CredLabelVal,
 					},
 				},
 				StringData: map[string]string{"password": os.Getenv("PAGER_DUTY_SERVICE_KEY")},
@@ -323,7 +323,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					Name:      "aws-secret",
 					Namespace: testData.Resources.Namespace,
 					Labels: map[string]string{
-						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+						secretservice.TypeLabelKey: secretservice.CredLabelVal,
 					},
 				},
 				Data: map[string][]byte{
@@ -553,7 +553,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					Name:      fmt.Sprintf("%s-dbuser-pass", projectName),
 					Namespace: testData.Resources.Namespace,
 					Labels: map[string]string{
-						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+						secretservice.TypeLabelKey: secretservice.CredLabelVal,
 					},
 				},
 				StringData: map[string]string{"password": "myHardPass2MyDB"},

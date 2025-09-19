@@ -31,7 +31,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
@@ -214,7 +214,7 @@ func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *akov2.Encryption
 			Name:      "aws-secret",
 			Namespace: userData.Resources.Namespace,
 			Labels: map[string]string{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 		},
 		Data: map[string][]byte{
@@ -251,7 +251,7 @@ func fillVaultforAzure(userData *model.TestDataProvider, encAtRest *akov2.Encryp
 			Name:      "az-secret",
 			Namespace: userData.Resources.Namespace,
 			Labels: map[string]string{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 		},
 		Data: map[string][]byte{
@@ -289,7 +289,7 @@ func fillKMSforGCP(userData *model.TestDataProvider, encAtRest *akov2.Encryption
 			Name:      "gcp-secret",
 			Namespace: userData.Resources.Namespace,
 			Labels: map[string]string{
-				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 		},
 		Data: map[string][]byte{
