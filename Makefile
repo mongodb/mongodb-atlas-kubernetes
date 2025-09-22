@@ -651,7 +651,7 @@ slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githu
 
 .PHONY: api-docs
 api-docs:
-	cd tools/crdoc && go tool crdoc --resources ../../config/crd/bases --output ../../docs/api-docs.md
+	cd tools/toolbox && go tool crdoc --resources ../../config/crd/bases --output ../../docs/api-docs.md
 
 .PHONY: validate-api-docs
 validate-api-docs: api-docs

@@ -1,4 +1,4 @@
-module crdoc
+module toolbox
 
 go 1.25.1
 
