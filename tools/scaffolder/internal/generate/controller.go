@@ -28,7 +28,7 @@ const (
 )
 
 // FromConfig generates controllers and handlers based on the parsed CRD result file
-func FromConfig(resultPath, crdKind, controllerOutDir, translationOutDir string) error {
+func FromConfig(resultPath, crdKind, controllerOutDir, translationOutDir, indexerOutDir string) error {
 	parsedConfig, err := ParseCRDConfig(resultPath, crdKind)
 	if err != nil {
 		return err
@@ -42,6 +42,14 @@ func FromConfig(resultPath, crdKind, controllerOutDir, translationOutDir string)
 	}
 	if translationOutDir == "" {
 		translationOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "translation")
+	}
+	
+	// Generate indexers
+	if indexerOutDir == "" {
+		indexerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "indexer")
+	}
+	if err := GenerateIndexers(resultPath, crdKind, indexerOutDir); err != nil {
+		return fmt.Errorf("failed to generate indexers: %w", err)
 	}
 	
 	baseControllerDir := filepath.Join(controllerOutDir, strings.ToLower(resourceName))
