@@ -28,17 +28,26 @@ const (
 )
 
 // FromConfig generates controllers and handlers based on the parsed CRD result file
-func FromConfig(resultPath, crdKind string) error {
+func FromConfig(resultPath, crdKind, controllerOutDir, translationOutDir string) error {
 	parsedConfig, err := ParseCRDConfig(resultPath, crdKind)
 	if err != nil {
 		return err
 	}
 
 	resourceName := parsedConfig.ResourceName
-	baseControllerDir := filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "controller", strings.ToLower(resourceName))
+	
+	// Set default directories if not provided
+	if controllerOutDir == "" {
+		controllerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "controller")
+	}
+	if translationOutDir == "" {
+		translationOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "translation")
+	}
+	
+	baseControllerDir := filepath.Join(controllerOutDir, strings.ToLower(resourceName))
 
 	// Generate translation layers for all mappings
-	if err := GenerateTranslationLayers(resourceName, parsedConfig.Mappings); err != nil {
+	if err := GenerateTranslationLayers(resourceName, parsedConfig.Mappings, translationOutDir); err != nil {
 		return fmt.Errorf("failed to generate translation layers: %w", err)
 	}
 

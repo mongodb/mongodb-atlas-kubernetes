@@ -9,9 +9,11 @@ import (
 )
 
 var (
-	inputPath string
-	crdKind   string
-	listCRDs  bool
+	inputPath        string
+	crdKind          string
+	listCRDs         bool
+	controllerOutDir string
+	translationOutDir string
 )
 
 func main() {
@@ -27,13 +29,15 @@ func main() {
 				return generate.PrintCRDs(inputPath)
 			}
 
-			return generate.FromConfig(inputPath, crdKind)
+			return generate.FromConfig(inputPath, crdKind, controllerOutDir, translationOutDir)
 		},
 	}
 
 	rootCmd.Flags().StringVar(&inputPath, "input", "", "Path to openapi2crd result.yaml file (required)")
 	rootCmd.Flags().StringVar(&crdKind, "crd", "", "CRD kind to generate controller for")
 	rootCmd.Flags().BoolVar(&listCRDs, "list", false, "List available CRDs from result file")
+	rootCmd.Flags().StringVar(&controllerOutDir, "controller-out", "", "Output directory for controller files (default: ../mongodb-atlas-kubernetes/internal/controller)")
+	rootCmd.Flags().StringVar(&translationOutDir, "translation-out", "", "Output directory for translation files (default: ../mongodb-atlas-kubernetes/internal/translation)")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
