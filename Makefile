@@ -448,8 +448,10 @@ actions.txt: .github/workflows/ ## List GitHub Action dependencies
 
 .PHONY: check-major-version
 check-major-version: ## Check that VERSION starts with MAJOR_VERSION
-	@[[ $(VERSION) == $(MAJOR_VERSION).* ]] && echo "Version OK" || \
-	(echo "Bad major version for $(VERSION) expected $(MAJOR_VERSION)"; exit 1)
+	@VERSION_MAJOR=$$(echo "$(VERSION)" | cut -d. -f1 | sed 's/v//'); \
+	CURRENT_MAJOR=$$(jq -r '.current' $(VERSION_FILE) | cut -d. -f1); \
+	[ "$$VERSION_MAJOR" = "$$CURRENT_MAJOR" ] || \
+	(echo "Bad major version for $$VERSION expected $$CURRENT_MAJOR"; exit 1)
 
 tools/makejwt/makejwt: tools/makejwt/*.go
 	cd tools/makejwt && go test . && go build .
