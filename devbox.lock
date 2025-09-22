@@ -574,8 +574,8 @@
       }
     },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "last_modified": "2025-09-13T06:53:53Z",
-      "resolved": "github:NixOS/nixpkgs/6d7ec06d6868ac6d94c371458fc2391ded9ff13d?lastModified=1757746433&narHash=sha256-fEvTiU4s9lWgW7mYEU%2F1QUPirgkn%2BodUBTaindgiziY%3D"
+      "last_modified": "2025-09-19T06:08:23Z",
+      "resolved": "github:NixOS/nixpkgs/12bd230118a1901a4a5d393f9f56b6ad7e571d01?lastModified=1758262103&narHash=sha256-aBGl3XEOsjWw6W3AHiKibN7FeoG73dutQQEqnd%2FetR8%3D"
     },
     "go-mockery@2": {
       "last_modified": "2025-07-13T22:45:35Z",
