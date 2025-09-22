@@ -9,16 +9,17 @@ import (
 )
 
 var (
-	inputPath        string
-	crdKind          string
-	listCRDs         bool
-	controllerOutDir string
+	inputPath         string
+	crdKind           string
+	listCRDs          bool
+	controllerOutDir  string
 	translationOutDir string
+	indexerOutDir     string
 )
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "ako-controller-scaffolder",
+		Use:   "scaffolder",
 		Short: "Generate Kubernetes controllers for MongoDB Atlas CRDs",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if inputPath == "" {
@@ -29,7 +30,7 @@ func main() {
 				return generate.PrintCRDs(inputPath)
 			}
 
-			return generate.FromConfig(inputPath, crdKind, controllerOutDir, translationOutDir)
+			return generate.FromConfig(inputPath, crdKind, controllerOutDir, translationOutDir, indexerOutDir)
 		},
 	}
 
@@ -38,6 +39,7 @@ func main() {
 	rootCmd.Flags().BoolVar(&listCRDs, "list", false, "List available CRDs from result file")
 	rootCmd.Flags().StringVar(&controllerOutDir, "controller-out", "", "Output directory for controller files (default: ../mongodb-atlas-kubernetes/internal/controller)")
 	rootCmd.Flags().StringVar(&translationOutDir, "translation-out", "", "Output directory for translation files (default: ../mongodb-atlas-kubernetes/internal/translation)")
+	rootCmd.Flags().StringVar(&indexerOutDir, "indexer-out", "", "Output directory for indexer files (default: ../mongodb-atlas-kubernetes/internal/indexer)")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
