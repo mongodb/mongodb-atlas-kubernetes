@@ -296,7 +296,7 @@ ifneq ($(shell git ls-files -o -m --directory --exclude-standard --no-empty-dire
 	$(info Detected files that need to be committed:)
 	$(info $(shell git ls-files -o -m --directory --exclude-standard --no-empty-directory | sed -e "s/^/  /"))
 	$(info )
-	$(info Try running: make generate manifests)
+	$(info Try running: make generate manifests api-docs)
 	$(error Check: FAILED)
 else
 	$(info Check: PASS)
@@ -650,7 +650,6 @@ tools/githubjobs/githubjobs: tools/githubjobs/*.go
 tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
 	cd tools/scandeprecation && go test . && go build .
 
-
 .PHONY: slack-deprecations
 slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githubjobs
 	@echo "Computing and sending deprecation report to Slack..."
@@ -664,3 +663,11 @@ bump-version-file:
 
 	@echo "Version updated successfully:"
 	@cat $(VERSION_FILE)
+
+.PHONY: api-docs
+api-docs:
+	go tool crdoc --resources config/crd/bases --output docs/api-docs.md
+
+.PHONY: validate-api-docs
+validate-api-docs: api-docs
+	$(MAKE) check-missing-files
