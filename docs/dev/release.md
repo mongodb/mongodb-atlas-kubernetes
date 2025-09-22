@@ -23,6 +23,16 @@ At least **one** (1) week before the release the Kubernetes Version testing matr
 
 Please refer to the [CI documentation](ci.md#kubernetes-version-matrix) and submit a pull request, example: https://github.com/mongodb/mongodb-atlas-kubernetes/pull/2161 or https://github.com/mongodb/mongodb-atlas-kubernetes/pull/2082.
 
+## A Note on Versioning with `version.json`
+
+The `version.json` file is the definitive **source of truth** for managing software versions in this project.
+
+* **Source of Truth**: The file contains two primary fields: **`current`**, which reflects the latest stable version that has been released, and **`next`**, which designates the version targeted for the upcoming release.
+
+* **Automatic Updates for next Releases**: After a successful release, the CI pipeline will **automatically** update `version.json`. The `current` field is set to the version that was just released, and the `next` field is incremented to the next minor version (e.g., `2.11.0` would become `2.12.0`).
+
+* **Manual Updates for Patch Releases**: Creating a **patch release** (e.g., `v2.10.1`) is a deliberate exception to the automated process. To prepare for a patch, you must **manually** update the `next` field to the exact patch version via a Pull Request (PR). This manual step ensures the release workflow targets the specific patch instead of accidentally creating the next minor release.
+
 ## Release Notes
 
 - Create a draft of the release notes in a Google Document and share with Product and the Docs team.
@@ -42,18 +52,16 @@ You will be prompted to enter:
 
 | Input       | Description                                                                                         | Required | Default  | Example                               |
 |-------------|-----------------------------------------------------------------------------------------------------|----------|----------|---------------------------------------|
-| `version`   | The version to be released, including the `v` prefix                                                | Yes      | None     | `v1.10.3`                             |
 | `authors`   | A comma-separated list of MongoDB email addresses responsible for the release                       | Yes      | None     | `alice@mongodb.com,bob@mongodb.com`   |
 | `image_sha` | The 7-character Git commit SHA used for the promoted image, or `'latest'` for the most recent       | No       | `latest` | `3e79a3f`.                            |
 
-The inputs `version` and `authors` must be filled out every time you trigger the release workflow. The `image_sha` is optional and defaults to `latest` if left empty.
+The input `authors` must be filled out every time you trigger the release workflow. The `image_sha` is optional and defaults to `latest` if left empty.
 
 The `image_sha` corresponds exactly to the 7-character Git commit SHA used to build the operator image; for example, `image_sha: 3e79a3f` means the image was built from Git commit `3e79a3f`. Using `latest` as the `image_sha` means the workflow will release the most recently promoted and tested operator image—not necessarily the latest Git commit—and when `latest` is used, the workflow will echo the corresponding Git commit during the internal steps so the user knows exactly which source is being released.
 
 ### Example Release Input
 
 ```yaml
-version: v1.10.3
 authors: alice@mongodb.com,bob@mongodb.com
 image_sha: 3e79a3f
 ```
@@ -61,7 +69,6 @@ image_sha: 3e79a3f
 or
 
 ```yaml
-version: v1.10.3
 authors: alice@mongodb.com,bob@mongodb.com
 image_sha: latest
 ```
@@ -332,10 +339,12 @@ And use the URL there to set `OPENSHIFT_UPGRADE_SERVER_API` so that openshift up
 
 ### Major version issues when executing the "Create Release Branch" workflow
 
-The release creation will fail if the file `major-version` contents does not match the major version to be released. This file explicitly means the upcoming release is for a particular major version, with potential breaking changes. This allows us to:
+The release creation will fail if the major version of the release you're creating is incompatible with the `current` version defined in the `version.json` file. This file acts as the single source of truth for the codebase's version, which helps prevent mistakes.
 
-1. Notice if we forgot to update the `major-version` file before releasing the next major version.
-2. Notice if we tried to re-release an older major version when the code is already prepared for the next major version.
-3. Skip some tests, like `helm update`, when crossing from one major version to the next, as such test is not expected to work across incompatible major version upgrades.
+This check allows us to:
 
-If the create release branch job fails due an error such as `Bad major version for X... expected Y..`, review whether or not the `major-version` file was updated as expected. Check as well you are not trying to release a patch for the older major version from the new major version codebase.
+1.  **Prevent Mismatches**: It stops the workflow if the version being released (e.g., `v3.0.0`) has a different major version than what the codebase expects (e.g., `current` is `v2.11.0`).
+2.  **Avoid Incorrect Patching**: It stops you from accidentally trying to release a patch for an older major version (e.g., `v1.2.3`) when the codebase has already moved on to a new major version.
+3.  **Skip Tests**: Certain tests that are expected to fail, like Helm upgrades, they should be skipped.
+
+If the "Create Release Branch" job fails with an error like `Bad major version for X... expected Y...`, you should review the `current` field in `version.json`. Ensure it correctly reflects the codebase's state and is compatible with the version you intend to release.
