@@ -24,19 +24,19 @@ import (
 )
 
 // GenerateTranslationLayers generates translation layers for all mappings
-func GenerateTranslationLayers(resourceName string, mappings []MappingWithConfig) error {
+func GenerateTranslationLayers(resourceName string, mappings []MappingWithConfig, translationOutDir string) error {
 	for _, mapping := range mappings {
 		versionSuffix := mapping.Version
-		if err := generateTranslationLayerWithVersion(resourceName, versionSuffix, mapping.OpenAPIConfig.Package); err != nil {
+		if err := generateTranslationLayerWithVersion(resourceName, versionSuffix, mapping.OpenAPIConfig.Package, translationOutDir); err != nil {
 			return fmt.Errorf("failed to generate translation layer for version %s: %w", versionSuffix, err)
 		}
 	}
 	return nil
 }
 
-func generateTranslationLayerWithVersion(resourceName, versionSuffix, sdkPackage string) error {
+func generateTranslationLayerWithVersion(resourceName, versionSuffix, sdkPackage, translationOutDir string) error {
 	packageName := strings.ToLower(resourceName) + versionSuffix
-	translationDir := filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "translation", packageName)
+	translationDir := filepath.Join(translationOutDir, packageName)
 
 	if err := os.MkdirAll(translationDir, 0755); err != nil {
 		return fmt.Errorf("failed to create translation directory: %w", err)
@@ -201,6 +201,7 @@ func GetAtlasAPIForCRD(crdKind string) (string, error) {
 		"StreamInstance":         "StreamsApi",
 		"PrivateEndpoint":        "PrivateEndpointServicesApi",
 		"NetworkPeering":         "NetworkPeeringApi",
+		"NetworkPeeringConnection": "NetworkPeeringApi",
 		"NetworkContainer":       "NetworkPeeringApi",
 		"IPAccessList":           "ProjectIPAccessListApi",
 		"CustomRole":             "CustomDatabaseRolesApi",
