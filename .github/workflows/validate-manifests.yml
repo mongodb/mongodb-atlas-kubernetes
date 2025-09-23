@@ -16,4 +16,4 @@ jobs:
         with:
           enable-cache: 'true'
       - name: Run testing
-        run: devbox run -- 'make validate-manifests'
+        run: devbox run -- 'make validate-manifests validate-api-docs'
