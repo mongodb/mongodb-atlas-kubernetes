@@ -660,8 +660,7 @@ slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githu
 bump-version-file:
 	@echo "Bumping version in $(VERSION_FILE)..."
 
-	jq ' (.next | split(".") | map(tonumber) | .[1] += 1 | .[2] = 0 | map(tostring) | join(".")) as $$new_next | .current = .next | .next = $$new_next \
-	' $(VERSION_FILE) > $(VERSION_FILE).tmp && mv $(VERSION_FILE).tmp $(VERSION_FILE)
+	jq '(.next | split(".") | map(tonumber) | .[1] += 1 | .[2] = 0 | map(tostring) | join(".")) as $$new_next | .current = .next | .next = $$new_next' $(VERSION_FILE) > $(VERSION_FILE).tmp && mv $(VERSION_FILE).tmp $(VERSION_FILE)
 
 	@echo "Version updated successfully:"
 	@cat $(VERSION_FILE)
