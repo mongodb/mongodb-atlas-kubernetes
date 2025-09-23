@@ -60,6 +60,7 @@ type AtlasDataFederationReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	GlobalSecretRef             client.ObjectKey
+	maxConcurrentReconciles     int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatafederations,verbs=get;list;watch;create;update;patch;delete
@@ -244,8 +245,9 @@ func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager, skipN
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
@@ -276,14 +278,7 @@ func (r *AtlasDataFederationReconciler) findAtlasDataFederationForProjects(ctx c
 	return requests
 }
 
-func NewAtlasDataFederationReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	logger *zap.Logger,
-	globalSecretRef client.ObjectKey,
-) *AtlasDataFederationReconciler {
+func NewAtlasDataFederationReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasDataFederationReconciler {
 	return &AtlasDataFederationReconciler{
 		Scheme:                   c.GetScheme(),
 		Client:                   c.GetClient(),
@@ -293,6 +288,7 @@ func NewAtlasDataFederationReconciler(
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
 		GlobalSecretRef:          globalSecretRef,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 

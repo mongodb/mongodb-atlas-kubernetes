@@ -34,7 +34,7 @@ func TestCtrlStateReconciler_SetupWithManager_NoGomock(t *testing.T) {
 	fakeReconciler := ctrlstate.NewStateReconciler(&mock)
 	skipNameValidation := true
 
-	r := newCtrlStateReconciler(fakeReconciler)
+	r := newCtrlStateReconciler(fakeReconciler, 0)
 	require.NoError(t, r.SetupWithManager(fakeMgr, skipNameValidation))
 	require.Equal(t, fakeMgr, mock.ReceivedMgr)
 	wantOpts := controller.TypedOptions[reconcile.Request]{

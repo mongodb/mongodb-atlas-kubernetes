@@ -57,6 +57,7 @@ type AtlasPrivateEndpointReconciler struct {
 
 	ObjectDeletionProtection bool
 	independentSyncPeriod    time.Duration
+	maxConcurrentReconciles  int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprivateendpoints,verbs=get;list;watch;create;update;patch;delete
@@ -240,8 +241,9 @@ func (r *AtlasPrivateEndpointReconciler) SetupWithManager(mgr ctrl.Manager, skip
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
@@ -287,15 +289,7 @@ func (r *AtlasPrivateEndpointReconciler) privateEndpointForCredentialMapFunc() h
 	)
 }
 
-func NewAtlasPrivateEndpointReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	independentSyncPeriod time.Duration,
-	logger *zap.Logger,
-	globalSecretRef client.ObjectKey,
-) *AtlasPrivateEndpointReconciler {
+func NewAtlasPrivateEndpointReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, independentSyncPeriod time.Duration, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasPrivateEndpointReconciler {
 	return &AtlasPrivateEndpointReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
@@ -308,5 +302,6 @@ func NewAtlasPrivateEndpointReconciler(
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }

@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/env"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -94,6 +95,7 @@ func Run(ctx context.Context, fs *flag.FlagSet, args []string) error {
 		WithDeletionProtection(config.ObjectDeletionProtection).
 		WithIndependentSyncPeriod(time.Duration(config.IndependentSyncPeriod) * time.Minute).
 		WithDryRun(config.DryRun).
+		WithMaxConcurrentReconciles(config.MaxConcurrentReconciles).
 		Build(ctx)
 	if err != nil {
 		setupLog.Error(err, "unable to start operator")
@@ -123,6 +125,7 @@ type Config struct {
 	IndependentSyncPeriod       int
 	FeatureFlags                *featureflags.FeatureFlags
 	DryRun                      bool
+	MaxConcurrentReconciles     int
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -150,6 +153,7 @@ func parseConfiguration(fs *flag.FlagSet, args []string) (Config, error) {
 		fmt.Sprintf("The default time, in minutes,  between reconciliations for independent custom resources. (default %d, minimum %d)", independentSyncPeriod, minimumIndependentSyncPeriod),
 	)
 	fs.BoolVar(&config.DryRun, "dry-run", false, "If set, the operator will not perform any changes to the Atlas resources, run all reconcilers only Once and emit events for all planned changes")
+	config.MaxConcurrentReconciles, _ = env.GetInt("MDB_MAX_CONCURRENT_RECONCILES", 5) // errors yield default value
 
 	appVersion := fs.Bool("v", false, "prints application version")
 	if err := fs.Parse(args); err != nil {

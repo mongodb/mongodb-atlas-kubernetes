@@ -51,6 +51,7 @@ type AtlasIPAccessListReconciler struct {
 	GlobalPredicates         []predicate.Predicate
 	ObjectDeletionProtection bool
 	independentSyncPeriod    time.Duration
+	maxConcurrentReconciles  int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasipaccesslists,verbs=get;list;watch;create;update;patch;delete
@@ -91,9 +92,9 @@ func (r *AtlasIPAccessListReconciler) SetupWithManager(mgr manager.Manager, skip
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation),
-		}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
@@ -139,15 +140,7 @@ func (r *AtlasIPAccessListReconciler) ipAccessListForCredentialMapFunc() handler
 	)
 }
 
-func NewAtlasIPAccessListReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	independentSyncPeriod time.Duration,
-	logger *zap.Logger,
-	globalSecretRef client.ObjectKey,
-) *AtlasIPAccessListReconciler {
+func NewAtlasIPAccessListReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, independentSyncPeriod time.Duration, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasIPAccessListReconciler {
 	return &AtlasIPAccessListReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
@@ -160,5 +153,6 @@ func NewAtlasIPAccessListReconciler(
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }

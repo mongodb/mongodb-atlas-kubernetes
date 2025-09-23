@@ -60,6 +60,7 @@ type AtlasDatabaseUserReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	independentSyncPeriod       time.Duration
+	maxConcurrentReconciles     int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
@@ -221,8 +222,9 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager, skipNam
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
@@ -273,16 +275,7 @@ func (r *AtlasDatabaseUserReconciler) databaseUsersForCredentialMapFunc() handle
 	)
 }
 
-func NewAtlasDatabaseUserReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	independentSyncPeriod time.Duration,
-	featureFlags *featureflags.FeatureFlags,
-	logger *zap.Logger,
-	globalSecretRef client.ObjectKey,
-) *AtlasDatabaseUserReconciler {
+func NewAtlasDatabaseUserReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasDatabaseUserReconciler {
 	return &AtlasDatabaseUserReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
@@ -295,5 +288,6 @@ func NewAtlasDatabaseUserReconciler(
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }

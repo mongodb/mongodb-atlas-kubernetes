@@ -53,17 +53,10 @@ type AtlasNetworkPeeringReconciler struct {
 	GlobalPredicates         []predicate.Predicate
 	ObjectDeletionProtection bool
 	independentSyncPeriod    time.Duration
+	maxConcurrentReconciles  int
 }
 
-func NewAtlasNetworkPeeringsReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	logger *zap.Logger,
-	independentSyncPeriod time.Duration,
-	globalSecretRef client.ObjectKey,
-) *AtlasNetworkPeeringReconciler {
+func NewAtlasNetworkPeeringsReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasNetworkPeeringReconciler {
 	return &AtlasNetworkPeeringReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
@@ -76,6 +69,7 @@ func NewAtlasNetworkPeeringsReconciler(
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 
@@ -131,8 +125,9 @@ func (r *AtlasNetworkPeeringReconciler) SetupWithManager(mgr ctrl.Manager, skipN
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
