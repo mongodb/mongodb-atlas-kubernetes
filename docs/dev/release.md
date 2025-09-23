@@ -29,7 +29,7 @@ The `version.json` file is the definitive **source of truth** for managing softw
 
 * **Source of Truth**: The file contains two primary fields: **`current`**, which reflects the latest stable version that has been released, and **`next`**, which designates the version targeted for the upcoming release.
 
-* **Automatic Updates for next Releases**: After a successful release, the CI pipeline will **automatically** update `version.json`. The `current` field is set to the version that was just released, and the `next` field is incremented to the next minor version (e.g., `2.11.0` would become `2.12.0`).
+* **Automatic Updates for next Releases**: After a successful release, the CI pipeline will **automatically** update `version.json`. The `current` field is set to the version that was just released, and the `next` field is incremented to the next minor version (e.g., `2.11.0` would become `2.12.0`, or `2.11.4` would become `2.12.0`).
 
 * **Manual Updates for Patch Releases**: Creating a **patch release** (e.g., `v2.10.1`) is a deliberate exception to the automated process. To prepare for a patch, you must **manually** update the `next` field to the exact patch version via a Pull Request (PR). This manual step ensures the release workflow targets the specific patch instead of accidentally creating the next minor release.
 
