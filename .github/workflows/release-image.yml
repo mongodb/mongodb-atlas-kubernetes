@@ -3,6 +3,10 @@ name: Release Image
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: "Release version (without v prefix)"
+        required: true
+        type: string
       authors:
         description: "Comma-separated list of author emails"
         required: true
@@ -86,8 +90,16 @@ jobs:
         fi
     - name: Read the next release version
       id: read_version
+      env:
+        INPUT_VERSION: ${{ github.event.inputs.version }}
       run: |
         VERSION=$(jq -r '.next' version.json)
+        
+        if [[ "$INPUT_VERSION" != "$VERSION" ]]; then
+          echo "::error::Input version '$INPUT_VERSION' does not match the expected 'next' version '$VERSION' from version.json."
+          exit 1
+        fi
+        
         echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
 
   # Release-image: Created and uploads a release for the specified operator version given in the image_sha
