@@ -400,6 +400,7 @@ require (
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/nektos/act
+	github.com/onsi/ginkgo/v2/ginkgo
 	golang.org/x/vuln/cmd/govulncheck
 	sigs.k8s.io/kustomize/kustomize/v4
 )

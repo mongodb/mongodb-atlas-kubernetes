@@ -111,7 +111,7 @@ GINKGO_FILTER_LABEL ?=
 ifneq ($(GINKGO_FILTER_LABEL),)
 GINKGO_FILTER_LABEL_OPT := --label-filter="$(GINKGO_FILTER_LABEL)"
 endif
-GINKGO=ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT) $(shell pwd)/$@
+GINKGO=go tool ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT) $(shell pwd)/$@
 
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
@@ -215,7 +215,7 @@ e2e2: run-kind manager install-credentials install-crds set-namespace ## Run e2e
 	NO_GORUN=1 \
 	AKO_E2E2_TEST=1 \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
-	ginkgo --race --label-filter=$(label) -ldflags="$(LD_FLAGS)" --timeout 120m -vv test/e2e2/
+	go tool ginkgo --race --label-filter=$(label) -ldflags="$(LD_FLAGS)" --timeout 120m -vv test/e2e2/
 
 .PHONY: e2e-openshift-upgrade
 e2e-openshift-upgrade:
