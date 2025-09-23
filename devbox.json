@@ -6,7 +6,6 @@
     "path:flakes/go",
     "kubectl@latest",
     "docker@latest",
-    "kustomize@4.3",
     "git@latest",
     "gettext@latest",
     "wget@latest",

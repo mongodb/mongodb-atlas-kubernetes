@@ -116,7 +116,7 @@ GINKGO=ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT) $(shell pwd)/$@
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
 GO_LICENSES_VERSION = 1.6.0
-KUSTOMIZE = kustomize
+KUSTOMIZE = go tool kustomize
 DISALLOWED_LICENSES = restricted,reciprocal
 
 REPORT_TYPE = flakiness
