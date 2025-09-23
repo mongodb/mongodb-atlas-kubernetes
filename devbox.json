@@ -10,7 +10,6 @@
     "curl@latest",
     "cosign@latest",
     "kubernetes-helm@latest",
-    "govulncheck@latest",
     "gotools@latest",
     "ginkgo@latest",
     "operator-sdk@1.36.1",

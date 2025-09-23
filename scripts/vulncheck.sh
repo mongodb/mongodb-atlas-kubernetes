@@ -17,11 +17,11 @@
 ignore_file=${1:-./vuln-ignore}
 
 set -e
-govulncheck -version
+go tool govulncheck -version
 set +e
 
 ignore_lines=$(grep -v '^#' "${ignore_file}")
-check_cmd='govulncheck ./... |grep "Vulnerability #"'
+check_cmd='go tool govulncheck ./... |grep "Vulnerability #"'
 while IFS= read -r line; do
   if [ "${line}" != "" ]; then
     check_cmd+="|grep -v \"${line}\""
