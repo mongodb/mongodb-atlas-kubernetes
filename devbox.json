@@ -7,7 +7,6 @@
     "kubectl@latest",
     "docker@latest",
     "git@latest",
-    "gettext@latest",
     "wget@latest",
     "cosign@latest",
     "kubernetes-helm@latest",
