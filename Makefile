@@ -115,7 +115,6 @@ GINKGO=go tool ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT) $(shell pwd)
 
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
-GO_LICENSES_VERSION = 1.6.0
 KUSTOMIZE = go tool kustomize
 DISALLOWED_LICENSES = restricted,reciprocal
 
@@ -172,7 +171,7 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	export GOOS=linux
 	export GOARCH=amd64
 	GOTOOLCHAIN=local \
-	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
+	$(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
 
@@ -183,7 +182,7 @@ check-licenses:  ## Check licenses are compliant with our restrictions
 	export GOOS=linux
 	export GOARCH=amd64
 	GOTOOLCHAIN=local \
-	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) check --include_tests \
+	$(GO_LICENSES) check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
 	@echo "Licenses check: PASS"

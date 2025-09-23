@@ -505,6 +505,54 @@
       "last_modified": "2025-09-19T06:08:23Z",
       "resolved": "github:NixOS/nixpkgs/12bd230118a1901a4a5d393f9f56b6ad7e571d01?lastModified=1758262103&narHash=sha256-aBGl3XEOsjWw6W3AHiKibN7FeoG73dutQQEqnd%2FetR8%3D"
     },
+    "go-licenses@1.6.0": {
+      "last_modified": "2025-07-28T17:09:23Z",
+      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#go-licenses",
+      "source": "devbox-search",
+      "version": "1.6.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/flmyi031v4386w8nfgbvwx64aphm3r88-go-licenses-1.6.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/flmyi031v4386w8nfgbvwx64aphm3r88-go-licenses-1.6.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/f0ihbvmlgckc3sgzpsymkgjbvxb7lw0v-go-licenses-1.6.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/f0ihbvmlgckc3sgzpsymkgjbvxb7lw0v-go-licenses-1.6.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gd70iv1kkb7qxjb03mclahdm4fbqjkb5-go-licenses-1.6.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gd70iv1kkb7qxjb03mclahdm4fbqjkb5-go-licenses-1.6.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/dhia5r4azvzy9ndcqvb31h7cg8qkq0bf-go-licenses-1.6.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/dhia5r4azvzy9ndcqvb31h7cg8qkq0bf-go-licenses-1.6.0"
+        }
+      }
+    },
     "jq@latest": {
       "last_modified": "2025-08-12T09:17:37Z",
       "resolved": "github:NixOS/nixpkgs/372d9eeeafa5b15913201e2b92e8e539ac7c64d1#jq",
