@@ -801,54 +801,6 @@
         }
       }
     },
-    "kubernetes-controller-tools@0.17.2": {
-      "last_modified": "2025-03-23T05:31:05Z",
-      "resolved": "github:NixOS/nixpkgs/dd613136ee91f67e5dba3f3f41ac99ae89c5406b#kubernetes-controller-tools",
-      "source": "devbox-search",
-      "version": "0.17.2",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/x2g121jdk7fdxb7vx964rrhbiwd0g0rm-controller-tools-0.17.2",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/x2g121jdk7fdxb7vx964rrhbiwd0g0rm-controller-tools-0.17.2"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/jaz48mw3pinfdw9gd8fng63gn7wwzmxy-controller-tools-0.17.2",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/jaz48mw3pinfdw9gd8fng63gn7wwzmxy-controller-tools-0.17.2"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/3wdf34xlpff7m01ggzr7pb9f3w3cl95f-controller-tools-0.17.2",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/3wdf34xlpff7m01ggzr7pb9f3w3cl95f-controller-tools-0.17.2"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/xgppkdij5f73igwfp5as058fmh21wn9p-controller-tools-0.17.2",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/xgppkdij5f73igwfp5as058fmh21wn9p-controller-tools-0.17.2"
-        }
-      }
-    },
     "kubernetes-helm@latest": {
       "last_modified": "2025-07-28T17:09:23Z",
       "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#kubernetes-helm",

@@ -251,10 +251,10 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
-	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+	go tool controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 ifdef EXPERIMENTAL
-	controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds
+	go tool controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds
 endif
 
 .PHONY: lint
@@ -277,9 +277,9 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
+	go tool controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
 ifdef EXPERIMENTAL
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
+	go tool controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
 endif
 	mockery
 	$(MAKE) fmt

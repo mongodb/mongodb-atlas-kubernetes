@@ -11,7 +11,6 @@
     "cosign@latest",
     "kubernetes-helm@latest",
     "shellcheck@latest",
-    "kubernetes-controller-tools@0.17.2",
     "setup-envtest@0.19.0",
     "awscli2@latest",
     "go-mockery@2",
