@@ -897,54 +897,6 @@
         }
       }
     },
-    "setup-envtest@0.19.0": {
-      "last_modified": "2025-07-28T17:09:23Z",
-      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#setup-envtest",
-      "source": "devbox-search",
-      "version": "0.19.0",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/0y0rh99725wjkhfgcyhm3mb4v1araimf-setup-envtest-0.19.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/0y0rh99725wjkhfgcyhm3mb4v1araimf-setup-envtest-0.19.0"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/lhlva17lqigynqbs327m7jvyc5cc0465-setup-envtest-0.19.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/lhlva17lqigynqbs327m7jvyc5cc0465-setup-envtest-0.19.0"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/gv83c8zg2bbp4dh6g0pl04y7zx8c87k1-setup-envtest-0.19.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/gv83c8zg2bbp4dh6g0pl04y7zx8c87k1-setup-envtest-0.19.0"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/x8h29wy7jz005nv3w1qrhmpndh1h9jxv-setup-envtest-0.19.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/x8h29wy7jz005nv3w1qrhmpndh1h9jxv-setup-envtest-0.19.0"
-        }
-      }
-    },
     "shellcheck@latest": {
       "last_modified": "2025-07-28T17:09:23Z",
       "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#shellcheck",

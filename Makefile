@@ -200,7 +200,7 @@ test/int/clusterwide: envtest
 	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
 
 envtest: envtest-assets
-	KUBEBUILDER_ASSETS=$(shell setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(ENVTEST_ASSETS_DIR) -p path)
+	KUBEBUILDER_ASSETS=$(shell go tool setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(ENVTEST_ASSETS_DIR) -p path)
 
 envtest-assets:
 	echo "Env: $(env)"

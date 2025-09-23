@@ -405,6 +405,7 @@ require (
 	mvdan.cc/unparam v0.0.0-20250301125049-0df0534333a4 // indirect
 	oras.land/oras-go v1.2.5 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
+	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20250918083545-961fc2c233d6 // indirect
 	sigs.k8s.io/controller-tools v0.17.2 // indirect
 	sigs.k8s.io/kubebuilder/v3 v3.14.2 // indirect
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
@@ -490,6 +491,7 @@ tool (
 	github.com/onsi/ginkgo/v2/ginkgo
 	github.com/operator-framework/operator-sdk/cmd/operator-sdk
 	golang.org/x/vuln/cmd/govulncheck
+	sigs.k8s.io/controller-runtime/tools/setup-envtest
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kustomize/kustomize/v4
 )
