@@ -90,8 +90,8 @@ type PrivateLinkConnURLs struct {
 	PvtShardConnURL string
 }
 
-// CreateInternalFormat returns the Secret name in the internal format used by watchers: <projectID>$<clusterName>$<username>
-func CreateInternalFormat(projectID string, clusterName string, databaseUsername string, connectionType string) string {
+// NewConnectionSecretRequestName returns the Secret name in the internal format used by watchers: <projectID>$<clusterName>$<username>
+func NewConnectionSecretRequestName(projectID string, clusterName string, databaseUsername string, connectionType string) string {
 	return strings.Join([]string{
 		projectID,
 		kube.NormalizeIdentifier(clusterName),

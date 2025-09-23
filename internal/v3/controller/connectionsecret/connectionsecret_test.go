@@ -34,7 +34,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
 
-func TestCreateInternalFormat(t *testing.T) {
+func TestNewConnectionSecretRequestName(t *testing.T) {
 	tests := map[string]struct {
 		projectID        string
 		clusterName      string
@@ -67,7 +67,7 @@ func TestCreateInternalFormat(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := CreateInternalFormat(tc.projectID, tc.clusterName, tc.databaseUsername, tc.connectionType)
+			actual := NewConnectionSecretRequestName(tc.projectID, tc.clusterName, tc.databaseUsername, tc.connectionType)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}

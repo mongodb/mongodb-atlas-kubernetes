@@ -201,7 +201,7 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 				connectionType = "deployment"
 			}
 
-			name := CreateInternalFormat(projectID, ep.GetName(), u.Spec.Username, connectionType)
+			name := NewConnectionSecretRequestName(projectID, ep.GetName(), u.Spec.Username, connectionType)
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: types.NamespacedName{Namespace: u.Namespace, Name: name},
 			})

@@ -485,16 +485,16 @@ func Test_newEndpointMapFunc(t *testing.T) {
 			objs: []client.Object{depl, userNoScopes, userScopedDep, userScopedDf, userOtherProject},
 			obj:  depl,
 			expect: []types.NamespacedName{
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "admin", "deployment")},
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "user2", "deployment")},
+				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "cluster1", "admin", "deployment")},
+				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "cluster1", "user2", "deployment")},
 			},
 		},
 		"datafederation maps only users in same project and allowed by scopes": {
 			objs: []client.Object{df, userNoScopes, userScopedDf, userScopedDep, userOtherProject},
 			obj:  df,
 			expect: []types.NamespacedName{
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "admin", "data-federation")},
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "user3", "data-federation")},
+				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "my-df-name", "admin", "data-federation")},
+				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "my-df-name", "user3", "data-federation")},
 			},
 		},
 	}
@@ -566,16 +566,16 @@ func Test_newDatabaseUserMapFunc(t *testing.T) {
 			objs: []client.Object{depl, df},
 			user: userNoScopes,
 			expect: []types.NamespacedName{
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "admin", "deployment")},
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "admin", "data-federation")},
+				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "cluster1", "admin", "deployment")},
+				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "my-df-name", "admin", "data-federation")},
 			},
 		},
 		"user with scopes; only matching endpoints in same project": {
 			objs: []client.Object{depl, df},
 			user: userScoped,
 			expect: []types.NamespacedName{
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "cluster1", "user", "deployment")},
-				{Namespace: "test-ns", Name: CreateInternalFormat(projectID, "my-df-name", "user", "data-federation")},
+				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "cluster1", "user", "deployment")},
+				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "my-df-name", "user", "data-federation")},
 			},
 		},
 	}
