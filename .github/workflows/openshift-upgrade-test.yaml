@@ -42,10 +42,10 @@ jobs:
           enable-cache: 'true'
       - name: Download tools for openshift test
         run: |
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
+          curl -sL -o opm.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz
           tar xvf opm.tar.gz
           chmod +x opm && sudo mv opm /usr/local/bin/opm
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
+          curl -sL -o openshift.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz
           tar xvf openshift.tar.gz
           chmod +x oc && sudo mv oc /usr/local/bin/oc
       - name: Login to registry
