@@ -88,11 +88,11 @@ jobs:
           export REPO_DIGEST=$(docker inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
           
           cd "$REPOSITORY/$REPO_PATH"
-          yq e -i '.metadata.annotations.containerImage = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-          yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+          go tool yq e -i '.metadata.annotations.containerImage = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+          go tool yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
           # Add skip range
-          value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+          value='">=0.8.0"' go tool yq e -i '.spec.skipRange = env(value)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
       - name: Push Changes & Open PR
         env:
           VERSION: ${{ github.event.inputs.version }}

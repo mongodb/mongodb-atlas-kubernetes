@@ -607,10 +607,10 @@ prepare-all-in-one: local-docker-build run-kind
 test-all-in-one: prepare-all-in-one install-credentials ## Test the deploy/all-in-one.yaml definition
 	# Test all in one with a local image and at $(ATLAS_DOMAIN) (cloud-qa)
 	kubectl apply -f deploy/all-in-one.yaml
-	yq deploy/all-in-one.yaml \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).imagePullPolicy="IfNotPresent"' \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).image="$(LOCAL_IMAGE)"' \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).args[0]="--atlas-domain=$(ATLAS_DOMAIN)"' \
+	go tool yq deploy/all-in-one.yaml \
+	| go tool yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).imagePullPolicy="IfNotPresent"' \
+	| go tool yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).image="$(LOCAL_IMAGE)"' \
+	| go tool yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).args[0]="--atlas-domain=$(ATLAS_DOMAIN)"' \
 	| kubectl apply -f -
 
 .PHONY: upload-sbom-to-kondukto

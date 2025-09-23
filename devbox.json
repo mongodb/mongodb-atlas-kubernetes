@@ -1,6 +1,5 @@
 {
   "packages": [
-    "yq-go@latest",
     "kubebuilder@4.1.1",
     "jq@latest",
     "path:flakes/go",

@@ -80,7 +80,7 @@ else
   # Add WATCH_NAMESPACE env parameter
   value="metadata.annotations['olm.targetNamespaces']" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[2] |= {"name": "WATCH_NAMESPACE", "valueFrom": {"fieldRef": {"fieldPath": env(value)}}}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   # Add containerImage to bundle/manifests/ csv. containerImage - The full location (registry, repository, name and tag) of the operator image
-  yq e -i ".metadata.annotations.containerImage=\"${INPUT_IMAGE_URL}\"" bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+  go tool yq e -i ".metadata.annotations.containerImage=\"${INPUT_IMAGE_URL}\"" bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 fi
 
 # add additional LABELs to bundle.Docker file
