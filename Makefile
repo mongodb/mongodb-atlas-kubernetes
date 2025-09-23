@@ -259,7 +259,7 @@ endif
 
 .PHONY: lint
 lint: ## Run the lint against the code
-	golangci-lint run --timeout 10m
+	go tool golangci-lint run --timeout 10m
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
 	gci write -s standard -s default -s localmodule $(GO_SOURCES)
