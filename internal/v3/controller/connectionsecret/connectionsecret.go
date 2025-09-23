@@ -58,11 +58,12 @@ const (
 )
 
 var (
-	ErrInternalFormatErr   = errors.New("identifiers could not be loaded from internal format")
-	ErrK8SFormatErr        = errors.New("identifiers could not be loaded from k8s format")
-	ErrMissingPairing      = errors.New("missing user/endpoint")
-	ErrAmbiguousPairing    = errors.New("multiple users/endpoints with the same name found")
-	ErrUnresolvedProjectID = errors.New("could not resolve the project id")
+	ConnectionSecretGoFieldOwner = client.FieldOwner("connectionsecret")
+	ErrInternalFormatErr         = errors.New("identifiers could not be loaded from internal format")
+	ErrK8SFormatErr              = errors.New("identifiers could not be loaded from k8s format")
+	ErrMissingPairing            = errors.New("missing user/endpoint")
+	ErrAmbiguousPairing          = errors.New("multiple users/endpoints with the same name found")
+	ErrUnresolvedProjectID       = errors.New("could not resolve the project id")
 )
 
 // ConnnSecretIdentifiers stores all the necessary information that will
@@ -315,6 +316,10 @@ func (r *ConnSecretReconciler) ensureSecret(
 	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, connectionType)
 
 	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -334,23 +339,11 @@ func (r *ConnSecretReconciler) ensureSecret(
 	}
 
 	// Upsert the secret in Kubernetes
-	if err := r.Client.Create(ctx, secret); err != nil {
-		if apiErrors.IsAlreadyExists(err) {
-			current := &corev1.Secret{}
-			if err := r.Client.Get(ctx, client.ObjectKeyFromObject(secret), current); err != nil {
-				log.Errorw("failed to fetch existing secret", "error", err)
-				return err
-			}
-			secret.ResourceVersion = current.ResourceVersion
-			if err := r.Client.Update(ctx, secret); err != nil {
-				log.Errorw("failed to update secret", "error", err)
-				return err
-			}
-		} else {
-			log.Errorw("failed to create secret", "error", err)
-			return err
-		}
+	if err := r.Client.Patch(ctx, secret, client.Apply, client.ForceOwnership, ConnectionSecretGoFieldOwner); err != nil {
+		log.Errorw("failed to create/update secret via apply", "error", err)
+		return err
 	}
+
 	return nil
 }
 
