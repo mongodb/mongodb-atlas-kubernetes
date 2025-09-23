@@ -12,7 +12,6 @@
     "kubernetes-helm@latest",
     "shellcheck@latest",
     "awscli2@latest",
-    "go-mockery@2",
     "docker-sbom@latest",
     "openshift@latest",
     "gci@latest",

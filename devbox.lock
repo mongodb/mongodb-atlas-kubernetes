@@ -505,54 +505,6 @@
       "last_modified": "2025-09-19T06:08:23Z",
       "resolved": "github:NixOS/nixpkgs/12bd230118a1901a4a5d393f9f56b6ad7e571d01?lastModified=1758262103&narHash=sha256-aBGl3XEOsjWw6W3AHiKibN7FeoG73dutQQEqnd%2FetR8%3D"
     },
-    "go-mockery@2": {
-      "last_modified": "2025-07-13T22:45:35Z",
-      "resolved": "github:NixOS/nixpkgs/a421ac6595024edcfbb1ef950a3712b89161c359#go-mockery",
-      "source": "devbox-search",
-      "version": "2.53.3",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/gymm44dbi3sp824ghj28z7xdp5y0z8ij-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/gymm44dbi3sp824ghj28z7xdp5y0z8ij-go-mockery-2.53.3"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/7almddm7x5spkllll4avz0fd19slcvvj-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/7almddm7x5spkllll4avz0fd19slcvvj-go-mockery-2.53.3"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/xxd8ynzjqi4v0jahgzs9k45mj0ymcsns-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/xxd8ynzjqi4v0jahgzs9k45mj0ymcsns-go-mockery-2.53.3"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/p7cdcd71qnf8k6h1fyrsx42a768w02c2-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/p7cdcd71qnf8k6h1fyrsx42a768w02c2-go-mockery-2.53.3"
-        }
-      }
-    },
     "jq@latest": {
       "last_modified": "2025-08-12T09:17:37Z",
       "resolved": "github:NixOS/nixpkgs/372d9eeeafa5b15913201e2b92e8e539ac7c64d1#jq",
