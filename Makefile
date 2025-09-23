@@ -322,10 +322,10 @@ validate-crds-chart: ## Validate the CRDs in the Helm chart
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	@echo "Building bundle $(VERSION)"
-	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=api
+	go tool operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=api
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
-	operator-sdk bundle validate ./bundle
+	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | go tool operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	go tool operator-sdk bundle validate ./bundle
 
 .PHONY: image
 image: ## Build an operator image for local development

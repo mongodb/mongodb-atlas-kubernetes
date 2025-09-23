@@ -945,54 +945,6 @@
         }
       }
     },
-    "operator-sdk@1.36.1": {
-      "last_modified": "2024-09-10T15:01:03Z",
-      "resolved": "github:NixOS/nixpkgs/5ed627539ac84809c78b2dd6d26a5cebeb5ae269#operator-sdk",
-      "source": "devbox-search",
-      "version": "1.36.1",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/cmzhlf5ccjc3ps1bgf9wxcvx6xak518b-operator-sdk-1.36.1",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/cmzhlf5ccjc3ps1bgf9wxcvx6xak518b-operator-sdk-1.36.1"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/fy9968gdpy5lmi8hhfjcv1jfidxmpr0i-operator-sdk-1.36.1",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/fy9968gdpy5lmi8hhfjcv1jfidxmpr0i-operator-sdk-1.36.1"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/awimsm4xgvilaa9afnadljmiaxb0f969-operator-sdk-1.36.1",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/awimsm4xgvilaa9afnadljmiaxb0f969-operator-sdk-1.36.1"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/0n2mm7rkk7789cn7559mic9jvz7zaf93-operator-sdk-1.36.1",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/0n2mm7rkk7789cn7559mic9jvz7zaf93-operator-sdk-1.36.1"
-        }
-      }
-    },
     "setup-envtest@0.19.0": {
       "last_modified": "2025-07-28T17:09:23Z",
       "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#setup-envtest",

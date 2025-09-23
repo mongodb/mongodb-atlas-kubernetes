@@ -59,7 +59,7 @@ echo "Created namespaced config"
 cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
-operator-sdk generate go tool kustomize manifests -q --apis-dir=api
+go tool operator-sdk generate go tool kustomize manifests -q --apis-dir=api
 # get the current version so we could put it into the "replaces:"
 current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml)"
 
@@ -68,12 +68,12 @@ channel="stable"
 if [[ "${INPUT_ENV}" == "dev" ]]; then
   echo "build dev purpose"
   go tool kustomize build --load-restrictor LoadRestrictionsNone config/manifests |
-    operator-sdk generate bundle -q --overwrite --default-channel="${channel}" --channels="${channel}"
+    go tool operator-sdk generate bundle -q --overwrite --default-channel="${channel}" --channels="${channel}"
 else
   echo "build release version"
   echo "${INPUT_IMAGE_URL}"
   go tool kustomize build --load-restrictor LoadRestrictionsNone config/manifests |
-    operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
+    go tool operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
   # add replaces
   awk '!/replaces:/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml >tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   echo "  replaces: $current_version" >>bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
@@ -87,4 +87,4 @@ fi
 label="LABEL com.redhat.openshift.versions=\"v4.8-v4.18\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
 awk -v rep="FROM scratch\n\n$label" '{sub(/FROM scratch/, rep); print}' bundle.Dockerfile >tmp && mv tmp bundle.Dockerfile
 
-operator-sdk bundle validate ./bundle
+go tool operator-sdk bundle validate ./bundle
