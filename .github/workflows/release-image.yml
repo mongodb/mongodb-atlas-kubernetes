@@ -321,6 +321,8 @@ jobs:
           tar czvf atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz -C releases/${{ env.RELEASE_TAG }}/deploy all-in-one.yaml
 
       - name: Tag the release assets
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           git fetch --tags
           git tag -f ${{ env.RELEASE_TAG }} ${{ needs.image2commit.outputs.commit_sha }}
