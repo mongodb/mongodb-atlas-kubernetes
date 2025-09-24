@@ -26,6 +26,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  workflows: write
 
 jobs:
   # Image2commit: Creates a mapping between the image_sha given as input and the actual git commit
@@ -242,6 +243,18 @@ jobs:
           devbox run -- make sign IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
           devbox run -- make sign IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
           devbox run -- make sign IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD: ${{ secrets.GRS_PASSWORD }}
+      
+      - name: Self-verify released image signatures
+        run: |
+          devbox run -- make verify IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_RELEASE_REPO }}"
+          devbox run -- make verify IMG="${{ env.QUAY_IMAGE_URL }}"           SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
+          devbox run -- make verify IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
+          devbox run -- make verify IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
+          devbox run -- make verify IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
         env:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
