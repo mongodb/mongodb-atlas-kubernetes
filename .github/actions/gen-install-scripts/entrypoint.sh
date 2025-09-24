@@ -28,7 +28,7 @@ mkdir -p "${crds_dir}"
 mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
-controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+go tool controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
 cd -
 ./scripts/split_roles_yaml.sh
@@ -59,7 +59,7 @@ echo "Created namespaced config"
 cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
-operator-sdk generate kustomize manifests -q --apis-dir=api
+go tool operator-sdk generate kustomize manifests -q --apis-dir=api
 # get the current version so we could put it into the "replaces:"
 current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml)"
 
@@ -68,23 +68,23 @@ channel="stable"
 if [[ "${INPUT_ENV}" == "dev" ]]; then
   echo "build dev purpose"
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests |
-    operator-sdk generate bundle -q --overwrite --default-channel="${channel}" --channels="${channel}"
+    go tool operator-sdk generate bundle -q --overwrite --default-channel="${channel}" --channels="${channel}"
 else
   echo "build release version"
   echo "${INPUT_IMAGE_URL}"
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests |
-    operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
+    go tool operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
   # add replaces
   awk '!/replaces:/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml >tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   echo "  replaces: $current_version" >>bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   # Add WATCH_NAMESPACE env parameter
   value="metadata.annotations['olm.targetNamespaces']" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[2] |= {"name": "WATCH_NAMESPACE", "valueFrom": {"fieldRef": {"fieldPath": env(value)}}}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   # Add containerImage to bundle/manifests/ csv. containerImage - The full location (registry, repository, name and tag) of the operator image
-  yq e -i ".metadata.annotations.containerImage=\"${INPUT_IMAGE_URL}\"" bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+  go tool yq e -i ".metadata.annotations.containerImage=\"${INPUT_IMAGE_URL}\"" bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 fi
 
 # add additional LABELs to bundle.Docker file
 label="LABEL com.redhat.openshift.versions=\"v4.8-v4.18\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
 awk -v rep="FROM scratch\n\n$label" '{sub(/FROM scratch/, rep); print}' bundle.Dockerfile >tmp && mv tmp bundle.Dockerfile
 
-operator-sdk bundle validate ./bundle
+go tool operator-sdk bundle validate ./bundle

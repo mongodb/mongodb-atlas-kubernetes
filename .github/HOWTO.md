@@ -33,13 +33,13 @@ KUBE_CONFIG_DATA=$(kubectl config view -o json --raw | jq -c '.')
 Calling push trigger will run all workflow with `push` trigger. This command will run build-image and push-test workflows:
 
 ```bash
-act push
+go tool act push
 ```
 
 This sample runs a specific job - unit-test
 
 ```bash
-act -j unit-test
+go tool act -j unit-test
 ```
 
 Some workflows have `workflow_dispatch` trigger - manual launch with inputs. It is possible to run it with `act` too.
@@ -57,8 +57,8 @@ Some workflows have `workflow_dispatch` trigger - manual launch with inputs. It 
 Build-image triggered by Pull_request:
 
 ```bash
-act pull_request -e event_pull_request.json
-act pull_request -j name -e event_pull_request.json
+go tool act pull_request -e event_pull_request.json
+go tool act pull_request -j name -e event_pull_request.json
 ```
 
 event_pull_request.json:
@@ -81,5 +81,5 @@ For example, we need to run image-build
 3. Run job
 
 ```bash
-act -j build-push
+go tool act -j build-push
 ```

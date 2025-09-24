@@ -39,9 +39,6 @@ jobs:
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
 
-      - name: Install Ginkgo
-        run: go install github.com/onsi/ginkgo/v2/ginkgo@latest
-
       - name: Get test labels from PR or input
         env:
           TEST_LABELS: ${{ github.event.inputs.testLabels }}
@@ -66,8 +63,8 @@ jobs:
       - name: List available Ginkgo test labels
         id: fetch-labels
         run: |
-          INT_LABELS=$(cd ./test/int && ginkgo labels | sed 's/^int: //' | jq -s -c '.[0]')
-          E2E_LABELS=$(cd ./test/e2e && ginkgo labels | sed 's/^e2e: //' | jq -s -c '.[0]')
+          INT_LABELS=$(cd ./test/int && go tool ginkgo labels | sed 's/^int: //' | jq -s -c '.[0]')
+          E2E_LABELS=$(cd ./test/e2e && go tool ginkgo labels | sed 's/^e2e: //' | jq -s -c '.[0]')
 
           echo "int_labels=$INT_LABELS" >> $GITHUB_ENV
           echo "e2e_labels=$E2E_LABELS" >> $GITHUB_ENV

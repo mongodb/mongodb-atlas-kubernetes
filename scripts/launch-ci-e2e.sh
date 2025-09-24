@@ -27,6 +27,6 @@ else
 	filter="$TEST_NAME && !long-run && !broken";
 fi
 
-AKO_E2E_TEST=1 ginkgo --output-interceptor-mode=none --label-filter="${filter}" --timeout 120m --nodes=10 \
+AKO_E2E_TEST=1 go tool ginkgo --output-interceptor-mode=none --label-filter="${filter}" --timeout 120m --nodes=10 \
   --race --cover --v --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/... \
   --coverprofile=coverprofile.out
