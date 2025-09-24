@@ -304,6 +304,9 @@ jobs:
           git add -f "$RELEASE_DIR" helm-charts
           scripts/create-signed-commit.sh
 
+          # FIX: Add this line to unstage any accidental workflow changes
+          git reset .github/
+
           gh pr create \
             --draft \
             --base main \
