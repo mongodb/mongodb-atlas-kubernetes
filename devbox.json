@@ -5,6 +5,7 @@
     "path:flakes/go",
     "kubectl@latest",
     "docker@latest",
+    "kustomize@4.3",
     "git@latest",
     "curl@latest",
     "cosign@latest",

@@ -32,8 +32,8 @@ go tool controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleN
 #Installing the CRD,Operator,Role
 ns=mongodb-atlas-system
 kubectl delete deployment mongodb-atlas-operator -n "${ns}" || true # temporary
-cd config/manager && go tool kustomize edit set image controller="${image}"
-cd - && go tool kustomize build --load-restrictor LoadRestrictionsNone config/release/dev/allinone | kubectl apply -f -
+cd config/manager && kustomize edit set image controller="${image}"
+cd - && kustomize build --load-restrictor LoadRestrictionsNone config/release/dev/allinone | kubectl apply -f -
 
 # Ensuring the Atlas credentials Secret
 public_key=$(grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)

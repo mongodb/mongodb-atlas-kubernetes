@@ -419,8 +419,6 @@ require (
 	sigs.k8s.io/controller-tools v0.17.2 // indirect
 	sigs.k8s.io/kubebuilder/v3 v3.14.2 // indirect
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
-	sigs.k8s.io/kustomize/cmd/config v0.10.0 // indirect
-	sigs.k8s.io/kustomize/kustomize/v4 v4.3.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.3-0.20230601165947-6ce0bf390ce3 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
@@ -505,5 +503,4 @@ tool (
 	golang.org/x/vuln/cmd/govulncheck
 	sigs.k8s.io/controller-runtime/tools/setup-envtest
 	sigs.k8s.io/controller-tools/cmd/controller-gen
-	sigs.k8s.io/kustomize/kustomize/v4
 )

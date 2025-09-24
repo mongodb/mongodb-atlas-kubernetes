@@ -849,6 +849,30 @@
         }
       }
     },
+    "kustomize@4.3": {
+      "last_modified": "2021-10-22T02:15:45Z",
+      "resolved": "github:NixOS/nixpkgs/718895c14907b60069520b6394b4dbb6e3aa9c33#kustomize",
+      "source": "devbox-search",
+      "version": "4.3.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "path": "/nix/store/72hchxzawfrj0ayhqcb57wyz11320w13-kustomize-4.3.0",
+              "default": true
+            }
+          ]
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "path": "/nix/store/cyxijsvrvl4v986z606yirrdk4pzcqj8-kustomize-4.3.0",
+              "default": true
+            }
+          ]
+        }
+      }
+    },
     "openshift@latest": {
       "last_modified": "2025-07-28T17:09:23Z",
       "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#openshift",
