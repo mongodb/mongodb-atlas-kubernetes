@@ -88,6 +88,11 @@ jobs:
           echo "Setting pre-release repo mongodb/mongodb-atlas-kubernetes-operator-prerelease"
           echo "repo=mongodb/mongodb-atlas-kubernetes-operator-prerelease" | tee -a $GITHUB_OUTPUT
         fi
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+        ref: ${{ needs.image2commit.outputs.commit_sha }}
     - name: Read the next release version
       id: read_version
       env:
