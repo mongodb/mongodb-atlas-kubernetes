@@ -15,6 +15,7 @@
 package helm
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -298,11 +299,22 @@ func getVersionFromChartYAML(chartYAML []byte) (string, error) {
 }
 
 func GetDevelopmentMayorVersion() (string, error) {
-	majorVersion, err := os.ReadFile(config.MajorVersionFile)
+	fileBytes, err := os.ReadFile(config.VersionFile)
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(string(majorVersion)), nil
+
+	type versionInfo struct {
+		Current string `json:"current"`
+		Next    string `json:"next"`
+	}
+	var versions versionInfo
+	if err := json.Unmarshal(fileBytes, &versions); err != nil {
+		return "", fmt.Errorf("failed to parse JSON from '%s': %w", config.VersionFile, err)
+	}
+
+	parts := strings.Split(versions.Current, ".")
+	return parts[0], nil
 }
 
 func packageChart(sPath, dPath string) {

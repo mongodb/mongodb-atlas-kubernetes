@@ -11,15 +11,19 @@ DOCKER_SBOM_PLUGIN_VERSION=0.6.1
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
+VERSION_FILE=version.json
 VERSION ?= $(shell git describe --always --tags --dirty --broken | cut -c 2-)
+BUILDTIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+GITCOMMIT ?= $(shell git rev-parse --short HEAD 2> /dev/null || true)
+
+VERSION_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version
 
 # LD_FLAGS
-LD_FLAG_SET_VERSION = -X github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version.Version=$(VERSION)
-LD_FLAGS_SET_EXPERIMENTAL = -X github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version.Experimental=$(EXPERIMENTAL)
+LD_FLAGS := -X $(VERSION_PACKAGE).Version=$(VERSION)
+LD_FLAGS += -X $(VERSION_PACKAGE).GitCommit=$(GITCOMMIT)
+LD_FLAGS += -X $(VERSION_PACKAGE).BuildTime=$(BUILDTIME)
 ifdef EXPERIMENTAL
-LD_FLAGS = $(LD_FLAGS_SET_EXPERIMENTAL) $(LD_FLAG_SET_VERSION)
-else
-LD_FLAGS = $(LD_FLAG_SET_VERSION)
+LD_FLAGS += -X $(VERSION_PACKAGE).Experimental=$(EXPERIMENTAL)
 endif
 
 # NEXT_VERSION represents a version that is higher than anything released
@@ -444,8 +448,10 @@ actions.txt: .github/workflows/ ## List GitHub Action dependencies
 
 .PHONY: check-major-version
 check-major-version: ## Check that VERSION starts with MAJOR_VERSION
-	@[[ $(VERSION) == $(MAJOR_VERSION).* ]] && echo "Version OK" || \
-	(echo "Bad major version for $(VERSION) expected $(MAJOR_VERSION)"; exit 1)
+	@VERSION_MAJOR=$$(echo "$(VERSION)" | cut -d. -f1 | sed 's/v//'); \
+	CURRENT_MAJOR=$$(jq -r '.current' $(VERSION_FILE) | cut -d. -f1); \
+	[ "$$VERSION_MAJOR" = "$$CURRENT_MAJOR" ] || \
+	(echo "Bad major version for $$VERSION expected $$CURRENT_MAJOR"; exit 1)
 
 tools/makejwt/makejwt: tools/makejwt/*.go
 	cd tools/makejwt && go test . && go build .
@@ -649,3 +655,12 @@ tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
 slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githubjobs
 	@echo "Computing and sending deprecation report to Slack..."
 	GH_RUN_ID=$(GH_RUN_ID) ./tools/githubjobs/githubjobs | grep "javaMethod" | ./tools/scandeprecation/scandeprecations | ./scripts/slackit.sh $(SLACK_WEBHOOK)
+
+.PHONY: bump-version-file
+bump-version-file:
+	@echo "Bumping version in $(VERSION_FILE)..."
+
+	jq '(.next | split(".") | map(tonumber) | .[1] += 1 | .[2] = 0 | map(tostring) | join(".")) as $$new_next | .current = .next | .next = $$new_next' $(VERSION_FILE) > $(VERSION_FILE).tmp && mv $(VERSION_FILE).tmp $(VERSION_FILE)
+
+	@echo "Version updated successfully:"
+	@cat $(VERSION_FILE)

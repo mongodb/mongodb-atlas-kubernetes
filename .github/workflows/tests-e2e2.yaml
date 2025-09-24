@@ -142,9 +142,6 @@ jobs:
         with:
           enable-cache: 'true'
 
-      - name: Prepare tag
-        id: prepare
-        uses: ./.github/actions/set-tag
       - name: Set properties
         id: properties
         run: |

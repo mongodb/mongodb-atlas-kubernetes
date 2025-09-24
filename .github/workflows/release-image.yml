@@ -76,17 +76,31 @@ jobs:
       RELEASE_TYPE: ${{ github.event.inputs.release_type }}
     outputs:
       repo: ${{ steps.compute.outputs.repo }}
+      version: ${{ steps.read_version.outputs.version }}
     steps:
-     - name: Compute
-       id: compute
-       run: |
-          if [ "${RELEASE_TYPE}" == "official-release" ]; then
-            echo "Setting official release repo mongodb/mongodb-atlas-kubernetes-operator"
-            echo "repo=mongodb/mongodb-atlas-kubernetes-operator" | tee -a $GITHUB_OUTPUT
-          else
-            echo "Setting pre-release repo mongodb/mongodb-atlas-kubernetes-operator-prerelease"
-            echo "repo=mongodb/mongodb-atlas-kubernetes-operator-prerelease" | tee -a $GITHUB_OUTPUT
-          fi
+    - name: Compute
+      id: compute
+      run: |
+        if [ "${RELEASE_TYPE}" == "official-release" ]; then
+          echo "Setting official release repo mongodb/mongodb-atlas-kubernetes-operator"
+          echo "repo=mongodb/mongodb-atlas-kubernetes-operator" | tee -a $GITHUB_OUTPUT
+        else
+          echo "Setting pre-release repo mongodb/mongodb-atlas-kubernetes-operator-prerelease"
+          echo "repo=mongodb/mongodb-atlas-kubernetes-operator-prerelease" | tee -a $GITHUB_OUTPUT
+        fi
+    - name: Read the next release version
+      id: read_version
+      env:
+        INPUT_VERSION: ${{ github.event.inputs.version }}
+      run: |
+        VERSION=$(jq -r '.next' version.json)
+        
+        if [[ "$INPUT_VERSION" != "$VERSION" ]]; then
+          echo "::error::Input version '$INPUT_VERSION' does not match the expected 'next' version '$VERSION' from version.json."
+          exit 1
+        fi
+        
+        echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
 
   # Release-image: Created and uploads a release for the specified operator version given in the image_sha
   # Note, with new releases, all the release artifacts will be stored within docs/releases/{version}
@@ -98,7 +112,7 @@ jobs:
     - image2commit
     - compute-repo
     env:
-      VERSION: ${{ github.event.inputs.version }}
+      VERSION: ${{ needs.compute-repo.outputs.version }}
       RELEASE_TAG: v${{ github.event.inputs.version }}
       AUTHORS: ${{ github.event.inputs.authors }}
       IMAGE_SHA: ${{ github.event.inputs.image_sha }}
@@ -237,6 +251,10 @@ jobs:
       - name: Generate licenses.csv
         run: |
           devbox run -- 'make build-licenses.csv'
+
+      - name: Bump version.json
+        run: |
+          devbox run -- 'make bump-version-file'
 
       # Create PR on release branch with all updates generated
       - name: Create release pr with all updated artefacts
