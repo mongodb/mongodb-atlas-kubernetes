@@ -26,7 +26,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  workflows: write
 
 jobs:
   # Image2commit: Creates a mapping between the image_sha given as input and the actual git commit
