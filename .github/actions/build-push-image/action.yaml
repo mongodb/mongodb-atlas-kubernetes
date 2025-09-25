@@ -70,7 +70,7 @@ runs:
     - name: Build all platforms (Devbox)
       env:
         VERSION: ${{ inputs.version }}
-        experimental: ${{ contains(github.event.pull_request.labels.*.name, 'experimental') && 'true' || null }}  
+        EXPERIMENTAL: ${{ contains(github.event.pull_request.labels.*.name, 'experimental') && 'true' || null }}  
       run: devbox run -- 'make all-platforms'  
       shell: bash  
 
