@@ -38,5 +38,6 @@ jobs:
           GINKGO_NODES: ${{ matrix.nodes }}
           GO111MODULE: on
           GINKGO_EDITOR_INTEGRATION: "true"
+          EXPERIMENTAL: ${{ contains(github.event.pull_request.labels.*.name, 'experimental') && 'true' || null }} 
         run: |
           devbox run -- 'make ${{ matrix.target }}'
