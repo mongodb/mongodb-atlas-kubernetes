@@ -16,6 +16,10 @@
 
 set -xeou pipefail
 
+# copy the initial bundle dir state from teh latest released bundle
+latest_release_dir=$(find releases -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -Vr | head -n 1)
+cp -rf "releases/${latest_release_dir}/bundle" .
+
 target_dir="deploy"
 clusterwide_dir="${target_dir}/clusterwide"
 namespaced_dir="${target_dir}/namespaced"
