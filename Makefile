@@ -33,8 +33,6 @@ endif
 # This happens if you use exported YAMLs from CLI and the dirty version is deemed a pre-release
 NEXT_VERSION = 99.99.99-next
 
-MAJOR_VERSION = $(shell cat major-version)
-
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -150,6 +148,8 @@ HELM_AKO_INSTALL_NAME = local-ako-install
 HELM_AKO_NAMESPACE = $(OPERATOR_NAMESPACE)
 
 GH_RUN_ID=$(shell gh run list -w Test -b main -e schedule -s success --json databaseId | jq '.[0] | .databaseId')
+
+SBOMS_DIR ?= temp
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -632,7 +632,7 @@ augment-sbom: ## augment the latest SBOM for a given architecture on a given dir
 
 .PHONY: store-augmented-sboms
 store-augmented-sboms: ## Augment & Store the latest SBOM for a given version & architecture
-	KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH)
+	KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH) $(SBOMS_DIR)
 
 .PHONY: install-ako-helm
 install-ako-helm:
