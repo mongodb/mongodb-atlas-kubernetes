@@ -74,7 +74,8 @@ runs:
         else    
           echo "This run is not marked as experimental.";    
         fi
-           
+      shell: bash  
+
     - name: Build all platforms (Devbox)
       env:
         VERSION: ${{ inputs.version }}
