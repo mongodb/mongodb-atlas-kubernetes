@@ -29,6 +29,13 @@ jobs:
         uses: jetify-com/devbox-install-action@v0.13.0
         with:
           enable-cache: 'true'
+      - name: Log Experimental Status    
+        run: |    
+          if [ "${{ contains(github.event.pull_request.labels.*.name, 'experimental') && 'true' || null }}" = "true" ]; then    
+            echo "This run is marked as experimental.";    
+          else    
+            echo "This run is not marked as experimental.";    
+          fi    
       - name: Run testing
         env:
           ATLAS_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
