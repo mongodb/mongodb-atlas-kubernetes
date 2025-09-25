@@ -19,9 +19,10 @@ on:
       release_type:
         description: "Official releases post to official registries, otherwise post to pre-release registries"
         type: choice
+        default: pre-release
         options:
-        - official-release
         - pre-release
+        - official-release
 
 permissions:
   contents: write
