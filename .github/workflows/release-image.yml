@@ -270,10 +270,6 @@ jobs:
         run: |
           devbox run -- 'make build-licenses.csv'
 
-      - name: Bump version.json
-        run: |
-          devbox run -- 'make bump-version-file'
-
       # Create PR on release branch with all updates generated
       - name: Create release pr with all updated artefacts
         env:
@@ -294,15 +290,17 @@ jobs:
           cp bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
           cp licenses.csv "$RELEASE_DIR/"
 
-
           git fetch origin
           git checkout -f -b "$BRANCH" origin/main
           git push -f origin "$BRANCH"
 
+          # bump version.json
+          devbox run -- 'make bump-version-file'
+
           # Update Helm Charts on main
           cp -r "$RELEASE_DIR/helm-charts" .
 
-          git add -f "$RELEASE_DIR" helm-charts
+          git add -f "$RELEASE_DIR" helm-charts version.json
           scripts/create-signed-commit.sh
 
           gh pr create \
