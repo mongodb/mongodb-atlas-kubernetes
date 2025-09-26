@@ -84,6 +84,7 @@ type ConnectionSecretData struct {
 	SrvConnectionURL      string
 	PrivateConnectionURLs []PrivateLinkConnectionURLs
 }
+
 type PrivateLinkConnectionURLs struct {
 	ConnectionURL      string
 	SrvConnectionURL   string
