@@ -52,8 +52,11 @@ You will be prompted to enter:
 
 | Input       | Description                                                                                         | Required | Default  | Example                               |
 |-------------|-----------------------------------------------------------------------------------------------------|----------|----------|---------------------------------------|
+| `version`   | The version to be released in the samiliar X.Y.Z formmat, without the `v` prefix. | Yes | None| 2.11.0
 | `authors`   | A comma-separated list of MongoDB email addresses responsible for the release                       | Yes      | None     | `alice@mongodb.com,bob@mongodb.com`   |
 | `image_sha` | The 7-character Git commit SHA used for the promoted image, or `'latest'` for the most recent       | No       | `latest` | `3e79a3f`.                            |
+
+The input `version` is just **safety check** to ensure the intent is to release the same version that was already tagged in the image already tested and ready for release. The workflow will fail if the input does not match the expected version.
 
 The input `authors` must be filled out every time you trigger the release workflow. The `image_sha` is optional and defaults to `latest` if left empty.
 
@@ -62,6 +65,7 @@ The `image_sha` corresponds exactly to the 7-character Git commit SHA used to bu
 ### Example Release Input
 
 ```yaml
+version: 2.10.2
 authors: alice@mongodb.com,bob@mongodb.com
 image_sha: 3e79a3f
 ```
@@ -69,6 +73,7 @@ image_sha: 3e79a3f
 or
 
 ```yaml
+version: 2.10.2
 authors: alice@mongodb.com,bob@mongodb.com
 image_sha: latest
 ```
@@ -92,10 +97,9 @@ The only manual step is to **review and merge** the release PR. This PR does **n
 
 ## Image Promotion
 
-The `image_sha` used in a release must already be tested and promoted via CI. Promotion can occur in one of three ways:
+The `image_sha` used in a release must already be tested and promoted via CI. Promotion can occur in one of two ways:
 
 - A scheduled CI run on the `main` branch
-- A merge into `main` that includes production code changes
 - A manual dispatch of the `tests.yml` workflow with the `promote` flag enabled
 
 ### How Promotion Works
@@ -109,7 +113,7 @@ This workflow:
   - `promoted-<git_sha>` — uniquely maps the image to the source Git commit
   - `promoted-latest` — always points to the most recent image that passed all tests
 
-The `promoted-<git_sha>` builds the one-to-one correspondence between the 7-character Git commit and the `image_sha`. For the correspondence between the 7-character Git commit and `image_sha: latest`, we internally store a label within the image `promoted-latest` that has the exact git commit used for that image. Moreover, the `promoted-latest` tag is only updated by events that run on the main branch—whether triggered by a schedule, a merge, or a workflow dispatch. Manual promotions on any other branch will never overwrite this tag.
+The `promoted-<git_sha>` builds the one-to-one correspondence between the 7-character Git commit and the `image_sha`. For the correspondence between the 7-character Git commit and `image_sha: latest`, we internally store a label within the image `promoted-latest` that has the exact git commit used for that image. Moreover, the `promoted-latest` tag is only updated by events that run on the main branch—whether triggered by a schedule or a workflow dispatch. Manual promotions on any other branch will never overwrite this tag.
 
 One can find promoted images by browsing the prerelease Docker registries at:
 
@@ -121,6 +125,12 @@ One can find promoted images by browsing the prerelease Docker registries at:
 ### Best Practice
 
 Releases should generally use `latest` as the `image_sha`. This ensures that you are releasing the most recently tested and CI-verified image.
+
+## Edit the Release Notes and publish the release
+
+Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file.
+Paste the release notes content approved before the release was started.
+Once the image is out, publish the release notes draft as soon as possible.
 
 ## Manual SSDLC steps
 
@@ -152,16 +162,17 @@ What follows is a quick reference of the make rules involved, assuming the crede
 Make sure that you have the credentials configured to handle SBOM artifacts.
 Read through the wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual" on how to retrieve them.
 
-Update the local `main` branch to point to the commit which includes the merged SSDLC files from the previous step:
+Get the SDLC files form the release notes and put them in some local temporary directory (has to be within the repo):
 
 ```shell
-$ git checkout main
-$ git pull
+$ curl -L https://github.com/mongodb/mongodb-atlas-kubernetes/releases/download/v${VERSION}/linux_amd64.sbom.json > temp/linux_amd64.sbom.json
+$ curl -L https://github.com/mongodb/mongodb-atlas-kubernetes/releases/download/v${VERSION}/linux_arm64.sbom.json > temp/linux_arm64.sbom.json
 ```
 
+Then use teh tool to augment them for `Kondukto`:
 ```shell
-$ make augment-sbom SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_amd64.sbom.json"
-$ make augment-sbom SBOM_JSON_FILE="docs/releases/v${VERSION}/linux_arm64.sbom.json"
+$ make augment-sbom SBOM_JSON_FILE="temp/linux_amd64.sbom.json"
+$ make augment-sbom SBOM_JSON_FILE="temp/linux_arm64.sbom.json"
 ```
 
 ### Register SBOMs internally
@@ -170,15 +181,9 @@ To be able to store SBOMs in S3, you need special credentials.
 Please advise the Wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual".
 
 ```shell
-$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=amd64
-$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=arm64
+$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=amd64 SBOMS_DIR=temp
+$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=arm64 SBOMS_DIR=temp
 ```
-
-## Edit the Release Notes and publish the release
-
-Follow the format described in the [release-notes-template.md](../release-notes/release-notes-template.md) file.
-Paste the release notes content approved before the release was started.
-Once the image is out, publish the release notes draft as soon as possible.
 
 ## Synchronize configuration changes with the Helm Charts
 

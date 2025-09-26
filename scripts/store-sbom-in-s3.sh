@@ -41,12 +41,14 @@ version=$1
 [ -z "${version}" ] && echo "Missing version parameter #1" && exit 1
 arch=$2
 [ -z "${arch}" ] && echo "Missing arch parameter #2" && exit 1
+dir=$3
+[ -z "${dir}" ] && echo "Missing dir parameter #3" && exit 1
 
 # Environment inputs
 kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX:?KONDUKTO_BRANCH_PREFIX must be set}"
 
 # Computed values
-sbom_lite_json="docs/releases/v${version}/linux_${arch}.sbom.json"
+sbom_lite_json="${dir}/linux_${arch}.sbom.json"
 sbom_json="tmp/linux-${arch}.sbom.json"
 lite_name=$(jq -r < "${sbom_lite_json}" '.metadata.component.name')
 name=$(jq -r < "${sbom_json}" '.metadata.component.name')
