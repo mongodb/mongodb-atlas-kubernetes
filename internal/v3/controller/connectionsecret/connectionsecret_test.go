@@ -240,8 +240,8 @@ func Test_loadPair(t *testing.T) {
 	)
 
 	type fields struct {
-		endpointObjs []client.Object
-		users        []*akov2.AtlasDatabaseUser
+		connectionSourceObjs []client.Object
+		users                []*akov2.AtlasDatabaseUser
 	}
 
 	tests := map[string]struct {
@@ -257,7 +257,7 @@ func Test_loadPair(t *testing.T) {
 			clusterName:      "clusterA",
 			databaseUsername: "admin",
 			fields: fields{
-				endpointObjs: []client.Object{
+				connectionSourceObjs: []client.Object{
 					&akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep1", Namespace: ns},
 						Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "clusterA"}},
@@ -271,11 +271,11 @@ func Test_loadPair(t *testing.T) {
 			expectedErr:     ErrAmbiguousPairing,
 			expectedPairNil: true,
 		},
-		"fail: ambiguous-multiple endpoints (2 deployments)": {
+		"fail: ambiguous-multiple connectionSources (2 deployments)": {
 			clusterName:      "clusterB",
 			databaseUsername: "root",
 			fields: fields{
-				endpointObjs: []client.Object{
+				connectionSourceObjs: []client.Object{
 					&akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep-a", Namespace: ns},
 						Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "clusterB"}},
@@ -292,11 +292,11 @@ func Test_loadPair(t *testing.T) {
 			expectedErr:     ErrAmbiguousPairing,
 			expectedPairNil: true,
 		},
-		"fail: ambiguous-multiple endpoints (deployment and federation share name)": {
+		"fail: ambiguous-multiple connectionSources (deployment and federation share name)": {
 			clusterName:      "clusterC",
 			databaseUsername: "admin",
 			fields: fields{
-				endpointObjs: []client.Object{
+				connectionSourceObjs: []client.Object{
 					&akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep-a", Namespace: ns},
 						Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "clusterC"}},
@@ -317,19 +317,19 @@ func Test_loadPair(t *testing.T) {
 			clusterName:      "clusterD",
 			databaseUsername: "andrpac",
 			fields: fields{
-				endpointObjs: nil,
-				users:        nil,
+				connectionSourceObjs: nil,
+				users:                nil,
 			},
 			expectedErr:     ErrMissingPairing,
 			expectedPairNil: true,
 			expectUserNil:   true,
 			expectEpNil:     true,
 		},
-		"fail: user present but endpoint missing": {
+		"fail: user present but connectionSource missing": {
 			clusterName:      "missing",
 			databaseUsername: "admin",
 			fields: fields{
-				endpointObjs: nil,
+				connectionSourceObjs: nil,
 				users: []*akov2.AtlasDatabaseUser{
 					{ObjectMeta: metav1.ObjectMeta{Name: "u-only", Namespace: ns}, Spec: akov2.AtlasDatabaseUserSpec{Username: "admin"}},
 				},
@@ -337,11 +337,11 @@ func Test_loadPair(t *testing.T) {
 			expectedErr: ErrMissingPairing,
 			expectEpNil: true,
 		},
-		"fail: user absent but endpoint present": {
+		"fail: user absent but connectionSource present": {
 			clusterName:      "clusterE",
 			databaseUsername: "missing",
 			fields: fields{
-				endpointObjs: []client.Object{
+				connectionSourceObjs: []client.Object{
 					&akov2.AtlasDataFederation{
 						ObjectMeta: metav1.ObjectMeta{Name: "df", Namespace: ns},
 						Spec:       akov2.DataFederationSpec{Name: "clusterE"},
@@ -352,11 +352,11 @@ func Test_loadPair(t *testing.T) {
 			expectedErr:   ErrMissingPairing,
 			expectUserNil: true,
 		},
-		"success: exactly one user and one endpoint": {
+		"success: exactly one user and one connectionSource": {
 			clusterName:      "clusterF",
 			databaseUsername: "admin",
 			fields: fields{
-				endpointObjs: []client.Object{
+				connectionSourceObjs: []client.Object{
 					&akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep", Namespace: ns},
 						Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "clusterF"}},
@@ -373,34 +373,34 @@ func Test_loadPair(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			var all []client.Object
-			all = append(all, tc.fields.endpointObjs...)
+			all = append(all, tc.fields.connectionSourceObjs...)
 			for _, u := range tc.fields.users {
 				all = append(all, u)
 			}
 
 			r := createDummyEnv(t, all)
-			r.EndpointKinds = []Endpoint{
-				DeploymentEndpoint{
-					k8s:             r.Client,
+			r.ConnectionSourceKinds = []ConnectionSource{
+				DeploymentConnectionSource{
+					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
 					log:             r.Log,
 				},
-				FederationEndpoint{
-					k8s:             r.Client,
+				DataFederationConnectionSource{
+					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
 					log:             r.Log,
 				},
 			}
 
-			ids := &ConnSecretIdentifiers{
+			ids := &ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      tc.clusterName,
 				DatabaseUsername: tc.databaseUsername,
 			}
 
-			user, endpoint, err := r.loadPair(context.Background(), ids)
+			user, connectionSource, err := r.loadPair(context.Background(), ids)
 
 			if tc.expectedErr != nil {
 				assert.ErrorIs(t, err, tc.expectedErr)
@@ -410,7 +410,7 @@ func Test_loadPair(t *testing.T) {
 
 			if tc.expectedPairNil {
 				assert.Nil(t, user)
-				assert.Nil(t, endpoint)
+				assert.Nil(t, connectionSource)
 				return
 			}
 
@@ -422,21 +422,21 @@ func Test_loadPair(t *testing.T) {
 				}
 			}
 			if tc.expectEpNil {
-				assert.Nil(t, endpoint)
+				assert.Nil(t, connectionSource)
 			} else {
-				assert.NotNil(t, endpoint)
+				assert.NotNil(t, connectionSource)
 			}
 			// assert.Equal(t, projectID, pair.ProjectID)
 
-			missIDs := &ConnSecretIdentifiers{
+			missIDs := &ConnectionSecretIdentifiers{
 				ProjectID:        otherProjectID,
 				ClusterName:      tc.clusterName,
 				DatabaseUsername: tc.databaseUsername,
 			}
-			missUser, missEndpoint, missErr := r.loadPair(context.Background(), missIDs)
+			missUser, missConnectionSource, missErr := r.loadPair(context.Background(), missIDs)
 			assert.ErrorIs(t, missErr, ErrMissingPairing)
 			assert.Nil(t, missUser)
-			assert.Nil(t, missEndpoint)
+			assert.Nil(t, missConnectionSource)
 		})
 	}
 }
@@ -455,17 +455,17 @@ func Test_handleDelete(t *testing.T) {
 	)
 
 	type testCase struct {
-		ids      ConnSecretIdentifiers
-		result   expectedResult
-		user     *akov2.AtlasDatabaseUser
-		endpoint Endpoint
+		ids              ConnectionSecretIdentifiers
+		result           expectedResult
+		user             *akov2.AtlasDatabaseUser
+		connectionSource ConnectionSource
 	}
 
 	r := createDummyEnv(t, nil)
 
 	tests := map[string]testCase{
 		"success: no secret present beforehand": {
-			ids: ConnSecretIdentifiers{
+			ids: ConnectionSecretIdentifiers{
 				ProjectID:        "missing-proj",
 				ClusterName:      cluster,
 				DatabaseUsername: username,
@@ -477,7 +477,7 @@ func Test_handleDelete(t *testing.T) {
 			},
 		},
 		"success: delete existing secret": {
-			ids: ConnSecretIdentifiers{
+			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
@@ -508,7 +508,7 @@ func Test_handleDelete(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if tc.endpoint == nil && tc.user == nil {
+			if tc.connectionSource == nil && tc.user == nil {
 				return
 			}
 
@@ -535,17 +535,17 @@ func Test_handleUpsert(t *testing.T) {
 	)
 
 	type testCase struct {
-		ids      ConnSecretIdentifiers
-		result   expectedResult
-		user     *akov2.AtlasDatabaseUser
-		endpoint Endpoint
+		ids              ConnectionSecretIdentifiers
+		result           expectedResult
+		user             *akov2.AtlasDatabaseUser
+		connectionSource ConnectionSource
 	}
 
 	r := createDummyEnv(t, nil)
 	dep := createDummyDeployment(t)
 	dbuser := createDummyUser(t, "test-user")
-	depEndpoint := DeploymentEndpoint{
-		k8s:             r.Client,
+	depConnectionSource := DeploymentConnectionSource{
+		client:          r.Client,
 		provider:        r.AtlasProvider,
 		globalSecretRef: r.GlobalSecretRef,
 		log:             r.Log,
@@ -554,28 +554,28 @@ func Test_handleUpsert(t *testing.T) {
 
 	tests := map[string]testCase{
 		"fail: cannot build data": {
-			ids: ConnSecretIdentifiers{
+			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			user:     nil,
-			endpoint: depEndpoint,
+			user:             nil,
+			connectionSource: depConnectionSource,
 			result: expectedResult{
 				expectedResult: ctrl.Result{},
 				expectedError:  ErrMissingPairing,
 			},
 		},
 		"success: upsert secret": {
-			ids: ConnSecretIdentifiers{
+			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			user:     dbuser,
-			endpoint: depEndpoint,
+			user:             dbuser,
+			connectionSource: depConnectionSource,
 			result: expectedResult{
 				expectedResult: ctrl.Result{},
 				expectedError:  nil,
@@ -589,7 +589,7 @@ func Test_handleUpsert(t *testing.T) {
 				NamespacedName: types.NamespacedName{Namespace: ns, Name: "any"},
 			}
 
-			res, err := r.handleUpsert(context.Background(), req, &tc.ids, tc.user, tc.endpoint)
+			res, err := r.handleUpsert(context.Background(), req, &tc.ids, tc.user, tc.connectionSource)
 			assert.Equal(t, tc.result.expectedResult, res)
 
 			if tc.result.expectedError != nil {
@@ -599,7 +599,7 @@ func Test_handleUpsert(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if tc.endpoint == nil || tc.user == nil {
+			if tc.connectionSource == nil || tc.user == nil {
 				return
 			}
 
@@ -634,27 +634,27 @@ func Test_ensureSecret(t *testing.T) {
 	dbUser := createDummyUser(t, "test-user")
 	dep := createDummyDeployment(t)
 
-	connData := ConnSecretData{
-		DBUserName: username,
-		Password:   "newpassword",
-		ConnURL:    "mongodb://cluster1.mongodb.net/?authSource=admin",
-		SrvConnURL: "mongodb+srv://cluster1.mongodb.net/?authSource=admin",
-		PrivateConnURLs: []PrivateLinkConnURLs{
+	connData := ConnectionSecretData{
+		DBUserName:       username,
+		Password:         "newpassword",
+		ConnectionURL:    "mongodb://cluster1.mongodb.net/?authSource=admin",
+		SrvConnectionURL: "mongodb+srv://cluster1.mongodb.net/?authSource=admin",
+		PrivateConnectionURLs: []PrivateLinkConnectionURLs{
 			{
-				PvtConnURL:      "mongodb://pe1.mongodb.net",
-				PvtSrvConnURL:   "mongodb+srv://pe1.mongodb.net",
-				PvtShardConnURL: "mongodb+srv://pe1-shard.mongodb.net",
+				ConnectionURL:      "mongodb://pe1.mongodb.net",
+				SrvConnectionURL:   "mongodb+srv://pe1.mongodb.net",
+				ShardConnectionURL: "mongodb+srv://pe1-shard.mongodb.net",
 			},
 			{
-				PvtConnURL:      "mongodb://pe2.mongodb.net",
-				PvtSrvConnURL:   "mongodb+srv://pe2.mongodb.net",
-				PvtShardConnURL: "mongodb+srv://pe2-shard.mongodb.net",
+				ConnectionURL:      "mongodb://pe2.mongodb.net",
+				SrvConnectionURL:   "mongodb+srv://pe2.mongodb.net",
+				ShardConnectionURL: "mongodb+srv://pe2-shard.mongodb.net",
 			},
 		},
 	}
 
-	depEndpoint := DeploymentEndpoint{
-		k8s:             r.Client,
+	depConnectionSource := DeploymentConnectionSource{
+		client:          r.Client,
 		provider:        r.AtlasProvider,
 		globalSecretRef: r.GlobalSecretRef,
 		log:             r.Log,
@@ -662,58 +662,58 @@ func Test_ensureSecret(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		ids      ConnSecretIdentifiers
-		secrets  []client.Object
-		data     ConnSecretData
-		result   expectedResult
-		user     *akov2.AtlasDatabaseUser
-		endpoint Endpoint
+		ids              ConnectionSecretIdentifiers
+		secrets          []client.Object
+		data             ConnectionSecretData
+		result           expectedResult
+		user             *akov2.AtlasDatabaseUser
+		connectionSource ConnectionSource
 	}{
 		"fail: invalid URL bubbles up and prevents creation": {
-			ids: ConnSecretIdentifiers{
+			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			user:     dbUser,
-			endpoint: depEndpoint,
-			data: ConnSecretData{
-				DBUserName: username,
-				Password:   "test-pass",
-				ConnURL:    "://\x00",
+			user:             dbUser,
+			connectionSource: depConnectionSource,
+			data: ConnectionSecretData{
+				DBUserName:    username,
+				Password:      "test-pass",
+				ConnectionURL: "://\x00",
 			},
 			result: expectedResult{expectedError: fmt.Errorf("parse \"://\\x00\": net/url: invalid control character in URL")},
 		},
-		"success: create with private endpoints": {
-			ids: ConnSecretIdentifiers{
+		"success: create with private connectionSources": {
+			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			user:     dbUser,
-			endpoint: depEndpoint,
-			data:     connData,
-			result:   expectedResult{expectedError: nil},
+			user:             dbUser,
+			connectionSource: depConnectionSource,
+			data:             connData,
+			result:           expectedResult{expectedError: nil},
 		},
 		"success: update existing secret": {
-			ids: ConnSecretIdentifiers{
+			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
-			user:     dbUser,
-			endpoint: depEndpoint,
-			data:     connData,
-			result:   expectedResult{expectedError: nil},
+			user:             dbUser,
+			connectionSource: depConnectionSource,
+			data:             connData,
+			result:           expectedResult{expectedError: nil},
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := r.ensureSecret(context.Background(), &tc.ids, tc.user, tc.endpoint, tc.data)
+			err := r.ensureSecret(context.Background(), &tc.ids, tc.user, tc.connectionSource, tc.data)
 			if tc.result.expectedError != nil {
 				require.Error(t, err)
 				return

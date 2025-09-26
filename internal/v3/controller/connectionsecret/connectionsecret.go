@@ -61,14 +61,14 @@ var (
 	ConnectionSecretGoFieldOwner = client.FieldOwner("connectionsecret")
 	ErrInternalFormatErr         = errors.New("identifiers could not be loaded from internal format")
 	ErrK8SFormatErr              = errors.New("identifiers could not be loaded from k8s format")
-	ErrMissingPairing            = errors.New("missing user/endpoint")
-	ErrAmbiguousPairing          = errors.New("multiple users/endpoints with the same name found")
+	ErrMissingPairing            = errors.New("missing user/connectionSource")
+	ErrAmbiguousPairing          = errors.New("multiple users/connectionSources with the same name found")
 	ErrUnresolvedProjectID       = errors.New("could not resolve the project id")
 )
 
 // ConnnSecretIdentifiers stores all the necessary information that will
 // be needed to identiy and get a K8s connection secret
-type ConnSecretIdentifiers struct {
+type ConnectionSecretIdentifiers struct {
 	ProjectID        string
 	ClusterName      string
 	DatabaseUsername string
@@ -77,17 +77,17 @@ type ConnSecretIdentifiers struct {
 
 // ConnectionData contains all connection information required to populate
 // the Kubernetes Secret, including standard and SRV URLs and optional Private Link URLs.
-type ConnSecretData struct {
-	DBUserName      string
-	Password        string
-	ConnURL         string
-	SrvConnURL      string
-	PrivateConnURLs []PrivateLinkConnURLs
+type ConnectionSecretData struct {
+	DBUserName            string
+	Password              string
+	ConnectionURL         string
+	SrvConnectionURL      string
+	PrivateConnectionURLs []PrivateLinkConnectionURLs
 }
-type PrivateLinkConnURLs struct {
-	PvtConnURL      string
-	PvtSrvConnURL   string
-	PvtShardConnURL string
+type PrivateLinkConnectionURLs struct {
+	ConnectionURL      string
+	SrvConnectionURL   string
+	ShardConnectionURL string
 }
 
 // NewConnectionSecretRequestName returns the Secret name in the internal format used by watchers: <projectID>$<clusterName>$<username>
@@ -102,7 +102,7 @@ func NewConnectionSecretRequestName(projectID string, clusterName string, databa
 
 // loadIdentifiers determines whether the request name is internal or K8s format
 // and extracts ProjectID, ClusterName, and DatabaseUsername.
-func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
+func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.NamespacedName) (*ConnectionSecretIdentifiers, error) {
 	if strings.Contains(req.Name, InternalSeparator) {
 		return r.identifiersFromInternalName(req)
 	}
@@ -111,7 +111,7 @@ func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.Na
 
 // identifiersFromInternalName parses identifiers from the internal format.
 // === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>$<ConnectionType>
-func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedName) (*ConnSecretIdentifiers, error) {
+func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedName) (*ConnectionSecretIdentifiers, error) {
 	parts := strings.Split(req.Name, InternalSeparator)
 	if len(parts) != 4 {
 		return nil, ErrInternalFormatErr
@@ -119,7 +119,7 @@ func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedN
 	if parts[0] == "" || parts[1] == "" || parts[2] == "" || parts[3] == "" {
 		return nil, ErrInternalFormatErr
 	}
-	return &ConnSecretIdentifiers{
+	return &ConnectionSecretIdentifiers{
 		ProjectID:        parts[0],
 		ClusterName:      parts[1],
 		DatabaseUsername: parts[2],
@@ -129,7 +129,7 @@ func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedN
 
 // identifiersFromK8s retrieves identifiers from labels and annotations instead of parsing the secret name in Kubernetes format.
 // === K8s format: Use labels/annotations to extract metadata.
-func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types.NamespacedName) (*ConnSecretIdentifiers, error) {
+func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types.NamespacedName) (*ConnectionSecretIdentifiers, error) {
 	var secret corev1.Secret
 	if err := r.Client.Get(ctx, req, &secret); err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types
 		err := ErrK8SFormatErr
 		return nil, err
 	}
-	return &ConnSecretIdentifiers{
+	return &ConnectionSecretIdentifiers{
 		ProjectID:        projectID,
 		ClusterName:      clusterName,
 		DatabaseUsername: databaseUsername,
@@ -155,9 +155,9 @@ func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types
 	}, nil
 }
 
-// loadPair creates the paired resource that contains the parent AtlasDatabaseUser and the Endpoint.
-// Endpoint could be AtlasDeployment or AtlasDataFederation
-func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIdentifiers) (*akov2.AtlasDatabaseUser, Endpoint, error) {
+// loadPair creates the paired resource that contains the parent AtlasDatabaseUser and the ConnectionSource.
+// ConnectionSource could be AtlasDeployment or AtlasDataFederation
+func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnectionSecretIdentifiers) (*akov2.AtlasDatabaseUser, ConnectionSource, error) {
 	compositeUserKey := ids.ProjectID + "-" + ids.DatabaseUsername
 
 	// Retrieve the AtlasDatabaseUser using the defined indexers
@@ -172,64 +172,64 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIden
 	}
 	usersCount := len(users.Items)
 
-	// Retrieve Endpoints using the defined indexers
-	totalEndpoints := 0
-	var selected Endpoint
-	for _, kind := range r.EndpointKinds {
+	// Retrieve ConnectionSources using the defined indexers
+	totalConnectionSources := 0
+	var selected ConnectionSource
+	for _, kind := range r.ConnectionSourceKinds {
 		switch kind.(type) {
-		case FederationEndpoint:
+		case DataFederationConnectionSource:
 			list := &akov2.AtlasDataFederationList{}
 			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: kind.SelectorByProjectAndName(ids),
+				FieldSelector: kind.SelectorByProjectIDAndClusterName(ids),
 			}); err != nil {
 				return nil, nil, err
 			}
 
 			if len(list.Items) == 1 {
-				selected = FederationEndpoint{
+				selected = DataFederationConnectionSource{
 					obj:             &list.Items[0],
-					k8s:             r.Client,
+					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
 					log:             r.Log,
 				}
 			}
-			totalEndpoints += len(list.Items)
+			totalConnectionSources += len(list.Items)
 
-		case DeploymentEndpoint:
-			// Handle DeploymentEndpoint
+		case DeploymentConnectionSource:
+			// Handle DeploymentConnectionSource
 			list := &akov2.AtlasDeploymentList{}
 			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: kind.SelectorByProjectAndName(ids),
+				FieldSelector: kind.SelectorByProjectIDAndClusterName(ids),
 			}); err != nil {
 				return nil, nil, err
 			}
 
 			if len(list.Items) == 1 {
-				selected = DeploymentEndpoint{
+				selected = DeploymentConnectionSource{
 					obj:             &list.Items[0],
-					k8s:             r.Client,
+					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
 					log:             r.Log,
 				}
 			}
-			totalEndpoints += len(list.Items)
+			totalConnectionSources += len(list.Items)
 		}
 	}
 
 	// AmbiguousPairing (more than 1 of either resource)
-	if usersCount > 1 || totalEndpoints > 1 {
+	if usersCount > 1 || totalConnectionSources > 1 {
 		return nil, nil, ErrAmbiguousPairing
 	}
 
 	// Exactly one of each (OK case)
-	if usersCount == 1 && totalEndpoints == 1 {
+	if usersCount == 1 && totalConnectionSources == 1 {
 		return &users.Items[0], selected, nil
 	}
 
 	// Handle missing pairing cases
-	if usersCount == 0 && totalEndpoints == 0 {
+	if usersCount == 0 && totalConnectionSources == 0 {
 		return nil, nil, ErrMissingPairing
 	}
 	if usersCount == 0 {
@@ -242,7 +242,7 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnSecretIden
 func (r *ConnSecretReconciler) handleDelete(
 	ctx context.Context,
 	req ctrl.Request,
-	ids *ConnSecretIdentifiers,
+	ids *ConnectionSecretIdentifiers,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
 
@@ -260,8 +260,8 @@ func (r *ConnSecretReconciler) handleDelete(
 			log.Debugw("no secret to delete; already gone")
 			return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 		}
-		log.Errorw("unable to delete secret", "reason", workflow.ConnSecretFailedDeletion, "error", err)
-		return workflow.Terminate(workflow.ConnSecretFailedDeletion, err).ReconcileResult()
+		log.Errorw("unable to delete secret", "reason", workflow.ConnectionSecretFailedDeletion, "error", err)
+		return workflow.Terminate(workflow.ConnectionSecretFailedDeletion, err).ReconcileResult()
 	}
 
 	log.Debugw("connection secret deleted")
@@ -273,47 +273,39 @@ func (r *ConnSecretReconciler) handleDelete(
 func (r *ConnSecretReconciler) handleUpsert(
 	ctx context.Context,
 	req ctrl.Request,
-	ids *ConnSecretIdentifiers,
+	ids *ConnectionSecretIdentifiers,
 	user *akov2.AtlasDatabaseUser,
-	endpoint Endpoint,
+	connectionSource ConnectionSource,
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-	log.Debugw("Starting handleUpsert", "ConnSecretIdentifiers", ids, "AtlasDatabaseUser", user)
+	log.Debugw("Starting handleUpsert", "ConnectionSecretIdentifiers", ids, "AtlasDatabaseUser", user)
 	// create the connection data that will populate secret.stringData
-	data, err := endpoint.BuildConnData(ctx, user)
+	data, err := connectionSource.BuildConnectionData(ctx, user)
 	if err != nil {
 		log.Errorw("failed to build connection data", "error", err)
-		return workflow.Terminate(workflow.ConnSecretFailedToBuildData, err).ReconcileResult()
+		return workflow.Terminate(workflow.ConnectionSecretFailedToBuildData, err).ReconcileResult()
 	}
 	log.Debugw("connection data built")
-	if err := r.ensureSecret(ctx, ids, user, endpoint, data); err != nil {
-		return workflow.Terminate(workflow.ConnSecretFailedToUpsertSecret, err).ReconcileResult()
+	if err := r.ensureSecret(ctx, ids, user, connectionSource, data); err != nil {
+		return workflow.Terminate(workflow.ConnectionSecretFailedToUpsertSecret, err).ReconcileResult()
 	}
 
-	log.Infow("connection secret upserted")
+	log.Debugw("connection secret upserted")
 	return workflow.OK().ReconcileResult()
 }
 
 // ensureSecret creates or updates the Secret for the given identifiers and connection data
 func (r *ConnSecretReconciler) ensureSecret(
 	ctx context.Context,
-	ids *ConnSecretIdentifiers,
+	ids *ConnectionSecretIdentifiers,
 	user *akov2.AtlasDatabaseUser,
-	endpoint Endpoint,
-	data ConnSecretData,
+	connectionSource ConnectionSource,
+	data ConnectionSecretData,
 ) error {
 	namespace := user.GetNamespace()
 	log := r.Log.With("ns", namespace, "project", ids.ProjectID)
 
-	var connectionType string
-	switch endpoint.(type) {
-	case FederationEndpoint:
-		connectionType = "data-federation"
-	case DeploymentEndpoint:
-		connectionType = "deployment"
-	}
-
-	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, connectionType)
+	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, connectionSource.GetConnectionSourceType())
 
 	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -326,15 +318,15 @@ func (r *ConnSecretReconciler) ensureSecret(
 		},
 	}
 
-	// Fills the secret.stringData with the information stored in ConnSecretData
-	if err := fillConnSecretData(secret, ids, data, connectionType); err != nil {
-		log.Errorw("failed to fill secret data", "reason", workflow.ConnSecretFailedToFillData, "error", err)
+	// Fills the secret.stringData with the information stored in ConnectionSecretData
+	if err := fillConnSecretData(secret, ids, data, connectionSource.GetConnectionSourceType()); err != nil {
+		log.Errorw("failed to fill secret data", "reason", workflow.ConnectionSecretFailedToFillData, "error", err)
 		return err
 	}
 
 	// Add the owner to be the AtlasDatabaseUser for garbage collection
 	if err := controllerutil.SetControllerReference(user, secret, r.Scheme); err != nil {
-		log.Errorw("failed to set controller owner", "reason", workflow.ConnSecretFailedToSetOwnerReferences, "error", err)
+		log.Errorw("failed to set controller owner", "reason", workflow.ConnectionSecretFailedToSetOwnerReferences, "error", err)
 		return err
 	}
 
@@ -347,26 +339,26 @@ func (r *ConnSecretReconciler) ensureSecret(
 	return nil
 }
 
-// fillConnSecretData converts the ConnSecretData into secret.stringData
-func fillConnSecretData(secret *corev1.Secret, ids *ConnSecretIdentifiers, data ConnSecretData, endpointType string) error {
+// fillConnSecretData converts the ConnectionSecretData into secret.stringData
+func fillConnSecretData(secret *corev1.Secret, ids *ConnectionSecretIdentifiers, data ConnectionSecretData, connectionSourceType string) error {
 	var err error
 	username := data.DBUserName
 	password := data.Password
 
-	if data.ConnURL, err = CreateURL(data.ConnURL, username, password); err != nil {
+	if data.ConnectionURL, err = CreateURL(data.ConnectionURL, username, password); err != nil {
 		return err
 	}
-	if data.SrvConnURL, err = CreateURL(data.SrvConnURL, username, password); err != nil {
+	if data.SrvConnectionURL, err = CreateURL(data.SrvConnectionURL, username, password); err != nil {
 		return err
 	}
-	for i, pe := range data.PrivateConnURLs {
-		if data.PrivateConnURLs[i].PvtConnURL, err = CreateURL(pe.PvtConnURL, username, password); err != nil {
+	for i, pe := range data.PrivateConnectionURLs {
+		if data.PrivateConnectionURLs[i].ConnectionURL, err = CreateURL(pe.ConnectionURL, username, password); err != nil {
 			return err
 		}
-		if data.PrivateConnURLs[i].PvtSrvConnURL, err = CreateURL(pe.PvtSrvConnURL, username, password); err != nil {
+		if data.PrivateConnectionURLs[i].SrvConnectionURL, err = CreateURL(pe.SrvConnectionURL, username, password); err != nil {
 			return err
 		}
-		if data.PrivateConnURLs[i].PvtShardConnURL, err = CreateURL(pe.PvtShardConnURL, username, password); err != nil {
+		if data.PrivateConnectionURLs[i].ShardConnectionURL, err = CreateURL(pe.ShardConnectionURL, username, password); err != nil {
 			return err
 		}
 	}
@@ -379,26 +371,26 @@ func fillConnSecretData(secret *corev1.Secret, ids *ConnSecretIdentifiers, data 
 	}
 
 	secret.Annotations = map[string]string{
-		ConnectionTypelKey: endpointType,
+		ConnectionTypelKey: connectionSourceType,
 	}
 
 	secret.Data = map[string][]byte{
 		userNameKey:    []byte(data.DBUserName),
 		passwordKey:    []byte(data.Password),
-		standardKey:    []byte(data.ConnURL),
-		standardKeySrv: []byte(data.SrvConnURL),
+		standardKey:    []byte(data.ConnectionURL),
+		standardKeySrv: []byte(data.SrvConnectionURL),
 		privateKey:     []byte(""),
 		privateSrvKey:  []byte(""),
 	}
 
-	for i, pe := range data.PrivateConnURLs {
+	for i, pe := range data.PrivateConnectionURLs {
 		suffix := ""
 		if i != 0 {
 			suffix = fmt.Sprint(i)
 		}
-		secret.Data[privateKey+suffix] = []byte(pe.PvtConnURL)
-		secret.Data[privateSrvKey+suffix] = []byte(pe.PvtSrvConnURL)
-		secret.Data[privateShardKey+suffix] = []byte(pe.PvtShardConnURL)
+		secret.Data[privateKey+suffix] = []byte(pe.ConnectionURL)
+		secret.Data[privateSrvKey+suffix] = []byte(pe.SrvConnectionURL)
+		secret.Data[privateShardKey+suffix] = []byte(pe.ShardConnectionURL)
 	}
 
 	return nil
@@ -418,8 +410,8 @@ func CreateURL(hostname, username, password string) (string, error) {
 }
 
 // ComputeHash generates a hash based on key connection metadata for immutable secret naming
-func ComputeHash(projectID, clusterName, userName, endpointType string) string {
-	hashInput := fmt.Sprintf("%s-%s-%s-%s", projectID, clusterName, userName, endpointType)
+func ComputeHash(projectID, clusterName, userName, connectionSourceType string) string {
+	hashInput := fmt.Sprintf("%s-%s-%s-%s", projectID, clusterName, userName, connectionSourceType)
 	hasher := fnv.New64a()
 
 	hasher.Write([]byte(hashInput))
@@ -429,7 +421,7 @@ func ComputeHash(projectID, clusterName, userName, endpointType string) string {
 	return encodedHash
 }
 
-func K8sConnectionSecretName(projectID, clusterName, userName, endpointType string) string {
-	hash := ComputeHash(projectID, clusterName, userName, endpointType)
+func K8sConnectionSecretName(projectID, clusterName, userName, connectionSourceType string) string {
+	hash := ComputeHash(projectID, clusterName, userName, connectionSourceType)
 	return fmt.Sprintf("connection-%s", hash)
 }

@@ -28,9 +28,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 )
 
-type DeploymentEndpoint struct {
+type DeploymentConnectionSource struct {
 	obj             *akov2.AtlasDeployment
-	k8s             client.Client
+	client          client.Client
 	provider        atlas.Provider
 	globalSecretRef client.ObjectKey
 	log             *zap.SugaredLogger
@@ -48,26 +48,31 @@ func resolveProjectIDByKey(ctx context.Context, c client.Client, key client.Obje
 	return proj.ID(), nil
 }
 
-// GetName resolves the endpoints name from the spec
-func (e DeploymentEndpoint) GetName() string {
+// GetConnectionSourceType returns the connectionSource type
+func (e DeploymentConnectionSource) GetConnectionSourceType() string {
+	return "deployment"
+}
+
+// GetName resolves the connectionSources name from the spec
+func (e DeploymentConnectionSource) GetName() string {
 	if e.obj == nil {
 		return ""
 	}
 	return e.obj.GetDeploymentName()
 }
 
-// IsReady returns true if the endpoint is ready
-func (e DeploymentEndpoint) IsReady() bool {
+// IsReady returns true if the connectionSource is ready
+func (e DeploymentConnectionSource) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
-// GetScopeType returns the scope type of the endpoint to match with the ones from AtlasDatabaseUser
-func (e DeploymentEndpoint) GetScopeType() akov2.ScopeType {
+// GetScopeType returns the scope type of the connectionSource to match with the ones from AtlasDatabaseUser
+func (e DeploymentConnectionSource) GetScopeType() akov2.ScopeType {
 	return akov2.DeploymentScopeType
 }
 
 // GetProjectID resolves parent project's id (ProjectRef or ExternalRef)
-func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
+func (e DeploymentConnectionSource) GetProjectID(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil deployment")
 	}
@@ -75,46 +80,38 @@ func (e DeploymentEndpoint) GetProjectID(ctx context.Context) (string, error) {
 		return e.obj.Spec.ExternalProjectRef.ID, nil
 	}
 	if e.obj.Spec.ProjectRef != nil && e.obj.Spec.ProjectRef.Name != "" {
-		return resolveProjectIDByKey(ctx, e.k8s, e.obj.AtlasProjectObjectKey())
+		return resolveProjectIDByKey(ctx, e.client, e.obj.AtlasProjectObjectKey())
 	}
 	return "", ErrUnresolvedProjectID
 }
 
-// Defines the selector to use for indexer when trying to retrieve all endpoints by project
-func (DeploymentEndpoint) SelectorByProject(projectID string) fields.Selector {
+// Defines the selector to use for indexer when trying to retrieve all connectionSources by project
+func (DeploymentConnectionSource) SelectorByProjectID(projectID string) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDeploymentByProject, projectID)
 }
 
-// Defines the selector to use for indexer when trying to retrieve all endpoints by project and spec name
-func (DeploymentEndpoint) SelectorByProjectAndName(ids *ConnSecretIdentifiers) fields.Selector {
+// Defines the selector to use for indexer when trying to retrieve all connectionSources by project and spec name
+func (DeploymentConnectionSource) SelectorByProjectIDAndClusterName(ids *ConnectionSecretIdentifiers) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDeploymentBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
 }
 
-// BuildConnData defines the specific function/way for building the ConnSecretData given this type of endpoint
+// BuildConnectionData defines the specific function/way for building the ConnectionSecretData given this type of connectionSource
 // AtlasDeployment stores connection strings in the status field
-func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnSecretData, error) {
+func (e DeploymentConnectionSource) BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error) {
 	// Step 1: Log basic input details
 	if user == nil || e.obj == nil {
-		e.log.Errorw("BuildConnData called with nil Deployment or user",
-			"DeploymentEndpoint", e.obj,
-			"AtlasDatabaseUser", user,
-		)
-		return ConnSecretData{}, ErrMissingPairing
+		return ConnectionSecretData{}, ErrMissingPairing
 	}
 
-	e.log.Debugw("Starting BuildConnData",
+	e.log.Debugw("Starting BuildConnectionData",
 		"Username", user.Spec.Username,
 		"DeploymentName", e.obj.GetDeploymentName(),
 	)
 
 	// Step 2: Read the user's password and log outcome
-	password, err := user.ReadPassword(ctx, e.k8s)
+	password, err := user.ReadPassword(ctx, e.client)
 	if err != nil {
-		e.log.Errorw("Failed to read password for user",
-			"Username", user.Spec.Username,
-			"Error", err,
-		)
-		return ConnSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
+		return ConnectionSecretData{}, fmt.Errorf("failed to read password for user %q: %w", user.Spec.Username, err)
 	}
 
 	e.log.Debugw("Successfully read password for user",
@@ -122,8 +119,8 @@ func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 		"PasswordPresent", len(password) > 0,
 	)
 
-	// Initialize ConnSecretData with DBUserName and Password
-	data := ConnSecretData{
+	// Initialize ConnectionSecretData with DBUserName and Password
+	data := ConnectionSecretData{
 		DBUserName: user.Spec.Username,
 		Password:   password,
 	}
@@ -142,12 +139,12 @@ func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 	conn := e.obj.Status.ConnectionStrings
 
 	// Standard and SRV connection strings
-	data.ConnURL = conn.Standard
-	data.SrvConnURL = conn.StandardSrv
+	data.ConnectionURL = conn.Standard
+	data.SrvConnectionURL = conn.StandardSrv
 
 	e.log.Debugw("Standard/SRV connection strings",
-		"StandardConnURL", data.ConnURL,
-		"SrvConnURL", data.SrvConnURL,
+		"StandardConnectionURL", data.ConnectionURL,
+		"SrvConnectionURL", data.SrvConnectionURL,
 	)
 
 	// Private connection strings
@@ -156,32 +153,32 @@ func (e DeploymentEndpoint) BuildConnData(ctx context.Context, user *akov2.Atlas
 			"PrivateConnURL", conn.Private,
 			"PrivateSrvConnURL", conn.PrivateSrv,
 		)
-		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-			PvtConnURL:    conn.Private,
-			PvtSrvConnURL: conn.PrivateSrv,
+		data.PrivateConnectionURLs = append(data.PrivateConnectionURLs, PrivateLinkConnectionURLs{
+			ConnectionURL:    conn.Private,
+			SrvConnectionURL: conn.PrivateSrv,
 		})
 	}
 
 	// Iterate through PrivateEndpoint connection strings
 	for _, pe := range conn.PrivateEndpoint {
 		e.log.Debugw("PrivateEndpoint connection string detected",
-			"PvtConnURL", pe.ConnectionString,
-			"PvtSrvConnURL", pe.SRVConnectionString,
-			"PvtShardConnURL", pe.SRVShardOptimizedConnectionString,
+			"ConnectionURL", pe.ConnectionString,
+			"SrvConnectionURL", pe.SRVConnectionString,
+			"ShardConnectionURL", pe.SRVShardOptimizedConnectionString,
 		)
-		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-			PvtConnURL:      pe.ConnectionString,
-			PvtSrvConnURL:   pe.SRVConnectionString,
-			PvtShardConnURL: pe.SRVShardOptimizedConnectionString,
+		data.PrivateConnectionURLs = append(data.PrivateConnectionURLs, PrivateLinkConnectionURLs{
+			ConnectionURL:      pe.ConnectionString,
+			SrvConnectionURL:   pe.SRVConnectionString,
+			ShardConnectionURL: pe.SRVShardOptimizedConnectionString,
 		})
 	}
 
 	// Step 4: Log final data construction (success path)
-	e.log.Infow("ConnSecretData built successfully",
+	e.log.Debugw("ConnectionSecretData built successfully",
 		"Username", data.DBUserName,
-		"StandardConnURL", data.ConnURL,
-		"SrvConnURL", data.SrvConnURL,
-		"NumPrivateConnURLs", len(data.PrivateConnURLs),
+		"StandardConnectionURL", data.ConnectionURL,
+		"SrvConnectionURL", data.SrvConnectionURL,
+		"NumPrivateConnectionURLs", len(data.PrivateConnectionURLs),
 	)
 
 	return data, nil

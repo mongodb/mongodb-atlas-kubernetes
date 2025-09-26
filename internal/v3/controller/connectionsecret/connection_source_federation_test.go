@@ -62,19 +62,19 @@ func createDummyFederation(t *testing.T) *akov2.AtlasDataFederation {
 	return df
 }
 
-func runFederationProjectTest[T any](t *testing.T, method func(FederationEndpoint) (T, error), wantField string) {
+func runFederationProjectTest[T any](t *testing.T, method func(DataFederationConnectionSource) (T, error), wantField string) {
 	r := createDummyEnv(t, nil)
 	df := createDummyFederation(t)
 
 	tests := map[string]struct {
-		endpoint FederationEndpoint
-		want     string
-		wantErr  bool
+		connectionSource DataFederationConnectionSource
+		want             string
+		wantErr          bool
 	}{
 		"fail: nil federation": {
-			endpoint: FederationEndpoint{
+			connectionSource: DataFederationConnectionSource{
 				obj:             nil,
-				k8s:             r.Client,
+				client:          r.Client,
 				provider:        r.AtlasProvider,
 				globalSecretRef: r.GlobalSecretRef,
 				log:             r.Log,
@@ -82,7 +82,7 @@ func runFederationProjectTest[T any](t *testing.T, method func(FederationEndpoin
 			wantErr: true,
 		},
 		"fail: missing project ref": {
-			endpoint: FederationEndpoint{
+			connectionSource: DataFederationConnectionSource{
 				obj: &akov2.AtlasDataFederation{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-df",
@@ -92,7 +92,7 @@ func runFederationProjectTest[T any](t *testing.T, method func(FederationEndpoin
 						Name: "mising-proj",
 					},
 				},
-				k8s:             r.Client,
+				client:          r.Client,
 				provider:        r.AtlasProvider,
 				globalSecretRef: r.GlobalSecretRef,
 				log:             r.Log,
@@ -100,9 +100,9 @@ func runFederationProjectTest[T any](t *testing.T, method func(FederationEndpoin
 			wantErr: true,
 		},
 		"success": {
-			endpoint: FederationEndpoint{
+			connectionSource: DataFederationConnectionSource{
 				obj:             df,
-				k8s:             r.Client,
+				client:          r.Client,
 				provider:        r.AtlasProvider,
 				globalSecretRef: r.GlobalSecretRef,
 				log:             r.Log,
@@ -113,7 +113,7 @@ func runFederationProjectTest[T any](t *testing.T, method func(FederationEndpoin
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := method(tc.endpoint)
+			got, err := method(tc.connectionSource)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -124,18 +124,18 @@ func runFederationProjectTest[T any](t *testing.T, method func(FederationEndpoin
 	}
 }
 
-func TestFederationEndpoint_GetName(t *testing.T) {
-	eNil := FederationEndpoint{obj: nil}
+func TestFederationConnectionSource_GetName(t *testing.T) {
+	eNil := DataFederationConnectionSource{obj: nil}
 	assert.Equal(t, "", eNil.GetName())
-	e := FederationEndpoint{obj: createDummyFederation(t)}
+	e := DataFederationConnectionSource{obj: createDummyFederation(t)}
 	assert.Equal(t, "my-df-name", e.GetName())
 }
 
-func TestFederationEndpoint_IsReady(t *testing.T) {
-	eNil := FederationEndpoint{obj: nil}
+func TestFederationConnectionSource_IsReady(t *testing.T) {
+	eNil := DataFederationConnectionSource{obj: nil}
 	assert.False(t, eNil.IsReady())
 
-	eNotReady := FederationEndpoint{
+	eNotReady := DataFederationConnectionSource{
 		obj: &akov2.AtlasDataFederation{
 			Status: status.DataFederationStatus{
 				Common: api.Common{
@@ -146,7 +146,7 @@ func TestFederationEndpoint_IsReady(t *testing.T) {
 	}
 	assert.False(t, eNotReady.IsReady())
 
-	eReady := FederationEndpoint{
+	eReady := DataFederationConnectionSource{
 		obj: &akov2.AtlasDataFederation{
 			Status: status.DataFederationStatus{
 				Common: api.Common{
@@ -158,36 +158,36 @@ func TestFederationEndpoint_IsReady(t *testing.T) {
 	assert.True(t, eReady.IsReady())
 }
 
-func TestFederationEndpoint_GetScopeType(t *testing.T) {
-	e := FederationEndpoint{}
+func TestFederationConnectionSource_GetScopeType(t *testing.T) {
+	e := DataFederationConnectionSource{}
 	assert.Equal(t, akov2.DataLakeScopeType, e.GetScopeType())
 }
 
-func TestFederationEndpoint_GetProjectID(t *testing.T) {
+func TestFederationConnectionSource_GetProjectID(t *testing.T) {
 	runFederationProjectTest(t,
-		func(fe FederationEndpoint) (string, error) {
+		func(fe DataFederationConnectionSource) (string, error) {
 			return fe.GetProjectID(context.Background())
 		},
 		"test-project-id",
 	)
 }
 
-func TestFederationEndpoint_SelectorByProject(t *testing.T) {
-	e := FederationEndpoint{}
-	s := e.SelectorByProject("p123")
+func TestFederationConnectionSource_SelectorByProject(t *testing.T) {
+	e := DataFederationConnectionSource{}
+	s := e.SelectorByProjectID("p123")
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDataFederationByProjectID: "p123"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDataFederationByProjectID: "other"}))
 }
 
-func TestFederationEndpoint_SelectorByProjectAndName(t *testing.T) {
-	e := FederationEndpoint{}
-	ids := &ConnSecretIdentifiers{ProjectID: "pX", ClusterName: "dfY"}
-	s := e.SelectorByProjectAndName(ids)
+func TestFederationConnectionSource_SelectorByProjectIDAndClusterName(t *testing.T) {
+	e := DataFederationConnectionSource{}
+	ids := &ConnectionSecretIdentifiers{ProjectID: "pX", ClusterName: "dfY"}
+	s := e.SelectorByProjectIDAndClusterName(ids)
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDataFederationBySpecNameAndProjectID: "pX-dfY"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDataFederationBySpecNameAndProjectID: "pX-dfZ"}))
 }
 
-func TestFederationEndpoint_BuildConnData(t *testing.T) {
+func TestFederationConnectionSource_BuildConnData(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	df := createDummyFederation(t)
 	user := createDummyUser(t, "test-user")
@@ -208,27 +208,27 @@ func TestFederationEndpoint_BuildConnData(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		objs     []client.Object
-		override func(*ConnSecretReconciler)
-		endpoint *akov2.AtlasDataFederation
-		user     *akov2.AtlasDatabaseUser
-		wantURL  string
-		wantErr  bool
+		objs             []client.Object
+		override         func(*ConnSecretReconciler)
+		connectionSource *akov2.AtlasDataFederation
+		user             *akov2.AtlasDatabaseUser
+		wantURL          string
+		wantErr          bool
 	}{
-		"fail: nil endpoint and nil user": {
-			endpoint: nil,
-			user:     nil,
-			wantErr:  true,
+		"fail: nil connectionSource and nil user": {
+			connectionSource: nil,
+			user:             nil,
+			wantErr:          true,
 		},
 		"fail: password is missing": {
-			endpoint: dfNoProject,
-			user:     userNoPass,
-			wantErr:  true,
+			connectionSource: dfNoProject,
+			user:             userNoPass,
+			wantErr:          true,
 		},
-		"fail: endpoint exists but project missing": {
-			endpoint: dfNoProject,
-			user:     user,
-			wantErr:  true,
+		"fail: connectionSource exists but project missing": {
+			connectionSource: dfNoProject,
+			user:             user,
+			wantErr:          true,
 		},
 		"success: builds URL from DF hostnames": {
 			override: func(r *ConnSecretReconciler) {
@@ -256,10 +256,10 @@ func TestFederationEndpoint_BuildConnData(t *testing.T) {
 					IsCloudGovFunc:  func() bool { return false },
 				}
 			},
-			endpoint: df,
-			user:     user,
-			wantURL:  "mongodb://h1.example.net,h2.example.net/?ssl=true",
-			wantErr:  false,
+			connectionSource: df,
+			user:             user,
+			wantURL:          "mongodb://h1.example.net,h2.example.net/?ssl=true",
+			wantErr:          false,
 		},
 	}
 
@@ -268,14 +268,14 @@ func TestFederationEndpoint_BuildConnData(t *testing.T) {
 			if tc.override != nil {
 				tc.override(r)
 			}
-			e := FederationEndpoint{
-				obj:             tc.endpoint,
-				k8s:             r.Client,
+			e := DataFederationConnectionSource{
+				obj:             tc.connectionSource,
+				client:          r.Client,
 				provider:        r.AtlasProvider,
 				globalSecretRef: r.GlobalSecretRef,
 				log:             r.Log,
 			}
-			got, err := e.BuildConnData(context.Background(), tc.user)
+			got, err := e.BuildConnectionData(context.Background(), tc.user)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -283,7 +283,7 @@ func TestFederationEndpoint_BuildConnData(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, "admin", got.DBUserName)
 			assert.Equal(t, "secret", got.Password)
-			assert.Equal(t, tc.wantURL, got.ConnURL)
+			assert.Equal(t, tc.wantURL, got.ConnectionURL)
 		})
 	}
 }

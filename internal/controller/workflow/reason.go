@@ -196,14 +196,14 @@ const (
 
 // ConnectionSecret reasons
 const (
-	ConnSecretInvalidName                ConditionReason = "ConnSecretInvalidName"
-	ConnSecretPairNotLoaded              ConditionReason = "ConnSecretPairNotLoaded"
-	ConnSecretUserExpired                ConditionReason = "ConnSecretUserExpired"
-	ConnSecretNotReady                   ConditionReason = "ConnSecretNotReady"
-	ConnSecretUnresolvedProjectName      ConditionReason = "ConnSecretUnresolvedProjectName"
-	ConnSecretFailedToBuildData          ConditionReason = "ConnSecretFailedToBuildData"
-	ConnSecretFailedToFillData           ConditionReason = "ConnSecretFailedToFillData"
-	ConnSecretFailedDeletion             ConditionReason = "ConnSecretFailedDeletion"
-	ConnSecretFailedToUpsertSecret       ConditionReason = "ConnSecretFailedToUpsertSecret"
-	ConnSecretFailedToSetOwnerReferences ConditionReason = "ConnSecretFailedToSetOwnerReferences"
+	ConnectionSecretInvalidName                ConditionReason = "ConnectionSecretInvalidName"
+	ConnectionSecretPairNotLoaded              ConditionReason = "ConnectionSecretPairNotLoaded"
+	ConnectionSecretUserExpired                ConditionReason = "ConnectionSecretUserExpired"
+	ConnectionSecretNotReady                   ConditionReason = "ConnectionSecretNotReady"
+	ConnectionSecretUnresolvedProjectName      ConditionReason = "ConnectionSecretUnresolvedProjectName"
+	ConnectionSecretFailedToBuildData          ConditionReason = "ConnectionSecretFailedToBuildData"
+	ConnectionSecretFailedToFillData           ConditionReason = "ConnectionSecretFailedToFillData"
+	ConnectionSecretFailedDeletion             ConditionReason = "ConnectionSecretFailedDeletion"
+	ConnectionSecretFailedToUpsertSecret       ConditionReason = "ConnectionSecretFailedToUpsertSecret"
+	ConnectionSecretFailedToSetOwnerReferences ConditionReason = "ConnectionSecretFailedToSetOwnerReferences"
 )
