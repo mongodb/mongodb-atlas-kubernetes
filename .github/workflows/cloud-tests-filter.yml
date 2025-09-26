@@ -66,9 +66,6 @@ jobs:
             # Release branches always run all tests
             elif [[ "${GH_HEAD_REF}" == release/* ]];then
               RUN_CLOUD_TESTS='true'
-            # push events run all tests when code was changed
-            elif [ "${EVENT}" == "push" ] && [ "${CODE_CHANGED}" == "true" ];then
-              RUN_CLOUD_TESTS='true'
             # cloud-tests label forces cloud tests to run, BUT only on AKO PRs, not from forked repos 
             elif [ "${CLOUD_TESTS_LABEL}" == "true" ] && [ "${FORKED}" == "false" ];then
               RUN_CLOUD_TESTS='true'

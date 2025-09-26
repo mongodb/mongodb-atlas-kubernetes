@@ -1,0 +1,26 @@
+name: Gather Deprecations
+
+on:
+  schedule:
+    - cron: '0 0 * * 6' # Run after nightly test
+  workflow_dispatch:
+
+jobs:
+  gather-deprecations:
+    name: Gather Deprecation Warnings
+    environment: release
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.13.0
+        with:
+          enable-cache: 'true'
+      - name: Parse logs from e2e tests
+        run: |
+          devbox run -- 'make slack-deprecations'

@@ -19,10 +19,18 @@ import (
 	"strings"
 )
 
-const DefaultVersion = "unknown"
+const DefaultVersion = "unknown-version"
+const DefaultGitCommit = "unknown-commit"
+const DefaultBuildTime = "unknown-build-time"
 
 // Version set by the linker during link time.
 var Version = DefaultVersion
+
+// GitCommit set by the linker during link time.
+var GitCommit = DefaultGitCommit
+
+// BuildTime set by the linker during link time.
+var BuildTime = DefaultBuildTime
 
 // Experimental enables unreleased features
 var Experimental = "false"

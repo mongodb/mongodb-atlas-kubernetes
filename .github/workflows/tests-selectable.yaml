@@ -28,20 +28,18 @@ jobs:
       int_matrix: ${{ steps.set-matrix.outputs.int_matrix }}
       e2e_matrix: ${{ steps.set-matrix.outputs.e2e_matrix }}
       e2e_gov_matrix: ${{ steps.set-matrix.outputs.e2e_gov_matrix }}
+      next_version: ${{ steps.read_version.outputs.version }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.event.pull_request.head.sha }}
-
       - name: Setup GO
         uses: actions/setup-go@v6
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
-
       - name: Install Ginkgo
         run: go install github.com/onsi/ginkgo/v2/ginkgo@latest
-
       - name: Get test labels from PR or input
         env:
           TEST_LABELS: ${{ github.event.inputs.testLabels }}
@@ -62,7 +60,6 @@ jobs:
             }
             console.log("Not a PullRequest or WorkflowDispatch event skipping");
             return [];
-
       - name: List available Ginkgo test labels
         id: fetch-labels
         run: |
@@ -74,7 +71,6 @@ jobs:
           
           echo "Available Integration Tests: $INT_LABELS"
           echo "Available E2E Tests: $E2E_LABELS"
-
       - name: Compute Test Matrix
         id: set-matrix
         env:
@@ -92,6 +88,11 @@ jobs:
           echo "int_matrix=$(cat result.json | jq -c .int)" >> $GITHUB_OUTPUT
           echo "e2e_matrix=$(cat result.json | jq -c .e2e)" >> $GITHUB_OUTPUT
           echo "e2e_gov_matrix=$(cat result.json | jq -c .e2e_gov)" >> $GITHUB_OUTPUT
+      - name: Read the next release version
+        id: read_version
+        run: |
+          VERSION=$(jq -r '.next' version.json)
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
 
   compute:
     needs: detect-tests
@@ -138,8 +139,7 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          repository: ghcr.io/${{ env.REPOSITORY }}
-          version: ${{ steps.prepare.outputs.tag }}
+          version: ${{ needs.detect-tests.outputs.next_version }}
           tags: ghcr.io/${{ env.REPOSITORY }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
@@ -178,7 +178,7 @@ jobs:
         uses: ./.github/actions/gen-install-scripts
         with:
           IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
-          VERSION: ${{ steps.prepare.outputs.tag }}
+          VERSION: ${{ needs.detect-tests.outputs.next_version }}
           ENV: dev
 
       - name: Change URL for the test
@@ -207,8 +207,7 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          repository: ${{ env.GHCR_BUNDLES_REPO }}
-          version: ${{ steps.prepare.outputs.tag }}
+          version: ${{ needs.detect-tests.outputs.next_version }}
           tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
@@ -295,7 +294,7 @@ jobs:
         uses: ./.github/actions/gen-install-scripts
         with:
           IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
-          VERSION: ${{ steps.prepare.outputs.tag }}
+          VERSION: ${{ needs.detect-tests.outputs.next_version }}
           ENV: dev
 
       - name: Change path for the test

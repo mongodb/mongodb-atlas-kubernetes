@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-BIN_VERSION=$("${BINARY}" -v)
+BIN_VERSION=$("${BINARY}" -v | awk '/^Version/ {print $3}')
 
 if [ "${BIN_VERSION}" == "unknown" ]; then
     echo "${BINARY} version ${BIN_VERSION}: was not set"

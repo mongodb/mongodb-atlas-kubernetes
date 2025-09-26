@@ -39,7 +39,7 @@ const (
 	AtlasOperatorCRDHelmChartPath = "../../helm-charts/atlas-operator-crds"
 	AtlasDeploymentHelmChartPath  = "../../helm-charts/atlas-deployment"
 	HelmChartDirectory            = "../../helm-charts"
-	MajorVersionFile              = "../../major-version"
+	VersionFile                   = "../../version.json"
 
 	// Tags for test
 	TagName         = "atlas-operator-test"

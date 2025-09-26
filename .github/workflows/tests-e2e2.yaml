@@ -78,7 +78,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           # Nightly runs all tests, overriding PR labels as '["test/e2e2/*"]'
-          if [ "${GITHUB_REF}" == "refs/heads/main" ] && [ "${EVENT_NAME}" == "schedule" ];then
+          if [ "${GITHUB_REF}" == "refs/heads/main" ] && [ "${EVENT_NAME}" == "schedule" -o "${EVENT_NAME}" == "workflow_dispatch" ];then
             PR_LABELS='["test/e2e2/*"]'
             echo "Nightly runs all tests"
           fi
@@ -142,9 +142,6 @@ jobs:
         with:
           enable-cache: 'true'
 
-      - name: Prepare tag
-        id: prepare
-        uses: ./.github/actions/set-tag
       - name: Set properties
         id: properties
         run: |

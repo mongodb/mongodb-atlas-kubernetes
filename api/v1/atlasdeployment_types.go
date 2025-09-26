@@ -353,10 +353,6 @@ type ComputeSpec struct {
 	// Maximum instance size to which your deployment can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.
 	// +optional
 	MaxInstanceSize string `json:"maxInstanceSize,omitempty"`
-
-	// Flag that indicates whether predictive instance size auto-scaling is enabled.
-	// +optional
-	PredictiveEnabled *bool `json:"predictiveEnabled,omitempty"`
 }
 
 type ProcessArgs struct {

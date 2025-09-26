@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       test_matrix: ${{ steps.compute.outputs.matrix }}
+      next_version: ${{ steps.read_version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
 
@@ -26,9 +27,14 @@ jobs:
             matrix='["v1.31.9-kind", "v1.33.2-kind"]'
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
-
+      - name: Read the next release version
+        id: read_version
+        run: |
+          VERSION=$(jq -r '.next' version.json)
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
   prepare-e2e-image:
     runs-on: ubuntu-latest
+    needs: [prepare-e2e]
     outputs:
       image_url: ${{ steps.set_image_url.outputs.image_url }}
     env:
@@ -58,8 +64,7 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          repository: ${{ env.REPO }}
-          version: ${{ steps.set_tag.outputs.tag }}
+          version: ${{ needs.prepare-e2e.outputs.next_version }}
           tags: ${{ steps.set_image_url.outputs.image_url }}
           platforms: linux/amd64,linux/arm64
           push_to_docker: false
@@ -68,6 +73,8 @@ jobs:
     needs: [prepare-e2e]
     runs-on: ubuntu-latest
     environment: test
+    env:
+      AKO_DEPRECATION_WARNINGS: true
     strategy:
       fail-fast: false
       matrix:
