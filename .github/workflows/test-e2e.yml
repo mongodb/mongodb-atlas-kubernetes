@@ -144,7 +144,7 @@ jobs:
         if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
         uses: helm/kind-action@v1.12.0
         with:
-          version: v0.29.0
+          version: v0.30.0
           config: test/helper/e2e/config/kind.yaml
           node_image: kindest/node:${{ steps.extract.outputs.k8s_version }}
           cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
