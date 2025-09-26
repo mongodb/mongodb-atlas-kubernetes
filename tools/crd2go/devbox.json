@@ -4,12 +4,7 @@
     "git@latest",
     "go@latest",
     "vscodium@latest",
-    "kubernetes-controller-tools@latest",
-    "gh@latest",
-    "gci@latest",
-    "golangci-lint@latest",
-    "addlicense@latest",
-    "mage@latest",
+    "kubernetes-controller-tools@latest"
   ],
   "shell": {
     "init_hook": [

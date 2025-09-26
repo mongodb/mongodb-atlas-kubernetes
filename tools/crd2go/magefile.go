@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -26,16 +27,29 @@ import (
 
 // CI runs all linting and validation checks.
 func CI() {
-	mg.SerialDeps(Addlicense, GCI)
+	mg.SerialDeps(Build, UnitTests, Addlicense, GCI, Lint)
+	fmt.Println("✅ CI PASSED all checks")
 }
 
-// Addlicense runs the addlicense check to ensure source files have license headers.
+// Build checks all execitable build properly
+func Build() error {
+	return sh.RunV("go", "build", "./...")
+}
+
+// UnitTests runs the go tests
+func UnitTests() error {
+	return sh.RunV("go", "test", "./...")
+}
+
+// Addlicense runs the addlicense check to ensure source files have license headers
 func Addlicense() error {
 	fmt.Println("Running license header check...")
 
 	// sh.RunV runs the command verbosely (streaming output)
 	// and returns an error if the command fails.
-	return sh.RunV("addlicense",
+	return sh.RunV(
+		"go", "tool",
+		"addlicense",
 		"-check",
 		"-l", "apache",
 		"-c", "MongoDB Inc",
@@ -49,10 +63,11 @@ func Addlicense() error {
 	)
 }
 
-// GCI runs gci to check that Go import orders are correct.
+// GCI runs gci to check that Go import orders are correct
 func GCI() error {
 	fmt.Println("🧹 Formatting Go imports...")
 	if err := sh.RunV(
+		"go", "tool",
 		"gci", "write",
 		"--skip-generated",
 		"-s", "standard",
@@ -72,4 +87,13 @@ func GCI() error {
 
 	fmt.Println("✅ Go imports are correctly formatted.")
 	return nil
+}
+
+// Lint runs the golangci-lint tool
+func Lint() error {
+	if err := os.Setenv("CGO_ENABLED", "0"); err != nil {
+		return nil
+	}
+	return sh.RunV("go", "tool", "golangci-lint", "run",
+		"./cmd/...", "./internal/...", "./k8s/...", "./pkg/...")
 }
