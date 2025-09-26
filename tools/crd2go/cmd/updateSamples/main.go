@@ -23,6 +23,7 @@ import (
 	"os"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/checkerr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/fileinput"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/run"
 )
 
@@ -62,6 +63,8 @@ func updateSamples() error {
 }
 
 func downloadTo(url, filename string) (int64, error) {
+	// #nosec G107 URL is safe as we are just adding a token, it cannot be re-pathed
+	//nolint:noctx
 	rsp, err := http.Get(url)
 	if err != nil {
 		return 0, fmt.Errorf("failed to download from %s: %w", url, err)
@@ -69,7 +72,7 @@ func downloadTo(url, filename string) (int64, error) {
 	if rsp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("failed to request %s with status: %q", url, rsp.Status)
 	}
-	f, err := os.Create(filename)
+	f, err := os.Create(fileinput.MustBeSafe(filename))
 	if err != nil {
 		return 0, fmt.Errorf("failed to create file %s: %w", filename, err)
 	}

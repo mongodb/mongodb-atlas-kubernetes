@@ -30,6 +30,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/crd/hooks"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/fileinput"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/render"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/run"
@@ -47,7 +48,7 @@ func LoadConfig(r io.Reader) (*config.Config, error) {
 	}
 	cfg := config.Config{}
 	if err = yaml.Unmarshal(yml, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to load configuration: %v", err)
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 	return &cfg, nil
 }
@@ -55,12 +56,20 @@ func LoadConfig(r io.Reader) (*config.Config, error) {
 // CodeWriterAtPath creates a file writer for the given CRD at the specified directory
 func CodeWriterAtPath(dir string) config.CodeWriterFunc {
 	return func(filename string, overwrite bool) (io.WriteCloser, error) {
+		log.Printf("filename=%q", filename)
 		srcFile := filepath.Join(dir, filename)
+		log.Printf("dir=%q", dir)
+		log.Printf("srcFile=%q", srcFile)
 		flags := os.O_CREATE | os.O_EXCL | os.O_WRONLY
 		if overwrite {
 			flags = os.O_CREATE | os.O_TRUNC | os.O_RDWR
 		}
-		w, err := os.OpenFile(srcFile, flags, 0666)
+		safeSrcFile, err := fileinput.SafeAt(dir, srcFile)
+		if err != nil {
+			return nil, fmt.Errorf("unsafe file path %s: %w", srcFile, err)
+		}
+		// #nosec G304 gosec is confused here as SafeAt above already sanitized the input
+		w, err := os.OpenFile(safeSrcFile, flags, 0600)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create file %s: %w", srcFile, err)
 		}

@@ -1,13 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.0/.schema/devbox.schema.json",
   "packages": [
-    "neovim@latest",
+    "git@latest",
     "go@latest",
     "vscodium@latest",
-    "kubernetes-controller-tools@latest",
-    "gh@latest",
-    "gci@latest",
-    "golangci-lint@latest"
+    "kubernetes-controller-tools@latest"
   ],
   "shell": {
     "init_hook": [
