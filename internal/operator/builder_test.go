@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -161,6 +162,7 @@ func TestBuildManager(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			akoScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(akoScheme))
+			require.NoError(t, corev1.AddToScheme(akoScheme))
 
 			mgrMock := &managerMock{}
 			builder := NewBuilder(mgrMock, akoScheme, 5*time.Minute)
