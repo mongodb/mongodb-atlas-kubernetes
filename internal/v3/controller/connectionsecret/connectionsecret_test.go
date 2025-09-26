@@ -240,7 +240,7 @@ func Test_loadPair(t *testing.T) {
 	)
 
 	type fields struct {
-		connectionSourceObjs []client.Object
+		connectionTargetObjs []client.Object
 		users                []*akov2.AtlasDatabaseUser
 	}
 
@@ -257,7 +257,7 @@ func Test_loadPair(t *testing.T) {
 			clusterName:      "clusterA",
 			databaseUsername: "admin",
 			fields: fields{
-				connectionSourceObjs: []client.Object{
+				connectionTargetObjs: []client.Object{
 					&akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep1", Namespace: ns},
 						Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "clusterA"}},
@@ -271,11 +271,11 @@ func Test_loadPair(t *testing.T) {
 			expectedErr:     ErrAmbiguousPairing,
 			expectedPairNil: true,
 		},
-		"fail: ambiguous-multiple connectionSources (2 deployments)": {
+		"fail: ambiguous-multiple connectionTargets (2 deployments)": {
 			clusterName:      "clusterB",
 			databaseUsername: "root",
 			fields: fields{
-				connectionSourceObjs: []client.Object{
+				connectionTargetObjs: []client.Object{
 					&akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep-a", Namespace: ns},
 						Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "clusterB"}},
@@ -292,11 +292,11 @@ func Test_loadPair(t *testing.T) {
 			expectedErr:     ErrAmbiguousPairing,
 			expectedPairNil: true,
 		},
-		"fail: ambiguous-multiple connectionSources (deployment and federation share name)": {
+		"fail: ambiguous-multiple connectionTargets (deployment and federation share name)": {
 			clusterName:      "clusterC",
 			databaseUsername: "admin",
 			fields: fields{
-				connectionSourceObjs: []client.Object{
+				connectionTargetObjs: []client.Object{
 					&akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep-a", Namespace: ns},
 						Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "clusterC"}},
@@ -317,7 +317,7 @@ func Test_loadPair(t *testing.T) {
 			clusterName:      "clusterD",
 			databaseUsername: "andrpac",
 			fields: fields{
-				connectionSourceObjs: nil,
+				connectionTargetObjs: nil,
 				users:                nil,
 			},
 			expectedErr:     ErrMissingPairing,
@@ -325,11 +325,11 @@ func Test_loadPair(t *testing.T) {
 			expectUserNil:   true,
 			expectEpNil:     true,
 		},
-		"fail: user present but connectionSource missing": {
+		"fail: user present but connectionTarget missing": {
 			clusterName:      "missing",
 			databaseUsername: "admin",
 			fields: fields{
-				connectionSourceObjs: nil,
+				connectionTargetObjs: nil,
 				users: []*akov2.AtlasDatabaseUser{
 					{ObjectMeta: metav1.ObjectMeta{Name: "u-only", Namespace: ns}, Spec: akov2.AtlasDatabaseUserSpec{Username: "admin"}},
 				},
@@ -337,11 +337,11 @@ func Test_loadPair(t *testing.T) {
 			expectedErr: ErrMissingPairing,
 			expectEpNil: true,
 		},
-		"fail: user absent but connectionSource present": {
+		"fail: user absent but connectionTarget present": {
 			clusterName:      "clusterE",
 			databaseUsername: "missing",
 			fields: fields{
-				connectionSourceObjs: []client.Object{
+				connectionTargetObjs: []client.Object{
 					&akov2.AtlasDataFederation{
 						ObjectMeta: metav1.ObjectMeta{Name: "df", Namespace: ns},
 						Spec:       akov2.DataFederationSpec{Name: "clusterE"},
@@ -352,11 +352,11 @@ func Test_loadPair(t *testing.T) {
 			expectedErr:   ErrMissingPairing,
 			expectUserNil: true,
 		},
-		"success: exactly one user and one connectionSource": {
+		"success: exactly one user and one connectionTarget": {
 			clusterName:      "clusterF",
 			databaseUsername: "admin",
 			fields: fields{
-				connectionSourceObjs: []client.Object{
+				connectionTargetObjs: []client.Object{
 					&akov2.AtlasDeployment{
 						ObjectMeta: metav1.ObjectMeta{Name: "dep", Namespace: ns},
 						Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "clusterF"}},
@@ -373,20 +373,20 @@ func Test_loadPair(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			var all []client.Object
-			all = append(all, tc.fields.connectionSourceObjs...)
+			all = append(all, tc.fields.connectionTargetObjs...)
 			for _, u := range tc.fields.users {
 				all = append(all, u)
 			}
 
 			r := createDummyEnv(t, all)
-			r.ConnectionSourceKinds = []ConnectionSource{
-				DeploymentConnectionSource{
+			r.ConnectionTargetKinds = []ConnectionTarget{
+				DeploymentConnectionTarget{
 					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
 					log:             r.Log,
 				},
-				DataFederationConnectionSource{
+				DataFederationConnectionTarget{
 					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
@@ -400,7 +400,7 @@ func Test_loadPair(t *testing.T) {
 				DatabaseUsername: tc.databaseUsername,
 			}
 
-			user, connectionSource, err := r.loadPair(context.Background(), ids)
+			user, connectionTarget, err := r.loadPair(context.Background(), ids)
 
 			if tc.expectedErr != nil {
 				assert.ErrorIs(t, err, tc.expectedErr)
@@ -410,7 +410,7 @@ func Test_loadPair(t *testing.T) {
 
 			if tc.expectedPairNil {
 				assert.Nil(t, user)
-				assert.Nil(t, connectionSource)
+				assert.Nil(t, connectionTarget)
 				return
 			}
 
@@ -422,9 +422,9 @@ func Test_loadPair(t *testing.T) {
 				}
 			}
 			if tc.expectEpNil {
-				assert.Nil(t, connectionSource)
+				assert.Nil(t, connectionTarget)
 			} else {
-				assert.NotNil(t, connectionSource)
+				assert.NotNil(t, connectionTarget)
 			}
 			// assert.Equal(t, projectID, pair.ProjectID)
 
@@ -433,10 +433,10 @@ func Test_loadPair(t *testing.T) {
 				ClusterName:      tc.clusterName,
 				DatabaseUsername: tc.databaseUsername,
 			}
-			missUser, missConnectionSource, missErr := r.loadPair(context.Background(), missIDs)
+			missUser, missConnectionTarget, missErr := r.loadPair(context.Background(), missIDs)
 			assert.ErrorIs(t, missErr, ErrMissingPairing)
 			assert.Nil(t, missUser)
-			assert.Nil(t, missConnectionSource)
+			assert.Nil(t, missConnectionTarget)
 		})
 	}
 }
@@ -458,7 +458,7 @@ func Test_handleDelete(t *testing.T) {
 		ids              ConnectionSecretIdentifiers
 		result           expectedResult
 		user             *akov2.AtlasDatabaseUser
-		connectionSource ConnectionSource
+		connectionTarget ConnectionTarget
 	}
 
 	r := createDummyEnv(t, nil)
@@ -508,7 +508,7 @@ func Test_handleDelete(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if tc.connectionSource == nil && tc.user == nil {
+			if tc.connectionTarget == nil && tc.user == nil {
 				return
 			}
 
@@ -538,13 +538,13 @@ func Test_handleUpsert(t *testing.T) {
 		ids              ConnectionSecretIdentifiers
 		result           expectedResult
 		user             *akov2.AtlasDatabaseUser
-		connectionSource ConnectionSource
+		connectionTarget ConnectionTarget
 	}
 
 	r := createDummyEnv(t, nil)
 	dep := createDummyDeployment(t)
 	dbuser := createDummyUser(t, "test-user")
-	depConnectionSource := DeploymentConnectionSource{
+	depConnectionTarget := DeploymentConnectionTarget{
 		client:          r.Client,
 		provider:        r.AtlasProvider,
 		globalSecretRef: r.GlobalSecretRef,
@@ -561,7 +561,7 @@ func Test_handleUpsert(t *testing.T) {
 				ConnectionType:   connectionType,
 			},
 			user:             nil,
-			connectionSource: depConnectionSource,
+			connectionTarget: depConnectionTarget,
 			result: expectedResult{
 				expectedResult: ctrl.Result{},
 				expectedError:  ErrMissingPairing,
@@ -575,7 +575,7 @@ func Test_handleUpsert(t *testing.T) {
 				ConnectionType:   connectionType,
 			},
 			user:             dbuser,
-			connectionSource: depConnectionSource,
+			connectionTarget: depConnectionTarget,
 			result: expectedResult{
 				expectedResult: ctrl.Result{},
 				expectedError:  nil,
@@ -589,7 +589,7 @@ func Test_handleUpsert(t *testing.T) {
 				NamespacedName: types.NamespacedName{Namespace: ns, Name: "any"},
 			}
 
-			res, err := r.handleUpsert(context.Background(), req, &tc.ids, tc.user, tc.connectionSource)
+			res, err := r.handleUpsert(context.Background(), req, &tc.ids, tc.user, tc.connectionTarget)
 			assert.Equal(t, tc.result.expectedResult, res)
 
 			if tc.result.expectedError != nil {
@@ -599,7 +599,7 @@ func Test_handleUpsert(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if tc.connectionSource == nil || tc.user == nil {
+			if tc.connectionTarget == nil || tc.user == nil {
 				return
 			}
 
@@ -653,7 +653,7 @@ func Test_ensureSecret(t *testing.T) {
 		},
 	}
 
-	depConnectionSource := DeploymentConnectionSource{
+	depConnectionTarget := DeploymentConnectionTarget{
 		client:          r.Client,
 		provider:        r.AtlasProvider,
 		globalSecretRef: r.GlobalSecretRef,
@@ -667,7 +667,7 @@ func Test_ensureSecret(t *testing.T) {
 		data             ConnectionSecretData
 		result           expectedResult
 		user             *akov2.AtlasDatabaseUser
-		connectionSource ConnectionSource
+		connectionTarget ConnectionTarget
 	}{
 		"fail: invalid URL bubbles up and prevents creation": {
 			ids: ConnectionSecretIdentifiers{
@@ -677,7 +677,7 @@ func Test_ensureSecret(t *testing.T) {
 				ConnectionType:   connectionType,
 			},
 			user:             dbUser,
-			connectionSource: depConnectionSource,
+			connectionTarget: depConnectionTarget,
 			data: ConnectionSecretData{
 				DBUserName:    username,
 				Password:      "test-pass",
@@ -685,7 +685,7 @@ func Test_ensureSecret(t *testing.T) {
 			},
 			result: expectedResult{expectedError: fmt.Errorf("parse \"://\\x00\": net/url: invalid control character in URL")},
 		},
-		"success: create with private connectionSources": {
+		"success: create with private connectionTargets": {
 			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
 				ClusterName:      cluster,
@@ -693,7 +693,7 @@ func Test_ensureSecret(t *testing.T) {
 				ConnectionType:   connectionType,
 			},
 			user:             dbUser,
-			connectionSource: depConnectionSource,
+			connectionTarget: depConnectionTarget,
 			data:             connData,
 			result:           expectedResult{expectedError: nil},
 		},
@@ -705,7 +705,7 @@ func Test_ensureSecret(t *testing.T) {
 				ConnectionType:   connectionType,
 			},
 			user:             dbUser,
-			connectionSource: depConnectionSource,
+			connectionTarget: depConnectionTarget,
 			data:             connData,
 			result:           expectedResult{expectedError: nil},
 		},
@@ -713,7 +713,7 @@ func Test_ensureSecret(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := r.ensureSecret(context.Background(), &tc.ids, tc.user, tc.connectionSource, tc.data)
+			err := r.ensureSecret(context.Background(), &tc.ids, tc.user, tc.connectionTarget, tc.data)
 			if tc.result.expectedError != nil {
 				require.Error(t, err)
 				return

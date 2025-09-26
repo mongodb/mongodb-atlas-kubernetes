@@ -62,17 +62,17 @@ func createDummyFederation(t *testing.T) *akov2.AtlasDataFederation {
 	return df
 }
 
-func runFederationProjectTest[T any](t *testing.T, method func(DataFederationConnectionSource) (T, error), wantField string) {
+func runFederationProjectTest[T any](t *testing.T, method func(DataFederationConnectionTarget) (T, error), wantField string) {
 	r := createDummyEnv(t, nil)
 	df := createDummyFederation(t)
 
 	tests := map[string]struct {
-		connectionSource DataFederationConnectionSource
+		connectionTarget DataFederationConnectionTarget
 		want             string
 		wantErr          bool
 	}{
 		"fail: nil federation": {
-			connectionSource: DataFederationConnectionSource{
+			connectionTarget: DataFederationConnectionTarget{
 				obj:             nil,
 				client:          r.Client,
 				provider:        r.AtlasProvider,
@@ -82,7 +82,7 @@ func runFederationProjectTest[T any](t *testing.T, method func(DataFederationCon
 			wantErr: true,
 		},
 		"fail: missing project ref": {
-			connectionSource: DataFederationConnectionSource{
+			connectionTarget: DataFederationConnectionTarget{
 				obj: &akov2.AtlasDataFederation{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-df",
@@ -100,7 +100,7 @@ func runFederationProjectTest[T any](t *testing.T, method func(DataFederationCon
 			wantErr: true,
 		},
 		"success": {
-			connectionSource: DataFederationConnectionSource{
+			connectionTarget: DataFederationConnectionTarget{
 				obj:             df,
 				client:          r.Client,
 				provider:        r.AtlasProvider,
@@ -113,7 +113,7 @@ func runFederationProjectTest[T any](t *testing.T, method func(DataFederationCon
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := method(tc.connectionSource)
+			got, err := method(tc.connectionTarget)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -124,18 +124,18 @@ func runFederationProjectTest[T any](t *testing.T, method func(DataFederationCon
 	}
 }
 
-func TestFederationConnectionSource_GetName(t *testing.T) {
-	eNil := DataFederationConnectionSource{obj: nil}
+func TestFederationConnectionTarget_GetName(t *testing.T) {
+	eNil := DataFederationConnectionTarget{obj: nil}
 	assert.Equal(t, "", eNil.GetName())
-	e := DataFederationConnectionSource{obj: createDummyFederation(t)}
+	e := DataFederationConnectionTarget{obj: createDummyFederation(t)}
 	assert.Equal(t, "my-df-name", e.GetName())
 }
 
-func TestFederationConnectionSource_IsReady(t *testing.T) {
-	eNil := DataFederationConnectionSource{obj: nil}
+func TestFederationConnectionTarget_IsReady(t *testing.T) {
+	eNil := DataFederationConnectionTarget{obj: nil}
 	assert.False(t, eNil.IsReady())
 
-	eNotReady := DataFederationConnectionSource{
+	eNotReady := DataFederationConnectionTarget{
 		obj: &akov2.AtlasDataFederation{
 			Status: status.DataFederationStatus{
 				Common: api.Common{
@@ -146,7 +146,7 @@ func TestFederationConnectionSource_IsReady(t *testing.T) {
 	}
 	assert.False(t, eNotReady.IsReady())
 
-	eReady := DataFederationConnectionSource{
+	eReady := DataFederationConnectionTarget{
 		obj: &akov2.AtlasDataFederation{
 			Status: status.DataFederationStatus{
 				Common: api.Common{
@@ -158,36 +158,36 @@ func TestFederationConnectionSource_IsReady(t *testing.T) {
 	assert.True(t, eReady.IsReady())
 }
 
-func TestFederationConnectionSource_GetScopeType(t *testing.T) {
-	e := DataFederationConnectionSource{}
+func TestFederationConnectionTarget_GetScopeType(t *testing.T) {
+	e := DataFederationConnectionTarget{}
 	assert.Equal(t, akov2.DataLakeScopeType, e.GetScopeType())
 }
 
-func TestFederationConnectionSource_GetProjectID(t *testing.T) {
+func TestFederationConnectionTarget_GetProjectID(t *testing.T) {
 	runFederationProjectTest(t,
-		func(fe DataFederationConnectionSource) (string, error) {
+		func(fe DataFederationConnectionTarget) (string, error) {
 			return fe.GetProjectID(context.Background())
 		},
 		"test-project-id",
 	)
 }
 
-func TestFederationConnectionSource_SelectorByProject(t *testing.T) {
-	e := DataFederationConnectionSource{}
+func TestFederationConnectionTarget_SelectorByProject(t *testing.T) {
+	e := DataFederationConnectionTarget{}
 	s := e.SelectorByProjectID("p123")
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDataFederationByProjectID: "p123"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDataFederationByProjectID: "other"}))
 }
 
-func TestFederationConnectionSource_SelectorByProjectIDAndClusterName(t *testing.T) {
-	e := DataFederationConnectionSource{}
+func TestFederationConnectionTarget_SelectorByProjectIDAndClusterName(t *testing.T) {
+	e := DataFederationConnectionTarget{}
 	ids := &ConnectionSecretIdentifiers{ProjectID: "pX", ClusterName: "dfY"}
 	s := e.SelectorByProjectIDAndClusterName(ids)
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDataFederationBySpecNameAndProjectID: "pX-dfY"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDataFederationBySpecNameAndProjectID: "pX-dfZ"}))
 }
 
-func TestFederationConnectionSource_BuildConnData(t *testing.T) {
+func TestFederationConnectionTarget_BuildConnData(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	df := createDummyFederation(t)
 	user := createDummyUser(t, "test-user")
@@ -210,23 +210,23 @@ func TestFederationConnectionSource_BuildConnData(t *testing.T) {
 	tests := map[string]struct {
 		objs             []client.Object
 		override         func(*ConnSecretReconciler)
-		connectionSource *akov2.AtlasDataFederation
+		connectionTarget *akov2.AtlasDataFederation
 		user             *akov2.AtlasDatabaseUser
 		wantURL          string
 		wantErr          bool
 	}{
-		"fail: nil connectionSource and nil user": {
-			connectionSource: nil,
+		"fail: nil connectionTarget and nil user": {
+			connectionTarget: nil,
 			user:             nil,
 			wantErr:          true,
 		},
 		"fail: password is missing": {
-			connectionSource: dfNoProject,
+			connectionTarget: dfNoProject,
 			user:             userNoPass,
 			wantErr:          true,
 		},
-		"fail: connectionSource exists but project missing": {
-			connectionSource: dfNoProject,
+		"fail: connectionTarget exists but project missing": {
+			connectionTarget: dfNoProject,
 			user:             user,
 			wantErr:          true,
 		},
@@ -256,7 +256,7 @@ func TestFederationConnectionSource_BuildConnData(t *testing.T) {
 					IsCloudGovFunc:  func() bool { return false },
 				}
 			},
-			connectionSource: df,
+			connectionTarget: df,
 			user:             user,
 			wantURL:          "mongodb://h1.example.net,h2.example.net/?ssl=true",
 			wantErr:          false,
@@ -268,8 +268,8 @@ func TestFederationConnectionSource_BuildConnData(t *testing.T) {
 			if tc.override != nil {
 				tc.override(r)
 			}
-			e := DataFederationConnectionSource{
-				obj:             tc.connectionSource,
+			e := DataFederationConnectionTarget{
+				obj:             tc.connectionTarget,
 				client:          r.Client,
 				provider:        r.AtlasProvider,
 				globalSecretRef: r.GlobalSecretRef,

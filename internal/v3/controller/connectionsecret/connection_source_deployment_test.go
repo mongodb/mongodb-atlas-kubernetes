@@ -90,16 +90,16 @@ func createDummyDeploymentSDK(t *testing.T) *akov2.AtlasDeployment {
 	return depl
 }
 
-func TestDeploymentConnectionSource_GetName(t *testing.T) {
-	eNil := DeploymentConnectionSource{obj: nil}
+func TestDeploymentConnectionTarget_GetName(t *testing.T) {
+	eNil := DeploymentConnectionTarget{obj: nil}
 	assert.Equal(t, "", eNil.GetName())
 	dep := createDummyDeployment(t)
-	e := DeploymentConnectionSource{obj: dep}
+	e := DeploymentConnectionTarget{obj: dep}
 	assert.Equal(t, "cluster1", e.GetName())
 }
 
-func TestDeploymentConnectionSource_IsReady(t *testing.T) {
-	eNil := DeploymentConnectionSource{obj: nil}
+func TestDeploymentConnectionTarget_IsReady(t *testing.T) {
+	eNil := DeploymentConnectionTarget{obj: nil}
 	assert.False(t, eNil.IsReady())
 
 	notReady := &akov2.AtlasDeployment{
@@ -109,7 +109,7 @@ func TestDeploymentConnectionSource_IsReady(t *testing.T) {
 			},
 		},
 	}
-	assert.False(t, DeploymentConnectionSource{obj: notReady}.IsReady())
+	assert.False(t, DeploymentConnectionTarget{obj: notReady}.IsReady())
 
 	ready := &akov2.AtlasDeployment{
 		Status: status.AtlasDeploymentStatus{
@@ -118,26 +118,26 @@ func TestDeploymentConnectionSource_IsReady(t *testing.T) {
 			},
 		},
 	}
-	assert.True(t, DeploymentConnectionSource{obj: ready}.IsReady())
+	assert.True(t, DeploymentConnectionTarget{obj: ready}.IsReady())
 }
 
-func TestDeploymentConnectionSource_GetScopeType(t *testing.T) {
-	e := DeploymentConnectionSource{}
+func TestDeploymentConnectionTarget_GetScopeType(t *testing.T) {
+	e := DeploymentConnectionTarget{}
 	assert.Equal(t, akov2.DeploymentScopeType, e.GetScopeType())
 }
 
-func TestDeploymentConnectionSource_GetProjectID(t *testing.T) {
+func TestDeploymentConnectionTarget_GetProjectID(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	depl := createDummyDeployment(t)
 	deplsdk := createDummyDeploymentSDK(t)
 
 	tests := map[string]struct {
-		connectionSource DeploymentConnectionSource
+		connectionTarget DeploymentConnectionTarget
 		want             string
 		wantErr          bool
 	}{
 		"fail: nil deployment": {
-			connectionSource: DeploymentConnectionSource{
+			connectionTarget: DeploymentConnectionTarget{
 				obj:             nil,
 				client:          r.Client,
 				provider:        r.AtlasProvider,
@@ -147,7 +147,7 @@ func TestDeploymentConnectionSource_GetProjectID(t *testing.T) {
 			wantErr: true,
 		},
 		"fail: project ref missing": {
-			connectionSource: DeploymentConnectionSource{
+			connectionTarget: DeploymentConnectionTarget{
 				obj:             &akov2.AtlasDeployment{Spec: akov2.AtlasDeploymentSpec{}},
 				client:          r.Client,
 				provider:        r.AtlasProvider,
@@ -157,7 +157,7 @@ func TestDeploymentConnectionSource_GetProjectID(t *testing.T) {
 			wantErr: true,
 		},
 		"fail: k8s project ref but project not found": {
-			connectionSource: DeploymentConnectionSource{
+			connectionTarget: DeploymentConnectionTarget{
 				obj: &akov2.AtlasDeployment{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test-ns"},
 					Spec: akov2.AtlasDeploymentSpec{
@@ -177,7 +177,7 @@ func TestDeploymentConnectionSource_GetProjectID(t *testing.T) {
 			wantErr: true,
 		},
 		"success: external project ID": {
-			connectionSource: DeploymentConnectionSource{
+			connectionTarget: DeploymentConnectionTarget{
 				obj:             deplsdk,
 				client:          r.Client,
 				provider:        r.AtlasProvider,
@@ -187,7 +187,7 @@ func TestDeploymentConnectionSource_GetProjectID(t *testing.T) {
 			want: "test-project-id",
 		},
 		"success: k8s project ref": {
-			connectionSource: DeploymentConnectionSource{
+			connectionTarget: DeploymentConnectionTarget{
 				obj:             depl,
 				client:          r.Client,
 				provider:        r.AtlasProvider,
@@ -200,7 +200,7 @@ func TestDeploymentConnectionSource_GetProjectID(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := tc.connectionSource.GetProjectID(context.Background())
+			got, err := tc.connectionTarget.GetProjectID(context.Background())
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -211,22 +211,22 @@ func TestDeploymentConnectionSource_GetProjectID(t *testing.T) {
 	}
 }
 
-func TestDeploymentConnectionSource_SelectorByProject(t *testing.T) {
-	e := DeploymentConnectionSource{}
+func TestDeploymentConnectionTarget_SelectorByProject(t *testing.T) {
+	e := DeploymentConnectionTarget{}
 	s := e.SelectorByProjectID("p-1")
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDeploymentByProject: "p-1"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDeploymentByProject: "other"}))
 }
 
-func TestDeploymentConnectionSource_SelectorByProjectIDAndClusterName(t *testing.T) {
-	e := DeploymentConnectionSource{}
+func TestDeploymentConnectionTarget_SelectorByProjectIDAndClusterName(t *testing.T) {
+	e := DeploymentConnectionTarget{}
 	ids := &ConnectionSecretIdentifiers{ProjectID: "pX", ClusterName: "cY"}
 	s := e.SelectorByProjectIDAndClusterName(ids)
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDeploymentBySpecNameAndProjectID: "pX-cY"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDeploymentBySpecNameAndProjectID: "pX-cZ"}))
 }
 
-func TestDeploymentConnectionSource_BuildConnData(t *testing.T) {
+func TestDeploymentConnectionTarget_BuildConnData(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	depl := createDummyDeployment(t)
 	user := createDummyUser(t, "test-user")
@@ -261,23 +261,23 @@ func TestDeploymentConnectionSource_BuildConnData(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		connectionSource *akov2.AtlasDeployment
+		connectionTarget *akov2.AtlasDeployment
 		user             *akov2.AtlasDatabaseUser
 		want             ConnectionSecretData
 		wantErr          bool
 	}{
-		"fail: nil connectionSource and user": {
-			connectionSource: nil,
+		"fail: nil connectionTarget and user": {
+			connectionTarget: nil,
 			user:             nil,
 			wantErr:          true,
 		},
 		"fail: missing password": {
-			connectionSource: depl,
+			connectionTarget: depl,
 			user:             userNoPass,
 			wantErr:          true,
 		},
 		"success: builds from deployment connection strings": {
-			connectionSource: depl,
+			connectionTarget: depl,
 			user:             user,
 			want: ConnectionSecretData{
 				DBUserName:       "admin",
@@ -296,8 +296,8 @@ func TestDeploymentConnectionSource_BuildConnData(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			e := DeploymentConnectionSource{
-				obj:             tc.connectionSource,
+			e := DeploymentConnectionTarget{
+				obj:             tc.connectionTarget,
 				client:          r.Client,
 				provider:        r.AtlasProvider,
 				globalSecretRef: r.GlobalSecretRef,

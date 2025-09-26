@@ -53,12 +53,12 @@ type ConnSecretReconciler struct {
 	Scheme                *runtime.Scheme
 	EventRecorder         record.EventRecorder
 	GlobalPredicates      []predicate.Predicate
-	ConnectionSourceKinds []ConnectionSource
+	ConnectionTargetKinds []ConnectionTarget
 }
 
-// Each connectionSource would have to implement this interface (e.g. AtlasDeployment, AtlasDataFederation)
-type ConnectionSource interface {
-	GetConnectionSourceType() string
+// Each connectionTarget would have to implement this interface (e.g. AtlasDeployment, AtlasDataFederation)
+type ConnectionTarget interface {
+	GetConnectionTargetType() string
 	GetName() string
 	IsReady() bool
 	GetScopeType() akov2.ScopeType
@@ -89,7 +89,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Load the paired resource
-	user, connectionSource, err := r.loadPair(ctx, ids)
+	user, connectionTarget, err := r.loadPair(ctx, ids)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrMissingPairing):
@@ -116,18 +116,18 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Check that scopes are still valid
-	if !allowsByScopes(user, connectionSource.GetName(), connectionSource.GetScopeType()) {
+	if !allowsByScopes(user, connectionTarget.GetName(), connectionTarget.GetScopeType()) {
 		log.Infow("invalid scope; scheduling deletion of connection secrets")
 		return r.handleDelete(ctx, req, ids)
 	}
 
 	// Paired resource must be ready
-	if !(api.HasReadyCondition(user.Status.Conditions) && connectionSource.IsReady()) {
+	if !(api.HasReadyCondition(user.Status.Conditions) && connectionTarget.IsReady()) {
 		log.Debugw("waiting on paired resource to be ready")
 		return workflow.InProgress(workflow.ConnectionSecretNotReady, "resources not ready").ReconcileResult()
 	}
 
-	return r.handleUpsert(ctx, req, ids, user, connectionSource)
+	return r.handleUpsert(ctx, req, ids, user, connectionTarget)
 }
 
 func (r *ConnSecretReconciler) For() (client.Object, builder.Predicates) {
@@ -141,7 +141,7 @@ func (r *ConnSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValida
 		For(r.For()).
 		Watches(
 			&akov2.AtlasDeployment{},
-			handler.EnqueueRequestsFromMapFunc(r.newConnectionSourceMapFunc),
+			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
 			builder.WithPredicates(predicate.Or(
 				watch.ReadyTransitionPredicate(func(d *akov2.AtlasDeployment) bool {
 					return api.HasReadyCondition(d.Status.Conditions)
@@ -151,7 +151,7 @@ func (r *ConnSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValida
 		).
 		Watches(
 			&akov2.AtlasDataFederation{},
-			handler.EnqueueRequestsFromMapFunc(r.newConnectionSourceMapFunc),
+			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
 			builder.WithPredicates(predicate.Or(
 				watch.ReadyTransitionPredicate(func(d *akov2.AtlasDataFederation) bool {
 					return api.HasReadyCondition(d.Status.Conditions)
@@ -186,15 +186,15 @@ func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string, epType akov2.Scop
 	return false
 }
 
-func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string, connectionSources []ConnectionSource, users []akov2.AtlasDatabaseUser) []reconcile.Request {
+func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string, connectionTargets []ConnectionTarget, users []akov2.AtlasDatabaseUser) []reconcile.Request {
 	var reqs []reconcile.Request
-	for _, ep := range connectionSources {
+	for _, ep := range connectionTargets {
 		for _, u := range users {
 			if !allowsByScopes(&u, ep.GetName(), ep.GetScopeType()) {
 				continue
 			}
 
-			name := NewConnectionSecretRequestName(projectID, ep.GetName(), u.Spec.Username, ep.GetConnectionSourceType())
+			name := NewConnectionSecretRequestName(projectID, ep.GetName(), u.Spec.Username, ep.GetConnectionTargetType())
 			reqs = append(reqs, reconcile.Request{
 				NamespacedName: types.NamespacedName{Namespace: u.Namespace, Name: name},
 			})
@@ -203,13 +203,13 @@ func (r *ConnSecretReconciler) generateConnectionSecretRequests(projectID string
 	return reqs
 }
 
-// listConnectionSourcesByProject retrieves all of the connectionSources that live under an AtlasProject
-func (r *ConnSecretReconciler) listConnectionSourcesByProject(ctx context.Context, projectID string) ([]ConnectionSource, error) {
-	var out []ConnectionSource
+// listConnectionTargetsByProject retrieves all of the connectionTargets that live under an AtlasProject
+func (r *ConnSecretReconciler) listConnectionTargetsByProject(ctx context.Context, projectID string) ([]ConnectionTarget, error) {
+	var out []ConnectionTarget
 
-	for _, kind := range r.ConnectionSourceKinds {
+	for _, kind := range r.ConnectionTargetKinds {
 		switch kind.(type) {
-		case DataFederationConnectionSource:
+		case DataFederationConnectionTarget:
 			list := &akov2.AtlasDataFederationList{}
 			if err := r.Client.List(ctx, list, &client.ListOptions{
 				FieldSelector: kind.SelectorByProjectID(projectID),
@@ -218,7 +218,7 @@ func (r *ConnSecretReconciler) listConnectionSourcesByProject(ctx context.Contex
 			}
 
 			for i := range list.Items {
-				out = append(out, DataFederationConnectionSource{
+				out = append(out, DataFederationConnectionTarget{
 					obj:             &list.Items[i],
 					client:          r.Client,
 					provider:        r.AtlasProvider,
@@ -227,7 +227,7 @@ func (r *ConnSecretReconciler) listConnectionSourcesByProject(ctx context.Contex
 				})
 			}
 
-		case DeploymentConnectionSource:
+		case DeploymentConnectionTarget:
 			list := &akov2.AtlasDeploymentList{}
 			if err := r.Client.List(ctx, list, &client.ListOptions{
 				FieldSelector: kind.SelectorByProjectID(projectID),
@@ -236,7 +236,7 @@ func (r *ConnSecretReconciler) listConnectionSourcesByProject(ctx context.Contex
 			}
 
 			for i := range list.Items {
-				out = append(out, DeploymentConnectionSource{
+				out = append(out, DeploymentConnectionTarget{
 					obj:             &list.Items[i],
 					client:          r.Client,
 					provider:        r.AtlasProvider,
@@ -250,14 +250,14 @@ func (r *ConnSecretReconciler) listConnectionSourcesByProject(ctx context.Contex
 	return out, nil
 }
 
-// newConnectionSourceMapFunc maps an ConnectionSource to requests by fetching all AtlasDatabaseUsers and creating a request for each
-func (r *ConnSecretReconciler) newConnectionSourceMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
-	var ep ConnectionSource
+// newConnectionTargetMapFunc maps a ConnectionTarget to requests by fetching all AtlasDatabaseUsers and creating a request for each
+func (r *ConnSecretReconciler) newConnectionTargetMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
+	var ep ConnectionTarget
 
-	// Case on the type of connectionSource
+	// Case on the type of connectionTarget
 	switch o := obj.(type) {
 	case *akov2.AtlasDeployment:
-		ep = DeploymentConnectionSource{
+		ep = DeploymentConnectionTarget{
 			obj:             o,
 			client:          r.Client,
 			provider:        r.AtlasProvider,
@@ -265,7 +265,7 @@ func (r *ConnSecretReconciler) newConnectionSourceMapFunc(ctx context.Context, o
 			log:             r.Log,
 		}
 	case *akov2.AtlasDataFederation:
-		ep = DataFederationConnectionSource{
+		ep = DataFederationConnectionTarget{
 			obj:             o,
 			client:          r.Client,
 			provider:        r.AtlasProvider,
@@ -288,10 +288,10 @@ func (r *ConnSecretReconciler) newConnectionSourceMapFunc(ctx context.Context, o
 		return nil
 	}
 
-	return r.generateConnectionSecretRequests(projectID, []ConnectionSource{ep}, users.Items)
+	return r.generateConnectionSecretRequests(projectID, []ConnectionTarget{ep}, users.Items)
 }
 
-// newDatabaseUserMapFunc maps an AtlasDatabaseUser to requests by fetching all connectionSources and creating a request for each
+// newDatabaseUserMapFunc maps an AtlasDatabaseUser to requests by fetching all connectionTargets and creating a request for each
 func (r *ConnSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
 	user, ok := obj.(*akov2.AtlasDatabaseUser)
 	if !ok {
@@ -302,12 +302,12 @@ func (r *ConnSecretReconciler) newDatabaseUserMapFunc(ctx context.Context, obj c
 		return nil
 	}
 
-	connectionSources, err := r.listConnectionSourcesByProject(ctx, projectID)
+	connectionTargets, err := r.listConnectionTargetsByProject(ctx, projectID)
 	if err != nil {
 		return nil
 	}
 
-	return r.generateConnectionSecretRequests(projectID, connectionSources, []akov2.AtlasDatabaseUser{*user})
+	return r.generateConnectionSecretRequests(projectID, connectionTargets, []akov2.AtlasDatabaseUser{*user})
 }
 
 func NewConnectionSecretReconciler(
@@ -329,15 +329,15 @@ func NewConnectionSecretReconciler(
 		GlobalPredicates: predicates,
 	}
 
-	// Register all the connectionSource types
-	r.ConnectionSourceKinds = []ConnectionSource{
-		DeploymentConnectionSource{
+	// Register all the connectionTarget types
+	r.ConnectionTargetKinds = []ConnectionTarget{
+		DeploymentConnectionTarget{
 			client:          r.Client,
 			provider:        r.AtlasProvider,
 			globalSecretRef: r.GlobalSecretRef,
 			log:             r.Log,
 		},
-		DataFederationConnectionSource{
+		DataFederationConnectionTarget{
 			client:          r.Client,
 			provider:        r.AtlasProvider,
 			globalSecretRef: r.GlobalSecretRef,

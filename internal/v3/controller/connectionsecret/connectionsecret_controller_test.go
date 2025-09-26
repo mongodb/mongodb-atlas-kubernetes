@@ -195,14 +195,14 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			}
 
 			r := createDummyEnv(t, all)
-			r.ConnectionSourceKinds = []ConnectionSource{
-				DeploymentConnectionSource{
+			r.ConnectionTargetKinds = []ConnectionTarget{
+				DeploymentConnectionTarget{
 					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
 					log:             r.Log,
 				},
-				DataFederationConnectionSource{
+				DataFederationConnectionTarget{
 					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
@@ -285,7 +285,7 @@ func Test_allowsByScopes(t *testing.T) {
 			args: args{epName: "clusterA", epType: akov2.DeploymentScopeType},
 			want: true,
 		},
-		"deny: only data lake scopes present for deployment connectionSource": {
+		"deny: only data lake scopes present for deployment connectionTarget": {
 			user: &akov2.AtlasDatabaseUser{
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Scopes: []akov2.ScopeSpec{
@@ -325,7 +325,7 @@ func Test_allowsByScopes(t *testing.T) {
 func Test_generateConnectionSecretRequests(t *testing.T) {
 	type testCase struct {
 		projectID         string
-		connectionSources []ConnectionSource
+		connectionTargets []ConnectionTarget
 		users             []akov2.AtlasDatabaseUser
 		expect            []types.NamespacedName
 	}
@@ -338,7 +338,7 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 
 	r := createDummyEnv(t, nil)
 
-	depA := DeploymentConnectionSource{
+	depA := DeploymentConnectionTarget{
 		client:          r.Client,
 		provider:        r.AtlasProvider,
 		globalSecretRef: r.GlobalSecretRef,
@@ -348,7 +348,7 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 			Spec:       akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "my-depl-name"}},
 		},
 	}
-	df1 := DataFederationConnectionSource{
+	df1 := DataFederationConnectionTarget{
 		client:          r.Client,
 		provider:        r.AtlasProvider,
 		globalSecretRef: r.GlobalSecretRef,
@@ -386,9 +386,9 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 	}
 
 	tests := map[string]testCase{
-		"no scopes; all connectionSources allowed": {
+		"no scopes; all connectionTargets allowed": {
 			projectID:         projectID,
-			connectionSources: []ConnectionSource{depA, df1},
+			connectionTargets: []ConnectionTarget{depA, df1},
 			users:             []akov2.AtlasDatabaseUser{userNoScopes},
 			expect: []types.NamespacedName{
 				{Namespace: ns1, Name: "proj-1$my-depl-name$user1$deployment"},
@@ -397,7 +397,7 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 		},
 		"deployment scoping filters correctly": {
 			projectID:         projectID,
-			connectionSources: []ConnectionSource{depA, df1},
+			connectionTargets: []ConnectionTarget{depA, df1},
 			users:             []akov2.AtlasDatabaseUser{userDepScopedMatch, userDepScopedNoMatch},
 			expect: []types.NamespacedName{
 				{Namespace: ns2, Name: "proj-1$my-depl-name$user2$deployment"},
@@ -405,7 +405,7 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 		},
 		"data lake scoping filters correctly with mixed users": {
 			projectID:         projectID,
-			connectionSources: []ConnectionSource{depA, df1},
+			connectionTargets: []ConnectionTarget{depA, df1},
 			users:             []akov2.AtlasDatabaseUser{userNoScopes, userDfScopedMatch},
 			expect: []types.NamespacedName{
 				{Namespace: ns1, Name: "proj-1$my-depl-name$user1$deployment"},
@@ -417,7 +417,7 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := r.generateConnectionSecretRequests(tc.projectID, tc.connectionSources, tc.users)
+			got := r.generateConnectionSecretRequests(tc.projectID, tc.connectionTargets, tc.users)
 
 			require := require.New(t)
 			assert := assert.New(t)
@@ -436,7 +436,7 @@ func Test_generateConnectionSecretRequests(t *testing.T) {
 	}
 }
 
-func Test_newConnectionSourceMapFunc(t *testing.T) {
+func Test_newConnectionTargetMapFunc(t *testing.T) {
 	type testCase struct {
 		objs   []client.Object
 		obj    client.Object
@@ -503,14 +503,14 @@ func Test_newConnectionSourceMapFunc(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := createDummyEnv(t, tc.objs)
-			r.ConnectionSourceKinds = []ConnectionSource{
-				DeploymentConnectionSource{
+			r.ConnectionTargetKinds = []ConnectionTarget{
+				DeploymentConnectionTarget{
 					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
 					log:             r.Log,
 				},
-				DataFederationConnectionSource{
+				DataFederationConnectionTarget{
 					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
@@ -518,7 +518,7 @@ func Test_newConnectionSourceMapFunc(t *testing.T) {
 				},
 			}
 
-			reqs := r.newConnectionSourceMapFunc(context.Background(), tc.obj)
+			reqs := r.newConnectionTargetMapFunc(context.Background(), tc.obj)
 
 			require.Len(t, reqs, len(tc.expect))
 			got := make(map[types.NamespacedName]struct{}, len(reqs))
@@ -563,7 +563,7 @@ func Test_newDatabaseUserMapFunc(t *testing.T) {
 	}
 
 	tests := map[string]testCase{
-		"user without scopes; all connectionSources in same project": {
+		"user without scopes; all connectionTargets in same project": {
 			objs: []client.Object{depl, df},
 			user: userNoScopes,
 			expect: []types.NamespacedName{
@@ -571,7 +571,7 @@ func Test_newDatabaseUserMapFunc(t *testing.T) {
 				{Namespace: "test-ns", Name: NewConnectionSecretRequestName(projectID, "my-df-name", "admin", "data-federation")},
 			},
 		},
-		"user with scopes; only matching connectionSources in same project": {
+		"user with scopes; only matching connectionTargets in same project": {
 			objs: []client.Object{depl, df},
 			user: userScoped,
 			expect: []types.NamespacedName{
@@ -585,14 +585,14 @@ func Test_newDatabaseUserMapFunc(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			all := append([]client.Object{tc.user}, tc.objs...)
 			r := createDummyEnv(t, all)
-			r.ConnectionSourceKinds = []ConnectionSource{
-				DeploymentConnectionSource{
+			r.ConnectionTargetKinds = []ConnectionTarget{
+				DeploymentConnectionTarget{
 					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,
 					log:             r.Log,
 				},
-				DataFederationConnectionSource{
+				DataFederationConnectionTarget{
 					client:          r.Client,
 					provider:        r.AtlasProvider,
 					globalSecretRef: r.GlobalSecretRef,

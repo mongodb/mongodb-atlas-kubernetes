@@ -32,7 +32,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 )
 
-type DataFederationConnectionSource struct {
+type DataFederationConnectionTarget struct {
 	obj             *akov2.AtlasDataFederation
 	client          client.Client
 	provider        atlas.Provider
@@ -40,31 +40,31 @@ type DataFederationConnectionSource struct {
 	log             *zap.SugaredLogger
 }
 
-// GetConnectionSourceType returns the connectionSource type
-func (e DataFederationConnectionSource) GetConnectionSourceType() string {
+// GetConnectionTargetType returns the connectionTarget type
+func (e DataFederationConnectionTarget) GetConnectionTargetType() string {
 	return "data-federation"
 }
 
-// GetName resolves the connectionSources name from the spec
-func (e DataFederationConnectionSource) GetName() string {
+// GetName resolves the connectionTargets name from the spec
+func (e DataFederationConnectionTarget) GetName() string {
 	if e.obj == nil {
 		return ""
 	}
 	return e.obj.Spec.Name
 }
 
-// IsReady returns true if the connectionSource is ready
-func (e DataFederationConnectionSource) IsReady() bool {
+// IsReady returns true if the connectionTarget is ready
+func (e DataFederationConnectionTarget) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
-// GetScopeType returns the scope type of the connectionSource to match with the ones from AtlasDatabaseUser
-func (e DataFederationConnectionSource) GetScopeType() akov2.ScopeType {
+// GetScopeType returns the scope type of the connectionTarget to match with the ones from AtlasDatabaseUser
+func (e DataFederationConnectionTarget) GetScopeType() akov2.ScopeType {
 	return akov2.DataLakeScopeType
 }
 
 // GetProjectID resolves parent project's id (only ProjectRef)
-func (e DataFederationConnectionSource) GetProjectID(ctx context.Context) (string, error) {
+func (e DataFederationConnectionTarget) GetProjectID(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil federation")
 	}
@@ -74,22 +74,22 @@ func (e DataFederationConnectionSource) GetProjectID(ctx context.Context) (strin
 	return "", ErrUnresolvedProjectID
 }
 
-// Defines the selector to use for indexer when trying to retrieve all connectionSources by project
-func (DataFederationConnectionSource) SelectorByProjectID(projectID string) fields.Selector {
+// Defines the selector to use for indexer when trying to retrieve all connectionTargets by project
+func (DataFederationConnectionTarget) SelectorByProjectID(projectID string) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDataFederationByProjectID, projectID)
 }
 
-// Defines the selector to use for indexer when trying to retrieve all connectionSources by project and spec name
-func (DataFederationConnectionSource) SelectorByProjectIDAndClusterName(ids *ConnectionSecretIdentifiers) fields.Selector {
+// Defines the selector to use for indexer when trying to retrieve all connectionTargets by project and spec name
+func (DataFederationConnectionTarget) SelectorByProjectIDAndClusterName(ids *ConnectionSecretIdentifiers) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDataFederationBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
 }
 
-// BuildConnectionData builds the ConnectionSecretData for this connectionSource type
-func (e DataFederationConnectionSource) BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error) {
+// BuildConnectionData builds the ConnectionSecretData for this connectionTarget type
+func (e DataFederationConnectionTarget) BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error) {
 	if user == nil || e.obj == nil {
 		return ConnectionSecretData{}, ErrMissingPairing
 	}
-	e.log.Debugw("Starting BuildConnectionData", "Username", user.Spec.Username, "DataFederationConnectionSource", e.obj.Spec.Name)
+	e.log.Debugw("Starting BuildConnectionData", "Username", user.Spec.Username, "DataFederationConnectionTarget", e.obj.Spec.Name)
 
 	password, err := user.ReadPassword(ctx, e.client)
 	if err != nil {
@@ -98,7 +98,7 @@ func (e DataFederationConnectionSource) BuildConnectionData(ctx context.Context,
 
 	project := &akov2.AtlasProject{}
 	if err := e.client.Get(ctx, e.obj.AtlasProjectObjectKey(), project); err != nil {
-		e.log.Errorw("Failed to fetch project for DataFederationConnectionSource", "Error", err)
+		e.log.Errorw("Failed to fetch project for DataFederationConnectionTarget", "Error", err)
 		return ConnectionSecretData{}, err
 	}
 
@@ -123,7 +123,7 @@ func (e DataFederationConnectionSource) BuildConnectionData(ctx context.Context,
 	}
 
 	hostlist := strings.Join(df.Hostnames, ",")
-	e.log.Debugw("Building connection URL for DataFederationConnectionSource", "Hostlist", hostlist)
+	e.log.Debugw("Building connection URL for DataFederationConnectionTarget", "Hostlist", hostlist)
 
 	u := &url.URL{
 		Scheme:   "mongodb",

@@ -28,7 +28,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 )
 
-type DeploymentConnectionSource struct {
+type DeploymentConnectionTarget struct {
 	obj             *akov2.AtlasDeployment
 	client          client.Client
 	provider        atlas.Provider
@@ -48,31 +48,31 @@ func resolveProjectIDByKey(ctx context.Context, c client.Client, key client.Obje
 	return proj.ID(), nil
 }
 
-// GetConnectionSourceType returns the connectionSource type
-func (e DeploymentConnectionSource) GetConnectionSourceType() string {
+// GetConnectionTargetType returns the connectionTarget type
+func (e DeploymentConnectionTarget) GetConnectionTargetType() string {
 	return "deployment"
 }
 
-// GetName resolves the connectionSources name from the spec
-func (e DeploymentConnectionSource) GetName() string {
+// GetName resolves the connectionTargets name from the spec
+func (e DeploymentConnectionTarget) GetName() string {
 	if e.obj == nil {
 		return ""
 	}
 	return e.obj.GetDeploymentName()
 }
 
-// IsReady returns true if the connectionSource is ready
-func (e DeploymentConnectionSource) IsReady() bool {
+// IsReady returns true if the connectionTarget is ready
+func (e DeploymentConnectionTarget) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
 }
 
-// GetScopeType returns the scope type of the connectionSource to match with the ones from AtlasDatabaseUser
-func (e DeploymentConnectionSource) GetScopeType() akov2.ScopeType {
+// GetScopeType returns the scope type of the connectionTarget to match with the ones from AtlasDatabaseUser
+func (e DeploymentConnectionTarget) GetScopeType() akov2.ScopeType {
 	return akov2.DeploymentScopeType
 }
 
 // GetProjectID resolves parent project's id (ProjectRef or ExternalRef)
-func (e DeploymentConnectionSource) GetProjectID(ctx context.Context) (string, error) {
+func (e DeploymentConnectionTarget) GetProjectID(ctx context.Context) (string, error) {
 	if e.obj == nil {
 		return "", fmt.Errorf("nil deployment")
 	}
@@ -85,19 +85,19 @@ func (e DeploymentConnectionSource) GetProjectID(ctx context.Context) (string, e
 	return "", ErrUnresolvedProjectID
 }
 
-// Defines the selector to use for indexer when trying to retrieve all connectionSources by project
-func (DeploymentConnectionSource) SelectorByProjectID(projectID string) fields.Selector {
+// Defines the selector to use for indexer when trying to retrieve all connectionTargets by project
+func (DeploymentConnectionTarget) SelectorByProjectID(projectID string) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDeploymentByProject, projectID)
 }
 
-// Defines the selector to use for indexer when trying to retrieve all connectionSources by project and spec name
-func (DeploymentConnectionSource) SelectorByProjectIDAndClusterName(ids *ConnectionSecretIdentifiers) fields.Selector {
+// Defines the selector to use for indexer when trying to retrieve all connectionTargets by project and spec name
+func (DeploymentConnectionTarget) SelectorByProjectIDAndClusterName(ids *ConnectionSecretIdentifiers) fields.Selector {
 	return fields.OneTermEqualSelector(indexer.AtlasDeploymentBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
 }
 
-// BuildConnectionData defines the specific function/way for building the ConnectionSecretData given this type of connectionSource
+// BuildConnectionData defines the specific function/way for building the ConnectionSecretData given this type of connectionTarget
 // AtlasDeployment stores connection strings in the status field
-func (e DeploymentConnectionSource) BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error) {
+func (e DeploymentConnectionTarget) BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error) {
 	// Step 1: Log basic input details
 	if user == nil || e.obj == nil {
 		return ConnectionSecretData{}, ErrMissingPairing
