@@ -294,6 +294,7 @@ func TestParseConfiguration(t *testing.T) {
 				IndependentSyncPeriod:       15,
 				FeatureFlags:                featureflags.NewFeatureFlags(os.Environ),
 				DryRun:                      false,
+				MaxConcurrentReconciles:     5,
 			},
 		},
 		{
@@ -321,6 +322,7 @@ func TestParseConfiguration(t *testing.T) {
 				IndependentSyncPeriod:       15,
 				FeatureFlags:                featureflags.NewFeatureFlags(os.Environ),
 				DryRun:                      false,
+				MaxConcurrentReconciles:     5,
 			},
 		},
 	} {

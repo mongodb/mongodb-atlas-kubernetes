@@ -55,17 +55,10 @@ type AtlasCustomRoleReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	independentSyncPeriod       time.Duration
+	maxConcurrentReconciles     int
 }
 
-func NewAtlasCustomRoleReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	independentSyncPeriod time.Duration,
-	logger *zap.Logger,
-	globalSecretRef client.ObjectKey,
-) *AtlasCustomRoleReconciler {
+func NewAtlasCustomRoleReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, independentSyncPeriod time.Duration, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasCustomRoleReconciler {
 	return &AtlasCustomRoleReconciler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
@@ -78,6 +71,7 @@ func NewAtlasCustomRoleReconciler(
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 
@@ -218,8 +212,9 @@ func (r *AtlasCustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 			handler.EnqueueRequestsFromMapFunc(r.customRolesCredentials()),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
