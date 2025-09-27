@@ -218,10 +218,10 @@ func TestDeploymentConnectionTarget_SelectorByProject(t *testing.T) {
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDeploymentByProject: "other"}))
 }
 
-func TestDeploymentConnectionTarget_SelectorByProjectIDAndClusterName(t *testing.T) {
+func TestDeploymentConnectionTarget_SelectorByTargetIdentifierFields(t *testing.T) {
 	e := DeploymentConnectionTarget{}
-	ids := &ConnectionSecretIdentifiers{ProjectID: "pX", ClusterName: "cY"}
-	s := e.SelectorByProjectIDAndClusterName(ids)
+	ids := &ConnectionSecretIdentifiers{ProjectID: "pX", TargetName: "cY"}
+	s := e.SelectorByTargetIdentifierFields(ids)
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDeploymentBySpecNameAndProjectID: "pX-cY"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDeploymentBySpecNameAndProjectID: "pX-cZ"}))
 }

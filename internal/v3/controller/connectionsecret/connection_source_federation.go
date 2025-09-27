@@ -80,8 +80,8 @@ func (DataFederationConnectionTarget) SelectorByProjectID(projectID string) fiel
 }
 
 // Defines the selector to use for indexer when trying to retrieve all connectionTargets by project and spec name
-func (DataFederationConnectionTarget) SelectorByProjectIDAndClusterName(ids *ConnectionSecretIdentifiers) fields.Selector {
-	return fields.OneTermEqualSelector(indexer.AtlasDataFederationBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
+func (DataFederationConnectionTarget) SelectorByTargetIdentifierFields(ids *ConnectionSecretIdentifiers) fields.Selector {
+	return fields.OneTermEqualSelector(indexer.AtlasDataFederationBySpecNameAndProjectID, ids.ProjectID+"-"+ids.TargetName)
 }
 
 // BuildConnectionData builds the ConnectionSecretData for this connectionTarget type

@@ -231,7 +231,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				ids, err := r.loadIdentifiers(context.Background(), req.NamespacedName)
 				require.NoError(t, err)
 
-				expectedName := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, ids.ConnectionType)
+				expectedName := K8sConnectionSecretName(ids.ProjectID, ids.TargetName, ids.DatabaseUsername, ids.ConnectionType)
 				var outputSecret corev1.Secret
 				getErr := r.Client.Get(context.Background(), types.NamespacedName{
 					Namespace: "test-ns",
@@ -244,7 +244,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				ids, err := r.loadIdentifiers(context.Background(), req.NamespacedName)
 				require.NoError(t, err)
 
-				expectedName := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, ids.ConnectionType)
+				expectedName := K8sConnectionSecretName(ids.ProjectID, ids.TargetName, ids.DatabaseUsername, ids.ConnectionType)
 				var check corev1.Secret
 				getErr := r.Client.Get(context.Background(), types.NamespacedName{
 					Namespace: "test-ns",
@@ -658,7 +658,7 @@ func createDummyEnv(t *testing.T, objs []client.Object) *ConnSecretReconciler {
 			Namespace: "test-ns",
 			Labels: map[string]string{
 				ProjectLabelKey: "test-project-id",
-				ClusterLabelKey: "cluster1",
+				TargetLabelKey:  "cluster1",
 				TypeLabelKey:    "connection",
 			},
 		},

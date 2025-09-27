@@ -179,10 +179,10 @@ func TestFederationConnectionTarget_SelectorByProject(t *testing.T) {
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDataFederationByProjectID: "other"}))
 }
 
-func TestFederationConnectionTarget_SelectorByProjectIDAndClusterName(t *testing.T) {
+func TestFederationConnectionTarget_SelectorByTargetIdentifierFields(t *testing.T) {
 	e := DataFederationConnectionTarget{}
-	ids := &ConnectionSecretIdentifiers{ProjectID: "pX", ClusterName: "dfY"}
-	s := e.SelectorByProjectIDAndClusterName(ids)
+	ids := &ConnectionSecretIdentifiers{ProjectID: "pX", TargetName: "dfY"}
+	s := e.SelectorByTargetIdentifierFields(ids)
 	assert.True(t, s.Matches(fields.Set{indexer.AtlasDataFederationBySpecNameAndProjectID: "pX-dfY"}))
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDataFederationBySpecNameAndProjectID: "pX-dfZ"}))
 }

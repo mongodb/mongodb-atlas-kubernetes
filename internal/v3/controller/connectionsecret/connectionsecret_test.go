@@ -37,28 +37,28 @@ import (
 func TestNewConnectionSecretRequestName(t *testing.T) {
 	tests := map[string]struct {
 		projectID        string
-		clusterName      string
+		targetName       string
 		databaseUsername string
 		connectionType   string
 		expected         string
 	}{
 		"normal values": {
 			projectID:        "proj123",
-			clusterName:      "ClusterOne",
+			targetName:       "ClusterOne",
 			databaseUsername: "DBUser",
 			connectionType:   "deployment",
 			expected:         "proj123$clusterone$dbuser$deployment",
 		},
 		"cluster and user already normalized": {
 			projectID:        "id456",
-			clusterName:      "cluster",
+			targetName:       "cluster",
 			databaseUsername: "user",
 			connectionType:   "deployment",
 			expected:         "id456$cluster$user$deployment",
 		},
 		"values with spaces": {
 			projectID:        "id789",
-			clusterName:      "CL X",
+			targetName:       "CL X",
 			databaseUsername: "U X",
 			connectionType:   "data-federation",
 			expected:         "id789$cl-x$u-x$data-federation",
@@ -67,7 +67,7 @@ func TestNewConnectionSecretRequestName(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual := NewConnectionSecretRequestName(tc.projectID, tc.clusterName, tc.databaseUsername, tc.connectionType)
+			actual := NewConnectionSecretRequestName(tc.projectID, tc.targetName, tc.databaseUsername, tc.connectionType)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
@@ -77,7 +77,7 @@ func Test_loadIdentifiers(t *testing.T) {
 	uniqueID := strings.ToLower(uuid.New().String()[0:6])
 	type want struct {
 		projectID        string
-		clusterName      string
+		targetName       string
 		databaseUsername string
 		connectionType   string
 		err              error
@@ -109,7 +109,7 @@ func Test_loadIdentifiers(t *testing.T) {
 			ns:      "default",
 			want: want{
 				projectID:        uniqueID,
-				clusterName:      "mycluster",
+				targetName:       "mycluster",
 				databaseUsername: "theuser",
 				connectionType:   "deployment",
 				err:              nil,
@@ -136,7 +136,7 @@ func Test_loadIdentifiers(t *testing.T) {
 					Namespace: "ns",
 					Labels: map[string]string{
 						ProjectLabelKey: "",
-						ClusterLabelKey: "",
+						TargetLabelKey:  "",
 					},
 				},
 			},
@@ -151,7 +151,7 @@ func Test_loadIdentifiers(t *testing.T) {
 					Namespace: "ns",
 					Labels: map[string]string{
 						ProjectLabelKey: "pid-1",
-						ClusterLabelKey: "clusterX",
+						TargetLabelKey:  "clusterX",
 					},
 				},
 			},
@@ -166,7 +166,7 @@ func Test_loadIdentifiers(t *testing.T) {
 					Namespace: "ns",
 					Labels: map[string]string{
 						ProjectLabelKey: "pid-2",
-						ClusterLabelKey: "clusterY",
+						TargetLabelKey:  "clusterY",
 					},
 				},
 			},
@@ -181,7 +181,7 @@ func Test_loadIdentifiers(t *testing.T) {
 					Namespace: "test-ns",
 					Labels: map[string]string{
 						ProjectLabelKey:      uniqueID,
-						ClusterLabelKey:      "mycluster",
+						TargetLabelKey:       "mycluster",
 						DatabaseUserLabelKey: "theuser",
 					},
 					Annotations: map[string]string{
@@ -191,7 +191,7 @@ func Test_loadIdentifiers(t *testing.T) {
 			},
 			want: want{
 				projectID:        uniqueID,
-				clusterName:      "mycluster",
+				targetName:       "mycluster",
 				databaseUsername: "theuser",
 				connectionType:   "deployment",
 				err:              nil,
@@ -221,7 +221,7 @@ func Test_loadIdentifiers(t *testing.T) {
 			assert.NoError(t, err)
 			if assert.NotNil(t, got) {
 				assert.Equal(t, tc.want.projectID, got.ProjectID)
-				assert.Equal(t, tc.want.clusterName, got.ClusterName)
+				assert.Equal(t, tc.want.targetName, got.TargetName)
 				assert.Equal(t, tc.want.databaseUsername, got.DatabaseUsername)
 				assert.Equal(t, tc.want.connectionType, got.ConnectionType)
 			}
@@ -245,7 +245,7 @@ func Test_loadPair(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		clusterName      string
+		targetName       string
 		databaseUsername string
 		fields           fields
 		expectedErr      error
@@ -254,7 +254,7 @@ func Test_loadPair(t *testing.T) {
 		expectEpNil      bool
 	}{
 		"fail: ambiguous-multiple users": {
-			clusterName:      "clusterA",
+			targetName:       "clusterA",
 			databaseUsername: "admin",
 			fields: fields{
 				connectionTargetObjs: []client.Object{
@@ -272,7 +272,7 @@ func Test_loadPair(t *testing.T) {
 			expectedPairNil: true,
 		},
 		"fail: ambiguous-multiple connectionTargets (2 deployments)": {
-			clusterName:      "clusterB",
+			targetName:       "clusterB",
 			databaseUsername: "root",
 			fields: fields{
 				connectionTargetObjs: []client.Object{
@@ -293,7 +293,7 @@ func Test_loadPair(t *testing.T) {
 			expectedPairNil: true,
 		},
 		"fail: ambiguous-multiple connectionTargets (deployment and federation share name)": {
-			clusterName:      "clusterC",
+			targetName:       "clusterC",
 			databaseUsername: "admin",
 			fields: fields{
 				connectionTargetObjs: []client.Object{
@@ -314,7 +314,7 @@ func Test_loadPair(t *testing.T) {
 			expectedPairNil: true,
 		},
 		"fail: both missing": {
-			clusterName:      "clusterD",
+			targetName:       "clusterD",
 			databaseUsername: "andrpac",
 			fields: fields{
 				connectionTargetObjs: nil,
@@ -326,7 +326,7 @@ func Test_loadPair(t *testing.T) {
 			expectEpNil:     true,
 		},
 		"fail: user present but connectionTarget missing": {
-			clusterName:      "missing",
+			targetName:       "missing",
 			databaseUsername: "admin",
 			fields: fields{
 				connectionTargetObjs: nil,
@@ -338,7 +338,7 @@ func Test_loadPair(t *testing.T) {
 			expectEpNil: true,
 		},
 		"fail: user absent but connectionTarget present": {
-			clusterName:      "clusterE",
+			targetName:       "clusterE",
 			databaseUsername: "missing",
 			fields: fields{
 				connectionTargetObjs: []client.Object{
@@ -353,7 +353,7 @@ func Test_loadPair(t *testing.T) {
 			expectUserNil: true,
 		},
 		"success: exactly one user and one connectionTarget": {
-			clusterName:      "clusterF",
+			targetName:       "clusterF",
 			databaseUsername: "admin",
 			fields: fields{
 				connectionTargetObjs: []client.Object{
@@ -396,7 +396,7 @@ func Test_loadPair(t *testing.T) {
 
 			ids := &ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
-				ClusterName:      tc.clusterName,
+				TargetName:       tc.targetName,
 				DatabaseUsername: tc.databaseUsername,
 			}
 
@@ -430,7 +430,7 @@ func Test_loadPair(t *testing.T) {
 
 			missIDs := &ConnectionSecretIdentifiers{
 				ProjectID:        otherProjectID,
-				ClusterName:      tc.clusterName,
+				TargetName:       tc.targetName,
 				DatabaseUsername: tc.databaseUsername,
 			}
 			missUser, missConnectionTarget, missErr := r.loadPair(context.Background(), missIDs)
@@ -467,7 +467,7 @@ func Test_handleDelete(t *testing.T) {
 		"success: no secret present beforehand": {
 			ids: ConnectionSecretIdentifiers{
 				ProjectID:        "missing-proj",
-				ClusterName:      cluster,
+				TargetName:       cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
@@ -479,7 +479,7 @@ func Test_handleDelete(t *testing.T) {
 		"success: delete existing secret": {
 			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
-				ClusterName:      cluster,
+				TargetName:       cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
@@ -513,7 +513,7 @@ func Test_handleDelete(t *testing.T) {
 			}
 
 			var s corev1.Secret
-			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.ClusterName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
+			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.TargetName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
 			getErr := r.Client.Get(context.Background(), types.NamespacedName{Namespace: "test-ns", Name: secretName}, &s)
 			require.True(t, apiErrors.IsNotFound(getErr), "expected secret %s to be deleted", secretName)
 		})
@@ -556,7 +556,7 @@ func Test_handleUpsert(t *testing.T) {
 		"fail: cannot build data": {
 			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
-				ClusterName:      cluster,
+				TargetName:       cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
@@ -570,7 +570,7 @@ func Test_handleUpsert(t *testing.T) {
 		"success: upsert secret": {
 			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
-				ClusterName:      cluster,
+				TargetName:       cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
@@ -604,12 +604,12 @@ func Test_handleUpsert(t *testing.T) {
 			}
 
 			var s corev1.Secret
-			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.ClusterName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
+			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.TargetName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
 			require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: ns, Name: secretName}, &s))
 
 			require.Equal(t, CredLabelVal, s.Labels[TypeLabelKey])
 			require.Equal(t, projectID, s.Labels[ProjectLabelKey])
-			require.Equal(t, cluster, s.Labels[ClusterLabelKey])
+			require.Equal(t, cluster, s.Labels[TargetLabelKey])
 
 			require.Equal(t, username, string(s.Data[userNameKey]))
 			require.Equal(t, "secret", string(s.Data[passwordKey]))
@@ -672,7 +672,7 @@ func Test_ensureSecret(t *testing.T) {
 		"fail: invalid URL bubbles up and prevents creation": {
 			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
-				ClusterName:      cluster,
+				TargetName:       cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
@@ -688,7 +688,7 @@ func Test_ensureSecret(t *testing.T) {
 		"success: create with private connectionTargets": {
 			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
-				ClusterName:      cluster,
+				TargetName:       cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
@@ -700,7 +700,7 @@ func Test_ensureSecret(t *testing.T) {
 		"success: update existing secret": {
 			ids: ConnectionSecretIdentifiers{
 				ProjectID:        projectID,
-				ClusterName:      cluster,
+				TargetName:       cluster,
 				DatabaseUsername: username,
 				ConnectionType:   connectionType,
 			},
@@ -720,14 +720,14 @@ func Test_ensureSecret(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.ClusterName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
+			secretName := K8sConnectionSecretName(tc.ids.ProjectID, tc.ids.TargetName, tc.ids.DatabaseUsername, tc.ids.ConnectionType)
 			var s corev1.Secret
 			getErr := r.Client.Get(context.Background(), types.NamespacedName{Namespace: ns, Name: secretName}, &s)
 			require.NoError(t, getErr)
 
 			require.Equal(t, CredLabelVal, s.Labels[TypeLabelKey])
 			require.Equal(t, projectID, s.Labels[ProjectLabelKey])
-			require.Equal(t, cluster, s.Labels[ClusterLabelKey])
+			require.Equal(t, cluster, s.Labels[TargetLabelKey])
 
 			require.Equal(t, username, string(s.Data[userNameKey]))
 			require.Equal(t, tc.data.Password, string(s.Data[passwordKey]))

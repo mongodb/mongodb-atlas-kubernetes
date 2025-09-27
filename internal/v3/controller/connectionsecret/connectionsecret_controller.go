@@ -64,7 +64,7 @@ type ConnectionTarget interface {
 	GetScopeType() akov2.ScopeType
 	GetProjectID(ctx context.Context) (string, error)
 	SelectorByProjectID(projectID string) fields.Selector
-	SelectorByProjectIDAndClusterName(ids *ConnectionSecretIdentifiers) fields.Selector
+	SelectorByTargetIdentifierFields(ids *ConnectionSecretIdentifiers) fields.Selector
 	BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error)
 }
 
@@ -131,7 +131,7 @@ func (r *ConnSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 func (r *ConnSecretReconciler) For() (client.Object, builder.Predicates) {
-	preds := append(r.GlobalPredicates, watch.SecretLabelPredicate(TypeLabelKey, ProjectLabelKey, ClusterLabelKey, DatabaseUserLabelKey))
+	preds := append(r.GlobalPredicates, watch.SecretLabelPredicate(TypeLabelKey, ProjectLabelKey, TargetLabelKey, DatabaseUserLabelKey))
 	return &corev1.Secret{}, builder.WithPredicates(preds...)
 }
 

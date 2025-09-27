@@ -91,8 +91,8 @@ func (DeploymentConnectionTarget) SelectorByProjectID(projectID string) fields.S
 }
 
 // Defines the selector to use for indexer when trying to retrieve all connectionTargets by project and spec name
-func (DeploymentConnectionTarget) SelectorByProjectIDAndClusterName(ids *ConnectionSecretIdentifiers) fields.Selector {
-	return fields.OneTermEqualSelector(indexer.AtlasDeploymentBySpecNameAndProjectID, ids.ProjectID+"-"+ids.ClusterName)
+func (DeploymentConnectionTarget) SelectorByTargetIdentifierFields(ids *ConnectionSecretIdentifiers) fields.Selector {
+	return fields.OneTermEqualSelector(indexer.AtlasDeploymentBySpecNameAndProjectID, ids.ProjectID+"-"+ids.TargetName)
 }
 
 // BuildConnectionData defines the specific function/way for building the ConnectionSecretData given this type of connectionTarget

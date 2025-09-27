@@ -42,7 +42,7 @@ const (
 	InternalSeparator = "$"
 
 	ProjectLabelKey      = "atlas.mongodb.com/project-id"
-	ClusterLabelKey      = "atlas.mongodb.com/cluster-name"
+	TargetLabelKey       = "atlas.mongodb.com/target-name"
 	TypeLabelKey         = "atlas.mongodb.com/type"
 	DatabaseUserLabelKey = "atlas.mongodb.com/database-user-name"
 	ConnectionTypelKey   = "atlas.mongodb.com/connection-type"
@@ -70,7 +70,7 @@ var (
 // be needed to identiy and get a K8s connection secret
 type ConnectionSecretIdentifiers struct {
 	ProjectID        string
-	ClusterName      string
+	TargetName       string
 	DatabaseUsername string
 	ConnectionType   string
 }
@@ -91,18 +91,18 @@ type PrivateLinkConnectionURLs struct {
 	ShardConnectionURL string
 }
 
-// NewConnectionSecretRequestName returns the Secret name in the internal format used by watchers: <projectID>$<clusterName>$<username>
-func NewConnectionSecretRequestName(projectID string, clusterName string, databaseUsername string, connectionType string) string {
+// NewConnectionSecretRequestName returns the Secret name in the internal format used by watchers: <projectID>$<targetName>$<username>
+func NewConnectionSecretRequestName(projectID string, targetName string, databaseUsername string, connectionType string) string {
 	return strings.Join([]string{
 		projectID,
-		kube.NormalizeIdentifier(clusterName),
+		kube.NormalizeIdentifier(targetName),
 		kube.NormalizeIdentifier(databaseUsername),
 		kube.NormalizeIdentifier(connectionType),
 	}, InternalSeparator)
 }
 
 // loadIdentifiers determines whether the request name is internal or K8s format
-// and extracts ProjectID, ClusterName, and DatabaseUsername.
+// and extracts ProjectID, TargetName, and DatabaseUsername.
 func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.NamespacedName) (*ConnectionSecretIdentifiers, error) {
 	if strings.Contains(req.Name, InternalSeparator) {
 		return r.identifiersFromInternalName(req)
@@ -111,7 +111,7 @@ func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.Na
 }
 
 // identifiersFromInternalName parses identifiers from the internal format.
-// === Internal format: <ProjectID>$<ClusterName>$<DatabaseUserName>$<ConnectionType>
+// === Internal format: <ProjectID>$<TargetName>$<DatabaseUserName>$<ConnectionType>
 func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedName) (*ConnectionSecretIdentifiers, error) {
 	parts := strings.Split(req.Name, InternalSeparator)
 	if len(parts) != 4 {
@@ -122,7 +122,7 @@ func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedN
 	}
 	return &ConnectionSecretIdentifiers{
 		ProjectID:        parts[0],
-		ClusterName:      parts[1],
+		TargetName:       parts[1],
 		DatabaseUsername: parts[2],
 		ConnectionType:   parts[3],
 	}, nil
@@ -139,18 +139,18 @@ func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types
 	annotations := secret.GetAnnotations()
 
 	projectID, hasProject := labels[ProjectLabelKey]
-	clusterName, hasCluster := labels[ClusterLabelKey]
+	targetName, hasTarget := labels[TargetLabelKey]
 	databaseUsername, hasUser := labels[DatabaseUserLabelKey]
 	connectionType, hasConnectionType := annotations[ConnectionTypelKey]
 
 	// Validate required fields
-	if !hasProject || !hasCluster || !hasUser || !hasConnectionType || projectID == "" || clusterName == "" || databaseUsername == "" || connectionType == "" {
+	if !hasProject || !hasTarget || !hasUser || !hasConnectionType || projectID == "" || targetName == "" || databaseUsername == "" || connectionType == "" {
 		err := ErrK8SFormatErr
 		return nil, err
 	}
 	return &ConnectionSecretIdentifiers{
 		ProjectID:        projectID,
-		ClusterName:      clusterName,
+		TargetName:       targetName,
 		DatabaseUsername: databaseUsername,
 		ConnectionType:   connectionType,
 	}, nil
@@ -181,7 +181,7 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnectionSecr
 		case DataFederationConnectionTarget:
 			list := &akov2.AtlasDataFederationList{}
 			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: kind.SelectorByProjectIDAndClusterName(ids),
+				FieldSelector: kind.SelectorByTargetIdentifierFields(ids),
 			}); err != nil {
 				return nil, nil, err
 			}
@@ -201,7 +201,7 @@ func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnectionSecr
 			// Handle DeploymentConnectionTarget
 			list := &akov2.AtlasDeploymentList{}
 			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: kind.SelectorByProjectIDAndClusterName(ids),
+				FieldSelector: kind.SelectorByTargetIdentifierFields(ids),
 			}); err != nil {
 				return nil, nil, err
 			}
@@ -247,7 +247,7 @@ func (r *ConnSecretReconciler) handleDelete(
 ) (ctrl.Result, error) {
 	log := r.Log.With("ns", req.Namespace, "name", req.Name)
 
-	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, ids.ConnectionType)
+	name := K8sConnectionSecretName(ids.ProjectID, ids.TargetName, ids.DatabaseUsername, ids.ConnectionType)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -306,7 +306,7 @@ func (r *ConnSecretReconciler) ensureSecret(
 	namespace := user.GetNamespace()
 	log := r.Log.With("ns", namespace, "project", ids.ProjectID)
 
-	name := K8sConnectionSecretName(ids.ProjectID, ids.ClusterName, ids.DatabaseUsername, connectionTarget.GetConnectionTargetType())
+	name := K8sConnectionSecretName(ids.ProjectID, ids.TargetName, ids.DatabaseUsername, connectionTarget.GetConnectionTargetType())
 
 	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -367,7 +367,7 @@ func fillConnSecretData(secret *corev1.Secret, ids *ConnectionSecretIdentifiers,
 	secret.Labels = map[string]string{
 		TypeLabelKey:         CredLabelVal,
 		ProjectLabelKey:      ids.ProjectID,
-		ClusterLabelKey:      ids.ClusterName,
+		TargetLabelKey:       ids.TargetName,
 		DatabaseUserLabelKey: ids.DatabaseUsername,
 	}
 
@@ -411,8 +411,8 @@ func CreateURL(hostname, username, password string) (string, error) {
 }
 
 // ComputeHash generates a hash based on key connection metadata for immutable secret naming
-func ComputeHash(projectID, clusterName, userName, connectionTargetType string) string {
-	hashInput := fmt.Sprintf("%s-%s-%s-%s", projectID, clusterName, userName, connectionTargetType)
+func ComputeHash(projectID, targetName, userName, connectionTargetType string) string {
+	hashInput := fmt.Sprintf("%s-%s-%s-%s", projectID, targetName, userName, connectionTargetType)
 	hasher := fnv.New64a()
 
 	hasher.Write([]byte(hashInput))
@@ -422,7 +422,7 @@ func ComputeHash(projectID, clusterName, userName, connectionTargetType string) 
 	return encodedHash
 }
 
-func K8sConnectionSecretName(projectID, clusterName, userName, connectionTargetType string) string {
-	hash := ComputeHash(projectID, clusterName, userName, connectionTargetType)
+func K8sConnectionSecretName(projectID, targetName, userName, connectionTargetType string) string {
+	hash := ComputeHash(projectID, targetName, userName, connectionTargetType)
 	return fmt.Sprintf("connection-%s", hash)
 }
