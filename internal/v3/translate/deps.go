@@ -50,7 +50,7 @@ func (d *Dependencies) MainObject() client.Object {
 	return d.mainObj
 }
 
-// Find looks for an object withing the dependencies by name and namespace
+// Find looks for an object within the dependencies by name and namespace
 func (d *Dependencies) Find(name, namespace string) client.Object {
 	ns := namespace
 	if ns == SetFallbackNamespace {

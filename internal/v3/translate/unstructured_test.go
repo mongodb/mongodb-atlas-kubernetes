@@ -21,9 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312006/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 type testStruct struct {
@@ -56,8 +56,8 @@ func TestParamsFill(t *testing.T) {
 	assert.Equal(t, admin2025.CreateAlertConfigurationApiParams{
 		GroupId: "62b6e34b3d91647abb20e7b8",
 		GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-			Enabled:       pointer.Get(true),
-			EventTypeName: pointer.Get("some-event"),
+			Enabled:       pointer.MakePtr(true),
+			EventTypeName: pointer.MakePtr("some-event"),
 		},
 	}, result)
 }

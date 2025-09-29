@@ -3,9 +3,10 @@
 package v1
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/k8s"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {

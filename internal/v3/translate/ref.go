@@ -26,7 +26,7 @@ import (
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/translate/samples/v1"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/samples/v1"
 )
 
 type EncodeDecodeFunc func(any) (any, error)
@@ -40,7 +40,7 @@ var (
 
 	encoders = map[string]EncodeDecodeFunc{
 		"v1/secrets": func(in any) (any, error) {
-			return secretEncode((in).(string))
+			return secretEncode((in).(string)), nil
 		},
 	}
 
@@ -229,7 +229,7 @@ func (km kubeMapping) FetchReferencedValue(target string, reference map[string]a
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return nil, fmt.Errorf("failed to resolve reference properties: %w", err)
 	}
-	if err == ErrNotFound {
+	if errors.Is(err, ErrNotFound) {
 		var err error
 		value, err = km.fetchFromPropertySelectors(resourceMap, target)
 		if errors.Is(err, ErrNotFound) {
