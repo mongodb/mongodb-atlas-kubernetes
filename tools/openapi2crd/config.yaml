@@ -23,15 +23,15 @@ spec:
       plugins:
         - base
         - major_version
-        - parameter
+        - parameters
         - entry
         - status
-        - sensitive_property
-        - skipped_property
-        - read_only_property
-        - read_write_property
-        - reference
-        - reference_metadata
+        - sensitive_properties
+        - skipped_properties
+        - read_only_properties
+        - read_write_properties
+        - references
+        - references_metadata
         - mutual_exclusive_major_versions
         - atlas_sdk_version
 

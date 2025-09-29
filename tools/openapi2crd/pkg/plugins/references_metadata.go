@@ -6,13 +6,13 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-type ReferenceMetadata struct{}
+type ReferencesMetadata struct{}
 
-func (r *ReferenceMetadata) Name() string {
+func (r *ReferencesMetadata) Name() string {
 	return "reference_metadata"
 }
 
-func (r *ReferenceMetadata) Process(req *ExtensionProcessorRequest) error {
+func (r *ReferencesMetadata) Process(req *ExtensionProcessorRequest) error {
 	for _, ref := range req.MappingConfig.ParametersMapping.References {
 		if len(ref.Target.Properties) == 0 {
 			return errors.New("reference target must have at least one property defined")

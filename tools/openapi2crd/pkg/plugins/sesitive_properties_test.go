@@ -11,7 +11,7 @@ import (
 )
 
 func TestSensitivePropertyName(t *testing.T) {
-	p := &SensitiveProperty{}
+	p := &SensitiveProperties{}
 	assert.Equal(t, "sensitive_property", p.Name())
 }
 
@@ -138,7 +138,7 @@ func TestSensitivePropertyProcess(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			p := &SensitiveProperty{}
+			p := &SensitiveProperties{}
 			err := p.Process(test.request)
 			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedProps, test.request.Property)

@@ -9,15 +9,15 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
-// Parameter adds parameters from the OpenAPI spec to the CRD schema.
+// Parameters adds parameters from the OpenAPI spec to the CRD schema.
 // It requires base and major version plugins to be run before.
-type Parameter struct{}
+type Parameters struct{}
 
-func (p *Parameter) Name() string {
-	return "parameter"
+func (p *Parameters) Name() string {
+	return "parameters"
 }
 
-func (p *Parameter) Process(req *MappingProcessorRequest) error {
+func (p *Parameters) Process(req *MappingProcessorRequest) error {
 	majorVersionSpec := req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion]
 
 	if req.MappingConfig.ParametersMapping.Path.Name != "" {

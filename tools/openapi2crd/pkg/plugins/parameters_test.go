@@ -15,7 +15,7 @@ import (
 )
 
 func TestParameterName(t *testing.T) {
-	p := &Parameter{}
+	p := &Parameters{}
 	assert.Equal(t, "parameter", p.Name())
 }
 
@@ -124,7 +124,7 @@ func TestParameterProcess(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			p := &Parameter{}
+			p := &Parameters{}
 			err := p.Process(tt.request)
 			assert.Equal(t, tt.expectedErr, err)
 			versionSpec := tt.request.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[tt.request.MappingConfig.MajorVersion]

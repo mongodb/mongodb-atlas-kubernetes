@@ -10,7 +10,7 @@ import (
 )
 
 func TestReferenceMetadataName(t *testing.T) {
-	p := &ReferenceMetadata{}
+	p := &ReferencesMetadata{}
 	assert.Equal(t, "reference_metadata", p.Name())
 }
 
@@ -151,7 +151,7 @@ func TestReferenceMetadataProcess(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			p := &ReferenceMetadata{}
+			p := &ReferencesMetadata{}
 			err := p.Process(tt.request)
 			assert.Equal(t, tt.expectedErr, err)
 			if tt.expectedExtensions != nil {

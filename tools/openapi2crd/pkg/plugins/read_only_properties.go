@@ -6,13 +6,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-type ReadOnlyProperty struct{}
+type ReadOnlyProperties struct{}
 
-func (p *ReadOnlyProperty) Name() string {
-	return "read_only_property"
+func (p *ReadOnlyProperties) Name() string {
+	return "read_only_properties"
 }
 
-func (p *ReadOnlyProperty) Process(req *PropertyProcessorRequest) error {
+func (p *ReadOnlyProperties) Process(req *PropertyProcessorRequest) error {
 	if req.PropertyConfig == nil || !req.PropertyConfig.Filters.ReadOnly {
 		return nil
 	}

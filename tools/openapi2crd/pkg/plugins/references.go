@@ -10,15 +10,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-// Reference adds reference properties to the CRD OpenAPI schema based on the mapping configuration.
+// References adds reference properties to the CRD OpenAPI schema based on the mapping configuration.
 // It requires base and major version schemas to be already processed.
-type Reference struct{}
+type References struct{}
 
-func (r *Reference) Name() string {
+func (r *References) Name() string {
 	return "reference"
 }
 
-func (r *Reference) Process(req *MappingProcessorRequest) error {
+func (r *References) Process(req *MappingProcessorRequest) error {
 	majorVersionSpec := req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion]
 
 	for _, ref := range req.MappingConfig.ParametersMapping.References {

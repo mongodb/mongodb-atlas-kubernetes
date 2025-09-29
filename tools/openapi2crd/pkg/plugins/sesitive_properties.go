@@ -10,13 +10,13 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
-type SensitiveProperty struct{}
+type SensitiveProperties struct{}
 
-func (p *SensitiveProperty) Name() string {
+func (p *SensitiveProperties) Name() string {
 	return "sensitive_property"
 }
 
-func (p *SensitiveProperty) Process(req *PropertyProcessorRequest) error {
+func (p *SensitiveProperties) Process(req *PropertyProcessorRequest) error {
 	if !isSensitiveField(req.Path, req.PropertyConfig) {
 		return nil
 	}

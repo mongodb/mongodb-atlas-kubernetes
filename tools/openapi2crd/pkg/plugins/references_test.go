@@ -12,7 +12,7 @@ import (
 )
 
 func TestReferenceName(t *testing.T) {
-	p := &Reference{}
+	p := &References{}
 	assert.Equal(t, "reference", p.Name())
 }
 
@@ -66,7 +66,7 @@ func TestReferenceProcess(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			p := &Reference{}
+			p := &References{}
 			err := p.Process(test.request)
 			assert.Equal(t, test.expectedError, err)
 			spec := test.request.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[test.request.MappingConfig.MajorVersion]

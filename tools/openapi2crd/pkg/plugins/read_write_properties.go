@@ -6,13 +6,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-type ReadWriteProperty struct{}
+type ReadWriteProperties struct{}
 
-func (p *ReadWriteProperty) Name() string {
+func (p *ReadWriteProperties) Name() string {
 	return "read_write_property"
 }
 
-func (p *ReadWriteProperty) Process(req *PropertyProcessorRequest) error {
+func (p *ReadWriteProperties) Process(req *PropertyProcessorRequest) error {
 	if req.PropertyConfig == nil || !req.PropertyConfig.Filters.ReadWriteOnly {
 		return nil
 	}

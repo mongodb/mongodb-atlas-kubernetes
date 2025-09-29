@@ -6,13 +6,13 @@ import (
 	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
-type SkippedProperty struct{}
+type SkippedProperties struct{}
 
-func (p *SkippedProperty) Name() string {
+func (p *SkippedProperties) Name() string {
 	return "skipped_property"
 }
 
-func (p *SkippedProperty) Process(req *PropertyProcessorRequest) error {
+func (p *SkippedProperties) Process(req *PropertyProcessorRequest) error {
 	if isSkippedField(req.Path, req.PropertyConfig) {
 		req.Property = nil
 

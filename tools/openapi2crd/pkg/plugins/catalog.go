@@ -122,20 +122,20 @@ func NewCatalog() *Catalog {
 		},
 		mapping: map[string]MappingPlugin{
 			"major_version": &MajorVersion{},
-			"parameter":     &Parameter{},
+			"parameters":    &Parameters{},
 			"entry":         &Entry{},
 			"status":        &Status{},
-			"reference":     &Reference{},
+			"references":    &References{},
 		},
 		property: map[string]PropertyPlugin{
-			"sensitive_property":  &SensitiveProperty{},
-			"skipped_property":    &SkippedProperty{},
-			"read_only_property":  &ReadOnlyProperty{},
-			"read_write_property": &ReadWriteProperty{},
+			"sensitive_properties":  &SensitiveProperties{},
+			"skipped_properties":    &SkippedProperties{},
+			"read_only_properties":  &ReadOnlyProperties{},
+			"read_write_properties": &ReadWriteProperties{},
 		},
 		extension: map[string]ExtensionPlugin{
-			"atlas_sdk_version":  &AtlasSdkVersionPlugin{},
-			"reference_metadata": &ReferenceMetadata{},
+			"atlas_sdk_version":   &AtlasSdkVersionPlugin{},
+			"references_metadata": &ReferencesMetadata{},
 		},
 	}
 }

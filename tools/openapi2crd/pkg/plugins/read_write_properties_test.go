@@ -9,12 +9,12 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
-func TestReadOnlyPropertyName(t *testing.T) {
-	p := &ReadOnlyProperty{}
-	assert.Equal(t, "read_only_property", p.Name())
+func TestReadWritePropertyName(t *testing.T) {
+	p := &ReadWriteProperties{}
+	assert.Equal(t, "read_write_property", p.Name())
 }
 
-func TestReadOnlyPropertyProcess(t *testing.T) {
+func TestReadWritePropertyProcess(t *testing.T) {
 	tests := map[string]struct {
 		request       *PropertyProcessorRequest
 		expectedProps *apiextensions.JSONSchemaProps
@@ -33,11 +33,11 @@ func TestReadOnlyPropertyProcess(t *testing.T) {
 			},
 			expectedError: nil,
 		},
-		"do nothing when read only filter is false": {
+		"do nothing when read write only filter is false": {
 			request: &PropertyProcessorRequest{
 				PropertyConfig: &v1alpha1.PropertyMapping{
 					Filters: v1alpha1.Filters{
-						ReadOnly: false,
+						ReadWriteOnly: false,
 					},
 				},
 				Property: &apiextensions.JSONSchemaProps{
@@ -51,86 +51,65 @@ func TestReadOnlyPropertyProcess(t *testing.T) {
 			},
 			expectedError: nil,
 		},
-		"do nothing when schema is read only": {
+		"remove entire property when schema is read only": {
 			request: &PropertyProcessorRequest{
 				PropertyConfig: &v1alpha1.PropertyMapping{
 					Filters: v1alpha1.Filters{
-						ReadOnly: true,
+						ReadWriteOnly: true,
 					},
 				},
 				OpenAPISchema: &openapi3.Schema{
 					ReadOnly: true,
 				},
 				Property: &apiextensions.JSONSchemaProps{
-					Required:   nil,
-					Properties: map[string]apiextensions.JSONSchemaProps{},
-				},
-			},
-			expectedProps: &apiextensions.JSONSchemaProps{
-				Required:   nil,
-				Properties: map[string]apiextensions.JSONSchemaProps{},
-			},
-			expectedError: nil,
-		},
-		"remove non-read-only properties from required list": {
-			request: &PropertyProcessorRequest{
-				PropertyConfig: &v1alpha1.PropertyMapping{
-					Filters: v1alpha1.Filters{
-						ReadOnly: true,
-					},
-				},
-				OpenAPISchema: &openapi3.Schema{
-					ReadOnly: false,
-					Required: []string{"a", "b", "c"},
-					Properties: map[string]*openapi3.SchemaRef{
-						"a": {Value: &openapi3.Schema{ReadOnly: true}},
-						"b": {Value: &openapi3.Schema{ReadOnly: false}},
-						"c": {Value: &openapi3.Schema{ReadOnly: true}},
-					},
-				},
-				Property: &apiextensions.JSONSchemaProps{
-					Required:   nil,
+					Required:   []string{"a", "b"},
 					Properties: map[string]apiextensions.JSONSchemaProps{},
 				},
 			},
 			expectedProps: nil,
 			expectedError: nil,
 		},
-		"do nothing when path is root": {
+		"remove read only properties from required list and keep others": {
 			request: &PropertyProcessorRequest{
 				PropertyConfig: &v1alpha1.PropertyMapping{
 					Filters: v1alpha1.Filters{
-						ReadOnly: true,
+						ReadWriteOnly: true,
 					},
 				},
 				OpenAPISchema: &openapi3.Schema{
-					ReadOnly: false,
 					Required: []string{"a", "b", "c"},
 					Properties: map[string]*openapi3.SchemaRef{
-						"a": {Value: &openapi3.Schema{ReadOnly: true}},
-						"b": {Value: &openapi3.Schema{ReadOnly: false}},
-						"c": {Value: &openapi3.Schema{ReadOnly: true}},
+						"a": {Value: &openapi3.Schema{Type: &openapi3.Types{"string"}}},
+						"b": {Value: &openapi3.Schema{Type: &openapi3.Types{"string"}, ReadOnly: true}},
+						"c": {Value: &openapi3.Schema{Type: &openapi3.Types{"string"}}},
 					},
 				},
 				Property: &apiextensions.JSONSchemaProps{
-					Required:   nil,
-					Properties: map[string]apiextensions.JSONSchemaProps{},
+					Required: []string{"a", "b", "c"},
+					Properties: map[string]apiextensions.JSONSchemaProps{
+						"a": {Type: "string"},
+						"b": {Type: "string"},
+						"c": {Type: "string"},
+					},
 				},
-				Path: []string{"$"},
 			},
 			expectedProps: &apiextensions.JSONSchemaProps{
-				Required:   []string{"a", "c"},
-				Properties: map[string]apiextensions.JSONSchemaProps{},
+				Required: []string{"a", "c"},
+				Properties: map[string]apiextensions.JSONSchemaProps{
+					"a": {Type: "string"},
+					"b": {Type: "string"},
+					"c": {Type: "string"},
+				},
 			},
 			expectedError: nil,
 		},
 	}
-	for name, test := range tests {
+	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			p := &ReadOnlyProperty{}
-			err := p.Process(test.request)
-			assert.Equal(t, test.expectedError, err)
-			assert.Equal(t, test.expectedProps, test.request.Property)
+			p := &ReadWriteProperties{}
+			err := p.Process(tc.request)
+			assert.Equal(t, tc.expectedError, err)
+			assert.Equal(t, tc.expectedProps, tc.request.Property)
 		})
 	}
 }
