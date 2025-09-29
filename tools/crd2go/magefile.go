@@ -33,7 +33,7 @@ func CI() {
 
 // Build checks all execitable build properly
 func Build() error {
-	return wrapRun("🛠️ Building...", "go", "build", "./...")
+	return wrapRun("🛠️  Building...", "go", "build", "./...")
 }
 
 // UnitTests runs the go tests
@@ -43,7 +43,7 @@ func UnitTests() error {
 
 // Addlicense runs the addlicense check to ensure source files have license headers
 func Addlicense() error {
-	return wrapRun("🛠️ Running license header check...",
+	return wrapRun("🛠️  Running license header check...",
 		"go", "tool",
 		"addlicense",
 		"-check",
@@ -61,7 +61,7 @@ func Addlicense() error {
 
 // Checklicense runs the go-licenses tool to check license compliance
 func Checklicense() error {
-	return wrapRun("🛠️ Running license compliance checks:\n",
+	return wrapRun("🔬 Running license compliance checks:\n",
 		"go", "tool",
 		"go-licenses", "check",
 		"--include_tests",
