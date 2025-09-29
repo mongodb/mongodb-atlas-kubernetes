@@ -239,13 +239,15 @@ func TestGeneratorGenerate(t *testing.T) {
 
 					return nil
 				})
+			extensionPlugin := plugins.NewExtensionPluginMock(t)
+			extensionPlugin.EXPECT().Process(mock.AnythingOfType("*plugins.ExtensionProcessorRequest")).Return(nil)
 
 			g := &Generator{
 				definitions: tt.apiDefinitions,
 				pluginSet: &plugins.Set{
 					CRD:       []plugins.CRDPlugin{crdPlugin},
 					Mapping:   []plugins.MappingPlugin{mappingPlugin},
-					Extension: []plugins.ExtensionPlugin{},
+					Extension: []plugins.ExtensionPlugin{extensionPlugin},
 				},
 				openapiLoader: loader,
 			}

@@ -39,68 +39,13 @@ func RunCmd(ctx context.Context) *cobra.Command {
 			_ = viper.BindPFlags(cmd.Flags())
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			configPath := viper.GetString(configOption)
+			outputPath := viper.GetString(outputOption)
+			forceOverwrite := viper.GetBool(forceOption)
+
 			fs := afero.NewOsFs()
 
-			outputOptionValue := viper.GetString(outputOption)
-			forceOptionValue := viper.GetBool(forceOption)
-			fsExporter, err := exporter.New(fs, outputOptionValue, forceOptionValue)
-			if err != nil {
-				return err
-			}
-
-			err = fsExporter.Start()
-			if err != nil {
-				return fmt.Errorf("error starting the exporter: %w", err)
-			}
-
-			configPath := viper.GetString(configOption)
-			file, err := fs.OpenFile(configPath, readOnly, 0o644)
-			if err != nil {
-				return fmt.Errorf("error opening the file %s: %w", configPath, err)
-			}
-
-			configData, err := afero.ReadAll(file)
-			if err != nil {
-				return fmt.Errorf("error reading the file %s: %w", configPath, err)
-			}
-
-			cfg, err := config.Parse(configData)
-			if err != nil {
-				return fmt.Errorf("error parsing config: %w", err)
-			}
-
-			definitionsMap := map[string]configv1alpha1.OpenAPIDefinition{}
-			for _, def := range cfg.Spec.OpenAPIDefinitions {
-				definitionsMap[def.Name] = def
-			}
-
-			catalog := plugins.NewCatalog()
-			pluginSets, err := catalog.BuildSets(cfg.Spec.PluginSets)
-			if err != nil {
-				return fmt.Errorf("error creating plugin set: %w", err)
-			}
-
-			openapiLoader := config.NewKinOpeAPI(fs)
-
-			for _, crdConfig := range cfg.Spec.CRDConfig {
-				pluginSet, err := plugins.GetPluginSet(pluginSets, crdConfig.PluginSet)
-				if err != nil {
-					return fmt.Errorf("error getting plugin set %q: %w", crdConfig.PluginSet, err)
-				}
-
-				g := generator.NewGenerator(definitionsMap, pluginSet, openapiLoader)
-				crd, err := g.Generate(ctx, &crdConfig)
-				if err != nil {
-					return err
-				}
-
-				err = fsExporter.Export(crd)
-				if err != nil {
-					return err
-				}
-			}
-
-			return fsExporter.Close()
+			return runOpenapi2crd(ctx, fs, configPath, outputPath, forceOverwrite)
 		},
 	}
 
@@ -113,4 +58,64 @@ func RunCmd(ctx context.Context) *cobra.Command {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
 	return cmd
+}
+
+func runOpenapi2crd(ctx context.Context, fs afero.Fs, input, output string, overwrite bool) error {
+	file, err := fs.OpenFile(input, readOnly, 0o644)
+	if err != nil {
+		return fmt.Errorf("error opening the file %s: %w", input, err)
+	}
+
+	configData, err := afero.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("error reading the file %s: %w", input, err)
+	}
+
+	cfg, err := config.Parse(configData)
+	if err != nil {
+		return fmt.Errorf("error parsing config: %w", err)
+	}
+
+	fsExporter, err := exporter.New(fs, output, overwrite)
+	if err != nil {
+		return fmt.Errorf("error creating the exporter: %w", err)
+	}
+
+	err = fsExporter.Start()
+	if err != nil {
+		return fmt.Errorf("error starting the exporter: %w", err)
+	}
+
+	definitionsMap := map[string]configv1alpha1.OpenAPIDefinition{}
+	for _, def := range cfg.Spec.OpenAPIDefinitions {
+		definitionsMap[def.Name] = def
+	}
+
+	catalog := plugins.NewCatalog()
+	pluginSets, err := catalog.BuildSets(cfg.Spec.PluginSets)
+	if err != nil {
+		return fmt.Errorf("error creating plugin set: %w", err)
+	}
+
+	openapiLoader := config.NewKinOpeAPI(fs)
+
+	for _, crdConfig := range cfg.Spec.CRDConfig {
+		pluginSet, err := plugins.GetPluginSet(pluginSets, crdConfig.PluginSet)
+		if err != nil {
+			return fmt.Errorf("error getting plugin set %q: %w", crdConfig.PluginSet, err)
+		}
+
+		g := generator.NewGenerator(definitionsMap, pluginSet, openapiLoader)
+		crd, err := g.Generate(ctx, &crdConfig)
+		if err != nil {
+			return err
+		}
+
+		err = fsExporter.Export(crd)
+		if err != nil {
+			return err
+		}
+	}
+
+	return fsExporter.Close()
 }
