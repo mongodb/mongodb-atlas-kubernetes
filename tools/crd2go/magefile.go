@@ -27,27 +27,23 @@ import (
 
 // CI runs all linting and validation checks.
 func CI() {
-	mg.SerialDeps(Build, UnitTests, Addlicense, GCI, Lint)
+	mg.SerialDeps(Build, UnitTests, Addlicense, Checklicense, GCI, Lint)
 	fmt.Println("✅ CI PASSED all checks")
 }
 
 // Build checks all execitable build properly
 func Build() error {
-	return sh.RunV("go", "build", "./...")
+	return wrapRun("🛠️ Building...", "go", "build", "./...")
 }
 
 // UnitTests runs the go tests
 func UnitTests() error {
-	return sh.RunV("go", "test", "./...")
+	return wrapRun("🧪 Running unit tests:\n", "go", "test", "./...")
 }
 
 // Addlicense runs the addlicense check to ensure source files have license headers
 func Addlicense() error {
-	fmt.Println("Running license header check...")
-
-	// sh.RunV runs the command verbosely (streaming output)
-	// and returns an error if the command fails.
-	return sh.RunV(
+	return wrapRun("🛠️ Running license header check...",
 		"go", "tool",
 		"addlicense",
 		"-check",
@@ -60,6 +56,17 @@ func Addlicense() error {
 		"-ignore", ".devbox/**",
 		"-ignore", "magefile.go",
 		".",
+	)
+}
+
+// Checklicense runs the go-licenses tool to check license compliance
+func Checklicense() error {
+	return wrapRun("🛠️ Running license compliance checks:\n",
+		"go", "tool",
+		"go-licenses", "check",
+		"--include_tests",
+		"--disallowed_types", "restricted,reciprocal",
+		"./...",
 	)
 }
 
@@ -94,6 +101,17 @@ func Lint() error {
 	if err := os.Setenv("CGO_ENABLED", "0"); err != nil {
 		return nil
 	}
-	return sh.RunV("go", "tool", "golangci-lint", "run",
+	return wrapRun("▶️ Run linting...",
+		"go", "tool", "golangci-lint", "run",
 		"./cmd/...", "./internal/...", "./k8s/...", "./pkg/...")
+}
+
+func wrapRun(msg, cmd string, args ...string) error {
+	fmt.Print(msg)
+	if err := sh.RunV(cmd, args...); err != nil {
+		fmt.Println()
+		return err
+	}
+	fmt.Println("✅ Success")
+	return nil
 }
