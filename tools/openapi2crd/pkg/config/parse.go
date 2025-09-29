@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"sigs.k8s.io/yaml"
+
 	"tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 

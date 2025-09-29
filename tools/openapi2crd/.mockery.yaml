@@ -1,0 +1,17 @@
+all: true
+dir: '{{.InterfaceDir}}'
+filename: '{{base (trimSuffix ".go" .InterfaceFile)}}_mock.go'
+force-file-write: true
+formatter: goimports
+log-level: info
+structname: '{{.InterfaceName}}{{.Mock}}'
+pkgname: '{{.SrcPackageName}}'
+recursive: false
+template: testify
+packages:
+  tools/openapi2crd/pkg/config:
+    config:
+      all: true
+  tools/openapi2crd/pkg/plugins:
+    config:
+      all: true

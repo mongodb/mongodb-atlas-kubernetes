@@ -40,8 +40,16 @@ type Config struct {
 }
 
 type Spec struct {
+	PluginSets         []PluginSet         `json:"pluginSets,omitempty"`
 	CRDConfig          []CRDConfig         `json:"crd,omitempty"`
 	OpenAPIDefinitions []OpenAPIDefinition `json:"openapi,omitempty"`
+}
+
+type PluginSet struct {
+	Name        string `json:"name"`
+	Default     bool   `json:"default,omitempty"`
+	InheritFrom string `json:"inheritFrom,omitempty"`
+	Plugins     []string
 }
 
 type OpenAPIDefinition struct {
@@ -55,6 +63,7 @@ type CRDConfig struct {
 	Categories []string                `json:"categories,omitempty"`
 	Mappings   []CRDMapping            `json:"mappings,omitempty"`
 	ShortNames []string                `json:"shortNames,omitempty"`
+	PluginSet  string                  `json:"pluginSet,omitempty"`
 }
 
 type CRDMapping struct {
