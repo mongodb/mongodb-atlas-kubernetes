@@ -78,7 +78,6 @@ func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	switch {
 	case failedToRetrieve:
-		log.Errorw("failed to retrieve user", "error", err)
 		return workflow.Terminate(workflow.ConnectionSecretInvalidUsername, err).ReconcileResult()
 	case objectNotFound:
 		log.Debugw("user not found; nothing to reconcile")
@@ -88,20 +87,17 @@ func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Retrieve the project ID associated with the user.
 	projectID, err := r.getUserProjectID(ctx, user)
 	if err != nil {
-		log.Errorw("failed to load projectID for user", "error", err)
 		return workflow.Terminate(workflow.ConnectionSecretProjectIDNotLoaded, err).ReconcileResult()
 	}
 
 	// Load the connection targets for the project.
 	connectionTargets, err := r.listConnectionTargetsByProject(ctx, projectID)
 	if err != nil {
-		log.Errorw("failed to load paired resources", "error", err)
 		return workflow.Terminate(workflow.ConnectionSecretConnectionTargetsNotLoaded, err).ReconcileResult()
 	}
 
 	// Cleanup stale Secrets
 	if err := r.cleanupStaleSecrets(ctx, req.Namespace, connectionTargets, projectID); err != nil {
-		log.Errorw("Failed to clean up secrets for databaseUser", "databaseUser", req.Name, "error", err)
 		return workflow.Terminate(workflow.ConnectionSecretStaleSecretsNotCleaned, err).ReconcileResult()
 	}
 
