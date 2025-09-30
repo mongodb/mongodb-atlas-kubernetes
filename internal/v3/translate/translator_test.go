@@ -25,17 +25,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312006/admin"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/internal/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/k8s"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/translate"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/ako2api/pkg/translate/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/crds"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 const (
@@ -60,7 +60,7 @@ func TestFromAPI(t *testing.T) {
 				input := admin2025.Group{
 					Created:      time.Date(2025, 1, 1, 1, 30, 15, 0, time.UTC),
 					ClusterCount: 0,
-					Id:           pointer.Get("6127378123219"),
+					Id:           pointer.MakePtr("6127378123219"),
 					Name:         "test-project",
 					OrgId:        testProjectID,
 					Tags: &[]admin2025.ResourceTag{
@@ -73,7 +73,7 @@ func TestFromAPI(t *testing.T) {
 							Value: "value",
 						},
 					},
-					WithDefaultAlertsSettings: pointer.Get(true),
+					WithDefaultAlertsSettings: pointer.MakePtr(true),
 				}
 				target := v1.Group{}
 				want := []client.Object{
@@ -93,14 +93,14 @@ func TestFromAPI(t *testing.T) {
 											Value: "value",
 										},
 									},
-									WithDefaultAlertsSettings: pointer.Get(true),
+									WithDefaultAlertsSettings: pointer.MakePtr(true),
 								},
 							},
 						},
 						Status: v1.GroupStatus{
 							V20250312: &v1.GroupStatusV20250312{
 								Created: "2025-01-01T01:30:15Z",
-								Id:      pointer.Get("6127378123219"),
+								Id:      pointer.MakePtr("6127378123219"),
 							},
 						},
 					},
@@ -113,28 +113,28 @@ func TestFromAPI(t *testing.T) {
 			name: "dbuser with secret and group refs",
 			test: func(t *testing.T) {
 				input := admin2025.CloudDatabaseUser{
-					AwsIAMType:      pointer.Get("NONE AWS"),
+					AwsIAMType:      pointer.MakePtr("NONE AWS"),
 					DatabaseName:    "dbname",
-					DeleteAfterDate: pointer.Get(time.Date(2025, 2, 1, 1, 30, 15, 0, time.UTC)),
-					Description:     pointer.Get("sample db user"),
+					DeleteAfterDate: pointer.MakePtr(time.Date(2025, 2, 1, 1, 30, 15, 0, time.UTC)),
+					Description:     pointer.MakePtr("sample db user"),
 					GroupId:         testProjectID,
 					Labels: &[]admin2025.ComponentLabel{
 						{
-							Key:   pointer.Get("key0"),
-							Value: pointer.Get("value0"),
+							Key:   pointer.MakePtr("key0"),
+							Value: pointer.MakePtr("value0"),
 						},
 						{
-							Key:   pointer.Get("key1"),
-							Value: pointer.Get("value1"),
+							Key:   pointer.MakePtr("key1"),
+							Value: pointer.MakePtr("value1"),
 						},
 					},
-					LdapAuthType: pointer.Get("NONE LDAP"),
-					OidcAuthType: pointer.Get("NONE OIDC"),
+					LdapAuthType: pointer.MakePtr("NONE LDAP"),
+					OidcAuthType: pointer.MakePtr("NONE OIDC"),
 					// TODO: new crd should put this on a secret
-					Password: pointer.Get("fakepass"),
+					Password: pointer.MakePtr("fakepass"),
 					Roles: &[]admin2025.DatabaseUserRole{
 						{
-							CollectionName: pointer.Get("collection0"),
+							CollectionName: pointer.MakePtr("collection0"),
 							DatabaseName:   "mydb",
 							RoleName:       "admin",
 						},
@@ -146,7 +146,7 @@ func TestFromAPI(t *testing.T) {
 						},
 					},
 					Username: "dbuser",
-					X509Type: pointer.Get("NONE X509"),
+					X509Type: pointer.MakePtr("NONE X509"),
 				}
 				target := v1.DatabaseUser{}
 				want := []client.Object{
@@ -154,10 +154,10 @@ func TestFromAPI(t *testing.T) {
 						Spec: v1.DatabaseUserSpec{
 							V20250312: &v1.DatabaseUserSpecV20250312{
 								Entry: &v1.DatabaseUserSpecV20250312Entry{
-									AwsIAMType:      pointer.Get("NONE AWS"),
+									AwsIAMType:      pointer.MakePtr("NONE AWS"),
 									DatabaseName:    "dbname",
-									DeleteAfterDate: pointer.Get("2025-02-01T01:30:15Z"),
-									Description:     pointer.Get("sample db user"),
+									DeleteAfterDate: pointer.MakePtr("2025-02-01T01:30:15Z"),
+									Description:     pointer.MakePtr("sample db user"),
 									GroupId:         testProjectID, // ID ref by default
 									Labels: &[]v1.Tags{
 										{
@@ -169,11 +169,11 @@ func TestFromAPI(t *testing.T) {
 											Value: "value1",
 										},
 									},
-									LdapAuthType: pointer.Get("NONE LDAP"),
-									OidcAuthType: pointer.Get("NONE OIDC"),
+									LdapAuthType: pointer.MakePtr("NONE LDAP"),
+									OidcAuthType: pointer.MakePtr("NONE OIDC"),
 									Roles: &[]v1.Roles{
 										{
-											CollectionName: pointer.Get("collection0"),
+											CollectionName: pointer.MakePtr("collection0"),
 											DatabaseName:   "mydb",
 											RoleName:       "admin",
 										},
@@ -185,10 +185,10 @@ func TestFromAPI(t *testing.T) {
 										},
 									},
 									Username: "dbuser",
-									X509Type: pointer.Get("NONE X509"),
-									Password: pointer.Get("fakepass"), // TODO: this should go away to a secret
+									X509Type: pointer.MakePtr("NONE X509"),
+									Password: pointer.MakePtr("fakepass"), // TODO: this should go away to a secret
 								},
-								GroupId: pointer.Get(testProjectID),
+								GroupId: pointer.MakePtr(testProjectID),
 							},
 						},
 					},
@@ -201,10 +201,10 @@ func TestFromAPI(t *testing.T) {
 			name: "GroupAlertConfigs",
 			test: func(t *testing.T) {
 				input := admin2025.GroupAlertsConfig{
-					Enabled:       pointer.Get(true),
-					EventTypeName: pointer.Get("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
-					GroupId:       pointer.Get(testProjectID),
-					Id:            pointer.Get("notification id"),
+					Enabled:       pointer.MakePtr(true),
+					EventTypeName: pointer.MakePtr("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
+					GroupId:       pointer.MakePtr(testProjectID),
+					Id:            pointer.MakePtr("notification id"),
 					Matchers: &[]admin2025.StreamsMatcher{
 						{
 							FieldName: "field0",
@@ -219,29 +219,29 @@ func TestFromAPI(t *testing.T) {
 					},
 					Notifications: &[]admin2025.AlertsNotificationRootForGroup{
 						{
-							DatadogApiKey: pointer.Get("fake api key"),
-							DatadogRegion: pointer.Get("US"),
-							DelayMin:      pointer.Get(42),
-							IntegrationId: pointer.Get("32b6e34b3d91647abb20e7b8"),
-							IntervalMin:   pointer.Get(43),
-							NotifierId:    pointer.Get("32b6e34b3d91647abb20e7b8"),
-							TypeName:      pointer.Get("DATADOG"),
+							DatadogApiKey: pointer.MakePtr("fake api key"),
+							DatadogRegion: pointer.MakePtr("US"),
+							DelayMin:      pointer.MakePtr(42),
+							IntegrationId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
+							IntervalMin:   pointer.MakePtr(43),
+							NotifierId:    pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
+							TypeName:      pointer.MakePtr("DATADOG"),
 						},
 					},
-					SeverityOverride: pointer.Get("CRITICIAL"),
+					SeverityOverride: pointer.MakePtr("CRITICIAL"),
 					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
 						MetricName: "metric",
-						Mode:       pointer.Get("mode"),
-						Operator:   pointer.Get("op"),
-						Threshold:  pointer.Get(0.1),
-						Units:      pointer.Get("unit"),
+						Mode:       pointer.MakePtr("mode"),
+						Operator:   pointer.MakePtr("op"),
+						Threshold:  pointer.MakePtr(0.1),
+						Units:      pointer.MakePtr("unit"),
 					},
 					Threshold: &admin2025.StreamProcessorMetricThreshold{
-						MetricName: pointer.Get("anotherMetric"),
-						Mode:       pointer.Get("a mode"),
-						Operator:   pointer.Get("an op"),
-						Threshold:  pointer.Get(0.2),
-						Units:      pointer.Get("a unit"),
+						MetricName: pointer.MakePtr("anotherMetric"),
+						Mode:       pointer.MakePtr("a mode"),
+						Operator:   pointer.MakePtr("an op"),
+						Threshold:  pointer.MakePtr(0.2),
+						Units:      pointer.MakePtr("a unit"),
 					},
 				}
 				target := v1.GroupAlertsConfig{
@@ -259,8 +259,8 @@ func TestFromAPI(t *testing.T) {
 						Spec: v1.GroupAlertsConfigSpec{
 							V20250312: &v1.GroupAlertsConfigSpecV20250312{
 								Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-									Enabled:       pointer.Get(true),
-									EventTypeName: pointer.Get("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
+									Enabled:       pointer.MakePtr(true),
+									EventTypeName: pointer.MakePtr("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
 									Matchers: &[]v1.Matchers{
 										{
 											FieldName: "field0",
@@ -275,41 +275,41 @@ func TestFromAPI(t *testing.T) {
 									},
 									MetricThreshold: &v1.MetricThreshold{
 										MetricName: "metric",
-										Mode:       pointer.Get("mode"),
-										Operator:   pointer.Get("op"),
-										Threshold:  pointer.Get(0.1),
-										Units:      pointer.Get("unit"),
+										Mode:       pointer.MakePtr("mode"),
+										Operator:   pointer.MakePtr("op"),
+										Threshold:  pointer.MakePtr(0.1),
+										Units:      pointer.MakePtr("unit"),
 									},
 									Notifications: &[]v1.Notifications{
 										{
 											DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-												Key:  pointer.Get("datadogApiKey"),
-												Name: pointer.Get("groupalertscfg-notifications-datadogapikey"),
+												Key:  pointer.MakePtr("datadogApiKey"),
+												Name: pointer.MakePtr("groupalertscfg-notifications-datadogapikey"),
 											},
-											DatadogRegion: pointer.Get("US"),
-											DelayMin:      pointer.Get(42),
-											IntegrationId: pointer.Get("32b6e34b3d91647abb20e7b8"),
-											IntervalMin:   pointer.Get(43),
-											NotifierId:    pointer.Get("32b6e34b3d91647abb20e7b8"),
-											TypeName:      pointer.Get("DATADOG"),
+											DatadogRegion: pointer.MakePtr("US"),
+											DelayMin:      pointer.MakePtr(42),
+											IntegrationId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
+											IntervalMin:   pointer.MakePtr(43),
+											NotifierId:    pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
+											TypeName:      pointer.MakePtr("DATADOG"),
 										},
 									},
-									SeverityOverride: pointer.Get("CRITICIAL"),
+									SeverityOverride: pointer.MakePtr("CRITICIAL"),
 									Threshold: &v1.MetricThreshold{
 										MetricName: "anotherMetric",
-										Mode:       pointer.Get("a mode"),
-										Operator:   pointer.Get("an op"),
-										Threshold:  pointer.Get(0.2),
-										Units:      pointer.Get("a unit"),
+										Mode:       pointer.MakePtr("a mode"),
+										Operator:   pointer.MakePtr("an op"),
+										Threshold:  pointer.MakePtr(0.2),
+										Units:      pointer.MakePtr("a unit"),
 									},
 								},
-								GroupId: pointer.Get(testProjectID),
+								GroupId: pointer.MakePtr(testProjectID),
 							},
 						},
 						Status: v1.GroupAlertsConfigStatus{
 							V20250312: &v1.GroupAlertsConfigStatusV20250312{
-								GroupId: pointer.Get(testProjectID),
-								Id:      pointer.Get("notification id"),
+								GroupId: pointer.MakePtr(testProjectID),
+								Id:      pointer.MakePtr("notification id"),
 							},
 						},
 					},
@@ -331,11 +331,11 @@ func TestFromAPI(t *testing.T) {
 			name: "ThirdPartyIntegration",
 			test: func(t *testing.T) {
 				input := admin2025.ThirdPartyIntegration{
-					Id:          pointer.Get("SomeID"),
-					Type:        pointer.Get("SLACK"),
-					ApiToken:    pointer.Get("some fake api token"),
-					ChannelName: pointer.Get("alert-channel"),
-					TeamName:    pointer.Get("some-team"),
+					Id:          pointer.MakePtr("SomeID"),
+					Type:        pointer.MakePtr("SLACK"),
+					ApiToken:    pointer.MakePtr("some fake api token"),
+					ChannelName: pointer.MakePtr("alert-channel"),
+					TeamName:    pointer.MakePtr("some-team"),
 				}
 				target := v1.ThirdPartyIntegration{
 					ObjectMeta: metav1.ObjectMeta{
@@ -347,7 +347,7 @@ func TestFromAPI(t *testing.T) {
 							// TODO: is this a valid trick?
 							// This API struct, unlike others, does NOT include the Group ID
 							// it is part of the parameters, but not the response
-							GroupId: pointer.Get(testProjectID),
+							GroupId: pointer.MakePtr(testProjectID),
 							// TODO: similarly to the Group ID the IntegrationType would
 							// be the aparameter thet corresponds with "type" in the response
 							// but there is no indication of such semantics from the CRD
@@ -364,24 +364,24 @@ func TestFromAPI(t *testing.T) {
 						Spec: v1.ThirdPartyIntegrationSpec{
 							V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
 								Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
-									Type: pointer.Get("SLACK"),
+									Type: pointer.MakePtr("SLACK"),
 									ApiTokenSecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.Get("3rdparty-slack-apitoken"),
-										Key:  pointer.Get("apiToken"),
+										Name: pointer.MakePtr("3rdparty-slack-apitoken"),
+										Key:  pointer.MakePtr("apiToken"),
 									},
-									ChannelName: pointer.Get("alert-channel"),
-									TeamName:    pointer.Get("some-team"),
+									ChannelName: pointer.MakePtr("alert-channel"),
+									TeamName:    pointer.MakePtr("some-team"),
 								},
 								// Pre-existing from input
-								GroupId: pointer.Get(string(testProjectID)),
+								GroupId: pointer.MakePtr(string(testProjectID)),
 								// Pre-existing from input
 								IntegrationType: "SLACK",
 							},
 						},
 						Status: v1.ThirdPartyIntegrationStatus{
 							V20250312: &v1.ThirdPartyIntegrationStatusV20250312{
-								Id:   pointer.Get("SomeID"),
-								Type: pointer.Get("SLACK"),
+								Id:   pointer.MakePtr("SomeID"),
+								Type: pointer.MakePtr("SLACK"),
 							},
 						},
 					},
@@ -440,8 +440,8 @@ func TestToAPIAllRefs(t *testing.T) {
 				Spec: v1.GroupAlertsConfigSpec{
 					V20250312: &v1.GroupAlertsConfigSpecV20250312{
 						Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-							Enabled:       pointer.Get(true),
-							EventTypeName: pointer.Get("some-event"),
+							Enabled:       pointer.MakePtr(true),
+							EventTypeName: pointer.MakePtr("some-event"),
 							Matchers: &[]v1.Matchers{
 								{
 									FieldName: "field1",
@@ -456,37 +456,37 @@ func TestToAPIAllRefs(t *testing.T) {
 							},
 							MetricThreshold: &v1.MetricThreshold{
 								MetricName: "metric",
-								Mode:       pointer.Get("mode"),
-								Operator:   pointer.Get("operator"),
-								Threshold:  pointer.Get(1.0),
-								Units:      pointer.Get("unit"),
+								Mode:       pointer.MakePtr("mode"),
+								Operator:   pointer.MakePtr("operator"),
+								Threshold:  pointer.MakePtr(1.0),
+								Units:      pointer.MakePtr("unit"),
 							},
 							Notifications: &[]v1.Notifications{
 								{
 									DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.Get("alert-secrets-0"),
-										Key:  pointer.Get("apiKey"),
+										Name: pointer.MakePtr("alert-secrets-0"),
+										Key:  pointer.MakePtr("apiKey"),
 									},
-									DatadogRegion: pointer.Get("US"),
+									DatadogRegion: pointer.MakePtr("US"),
 								},
 								{
 									WebhookSecretSecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.Get("alert-secrets-0"),
-										Key:  pointer.Get("webhookSecret"),
+										Name: pointer.MakePtr("alert-secrets-0"),
+										Key:  pointer.MakePtr("webhookSecret"),
 									},
 									WebhookUrlSecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.Get("alert-secrets-1"),
-										Key:  pointer.Get("webhookUrl"),
+										Name: pointer.MakePtr("alert-secrets-1"),
+										Key:  pointer.MakePtr("webhookUrl"),
 									},
 								},
 							},
-							SeverityOverride: pointer.Get("severe"),
+							SeverityOverride: pointer.MakePtr("severe"),
 							Threshold: &v1.MetricThreshold{
 								MetricName: "metric",
-								Mode:       pointer.Get("mode-t"),
-								Operator:   pointer.Get("op-t"),
-								Threshold:  pointer.Get(2.0),
-								Units:      pointer.Get("unit-t"),
+								Mode:       pointer.MakePtr("mode-t"),
+								Operator:   pointer.MakePtr("op-t"),
+								Threshold:  pointer.MakePtr(2.0),
+								Units:      pointer.MakePtr("unit-t"),
 							},
 						},
 						GroupRef: &k8s.LocalReference{
@@ -509,7 +509,7 @@ func TestToAPIAllRefs(t *testing.T) {
 					},
 					Status: v1.GroupStatus{
 						V20250312: &v1.GroupStatusV20250312{
-							Id: pointer.Get("62b6e34b3d91647abb20e7b8"),
+							Id: pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
 						},
 					},
 				},
@@ -532,8 +532,8 @@ func TestToAPIAllRefs(t *testing.T) {
 			want: admin2025.CreateAlertConfigurationApiParams{
 				GroupId: "62b6e34b3d91647abb20e7b8",
 				GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-					Enabled:       pointer.Get(true),
-					EventTypeName: pointer.Get("some-event"),
+					Enabled:       pointer.MakePtr(true),
+					EventTypeName: pointer.MakePtr("some-event"),
 					Matchers: &[]admin2025.StreamsMatcher{
 						{
 							FieldName: "field1",
@@ -548,28 +548,28 @@ func TestToAPIAllRefs(t *testing.T) {
 					},
 					Notifications: &[]admin2025.AlertsNotificationRootForGroup{
 						{
-							DatadogApiKey: pointer.Get("sample-api-key"),
-							DatadogRegion: pointer.Get("US"),
+							DatadogApiKey: pointer.MakePtr("sample-api-key"),
+							DatadogRegion: pointer.MakePtr("US"),
 						},
 						{
-							WebhookSecret: pointer.Get("sample-webhook-secret"),
-							WebhookUrl:    pointer.Get("sample-webhook-url"),
+							WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
+							WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
 						},
 					},
-					SeverityOverride: pointer.Get("severe"),
+					SeverityOverride: pointer.MakePtr("severe"),
 					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
 						MetricName: "metric",
-						Mode:       pointer.Get("mode"),
-						Operator:   pointer.Get("operator"),
-						Threshold:  pointer.Get(1.0),
-						Units:      pointer.Get("unit"),
+						Mode:       pointer.MakePtr("mode"),
+						Operator:   pointer.MakePtr("operator"),
+						Threshold:  pointer.MakePtr(1.0),
+						Units:      pointer.MakePtr("unit"),
 					},
 					Threshold: &admin2025.StreamProcessorMetricThreshold{
-						MetricName: pointer.Get("metric"),
-						Mode:       pointer.Get("mode-t"),
-						Operator:   pointer.Get("op-t"),
-						Threshold:  pointer.Get(2.0),
-						Units:      pointer.Get("unit-t"),
+						MetricName: pointer.MakePtr("metric"),
+						Mode:       pointer.MakePtr("mode-t"),
+						Operator:   pointer.MakePtr("op-t"),
+						Threshold:  pointer.MakePtr(2.0),
+						Units:      pointer.MakePtr("unit-t"),
 					},
 				},
 			},
@@ -591,8 +591,8 @@ func TestToAPIAllRefs(t *testing.T) {
 		// 		Spec: v1.GroupAlertsConfigSpec{
 		// 			V20250312: &v1.GroupAlertsConfigSpecV20250312{
 		// 				Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-		// 					Enabled:       pointer.Get(true),
-		// 					EventTypeName: pointer.Get("some-event"),
+		// 					Enabled:       pointer.MakePtr(true),
+		// 					EventTypeName: pointer.MakePtr("some-event"),
 		// 					Matchers: &[]v1.Matchers{
 		// 						{
 		// 							FieldName: "field1",
@@ -607,40 +607,40 @@ func TestToAPIAllRefs(t *testing.T) {
 		// 					},
 		// 					MetricThreshold: &v1.MetricThreshold{
 		// 						MetricName: "metric",
-		// 						Mode:       pointer.Get("mode"),
-		// 						Operator:   pointer.Get("operator"),
-		// 						Threshold:  pointer.Get(1.0),
-		// 						Units:      pointer.Get("unit"),
+		// 						Mode:       pointer.MakePtr("mode"),
+		// 						Operator:   pointer.MakePtr("operator"),
+		// 						Threshold:  pointer.MakePtr(1.0),
+		// 						Units:      pointer.MakePtr("unit"),
 		// 					},
 		// 					Notifications: &[]v1.Notifications{
 		// 						{
 		// 							DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.Get("alert-secrets-0"),
-		// 								Key:  pointer.Get("apiKey"),
+		// 								Name: pointer.MakePtr("alert-secrets-0"),
+		// 								Key:  pointer.MakePtr("apiKey"),
 		// 							},
-		// 							DatadogRegion: pointer.Get("US"),
+		// 							DatadogRegion: pointer.MakePtr("US"),
 		// 						},
 		// 						{
 		// 							WebhookSecretSecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.Get("alert-secrets-0"),
-		// 								Key:  pointer.Get("webhookSecret"),
+		// 								Name: pointer.MakePtr("alert-secrets-0"),
+		// 								Key:  pointer.MakePtr("webhookSecret"),
 		// 							},
 		// 							WebhookUrlSecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.Get("alert-secrets-1"),
-		// 								Key:  pointer.Get("webhookUrl"),
+		// 								Name: pointer.MakePtr("alert-secrets-1"),
+		// 								Key:  pointer.MakePtr("webhookUrl"),
 		// 							},
 		// 						},
 		// 					},
-		// 					SeverityOverride: pointer.Get("severe"),
+		// 					SeverityOverride: pointer.MakePtr("severe"),
 		// 					Threshold: &v1.MetricThreshold{
 		// 						MetricName: "metric",
-		// 						Mode:       pointer.Get("mode-t"),
-		// 						Operator:   pointer.Get("op-t"),
-		// 						Threshold:  pointer.Get(2.0),
-		// 						Units:      pointer.Get("unit-t"),
+		// 						Mode:       pointer.MakePtr("mode-t"),
+		// 						Operator:   pointer.MakePtr("op-t"),
+		// 						Threshold:  pointer.MakePtr(2.0),
+		// 						Units:      pointer.MakePtr("unit-t"),
 		// 					},
 		// 				},
-		// 				GroupId: pointer.Get("62b6e34b3d91647abb20e7b8"),
+		// 				GroupId: pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
 		// 			},
 		// 		},
 		// 	},
@@ -664,8 +664,8 @@ func TestToAPIAllRefs(t *testing.T) {
 		// 	want: admin2025.CreateAlertConfigurationApiParams{
 		// 		GroupId: "62b6e34b3d91647abb20e7b8",
 		// 		GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-		// 			Enabled:       pointer.Get(true),
-		// 			EventTypeName: pointer.Get("some-event"),
+		// 			Enabled:       pointer.MakePtr(true),
+		// 			EventTypeName: pointer.MakePtr("some-event"),
 		// 			Matchers: &[]admin2025.StreamsMatcher{
 		// 				{
 		// 					FieldName: "field1",
@@ -680,28 +680,28 @@ func TestToAPIAllRefs(t *testing.T) {
 		// 			},
 		// 			Notifications: &[]admin2025.AlertsNotificationRootForGroup{
 		// 				{
-		// 					DatadogApiKey: pointer.Get("sample-api-key"),
-		// 					DatadogRegion: pointer.Get("US"),
+		// 					DatadogApiKey: pointer.MakePtr("sample-api-key"),
+		// 					DatadogRegion: pointer.MakePtr("US"),
 		// 				},
 		// 				{
-		// 					WebhookSecret: pointer.Get("sample-webhook-secret"),
-		// 					WebhookUrl:    pointer.Get("sample-webhook-url"),
+		// 					WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
+		// 					WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
 		// 				},
 		// 			},
-		// 			SeverityOverride: pointer.Get("severe"),
+		// 			SeverityOverride: pointer.MakePtr("severe"),
 		// 			MetricThreshold: &admin2025.FlexClusterMetricThreshold{
 		// 				MetricName: "metric",
-		// 				Mode:       pointer.Get("mode"),
-		// 				Operator:   pointer.Get("operator"),
-		// 				Threshold:  pointer.Get(1.0),
-		// 				Units:      pointer.Get("unit"),
+		// 				Mode:       pointer.MakePtr("mode"),
+		// 				Operator:   pointer.MakePtr("operator"),
+		// 				Threshold:  pointer.MakePtr(1.0),
+		// 				Units:      pointer.MakePtr("unit"),
 		// 			},
 		// 			Threshold: &admin2025.StreamProcessorMetricThreshold{
-		// 				MetricName: pointer.Get("metric"),
-		// 				Mode:       pointer.Get("mode-t"),
-		// 				Operator:   pointer.Get("op-t"),
-		// 				Threshold:  pointer.Get(2.0),
-		// 				Units:      pointer.Get("unit-t"),
+		// 				MetricName: pointer.MakePtr("metric"),
+		// 				Mode:       pointer.MakePtr("mode-t"),
+		// 				Operator:   pointer.MakePtr("op-t"),
+		// 				Threshold:  pointer.MakePtr(2.0),
+		// 				Units:      pointer.MakePtr("unit-t"),
 		// 			},
 		// 		},
 		// 	},
@@ -742,8 +742,8 @@ func TestToAPI(t *testing.T) {
 						V20250312: &v1.BackupCompliancePolicySpecV20250312{
 							Entry: &v1.BackupCompliancePolicySpecV20250312Entry{
 								AuthorizedEmail:         "user@example.com",
-								CopyProtectionEnabled:   pointer.Get(true),
-								EncryptionAtRestEnabled: pointer.Get(true),
+								CopyProtectionEnabled:   pointer.MakePtr(true),
+								EncryptionAtRestEnabled: pointer.MakePtr(true),
 								AuthorizedUserFirstName: "first-name",
 								AuthorizedUserLastName:  "last-name",
 								OnDemandPolicyItem: &v1.OnDemandPolicyItem{
@@ -752,9 +752,9 @@ func TestToAPI(t *testing.T) {
 									RetentionUnit:     "some-unit",
 									RetentionValue:    2,
 								},
-								PitEnabled:        pointer.Get(true),
-								ProjectId:         pointer.Get("project-id"),
-								RestoreWindowDays: pointer.Get(3),
+								PitEnabled:        pointer.MakePtr(true),
+								ProjectId:         pointer.MakePtr("project-id"),
+								RestoreWindowDays: pointer.MakePtr(3),
 								ScheduledPolicyItems: &[]v1.OnDemandPolicyItem{
 									{
 										FrequencyInterval: 3,
@@ -770,7 +770,7 @@ func TestToAPI(t *testing.T) {
 									},
 								},
 							},
-							GroupId:                 pointer.Get("32b6e34b3d91647abb20e7b8"),
+							GroupId:                 pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 							OverwriteBackupPolicies: true,
 						},
 					},
@@ -778,8 +778,8 @@ func TestToAPI(t *testing.T) {
 				target := &admin2025.DataProtectionSettings20231001{}
 				want := &admin2025.DataProtectionSettings20231001{
 					AuthorizedEmail:         "user@example.com",
-					CopyProtectionEnabled:   pointer.Get(true),
-					EncryptionAtRestEnabled: pointer.Get(true),
+					CopyProtectionEnabled:   pointer.MakePtr(true),
+					EncryptionAtRestEnabled: pointer.MakePtr(true),
 					AuthorizedUserFirstName: "first-name",
 					AuthorizedUserLastName:  "last-name",
 					OnDemandPolicyItem: &admin2025.BackupComplianceOnDemandPolicyItem{
@@ -788,9 +788,9 @@ func TestToAPI(t *testing.T) {
 						RetentionUnit:     "some-unit",
 						RetentionValue:    2,
 					},
-					PitEnabled:        pointer.Get(true),
-					ProjectId:         pointer.Get("project-id"),
-					RestoreWindowDays: pointer.Get(3),
+					PitEnabled:        pointer.MakePtr(true),
+					ProjectId:         pointer.MakePtr("project-id"),
+					RestoreWindowDays: pointer.MakePtr(3),
 					ScheduledPolicyItems: &[]admin2025.BackupComplianceScheduledPolicyItem{
 						{
 							FrequencyInterval: 3,
@@ -817,51 +817,51 @@ func TestToAPI(t *testing.T) {
 					Spec: v1.BackupScheduleSpec{
 						V20250312: &v1.BackupScheduleSpecV20250312{
 							Entry: &v1.BackupScheduleSpecV20250312Entry{
-								ReferenceHourOfDay:    pointer.Get(2),
-								ReferenceMinuteOfHour: pointer.Get(30),
-								RestoreWindowDays:     pointer.Get(7),
-								UpdateSnapshots:       pointer.Get(true),
-								AutoExportEnabled:     pointer.Get(true),
+								ReferenceHourOfDay:    pointer.MakePtr(2),
+								ReferenceMinuteOfHour: pointer.MakePtr(30),
+								RestoreWindowDays:     pointer.MakePtr(7),
+								UpdateSnapshots:       pointer.MakePtr(true),
+								AutoExportEnabled:     pointer.MakePtr(true),
 								CopySettings: &[]v1.CopySettings{
 									{
-										CloudProvider:    pointer.Get("AWS"),
+										CloudProvider:    pointer.MakePtr("AWS"),
 										Frequencies:      &[]string{"freq-1", "freq-2"},
-										RegionName:       pointer.Get("us-east-1"),
-										ShouldCopyOplogs: pointer.Get(true),
+										RegionName:       pointer.MakePtr("us-east-1"),
+										ShouldCopyOplogs: pointer.MakePtr(true),
 										ZoneId:           "zone-id",
 									},
 									{
-										CloudProvider:    pointer.Get("GCE"),
+										CloudProvider:    pointer.MakePtr("GCE"),
 										Frequencies:      &[]string{"freq-3", "freq-4"},
-										RegionName:       pointer.Get("us-east-3"),
-										ShouldCopyOplogs: pointer.Get(true),
+										RegionName:       pointer.MakePtr("us-east-3"),
+										ShouldCopyOplogs: pointer.MakePtr(true),
 										ZoneId:           "zone-id-0",
 									},
 								},
 								DeleteCopiedBackups: &[]v1.DeleteCopiedBackups{
 									{
-										CloudProvider: pointer.Get("Azure"),
-										RegionName:    pointer.Get("us-west-2"),
-										ZoneId:        pointer.Get("zone-id"),
+										CloudProvider: pointer.MakePtr("Azure"),
+										RegionName:    pointer.MakePtr("us-west-2"),
+										ZoneId:        pointer.MakePtr("zone-id"),
 									},
 								},
 								Export: &v1.Export{
-									ExportBucketId: pointer.Get("ExportBucketId"),
-									FrequencyType:  pointer.Get("FrequencyType"),
+									ExportBucketId: pointer.MakePtr("ExportBucketId"),
+									FrequencyType:  pointer.MakePtr("FrequencyType"),
 								},
 								ExtraRetentionSettings: &[]v1.ExtraRetentionSettings{
 									{
-										FrequencyType: pointer.Get("FrequencyType0"),
-										RetentionDays: pointer.Get(1),
+										FrequencyType: pointer.MakePtr("FrequencyType0"),
+										RetentionDays: pointer.MakePtr(1),
 									},
 									{
-										FrequencyType: pointer.Get("FrequencyType1"),
-										RetentionDays: pointer.Get(2),
+										FrequencyType: pointer.MakePtr("FrequencyType1"),
+										RetentionDays: pointer.MakePtr(2),
 									},
 								},
 								Policies: &[]v1.Policies{
 									{
-										Id: pointer.Get("id0"),
+										Id: pointer.MakePtr("id0"),
 										PolicyItems: &[]v1.OnDemandPolicyItem{
 											{
 												FrequencyInterval: 1,
@@ -878,60 +878,60 @@ func TestToAPI(t *testing.T) {
 										},
 									},
 								},
-								UseOrgAndGroupNamesInExportPrefix: pointer.Get(true),
+								UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(true),
 							},
-							GroupId:     pointer.Get("group-id-101"),
+							GroupId:     pointer.MakePtr("group-id-101"),
 							ClusterName: "cluster-name",
 						},
 					},
 				}
 				target := &admin2025.DiskBackupSnapshotSchedule20240805{}
 				want := &admin2025.DiskBackupSnapshotSchedule20240805{
-					ReferenceHourOfDay:    pointer.Get(2),
-					ReferenceMinuteOfHour: pointer.Get(30),
-					RestoreWindowDays:     pointer.Get(7),
-					UpdateSnapshots:       pointer.Get(true),
-					AutoExportEnabled:     pointer.Get(true),
+					ReferenceHourOfDay:    pointer.MakePtr(2),
+					ReferenceMinuteOfHour: pointer.MakePtr(30),
+					RestoreWindowDays:     pointer.MakePtr(7),
+					UpdateSnapshots:       pointer.MakePtr(true),
+					AutoExportEnabled:     pointer.MakePtr(true),
 					CopySettings: &[]admin2025.DiskBackupCopySetting20240805{
 						{
-							CloudProvider:    pointer.Get("AWS"),
+							CloudProvider:    pointer.MakePtr("AWS"),
 							Frequencies:      &[]string{"freq-1", "freq-2"},
-							RegionName:       pointer.Get("us-east-1"),
-							ShouldCopyOplogs: pointer.Get(true),
+							RegionName:       pointer.MakePtr("us-east-1"),
+							ShouldCopyOplogs: pointer.MakePtr(true),
 							ZoneId:           "zone-id",
 						},
 						{
-							CloudProvider:    pointer.Get("GCE"),
+							CloudProvider:    pointer.MakePtr("GCE"),
 							Frequencies:      &[]string{"freq-3", "freq-4"},
-							RegionName:       pointer.Get("us-east-3"),
-							ShouldCopyOplogs: pointer.Get(true),
+							RegionName:       pointer.MakePtr("us-east-3"),
+							ShouldCopyOplogs: pointer.MakePtr(true),
 							ZoneId:           "zone-id-0",
 						},
 					},
 					DeleteCopiedBackups: &[]admin2025.DeleteCopiedBackups20240805{
 						{
-							CloudProvider: pointer.Get("Azure"),
-							RegionName:    pointer.Get("us-west-2"),
-							ZoneId:        pointer.Get("zone-id"),
+							CloudProvider: pointer.MakePtr("Azure"),
+							RegionName:    pointer.MakePtr("us-west-2"),
+							ZoneId:        pointer.MakePtr("zone-id"),
 						},
 					},
 					Export: &admin2025.AutoExportPolicy{
-						ExportBucketId: pointer.Get("ExportBucketId"),
-						FrequencyType:  pointer.Get("FrequencyType"),
+						ExportBucketId: pointer.MakePtr("ExportBucketId"),
+						FrequencyType:  pointer.MakePtr("FrequencyType"),
 					},
 					ExtraRetentionSettings: &[]admin2025.ExtraRetentionSetting{
 						{
-							FrequencyType: pointer.Get("FrequencyType0"),
-							RetentionDays: pointer.Get(1),
+							FrequencyType: pointer.MakePtr("FrequencyType0"),
+							RetentionDays: pointer.MakePtr(1),
 						},
 						{
-							FrequencyType: pointer.Get("FrequencyType1"),
-							RetentionDays: pointer.Get(2),
+							FrequencyType: pointer.MakePtr("FrequencyType1"),
+							RetentionDays: pointer.MakePtr(2),
 						},
 					},
 					Policies: &[]admin2025.AdvancedDiskBackupSnapshotSchedulePolicy{
 						{
-							Id: pointer.Get("id0"),
+							Id: pointer.MakePtr("id0"),
 							PolicyItems: &[]admin2025.DiskBackupApiPolicyItem{
 								{
 									FrequencyInterval: 1,
@@ -948,13 +948,14 @@ func TestToAPI(t *testing.T) {
 							},
 						},
 					},
-					UseOrgAndGroupNamesInExportPrefix: pointer.Get(true),
-					ClusterName:                       pointer.Get("cluster-name"),
+					UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(true),
+					ClusterName:                       pointer.MakePtr("cluster-name"),
 				}
 				testToAPI(t, "BackupSchedule", input, nil, target, want)
 			},
 		},
 
+		//nolint:dupl
 		{
 			name: "cluster all fields",
 			test: func(t *testing.T) {
@@ -962,24 +963,24 @@ func TestToAPI(t *testing.T) {
 					Spec: v1.ClusterSpec{
 						V20250312: &v1.ClusterSpecV20250312{
 							Entry: &v1.ClusterSpecV20250312Entry{
-								AcceptDataRisksAndForceReplicaSetReconfig: pointer.Get("2025-01-01T00:00:00Z"),
+								AcceptDataRisksAndForceReplicaSetReconfig: pointer.MakePtr("2025-01-01T00:00:00Z"),
 								AdvancedConfiguration: &v1.AdvancedConfiguration{
 									CustomOpensslCipherConfigTls12: &[]string{
 										"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
 									},
-									MinimumEnabledTlsProtocol: pointer.Get("TLS1.2"),
-									TlsCipherConfigMode:       pointer.Get("Custom"),
+									MinimumEnabledTlsProtocol: pointer.MakePtr("TLS1.2"),
+									TlsCipherConfigMode:       pointer.MakePtr("Custom"),
 								},
-								BackupEnabled:                             pointer.Get(true),
-								BiConnector:                               &v1.BiConnector{Enabled: pointer.Get(true)},
-								ClusterType:                               pointer.Get("ReplicaSet"),
-								ConfigServerManagementMode:                pointer.Get("Managed"),
-								ConfigServerType:                          pointer.Get("ReplicaSet"),
-								DiskWarmingMode:                           pointer.Get("Enabled"),
-								EncryptionAtRestProvider:                  pointer.Get("AWS-KMS"),
-								FeatureCompatibilityVersion:               pointer.Get("7.0"),
-								FeatureCompatibilityVersionExpirationDate: pointer.Get("2025-12-31T00:00:00Z"),
-								GlobalClusterSelfManagedSharding:          pointer.Get(true),
+								BackupEnabled:                             pointer.MakePtr(true),
+								BiConnector:                               &v1.BiConnector{Enabled: pointer.MakePtr(true)},
+								ClusterType:                               pointer.MakePtr("ReplicaSet"),
+								ConfigServerManagementMode:                pointer.MakePtr("Managed"),
+								ConfigServerType:                          pointer.MakePtr("ReplicaSet"),
+								DiskWarmingMode:                           pointer.MakePtr("Enabled"),
+								EncryptionAtRestProvider:                  pointer.MakePtr("AWS-KMS"),
+								FeatureCompatibilityVersion:               pointer.MakePtr("7.0"),
+								FeatureCompatibilityVersionExpirationDate: pointer.MakePtr("2025-12-31T00:00:00Z"),
+								GlobalClusterSelfManagedSharding:          pointer.MakePtr(true),
 								Labels: &[]v1.Tags{
 									{Key: "key1", Value: "value1"},
 									{Key: "key2", Value: "value2"},
@@ -988,295 +989,296 @@ func TestToAPI(t *testing.T) {
 									ExpirationTime: "2025-12-31T00:00:00Z",
 									GrantType:      "Temporary",
 								},
-								MongoDBMajorVersion:       pointer.Get("8.0"),
-								Name:                      pointer.Get("my-cluster"),
-								Paused:                    pointer.Get(true),
-								PitEnabled:                pointer.Get(true),
-								RedactClientLogData:       pointer.Get(true),
-								ReplicaSetScalingStrategy: pointer.Get("Auto"),
+								MongoDBMajorVersion:       pointer.MakePtr("8.0"),
+								Name:                      pointer.MakePtr("my-cluster"),
+								Paused:                    pointer.MakePtr(true),
+								PitEnabled:                pointer.MakePtr(true),
+								RedactClientLogData:       pointer.MakePtr(true),
+								ReplicaSetScalingStrategy: pointer.MakePtr("Auto"),
 								ReplicationSpecs: &[]v1.ReplicationSpecs{
 									{
-										ZoneId:   pointer.Get("zone-id-1"),
-										ZoneName: pointer.Get("zone-name-1"),
+										ZoneId:   pointer.MakePtr("zone-id-1"),
+										ZoneName: pointer.MakePtr("zone-name-1"),
 										RegionConfigs: &[]v1.RegionConfigs{
 											{
-												RegionName: pointer.Get("us-east-1"),
+												RegionName: pointer.MakePtr("us-east-1"),
 												AnalyticsSpecs: &v1.AnalyticsSpecs{
-													DiskIOPS:      pointer.Get(1000),
-													DiskSizeGB:    pointer.Get(10.0),
-													EbsVolumeType: pointer.Get("gp2"),
-													InstanceSize:  pointer.Get("M10"),
-													NodeCount:     pointer.Get(3),
+													DiskIOPS:      pointer.MakePtr(1000),
+													DiskSizeGB:    pointer.MakePtr(10.0),
+													EbsVolumeType: pointer.MakePtr("gp2"),
+													InstanceSize:  pointer.MakePtr("M10"),
+													NodeCount:     pointer.MakePtr(3),
 												},
 												AutoScaling: &v1.AnalyticsAutoScaling{
 													Compute: &v1.Compute{
-														Enabled:           pointer.Get(true),
-														ScaleDownEnabled:  pointer.Get(true),
-														MaxInstanceSize:   pointer.Get("M20"),
-														MinInstanceSize:   pointer.Get("M10"),
-														PredictiveEnabled: pointer.Get(true),
+														Enabled:           pointer.MakePtr(true),
+														ScaleDownEnabled:  pointer.MakePtr(true),
+														MaxInstanceSize:   pointer.MakePtr("M20"),
+														MinInstanceSize:   pointer.MakePtr("M10"),
+														PredictiveEnabled: pointer.MakePtr(true),
 													},
 													DiskGB: &v1.DiskGB{
-														Enabled: pointer.Get(true),
+														Enabled: pointer.MakePtr(true),
 													},
 												},
 												AnalyticsAutoScaling: &v1.AnalyticsAutoScaling{
 													Compute: &v1.Compute{
-														Enabled:           pointer.Get(true),
-														ScaleDownEnabled:  pointer.Get(true),
-														MaxInstanceSize:   pointer.Get("M30"),
-														MinInstanceSize:   pointer.Get("M10"),
-														PredictiveEnabled: pointer.Get(true),
+														Enabled:           pointer.MakePtr(true),
+														ScaleDownEnabled:  pointer.MakePtr(true),
+														MaxInstanceSize:   pointer.MakePtr("M30"),
+														MinInstanceSize:   pointer.MakePtr("M10"),
+														PredictiveEnabled: pointer.MakePtr(true),
 													},
 													DiskGB: &v1.DiskGB{
-														Enabled: pointer.Get(true),
+														Enabled: pointer.MakePtr(true),
 													},
 												},
-												BackingProviderName: pointer.Get("AWS"),
+												BackingProviderName: pointer.MakePtr("AWS"),
 												ElectableSpecs: &v1.ElectableSpecs{
-													DiskIOPS:              pointer.Get(1000),
-													DiskSizeGB:            pointer.Get(10.0),
-													EbsVolumeType:         pointer.Get("gp2"),
-													EffectiveInstanceSize: pointer.Get("M10"),
-													InstanceSize:          pointer.Get("M10"),
-													NodeCount:             pointer.Get(3),
+													DiskIOPS:              pointer.MakePtr(1000),
+													DiskSizeGB:            pointer.MakePtr(10.0),
+													EbsVolumeType:         pointer.MakePtr("gp2"),
+													EffectiveInstanceSize: pointer.MakePtr("M10"),
+													InstanceSize:          pointer.MakePtr("M10"),
+													NodeCount:             pointer.MakePtr(3),
 												},
-												Priority:     pointer.Get(1),
-												ProviderName: pointer.Get("AWS"),
+												Priority:     pointer.MakePtr(1),
+												ProviderName: pointer.MakePtr("AWS"),
 												ReadOnlySpecs: &v1.AnalyticsSpecs{
-													DiskIOPS:      pointer.Get(1000),
-													DiskSizeGB:    pointer.Get(10.0),
-													EbsVolumeType: pointer.Get("gp2"),
-													InstanceSize:  pointer.Get("M10"),
-													NodeCount:     pointer.Get(3),
+													DiskIOPS:      pointer.MakePtr(1000),
+													DiskSizeGB:    pointer.MakePtr(10.0),
+													EbsVolumeType: pointer.MakePtr("gp2"),
+													InstanceSize:  pointer.MakePtr("M10"),
+													NodeCount:     pointer.MakePtr(3),
 												},
 											},
 											{
-												RegionName: pointer.Get("us-east-2"),
+												RegionName: pointer.MakePtr("us-east-2"),
 												AnalyticsSpecs: &v1.AnalyticsSpecs{
-													DiskIOPS:      pointer.Get(2000),
-													DiskSizeGB:    pointer.Get(10.0),
-													EbsVolumeType: pointer.Get("gp3"),
-													InstanceSize:  pointer.Get("M20"),
-													NodeCount:     pointer.Get(3),
+													DiskIOPS:      pointer.MakePtr(2000),
+													DiskSizeGB:    pointer.MakePtr(10.0),
+													EbsVolumeType: pointer.MakePtr("gp3"),
+													InstanceSize:  pointer.MakePtr("M20"),
+													NodeCount:     pointer.MakePtr(3),
 												},
 												AutoScaling: &v1.AnalyticsAutoScaling{
 													Compute: &v1.Compute{
-														Enabled:           pointer.Get(true),
-														ScaleDownEnabled:  pointer.Get(true),
-														MaxInstanceSize:   pointer.Get("M50"),
-														MinInstanceSize:   pointer.Get("M20"),
-														PredictiveEnabled: pointer.Get(true),
+														Enabled:           pointer.MakePtr(true),
+														ScaleDownEnabled:  pointer.MakePtr(true),
+														MaxInstanceSize:   pointer.MakePtr("M50"),
+														MinInstanceSize:   pointer.MakePtr("M20"),
+														PredictiveEnabled: pointer.MakePtr(true),
 													},
 													DiskGB: &v1.DiskGB{
-														Enabled: pointer.Get(true),
+														Enabled: pointer.MakePtr(true),
 													},
 												},
 												AnalyticsAutoScaling: &v1.AnalyticsAutoScaling{
 													Compute: &v1.Compute{
-														Enabled:           pointer.Get(true),
-														ScaleDownEnabled:  pointer.Get(true),
-														MaxInstanceSize:   pointer.Get("M40"),
-														MinInstanceSize:   pointer.Get("M10"),
-														PredictiveEnabled: pointer.Get(true),
+														Enabled:           pointer.MakePtr(true),
+														ScaleDownEnabled:  pointer.MakePtr(true),
+														MaxInstanceSize:   pointer.MakePtr("M40"),
+														MinInstanceSize:   pointer.MakePtr("M10"),
+														PredictiveEnabled: pointer.MakePtr(true),
 													},
 													DiskGB: &v1.DiskGB{
-														Enabled: pointer.Get(true),
+														Enabled: pointer.MakePtr(true),
 													},
 												},
-												BackingProviderName: pointer.Get("AWS"),
+												BackingProviderName: pointer.MakePtr("AWS"),
 												ElectableSpecs: &v1.ElectableSpecs{
-													DiskIOPS:              pointer.Get(1000),
-													DiskSizeGB:            pointer.Get(10.0),
-													EbsVolumeType:         pointer.Get("gp2"),
-													EffectiveInstanceSize: pointer.Get("M10"),
-													InstanceSize:          pointer.Get("M10"),
-													NodeCount:             pointer.Get(3),
+													DiskIOPS:              pointer.MakePtr(1000),
+													DiskSizeGB:            pointer.MakePtr(10.0),
+													EbsVolumeType:         pointer.MakePtr("gp2"),
+													EffectiveInstanceSize: pointer.MakePtr("M10"),
+													InstanceSize:          pointer.MakePtr("M10"),
+													NodeCount:             pointer.MakePtr(3),
 												},
-												Priority:     pointer.Get(1),
-												ProviderName: pointer.Get("AWS"),
+												Priority:     pointer.MakePtr(1),
+												ProviderName: pointer.MakePtr("AWS"),
 												ReadOnlySpecs: &v1.AnalyticsSpecs{
-													DiskIOPS:      pointer.Get(1000),
-													DiskSizeGB:    pointer.Get(10.0),
-													EbsVolumeType: pointer.Get("gp2"),
-													InstanceSize:  pointer.Get("M10"),
-													NodeCount:     pointer.Get(3),
+													DiskIOPS:      pointer.MakePtr(1000),
+													DiskSizeGB:    pointer.MakePtr(10.0),
+													EbsVolumeType: pointer.MakePtr("gp2"),
+													InstanceSize:  pointer.MakePtr("M10"),
+													NodeCount:     pointer.MakePtr(3),
 												},
 											},
 										},
 									},
 								},
-								RootCertType: pointer.Get("X509"),
+								RootCertType: pointer.MakePtr("X509"),
 								Tags: &[]v1.Tags{
 									{Key: "key1", Value: "value1"},
 									{Key: "key2", Value: "value2"},
 								},
-								TerminationProtectionEnabled: pointer.Get(true),
-								VersionReleaseSystem:         pointer.Get("Atlas"),
+								TerminationProtectionEnabled: pointer.MakePtr(true),
+								VersionReleaseSystem:         pointer.MakePtr("Atlas"),
 							},
-							GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+							GroupId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 						},
 					},
 				}
 				target := &admin2025.ClusterDescription20240805{}
 				want := &admin2025.ClusterDescription20240805{
-					AcceptDataRisksAndForceReplicaSetReconfig: pointer.Get(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
+					AcceptDataRisksAndForceReplicaSetReconfig: pointer.MakePtr(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)),
 					AdvancedConfiguration: &admin2025.ApiAtlasClusterAdvancedConfiguration{
 						CustomOpensslCipherConfigTls12: &[]string{
 							"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
 						},
-						MinimumEnabledTlsProtocol: pointer.Get("TLS1.2"),
-						TlsCipherConfigMode:       pointer.Get("Custom"),
+						MinimumEnabledTlsProtocol: pointer.MakePtr("TLS1.2"),
+						TlsCipherConfigMode:       pointer.MakePtr("Custom"),
 					},
-					BackupEnabled:                             pointer.Get(true),
-					BiConnector:                               &admin2025.BiConnector{Enabled: pointer.Get(true)},
-					ClusterType:                               pointer.Get("ReplicaSet"),
-					ConfigServerManagementMode:                pointer.Get("Managed"),
-					ConfigServerType:                          pointer.Get("ReplicaSet"),
-					DiskWarmingMode:                           pointer.Get("Enabled"),
-					EncryptionAtRestProvider:                  pointer.Get("AWS-KMS"),
-					FeatureCompatibilityVersion:               pointer.Get("7.0"),
-					FeatureCompatibilityVersionExpirationDate: pointer.Get(time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC)),
-					GlobalClusterSelfManagedSharding:          pointer.Get(true),
+					BackupEnabled:                             pointer.MakePtr(true),
+					BiConnector:                               &admin2025.BiConnector{Enabled: pointer.MakePtr(true)},
+					ClusterType:                               pointer.MakePtr("ReplicaSet"),
+					ConfigServerManagementMode:                pointer.MakePtr("Managed"),
+					ConfigServerType:                          pointer.MakePtr("ReplicaSet"),
+					DiskWarmingMode:                           pointer.MakePtr("Enabled"),
+					EncryptionAtRestProvider:                  pointer.MakePtr("AWS-KMS"),
+					FeatureCompatibilityVersion:               pointer.MakePtr("7.0"),
+					FeatureCompatibilityVersionExpirationDate: pointer.MakePtr(time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC)),
+					GlobalClusterSelfManagedSharding:          pointer.MakePtr(true),
 					Labels: &[]admin2025.ComponentLabel{
-						{Key: pointer.Get("key1"), Value: pointer.Get("value1")},
-						{Key: pointer.Get("key2"), Value: pointer.Get("value2")},
+						{Key: pointer.MakePtr("key1"), Value: pointer.MakePtr("value1")},
+						{Key: pointer.MakePtr("key2"), Value: pointer.MakePtr("value2")},
 					},
 					MongoDBEmployeeAccessGrant: &admin2025.EmployeeAccessGrant{
 						ExpirationTime: time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC),
 						GrantType:      "Temporary",
 					},
-					MongoDBMajorVersion:       pointer.Get("8.0"),
-					Name:                      pointer.Get("my-cluster"),
-					Paused:                    pointer.Get(true),
-					PitEnabled:                pointer.Get(true),
-					RedactClientLogData:       pointer.Get(true),
-					ReplicaSetScalingStrategy: pointer.Get("Auto"),
+					MongoDBMajorVersion:       pointer.MakePtr("8.0"),
+					Name:                      pointer.MakePtr("my-cluster"),
+					Paused:                    pointer.MakePtr(true),
+					PitEnabled:                pointer.MakePtr(true),
+					RedactClientLogData:       pointer.MakePtr(true),
+					ReplicaSetScalingStrategy: pointer.MakePtr("Auto"),
 					ReplicationSpecs: &[]admin2025.ReplicationSpec20240805{
 						{
-							ZoneId:   pointer.Get("zone-id-1"),
-							ZoneName: pointer.Get("zone-name-1"),
+							ZoneId:   pointer.MakePtr("zone-id-1"),
+							ZoneName: pointer.MakePtr("zone-name-1"),
 							RegionConfigs: &[]admin2025.CloudRegionConfig20240805{
 								{
-									RegionName: pointer.Get("us-east-1"),
+									RegionName: pointer.MakePtr("us-east-1"),
 									AnalyticsSpecs: &admin2025.DedicatedHardwareSpec20240805{
-										DiskIOPS:      pointer.Get(1000),
-										DiskSizeGB:    pointer.Get(10.0),
-										EbsVolumeType: pointer.Get("gp2"),
-										InstanceSize:  pointer.Get("M10"),
-										NodeCount:     pointer.Get(3),
+										DiskIOPS:      pointer.MakePtr(1000),
+										DiskSizeGB:    pointer.MakePtr(10.0),
+										EbsVolumeType: pointer.MakePtr("gp2"),
+										InstanceSize:  pointer.MakePtr("M10"),
+										NodeCount:     pointer.MakePtr(3),
 									},
 									AutoScaling: &admin2025.AdvancedAutoScalingSettings{
 										Compute: &admin2025.AdvancedComputeAutoScaling{
-											Enabled:           pointer.Get(true),
-											ScaleDownEnabled:  pointer.Get(true),
-											MaxInstanceSize:   pointer.Get("M20"),
-											MinInstanceSize:   pointer.Get("M10"),
-											PredictiveEnabled: pointer.Get(true),
+											Enabled:           pointer.MakePtr(true),
+											ScaleDownEnabled:  pointer.MakePtr(true),
+											MaxInstanceSize:   pointer.MakePtr("M20"),
+											MinInstanceSize:   pointer.MakePtr("M10"),
+											PredictiveEnabled: pointer.MakePtr(true),
 										},
 										DiskGB: &admin2025.DiskGBAutoScaling{
-											Enabled: pointer.Get(true),
+											Enabled: pointer.MakePtr(true),
 										},
 									},
 									AnalyticsAutoScaling: &admin2025.AdvancedAutoScalingSettings{
 										Compute: &admin2025.AdvancedComputeAutoScaling{
-											Enabled:           pointer.Get(true),
-											ScaleDownEnabled:  pointer.Get(true),
-											MaxInstanceSize:   pointer.Get("M30"),
-											MinInstanceSize:   pointer.Get("M10"),
-											PredictiveEnabled: pointer.Get(true),
+											Enabled:           pointer.MakePtr(true),
+											ScaleDownEnabled:  pointer.MakePtr(true),
+											MaxInstanceSize:   pointer.MakePtr("M30"),
+											MinInstanceSize:   pointer.MakePtr("M10"),
+											PredictiveEnabled: pointer.MakePtr(true),
 										},
 										DiskGB: &admin2025.DiskGBAutoScaling{
-											Enabled: pointer.Get(true),
+											Enabled: pointer.MakePtr(true),
 										},
 									},
-									BackingProviderName: pointer.Get("AWS"),
+									BackingProviderName: pointer.MakePtr("AWS"),
 									ElectableSpecs: &admin2025.HardwareSpec20240805{
-										DiskIOPS:              pointer.Get(1000),
-										DiskSizeGB:            pointer.Get(10.0),
-										EbsVolumeType:         pointer.Get("gp2"),
-										EffectiveInstanceSize: pointer.Get("M10"),
-										InstanceSize:          pointer.Get("M10"),
-										NodeCount:             pointer.Get(3),
+										DiskIOPS:              pointer.MakePtr(1000),
+										DiskSizeGB:            pointer.MakePtr(10.0),
+										EbsVolumeType:         pointer.MakePtr("gp2"),
+										EffectiveInstanceSize: pointer.MakePtr("M10"),
+										InstanceSize:          pointer.MakePtr("M10"),
+										NodeCount:             pointer.MakePtr(3),
 									},
-									Priority:     pointer.Get(1),
-									ProviderName: pointer.Get("AWS"),
+									Priority:     pointer.MakePtr(1),
+									ProviderName: pointer.MakePtr("AWS"),
 									ReadOnlySpecs: &admin2025.DedicatedHardwareSpec20240805{
-										DiskIOPS:      pointer.Get(1000),
-										DiskSizeGB:    pointer.Get(10.0),
-										EbsVolumeType: pointer.Get("gp2"),
-										InstanceSize:  pointer.Get("M10"),
-										NodeCount:     pointer.Get(3),
+										DiskIOPS:      pointer.MakePtr(1000),
+										DiskSizeGB:    pointer.MakePtr(10.0),
+										EbsVolumeType: pointer.MakePtr("gp2"),
+										InstanceSize:  pointer.MakePtr("M10"),
+										NodeCount:     pointer.MakePtr(3),
 									},
 								},
 								{
-									RegionName: pointer.Get("us-east-2"),
+									RegionName: pointer.MakePtr("us-east-2"),
 									AnalyticsSpecs: &admin2025.DedicatedHardwareSpec20240805{
-										DiskIOPS:      pointer.Get(2000),
-										DiskSizeGB:    pointer.Get(10.0),
-										EbsVolumeType: pointer.Get("gp3"),
-										InstanceSize:  pointer.Get("M20"),
-										NodeCount:     pointer.Get(3),
+										DiskIOPS:      pointer.MakePtr(2000),
+										DiskSizeGB:    pointer.MakePtr(10.0),
+										EbsVolumeType: pointer.MakePtr("gp3"),
+										InstanceSize:  pointer.MakePtr("M20"),
+										NodeCount:     pointer.MakePtr(3),
 									},
 									AutoScaling: &admin2025.AdvancedAutoScalingSettings{
 										Compute: &admin2025.AdvancedComputeAutoScaling{
-											Enabled:           pointer.Get(true),
-											ScaleDownEnabled:  pointer.Get(true),
-											MaxInstanceSize:   pointer.Get("M50"),
-											MinInstanceSize:   pointer.Get("M20"),
-											PredictiveEnabled: pointer.Get(true),
+											Enabled:           pointer.MakePtr(true),
+											ScaleDownEnabled:  pointer.MakePtr(true),
+											MaxInstanceSize:   pointer.MakePtr("M50"),
+											MinInstanceSize:   pointer.MakePtr("M20"),
+											PredictiveEnabled: pointer.MakePtr(true),
 										},
 										DiskGB: &admin2025.DiskGBAutoScaling{
-											Enabled: pointer.Get(true),
+											Enabled: pointer.MakePtr(true),
 										},
 									},
 									AnalyticsAutoScaling: &admin2025.AdvancedAutoScalingSettings{
 										Compute: &admin2025.AdvancedComputeAutoScaling{
-											Enabled:           pointer.Get(true),
-											ScaleDownEnabled:  pointer.Get(true),
-											MaxInstanceSize:   pointer.Get("M40"),
-											MinInstanceSize:   pointer.Get("M10"),
-											PredictiveEnabled: pointer.Get(true),
+											Enabled:           pointer.MakePtr(true),
+											ScaleDownEnabled:  pointer.MakePtr(true),
+											MaxInstanceSize:   pointer.MakePtr("M40"),
+											MinInstanceSize:   pointer.MakePtr("M10"),
+											PredictiveEnabled: pointer.MakePtr(true),
 										},
 										DiskGB: &admin2025.DiskGBAutoScaling{
-											Enabled: pointer.Get(true),
+											Enabled: pointer.MakePtr(true),
 										},
 									},
-									BackingProviderName: pointer.Get("AWS"),
+									BackingProviderName: pointer.MakePtr("AWS"),
 									ElectableSpecs: &admin2025.HardwareSpec20240805{
-										DiskIOPS:              pointer.Get(1000),
-										DiskSizeGB:            pointer.Get(10.0),
-										EbsVolumeType:         pointer.Get("gp2"),
-										EffectiveInstanceSize: pointer.Get("M10"),
-										InstanceSize:          pointer.Get("M10"),
-										NodeCount:             pointer.Get(3),
+										DiskIOPS:              pointer.MakePtr(1000),
+										DiskSizeGB:            pointer.MakePtr(10.0),
+										EbsVolumeType:         pointer.MakePtr("gp2"),
+										EffectiveInstanceSize: pointer.MakePtr("M10"),
+										InstanceSize:          pointer.MakePtr("M10"),
+										NodeCount:             pointer.MakePtr(3),
 									},
-									Priority:     pointer.Get(1),
-									ProviderName: pointer.Get("AWS"),
+									Priority:     pointer.MakePtr(1),
+									ProviderName: pointer.MakePtr("AWS"),
 									ReadOnlySpecs: &admin2025.DedicatedHardwareSpec20240805{
-										DiskIOPS:      pointer.Get(1000),
-										DiskSizeGB:    pointer.Get(10.0),
-										EbsVolumeType: pointer.Get("gp2"),
-										InstanceSize:  pointer.Get("M10"),
-										NodeCount:     pointer.Get(3),
+										DiskIOPS:      pointer.MakePtr(1000),
+										DiskSizeGB:    pointer.MakePtr(10.0),
+										EbsVolumeType: pointer.MakePtr("gp2"),
+										InstanceSize:  pointer.MakePtr("M10"),
+										NodeCount:     pointer.MakePtr(3),
 									},
 								},
 							},
 						},
 					},
-					RootCertType: pointer.Get("X509"),
+					RootCertType: pointer.MakePtr("X509"),
 					Tags: &[]admin2025.ResourceTag{
 						{Key: "key1", Value: "value1"},
 						{Key: "key2", Value: "value2"},
 					},
-					TerminationProtectionEnabled: pointer.Get(true),
-					VersionReleaseSystem:         pointer.Get("Atlas"),
-					GroupId:                      pointer.Get("32b6e34b3d91647abb20e7b8"),
+					TerminationProtectionEnabled: pointer.MakePtr(true),
+					VersionReleaseSystem:         pointer.MakePtr("Atlas"),
+					GroupId:                      pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 				}
 				testToAPI(t, "Cluster", input, nil, target, want)
 			},
 		},
 
+		//nolint:dupl
 		{
 			name: "data federation all fields",
 			test: func(t *testing.T) {
@@ -1300,7 +1302,7 @@ func TestToAPI(t *testing.T) {
 									CloudProvider: "GCE",
 									Region:        "eu-north-2",
 								},
-								Name: pointer.Get("some-name"),
+								Name: pointer.MakePtr("some-name"),
 								Storage: &v1.Storage{
 									Databases: &[]v1.Databases{
 										{
@@ -1308,31 +1310,31 @@ func TestToAPI(t *testing.T) {
 												{
 													DataSources: &[]v1.DataSources{
 														{
-															AllowInsecure:       pointer.Get(true),
-															Collection:          pointer.Get("some-name"),
-															CollectionRegex:     pointer.Get("collection-regex"),
-															Database:            pointer.Get("db"),
-															DatabaseRegex:       pointer.Get("db-regex"),
-															DatasetName:         pointer.Get("dataset-name"),
-															DatasetPrefix:       pointer.Get("dataset-prefix"),
-															DefaultFormat:       pointer.Get("default-format"),
-															Path:                pointer.Get("path"),
-															ProvenanceFieldName: pointer.Get("provenqance-field-name"),
-															StoreName:           pointer.Get("store-name"),
-															TrimLevel:           pointer.Get(1),
+															AllowInsecure:       pointer.MakePtr(true),
+															Collection:          pointer.MakePtr("some-name"),
+															CollectionRegex:     pointer.MakePtr("collection-regex"),
+															Database:            pointer.MakePtr("db"),
+															DatabaseRegex:       pointer.MakePtr("db-regex"),
+															DatasetName:         pointer.MakePtr("dataset-name"),
+															DatasetPrefix:       pointer.MakePtr("dataset-prefix"),
+															DefaultFormat:       pointer.MakePtr("default-format"),
+															Path:                pointer.MakePtr("path"),
+															ProvenanceFieldName: pointer.MakePtr("provenqance-field-name"),
+															StoreName:           pointer.MakePtr("store-name"),
+															TrimLevel:           pointer.MakePtr(1),
 															Urls:                &[]string{"url1", "url2"},
 														},
 													},
-													Name: pointer.Get("collection0"),
+													Name: pointer.MakePtr("collection0"),
 												},
 											},
-											MaxWildcardCollections: pointer.Get(3),
-											Name:                   pointer.Get("db0"),
+											MaxWildcardCollections: pointer.MakePtr(3),
+											Name:                   pointer.MakePtr("db0"),
 											Views: &[]v1.Views{
 												{
-													Name:     pointer.Get("view0"),
-													Pipeline: pointer.Get("pipeline0"),
-													Source:   pointer.Get("source0"),
+													Name:     pointer.MakePtr("view0"),
+													Pipeline: pointer.MakePtr("pipeline0"),
+													Source:   pointer.MakePtr("source0"),
 												},
 											},
 										},
@@ -1340,26 +1342,26 @@ func TestToAPI(t *testing.T) {
 									Stores: &[]v1.Stores{
 										{
 											AdditionalStorageClasses: &[]string{"stc1", "stc2"},
-											AllowInsecure:            pointer.Get(true),
-											Bucket:                   pointer.Get("bucket-name"),
-											ClusterName:              pointer.Get("cluster-name"),
-											ContainerName:            pointer.Get("container-name"),
-											DefaultFormat:            pointer.Get("default-format"),
-											Delimiter:                pointer.Get("delimiter"),
-											IncludeTags:              pointer.Get(true),
-											Name:                     pointer.Get("store-name"),
-											Prefix:                   pointer.Get("prefix"),
+											AllowInsecure:            pointer.MakePtr(true),
+											Bucket:                   pointer.MakePtr("bucket-name"),
+											ClusterName:              pointer.MakePtr("cluster-name"),
+											ContainerName:            pointer.MakePtr("container-name"),
+											DefaultFormat:            pointer.MakePtr("default-format"),
+											Delimiter:                pointer.MakePtr("delimiter"),
+											IncludeTags:              pointer.MakePtr(true),
+											Name:                     pointer.MakePtr("store-name"),
+											Prefix:                   pointer.MakePtr("prefix"),
 											Provider:                 "AWS",
-											Public:                   pointer.Get(true),
+											Public:                   pointer.MakePtr(true),
 											ReadConcern: &v1.ReadConcern{
-												Level: pointer.Get("local"),
+												Level: pointer.MakePtr("local"),
 											},
 											ReadPreference: &v1.ReadPreference{
-												Mode: pointer.Get("primary"),
+												Mode: pointer.MakePtr("primary"),
 											},
-											Region:               pointer.Get("us-east-1"),
-											ReplacementDelimiter: pointer.Get("replacement-delimiter"),
-											ServiceURL:           pointer.Get("https://service-url.com"),
+											Region:               pointer.MakePtr("us-east-1"),
+											ReplacementDelimiter: pointer.MakePtr("replacement-delimiter"),
+											ServiceURL:           pointer.MakePtr("https://service-url.com"),
 											Urls:                 &[]string{"url1", "url2"},
 										},
 									},
@@ -1370,7 +1372,7 @@ func TestToAPI(t *testing.T) {
 				}
 				target := &admin2025.DataLakeTenant{}
 				want := &admin2025.DataLakeTenant{
-					Name: pointer.Get("some-name"),
+					Name: pointer.MakePtr("some-name"),
 					CloudProviderConfig: &admin2025.DataLakeCloudProviderConfig{
 						Aws: &admin2025.DataLakeAWSCloudProviderConfig{
 							RoleId:       "aws-role-id-123",
@@ -1394,31 +1396,31 @@ func TestToAPI(t *testing.T) {
 									{
 										DataSources: &[]admin2025.DataLakeDatabaseDataSourceSettings{
 											{
-												AllowInsecure:       pointer.Get(true),
-												Collection:          pointer.Get("some-name"),
-												CollectionRegex:     pointer.Get("collection-regex"),
-												Database:            pointer.Get("db"),
-												DatabaseRegex:       pointer.Get("db-regex"),
-												DatasetName:         pointer.Get("dataset-name"),
-												DatasetPrefix:       pointer.Get("dataset-prefix"),
-												DefaultFormat:       pointer.Get("default-format"),
-												Path:                pointer.Get("path"),
-												ProvenanceFieldName: pointer.Get("provenqance-field-name"),
-												StoreName:           pointer.Get("store-name"),
-												TrimLevel:           pointer.Get(1),
+												AllowInsecure:       pointer.MakePtr(true),
+												Collection:          pointer.MakePtr("some-name"),
+												CollectionRegex:     pointer.MakePtr("collection-regex"),
+												Database:            pointer.MakePtr("db"),
+												DatabaseRegex:       pointer.MakePtr("db-regex"),
+												DatasetName:         pointer.MakePtr("dataset-name"),
+												DatasetPrefix:       pointer.MakePtr("dataset-prefix"),
+												DefaultFormat:       pointer.MakePtr("default-format"),
+												Path:                pointer.MakePtr("path"),
+												ProvenanceFieldName: pointer.MakePtr("provenqance-field-name"),
+												StoreName:           pointer.MakePtr("store-name"),
+												TrimLevel:           pointer.MakePtr(1),
 												Urls:                &[]string{"url1", "url2"},
 											},
 										},
-										Name: pointer.Get("collection0"),
+										Name: pointer.MakePtr("collection0"),
 									},
 								},
-								MaxWildcardCollections: pointer.Get(3),
-								Name:                   pointer.Get("db0"),
+								MaxWildcardCollections: pointer.MakePtr(3),
+								Name:                   pointer.MakePtr("db0"),
 								Views: &[]admin2025.DataLakeApiBase{
 									{
-										Name:     pointer.Get("view0"),
-										Pipeline: pointer.Get("pipeline0"),
-										Source:   pointer.Get("source0"),
+										Name:     pointer.MakePtr("view0"),
+										Pipeline: pointer.MakePtr("pipeline0"),
+										Source:   pointer.MakePtr("source0"),
 									},
 								},
 							},
@@ -1426,26 +1428,26 @@ func TestToAPI(t *testing.T) {
 						Stores: &[]admin2025.DataLakeStoreSettings{
 							{
 								AdditionalStorageClasses: &[]string{"stc1", "stc2"},
-								AllowInsecure:            pointer.Get(true),
-								Bucket:                   pointer.Get("bucket-name"),
-								ClusterName:              pointer.Get("cluster-name"),
-								ContainerName:            pointer.Get("container-name"),
-								DefaultFormat:            pointer.Get("default-format"),
-								Delimiter:                pointer.Get("delimiter"),
-								IncludeTags:              pointer.Get(true),
-								Name:                     pointer.Get("store-name"),
-								Prefix:                   pointer.Get("prefix"),
+								AllowInsecure:            pointer.MakePtr(true),
+								Bucket:                   pointer.MakePtr("bucket-name"),
+								ClusterName:              pointer.MakePtr("cluster-name"),
+								ContainerName:            pointer.MakePtr("container-name"),
+								DefaultFormat:            pointer.MakePtr("default-format"),
+								Delimiter:                pointer.MakePtr("delimiter"),
+								IncludeTags:              pointer.MakePtr(true),
+								Name:                     pointer.MakePtr("store-name"),
+								Prefix:                   pointer.MakePtr("prefix"),
 								Provider:                 "AWS",
-								Public:                   pointer.Get(true),
+								Public:                   pointer.MakePtr(true),
 								ReadConcern: &admin2025.DataLakeAtlasStoreReadConcern{
-									Level: pointer.Get("local"),
+									Level: pointer.MakePtr("local"),
 								},
 								ReadPreference: &admin2025.DataLakeAtlasStoreReadPreference{
-									Mode: pointer.Get("primary"),
+									Mode: pointer.MakePtr("primary"),
 								},
-								Region:               pointer.Get("us-east-1"),
-								ReplacementDelimiter: pointer.Get("replacement-delimiter"),
-								ServiceURL:           pointer.Get("https://service-url.com"),
+								Region:               pointer.MakePtr("us-east-1"),
+								ReplacementDelimiter: pointer.MakePtr("replacement-delimiter"),
+								ServiceURL:           pointer.MakePtr("https://service-url.com"),
 								Urls:                 &[]string{"url1", "url2"},
 							},
 						},
@@ -1468,23 +1470,23 @@ func TestToAPI(t *testing.T) {
 								Roles: &[]v1.Roles{
 									{DatabaseName: "admin", RoleName: "readWrite"},
 								},
-								AwsIAMType:      pointer.Get("aws-iam-type"),
-								DeleteAfterDate: pointer.Get("2025-07-01T00:00:00Z"),
-								Description:     pointer.Get("description"),
+								AwsIAMType:      pointer.MakePtr("aws-iam-type"),
+								DeleteAfterDate: pointer.MakePtr("2025-07-01T00:00:00Z"),
+								Description:     pointer.MakePtr("description"),
 								Labels: &[]v1.Tags{
 									{Key: "key-1", Value: "value-1"},
 									{Key: "key-2", Value: "value-2"},
 								},
-								LdapAuthType: pointer.Get("ldap-auth-type"),
-								OidcAuthType: pointer.Get("oidc-auth-type"),
-								Password:     pointer.Get("password"),
+								LdapAuthType: pointer.MakePtr("ldap-auth-type"),
+								OidcAuthType: pointer.MakePtr("oidc-auth-type"),
+								Password:     pointer.MakePtr("password"),
 								Scopes: &[]v1.Scopes{
 									{Name: "scope-1", Type: "type-1"},
 									{Name: "scope-2", Type: "type-2"},
 								},
-								X509Type: pointer.Get("x509-type"),
+								X509Type: pointer.MakePtr("x509-type"),
 							},
-							GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+							GroupId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 						},
 					},
 				}
@@ -1496,21 +1498,21 @@ func TestToAPI(t *testing.T) {
 					Roles: &[]admin2025.DatabaseUserRole{
 						{DatabaseName: "admin", RoleName: "readWrite"},
 					},
-					AwsIAMType:      pointer.Get("aws-iam-type"),
-					DeleteAfterDate: pointer.Get(time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)),
-					Description:     pointer.Get("description"),
+					AwsIAMType:      pointer.MakePtr("aws-iam-type"),
+					DeleteAfterDate: pointer.MakePtr(time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)),
+					Description:     pointer.MakePtr("description"),
 					Labels: &[]admin2025.ComponentLabel{
-						{Key: pointer.Get("key-1"), Value: pointer.Get("value-1")},
-						{Key: pointer.Get("key-2"), Value: pointer.Get("value-2")},
+						{Key: pointer.MakePtr("key-1"), Value: pointer.MakePtr("value-1")},
+						{Key: pointer.MakePtr("key-2"), Value: pointer.MakePtr("value-2")},
 					},
-					LdapAuthType: pointer.Get("ldap-auth-type"),
-					OidcAuthType: pointer.Get("oidc-auth-type"),
-					Password:     pointer.Get("password"),
+					LdapAuthType: pointer.MakePtr("ldap-auth-type"),
+					OidcAuthType: pointer.MakePtr("oidc-auth-type"),
+					Password:     pointer.MakePtr("password"),
 					Scopes: &[]admin2025.UserScope{
 						{Name: "scope-1", Type: "type-1"},
 						{Name: "scope-2", Type: "type-2"},
 					},
-					X509Type: pointer.Get("x509-type"),
+					X509Type: pointer.MakePtr("x509-type"),
 				}
 				testToAPI(t, "DatabaseUser", input, nil, target, want)
 			},
@@ -1532,9 +1534,9 @@ func TestToAPI(t *testing.T) {
 									{Key: "key1", Value: "value1"},
 									{Key: "key2", Value: "value2"},
 								},
-								TerminationProtectionEnabled: pointer.Get(true),
+								TerminationProtectionEnabled: pointer.MakePtr(true),
 							},
-							GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+							GroupId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 						},
 					},
 				}
@@ -1549,7 +1551,7 @@ func TestToAPI(t *testing.T) {
 						{Key: "key1", Value: "value1"},
 						{Key: "key2", Value: "value2"},
 					},
-					TerminationProtectionEnabled: pointer.Get(true),
+					TerminationProtectionEnabled: pointer.MakePtr(true),
 				}
 				testToAPI(t, "FlexCluster", input, nil, target, want)
 			},
@@ -1564,8 +1566,8 @@ func TestToAPI(t *testing.T) {
 							Entry: &v1.V20250312Entry{
 								Name:                      "project-name",
 								OrgId:                     "60987654321654321",
-								RegionUsageRestrictions:   pointer.Get("fake-restriction"),
-								WithDefaultAlertsSettings: pointer.Get(true),
+								RegionUsageRestrictions:   pointer.MakePtr("fake-restriction"),
+								WithDefaultAlertsSettings: pointer.MakePtr(true),
 								Tags: &[]v1.Tags{
 									{Key: "key", Value: "value"},
 								},
@@ -1579,8 +1581,8 @@ func TestToAPI(t *testing.T) {
 				want := &admin2025.Group{
 					Name:                      "project-name",
 					OrgId:                     "60987654321654321",
-					RegionUsageRestrictions:   pointer.Get("fake-restriction"),
-					WithDefaultAlertsSettings: pointer.Get(true),
+					RegionUsageRestrictions:   pointer.MakePtr("fake-restriction"),
+					WithDefaultAlertsSettings: pointer.MakePtr(true),
 					Tags: &[]admin2025.ResourceTag{
 						{Key: "key", Value: "value"},
 					},
@@ -1599,8 +1601,8 @@ func TestToAPI(t *testing.T) {
 					Spec: v1.GroupAlertsConfigSpec{
 						V20250312: &v1.GroupAlertsConfigSpecV20250312{
 							Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-								Enabled:       pointer.Get(true),
-								EventTypeName: pointer.Get("event-type"),
+								Enabled:       pointer.MakePtr(true),
+								EventTypeName: pointer.MakePtr("event-type"),
 								Matchers: &[]v1.Matchers{
 									{
 										FieldName: "field-name-1",
@@ -1615,29 +1617,29 @@ func TestToAPI(t *testing.T) {
 								},
 								MetricThreshold: &v1.MetricThreshold{
 									MetricName: "metric-1",
-									Mode:       pointer.Get("mode"),
-									Operator:   pointer.Get("operator"),
-									Threshold:  pointer.Get(1.1),
-									Units:      pointer.Get("units"),
+									Mode:       pointer.MakePtr("mode"),
+									Operator:   pointer.MakePtr("operator"),
+									Threshold:  pointer.MakePtr(1.1),
+									Units:      pointer.MakePtr("units"),
 								},
 								Threshold: &v1.MetricThreshold{
 									MetricName: "metric-t",
-									Mode:       pointer.Get("mode-t"),
-									Operator:   pointer.Get("operator-t"),
-									Threshold:  pointer.Get(2.2),
-									Units:      pointer.Get("units-t"),
+									Mode:       pointer.MakePtr("mode-t"),
+									Operator:   pointer.MakePtr("operator-t"),
+									Threshold:  pointer.MakePtr(2.2),
+									Units:      pointer.MakePtr("units-t"),
 								},
 								Notifications: &[]v1.Notifications{
 									{
 										DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-											Name: pointer.Get("datadog-secret"),
+											Name: pointer.MakePtr("datadog-secret"),
 										},
-										DatadogRegion: pointer.Get("US"),
+										DatadogRegion: pointer.MakePtr("US"),
 									},
 								},
-								SeverityOverride: pointer.Get("some-severity-override"),
+								SeverityOverride: pointer.MakePtr("some-severity-override"),
 							},
-							GroupId: pointer.Get("60965432187654321"),
+							GroupId: pointer.MakePtr("60965432187654321"),
 						},
 					},
 				}
@@ -1652,8 +1654,8 @@ func TestToAPI(t *testing.T) {
 				}
 				target := &admin2025.GroupAlertsConfig{}
 				want := &admin2025.GroupAlertsConfig{
-					Enabled:       pointer.Get(true),
-					EventTypeName: pointer.Get("event-type"),
+					Enabled:       pointer.MakePtr(true),
+					EventTypeName: pointer.MakePtr("event-type"),
 					Matchers: &[]admin2025.StreamsMatcher{
 						{
 							FieldName: "field-name-1",
@@ -1668,26 +1670,26 @@ func TestToAPI(t *testing.T) {
 					},
 					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
 						MetricName: "metric-1",
-						Mode:       pointer.Get("mode"),
-						Operator:   pointer.Get("operator"),
-						Threshold:  pointer.Get(1.1),
-						Units:      pointer.Get("units"),
+						Mode:       pointer.MakePtr("mode"),
+						Operator:   pointer.MakePtr("operator"),
+						Threshold:  pointer.MakePtr(1.1),
+						Units:      pointer.MakePtr("units"),
 					},
 					Threshold: &admin2025.StreamProcessorMetricThreshold{
-						MetricName: pointer.Get("metric-t"),
-						Mode:       pointer.Get("mode-t"),
-						Operator:   pointer.Get("operator-t"),
-						Threshold:  pointer.Get(2.2),
-						Units:      pointer.Get("units-t"),
+						MetricName: pointer.MakePtr("metric-t"),
+						Mode:       pointer.MakePtr("mode-t"),
+						Operator:   pointer.MakePtr("operator-t"),
+						Threshold:  pointer.MakePtr(2.2),
+						Units:      pointer.MakePtr("units-t"),
 					},
 					Notifications: &[]admin2025.AlertsNotificationRootForGroup{
 						{
-							DatadogApiKey: pointer.Get("sample-password"),
-							DatadogRegion: pointer.Get("US"),
+							DatadogApiKey: pointer.MakePtr("sample-password"),
+							DatadogRegion: pointer.MakePtr("US"),
 						},
 					},
-					GroupId:          pointer.Get("60965432187654321"),
-					SeverityOverride: pointer.Get("some-severity-override"),
+					GroupId:          pointer.MakePtr("60965432187654321"),
+					SeverityOverride: pointer.MakePtr("some-severity-override"),
 				}
 				testToAPI(t, "GroupAlertsConfig", input, objs, target, want)
 			},
@@ -1700,37 +1702,37 @@ func TestToAPI(t *testing.T) {
 					Spec: v1.NetworkPeeringConnectionSpec{
 						V20250312: &v1.NetworkPeeringConnectionSpecV20250312{
 							Entry: &v1.NetworkPeeringConnectionSpecV20250312Entry{
-								AccepterRegionName:  pointer.Get("accepter-region-name"),
-								AwsAccountId:        pointer.Get("aws-account-id"),
-								AzureDirectoryId:    pointer.Get("azure-dir-id"),
-								AzureSubscriptionId: pointer.Get("azure-subcription-id"),
+								AccepterRegionName:  pointer.MakePtr("accepter-region-name"),
+								AwsAccountId:        pointer.MakePtr("aws-account-id"),
+								AzureDirectoryId:    pointer.MakePtr("azure-dir-id"),
+								AzureSubscriptionId: pointer.MakePtr("azure-subcription-id"),
 								ContainerId:         "container-id",
-								GcpProjectId:        pointer.Get("azure-subcription-id"),
-								NetworkName:         pointer.Get("net-name"),
-								ProviderName:        pointer.Get("provider-name"),
-								ResourceGroupName:   pointer.Get("resource-group-name"),
-								RouteTableCidrBlock: pointer.Get("cidr"),
-								VnetName:            pointer.Get("vnet-name"),
-								VpcId:               pointer.Get("vpc-id"),
+								GcpProjectId:        pointer.MakePtr("azure-subcription-id"),
+								NetworkName:         pointer.MakePtr("net-name"),
+								ProviderName:        pointer.MakePtr("provider-name"),
+								ResourceGroupName:   pointer.MakePtr("resource-group-name"),
+								RouteTableCidrBlock: pointer.MakePtr("cidr"),
+								VnetName:            pointer.MakePtr("vnet-name"),
+								VpcId:               pointer.MakePtr("vpc-id"),
 							},
-							GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+							GroupId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 						},
 					},
 				}
 				target := &admin2025.BaseNetworkPeeringConnectionSettings{}
 				want := &admin2025.BaseNetworkPeeringConnectionSettings{
 					ContainerId:         "container-id",
-					ProviderName:        pointer.Get("provider-name"),
-					AccepterRegionName:  pointer.Get("accepter-region-name"),
-					AwsAccountId:        pointer.Get("aws-account-id"),
-					RouteTableCidrBlock: pointer.Get("cidr"),
-					VpcId:               pointer.Get("vpc-id"),
-					AzureDirectoryId:    pointer.Get("azure-dir-id"),
-					AzureSubscriptionId: pointer.Get("azure-subcription-id"),
-					ResourceGroupName:   pointer.Get("resource-group-name"),
-					VnetName:            pointer.Get("vnet-name"),
-					GcpProjectId:        pointer.Get("azure-subcription-id"),
-					NetworkName:         pointer.Get("net-name"),
+					ProviderName:        pointer.MakePtr("provider-name"),
+					AccepterRegionName:  pointer.MakePtr("accepter-region-name"),
+					AwsAccountId:        pointer.MakePtr("aws-account-id"),
+					RouteTableCidrBlock: pointer.MakePtr("cidr"),
+					VpcId:               pointer.MakePtr("vpc-id"),
+					AzureDirectoryId:    pointer.MakePtr("azure-dir-id"),
+					AzureSubscriptionId: pointer.MakePtr("azure-subcription-id"),
+					ResourceGroupName:   pointer.MakePtr("resource-group-name"),
+					VnetName:            pointer.MakePtr("vnet-name"),
+					GcpProjectId:        pointer.MakePtr("azure-subcription-id"),
+					NetworkName:         pointer.MakePtr("net-name"),
 				}
 				testToAPI(t, "NetworkPeeringConnection", input, nil, target, want)
 			},
@@ -1744,14 +1746,14 @@ func TestToAPI(t *testing.T) {
 						V20250312: &v1.NetworkPermissionEntriesSpecV20250312{
 							Entry: &[]v1.NetworkPermissionEntriesSpecV20250312Entry{
 								{
-									AwsSecurityGroup: pointer.Get("sg-12345678"),
-									CidrBlock:        pointer.Get("cird"),
-									Comment:          pointer.Get("comment"),
-									DeleteAfterDate:  pointer.Get("2025-07-01T00:00:00Z"),
-									IpAddress:        pointer.Get("1.1.1.1"),
+									AwsSecurityGroup: pointer.MakePtr("sg-12345678"),
+									CidrBlock:        pointer.MakePtr("cird"),
+									Comment:          pointer.MakePtr("comment"),
+									DeleteAfterDate:  pointer.MakePtr("2025-07-01T00:00:00Z"),
+									IpAddress:        pointer.MakePtr("1.1.1.1"),
 								},
 							},
-							GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+							GroupId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 						},
 					},
 				}
@@ -1759,11 +1761,11 @@ func TestToAPI(t *testing.T) {
 				want := &NetworkPermissions{
 					Entry: []admin2025.NetworkPermissionEntry{
 						{
-							AwsSecurityGroup: pointer.Get("sg-12345678"),
-							CidrBlock:        pointer.Get("cird"),
-							Comment:          pointer.Get("comment"),
-							DeleteAfterDate:  pointer.Get(time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)),
-							IpAddress:        pointer.Get("1.1.1.1"),
+							AwsSecurityGroup: pointer.MakePtr("sg-12345678"),
+							CidrBlock:        pointer.MakePtr("cird"),
+							Comment:          pointer.MakePtr("comment"),
+							DeleteAfterDate:  pointer.MakePtr(time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)),
+							IpAddress:        pointer.MakePtr("1.1.1.1"),
 						},
 					},
 				}
@@ -1782,10 +1784,10 @@ func TestToAPI(t *testing.T) {
 									Desc:  "description",
 									Roles: []string{"role-1", "role-2"},
 								},
-								FederationSettingsId:      pointer.Get("fed-id"),
+								FederationSettingsId:      pointer.MakePtr("fed-id"),
 								Name:                      "org-name",
-								OrgOwnerId:                pointer.Get("org-owner-id"),
-								SkipDefaultAlertsSettings: pointer.Get(true),
+								OrgOwnerId:                pointer.MakePtr("org-owner-id"),
+								SkipDefaultAlertsSettings: pointer.MakePtr(true),
 							},
 						},
 					},
@@ -1793,7 +1795,7 @@ func TestToAPI(t *testing.T) {
 				target := &admin2025.AtlasOrganization{}
 				want := &admin2025.AtlasOrganization{
 					Name:                      "org-name",
-					SkipDefaultAlertsSettings: pointer.Get(true),
+					SkipDefaultAlertsSettings: pointer.MakePtr(true),
 				}
 				testToAPI(t, "Organization", input, nil, target, want)
 			},
@@ -1806,13 +1808,13 @@ func TestToAPI(t *testing.T) {
 					Spec: v1.OrganizationSettingSpec{
 						V20250312: &v1.OrganizationSettingSpecV20250312{
 							Entry: &v1.OrganizationSettingSpecV20250312Entry{
-								ApiAccessListRequired:                  pointer.Get(true),
-								GenAIFeaturesEnabled:                   pointer.Get(true),
-								MaxServiceAccountSecretValidityInHours: pointer.Get(24),
-								MultiFactorAuthRequired:                pointer.Get(true),
-								RestrictEmployeeAccess:                 pointer.Get(true),
-								SecurityContact:                        pointer.Get("contact-info"),
-								StreamsCrossGroupEnabled:               pointer.Get(true),
+								ApiAccessListRequired:                  pointer.MakePtr(true),
+								GenAIFeaturesEnabled:                   pointer.MakePtr(true),
+								MaxServiceAccountSecretValidityInHours: pointer.MakePtr(24),
+								MultiFactorAuthRequired:                pointer.MakePtr(true),
+								RestrictEmployeeAccess:                 pointer.MakePtr(true),
+								SecurityContact:                        pointer.MakePtr("contact-info"),
+								StreamsCrossGroupEnabled:               pointer.MakePtr(true),
 							},
 							OrgId: "org-id",
 						},
@@ -1820,13 +1822,13 @@ func TestToAPI(t *testing.T) {
 				}
 				target := &admin2025.OrganizationSettings{}
 				want := &admin2025.OrganizationSettings{
-					ApiAccessListRequired:                  pointer.Get(true),
-					GenAIFeaturesEnabled:                   pointer.Get(true),
-					MaxServiceAccountSecretValidityInHours: pointer.Get(24),
-					MultiFactorAuthRequired:                pointer.Get(true),
-					RestrictEmployeeAccess:                 pointer.Get(true),
-					SecurityContact:                        pointer.Get("contact-info"),
-					StreamsCrossGroupEnabled:               pointer.Get(true),
+					ApiAccessListRequired:                  pointer.MakePtr(true),
+					GenAIFeaturesEnabled:                   pointer.MakePtr(true),
+					MaxServiceAccountSecretValidityInHours: pointer.MakePtr(24),
+					MultiFactorAuthRequired:                pointer.MakePtr(true),
+					RestrictEmployeeAccess:                 pointer.MakePtr(true),
+					SecurityContact:                        pointer.MakePtr("contact-info"),
+					StreamsCrossGroupEnabled:               pointer.MakePtr(true),
 				}
 				testToAPI(t, "OrganizationSetting", input, nil, target, want)
 			},
@@ -1915,7 +1917,7 @@ func TestToAPI(t *testing.T) {
 		//      Spec: v1.SampleDatasetSpec{
 		// 		    V20250312: &v1.SampleDatasetSpecV20250312{
 		// 			    Name:     "sample-dataset",
-		// 			    GroupId:  pointer.Get("32b6e34b3d91647abb20e7b8"),
+		// 			    GroupId:  pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 		// 	 	    },
 		// 	    },
 		//  },
@@ -1933,9 +1935,9 @@ func TestToAPI(t *testing.T) {
 								Database:       "database-name",
 								CollectionName: "collection-name",
 								Name:           "index-name",
-								Type:           pointer.Get("search-index-type"),
+								Type:           pointer.MakePtr("search-index-type"),
 								Definition: &v1.Definition{
-									Analyzer: pointer.Get("lucene.standard"),
+									Analyzer: pointer.MakePtr("lucene.standard"),
 									Analyzers: &[]v1.Analyzers{
 										{
 											Name: "custom-analyzer",
@@ -1958,13 +1960,13 @@ func TestToAPI(t *testing.T) {
 										{Raw: []byte(`{"field3":"value3"}`)},
 									},
 									Mappings: &v1.Mappings{
-										Dynamic: pointer.Get(true),
+										Dynamic: pointer.MakePtr(true),
 										Fields: &map[string]apiextensionsv1.JSON{
 											"field1": {Raw: []byte(`{"key4":"value4"}`)},
 										},
 									},
-									NumPartitions:  pointer.Get(3),
-									SearchAnalyzer: pointer.Get("lucene.standard"),
+									NumPartitions:  pointer.MakePtr(3),
+									SearchAnalyzer: pointer.MakePtr("lucene.standard"),
 									StoredSource: &apiextensionsv1.JSON{
 										Raw: []byte(`{"enabled": true}`),
 									},
@@ -1979,7 +1981,7 @@ func TestToAPI(t *testing.T) {
 									},
 								},
 							},
-							GroupId: pointer.Get("group-id-101"),
+							GroupId: pointer.MakePtr("group-id-101"),
 						},
 					},
 				}
@@ -1988,9 +1990,9 @@ func TestToAPI(t *testing.T) {
 					CollectionName: "collection-name",
 					Database:       "database-name",
 					Name:           "index-name",
-					Type:           pointer.Get("search-index-type"),
+					Type:           pointer.MakePtr("search-index-type"),
 					Definition: &admin2025.BaseSearchIndexCreateRequestDefinition{
-						Analyzer: pointer.Get("lucene.standard"),
+						Analyzer: pointer.MakePtr("lucene.standard"),
 						Analyzers: &[]admin2025.AtlasSearchAnalyzer{
 							{
 								Name: "custom-analyzer",
@@ -2018,13 +2020,13 @@ func TestToAPI(t *testing.T) {
 							map[string]any{"field3": "value3"},
 						},
 						Mappings: &admin2025.SearchMappings{
-							Dynamic: pointer.Get(true),
+							Dynamic: pointer.MakePtr(true),
 							Fields: &map[string]any{
 								"field1": map[string]any{"key4": "value4"},
 							},
 						},
-						NumPartitions:  pointer.Get(3),
-						SearchAnalyzer: pointer.Get("lucene.standard"),
+						NumPartitions:  pointer.MakePtr(3),
+						SearchAnalyzer: pointer.MakePtr("lucene.standard"),
 						StoredSource:   any(map[string]any{"enabled": true}),
 						Synonyms: &[]admin2025.SearchSynonymMappingDefinition{
 							{
@@ -2077,50 +2079,50 @@ func TestToAPI(t *testing.T) {
 						V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
 							IntegrationType: "ANY",
 							Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
-								AccountId: pointer.Get("account-id"),
+								AccountId: pointer.MakePtr("account-id"),
 								ApiKeySecretRef: &v1.ApiTokenSecretRef{
-									Key:  pointer.Get("apiKey"),
-									Name: pointer.Get("multi-secret0"),
+									Key:  pointer.MakePtr("apiKey"),
+									Name: pointer.MakePtr("multi-secret0"),
 								},
 								ApiTokenSecretRef: &v1.ApiTokenSecretRef{
-									Key:  pointer.Get("apiToken"),
-									Name: pointer.Get("multi-secret0"),
+									Key:  pointer.MakePtr("apiToken"),
+									Name: pointer.MakePtr("multi-secret0"),
 								},
-								ChannelName: pointer.Get("channel-name"),
-								Enabled:     pointer.Get(true),
+								ChannelName: pointer.MakePtr("channel-name"),
+								Enabled:     pointer.MakePtr(true),
 								LicenseKeySecretRef: &v1.ApiTokenSecretRef{
-									Key:  pointer.Get("licenseKey"),
-									Name: pointer.Get("multi-secret1"),
+									Key:  pointer.MakePtr("licenseKey"),
+									Name: pointer.MakePtr("multi-secret1"),
 								},
-								Region:                       pointer.Get("some-region"),
-								SendCollectionLatencyMetrics: pointer.Get(true),
-								SendDatabaseMetrics:          pointer.Get(true),
-								SendUserProvidedResourceTags: pointer.Get(true),
-								ServiceDiscovery:             pointer.Get("service-discovery"),
-								TeamName:                     pointer.Get("some-team"),
-								Type:                         pointer.Get("some-type"),
-								Username:                     pointer.Get("username"),
+								Region:                       pointer.MakePtr("some-region"),
+								SendCollectionLatencyMetrics: pointer.MakePtr(true),
+								SendDatabaseMetrics:          pointer.MakePtr(true),
+								SendUserProvidedResourceTags: pointer.MakePtr(true),
+								ServiceDiscovery:             pointer.MakePtr("service-discovery"),
+								TeamName:                     pointer.MakePtr("some-team"),
+								Type:                         pointer.MakePtr("some-type"),
+								Username:                     pointer.MakePtr("username"),
 							},
-							GroupId: pointer.Get("32b6e34b3d91647abb20e7b8"),
+							GroupId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
 						},
 					},
 				}
 				target := &admin2025.ThirdPartyIntegration{}
 				want := &admin2025.ThirdPartyIntegration{
-					Type:                         pointer.Get("some-type"),
-					ApiKey:                       pointer.Get("sample-api-key"),
-					Region:                       pointer.Get("some-region"),
-					SendCollectionLatencyMetrics: pointer.Get(true),
-					SendDatabaseMetrics:          pointer.Get(true),
-					SendUserProvidedResourceTags: pointer.Get(true),
-					AccountId:                    pointer.Get("account-id"),
-					LicenseKey:                   pointer.Get("sample-license-key"),
-					Enabled:                      pointer.Get(true),
-					ServiceDiscovery:             pointer.Get("service-discovery"),
-					Username:                     pointer.Get("username"),
-					ApiToken:                     pointer.Get("sample-api-token"),
-					ChannelName:                  pointer.Get("channel-name"),
-					TeamName:                     pointer.Get("some-team"),
+					Type:                         pointer.MakePtr("some-type"),
+					ApiKey:                       pointer.MakePtr("sample-api-key"),
+					Region:                       pointer.MakePtr("some-region"),
+					SendCollectionLatencyMetrics: pointer.MakePtr(true),
+					SendDatabaseMetrics:          pointer.MakePtr(true),
+					SendUserProvidedResourceTags: pointer.MakePtr(true),
+					AccountId:                    pointer.MakePtr("account-id"),
+					LicenseKey:                   pointer.MakePtr("sample-license-key"),
+					Enabled:                      pointer.MakePtr(true),
+					ServiceDiscovery:             pointer.MakePtr("service-discovery"),
+					Username:                     pointer.MakePtr("username"),
+					ApiToken:                     pointer.MakePtr("sample-api-token"),
+					ChannelName:                  pointer.MakePtr("channel-name"),
+					TeamName:                     pointer.MakePtr("some-team"),
 				}
 				objs := []client.Object{
 					&corev1.Secret{
