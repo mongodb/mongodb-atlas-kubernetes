@@ -61,7 +61,6 @@ type ConnectionTarget interface {
 	GetName() string
 	IsReady() bool
 	GetScopeType() akov2.ScopeType
-	GetOwnerReferences() []metav1.OwnerReference
 	GetProjectID(ctx context.Context) (string, error)
 	SelectorByProjectID(projectID string) fields.Selector
 	BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error)
