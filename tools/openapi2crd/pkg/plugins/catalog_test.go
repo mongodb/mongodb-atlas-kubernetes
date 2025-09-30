@@ -3,9 +3,10 @@ package plugins
 import (
 	"errors"
 	"testing"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
+
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 func TestBuildSets(t *testing.T) {

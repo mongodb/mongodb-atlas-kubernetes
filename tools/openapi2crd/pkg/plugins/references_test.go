@@ -3,12 +3,13 @@ package plugins
 import (
 	"errors"
 	"testing"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 func TestReferenceName(t *testing.T) {

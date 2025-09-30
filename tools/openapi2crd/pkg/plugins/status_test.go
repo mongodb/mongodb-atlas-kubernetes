@@ -2,12 +2,13 @@ package plugins
 
 import (
 	"testing"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/converter"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/utils/ptr"
+
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"tools/openapi2crd/pkg/converter"
 )
 
 func TestStatusName(t *testing.T) {

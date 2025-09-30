@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"tools/openapi2crd/pkg/converter"
-
 	"github.com/getkin/kin-openapi/openapi3"
+
+	"tools/openapi2crd/pkg/converter"
 )
 
 // Entry is a plugin that processes the entry mapping configuration and adds the entry schema to the CRD's spec validation schema.

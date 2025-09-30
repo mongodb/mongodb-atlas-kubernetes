@@ -3,15 +3,16 @@ package generator
 import (
 	"context"
 	"testing"
-	"tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/config"
-	"tools/openapi2crd/pkg/plugins"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"tools/openapi2crd/pkg/config"
+	"tools/openapi2crd/pkg/plugins"
 )
 
 func TestGeneratorMajorVersions(t *testing.T) {

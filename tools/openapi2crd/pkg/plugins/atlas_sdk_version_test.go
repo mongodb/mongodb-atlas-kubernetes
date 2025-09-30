@@ -2,10 +2,11 @@ package plugins
 
 import (
 	"testing"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/assert"
+
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 func TestAtlasSdkVersionName(t *testing.T) {

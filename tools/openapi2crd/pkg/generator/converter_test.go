@@ -2,14 +2,15 @@ package generator
 
 import (
 	"testing"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/converter"
-	"tools/openapi2crd/pkg/plugins"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"tools/openapi2crd/pkg/converter"
+	"tools/openapi2crd/pkg/plugins"
 )
 
 func TestGeneratorConvert(t *testing.T) {

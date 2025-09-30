@@ -3,11 +3,11 @@ package plugins
 import (
 	"testing"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 func TestMutualExclusiveMajorVersionsName(t *testing.T) {

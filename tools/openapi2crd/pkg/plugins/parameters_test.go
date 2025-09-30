@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"testing"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/converter"
-
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/utils/ptr"
+
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"tools/openapi2crd/pkg/converter"
 )
 
 func TestParameterName(t *testing.T) {

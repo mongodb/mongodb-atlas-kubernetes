@@ -3,9 +3,9 @@ package plugins
 import (
 	"fmt"
 
-	"tools/openapi2crd/pkg/converter"
-
 	"github.com/getkin/kin-openapi/openapi3"
+
+	"tools/openapi2crd/pkg/converter"
 )
 
 // Status plugin adds the status schema to the CRD if specified in the mapping configuration.

@@ -25,10 +25,8 @@ package tools
 import (
 	// linter(s)
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
-
-	// kubernetes code generators
-	_ "k8s.io/code-generator/cmd/deepcopy-gen"
-
 	// test runner
 	_ "gotest.tools/gotestsum"
+	// kubernetes code generators
+	_ "k8s.io/code-generator/cmd/deepcopy-gen"
 )

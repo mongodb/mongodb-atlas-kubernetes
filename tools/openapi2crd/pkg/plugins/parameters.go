@@ -3,10 +3,10 @@ package plugins
 import (
 	"fmt"
 
-	"tools/openapi2crd/pkg/converter"
-
 	"github.com/getkin/kin-openapi/openapi3"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
+	"tools/openapi2crd/pkg/converter"
 )
 
 // Parameters adds parameters from the OpenAPI spec to the CRD schema.

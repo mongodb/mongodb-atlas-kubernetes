@@ -2,12 +2,13 @@ package plugins
 
 import (
 	"testing"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
+	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 func TestSensitivePropertyName(t *testing.T) {
