@@ -10,6 +10,10 @@ This is not required for [Certified Operators](https://github.com/redhat-openshi
 
 Finally, make sure you have a "RedHat Connect" account and are a [team member with org administrator role in the team list](https://connect.redhat.com/account/team-members).
 
+> [!CAUTION]
+> Ensure that the commit you are releasing (the most recent change included in the image) did not contain changes to 
+> GitHub workflows. This causes the release workflows to error.
+
 ### Tools
 
 Most tools are automatically installed for you. Most of them are Go binaries and use `go install`. There are a few that might cause issues and you might want to pre-install manually:
