@@ -44,6 +44,18 @@ type SDKInfo struct {
 	version string
 }
 
+// APIImporter can translate itself into Kubernetes Objects.
+// Use to customize or accelerate translations ad-hoc
+type APIImporter[T any, P PtrClientObj[T]] interface {
+	FromAPI(t *Translator, target P) ([]client.Object, error)
+}
+
+// APIExporter can translate itself to an API Object.
+// Use to customize or accelerate translations ad-hoc
+type APIExporter[T any] interface {
+	ToAPI(t *Translator, target *T) error
+}
+
 // NewTranslator creates a translator for a particular CRD and SDK version pairs,
 // and with a particular set of known Kubernetes dependencies
 func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, sdkVersion string, deps DependencyRepo) *Translator {
@@ -56,6 +68,10 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 
 // FromAPI translaters a source API structure into a Kubernetes object
 func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S) ([]client.Object, error) {
+	importer, ok := any(source).(APIImporter[T, P])
+	if ok {
+		return importer.FromAPI(t, target)
+	}
 	sourceUnstructured, err := toUnstructured(source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert API source value to unstructured: %w", err)
@@ -90,6 +106,10 @@ func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S
 
 // ToAPI translates a source Kubernetes spec into a target API structure
 func ToAPI[T any](t *Translator, target *T, source client.Object) error {
+	exporter, ok := (source).(APIExporter[T])
+	if ok {
+		return exporter.ToAPI(t, target)
+	}
 	specVersion := selectVersion(&t.crd.definition.Spec, t.crd.version)
 	kind := t.crd.definition.Spec.Names.Kind
 	props, err := getOpenAPIProperties(kind, specVersion)
