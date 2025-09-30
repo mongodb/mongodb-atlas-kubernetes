@@ -675,14 +675,6 @@ func createDummyEnv(t *testing.T, objs []client.Object) *ConnectionSecretReconci
 		WithScheme(scheme).
 		WithObjects(project, sdkSecret, connSecret, userSecret).
 		WithObjects(objs...).
-		WithIndex(&akov2.AtlasDeployment{}, indexer.AtlasDeploymentBySpecNameAndProjectID, func(obj client.Object) []string {
-			d := obj.(*akov2.AtlasDeployment)
-			return []string{"test-project-id" + "-" + d.Spec.DeploymentSpec.Name}
-		}).
-		WithIndex(&akov2.AtlasDataFederation{}, indexer.AtlasDataFederationBySpecNameAndProjectID, func(obj client.Object) []string {
-			df := obj.(*akov2.AtlasDataFederation)
-			return []string{"test-project-id" + "-" + df.Spec.Name}
-		}).
 		WithIndex(&akov2.AtlasDatabaseUser{}, indexer.AtlasDatabaseUserBySpecUsernameAndProjectID, func(obj client.Object) []string {
 			u := obj.(*akov2.AtlasDatabaseUser)
 			return []string{"test-project-id" + "-" + u.Spec.Username}
