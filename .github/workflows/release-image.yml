@@ -173,7 +173,7 @@ jobs:
           password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.13.0
+        uses: jetify-com/devbox-install-action@v0.14.0
 
       # Trigger the helm release workflow to sync
       - name: Trigger helm post release workflow

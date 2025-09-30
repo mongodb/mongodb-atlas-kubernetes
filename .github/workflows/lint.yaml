@@ -13,7 +13,7 @@ jobs:
         with:
           ref: ${{github.event.pull_request.head.sha}}
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.13.0
+        uses: jetify-com/devbox-install-action@v0.14.0
         with:
           enable-cache: 'true'
       - name: Run lint
