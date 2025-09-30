@@ -47,8 +47,16 @@ func MustBeSafeAt(allowedBase, filename string) string {
 }
 
 func SafeAt(allowedBase, filename string) (string, error) {
-	cleanPath := filepath.Clean(filename)
-	if !strings.HasPrefix(cleanPath, allowedBase) {
+	absAllowedBase, err := filepath.Abs(allowedBase)
+	if err != nil {
+		return "", fmt.Errorf("absolute base path computation failed: %w", err)
+	}
+	absPath, err := filepath.Abs(filename)
+	if err != nil {
+		return "", fmt.Errorf("absolute filename path computation failed: %w", err)
+	}
+	cleanPath := filepath.Clean(absPath)
+	if !strings.HasPrefix(cleanPath, absAllowedBase) {
 		return "", fmt.Errorf("Unsafe input path %q not in %q (clean path %q)", filename, allowedBase, cleanPath)
 	}
 	return cleanPath, nil
