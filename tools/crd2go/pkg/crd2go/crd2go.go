@@ -56,10 +56,7 @@ func LoadConfig(r io.Reader) (*config.Config, error) {
 // CodeWriterAtPath creates a file writer for the given CRD at the specified directory
 func CodeWriterAtPath(dir string) config.CodeWriterFunc {
 	return func(filename string, overwrite bool) (io.WriteCloser, error) {
-		log.Printf("filename=%q", filename)
 		srcFile := filepath.Join(dir, filename)
-		log.Printf("dir=%q", dir)
-		log.Printf("srcFile=%q", srcFile)
 		flags := os.O_CREATE | os.O_EXCL | os.O_WRONLY
 		if overwrite {
 			flags = os.O_CREATE | os.O_TRUNC | os.O_RDWR

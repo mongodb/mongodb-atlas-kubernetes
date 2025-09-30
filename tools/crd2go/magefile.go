@@ -38,7 +38,7 @@ func Build() error {
 
 // UnitTests runs the go tests
 func UnitTests() error {
-	return wrapRun("🧪 Running unit tests:\n", "go", "test", "./...")
+	return wrapRun("🧪 Running unit tests:\n", "go", "test", "-cover", "./...")
 }
 
 // Addlicense runs the addlicense check to ensure source files have license headers
@@ -54,6 +54,7 @@ func Addlicense() error {
 		"-ignore", "**/*.yml",
 		"-ignore", "**/*.nix",
 		"-ignore", ".devbox/**",
+		"-ignore", "internal/samples/**",
 		"-ignore", "magefile.go",
 		".",
 	)
