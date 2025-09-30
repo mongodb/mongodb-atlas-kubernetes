@@ -249,7 +249,6 @@ func TestConnectionSecretReconcile(t *testing.T) {
 						Name:      targetDeletion,
 					}, &check)
 					assert.False(t, apiErrors.IsNotFound(getErr), "expected secret %q to be present", targetDeletion)
-
 				}
 			}
 
@@ -284,7 +283,6 @@ func TestConnectionSecretReconcile(t *testing.T) {
 						Name:      targetDeletion,
 					}, &check)
 					assert.True(t, apiErrors.IsNotFound(getErr), "expected secret %q to be deleted", targetDeletion)
-
 				}
 			}
 		})
@@ -611,7 +609,7 @@ func createDummyEnv(t *testing.T, objs []client.Object) *ConnectionSecretReconci
 			Name:      K8sConnectionSecretName("test-project-id1", "cluster1", "admin", "deployment"),
 			Namespace: "test-ns",
 			OwnerReferences: []metav1.OwnerReference{
-				metav1.OwnerReference{
+				{
 					APIVersion: "v1",
 					Kind:       "AtlasDatabaseUser",
 					Name:       "admin",

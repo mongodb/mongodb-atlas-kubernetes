@@ -218,14 +218,6 @@ func TestDeploymentConnectionTarget_SelectorByProject(t *testing.T) {
 	assert.False(t, s.Matches(fields.Set{indexer.AtlasDeploymentByProject: "other"}))
 }
 
-func TestDeploymentConnectionTarget_SelectorByTargetIdentifierFields(t *testing.T) {
-	e := DeploymentConnectionTarget{}
-	ids := &ConnectionSecretIdentifiers{ProjectID: "pX", TargetName: "cY"}
-	s := e.SelectorByTargetIdentifierFields(ids)
-	assert.True(t, s.Matches(fields.Set{indexer.AtlasDeploymentBySpecNameAndProjectID: "pX-cY"}))
-	assert.False(t, s.Matches(fields.Set{indexer.AtlasDeploymentBySpecNameAndProjectID: "pX-cZ"}))
-}
-
 func TestDeploymentConnectionTarget_BuildConnData(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	depl := createDummyDeployment(t)

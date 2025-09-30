@@ -91,11 +91,6 @@ func (DataFederationConnectionTarget) SelectorByProjectID(projectID string) fiel
 	return fields.OneTermEqualSelector(indexer.AtlasDataFederationByProjectID, projectID)
 }
 
-// Defines the selector to use for indexer when trying to retrieve all connectionTargets by project and spec name
-func (DataFederationConnectionTarget) SelectorByTargetIdentifierFields(ids *ConnectionSecretIdentifiers) fields.Selector {
-	return fields.OneTermEqualSelector(indexer.AtlasDataFederationBySpecNameAndProjectID, ids.ProjectID+"-"+ids.TargetName)
-}
-
 // BuildConnectionData builds the ConnectionSecretData for this connectionTarget type
 func (e DataFederationConnectionTarget) BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error) {
 	if user == nil || e.obj == nil {

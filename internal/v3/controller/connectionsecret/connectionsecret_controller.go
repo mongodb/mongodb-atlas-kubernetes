@@ -64,7 +64,6 @@ type ConnectionTarget interface {
 	GetOwnerReferences() []metav1.OwnerReference
 	GetProjectID(ctx context.Context) (string, error)
 	SelectorByProjectID(projectID string) fields.Selector
-	SelectorByTargetIdentifierFields(ids *ConnectionSecretIdentifiers) fields.Selector
 	BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error)
 }
 
@@ -228,7 +227,7 @@ func (r *ConnectionSecretReconciler) cleanupStaleSecrets(ctx context.Context, us
 
 	for _, secret := range secretList.Items {
 		// Filter secrets that are owned only by the AtlasDatabaseUser with the provided name.
-		if r.isOwnedByOnlyAtlasDatabaseUser(secret, userName) {
+		if r.isOwnedByOnlyAtlasDatabaseUser(secret) {
 			log.Debugw("Deleting secret", "secretName", secret.Name)
 
 			// Delete the secret.
@@ -247,7 +246,7 @@ func (r *ConnectionSecretReconciler) cleanupStaleSecrets(ctx context.Context, us
 	return nil
 }
 
-func (r *ConnectionSecretReconciler) isOwnedByOnlyAtlasDatabaseUser(secret corev1.Secret, userName string) bool {
+func (r *ConnectionSecretReconciler) isOwnedByOnlyAtlasDatabaseUser(secret corev1.Secret) bool {
 	// If the secret has no owner references, return false (not owned at all).
 	if len(secret.OwnerReferences) == 0 {
 		return false
