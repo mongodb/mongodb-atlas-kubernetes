@@ -231,7 +231,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.13.0
+        uses: jetify-com/devbox-install-action@v0.14.0
         with:
           enable-cache: 'true'
 
@@ -275,7 +275,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.13.0
+        uses: jetify-com/devbox-install-action@v0.14.0
         with:
           enable-cache: 'true'
 
@@ -395,7 +395,7 @@ jobs:
           wait: 180s
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.13.0
+        uses: jetify-com/devbox-install-action@v0.14.0
         with:
           enable-cache: 'true'
 

@@ -105,7 +105,7 @@ jobs:
           ref: ${{ env.TAG }}
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.13.0
+        uses: jetify-com/devbox-install-action@v0.14.0
         with:
           enable-cache: 'true'
 
