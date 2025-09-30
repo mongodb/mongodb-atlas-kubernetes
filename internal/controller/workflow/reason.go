@@ -196,11 +196,12 @@ const (
 
 // ConnectionSecret reasons
 const (
-	ConnectionSecretInvalidName                ConditionReason = "ConnectionSecretInvalidName"
-	ConnectionSecretPairNotLoaded              ConditionReason = "ConnectionSecretPairNotLoaded"
+	ConnectionSecretInvalidUsername            ConditionReason = "ConnectionSecretInvalidUsername"
+	ConnectionSecretStaleSecretsNotCleaned     ConditionReason = "ConnectionSecretStaleSecretsNotCleaned"
+	ConnectionSecretProjectIDNotLoaded         ConditionReason = "ConnectionSecretProjectIDNotLoaded"
+	ConnectionSecretConnectionTargetsNotLoaded ConditionReason = "ConnectionSecretConnectionTargetsNotLoaded"
 	ConnectionSecretUserExpired                ConditionReason = "ConnectionSecretUserExpired"
 	ConnectionSecretNotReady                   ConditionReason = "ConnectionSecretNotReady"
-	ConnectionSecretUnresolvedProjectName      ConditionReason = "ConnectionSecretUnresolvedProjectName"
 	ConnectionSecretFailedToBuildData          ConditionReason = "ConnectionSecretFailedToBuildData"
 	ConnectionSecretFailedToFillData           ConditionReason = "ConnectionSecretFailedToFillData"
 	ConnectionSecretFailedDeletion             ConditionReason = "ConnectionSecretFailedDeletion"

@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -64,6 +65,17 @@ func (e DeploymentConnectionTarget) GetName() string {
 // IsReady returns true if the connectionTarget is ready
 func (e DeploymentConnectionTarget) IsReady() bool {
 	return e.obj != nil && api.HasReadyCondition(e.obj.Status.Conditions)
+}
+
+func (e DeploymentConnectionTarget) GetOwnerReferences() []metav1.OwnerReference {
+	return []metav1.OwnerReference{
+		{
+			APIVersion: e.obj.APIVersion,
+			Kind:       e.obj.Kind,
+			Name:       e.obj.Name,
+			UID:        e.obj.UID,
+		},
+	}
 }
 
 // GetScopeType returns the scope type of the connectionTarget to match with the ones from AtlasDatabaseUser

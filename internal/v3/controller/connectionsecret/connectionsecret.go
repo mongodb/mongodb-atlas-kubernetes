@@ -20,22 +20,20 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net/url"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
 
 const (
@@ -91,156 +89,93 @@ type PrivateLinkConnectionURLs struct {
 	ShardConnectionURL string
 }
 
-// NewConnectionSecretRequestName returns the Secret name in the internal format used by watchers: <projectID>$<targetName>$<username>
-func NewConnectionSecretRequestName(projectID string, targetName string, databaseUsername string, connectionType string) string {
-	return strings.Join([]string{
-		projectID,
-		kube.NormalizeIdentifier(targetName),
-		kube.NormalizeIdentifier(databaseUsername),
-		kube.NormalizeIdentifier(connectionType),
-	}, InternalSeparator)
+func (r *ConnectionSecretReconciler) handleUpsert(
+	ctx context.Context,
+	req ctrl.Request,
+	ids *ConnectionSecretIdentifiers,
+	user *akov2.AtlasDatabaseUser,
+	connectionTarget ConnectionTarget,
+) (reconcile.Result, error) {
+	log := r.Log.With("ns", req.Namespace, "name", req.Name)
+	log.Debugw("Starting handleUpsert", "ConnectionSecretIdentifiers", ids, "AtlasDatabaseUser", user)
+	// create the connection data that will populate secret.stringData
+	data, err := connectionTarget.BuildConnectionData(ctx, user)
+	if err != nil {
+		log.Errorw("failed to build connection data", "error", err)
+		return workflow.Terminate(workflow.ConnectionSecretFailedToBuildData, err).ReconcileResult()
+	}
+	log.Debugw("connection data built")
+	if err := r.ensureSecret(ctx, ids, user, connectionTarget, data); err != nil {
+		return workflow.Terminate(workflow.ConnectionSecretFailedToUpsertSecret, err).ReconcileResult()
+	}
+
+	log.Debugw("connection secret upserted")
+	return workflow.OK().ReconcileResult()
 }
 
-// loadIdentifiers determines whether the request name is internal or K8s format
-// and extracts ProjectID, TargetName, and DatabaseUsername.
-func (r *ConnSecretReconciler) loadIdentifiers(ctx context.Context, req types.NamespacedName) (*ConnectionSecretIdentifiers, error) {
-	if strings.Contains(req.Name, InternalSeparator) {
-		return r.identifiersFromInternalName(req)
-	}
-	return r.identifiersFromK8s(ctx, req)
-}
+func (r *ConnectionSecretReconciler) handleBatchUpsert(
+	ctx context.Context,
+	req ctrl.Request,
+	user *akov2.AtlasDatabaseUser,
+	projectID string,
+	connectionTargets []ConnectionTarget,
+) (ctrl.Result, error) {
+	log := r.Log.With("namespace", req.Namespace, "name", req.Name)
 
-// identifiersFromInternalName parses identifiers from the internal format.
-// === Internal format: <ProjectID>$<TargetName>$<DatabaseUserName>$<ConnectionType>
-func (r *ConnSecretReconciler) identifiersFromInternalName(req types.NamespacedName) (*ConnectionSecretIdentifiers, error) {
-	parts := strings.Split(req.Name, InternalSeparator)
-	if len(parts) != 4 {
-		return nil, ErrInternalFormatErr
-	}
-	if parts[0] == "" || parts[1] == "" || parts[2] == "" || parts[3] == "" {
-		return nil, ErrInternalFormatErr
-	}
-	return &ConnectionSecretIdentifiers{
-		ProjectID:        parts[0],
-		TargetName:       parts[1],
-		DatabaseUsername: parts[2],
-		ConnectionType:   parts[3],
-	}, nil
-}
+	for _, connectionTarget := range connectionTargets {
+		// Construct connection secret identifier for the current connection target.
+		connectionSecretIdentifier := ConnectionSecretIdentifiers{
+			ProjectID:        projectID,
+			TargetName:       connectionTarget.GetName(),
+			DatabaseUsername: user.Spec.Username,
+			ConnectionType:   connectionTarget.GetConnectionTargetType(),
+		}
 
-// identifiersFromK8s retrieves identifiers from labels and annotations instead of parsing the secret name in Kubernetes format.
-// === K8s format: Use labels/annotations to extract metadata.
-func (r *ConnSecretReconciler) identifiersFromK8s(ctx context.Context, req types.NamespacedName) (*ConnectionSecretIdentifiers, error) {
-	var secret corev1.Secret
-	if err := r.Client.Get(ctx, req, &secret); err != nil {
-		return nil, err
-	}
-	labels := secret.GetLabels()
-	annotations := secret.GetAnnotations()
+		// Check if the user is expired.
+		expired, err := timeutil.IsExpired(user.Spec.DeleteAfterDate)
+		if err != nil {
+			log.Errorw("failed to check expiration date on user", "error", err)
+			return workflow.Terminate(workflow.ConnectionSecretUserExpired, err).ReconcileResult()
+		}
 
-	projectID, hasProject := labels[ProjectLabelKey]
-	targetName, hasTarget := labels[TargetLabelKey]
-	databaseUsername, hasUser := labels[DatabaseUserLabelKey]
-	connectionType, hasConnectionType := annotations[ConnectionTypelKey]
-
-	// Validate required fields
-	if !hasProject || !hasTarget || !hasUser || !hasConnectionType || projectID == "" || targetName == "" || databaseUsername == "" || connectionType == "" {
-		err := ErrK8SFormatErr
-		return nil, err
-	}
-	return &ConnectionSecretIdentifiers{
-		ProjectID:        projectID,
-		TargetName:       targetName,
-		DatabaseUsername: databaseUsername,
-		ConnectionType:   connectionType,
-	}, nil
-}
-
-// loadPair creates the paired resource that contains the parent AtlasDatabaseUser and the ConnectionTarget.
-// ConnectionTarget could be AtlasDeployment or AtlasDataFederation
-func (r *ConnSecretReconciler) loadPair(ctx context.Context, ids *ConnectionSecretIdentifiers) (*akov2.AtlasDatabaseUser, ConnectionTarget, error) {
-	compositeUserKey := ids.ProjectID + "-" + ids.DatabaseUsername
-
-	// Retrieve the AtlasDatabaseUser using the defined indexers
-	users := &akov2.AtlasDatabaseUserList{}
-	if err := r.Client.List(ctx, users, &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(
-			indexer.AtlasDatabaseUserBySpecUsernameAndProjectID,
-			compositeUserKey,
-		),
-	}); err != nil {
-		return nil, nil, err
-	}
-	usersCount := len(users.Items)
-
-	// Retrieve ConnectionTargets using the defined indexers
-	totalConnectionTargets := 0
-	var selected ConnectionTarget
-	for _, kind := range r.ConnectionTargetKinds {
-		switch kind.(type) {
-		case DataFederationConnectionTarget:
-			list := &akov2.AtlasDataFederationList{}
-			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: kind.SelectorByTargetIdentifierFields(ids),
-			}); err != nil {
-				return nil, nil, err
+		//Delete secret if the user is expired.
+		if expired {
+			log.Debugw("User expired; deleting connection secrets")
+			result, err := r.handleDelete(ctx, req, &connectionSecretIdentifier)
+			if err != nil {
+				log.Errorw("Failed to delete connection secrets for expired user", "error", err)
+				return result, err
 			}
+		}
 
-			if len(list.Items) == 1 {
-				selected = DataFederationConnectionTarget{
-					obj:             &list.Items[0],
-					client:          r.Client,
-					provider:        r.AtlasProvider,
-					globalSecretRef: r.GlobalSecretRef,
-					log:             r.Log,
-				}
+		// Check that scopes are still valid.
+		if !allowsByScopes(user, connectionTarget.GetName(), connectionTarget.GetScopeType()) {
+			log.Infow("invalid scope; scheduling deletion of connection secrets")
+			result, err := r.handleDelete(ctx, req, &connectionSecretIdentifier)
+			if err != nil {
+				log.Errorw("failed to delete connection secrets for invalid scope", "error", err)
+				return result, err
 			}
-			totalConnectionTargets += len(list.Items)
+		}
 
-		case DeploymentConnectionTarget:
-			// Handle DeploymentConnectionTarget
-			list := &akov2.AtlasDeploymentList{}
-			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: kind.SelectorByTargetIdentifierFields(ids),
-			}); err != nil {
-				return nil, nil, err
-			}
+		// Ensure paired resource readiness.
+		if !(api.HasReadyCondition(user.Status.Conditions) && connectionTarget.IsReady()) {
+			return workflow.InProgress(workflow.ConnectionSecretNotReady, "resources not ready").ReconcileResult()
+		}
 
-			if len(list.Items) == 1 {
-				selected = DeploymentConnectionTarget{
-					obj:             &list.Items[0],
-					client:          r.Client,
-					provider:        r.AtlasProvider,
-					globalSecretRef: r.GlobalSecretRef,
-					log:             r.Log,
-				}
-			}
-			totalConnectionTargets += len(list.Items)
+		// Handle the upsert of the connection secret.
+		result, err := r.handleUpsert(ctx, req, &connectionSecretIdentifier, user, connectionTarget)
+		if err != nil {
+			log.Errorw("failed to upsert connection secret", "error", err)
+			return result, err
 		}
 	}
 
-	// AmbiguousPairing (more than 1 of either resource)
-	if usersCount > 1 || totalConnectionTargets > 1 {
-		return nil, nil, ErrAmbiguousPairing
-	}
-
-	// Exactly one of each (OK case)
-	if usersCount == 1 && totalConnectionTargets == 1 {
-		return &users.Items[0], selected, nil
-	}
-
-	// Handle missing pairing cases
-	if usersCount == 0 && totalConnectionTargets == 0 {
-		return nil, nil, ErrMissingPairing
-	}
-	if usersCount == 0 {
-		return nil, selected, ErrMissingPairing
-	}
-	return &users.Items[0], nil, ErrMissingPairing
+	log.Debugw("batch processing completed successfully")
+	return workflow.OK().ReconcileResult()
 }
 
-// handleDelete ensures that the connection secret from the paired resource and identifiers will get deleted
-func (r *ConnSecretReconciler) handleDelete(
+func (r *ConnectionSecretReconciler) handleDelete(
 	ctx context.Context,
 	req ctrl.Request,
 	ids *ConnectionSecretIdentifiers,
@@ -270,33 +205,8 @@ func (r *ConnSecretReconciler) handleDelete(
 	return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 }
 
-// handleUpsert ensures that the connection secret from the paired resource and identifiers will be upserted
-func (r *ConnSecretReconciler) handleUpsert(
-	ctx context.Context,
-	req ctrl.Request,
-	ids *ConnectionSecretIdentifiers,
-	user *akov2.AtlasDatabaseUser,
-	connectionTarget ConnectionTarget,
-) (ctrl.Result, error) {
-	log := r.Log.With("ns", req.Namespace, "name", req.Name)
-	log.Debugw("Starting handleUpsert", "ConnectionSecretIdentifiers", ids, "AtlasDatabaseUser", user)
-	// create the connection data that will populate secret.stringData
-	data, err := connectionTarget.BuildConnectionData(ctx, user)
-	if err != nil {
-		log.Errorw("failed to build connection data", "error", err)
-		return workflow.Terminate(workflow.ConnectionSecretFailedToBuildData, err).ReconcileResult()
-	}
-	log.Debugw("connection data built")
-	if err := r.ensureSecret(ctx, ids, user, connectionTarget, data); err != nil {
-		return workflow.Terminate(workflow.ConnectionSecretFailedToUpsertSecret, err).ReconcileResult()
-	}
-
-	log.Debugw("connection secret upserted")
-	return workflow.OK().ReconcileResult()
-}
-
 // ensureSecret creates or updates the Secret for the given identifiers and connection data
-func (r *ConnSecretReconciler) ensureSecret(
+func (r *ConnectionSecretReconciler) ensureSecret(
 	ctx context.Context,
 	ids *ConnectionSecretIdentifiers,
 	user *akov2.AtlasDatabaseUser,
@@ -304,7 +214,7 @@ func (r *ConnSecretReconciler) ensureSecret(
 	data ConnectionSecretData,
 ) error {
 	namespace := user.GetNamespace()
-	log := r.Log.With("ns", namespace, "project", ids.ProjectID)
+	log := r.Log.With("namespace", namespace, "project", ids.ProjectID)
 
 	name := K8sConnectionSecretName(ids.ProjectID, ids.TargetName, ids.DatabaseUsername, connectionTarget.GetConnectionTargetType())
 
@@ -314,8 +224,9 @@ func (r *ConnSecretReconciler) ensureSecret(
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:            name,
+			Namespace:       namespace,
+			OwnerReferences: append(user.GetOwnerReferences(), connectionTarget.GetOwnerReferences()...),
 		},
 	}
 

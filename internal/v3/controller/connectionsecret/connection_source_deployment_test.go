@@ -229,7 +229,7 @@ func TestDeploymentConnectionTarget_SelectorByTargetIdentifierFields(t *testing.
 func TestDeploymentConnectionTarget_BuildConnData(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	depl := createDummyDeployment(t)
-	user := createDummyUser(t, "test-user")
+	user := createDummyUser(t, "test-user", "admin", "dummy-uid")
 
 	userNoPass := &akov2.AtlasDatabaseUser{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-user-nopass", Namespace: "test-ns"},

@@ -190,7 +190,7 @@ func TestFederationConnectionTarget_SelectorByTargetIdentifierFields(t *testing.
 func TestFederationConnectionTarget_BuildConnData(t *testing.T) {
 	r := createDummyEnv(t, nil)
 	df := createDummyFederation(t)
-	user := createDummyUser(t, "test-user")
+	user := createDummyUser(t, "test-user", "admin", "dummy-uid")
 
 	userNoPass := &akov2.AtlasDatabaseUser{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-user-nopass", Namespace: "test-ns"},
@@ -209,7 +209,7 @@ func TestFederationConnectionTarget_BuildConnData(t *testing.T) {
 
 	tests := map[string]struct {
 		objs             []client.Object
-		override         func(*ConnSecretReconciler)
+		override         func(*ConnectionSecretReconciler)
 		connectionTarget *akov2.AtlasDataFederation
 		user             *akov2.AtlasDatabaseUser
 		wantURL          string
@@ -231,7 +231,7 @@ func TestFederationConnectionTarget_BuildConnData(t *testing.T) {
 			wantErr:          true,
 		},
 		"success: builds URL from DF hostnames": {
-			override: func(r *ConnSecretReconciler) {
+			override: func(r *ConnectionSecretReconciler) {
 				dfAPI := mockadmin.NewDataFederationApi(t)
 
 				dfAPI.EXPECT().
