@@ -17,6 +17,7 @@ package connectionsecret
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -56,12 +57,13 @@ func TestConnectionSecretReconcile(t *testing.T) {
 		expectedDeletions *[]string
 		expectedDeletion  bool
 		expectedUpdate    bool
+		explectedUpdates  *[]string
 		expectedResult    func() (ctrl.Result, error)
 	}
 
-	// depl := createDummyDeployment(t)
+	depl := createDummyDeployment(t, "test-depl", "test-project", "cluster3")
 	user := createDummyUser(t, "kub-test-user", "db-test-user", "other-dummy-uid")
-	// secondUser := createDummyUser(t, "test-user-second")
+	// // secondUser := createDummyUser(t, "test-user-second")
 
 	tests := map[string]testCase{
 		"success: could not find secret with k8s format; assume deleted": {
@@ -70,8 +72,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 			},
 		},
-		"success: only one available resource from the pair, trigger delete": {
-			// deployment: &[]akov2.AtlasDeployment{*depl},
+		"success: deleted deployment triggers a secret delete": {
 			reqName: user.Name,
 			user:    &[]akov2.AtlasDatabaseUser{*user},
 			secrets: &[]*corev1.Secret{
@@ -106,91 +107,170 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 			},
 		},
-		// "fail: ambigous pair": {
-		// 	reqName:          "test-project-id$cluster1$admin$deployment",
-		// 	user:             &[]akov2.AtlasDatabaseUser{*user, *secondUser},
-		// 	expectedDeletion: true,
-		// 	expectedResult: func() (ctrl.Result, error) {
-		// 		return workflow.Terminate("ConnSecretPairNotLoaded", ErrAmbiguousPairing).
-		// 			ReconcileResult()
-		// 	},
-		// },
-		// "success: invalid scopes; trigger delete": {
-		// 	reqName:    "test-project-id$cluster1$admin$deployment",
-		// 	deployment: &[]akov2.AtlasDeployment{*depl},
-		// 	user: &[]akov2.AtlasDatabaseUser{
-		// 		{
-		// 			ObjectMeta: metav1.ObjectMeta{
-		// 				Name:      "test-user",
-		// 				Namespace: "test-ns",
-		// 			},
-		// 			Spec: akov2.AtlasDatabaseUserSpec{
-		// 				Username: "admin",
-		// 				Scopes: []akov2.ScopeSpec{
-		// 					{
-		// 						Name: "df",
-		// 						Type: akov2.DataLakeScopeType,
-		// 					},
-		// 				},
-		// 			},
-		// 		}},
-		// 	expectedDeletion: true,
-		// 	expectedResult: func() (ctrl.Result, error) {
-		// 		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
-		// 	},
-		// },
-		// "success: expired user; trigger delete": {
-		// 	reqName:    "test-project-id$cluster1$admin$deployment",
-		// 	deployment: &[]akov2.AtlasDeployment{*depl},
-		// 	user: &[]akov2.AtlasDatabaseUser{
-		// 		{
-		// 			ObjectMeta: metav1.ObjectMeta{
-		// 				Name:      "admin",
-		// 				Namespace: "test-ns",
-		// 			},
-		// 			Spec: akov2.AtlasDatabaseUserSpec{
-		// 				Username:        "admin",
-		// 				DeleteAfterDate: time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339),
-		// 			},
-		// 		},
-		// 	},
-		// 	expectedDeletion: true,
-		// 	expectedResult: func() (ctrl.Result, error) {
-		// 		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
-		// 	},
-		// },
-		// "re-enque: resources are not ready yet": {
-		// 	reqName:    "test-project-id$cluster1$admin$deployment",
-		// 	deployment: &[]akov2.AtlasDeployment{*depl},
-		// 	user: &[]akov2.AtlasDatabaseUser{
-		// 		{
-		// 			ObjectMeta: metav1.ObjectMeta{
-		// 				Name:      "test-user",
-		// 				Namespace: "test-ns",
-		// 			},
-		// 			Spec: akov2.AtlasDatabaseUserSpec{
-		// 				Username:       "admin",
-		// 				PasswordSecret: &common.ResourceRef{Name: "user-pass"},
-		// 				ProjectDualReference: akov2.ProjectDualReference{
-		// 					ExternalProjectRef: &akov2.ExternalProjectReference{ID: "test-project-id"},
-		// 					ConnectionSecret:   &api.LocalObjectReference{Name: "sdk-creds"},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	expectedResult: func() (ctrl.Result, error) {
-		// 		return workflow.InProgress(workflow.ConnectionSecretNotReady, "resources not ready").ReconcileResult()
-		// 	},
-		// },
-		// "success: pair ready; trigger upsert": {
-		// 	reqName:        "test-project-id$cluster1$admin$deployment",
-		// 	deployment:     &[]akov2.AtlasDeployment{*depl},
-		// 	user:           &[]akov2.AtlasDatabaseUser{*user},
-		// 	expectedUpdate: true,
-		// 	expectedResult: func() (ctrl.Result, error) {
-		// 		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
-		// 	},
-		// },
+		"success: deleted data-federation triggers a secret delete": {
+			reqName: user.Name,
+			user:    &[]akov2.AtlasDatabaseUser{*user},
+			secrets: &[]*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      K8sConnectionSecretName("test-project-id", "cluster2", user.Spec.Username, "data-federation"),
+						Namespace: "test-ns",
+
+						Labels: map[string]string{
+							ProjectLabelKey:      "test-project-id",
+							TargetLabelKey:       "cluster2",
+							TypeLabelKey:         "connection",
+							DatabaseUserLabelKey: user.Spec.Username,
+						},
+						Annotations: map[string]string{
+							ConnectionTypelKey: "data-federation",
+						},
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: "v1",
+								Kind:       "AtlasDatabaseUser",
+								Name:       "kub-test-user",
+								UID:        "test",
+							},
+						},
+					},
+				},
+			},
+			expectedDeletions: &[]string{K8sConnectionSecretName("test-project-id", "cluster2", user.Spec.Username, "data-federation")},
+			expectedDeletion:  true,
+			expectedResult: func() (ctrl.Result, error) {
+				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+			},
+		},
+		"success: expried user triggers deletion": {
+			reqName:    "kub-test-user",
+			deployment: &[]akov2.AtlasDeployment{*depl},
+			user: &[]akov2.AtlasDatabaseUser{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "AtlasDatabaseUser",
+						APIVersion: "v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "kub-test-user",
+						Namespace: "test-ns",
+						UID:       "other-dummy-uid",
+					},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						Username:       "db-test-user",
+						PasswordSecret: &common.ResourceRef{Name: "user-pass"},
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{ID: "test-project-id"},
+							ConnectionSecret:   &api.LocalObjectReference{Name: "sdk-creds"},
+						},
+						DeleteAfterDate: time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339),
+					},
+					Status: status.AtlasDatabaseUserStatus{
+						Common: api.Common{
+							Conditions: []api.Condition{{Type: api.ReadyType, Status: corev1.ConditionTrue}},
+						},
+					},
+				},
+			},
+			secrets: &[]*corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      K8sConnectionSecretName("test-project-id", "cluster3", user.Spec.Username, "deployment"),
+						Namespace: "test-ns",
+
+						Labels: map[string]string{
+							ProjectLabelKey:      "test-project-id",
+							TargetLabelKey:       "cluster3",
+							TypeLabelKey:         "connection",
+							DatabaseUserLabelKey: user.Spec.Username,
+						},
+						Annotations: map[string]string{
+							ConnectionTypelKey: "deployment",
+						},
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: "v1",
+								Kind:       "AtlasDatabaseUser",
+								Name:       "kub-test-user",
+								UID:        "test",
+							},
+						},
+					},
+				},
+			},
+			expectedDeletions: &[]string{K8sConnectionSecretName("test-project-id", "cluster3", user.Spec.Username, "deployment")},
+			expectedDeletion:  true,
+			expectedResult: func() (ctrl.Result, error) {
+				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+			},
+		},
+		"re-enque: resources are not ready yet": {
+			reqName:    "test-user",
+			deployment: &[]akov2.AtlasDeployment{*depl},
+			user: &[]akov2.AtlasDatabaseUser{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-user",
+						Namespace: "test-ns",
+					},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						Username:       "admin",
+						PasswordSecret: &common.ResourceRef{Name: "user-pass"},
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{ID: "test-project-id"},
+							ConnectionSecret:   &api.LocalObjectReference{Name: "sdk-creds"},
+						},
+					},
+				},
+			},
+			expectedResult: func() (ctrl.Result, error) {
+				return workflow.InProgress(workflow.ConnectionSecretNotReady, "resources not ready").ReconcileResult()
+			},
+		},
+		"success: invalid scopes; trigger delete": {
+			reqName:    "test-user",
+			deployment: &[]akov2.AtlasDeployment{*depl},
+			user: &[]akov2.AtlasDatabaseUser{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-user",
+						Namespace: "test-ns",
+					},
+					Spec: akov2.AtlasDatabaseUserSpec{
+						Username:       "admin",
+						PasswordSecret: &common.ResourceRef{Name: "user-pass"},
+						ProjectDualReference: akov2.ProjectDualReference{
+							ExternalProjectRef: &akov2.ExternalProjectReference{ID: "test-project-id"},
+							ConnectionSecret:   &api.LocalObjectReference{Name: "sdk-creds"},
+						},
+						Scopes: []akov2.ScopeSpec{
+							{
+								Name: "df",
+								Type: akov2.DataLakeScopeType,
+							},
+						},
+					},
+					Status: status.AtlasDatabaseUserStatus{
+						Common: api.Common{
+							Conditions: []api.Condition{{Type: api.ReadyType, Status: corev1.ConditionTrue}},
+						},
+					},
+				}},
+			expectedDeletion: false,
+			expectedResult: func() (ctrl.Result, error) {
+				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+			},
+		},
+		"success: pair ready; trigger upsert": {
+			reqName:          "kub-test-user",
+			deployment:       &[]akov2.AtlasDeployment{*depl},
+			user:             &[]akov2.AtlasDatabaseUser{*user},
+			expectedUpdate:   true,
+			explectedUpdates: &[]string{K8sConnectionSecretName("test-project-id", "cluster3", user.Spec.Username, "deployment")},
+			expectedResult: func() (ctrl.Result, error) {
+				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+			},
+		},
 	}
 
 	for name, tc := range tests {
@@ -242,6 +322,17 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				},
 			}
 
+			if tc.expectedUpdate {
+				for _, targetUpdate := range *tc.explectedUpdates {
+					var check corev1.Secret
+					getErr := r.Client.Get(context.Background(), types.NamespacedName{
+						Namespace: "test-ns",
+						Name:      targetUpdate,
+					}, &check)
+					assert.True(t, apiErrors.IsNotFound(getErr), "expected secret %q to be deleted", targetUpdate)
+				}
+			}
+
 			if tc.expectedDeletion {
 				for _, targetDeletion := range *tc.expectedDeletions {
 					var check corev1.Secret
@@ -264,16 +355,14 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			}
 
 			if tc.expectedUpdate {
-				// connectionTargets, err := r.listConnectionTargetsByProject()
-				// require.NoError(t, err)
-
-				expectedName := K8sConnectionSecretName("projectid", "targetname", user.Spec.Username, "connectiontype")
-				var outputSecret corev1.Secret
-				getErr := r.Client.Get(context.Background(), types.NamespacedName{
-					Namespace: "test-ns",
-					Name:      expectedName,
-				}, &outputSecret)
-				assert.NoError(t, getErr, "expected secret %q to exist", expectedName)
+				for _, targetUpdate := range *tc.explectedUpdates {
+					var check corev1.Secret
+					getErr := r.Client.Get(context.Background(), types.NamespacedName{
+						Namespace: "test-ns",
+						Name:      targetUpdate,
+					}, &check)
+					assert.False(t, apiErrors.IsNotFound(getErr), "expected secret %q to be deleted", targetUpdate)
+				}
 			}
 
 			if tc.expectedDeletion {
@@ -480,7 +569,7 @@ func Test_newConnectionTargetMapFunc(t *testing.T) {
 		projectID = "test-project-id"
 	)
 
-	depl := createDummyDeployment(t)
+	depl := createDummyDeployment(t, "test-depl-second", "test-project", "cluster1")
 	df := createDummyFederation(t)
 	userNoScopes := createDummyUser(t, "test-user", "admin", "dummy-uid")
 

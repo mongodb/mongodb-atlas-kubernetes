@@ -30,19 +30,19 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 )
 
-func createDummyDeployment(t *testing.T) *akov2.AtlasDeployment {
+func createDummyDeployment(t *testing.T, deploymentName string, deploymentProjectName string, deploymentClusterName string) *akov2.AtlasDeployment {
 	t.Helper()
 
 	depl := &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-depl",
+			Name:      deploymentName,
 			Namespace: "test-ns",
 		},
 		Spec: akov2.AtlasDeploymentSpec{
-			DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "cluster1"},
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: deploymentClusterName},
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{
-					Name:      "test-project",
+					Name:      deploymentProjectName,
 					Namespace: "test-ns",
 				},
 			},
@@ -93,7 +93,7 @@ func createDummyDeploymentSDK(t *testing.T) *akov2.AtlasDeployment {
 func TestDeploymentConnectionTarget_GetName(t *testing.T) {
 	eNil := DeploymentConnectionTarget{obj: nil}
 	assert.Equal(t, "", eNil.GetName())
-	dep := createDummyDeployment(t)
+	dep := createDummyDeployment(t, "test-depl", "test-project-second", "cluster1")
 	e := DeploymentConnectionTarget{obj: dep}
 	assert.Equal(t, "cluster1", e.GetName())
 }
@@ -128,7 +128,7 @@ func TestDeploymentConnectionTarget_GetScopeType(t *testing.T) {
 
 func TestDeploymentConnectionTarget_GetProjectID(t *testing.T) {
 	r := createDummyEnv(t, nil)
-	depl := createDummyDeployment(t)
+	depl := createDummyDeployment(t, "test-depl", "test-project", "cluster1")
 	deplsdk := createDummyDeploymentSDK(t)
 
 	tests := map[string]struct {
@@ -220,7 +220,7 @@ func TestDeploymentConnectionTarget_SelectorByProject(t *testing.T) {
 
 func TestDeploymentConnectionTarget_BuildConnData(t *testing.T) {
 	r := createDummyEnv(t, nil)
-	depl := createDummyDeployment(t)
+	depl := createDummyDeployment(t, "test-depl", "test-project", "cluster1")
 	user := createDummyUser(t, "test-user", "admin", "dummy-uid")
 
 	userNoPass := &akov2.AtlasDatabaseUser{

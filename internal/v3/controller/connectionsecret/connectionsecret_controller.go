@@ -105,7 +105,7 @@ func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	isUserReady := api.HasReadyCondition(user.Status.Conditions)
 	if !isUserReady {
 		log.Debugw("AtlasDatabaseUser not ready; nothing to reconcile")
-		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+		return workflow.InProgress(workflow.ConnectionSecretNotReady, "resources not ready").ReconcileResult()
 	}
 
 	// Delegate the batch upsert logic to handleBatchUpsert.

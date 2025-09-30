@@ -131,7 +131,7 @@ func Test_handleUpsert(t *testing.T) {
 	}
 
 	r := createDummyEnv(t, nil)
-	dep := createDummyDeployment(t)
+	dep := createDummyDeployment(t, "test-depl", "test-project", "cluster1")
 	dbuser := createDummyUser(t, "test-user", "admin", "dummy-uid")
 	depConnectionTarget := DeploymentConnectionTarget{
 		client:          r.Client,
@@ -221,7 +221,7 @@ func Test_ensureSecret(t *testing.T) {
 
 	r := createDummyEnv(t, nil)
 	dbUser := createDummyUser(t, "test-user", "admin", "dummy-uid")
-	dep := createDummyDeployment(t)
+	dep := createDummyDeployment(t, "test-depl", "test-project", "cluster1")
 
 	connData := ConnectionSecretData{
 		DBUserName:       username,

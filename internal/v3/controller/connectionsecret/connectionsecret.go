@@ -146,6 +146,7 @@ func (r *ConnectionSecretReconciler) handleBatchUpsert(
 				log.Errorw("Failed to delete connection secrets for expired user", "error", err)
 				return result, err
 			}
+			continue
 		}
 
 		// Check that scopes are still valid.
@@ -156,6 +157,7 @@ func (r *ConnectionSecretReconciler) handleBatchUpsert(
 				log.Errorw("failed to delete connection secrets for invalid scope", "error", err)
 				return result, err
 			}
+			continue
 		}
 
 		// Ensure paired resource readiness.
