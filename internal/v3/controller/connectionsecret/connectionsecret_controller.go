@@ -70,12 +70,6 @@ type ConnectionTarget interface {
 func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("namespace", req.Namespace, "name", req.Name)
 
-	// Cleanup stale Secrets
-	if err := r.cleanupStaleSecrets(ctx, req.Name, req.Namespace); err != nil {
-		log.Errorw("Failed to clean up secrets for databaseUser", "databaseUser", req.Name, "error", err)
-		return workflow.Terminate(workflow.ConnectionSecretStaleSecretsNotCleaned, err).ReconcileResult()
-	}
-
 	// Fetch the AtlasDatabaseUser resource.
 	user := &akov2.AtlasDatabaseUser{}
 	err := r.Client.Get(ctx, req.NamespacedName, user)
@@ -105,15 +99,32 @@ func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return workflow.Terminate(workflow.ConnectionSecretConnectionTargetsNotLoaded, err).ReconcileResult()
 	}
 
+	// Cleanup stale Secrets
+	if err := r.cleanupStaleSecrets(ctx, req.Namespace, connectionTargets, projectID); err != nil {
+		log.Errorw("Failed to clean up secrets for databaseUser", "databaseUser", req.Name, "error", err)
+		return workflow.Terminate(workflow.ConnectionSecretStaleSecretsNotCleaned, err).ReconcileResult()
+	}
+
+	// Verify if the AtlasDatabaseUser is ready.
+	isUserReady := api.HasReadyCondition(user.Status.Conditions)
+	if !isUserReady {
+		log.Debugw("AtlasDatabaseUser not ready; nothing to reconcile")
+		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+	}
+
 	// Delegate the batch upsert logic to handleBatchUpsert.
 	return r.handleBatchUpsert(ctx, req, user, projectID, connectionTargets)
 }
 
 func (r *ConnectionSecretReconciler) For() (client.Object, builder.Predicates) {
-	readyPredicate := watch.ReadyTransitionPredicate(func(user akov2.AtlasDatabaseUser) bool {
-		return api.HasReadyCondition(user.Status.Conditions)
-	})
-	return &akov2.AtlasDatabaseUser{}, builder.WithPredicates(readyPredicate)
+	return &akov2.AtlasDatabaseUser{}, builder.WithPredicates(
+		predicate.Or(
+			watch.ReadyTransitionPredicate(func(d *akov2.AtlasDatabaseUser) bool {
+				return api.HasReadyCondition(d.Status.Conditions)
+			}),
+			predicate.GenerationChangedPredicate{},
+		),
+	)
 }
 
 func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
@@ -215,55 +226,62 @@ func (r *ConnectionSecretReconciler) listConnectionTargetsByProject(ctx context.
 	return out, nil
 }
 
-func (r *ConnectionSecretReconciler) cleanupStaleSecrets(ctx context.Context, userName string, namespace string) error {
-	log := r.Log.With("namespace", namespace, "databaseUser", userName)
+func (r *ConnectionSecretReconciler) cleanupStaleSecrets(ctx context.Context, namespace string, connectionTargets []ConnectionTarget, projectID string) error {
+	log := r.Log.With("namespace", namespace)
 
-	// List all secrets in the namespace.
+	// Define the label selector to find relevant secrets.
+	labelSelector := &metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{Key: TypeLabelKey, Operator: metav1.LabelSelectorOpExists},
+			{Key: ProjectLabelKey, Operator: metav1.LabelSelectorOpIn, Values: []string{projectID}},
+			{Key: TargetLabelKey, Operator: metav1.LabelSelectorOpExists},
+			{Key: DatabaseUserLabelKey, Operator: metav1.LabelSelectorOpExists},
+		},
+	}
+
+	// Convert the label selector into a client-compatible format.
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return fmt.Errorf("failed to convert label selector: %w", err)
+	}
+
+	// Fetch all secrets in the specified namespace that match the label selector.
 	secretList := &corev1.SecretList{}
-	if err := r.Client.List(ctx, secretList, client.InNamespace(namespace)); err != nil {
-		log.Errorw("Failed to list secrets", "error", err)
+	if err := r.Client.List(ctx, secretList, client.InNamespace(namespace), client.MatchingLabelsSelector{Selector: selector}); err != nil {
 		return fmt.Errorf("failed to list secrets: %w", err)
 	}
 
+	// Iterate through secrets and delete any that are stale.
 	for _, secret := range secretList.Items {
-		// Filter secrets that are owned only by the AtlasDatabaseUser with the provided name.
-		if r.isOwnedByOnlyAtlasDatabaseUser(secret) {
-			log.Debugw("Deleting secret", "secretName", secret.Name)
-
-			// Delete the secret.
-			if err := r.Client.Delete(ctx, &secret); err != nil {
-				if apiErrors.IsNotFound(err) {
-					log.Debugw("Secret already deleted", "secretName", secret.Name)
-					continue
-				}
-				log.Errorw("Failed to delete secret", "secretName", secret.Name, "error", err)
-				return fmt.Errorf("failed to delete secret: %w", err)
-			}
-			log.Infow("Deleted secret successfully", "secretName", secret.Name)
+		if err := r.checkAndDeleteStaleSecret(ctx, &secret, connectionTargets); err != nil {
+			log.Errorw("Error cleaning up stale secret", "secretName", secret.Name, "error", err)
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (r *ConnectionSecretReconciler) isOwnedByOnlyAtlasDatabaseUser(secret corev1.Secret) bool {
-	// If the secret has no owner references, return false (not owned at all).
-	if len(secret.OwnerReferences) == 0 {
-		return false
-	}
-
-	hasAtlasDatabaseUserOwner := false
-	if len(secret.OwnerReferences) == 1 {
-		for _, ownerRef := range secret.OwnerReferences {
-			if ownerRef.Kind != "AtlasDatabaseUser" && ownerRef.Kind != "AtlasDeployment" && ownerRef.Kind != "AtlasDataFederation" {
-				return false
-			}
-			hasAtlasDatabaseUserOwner = true
+// checkAndDeleteStaleSecret deletes a secret if its associated user or connected resource no longer exists.
+func (r *ConnectionSecretReconciler) checkAndDeleteStaleSecret(ctx context.Context, secret *corev1.Secret, connectionTargets []ConnectionTarget) error {
+	pendingDeletion := true
+	for _, connectionTarget := range connectionTargets {
+		if connectionTarget.GetName() == secret.Labels[TargetLabelKey] && connectionTarget.GetConnectionTargetType() == secret.Annotations[ConnectionTypelKey] {
+			pendingDeletion = false
 		}
 	}
 
-	// Return true if exactly one owner exists for the secret.
-	return hasAtlasDatabaseUserOwner
+	if pendingDeletion {
+		if err := r.Client.Delete(ctx, secret); err != nil {
+			if apiErrors.IsNotFound(err) {
+				r.Log.Debugw("Secret already deleted", "secretName", secret.Name)
+				return nil
+			}
+			return fmt.Errorf("failed to delete secret: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // newConnectionTargetMapFunc maps a ConnectionTarget to requests by fetching all AtlasDatabaseUsers and creating a request for each

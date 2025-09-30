@@ -71,19 +71,20 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			},
 		},
 		"success: only one available resource from the pair, trigger delete": {
+			// deployment: &[]akov2.AtlasDeployment{*depl},
 			reqName: user.Name,
 			user:    &[]akov2.AtlasDatabaseUser{*user},
 			secrets: &[]*corev1.Secret{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      K8sConnectionSecretName("test-project-id", "cluster1", user.Spec.Username, "deployment"),
+						Name:      K8sConnectionSecretName("test-project-id", "cluster2", user.Spec.Username, "deployment"),
 						Namespace: "test-ns",
 
 						Labels: map[string]string{
-							ProjectLabelKey: "test-project-id",
-							TargetLabelKey:  "cluster1",
-							TypeLabelKey:    "connection",
-							userNameKey:     user.Spec.Username,
+							ProjectLabelKey:      "test-project-id",
+							TargetLabelKey:       "cluster2",
+							TypeLabelKey:         "connection",
+							DatabaseUserLabelKey: user.Spec.Username,
 						},
 						Annotations: map[string]string{
 							ConnectionTypelKey: "deployment",
@@ -99,7 +100,7 @@ func TestConnectionSecretReconcile(t *testing.T) {
 					},
 				},
 			},
-			expectedDeletions: &[]string{K8sConnectionSecretName("test-project-id", "cluster1", user.Spec.Username, "deployment")},
+			expectedDeletions: &[]string{K8sConnectionSecretName("test-project-id", "cluster2", user.Spec.Username, "deployment")},
 			expectedDeletion:  true,
 			expectedResult: func() (ctrl.Result, error) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()

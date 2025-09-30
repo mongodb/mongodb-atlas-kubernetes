@@ -226,7 +226,7 @@ func (r *ConnectionSecretReconciler) ensureSecret(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
-			OwnerReferences: append(user.GetOwnerReferences(), connectionTarget.GetOwnerReferences()...),
+			OwnerReferences: user.GetOwnerReferences(),
 		},
 	}
 

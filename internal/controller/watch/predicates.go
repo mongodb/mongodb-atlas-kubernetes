@@ -111,19 +111,3 @@ func ReadyTransitionPredicate[T any](ready ReadyFunc[T]) predicate.Predicate {
 		},
 	}
 }
-
-// SecretLabelPredicate filters out secrets based on the required labels
-func SecretLabelPredicate(requiredKeys ...string) predicate.Predicate {
-	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
-		if obj == nil {
-			return false
-		}
-		labels := obj.GetLabels()
-		for _, k := range requiredKeys {
-			if _, ok := labels[k]; !ok {
-				return false
-			}
-		}
-		return true
-	})
-}
