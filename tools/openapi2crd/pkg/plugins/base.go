@@ -135,7 +135,7 @@ func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.Gro
 }
 
 func majorVersions(crdConfig *configv1alpha1.CRDConfig) []string {
-	var result []string
+	result := make([]string, 0, len(crdConfig.Mappings))
 	for _, m := range crdConfig.Mappings {
 		result = append(result, "- "+m.MajorVersion)
 	}

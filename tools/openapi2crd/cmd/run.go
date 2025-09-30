@@ -98,6 +98,7 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, input, output string, over
 	}
 
 	openapiLoader := config.NewKinOpeAPI(fs)
+	atlasLoader := config.NewAtlas(openapiLoader)
 
 	for _, crdConfig := range cfg.Spec.CRDConfig {
 		pluginSet, err := plugins.GetPluginSet(pluginSets, crdConfig.PluginSet)
@@ -105,7 +106,7 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, input, output string, over
 			return fmt.Errorf("error getting plugin set %q: %w", crdConfig.PluginSet, err)
 		}
 
-		g := generator.NewGenerator(definitionsMap, pluginSet, openapiLoader)
+		g := generator.NewGenerator(definitionsMap, pluginSet, openapiLoader, atlasLoader)
 		crd, err := g.Generate(ctx, &crdConfig)
 		if err != nil {
 			return err

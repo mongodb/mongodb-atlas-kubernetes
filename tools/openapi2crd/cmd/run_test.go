@@ -48,7 +48,7 @@ spec:
       plugins:
         - base
         - major_version
-        - parameter
+        - parameters
         - entry
         - status
   openapi:

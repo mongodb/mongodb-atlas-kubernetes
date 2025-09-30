@@ -131,7 +131,12 @@ func (g *Generator) Convert(input converter.PropertyConvertInput) *apiextensions
 			ExtensionsSchema: extensionSchemaRef,
 			Path:             input.Path,
 		}
-		p.Process(req)
+		err := p.Process(req)
+		// Currently, property plugins are not expected to return an error.
+		// If an error case is introduced in the future, we should handle it appropriately.
+		if err != nil {
+			return nil
+		}
 
 		if req.Property == nil {
 			return nil
@@ -201,7 +206,12 @@ func (g *Generator) convertPropertyOrArray(input converter.PropertyConvertInput)
 }
 
 func (g *Generator) convertPropertySlice(schemas openapi3.SchemaRefs, input converter.PropertyConvertInput) []apiextensions.JSONSchemaProps {
-	var s []apiextensions.JSONSchemaProps
+	if len(schemas) == 0 {
+		return nil
+	}
+
+	s := make([]apiextensions.JSONSchemaProps, 0, len(schemas))
+
 	for _, schema := range schemas {
 		input.Depth++
 		result := g.Convert(
@@ -218,6 +228,7 @@ func (g *Generator) convertPropertySlice(schemas openapi3.SchemaRefs, input conv
 		}
 		s = append(s, *result)
 	}
+
 	return s
 }
 

@@ -39,7 +39,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/atlas"
 	"tools/openapi2crd/pkg/config"
 	"tools/openapi2crd/pkg/plugins"
 )
@@ -48,13 +47,20 @@ type Generator struct {
 	definitions   map[string]v1alpha1.OpenAPIDefinition
 	pluginSet     *plugins.Set
 	openapiLoader config.Loader
+	atlasLoader   config.Loader
 }
 
-func NewGenerator(openAPIDefinitions map[string]v1alpha1.OpenAPIDefinition, pluginSet *plugins.Set, openapiLoader config.Loader) *Generator {
+func NewGenerator(
+	openAPIDefinitions map[string]v1alpha1.OpenAPIDefinition,
+	pluginSet *plugins.Set,
+	openapiLoader config.Loader,
+	atlasLoader config.Loader,
+) *Generator {
 	return &Generator{
 		definitions:   openAPIDefinitions,
 		pluginSet:     pluginSet,
 		openapiLoader: openapiLoader,
+		atlasLoader:   atlasLoader,
 	}
 }
 
@@ -81,19 +87,19 @@ func (g *Generator) Generate(ctx context.Context, crdConfig *v1alpha1.CRDConfig)
 		}
 
 		var openApiSpec *openapi3.T
+		var err error
 
-		path := def.Path
-		if path == "" {
-			var err error
-			path, err = atlas.LoadOpenAPIPath(def.Package)
+		switch def.Path {
+		case "":
+			openApiSpec, err = g.atlasLoader.Load(ctx, def.Package)
 			if err != nil {
-				return nil, fmt.Errorf("error loading OpenAPI package %q: %w", def.Package, err)
+				return nil, fmt.Errorf("error loading Atlas OpenAPI package %q: %w", def.Package, err)
 			}
-		}
-
-		openApiSpec, err = g.openapiLoader.Load(path)
-		if err != nil {
-			return nil, fmt.Errorf("error loading spec: %w", err)
+		default:
+			openApiSpec, err = g.openapiLoader.Load(ctx, def.Path)
+			if err != nil {
+				return nil, fmt.Errorf("error loading spec: %w", err)
+			}
 		}
 
 		for _, p := range g.pluginSet.Mapping {
@@ -145,7 +151,7 @@ func (g *Generator) Generate(ctx context.Context, crdConfig *v1alpha1.CRDConfig)
 }
 
 func (g *Generator) majorVersions(config v1alpha1.CRDConfig) []string {
-	var result []string
+	result := make([]string, 0, len(config.Mappings))
 	for _, m := range config.Mappings {
 		result = append(result, "- "+m.MajorVersion)
 	}

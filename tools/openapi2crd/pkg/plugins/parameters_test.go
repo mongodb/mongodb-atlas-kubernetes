@@ -16,7 +16,7 @@ import (
 
 func TestParameterName(t *testing.T) {
 	p := &Parameters{}
-	assert.Equal(t, "parameter", p.Name())
+	assert.Equal(t, "parameters", p.Name())
 }
 
 func TestParameterProcess(t *testing.T) {

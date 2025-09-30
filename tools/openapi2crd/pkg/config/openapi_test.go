@@ -59,7 +59,7 @@ paths:
 			tt.expectedOpenAPI.Paths.Extensions = map[string]any{}
 
 			loader := NewKinOpeAPI(fs)
-			openapi, err := loader.Load(tt.filePath)
+			openapi, err := loader.Load(nil, tt.filePath)
 			assert.Equal(t, tt.expectError, err)
 			assert.Equal(t, tt.expectedOpenAPI, openapi)
 		})

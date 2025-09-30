@@ -30,6 +30,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -40,7 +41,7 @@ import (
 )
 
 type Loader interface {
-	Load(path string) (*openapi3.T, error)
+	Load(ctx context.Context, path string) (*openapi3.T, error)
 }
 
 type KinOpeAPI struct {
@@ -53,7 +54,7 @@ func NewKinOpeAPI(fs afero.Fs) *KinOpeAPI {
 	}
 }
 
-func (a *KinOpeAPI) Load(path string) (*openapi3.T, error) {
+func (a *KinOpeAPI) Load(_ context.Context, path string) (*openapi3.T, error) {
 	loader := &openapi3.Loader{
 		IsExternalRefsAllowed: true,
 	}

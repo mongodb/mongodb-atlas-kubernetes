@@ -26,7 +26,7 @@ func TestBuildSets(t *testing.T) {
 					Name:        "set-2",
 					Default:     false,
 					InheritFrom: "set-1",
-					Plugins:     []string{"reference", "read_only_property", "read_write_property"},
+					Plugins:     []string{"references", "read_only_properties", "read_write_properties"},
 				},
 			},
 			expectedSet: []Set{
@@ -55,12 +55,12 @@ func TestBuildSets(t *testing.T) {
 					Name:        "set-2",
 					Default:     false,
 					InheritFrom: "set-1",
-					Plugins:     []string{"reference", "read_only_property", "read_write_property"},
+					Plugins:     []string{"references", "read_only_properties", "read_write_properties"},
 				},
 				{
 					Name:    "set-1",
 					Default: true,
-					Plugins: []string{"base", "entry", "status", "reference_metadata"},
+					Plugins: []string{"base", "entry", "status", "references_metadata"},
 				},
 			},
 			expectedSet: []Set{
@@ -100,7 +100,7 @@ func TestBuildSets(t *testing.T) {
 					Name:        "set-2",
 					Default:     false,
 					InheritFrom: "set-1",
-					Plugins:     []string{"reference", "read_only_property", "read_write_property"},
+					Plugins:     []string{"references", "read_only_properties", "read_write_properties"},
 				},
 			},
 			expectedSet: nil,
@@ -116,7 +116,7 @@ func TestBuildSets(t *testing.T) {
 				{
 					Name:    "set-2",
 					Default: true,
-					Plugins: []string{"reference", "read_only_property", "read_write_property"},
+					Plugins: []string{"references", "read_only_properties", "read_write_properties"},
 				},
 			},
 			expectedSet: nil,

@@ -5,6 +5,8 @@
 package config
 
 import (
+	"context"
+
 	"github.com/getkin/kin-openapi/openapi3"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,8 +39,8 @@ func (_m *LoaderMock) EXPECT() *LoaderMock_Expecter {
 }
 
 // Load provides a mock function for the type LoaderMock
-func (_mock *LoaderMock) Load(path string) (*openapi3.T, error) {
-	ret := _mock.Called(path)
+func (_mock *LoaderMock) Load(ctx context.Context, path string) (*openapi3.T, error) {
+	ret := _mock.Called(ctx, path)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Load")
@@ -46,18 +48,18 @@ func (_mock *LoaderMock) Load(path string) (*openapi3.T, error) {
 
 	var r0 *openapi3.T
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*openapi3.T, error)); ok {
-		return returnFunc(path)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*openapi3.T, error)); ok {
+		return returnFunc(ctx, path)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *openapi3.T); ok {
-		r0 = returnFunc(path)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *openapi3.T); ok {
+		r0 = returnFunc(ctx, path)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*openapi3.T)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(path)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, path)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -70,19 +72,25 @@ type LoaderMock_Load_Call struct {
 }
 
 // Load is a helper method to define mock.On call
+//   - ctx context.Context
 //   - path string
-func (_e *LoaderMock_Expecter) Load(path interface{}) *LoaderMock_Load_Call {
-	return &LoaderMock_Load_Call{Call: _e.mock.On("Load", path)}
+func (_e *LoaderMock_Expecter) Load(ctx interface{}, path interface{}) *LoaderMock_Load_Call {
+	return &LoaderMock_Load_Call{Call: _e.mock.On("Load", ctx, path)}
 }
 
-func (_c *LoaderMock_Load_Call) Run(run func(path string)) *LoaderMock_Load_Call {
+func (_c *LoaderMock_Load_Call) Run(run func(ctx context.Context, path string)) *LoaderMock_Load_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -93,7 +101,7 @@ func (_c *LoaderMock_Load_Call) Return(t *openapi3.T, err error) *LoaderMock_Loa
 	return _c
 }
 
-func (_c *LoaderMock_Load_Call) RunAndReturn(run func(path string) (*openapi3.T, error)) *LoaderMock_Load_Call {
+func (_c *LoaderMock_Load_Call) RunAndReturn(run func(ctx context.Context, path string) (*openapi3.T, error)) *LoaderMock_Load_Call {
 	_c.Call.Return(run)
 	return _c
 }

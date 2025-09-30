@@ -12,7 +12,7 @@ import (
 
 func TestReadOnlyPropertyName(t *testing.T) {
 	p := &ReadOnlyProperties{}
-	assert.Equal(t, "read_only_property", p.Name())
+	assert.Equal(t, "read_only_properties", p.Name())
 }
 
 func TestReadOnlyPropertyProcess(t *testing.T) {
