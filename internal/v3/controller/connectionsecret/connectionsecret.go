@@ -223,9 +223,8 @@ func (r *ConnectionSecretReconciler) ensureSecret(
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
-			OwnerReferences: user.GetOwnerReferences(),
+			Name:      name,
+			Namespace: namespace,
 		},
 	}
 
