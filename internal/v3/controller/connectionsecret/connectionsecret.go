@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
@@ -158,9 +157,9 @@ func (r *ConnectionSecretReconciler) handleBatchUpsert(
 			continue
 		}
 
-		// Ensure paired resource readiness.
-		if !(api.HasReadyCondition(user.Status.Conditions) && connectionTarget.IsReady()) {
-			return workflow.InProgress(workflow.ConnectionSecretNotReady, "resources not ready").ReconcileResult()
+		// Ensure connectionTarget readiness
+		if !(connectionTarget.IsReady()) {
+			continue
 		}
 
 		// Handle the upsert of the connection secret.

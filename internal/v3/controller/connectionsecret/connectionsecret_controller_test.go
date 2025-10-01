@@ -272,6 +272,37 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 			},
 		},
+		"success: user ready but deployment no; nothing happening": {
+			reqName: "kub-test-user",
+			deployment: &[]akov2.AtlasDeployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-depl",
+						Namespace: "test-ns",
+					},
+					Spec: akov2.AtlasDeploymentSpec{
+						DeploymentSpec: &akov2.AdvancedDeploymentSpec{Name: "cluster3"},
+						ProjectDualReference: akov2.ProjectDualReference{
+							ProjectRef: &common.ResourceRefNamespaced{
+								Name:      "test-project",
+								Namespace: "test-ns",
+							},
+						},
+					},
+					Status: status.AtlasDeploymentStatus{
+						Common: api.Common{
+							Conditions: []api.Condition{{Type: api.ReadyType, Status: corev1.ConditionFalse}},
+						},
+						ConnectionStrings: &status.ConnectionStrings{
+							Standard:    "mongodb+srv://cluster1.mongodb.net",
+							StandardSrv: "mongodb://cluster1.mongodb.net",
+						},
+					}}},
+			user: &[]akov2.AtlasDatabaseUser{*user},
+			expectedResult: func() (ctrl.Result, error) {
+				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+			},
+		},
 	}
 
 	// Iterate through test cases and execute
