@@ -37,8 +37,6 @@ import (
 )
 
 const (
-	InternalSeparator = "$"
-
 	ProjectLabelKey      = "atlas.mongodb.com/project-id"
 	TargetLabelKey       = "atlas.mongodb.com/target-name"
 	TypeLabelKey         = "atlas.mongodb.com/type"
