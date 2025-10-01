@@ -48,23 +48,24 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-func TestConnectionSecretReconcile(t *testing.T) {
-	type testCase struct {
-		reqName           string
-		deployment        *[]akov2.AtlasDeployment
-		user              *[]akov2.AtlasDatabaseUser
-		secrets           *[]*corev1.Secret
-		expectedDeletions *[]string
-		expectedDeletion  bool
-		expectedUpdate    bool
-		explectedUpdates  *[]string
-		expectedResult    func() (ctrl.Result, error)
-	}
+type testCase struct {
+	reqName           string
+	deployment        *[]akov2.AtlasDeployment
+	user              *[]akov2.AtlasDatabaseUser
+	secrets           *[]*corev1.Secret
+	expectedDeletions *[]string
+	expectedDeletion  bool
+	expectedUpdate    bool
+	expectedUpdates   *[]string
+	expectedResult    func() (ctrl.Result, error)
+}
 
+func TestConnectionSecretReconcile(t *testing.T) {
+	// Dummy Deployment and User Setup
 	depl := createDummyDeployment(t, "test-depl", "test-project", "cluster3")
 	user := createDummyUser(t, "kub-test-user", "db-test-user", "other-dummy-uid")
-	// // secondUser := createDummyUser(t, "test-user-second")
 
+	// Define the Test Cases
 	tests := map[string]testCase{
 		"success: could not find secret with k8s format; assume deleted": {
 			reqName: "not-existing-username",
@@ -262,56 +263,34 @@ func TestConnectionSecretReconcile(t *testing.T) {
 			},
 		},
 		"success: pair ready; trigger upsert": {
-			reqName:          "kub-test-user",
-			deployment:       &[]akov2.AtlasDeployment{*depl},
-			user:             &[]akov2.AtlasDatabaseUser{*user},
-			expectedUpdate:   true,
-			explectedUpdates: &[]string{K8sConnectionSecretName("test-project-id", "cluster3", user.Spec.Username, "deployment")},
+			reqName:         "kub-test-user",
+			deployment:      &[]akov2.AtlasDeployment{*depl},
+			user:            &[]akov2.AtlasDatabaseUser{*user},
+			expectedUpdate:  true,
+			expectedUpdates: &[]string{K8sConnectionSecretName("test-project-id", "cluster3", user.Spec.Username, "deployment")},
 			expectedResult: func() (ctrl.Result, error) {
 				return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
 			},
 		},
 	}
 
+	// Iterate through test cases and execute
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			var all []client.Object
+			env := setupTestEnvironment(t, tc)
 
-			// If `tc.deployment` is not nil, append its contents to `all`
-			if tc.deployment != nil {
-				for _, dep := range *tc.deployment { // Dereferencing the pointer to iterate over the slice
-					all = append(all, &dep) // Adding individual deployments to `all`
-				}
-			}
-
-			// If `tc.user` is not nil, append its contents to `all`
-			if tc.user != nil {
-				for _, usr := range *tc.user { // Dereferencing the pointer to iterate over the slice
-					all = append(all, &usr) // Adding individual users to `all`
-				}
-			}
-
-			// If `tc.secrets` is not nil, append its contents to `all`
-			if tc.secrets != nil {
-				for _, sec := range *tc.secrets { // Iterating over the slice of secrets
-					all = append(all, sec)
-				}
-			}
-
-			r := createDummyEnv(t, all)
-
-			r.ConnectionTargetKinds = []ConnectionTarget{
+			env.ConnectionTargetKinds = []ConnectionTarget{
 				DeploymentConnectionTarget{
-					client:          r.Client,
-					provider:        r.AtlasProvider,
-					globalSecretRef: r.GlobalSecretRef,
-					log:             r.Log,
+					client:          env.Client,
+					provider:        env.AtlasProvider,
+					globalSecretRef: env.GlobalSecretRef,
+					log:             env.Log,
 				},
 				DataFederationConnectionTarget{
-					client:          r.Client,
-					provider:        r.AtlasProvider,
-					globalSecretRef: r.GlobalSecretRef,
-					log:             r.Log,
+					client:          env.Client,
+					provider:        env.AtlasProvider,
+					globalSecretRef: env.GlobalSecretRef,
+					log:             env.Log,
 				},
 			}
 
@@ -322,31 +301,11 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				},
 			}
 
-			if tc.expectedUpdate {
-				for _, targetUpdate := range *tc.explectedUpdates {
-					var check corev1.Secret
-					getErr := r.Client.Get(context.Background(), types.NamespacedName{
-						Namespace: "test-ns",
-						Name:      targetUpdate,
-					}, &check)
-					assert.True(t, apiErrors.IsNotFound(getErr), "expected secret %q to be deleted", targetUpdate)
-				}
-			}
-
-			if tc.expectedDeletion {
-				for _, targetDeletion := range *tc.expectedDeletions {
-					var check corev1.Secret
-					getErr := r.Client.Get(context.Background(), types.NamespacedName{
-						Namespace: "test-ns",
-						Name:      targetDeletion,
-					}, &check)
-					assert.False(t, apiErrors.IsNotFound(getErr), "expected secret %q to be present", targetDeletion)
-				}
-			}
-
-			res, err := r.Reconcile(context.Background(), req)
+			// Execute Reconciliation
+			res, err := env.Reconcile(context.Background(), req)
 			expRes, expErr := tc.expectedResult()
 
+			// Validate Reconcile Results
 			assert.Equal(t, expRes, res)
 			if expErr != nil {
 				assert.EqualError(t, err, expErr.Error())
@@ -354,29 +313,62 @@ func TestConnectionSecretReconcile(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			if tc.expectedUpdate {
-				for _, targetUpdate := range *tc.explectedUpdates {
-					var check corev1.Secret
-					getErr := r.Client.Get(context.Background(), types.NamespacedName{
-						Namespace: "test-ns",
-						Name:      targetUpdate,
-					}, &check)
-					assert.False(t, apiErrors.IsNotFound(getErr), "expected secret %q to be deleted", targetUpdate)
-				}
-			}
-
-			if tc.expectedDeletion {
-				for _, targetDeletion := range *tc.expectedDeletions {
-					var check corev1.Secret
-					getErr := r.Client.Get(context.Background(), types.NamespacedName{
-						Namespace: "test-ns",
-						Name:      targetDeletion,
-					}, &check)
-					assert.True(t, apiErrors.IsNotFound(getErr), "expected secret %q to be deleted", targetDeletion)
-				}
-			}
+			validateSecretUpdate(t, env, tc)
+			validateSecretDeletion(t, env, tc)
 		})
 	}
+}
+
+func validateSecretDeletion(t *testing.T, env *ConnectionSecretReconciler, tc testCase) {
+	t.Helper()
+	if tc.expectedDeletion {
+		for _, targetDeletion := range *tc.expectedDeletions {
+			var check corev1.Secret
+			getErr := env.Client.Get(context.Background(), types.NamespacedName{
+				Namespace: "test-ns",
+				Name:      targetDeletion,
+			}, &check)
+			assert.True(t, apiErrors.IsNotFound(getErr), "Expected secret %q to be deleted", targetDeletion)
+		}
+	}
+}
+
+func validateSecretUpdate(t *testing.T, env *ConnectionSecretReconciler, tc testCase) {
+	t.Helper()
+	if tc.expectedUpdate {
+		for _, targetUpdate := range *tc.expectedUpdates {
+			var check corev1.Secret
+			getErr := env.Client.Get(context.Background(), types.NamespacedName{
+				Namespace: "test-ns",
+				Name:      targetUpdate,
+			}, &check)
+			assert.False(t, apiErrors.IsNotFound(getErr), "Expected secret %q to be updated", targetUpdate)
+		}
+	}
+}
+
+func setupTestEnvironment(t *testing.T, tc testCase) *ConnectionSecretReconciler {
+	var allObjects []client.Object
+
+	if tc.deployment != nil {
+		for _, dep := range *tc.deployment {
+			allObjects = append(allObjects, &dep) // Deployment Objects
+		}
+	}
+
+	if tc.user != nil {
+		for _, usr := range *tc.user {
+			allObjects = append(allObjects, &usr) // User Objects
+		}
+	}
+
+	if tc.secrets != nil {
+		for _, sec := range *tc.secrets {
+			allObjects = append(allObjects, sec) // Secret Objects
+		}
+	}
+
+	return createDummyEnv(t, allObjects)
 }
 
 func Test_allowsByScopes(t *testing.T) {
