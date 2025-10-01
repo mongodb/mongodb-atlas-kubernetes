@@ -27,7 +27,7 @@ import (
 
 // CI runs all linting and validation checks.
 func CI() {
-	mg.SerialDeps(Build, UnitTests, Addlicense, Checklicense, GCI, Lint)
+	mg.SerialDeps(Build, UnitTests, Addlicense, Checklicense, GCI, Lint, Govulncheck)
 	fmt.Println("✅ CI PASSED all checks")
 }
 
@@ -105,6 +105,12 @@ func Lint() error {
 	return wrapRun("▶️ Run linting...",
 		"go", "tool", "golangci-lint", "run",
 		"./cmd/...", "./internal/...", "./k8s/...", "./pkg/...")
+}
+
+// Govulncheck checks for Go toolchain or library vulnerabilities
+func Govulncheck() error {
+	return wrapRun("🔬 Running Go Vulnerability Check:\n",
+		"go", "tool", "govulncheck", "./...")
 }
 
 func wrapRun(msg, cmd string, args ...string) error {
