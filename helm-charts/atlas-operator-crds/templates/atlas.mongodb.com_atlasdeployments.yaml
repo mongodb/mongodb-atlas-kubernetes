@@ -117,6 +117,13 @@ spec:
                     - SHARDED
                     - GEOSHARDED
                     type: string
+                  configServerManagementMode:
+                    description: Config Server Management Mode for creating or updating
+                      a sharded cluster.
+                    enum:
+                    - ATLAS_MANAGED
+                    - FIXED_TO_DEDICATED
+                    type: string
                   customZoneMapping:
                     items:
                       properties:
@@ -201,6 +208,9 @@ spec:
                       Can only contain ASCII letters, numbers, and hyphens.
                     pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
+                    x-kubernetes-validations:
+                    - message: Name cannot be modified after deployment creation
+                      rule: self == oldSelf
                   paused:
                     description: Flag that indicates whether the deployment should
                       be paused.
@@ -918,6 +928,12 @@ spec:
                 - name
                 - providerSettings
                 type: object
+              upgradeToDedicated:
+                description: |2-
+                   upgradeToDedicated, when set to true, triggers the migration from a Flex to a
+                   Dedicated cluster. The user MUST provide the new dedicated cluster configuration.
+                   This flag is ignored if the cluster is already dedicated.
+                type: boolean
             type: object
             x-kubernetes-validations:
             - message: must define only one project reference through externalProjectRef
