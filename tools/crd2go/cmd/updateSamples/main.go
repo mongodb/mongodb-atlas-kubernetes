@@ -16,25 +16,22 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/checkerr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/run"
+	"os/exec"
+	"strings"
 )
 
 const (
-	// visit https://github.com/s-urbaniak/atlas2crd/blob/main/crds.yaml
-	CRDsURL = "https://raw.githubusercontent.com/s-urbaniak/atlas2crd/refs/heads/main/crds.yaml?token=%s"
+	debug = false
 
-	samplesDir = "./pkg/crd2go/samples/"
+	OpenAPI2CRDDir = "../openapi2crd"
+
+	samplesDir = "../crd2go/pkg/crd2go/samples/"
 
 	crdsFile = samplesDir + "crds.yaml"
-
-	targetDir = samplesDir + "v1"
 )
 
 func main() {
@@ -44,47 +41,43 @@ func main() {
 }
 
 func updateSamples() error {
-	token := mustGetenv("GITHUB_URL_TOKEN")
-	url := fmt.Sprintf(CRDsURL, token)
-	log.Printf("Downloading %s on to %s", CRDsURL, crdsFile)
-	n, err := downloadTo(url, crdsFile)
-	if err != nil {
-		return fmt.Errorf("failed to download CRD YAML: %w", err)
+	if err := generateCRDs(); err != nil {
+		return fmt.Errorf("CRD generation failed: %w", err)
 	}
-	log.Printf("Downloaded %d bytes on to %s", n, crdsFile)
-
-	log.Printf("Generating Go structs from CRDs to %s...", targetDir)
-	crd2go := mustGetenv("CRD2GO_BIN")
-	if err := run.Run(crd2go, "-input", crdsFile, "-output", targetDir); err != nil {
-		return fmt.Errorf("failed to generate CRDs Go structs: %w", err)
+	if err := generateSamples(); err != nil {
+		return fmt.Errorf("Samples generation failed: %w", err)
 	}
 	return nil
 }
 
-func downloadTo(url, filename string) (int64, error) {
-	rsp, err := http.Get(url)
-	if err != nil {
-		return 0, fmt.Errorf("failed to download from %s: %w", url, err)
-	}
-	if rsp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("failed to request %s with status: %q", url, rsp.Status)
-	}
-	f, err := os.Create(filename)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create file %s: %w", filename, err)
-	}
-	defer checkerr.CheckErr("closing download file", f.Close)
-	n, err := io.Copy(f, rsp.Body)
-	if err != nil {
-		return n, fmt.Errorf("failed to write downloaded data to file %s: %w", filename, err)
-	}
-	return n, nil
+func generateCRDs() error {
+	return runAt(OpenAPI2CRDDir,
+		"go", "run", "main.go", "-c", "config.yaml", "-o", crdsFile)
 }
 
-func mustGetenv(name string) string {
-	value, ok := os.LookupEnv(name)
-	if !ok {
-		panic(fmt.Errorf("%s env var must be set", name))
+func generateSamples() error {
+	return runAt(".",
+		"go", "run", "cmd/crd2go/main.go", "-config", "crd2go.yaml")
+}
+
+func runAt(dir, command string, args ...string) error {
+	debugIt("%s > %s %s", dir, command, strings.Join(args, " "))
+	cmd := exec.CommandContext(context.Background(), command, args...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if _, err := os.Stderr.Write(out); err != nil {
+			log.Printf("err write failed: %v", err)
+		}
+		return fmt.Errorf("run at directory %s failed: %w", dir, err)
 	}
-	return value
+	debugIt("output:\n%s", string(out))
+	return nil
+}
+
+func debugIt(msg string, args ...any) {
+	if !debug {
+		return
+	}
+	log.Printf(msg, args...)
 }
