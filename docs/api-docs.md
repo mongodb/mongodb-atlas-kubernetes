@@ -3522,13 +3522,6 @@ Collection of settings that configure how a deployment might scale its deploymen
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>predictiveEnabled</b></td>
-        <td>boolean</td>
-        <td>
-          Flag that indicates whether predictive instance size auto-scaling is enabled.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>scaleDownEnabled</b></td>
         <td>boolean</td>
         <td>
@@ -4545,13 +4538,6 @@ Collection of settings that configure how a deployment might scale its deploymen
         <td>string</td>
         <td>
           Minimum instance size to which your deployment can automatically scale (such as M10). Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled" : true.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>predictiveEnabled</b></td>
-        <td>boolean</td>
-        <td>
-          Flag that indicates whether predictive instance size auto-scaling is enabled.<br/>
         </td>
         <td>false</td>
       </tr><tr>
