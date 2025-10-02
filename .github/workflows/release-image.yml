@@ -289,6 +289,7 @@ jobs:
           cp -rf helm-charts "$RELEASE_DIR/"
           cp bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
           cp licenses.csv "$RELEASE_DIR/"
+          cp docs/api-docs.md "$RELEASE_DIR/"
 
           git fetch origin
           git checkout -f -b "$BRANCH" origin/main
