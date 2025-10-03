@@ -74,6 +74,9 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 	)
 	if version.IsExperimental() {
 		// add experimental indexers here
+		indexers = append(indexers,
+			NewAtlasDataFederationByProjectIDIndexer(ctx, c.GetClient(), logger),
+		)
 	}
 	return Register(ctx, c, indexers...)
 }
