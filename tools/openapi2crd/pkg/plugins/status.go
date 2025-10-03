@@ -19,41 +19,40 @@ import (
 	"fmt"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+
+	"tools/openapi2crd/pkg/converter"
 )
 
-type StatusPlugin struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
-}
+// Status plugin adds the status schema to the CRD if specified in the mapping configuration.
+// It requires the base plugin to be run first.
+type Status struct{}
 
-var _ Plugin = &StatusPlugin{}
-
-func NewStatusPlugin(crd *apiextensions.CustomResourceDefinition) *StatusPlugin {
-	return &StatusPlugin{
-		crd: crd,
-	}
-}
-
-func (s *StatusPlugin) Name() string {
+func (p *Status) Name() string {
 	return "status"
 }
 
-func (s *StatusPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
-	if mappingConfig.StatusMapping.Schema == "" {
+func (p *Status) Process(req *MappingProcessorRequest) error {
+	if req.MappingConfig.StatusMapping.Schema == "" {
 		return nil
 	}
 
-	statusSchema, ok := openApiSpec.Components.Schemas[mappingConfig.StatusMapping.Schema]
+	statusSchema, ok := req.OpenAPISpec.Components.Schemas[req.MappingConfig.StatusMapping.Schema]
 	if !ok {
-		return fmt.Errorf("status schema %q not found in openapi spec", mappingConfig.StatusMapping.Schema)
+		return fmt.Errorf("status schema %q not found in openapi spec", req.MappingConfig.StatusMapping.Schema)
 	}
 
-	statusProps := g.ConvertProperty(statusSchema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.StatusMapping, 0)
-	statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", s.crd.Spec.Names.Singular, mappingConfig.MajorVersion)
+	statusProps := req.Converter.Convert(
+		converter.PropertyConvertInput{
+			Schema:              statusSchema,
+			ExtensionsSchemaRef: openapi3.NewSchemaRef("", openapi3.NewSchema()),
+			PropertyConfig:      &req.MappingConfig.StatusMapping,
+			Depth:               0,
+			Path:                nil,
+		},
+	)
 	if statusProps != nil {
-		s.crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[mappingConfig.MajorVersion] = *statusProps
+		statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", req.CRD.Spec.Names.Singular, req.MappingConfig.MajorVersion)
+		req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties[req.MappingConfig.MajorVersion] = *statusProps
 	}
 
 	return nil
