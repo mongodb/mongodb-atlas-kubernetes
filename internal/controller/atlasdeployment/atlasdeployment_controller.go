@@ -64,6 +64,7 @@ type AtlasDeploymentReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	independentSyncPeriod       time.Duration
+	maxConcurrentReconciles     int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdeployments,verbs=get;list;watch;create;update;patch;delete
@@ -405,20 +406,13 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
-func NewAtlasDeploymentReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	independentSyncPeriod time.Duration,
-	logger *zap.Logger,
-	globalSecretref client.ObjectKey,
-) *AtlasDeploymentReconciler {
+func NewAtlasDeploymentReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, independentSyncPeriod time.Duration, logger *zap.Logger, globalSecretref client.ObjectKey, maxConcurrentReconciles int) *AtlasDeploymentReconciler {
 	suggaredLogger := logger.Named("controllers").Named("AtlasDeployment").Sugar()
 
 	return &AtlasDeploymentReconciler{
@@ -433,6 +427,7 @@ func NewAtlasDeploymentReconciler(
 		GlobalPredicates:         predicates,
 		ObjectDeletionProtection: deletionProtection,
 		independentSyncPeriod:    independentSyncPeriod,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 

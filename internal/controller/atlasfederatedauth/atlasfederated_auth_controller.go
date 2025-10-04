@@ -57,6 +57,7 @@ type AtlasFederatedAuthReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	GlobalSecretRef             client.ObjectKey
+	maxConcurrentReconciles     int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasfederatedauths,verbs=get;list;watch;create;update;patch;delete
@@ -143,8 +144,9 @@ func (r *AtlasFederatedAuthReconciler) SetupWithManager(mgr ctrl.Manager, skipNa
 			handler.EnqueueRequestsFromMapFunc(r.findAtlasFederatedAuthForSecret),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
@@ -185,14 +187,7 @@ func (r *AtlasFederatedAuthReconciler) findAtlasFederatedAuthForSecret(ctx conte
 	return requests
 }
 
-func NewAtlasFederatedAuthReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	logger *zap.Logger,
-	globalSecretRef client.ObjectKey,
-) *AtlasFederatedAuthReconciler {
+func NewAtlasFederatedAuthReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasFederatedAuthReconciler {
 	return &AtlasFederatedAuthReconciler{
 		Scheme:                   c.GetScheme(),
 		Client:                   c.GetClient(),
@@ -202,6 +197,7 @@ func NewAtlasFederatedAuthReconciler(
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
 		GlobalSecretRef:          globalSecretRef,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 

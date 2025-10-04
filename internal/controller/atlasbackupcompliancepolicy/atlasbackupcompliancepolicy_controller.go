@@ -52,6 +52,7 @@ type AtlasBackupCompliancePolicyReconciler struct {
 	Log                         *zap.SugaredLogger
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	maxConcurrentReconciles     int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackupcompliancepolicies,verbs=get;list;watch;create;update;patch;delete
@@ -125,18 +126,13 @@ func (r *AtlasBackupCompliancePolicyReconciler) SetupWithManager(mgr ctrl.Manage
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
-func NewAtlasBackupCompliancePolicyReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	logger *zap.Logger,
-) *AtlasBackupCompliancePolicyReconciler {
+func NewAtlasBackupCompliancePolicyReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, maxConcurrentReconciles int) *AtlasBackupCompliancePolicyReconciler {
 	return &AtlasBackupCompliancePolicyReconciler{
 		Scheme:                   c.GetScheme(),
 		Client:                   c.GetClient(),
@@ -145,6 +141,7 @@ func NewAtlasBackupCompliancePolicyReconciler(
 		Log:                      logger.Named("controllers").Named("AtlasBackupCompliancePolicy").Sugar(),
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 

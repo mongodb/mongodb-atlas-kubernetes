@@ -57,6 +57,7 @@ type AtlasStreamsInstanceReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	GlobalSecretRef             client.ObjectKey
+	maxConcurrentReconciles     int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasstreaminstances,verbs=get;list;watch;create;update;patch;delete
@@ -177,19 +178,13 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager, skip
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
-func NewAtlasStreamsInstanceReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	logger *zap.Logger,
-	globalSecretRef client.ObjectKey,
-) *AtlasStreamsInstanceReconciler {
+func NewAtlasStreamsInstanceReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasStreamsInstanceReconciler {
 	return &AtlasStreamsInstanceReconciler{
 		Scheme:                   c.GetScheme(),
 		Client:                   c.GetClient(),
@@ -199,6 +194,7 @@ func NewAtlasStreamsInstanceReconciler(
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
 		GlobalSecretRef:          globalSecretRef,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 

@@ -52,6 +52,7 @@ type AtlasStreamsConnectionReconciler struct {
 	Log                         *zap.SugaredLogger
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	maxConcurrentReconciles     int
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasstreamconnections,verbs=get;list;watch;create;update;patch;delete
@@ -126,18 +127,13 @@ func (r *AtlasStreamsConnectionReconciler) SetupWithManager(mgr ctrl.Manager, sk
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
-func NewAtlasStreamsConnectionReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	logger *zap.Logger,
-) *AtlasStreamsConnectionReconciler {
+func NewAtlasStreamsConnectionReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, maxConcurrentReconciles int) *AtlasStreamsConnectionReconciler {
 	return &AtlasStreamsConnectionReconciler{
 		Scheme:                   c.GetScheme(),
 		Client:                   c.GetClient(),
@@ -146,6 +142,7 @@ func NewAtlasStreamsConnectionReconciler(
 		Log:                      logger.Named("controllers").Named("AtlasStreamsConnection").Sugar(),
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 

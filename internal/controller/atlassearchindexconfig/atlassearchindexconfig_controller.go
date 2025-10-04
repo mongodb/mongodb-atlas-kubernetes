@@ -61,6 +61,7 @@ type AtlasSearchIndexConfigReconciler struct {
 	Log                         *zap.SugaredLogger
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	maxConcurrentReconciles     int
 }
 
 func (r *AtlasSearchIndexConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -125,18 +126,13 @@ func (r *AtlasSearchIndexConfigReconciler) SetupWithManager(mgr ctrl.Manager, sk
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
-func NewAtlasSearchIndexConfigReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	deletionProtection bool,
-	logger *zap.Logger,
-) *AtlasSearchIndexConfigReconciler {
+func NewAtlasSearchIndexConfigReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, maxConcurrentReconciles int) *AtlasSearchIndexConfigReconciler {
 	return &AtlasSearchIndexConfigReconciler{
 		Scheme:                   c.GetScheme(),
 		Client:                   c.GetClient(),
@@ -145,6 +141,7 @@ func NewAtlasSearchIndexConfigReconciler(
 		Log:                      logger.Named("controllers").Named("AtlasSearchIndexConfig").Sugar(),
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 
