@@ -34,13 +34,13 @@ type PtrClientObj[T any] interface {
 // Translator allows to translate back and forth between a CRD schema version
 // and SDK API structures of a certain version
 type Translator struct {
-	crd  CRDInfo
-	sdk  SDKInfo
-	deps DependencyRepo
+	crd          CRDInfo
+	majorVersion MajorVersion
+	deps         DependencyRepo
 }
 
-// SDKInfo holds the SDK version information
-type SDKInfo struct {
+// MajorVersion holds the SDK version information
+type MajorVersion struct {
 	version string
 }
 
@@ -56,13 +56,24 @@ type APIExporter[T any] interface {
 	ToAPI(t *Translator, target *T) error
 }
 
-// NewTranslator creates a translator for a particular CRD and SDK version pairs,
-// and with a particular set of known Kubernetes dependencies
-func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, sdkVersion string, deps DependencyRepo) *Translator {
+// NewTranslator creates a translator for a particular CRD and major version pairs,
+// and with a particular set of known Kubernetes object dependencies.
+//
+// Given the following example resource:
+//
+//	apiVersion: atlas.generated.mongodb.com/v1
+//	kind: SearchIndex
+//	metadata:
+//	  name: search-index
+//	spec:
+//	  v20250312:
+//
+// In the above case crdVersion is "v1" and majorVersion is "v20250312".
+func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, majorVersion string, deps DependencyRepo) *Translator {
 	return &Translator{
-		crd:  CRDInfo{definition: crd, version: crdVersion},
-		sdk:  SDKInfo{version: sdkVersion},
-		deps: deps,
+		crd:          CRDInfo{definition: crd, version: crdVersion},
+		majorVersion: MajorVersion{version: majorVersion},
+		deps:         deps,
 	}
 }
 
@@ -81,7 +92,7 @@ func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S
 
 	versionedSpec := map[string]any{}
 	copyFields(versionedSpec, sourceUnstructured)
-	if err := createField(targetUnstructured, versionedSpec, "spec", t.sdk.version); err != nil {
+	if err := createField(targetUnstructured, versionedSpec, "spec", t.majorVersion.version); err != nil {
 		return nil, fmt.Errorf("failed to create versioned spec object in unstructured target: %w", err)
 	}
 	versionedSpecEntry := map[string]any{}
@@ -90,7 +101,7 @@ func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S
 
 	versionedStatus := map[string]any{}
 	copyFields(versionedStatus, sourceUnstructured)
-	if err := createField(targetUnstructured, versionedStatus, "status", t.sdk.version); err != nil {
+	if err := createField(targetUnstructured, versionedStatus, "status", t.majorVersion.version); err != nil {
 		return nil, fmt.Errorf("failed to create versioned status object in unsstructured target: %w", err)
 	}
 
@@ -120,15 +131,15 @@ func ToAPI[T any](t *Translator, target *T, source client.Object) error {
 	if err != nil {
 		return fmt.Errorf("failed to enumerate CRD spec properties: %w", err)
 	}
-	if _, ok := specProps[t.sdk.version]; !ok {
-		return fmt.Errorf("failed to match the CRD spec version %q in schema", t.sdk.version)
+	if _, ok := specProps[t.majorVersion.version]; !ok {
+		return fmt.Errorf("failed to match the CRD spec version %q in schema", t.majorVersion.version)
 	}
 	unstructuredSrc, err := toUnstructured(source)
 	if err != nil {
 		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
 	}
 	targetUnstructured := map[string]any{}
-	value, err := accessField[map[string]any](unstructuredSrc, "spec", t.sdk.version)
+	value, err := accessField[map[string]any](unstructuredSrc, "spec", t.majorVersion.version)
 	if err != nil {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
@@ -175,13 +186,13 @@ func (t *Translator) expandMappings(obj map[string]any) ([]client.Object, error)
 		return nil, fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
 	}
 
-	if err := t.expandMappingsAt(obj, mappings, "spec", t.sdk.version); err != nil {
+	if err := t.expandMappingsAt(obj, mappings, "spec", t.majorVersion.version); err != nil {
 		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
 	}
-	if err := t.expandMappingsAt(obj, mappings, "spec", t.sdk.version, "entry"); err != nil {
+	if err := t.expandMappingsAt(obj, mappings, "spec", t.majorVersion.version, "entry"); err != nil {
 		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
 	}
-	if err := t.expandMappingsAt(obj, mappings, "status", t.sdk.version); err != nil {
+	if err := t.expandMappingsAt(obj, mappings, "status", t.majorVersion.version); err != nil {
 		return nil, fmt.Errorf("failed to map properties of status from API to Kubernetes: %w", err)
 	}
 	return t.deps.Added(), nil
@@ -220,7 +231,7 @@ func (t *Translator) collapseMappings(spec map[string]any) error {
 		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
 	}
 	props, err := accessField[map[string]any](mappings,
-		"properties", "spec", "properties", t.sdk.version, "properties")
+		"properties", "spec", "properties", t.majorVersion.version, "properties")
 	if errors.Is(err, ErrNotFound) {
 		return nil
 	}
