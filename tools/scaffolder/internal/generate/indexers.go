@@ -65,9 +65,8 @@ func ParseReferenceFields(resultPath, crdKind string) ([]ReferenceField, error) 
 			continue
 		}
 
-		if refs != nil {
-			return refs, nil
-		}
+		// We found the target CRD, return the references (even if empty)
+		return refs, nil
 	}
 
 	return nil, fmt.Errorf("CRD kind '%s' not found in result file", crdKind)
@@ -103,9 +102,13 @@ func parseNextCRDReferences(scanner *bufio.Scanner, targetKind string) ([]Refere
 	if buffer.Len() > 0 {
 		refs, err := extractReferencesFromCRD(buffer.Bytes(), targetKind)
 		if err != nil {
-			return nil, err
+			// Ignore "not target CRD" errors, just like in the loop above
+			if err.Error() != "not target CRD" {
+				return nil, err
+			}
+		} else {
+			return refs, nil
 		}
-		return refs, nil
 	}
 
 	return nil, io.EOF
@@ -130,6 +133,7 @@ func extractReferencesFromCRD(content []byte, targetKind string) ([]ReferenceFie
 		}
 	}
 
+	// Return empty slice for CRDs with no references (this is valid)
 	return references, nil
 }
 

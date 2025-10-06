@@ -1,6 +1,13 @@
-
 build:
 	go build -o bin/scaffolder cmd/main.go
 
-generate:
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/api/..."
+list: build
+	./bin/scaffolder --input ../openapi2crd/result.yaml --list
+
+generate: build
+	./bin/scaffolder --input ../openapi2crd/result.yaml --crd $(CRD_NAME) \
+		--indexer-out ../../internal/indexer \
+		--controller-out ../../internal/controller \
+		--translation-out ../../internal/translation
+
+
