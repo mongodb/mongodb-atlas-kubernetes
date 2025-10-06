@@ -51,3 +51,4 @@ tools/githubjobs/githubjobs
 # ignore the ako.siging key local copy
 ako.pem
 
+config/crd/bases/*.yaml

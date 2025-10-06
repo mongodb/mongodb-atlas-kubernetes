@@ -248,8 +248,10 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
-manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
+manifests: ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+	touch config/crd/bases/kustomization.yaml
+	sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
 	@./scripts/split_roles_yaml.sh
 ifdef EXPERIMENTAL
 	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
