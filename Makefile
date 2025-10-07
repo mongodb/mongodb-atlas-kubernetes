@@ -436,6 +436,8 @@ clean: ## Clean built binaries
 	rm -f config/rbac/clusterwide/role.yaml
 	rm -f config/rbac/namespaced/role.yaml
 	rm -rf deploy/
+	rm -rf bundle/
+	rm -f bundle.Dockerfile
 
 .PHONY: all-platforms
 all-platforms:
