@@ -34,7 +34,7 @@ jobs:
                 - 'Dockerfile'
                 - 'test/e2e/**'
                 - 'test/int/**'
-                - 'internal/!v3/**'
+                - '!internal/v3/**'
         # run only if 'production-code' files were changed
         - name: Production code changed
           if: steps.paths-filter.outputs.production-code-changed == 'true'
