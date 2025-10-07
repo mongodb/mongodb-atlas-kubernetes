@@ -325,11 +325,7 @@ validate-crds-chart: ## Validate the CRDs in the Helm chart
 
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
-	@echo "Building bundle $(VERSION)"
-	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=api
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
-	operator-sdk bundle validate ./bundle
+	INPUT_VERSION=$(VERSION) INPUT_ENV=prod INPUT_IMAGE_URL=$(IMG) sh ./.github/actions/gen-install-scripts/entrypoint.sh
 
 .PHONY: image
 image: ## Build an operator image for local development
