@@ -24,6 +24,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -241,7 +243,9 @@ func (r *ConnectionSecretReconciler) ensureSecret(
 	}
 
 	// Upsert the secret in Kubernetes
-	if err := r.Client.Patch(ctx, secret, client.Apply, client.ForceOwnership, ConnectionSecretGoFieldOwner); err != nil {
+	unstructuredData, _ := apiruntime.DefaultUnstructuredConverter.ToUnstructured(secret)
+	unstructuredSecret := &unstructured.Unstructured{Object: unstructuredData}
+	if err := r.Client.Apply(ctx, client.ApplyConfigurationFromUnstructured(unstructuredSecret.DeepCopy()), client.ForceOwnership, ConnectionSecretGoFieldOwner); err != nil {
 		log.Errorw("failed to create/update secret via apply", "error", err)
 		return err
 	}
