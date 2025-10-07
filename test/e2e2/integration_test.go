@@ -100,7 +100,8 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			By("Prepare & apply test case objects", func() {
 				for _, obj := range objs {
 					objToApply := WithRandomAtlasProject(kube.WithRenamedNamespace(obj, testNamespace.Name))
-					unstructuredData, _ := apiruntime.DefaultUnstructuredConverter.ToUnstructured(objToApply)
+					unstructuredData, err := apiruntime.DefaultUnstructuredConverter.ToUnstructured(objToApply)
+					Expect(err).NotTo(HaveOccurred(), "Conversion to unstructured data failed")
 					unstructuredObject := &unstructured.Unstructured{Object: unstructuredData}
 					Expect(
 						kubeClient.Apply(ctx, client.ApplyConfigurationFromUnstructured(unstructuredObject.DeepCopy()), client.ForceOwnership, GinkGoFieldOwner),
@@ -126,7 +127,8 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			By("Apply updates", func() {
 				for _, objUpdate := range updates {
 					objToPatch := WithRandomAtlasProject(kube.WithRenamedNamespace(objUpdate, testNamespace.Name))
-					unstructuredData, _ := apiruntime.DefaultUnstructuredConverter.ToUnstructured(objToPatch)
+					unstructuredData, err := apiruntime.DefaultUnstructuredConverter.ToUnstructured(objToPatch)
+					Expect(err).NotTo(HaveOccurred(), "Conversion to unstructured data failed")
 					unstructuredObject := &unstructured.Unstructured{Object: unstructuredData}
 					Expect(
 						kubeClient.Apply(ctx, client.ApplyConfigurationFromUnstructured(unstructuredObject.DeepCopy()), client.ForceOwnership, GinkGoFieldOwner),
