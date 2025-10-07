@@ -438,6 +438,7 @@ clean: ## Clean built binaries
 	rm -rf deploy/
 	rm -rf bundle/
 	rm -f bundle.Dockerfile
+	rm -f test/e2e/data/
 
 .PHONY: all-platforms
 all-platforms:
