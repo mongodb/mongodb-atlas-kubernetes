@@ -54,3 +54,4 @@ ako.pem
 config/crd/bases/*.yaml
 config/rbac/clusterwide/role.yaml
 config/rbac/namespaced/role.yaml
+deploy/
