@@ -145,7 +145,7 @@ func (ref *namedRef) Name(prefix string, path []string) string {
 	if path[0] == "entry" {
 		path = path[1:]
 	}
-	return strings.ToLower(strings.Join(append([]string{prefix}, path...), "-"))
+	return PrefixedName(prefix, path[0], path[1:]...)
 }
 
 func (ref *namedRef) Collapse(deps DependencyRepo, path []string, obj map[string]any) error {
