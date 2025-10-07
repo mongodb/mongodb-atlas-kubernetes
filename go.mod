@@ -22,7 +22,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
-	github.com/onsi/ginkgo/v2 v2.25.3
+	github.com/onsi/ginkgo/v2 v2.26.0
 	github.com/onsi/gomega v1.38.2
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.11.1
@@ -86,6 +86,7 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/tools v0.36.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250929231259-57b25ae835d4 // indirect
