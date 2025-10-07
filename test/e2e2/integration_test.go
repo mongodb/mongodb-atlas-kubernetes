@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -98,8 +100,10 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			By("Prepare & apply test case objects", func() {
 				for _, obj := range objs {
 					objToApply := WithRandomAtlasProject(kube.WithRenamedNamespace(obj, testNamespace.Name))
+					unstructuredData, _ := apiruntime.DefaultUnstructuredConverter.ToUnstructured(objToApply)
+					unstructuredObject := &unstructured.Unstructured{Object: unstructuredData}
 					Expect(
-						kubeClient.Patch(ctx, objToApply, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+						kubeClient.Apply(ctx, client.ApplyConfigurationFromUnstructured(unstructuredObject.DeepCopy()), client.ForceOwnership, GinkGoFieldOwner),
 					).To(Succeed())
 				}
 			})
@@ -122,8 +126,10 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			By("Apply updates", func() {
 				for _, objUpdate := range updates {
 					objToPatch := WithRandomAtlasProject(kube.WithRenamedNamespace(objUpdate, testNamespace.Name))
+					unstructuredData, _ := apiruntime.DefaultUnstructuredConverter.ToUnstructured(objToPatch)
+					unstructuredObject := &unstructured.Unstructured{Object: unstructuredData}
 					Expect(
-						kubeClient.Patch(ctx, objToPatch, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+						kubeClient.Apply(ctx, client.ApplyConfigurationFromUnstructured(unstructuredObject.DeepCopy()), client.ForceOwnership, GinkGoFieldOwner),
 					).To(Succeed())
 				}
 			})
