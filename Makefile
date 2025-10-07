@@ -432,6 +432,9 @@ x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 
 clean: ## Clean built binaries
 	rm -rf bin/*
+	rm -f config/crd/bases/*.yaml
+	rm -f config/rbac/clusterwide/role.yaml
+	rm -f config/rbac/namespaced/role.yaml
 
 .PHONY: all-platforms
 all-platforms:
