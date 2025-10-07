@@ -193,8 +193,8 @@ check-licenses:  ## Check licenses are compliant with our restrictions
 	@echo "Licenses check: PASS"
 
 .PHONY: unit-test
-unit-test:
-	go test -race -cover $(GO_UNIT_TEST_FOLDERS)
+unit-test: manifests
+	go test -race -cover $(GO_UNIT_TEST_FOLDERS) $(GO_TEST_FLAGS)
 
 ## Run integration tests. Sample with labels: `make test/int GINKGO_FILTER_LABEL=AtlasProject`
 test/int: envtest
