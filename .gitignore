@@ -57,3 +57,6 @@ config/rbac/namespaced/role.yaml
 deploy/
 bundle/
 bundle.Dockerfile
+config/manifests/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+config/manifests/kustomization.yaml
+config/manager/kustomization.yaml

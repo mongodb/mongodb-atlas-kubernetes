@@ -33,7 +33,10 @@ mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
 controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
-cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
+cd config/manager
+touch kustomization.yaml
+kustomize edit add resource bases/
+kustomize edit set image controller="${INPUT_IMAGE_URL}"
 cd -
 ./scripts/split_roles_yaml.sh
 
@@ -63,7 +66,7 @@ echo "Created namespaced config"
 cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
-operator-sdk generate kustomize manifests -q --apis-dir=api
+operator-sdk generate kustomize manifests --input-dir=config/manifests-template --interactive=false -q --apis-dir=api
 # get the current version so we could put it into the "replaces:"
 current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml)"
 
