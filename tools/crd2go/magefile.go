@@ -27,23 +27,23 @@ import (
 
 // CI runs all linting and validation checks.
 func CI() {
-	mg.SerialDeps(Build, UnitTests, Addlicense, Checklicense, GCI, Lint, Govulncheck)
+	mg.Deps(Build, UnitTests, Addlicense, Checklicense, CheckGCI, Lint, Govulncheck)
 	fmt.Println("✅ CI PASSED all checks")
 }
 
 // Build checks all execitable build properly
 func Build() error {
-	return wrapRun("🛠️  Building...", "go", "build", "./...")
+	return wrapRun("🛠️  Build", "go", "build", "./...")
 }
 
 // UnitTests runs the go tests
 func UnitTests() error {
-	return wrapRun("🧪 Running unit tests:\n", "go", "test", "-cover", "./...")
+	return wrapRun("🧪 Unit tests", "go", "test", "-cover", "./...")
 }
 
 // Addlicense runs the addlicense check to ensure source files have license headers
 func Addlicense() error {
-	return wrapRun("🛠️  Running license header check...",
+	return wrapRun("🛠️  License header check",
 		"go", "tool",
 		"addlicense",
 		"-check",
@@ -62,7 +62,7 @@ func Addlicense() error {
 
 // Checklicense runs the go-licenses tool to check license compliance
 func Checklicense() error {
-	return wrapRun("🔬 Running license compliance checks:\n",
+	return wrapRun("🔬 License compliance check",
 		"go", "tool",
 		"go-licenses", "check",
 		"--include_tests",
@@ -73,8 +73,7 @@ func Checklicense() error {
 
 // GCI runs gci to check that Go import orders are correct
 func GCI() error {
-	fmt.Println("🧹 Formatting Go imports...")
-	if err := sh.RunV(
+	return wrapRun("🧹 Format code",
 		"go", "tool",
 		"gci", "write",
 		"--skip-generated",
@@ -82,19 +81,22 @@ func GCI() error {
 		"-s", "default",
 		"-s", "localmodule",
 		".",
-	); err != nil {
-		return fmt.Errorf("gci write command failed: %w", err)
-	}
+	)
+}
 
-	fmt.Println("🔍 Checking for changes...")
+// GitClean check git is clean of changes
+func GitClean() error {
 	if err := sh.Run("git", "diff-index", "--quiet", "HEAD", "--"); err != nil {
-		fmt.Println("❗️ Go files were not correctly formatted. The following files have changes:")
+		fmt.Println("❗️ The following files have changes:")
 		sh.RunV("git", "diff-index", "--name-only", "HEAD")
-		return fmt.Errorf("please run 'mage gci' and commit the changes")
+		return fmt.Errorf("please run 'mage gci' and commit any changes")
 	}
-
-	fmt.Println("✅ Go imports are correctly formatted.")
 	return nil
+}
+
+// CheckGCI check GCI formatting was committed as expected
+func CheckGCI() {
+	mg.SerialDeps(GCI, GitClean)
 }
 
 // Lint runs the golangci-lint tool
@@ -102,23 +104,22 @@ func Lint() error {
 	if err := os.Setenv("CGO_ENABLED", "0"); err != nil {
 		return nil
 	}
-	return wrapRun("▶️ Run linting...",
+	return wrapRun("🔬 Lint check",
 		"go", "tool", "golangci-lint", "run",
 		"./cmd/...", "./internal/...", "./k8s/...", "./pkg/...")
 }
 
 // Govulncheck checks for Go toolchain or library vulnerabilities
 func Govulncheck() error {
-	return wrapRun("🔬 Running Go Vulnerability Check:\n",
+	return wrapRun("🔬 Vulnerability Check",
 		"go", "tool", "govulncheck", "./...")
 }
 
-func wrapRun(msg, cmd string, args ...string) error {
-	fmt.Print(msg)
+func wrapRun(action, cmd string, args ...string) error {
+	fmt.Printf("▶️ Started: %s\n", action)
 	if err := sh.RunV(cmd, args...); err != nil {
-		fmt.Println()
 		return err
 	}
-	fmt.Println("✅ Success")
+	fmt.Printf("✅ Succeeded: %s\n", action)
 	return nil
 }
