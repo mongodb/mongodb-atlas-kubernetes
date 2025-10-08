@@ -1,4 +1,4 @@
-The contents of this directory is auto-generated, more formally:
+The contents of the bases/ directory is auto-generated, more formally:
 
 - kustomization.yaml
 - *.yaml (CRD definitions)
