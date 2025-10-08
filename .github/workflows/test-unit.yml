@@ -19,7 +19,7 @@ jobs:
           enable-cache: 'true'
 
       - name: Run testing
-        run: devbox run -- 'go test -race -v ./... -coverprofile=coverage.out'
+        run: devbox run -- 'GO_TEST_FLAGS="-coverprofile=coverage.out" make unit-test'
 
       - name: Test tools
         run: devbox run -- 'make test-tools'
