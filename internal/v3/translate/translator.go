@@ -16,11 +16,9 @@
 package translate
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
-	"gopkg.in/yaml.v3"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -100,8 +98,7 @@ func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S
 		return nil, fmt.Errorf("failed to create versioned status object in unsstructured target: %w", err)
 	}
 
-	deps := NewDependencies(target, objs...)
-	extraObjects, err := t.expandMappings(deps, targetUnstructured)
+	extraObjects, err := ExpandMappings(t, targetUnstructured, target, objs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process API mappings: %w", err)
 	}
@@ -140,8 +137,7 @@ func ToAPI[T any](t *Translator, target *T, source client.Object, objs ...client
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
 
-	deps := NewDependencies(source, objs...)
-	if err := t.collapseMappings(deps, value); err != nil {
+	if err := CollapseMappings(t, value, source, objs...); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
@@ -171,77 +167,4 @@ func ToAPI[T any](t *Translator, target *T, source client.Object, objs ...client
 		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
 	}
 	return nil
-}
-
-func (t *Translator) expandMappings(deps DependencyRepo, obj map[string]any) ([]client.Object, error) {
-	mappingsYML := t.crd.definition.Annotations[APIMAppingsAnnotation]
-	if mappingsYML == "" {
-		return []client.Object{}, nil
-	}
-	mappings := map[string]any{}
-	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
-	}
-
-	if err := t.expandMappingsAt(deps, obj, mappings, "spec", t.majorVersion); err != nil {
-		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
-	}
-	if err := t.expandMappingsAt(deps, obj, mappings, "spec", t.majorVersion, "entry"); err != nil {
-		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
-	}
-	if err := t.expandMappingsAt(deps, obj, mappings, "status", t.majorVersion); err != nil {
-		return nil, fmt.Errorf("failed to map properties of status from API to Kubernetes: %w", err)
-	}
-	return deps.Added(), nil
-}
-
-func (t *Translator) expandMappingsAt(deps DependencyRepo, obj, mappings map[string]any, fields ...string) error {
-	expandedPath := []string{"properties"}
-	for _, field := range fields {
-		expandedPath = append(expandedPath, field, "properties")
-	}
-	props, err := accessField[map[string]any](mappings, expandedPath...)
-	if errors.Is(err, ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to access the API mapping properties for %v: %w", expandedPath, err)
-	}
-	field, err := accessField[map[string]any](obj, fields...)
-	if err != nil {
-		return fmt.Errorf("failed to access object's %v: %w", fields, err)
-	}
-	mapper := Mapper{deps: deps, expand: true}
-	if err := mapper.mapProperties([]string{}, props, field); err != nil {
-		return fmt.Errorf("failed to process properties from API into %v: %w", fields, err)
-	}
-	return nil
-}
-
-func (t *Translator) collapseMappings(deps DependencyRepo, spec map[string]any) error {
-	mappingsYML := t.crd.definition.Annotations[APIMAppingsAnnotation]
-	if mappingsYML == "" {
-		return nil
-	}
-	mappings := map[string]any{}
-	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
-		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
-	}
-	props, err := accessField[map[string]any](mappings,
-		"properties", "spec", "properties", t.majorVersion, "properties")
-	if errors.Is(err, ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
-	}
-	mapper := Mapper{deps: deps, expand: false}
-	return mapper.mapProperties([]string{}, props, spec)
-}
-
-func findEntryPathInTarget(targetType reflect.Type) []string {
-	if targetType.String() == "admin.CreateAlertConfigurationApiParams" {
-		return []string{"GroupAlertsConfig"}
-	}
-	return []string{}
 }

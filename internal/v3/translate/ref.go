@@ -92,7 +92,7 @@ func newRef(name string, rm *refMapping) *namedRef {
 	return &namedRef{name: name, refMapping: rm}
 }
 
-func (ref *namedRef) Expand(deps DependencyRepo, pathHint []string, obj map[string]any) error {
+func (ref *namedRef) Expand(mc *mapContext, pathHint []string, obj map[string]any) error {
 	path := ref.pathToExpand(pathHint)
 	rawValue, err := accessField[any](obj, base(path))
 	if errors.Is(err, ErrNotFound) {
@@ -118,15 +118,19 @@ func (ref *namedRef) Expand(deps DependencyRepo, pathHint []string, obj map[stri
 		}
 		return fmt.Errorf("failed to populate final dependency object: %w", err)
 	}
-	dep.SetName(ref.Name(deps.MainObject().GetName(), path))
-	dep.SetNamespace(SetFallbackNamespace)
-	deps.Add(dep)
+	name := ref.Name(mc.main.GetName(), path)
+	if mc.has(name) {
+		return nil
+	}
+	dep.SetName(name)
+	dep.SetNamespace(mc.main.GetNamespace())
 	refData := map[string]any{"name": dep.GetName()}
 	if ref.XOpenAPIMapping.Property != "" {
 		path := resolveXPath(ref.XOpenAPIMapping.Property)
 		refData["key"] = base(path)
 	}
 	obj[ref.name] = refData
+	mc.add(dep)
 	return nil
 }
 
@@ -148,7 +152,7 @@ func (ref *namedRef) Name(prefix string, path []string) string {
 	return PrefixedName(prefix, path[0], path[1:]...)
 }
 
-func (ref *namedRef) Collapse(deps DependencyRepo, path []string, obj map[string]any) error {
+func (ref *namedRef) Collapse(mc *mapContext, path []string, obj map[string]any) error {
 	reference, err := accessField[map[string]any](obj, base(path))
 	if errors.Is(err, ErrNotFound) {
 		return nil
@@ -165,7 +169,7 @@ func (ref *namedRef) Collapse(deps DependencyRepo, path []string, obj map[string
 	if !ok || key == "" {
 		key = base(targetPath)
 	}
-	value, err := ref.XKubernetesMapping.FetchReferencedValue(key, reference, deps)
+	value, err := ref.XKubernetesMapping.FetchReferencedValue(mc, key, reference)
 	if err != nil {
 		return fmt.Errorf("failed to fetch referenced value %s: %w", key, err)
 	}
@@ -204,7 +208,7 @@ func (km kubeMapping) Equal(gvk schema.GroupVersionKind) bool {
 	return km.Type.Group == gvk.Group && km.Type.Version == gvk.Version && km.Type.Kind == gvk.Kind
 }
 
-func (km kubeMapping) FetchReferencedValue(target string, reference map[string]any, deps DependencyRepo) (any, error) {
+func (km kubeMapping) FetchReferencedValue(mc *mapContext, target string, reference map[string]any) (any, error) {
 	refPath := km.NameSelector
 	if refPath == "" {
 		return nil, errors.New("cannot solve reference without a x-kubernetes-mapping.nameSelector")
@@ -213,7 +217,7 @@ func (km kubeMapping) FetchReferencedValue(target string, reference map[string]a
 	if err != nil {
 		return nil, fmt.Errorf("failed to access field %q at %v: %w", refPath, reference, err)
 	}
-	resource := deps.Find(refName, SetFallbackNamespace)
+	resource := mc.find(refName)
 	if resource == nil {
 		return nil, fmt.Errorf("failed to find Kubernetes resource %q: %w", refName, err)
 	}
