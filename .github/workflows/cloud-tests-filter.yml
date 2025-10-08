@@ -26,15 +26,13 @@ jobs:
             # production code also includes changes to e2e and int tests,
             # note any other paths are covered by unit testing which run always
             # internal/v3 code for feature generation should not trigger old cloud tests
+            # .github changes should not trigger cloud tests by default
             filters: |
               production-code-changed:
                 - 'cmd/**/!(*_test.go)'
                 - 'pkg/**/!(*_test.go)'
-                - 'internal/**/!(*_test.go)'
+                - 'internal/controller/**/!(*_test.go)'
                 - 'Dockerfile'
-                - 'test/e2e/**'
-                - 'test/int/**'
-                - '!internal/v3/**'
         # run only if 'production-code' files were changed
         - name: Production code changed
           if: steps.paths-filter.outputs.production-code-changed == 'true'
