@@ -307,7 +307,7 @@ validate-manifests: generate manifests
 	$(MAKE) check-missing-files
 
 .PHONE: sync-crds-chart
-sync-crds-chart:
+sync-crds-chart: bundle
 	@cp -r bundle/manifests/atlas.mongodb.com_* helm-charts/atlas-operator-crds/templates/
 
 .PHONY: validate-crds-chart
