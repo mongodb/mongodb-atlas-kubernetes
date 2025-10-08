@@ -21,6 +21,8 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/unstructured"
 )
 
 // PtrClientObj is a pointer type implementing client.Object
@@ -76,7 +78,7 @@ func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S
 	if ok {
 		return importer.FromAPI(t, target)
 	}
-	sourceUnstructured, err := toUnstructured(source)
+	sourceUnstructured, err := unstructured.ToUnstructured(source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert API source value to unstructured: %w", err)
 	}
@@ -84,17 +86,17 @@ func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S
 	targetUnstructured := map[string]any{}
 
 	versionedSpec := map[string]any{}
-	copyFields(versionedSpec, sourceUnstructured)
-	if err := createField(targetUnstructured, versionedSpec, "spec", t.majorVersion); err != nil {
+	unstructured.CopyFields(versionedSpec, sourceUnstructured)
+	if err := unstructured.CreateField(targetUnstructured, versionedSpec, "spec", t.majorVersion); err != nil {
 		return nil, fmt.Errorf("failed to create versioned spec object in unstructured target: %w", err)
 	}
 	versionedSpecEntry := map[string]any{}
-	copyFields(versionedSpecEntry, sourceUnstructured)
+	unstructured.CopyFields(versionedSpecEntry, sourceUnstructured)
 	versionedSpec["entry"] = versionedSpecEntry
 
 	versionedStatus := map[string]any{}
-	copyFields(versionedStatus, sourceUnstructured)
-	if err := createField(targetUnstructured, versionedStatus, "status", t.majorVersion); err != nil {
+	unstructured.CopyFields(versionedStatus, sourceUnstructured)
+	if err := unstructured.CreateField(targetUnstructured, versionedStatus, "status", t.majorVersion); err != nil {
 		return nil, fmt.Errorf("failed to create versioned status object in unsstructured target: %w", err)
 	}
 
@@ -102,7 +104,7 @@ func FromAPI[S any, T any, P PtrClientObj[T]](t *Translator, target P, source *S
 	if err != nil {
 		return nil, fmt.Errorf("failed to process API mappings: %w", err)
 	}
-	if err := fromUnstructured(target, targetUnstructured); err != nil {
+	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
 		return nil, fmt.Errorf("failed set structured kubernetes object from unstructured: %w", err)
 	}
 	return append([]client.Object{target}, extraObjects...), nil
@@ -127,12 +129,12 @@ func ToAPI[T any](t *Translator, target *T, source client.Object, objs ...client
 	if _, ok := specProps[t.majorVersion]; !ok {
 		return fmt.Errorf("failed to match the CRD spec version %q in schema", t.majorVersion)
 	}
-	unstructuredSrc, err := toUnstructured(source)
+	unstructuredSrc, err := unstructured.ToUnstructured(source)
 	if err != nil {
 		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
 	}
 	targetUnstructured := map[string]any{}
-	value, err := accessField[map[string]any](unstructuredSrc, "spec", t.majorVersion)
+	value, err := unstructured.AccessField[map[string]any](unstructuredSrc, "spec", t.majorVersion)
 	if err != nil {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
@@ -148,22 +150,22 @@ func ToAPI[T any](t *Translator, target *T, source client.Object, objs ...client
 
 	rawEntry := value["entry"]
 	if entry, ok := rawEntry.(map[string]any); ok {
-		copyFields(targetUnstructured, skipKeys(value, "entry"))
+		unstructured.CopyFields(targetUnstructured, unstructured.SkipKeys(value, "entry"))
 		entryPathInTarget := findEntryPathInTarget(targetType)
 		dst := targetUnstructured
 		if len(entryPathInTarget) > 0 {
 			newValue := map[string]any{}
-			if err = createField(targetUnstructured, newValue, entryPathInTarget...); err != nil {
+			if err = unstructured.CreateField(targetUnstructured, newValue, entryPathInTarget...); err != nil {
 				return fmt.Errorf("failed to set target copy destination to path %v: %w", entryPathInTarget, err)
 			}
 			dst = newValue
 		}
-		copyFields(dst, entry)
+		unstructured.CopyFields(dst, entry)
 	} else {
-		copyFields(targetUnstructured, value)
+		unstructured.CopyFields(targetUnstructured, value)
 	}
 	delete(targetUnstructured, "groupref")
-	if err := fromUnstructured(target, targetUnstructured); err != nil {
+	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
 		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
 	}
 	return nil

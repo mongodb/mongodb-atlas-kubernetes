@@ -21,8 +21,9 @@ import (
 	"reflect"
 
 	"github.com/stretchr/testify/assert/yaml"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/unstructured"
 )
 
 const (
@@ -112,9 +113,9 @@ func CollapseMappings(t *Translator, spec map[string]any, main client.Object, ob
 	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
 		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
 	}
-	props, err := accessField[map[string]any](mappings,
+	props, err := unstructured.AccessField[map[string]any](mappings,
 		"properties", "spec", "properties", t.majorVersion, "properties")
-	if errors.Is(err, ErrNotFound) {
+	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	}
 	if err != nil {
@@ -135,14 +136,14 @@ func (m *mapper) expandMappingsAt(obj, mappings map[string]any, fields ...string
 	for _, field := range fields {
 		expandedPath = append(expandedPath, field, "properties")
 	}
-	props, err := accessField[map[string]any](mappings, expandedPath...)
-	if errors.Is(err, ErrNotFound) {
+	props, err := unstructured.AccessField[map[string]any](mappings, expandedPath...)
+	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("failed to access the API mapping properties for %v: %w", expandedPath, err)
 	}
-	field, err := accessField[map[string]any](obj, fields...)
+	field, err := unstructured.AccessField[map[string]any](obj, fields...)
 	if err != nil {
 		return fmt.Errorf("failed to access object's %v: %w", fields, err)
 	}
@@ -165,8 +166,8 @@ func (m *mapper) mapProperties(path []string, props, obj map[string]any) error {
 			}
 			continue
 		}
-		rawField, ok, err := unstructured.NestedFieldNoCopy(obj, key)
-		if !ok {
+		rawField, err := unstructured.AccessField[any](obj, key) // unstructured.NestedFieldNoCopy(obj, key)
+		if errors.Is(err, unstructured.ErrNotFound) {
 			continue
 		}
 		if err != nil {
@@ -190,9 +191,9 @@ func (m *mapper) mapProperties(path []string, props, obj map[string]any) error {
 }
 
 func (m *mapper) mapArray(path []string, mapping map[string]any, list []any) error {
-	mapItems, err := accessField[map[string]any](mapping, "items", "properties")
+	mapItems, err := unstructured.AccessField[map[string]any](mapping, "items", "properties")
 	if err != nil {
-		return fmt.Errorf("failed to access %q: %w", base(path), err)
+		return fmt.Errorf("failed to access %q: %w", unstructured.Base(path), err)
 	}
 	for mapName, mapItem := range mapItems {
 		mapping, ok := (mapItem).(map[string]any)
@@ -213,7 +214,7 @@ func (m *mapper) mapArray(path []string, mapping map[string]any, list []any) err
 
 func (m *mapper) mapObject(path []string, mapName string, mapping, obj map[string]any) error {
 	if mapping["properties"] != nil {
-		props, err := accessField[map[string]any](mapping, "properties")
+		props, err := unstructured.AccessField[map[string]any](mapping, "properties")
 		if err != nil {
 			return fmt.Errorf("failed to access properties at %q: %w", path, err)
 		}
@@ -222,12 +223,12 @@ func (m *mapper) mapObject(path []string, mapName string, mapping, obj map[strin
 	if isReference(mapping) {
 		return m.mapReference(path, mapName, mapping, obj)
 	}
-	return fmt.Errorf("unsupported extension at %v with fields %v", path, fieldsOf(mapping))
+	return fmt.Errorf("unsupported extension at %v with fields %v", path, unstructured.FieldsOf(mapping))
 }
 
 func (m *mapper) mapReference(path []string, mappingName string, mapping, obj map[string]any) error {
 	rm := refMapping{}
-	if err := fromUnstructured(&rm, mapping); err != nil {
+	if err := unstructured.FromUnstructured(&rm, mapping); err != nil {
 		return fmt.Errorf("failed to parse a reference mapping: %w", err)
 	}
 	ref := newRef(mappingName, &rm)
@@ -241,11 +242,11 @@ func entryMatchingMapping(mapName string, mapping map[string]any, list []any, ex
 	key := mapName
 	if expand {
 		refMap := refMapping{}
-		if err := fromUnstructured(&refMap, mapping); err != nil {
+		if err := unstructured.FromUnstructured(&refMap, mapping); err != nil {
 			return "", nil // not a ref, cannot reverse mapping dfrom API property name
 		}
 		path := resolveXPath(refMap.XOpenAPIMapping.Property)
-		key = base(path)
+		key = unstructured.Base(path)
 	}
 	return key, findByExistingKey(list, key)
 }

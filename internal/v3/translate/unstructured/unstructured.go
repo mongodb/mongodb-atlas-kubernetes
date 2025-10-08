@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package translate
+package unstructured
 
 import (
 	"encoding/json"
@@ -26,7 +26,9 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func toUnstructured(obj any) (map[string]any, error) {
+// ToUnstructured returns an unstructured map holding the public field values
+// from the original input obj value
+func ToUnstructured(obj any) (map[string]any, error) {
 	js, err := json.Marshal(obj)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal object into JSON: %w", err)
@@ -38,7 +40,9 @@ func toUnstructured(obj any) (map[string]any, error) {
 	return result, nil
 }
 
-func fromUnstructured[T any](target *T, source map[string]any) error {
+// FromUnstructured fills a target value with the field values from an
+// unstructured map
+func FromUnstructured[T any](target *T, source map[string]any) error {
 	js, err := json.Marshal(source)
 	if err != nil {
 		return fmt.Errorf("failed to marshal map into JSON: %w", err)
@@ -49,7 +53,8 @@ func fromUnstructured[T any](target *T, source map[string]any) error {
 	return nil
 }
 
-func accessField[T any](obj map[string]any, fields ...string) (T, error) {
+// AccessField gets the value of a named path within the given unstructured map
+func AccessField[T any](obj map[string]any, fields ...string) (T, error) {
 	var zeroValue T
 	rawValue, ok, err := unstructured.NestedFieldNoCopy(obj, fields...)
 	if !ok {
@@ -60,12 +65,14 @@ func accessField[T any](obj map[string]any, fields ...string) (T, error) {
 	}
 	value, ok := (rawValue).(T)
 	if !ok {
-		return zeroValue, fmt.Errorf("field path %v is not an object map", fields)
+		return zeroValue, fmt.Errorf("field path %v expected %T but was %T", fields, zeroValue, rawValue)
 	}
 	return value, nil
 }
 
-func createField[T any](obj map[string]any, value T, fields ...string) error {
+// CreateField creates a field with a value at the given path, it does create
+// the parent path objects as needed
+func CreateField[T any](obj map[string]any, value T, fields ...string) error {
 	current := obj
 	path := []string{}
 	for i := 0; i < len(fields)-1; i++ {
@@ -91,36 +98,24 @@ func createField[T any](obj map[string]any, value T, fields ...string) error {
 	return nil
 }
 
-func asPath(xpath string) []string {
+// AsPath translates the given simplified xpath expression into a sequence of
+// path entries
+func AsPath(xpath string) []string {
 	if strings.HasPrefix(xpath, ".") {
-		return asPath(xpath[1:])
+		return AsPath(xpath[1:])
 	}
 	return strings.Split(xpath, ".")
 }
 
-func base(path []string) string {
-	if len(path) == 0 {
-		return ""
-	}
-	lastIndex := len(path) - 1
-	return path[lastIndex]
-}
-
-func copyFields(target, source map[string]any) {
+// CopyFields copies all unstructured fields from an source to a target
+func CopyFields(target, source map[string]any) {
 	for field, value := range source {
 		target[field] = value
 	}
 }
 
-func fieldsOf(obj map[string]any) []string {
-	fields := make([]string, 0, len(obj))
-	for field := range obj {
-		fields = append(fields, field)
-	}
-	return fields
-}
-
-func skipKeys(obj map[string]any, skips ...string) map[string]any {
+// SkipKeys returns a copy of the origin obj without the given skips keys
+func SkipKeys(obj map[string]any, skips ...string) map[string]any {
 	result := map[string]any{}
 	for field, value := range obj {
 		if in(skips, field) {
@@ -129,6 +124,24 @@ func skipKeys(obj map[string]any, skips ...string) map[string]any {
 		result[field] = value
 	}
 	return result
+}
+
+// Base returns the base of the given path, namely the last name in the array
+func Base(path []string) string {
+	if len(path) == 0 {
+		return ""
+	}
+	lastIndex := len(path) - 1
+	return path[lastIndex]
+}
+
+// FieldsOf returns the names of the fields immediate at the given obj value
+func FieldsOf(obj map[string]any) []string {
+	fields := make([]string, 0, len(obj))
+	for field := range obj {
+		fields = append(fields, field)
+	}
+	return fields
 }
 
 func in[T comparable](list []T, target T) bool {
