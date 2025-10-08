@@ -128,10 +128,6 @@ SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
 SIGNATURE_REPO ?= OPERATOR_REGISTRY
 AKO_SIGN_PUBKEY = https://cosign.mongodb.com/atlas-kubernetes-operator.pem
 
-# Licenses status
-GOMOD_SHA := $(shell git ls-files -s go.mod | awk '{print $$1" "$$2" "$$4}')
-LICENSES_GOMOD_SHA_FILE := .licenses-gomod.sha256
-
 OPERATOR_POD_NAME=mongodb-atlas-operator
 RUN_YAML= # Set to the YAML to run when calling make run
 RUN_LOG_LEVEL ?= debug
@@ -177,8 +173,6 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	export GOARCH=amd64
 	GOTOOLCHAIN=local \
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
-	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
-
 
 .PHONY: check-licenses
 check-licenses:  ## Check licenses are compliant with our restrictions
