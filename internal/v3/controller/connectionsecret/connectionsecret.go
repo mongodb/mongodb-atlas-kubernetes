@@ -25,9 +25,6 @@ import (
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
-	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -243,29 +240,8 @@ func (r *ConnectionSecretReconciler) ensureSecret(
 		return err
 	}
 
-	// Build OwnerReferenceApplyConfigurations
-	ownerReferences := make([]*applymetav1.OwnerReferenceApplyConfiguration, len(secret.OwnerReferences))
-	for i, ref := range secret.OwnerReferences {
-		ownerReferences[i] = applymetav1.OwnerReference().
-			WithAPIVersion(ref.APIVersion).
-			WithKind(ref.Kind).
-			WithName(ref.Name).
-			WithUID(ref.UID).
-			WithBlockOwnerDeletion(ptr.Deref(ref.BlockOwnerDeletion, false)).
-			WithController(ptr.Deref(ref.Controller, false))
-	}
-
-	// Create SecretApplyConfiguration
-	secretApplyConfig := applycorev1.Secret(name, namespace).
-		WithKind("Secret").
-		WithAPIVersion("v1").
-		WithData(secret.Data).
-		WithAnnotations(secret.Annotations).
-		WithLabels(secret.Labels).
-		WithOwnerReferences(ownerReferences...)
-
-	// Apply the secret to the cluster
-	if err := r.Client.Apply(ctx, secretApplyConfig, client.ForceOwnership, ConnectionSecretGoFieldOwner); err != nil {
+	// Apply the secret
+	if err := r.Client.Patch(ctx, secret, client.Apply, client.ForceOwnership, ConnectionSecretGoFieldOwner); err != nil {
 		log.Errorw("failed to create/update secret via apply", "error", err)
 		return err
 	}
