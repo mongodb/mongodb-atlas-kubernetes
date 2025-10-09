@@ -432,10 +432,11 @@ clean: ## Clean built binaries
 	rm -f config/crd/bases/*.yaml
 	rm -f config/rbac/clusterwide/role.yaml
 	rm -f config/rbac/namespaced/role.yaml
+	rm -f config/rbac/role.yaml
 	rm -rf deploy/
 	rm -rf bundle/
 	rm -f bundle.Dockerfile
-	rm -f test/e2e/data/
+	rm -rf test/e2e/data/
 
 .PHONY: all-platforms
 all-platforms:
@@ -554,7 +555,7 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 	git submodule update helm-charts
 
 .PHONY: install-crds
-install-crds: ## Install CRDs in Kubernetes
+install-crds: manifests ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
 ifdef EXPERIMENTAL
 	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
