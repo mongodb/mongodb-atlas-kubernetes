@@ -20,38 +20,30 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+
+	"tools/openapi2crd/pkg/converter"
 )
 
-type ParametersPlugin struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
-}
+// Parameters adds parameters from the OpenAPI spec to the CRD schema.
+// It requires base and major version plugins to be run before.
+type Parameters struct{}
 
-var _ Plugin = &ParametersPlugin{}
-
-func NewParametersPlugin(crd *apiextensions.CustomResourceDefinition) *ParametersPlugin {
-	return &ParametersPlugin{
-		crd: crd,
-	}
-}
-
-func (s *ParametersPlugin) Name() string {
+func (p *Parameters) Name() string {
 	return "parameters"
 }
 
-func (s *ParametersPlugin) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
-	majorVersionSpec := s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion]
+func (p *Parameters) Process(req *MappingProcessorRequest) error {
+	majorVersionSpec := req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion]
 
-	if mappingConfig.ParametersMapping.Path.Name != "" {
+	if req.MappingConfig.ParametersMapping.Path.Name != "" {
 		var operation *openapi3.Operation
 
-		pathItem := openApiSpec.Paths.Find(mappingConfig.ParametersMapping.Path.Name)
+		pathItem := req.OpenAPISpec.Paths.Find(req.MappingConfig.ParametersMapping.Path.Name)
 		if pathItem == nil {
-			return fmt.Errorf("OpenAPI path %q does not exist", mappingConfig.ParametersMapping)
+			return fmt.Errorf("OpenAPI path %v does not exist", req.MappingConfig.ParametersMapping)
 		}
 
-		switch mappingConfig.ParametersMapping.Path.Verb {
+		switch req.MappingConfig.ParametersMapping.Path.Verb {
 		case "post":
 			operation = pathItem.Post
 		case "put":
@@ -59,32 +51,40 @@ func (s *ParametersPlugin) ProcessMapping(g Generator, mappingConfig *configv1al
 		case "patch":
 			operation = pathItem.Patch
 		default:
-			return fmt.Errorf("verb %q unsupported", mappingConfig.ParametersMapping.Path.Verb)
+			return fmt.Errorf("verb %q unsupported", req.MappingConfig.ParametersMapping.Path.Verb)
 		}
 
-		for _, p := range operation.Parameters {
-			switch p.Value.Name {
+		for _, param := range operation.Parameters {
+			switch param.Value.Name {
 			case "includeCount":
 			case "itemsPerPage":
 			case "pageNum":
 			case "envelope":
 			case "pretty":
 			default:
-				props := g.ConvertProperty(p.Value.Schema, openapi3.NewSchemaRef("", openapi3.NewSchema()), &mappingConfig.ParametersMapping, 0, "$", p.Value.Name)
-				props.Description = p.Value.Description
+				props := req.Converter.Convert(
+					converter.PropertyConvertInput{
+						Schema:              param.Value.Schema,
+						ExtensionsSchemaRef: openapi3.NewSchemaRef("", openapi3.NewSchema()),
+						PropertyConfig:      &req.MappingConfig.ParametersMapping,
+						Depth:               0,
+						Path:                []string{"$", param.Value.Name},
+					},
+				)
+				props.Description = param.Value.Description
 				props.XValidations = apiextensions.ValidationRules{
 					{
 						Rule:    "self == oldSelf",
-						Message: fmt.Sprintf("%s cannot be modified after creation", p.Value.Name),
+						Message: fmt.Sprintf("%s cannot be modified after creation", param.Value.Name),
 					},
 				}
-				majorVersionSpec.Properties[p.Value.Name] = *props
-				majorVersionSpec.Required = append(majorVersionSpec.Required, p.Value.Name)
+				majorVersionSpec.Properties[param.Value.Name] = *props
+				majorVersionSpec.Required = append(majorVersionSpec.Required, param.Value.Name)
 			}
 		}
 	}
 
-	s.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion] = majorVersionSpec
+	req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion] = majorVersionSpec
 
 	return nil
 }

@@ -17,37 +17,32 @@ package plugins
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
 	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
-type SensitiveProperties struct {
-	NoOp
+type SensitiveProperties struct{}
+
+func (p *SensitiveProperties) Name() string {
+	return "sensitive_property"
 }
 
-func NewSensitivePropertiesPlugin() *SensitiveProperties {
-	return &SensitiveProperties{}
-}
-
-func (s *SensitiveProperties) Name() string {
-	return "sensitive_properties"
-}
-
-func (n *SensitiveProperties) ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps {
-	if !isSensitiveField(path, propertyConfig) {
-		return props
+func (p *SensitiveProperties) Process(req *PropertyProcessorRequest) error {
+	if !isSensitiveField(req.Path, req.PropertyConfig) {
+		return nil
 	}
 
-	props.ID = path[len(path)-1] + "SecretRef"
+	req.Property.ID = req.Path[len(req.Path)-1] + "SecretRef"
 
-	if extensionsSchema.Value.Extensions == nil {
-		extensionsSchema.Value.Extensions = map[string]interface{}{}
+	if req.ExtensionsSchema.Value.Extensions == nil {
+		req.ExtensionsSchema.Value.Extensions = map[string]interface{}{}
 	}
 
-	extensionsSchema.Value.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
+	req.ExtensionsSchema.Value.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
 		"type": map[string]interface{}{
 			"kind":     "Secret",
 			"resource": v1.ResourceSecrets,
@@ -57,15 +52,15 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, propertyConfig *confi
 		"propertySelectors": []string{"$.data.#"},
 	}
 
-	extensionsSchema.Value.Extensions["x-openapi-mapping"] = map[string]interface{}{
-		"property": "." + path[len(path)-1],
-		"type":     propertySchema.Type,
+	req.ExtensionsSchema.Value.Extensions["x-openapi-mapping"] = map[string]interface{}{
+		"property": "." + req.Path[len(req.Path)-1],
+		"type":     req.OpenAPISchema.Type,
 	}
 
-	props.Type = "object"
-	props.Description = fmt.Sprintf("SENSITIVE FIELD\n\nReference to a secret containing data for the %q field:\n\n%v", path[len(path)-1], propertySchema.Description)
-	defaultKey := apiextensions.JSON(".data." + path[len(path)-1])
-	props.Properties = map[string]apiextensions.JSONSchemaProps{
+	req.Property.Type = "object"
+	req.Property.Description = fmt.Sprintf("SENSITIVE FIELD\n\nReference to a secret containing data for the %q field:\n\n%v", req.Path[len(req.Path)-1], req.OpenAPISchema.Description)
+	defaultKey := apiextensions.JSON(".data." + req.Path[len(req.Path)-1])
+	req.Property.Properties = map[string]apiextensions.JSONSchemaProps{
 		"name": {
 			Type:        "string",
 			Description: `Name of the secret containing the sensitive field value.`,
@@ -73,11 +68,11 @@ func (n *SensitiveProperties) ProcessProperty(g Generator, propertyConfig *confi
 		"key": {
 			Type:        "string",
 			Default:     &defaultKey,
-			Description: fmt.Sprintf(`Key of the secret data containing the sensitive field value, defaults to %q.`, path[len(path)-1]),
+			Description: fmt.Sprintf(`Key of the secret data containing the sensitive field value, defaults to %q.`, req.Path[len(req.Path)-1]),
 		},
 	}
 
-	return props
+	return nil
 }
 
 func isSensitiveField(path []string, mapping *configv1alpha1.PropertyMapping) bool {
@@ -94,4 +89,9 @@ func isSensitiveField(path []string, mapping *configv1alpha1.PropertyMapping) bo
 	}
 
 	return false
+}
+
+func jsonPath(path []string) string {
+	result := strings.Join(path, ".")
+	return strings.ReplaceAll(result, ".[*]", "[*]")
 }
