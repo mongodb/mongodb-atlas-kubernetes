@@ -129,10 +129,9 @@ jobs:
           enable-cache: 'true'
 
       - name: Generate kustomized all-in-one install configs
-        uses: ./.github/actions/gen-install-scripts
-        with:
-          ENV: dev
-          VERSION: dev
+        run: |
+          devbox run -- make bundle
+
 
       - name: Extract k8s version/platform
         id: extract

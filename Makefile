@@ -191,7 +191,7 @@ unit-test: manifests
 	go test -race -cover $(GO_UNIT_TEST_FOLDERS) $(GO_TEST_FLAGS)
 
 ## Run integration tests. Sample with labels: `make test/int GINKGO_FILTER_LABEL=AtlasProject`
-test/int: envtest
+test/int: envtest manifests
 	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
 
 test/int/clusterwide: envtest
