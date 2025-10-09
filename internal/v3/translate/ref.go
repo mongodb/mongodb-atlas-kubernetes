@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/unstructured"
 )
 
 type EncodeDecodeFunc func(any) (any, error)
@@ -65,9 +66,9 @@ func newKubeObjectFactory[T any, P PtrClientObj[T]]() func(map[string]any) (clie
 	}
 }
 
-func initObject[T any](obj *T, unstructured map[string]any) (*T, error) {
-	if unstructured != nil {
-		if err := fromUnstructured(obj, unstructured); err != nil {
+func initObject[T any](obj *T, unstructuredObj map[string]any) (*T, error) {
+	if unstructuredObj != nil {
+		if err := unstructured.FromUnstructured(obj, unstructuredObj); err != nil {
 			return nil, err
 		}
 	}
@@ -92,10 +93,10 @@ func newRef(name string, rm *refMapping) *namedRef {
 	return &namedRef{name: name, refMapping: rm}
 }
 
-func (ref *namedRef) Expand(deps DependencyRepo, pathHint []string, obj map[string]any) error {
+func (ref *namedRef) Expand(mc *mapContext, pathHint []string, obj map[string]any) error {
 	path := ref.pathToExpand(pathHint)
-	rawValue, err := accessField[any](obj, base(path))
-	if errors.Is(err, ErrNotFound) {
+	rawValue, err := unstructured.AccessField[any](obj, unstructured.Base(path))
+	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	}
 	if err != nil {
@@ -118,22 +119,26 @@ func (ref *namedRef) Expand(deps DependencyRepo, pathHint []string, obj map[stri
 		}
 		return fmt.Errorf("failed to populate final dependency object: %w", err)
 	}
-	dep.SetName(ref.Name(deps.MainObject().GetName(), path))
-	dep.SetNamespace(SetFallbackNamespace)
-	deps.Add(dep)
+	name := ref.Name(mc.main.GetName(), path)
+	if mc.has(name) {
+		return nil
+	}
+	dep.SetName(name)
+	dep.SetNamespace(mc.main.GetNamespace())
 	refData := map[string]any{"name": dep.GetName()}
 	if ref.XOpenAPIMapping.Property != "" {
 		path := resolveXPath(ref.XOpenAPIMapping.Property)
-		refData["key"] = base(path)
+		refData["key"] = unstructured.Base(path)
 	}
 	obj[ref.name] = refData
+	mc.add(dep)
 	return nil
 }
 
 func (ref *namedRef) pathToExpand(pathHint []string) []string {
 	path := make([]string, len(pathHint))
 	copy(path, pathHint)
-	path[len(path)-1] = base(resolveXPath(ref.XOpenAPIMapping.Property))
+	path[len(path)-1] = unstructured.Base(resolveXPath(ref.XOpenAPIMapping.Property))
 	return path
 }
 
@@ -145,12 +150,12 @@ func (ref *namedRef) Name(prefix string, path []string) string {
 	if path[0] == "entry" {
 		path = path[1:]
 	}
-	return strings.ToLower(strings.Join(append([]string{prefix}, path...), "-"))
+	return PrefixedName(prefix, path[0], path[1:]...)
 }
 
-func (ref *namedRef) Collapse(deps DependencyRepo, path []string, obj map[string]any) error {
-	reference, err := accessField[map[string]any](obj, base(path))
-	if errors.Is(err, ErrNotFound) {
+func (ref *namedRef) Collapse(mc *mapContext, path []string, obj map[string]any) error {
+	reference, err := unstructured.AccessField[map[string]any](obj, unstructured.Base(path))
+	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	}
 	if err != nil {
@@ -163,13 +168,13 @@ func (ref *namedRef) Collapse(deps DependencyRepo, path []string, obj map[string
 	targetPath := ref.XOpenAPIMapping.TargetPath()
 	key, ok := reference["key"].(string)
 	if !ok || key == "" {
-		key = base(targetPath)
+		key = unstructured.Base(targetPath)
 	}
-	value, err := ref.XKubernetesMapping.FetchReferencedValue(key, reference, deps)
+	value, err := ref.XKubernetesMapping.FetchReferencedValue(mc, key, reference)
 	if err != nil {
 		return fmt.Errorf("failed to fetch referenced value %s: %w", key, err)
 	}
-	return createField(obj, value, targetPath...)
+	return unstructured.CreateField(obj, value, targetPath...)
 }
 
 type kubeMapping struct {
@@ -204,16 +209,16 @@ func (km kubeMapping) Equal(gvk schema.GroupVersionKind) bool {
 	return km.Type.Group == gvk.Group && km.Type.Version == gvk.Version && km.Type.Kind == gvk.Kind
 }
 
-func (km kubeMapping) FetchReferencedValue(target string, reference map[string]any, deps DependencyRepo) (any, error) {
+func (km kubeMapping) FetchReferencedValue(mc *mapContext, target string, reference map[string]any) (any, error) {
 	refPath := km.NameSelector
 	if refPath == "" {
 		return nil, errors.New("cannot solve reference without a x-kubernetes-mapping.nameSelector")
 	}
-	refName, err := accessField[string](reference, asPath(refPath)...)
+	refName, err := unstructured.AccessField[string](reference, unstructured.AsPath(refPath)...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access field %q at %v: %w", refPath, reference, err)
 	}
-	resource := deps.Find(refName, SetFallbackNamespace)
+	resource := mc.find(refName)
 	if resource == nil {
 		return nil, fmt.Errorf("failed to find Kubernetes resource %q: %w", refName, err)
 	}
@@ -221,18 +226,18 @@ func (km kubeMapping) FetchReferencedValue(target string, reference map[string]a
 	if km.Type.Kind != "" && !km.Equal(gvk) {
 		return nil, fmt.Errorf("resource %q had to be a %q but got %q", refName, km.GVK(), gvk)
 	}
-	resourceMap, err := toUnstructured(resource)
+	resourceMap, err := unstructured.ToUnstructured(resource)
 	if err != nil {
 		return nil, fmt.Errorf("failed to turn resource %q into an unestuctued map: %w", refName, err)
 	}
 	value, err := km.fetchFromProperties(resourceMap)
-	if err != nil && !errors.Is(err, ErrNotFound) {
+	if err != nil && !errors.Is(err, unstructured.ErrNotFound) {
 		return nil, fmt.Errorf("failed to resolve reference properties: %w", err)
 	}
-	if errors.Is(err, ErrNotFound) {
+	if errors.Is(err, unstructured.ErrNotFound) {
 		var err error
 		value, err = km.fetchFromPropertySelectors(resourceMap, target)
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, unstructured.ErrNotFound) {
 			return nil, fmt.Errorf("failed to resolve reference properties or property selectors: %w", err)
 		}
 		if err != nil {
@@ -261,8 +266,8 @@ func (km kubeMapping) Encode(value any) (any, error) {
 func (km kubeMapping) fetchFromProperties(resource map[string]any) (any, error) {
 	for _, prop := range km.Properties {
 		path := resolveXPath(prop)
-		value, err := accessField[any](resource, path...)
-		if errors.Is(err, ErrNotFound) {
+		value, err := unstructured.AccessField[any](resource, path...)
+		if errors.Is(err, unstructured.ErrNotFound) {
 			continue
 		}
 		if err != nil {
@@ -270,7 +275,7 @@ func (km kubeMapping) fetchFromProperties(resource map[string]any) (any, error) 
 		}
 		return value, nil
 	}
-	return nil, ErrNotFound
+	return nil, unstructured.ErrNotFound
 }
 
 func (km kubeMapping) fetchFromPropertySelectors(resource map[string]any, target string) (any, error) {
@@ -280,8 +285,8 @@ func (km kubeMapping) fetchFromPropertySelectors(resource map[string]any, target
 			prop = fmt.Sprintf("%s.%s", prop[:len(prop)-2], target)
 		}
 		path := resolveXPath(prop)
-		value, err := accessField[any](resource, path...)
-		if errors.Is(err, ErrNotFound) {
+		value, err := unstructured.AccessField[any](resource, path...)
+		if errors.Is(err, unstructured.ErrNotFound) {
 			continue
 		}
 		if err != nil {
@@ -289,37 +294,37 @@ func (km kubeMapping) fetchFromPropertySelectors(resource map[string]any, target
 		}
 		return value, nil
 	}
-	return nil, ErrNotFound
+	return nil, unstructured.ErrNotFound
 }
 
-func (km kubeMapping) setAtPropertySelectors(gvr string, unstructured map[string]any, target string, value any) (client.Object, error) {
+func (km kubeMapping) setAtPropertySelectors(gvr string, obj map[string]any, target string, value any) (client.Object, error) {
 	for _, selector := range km.PropertySelectors {
 		prop := selector
 		if strings.HasSuffix(prop, ".#") {
 			targetPath := resolveXPath(target)
-			prop = fmt.Sprintf("%s.%s", prop[:len(prop)-2], base(targetPath))
+			prop = fmt.Sprintf("%s.%s", prop[:len(prop)-2], unstructured.Base(targetPath))
 		}
 		path := resolveXPath(prop)
-		if err := createField(unstructured, value, path...); err != nil {
+		if err := unstructured.CreateField(obj, value, path...); err != nil {
 			return nil, fmt.Errorf("failed to set value at %q: %w", path, err)
 		}
-		obj, err := initializedKubeObjectFor(gvr, unstructured)
+		obj, err := initializedKubeObjectFor(gvr, obj)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize Kubernetes object: %w", err)
 		}
-		unstructuredCopy, err := toUnstructured(obj)
+		unstructuredCopy, err := unstructured.ToUnstructured(obj)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read Kubernetes object contents: %w", err)
 		}
-		valueCopy, err := accessField[any](unstructuredCopy, path...)
+		valueCopy, err := unstructured.AccessField[any](unstructuredCopy, path...)
 		if reflect.DeepEqual(value, valueCopy) {
 			return obj, nil
 		}
-		if err != nil && !errors.Is(err, ErrNotFound) {
+		if err != nil && !errors.Is(err, unstructured.ErrNotFound) {
 			return nil, fmt.Errorf("failed to check Kubernetes object contents: %w", err)
 		}
 	}
-	return nil, ErrNotFound
+	return nil, unstructured.ErrNotFound
 }
 
 type openAPIMapping struct {
@@ -333,9 +338,9 @@ func (oam openAPIMapping) TargetPath() []string {
 
 func resolveXPath(xpath string) []string {
 	if strings.HasPrefix(xpath, "$.") {
-		return asPath(xpath[1:])
+		return unstructured.AsPath(xpath[1:])
 	}
-	return asPath(xpath)
+	return unstructured.AsPath(xpath)
 }
 
 func unstructuredKubeObjectFor(gvr string) (map[string]any, error) {
@@ -343,7 +348,7 @@ func unstructuredKubeObjectFor(gvr string) (map[string]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get unstructured kube object for GVR %q: %w", gvr, err)
 	}
-	return toUnstructured(objCopy)
+	return unstructured.ToUnstructured(objCopy)
 }
 
 func kubeObjectFor(gvr string) (client.Object, error) {

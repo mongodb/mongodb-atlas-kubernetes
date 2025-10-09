@@ -284,7 +284,7 @@ func TestFromAPI(t *testing.T) {
 										{
 											DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
 												Key:  pointer.MakePtr("datadogApiKey"),
-												Name: pointer.MakePtr("groupalertscfg-notifications-datadogapikey"),
+												Name: pointer.MakePtr("groupalertscfg-5b8c46f7fd54484b88b4"),
 											},
 											DatadogRegion: pointer.MakePtr("US"),
 											DelayMin:      pointer.MakePtr(42),
@@ -315,7 +315,7 @@ func TestFromAPI(t *testing.T) {
 					},
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "groupalertscfg-notifications-datadogapikey",
+							Name:      "groupalertscfg-5b8c46f7fd54484b88b4",
 							Namespace: "ns",
 						},
 						Data: map[string][]byte{
@@ -366,7 +366,7 @@ func TestFromAPI(t *testing.T) {
 								Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
 									Type: pointer.MakePtr("SLACK"),
 									ApiTokenSecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.MakePtr("3rdparty-slack-apitoken"),
+										Name: pointer.MakePtr("3rdparty-slack-5f444b9b4cc55b5b8cb"),
 										Key:  pointer.MakePtr("apiToken"),
 									},
 									ChannelName: pointer.MakePtr("alert-channel"),
@@ -387,7 +387,7 @@ func TestFromAPI(t *testing.T) {
 					},
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "3rdparty-slack-apitoken",
+							Name:      "3rdparty-slack-5f444b9b4cc55b5b8cb",
 							Namespace: "ns",
 						},
 						Data: map[string][]byte{
@@ -409,8 +409,7 @@ func testFromAPI[S any, T any, P translate.PtrClientObj[T]](t *testing.T, kind s
 	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	deps := translate.NewDependencies(target)
-	translator := translate.NewTranslator(crd, version, sdkVersion, deps)
+	translator := translate.NewTranslator(crd, version, sdkVersion)
 	results, err := translate.FromAPI(translator, target, input)
 	require.NoError(t, err)
 	assert.Equal(t, want, results)
@@ -712,10 +711,8 @@ func TestToAPIAllRefs(t *testing.T) {
 			crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			deps := translate.NewDependencies(tc.input, tc.deps...)
-			translator := translate.NewTranslator(crd, version, sdkVersion, deps)
-			// , reflect.TypeOf(tc.target)
-			require.NoError(t, translate.ToAPI(translator, &tc.target, tc.input))
+			translator := translate.NewTranslator(crd, version, sdkVersion)
+			require.NoError(t, translate.ToAPI(translator, &tc.target, tc.input, tc.deps...))
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}
@@ -2155,9 +2152,8 @@ func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []cli
 	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	deps := translate.NewDependencies(input, objs...)
-	translator := translate.NewTranslator(crd, version, sdkVersion, deps)
-	require.NoError(t, translate.ToAPI(translator, target, input))
+	translator := translate.NewTranslator(crd, version, sdkVersion)
+	require.NoError(t, translate.ToAPI(translator, target, input, objs...))
 	assert.Equal(t, want, target)
 }
 

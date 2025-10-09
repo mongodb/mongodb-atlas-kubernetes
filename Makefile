@@ -128,10 +128,6 @@ SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
 SIGNATURE_REPO ?= OPERATOR_REGISTRY
 AKO_SIGN_PUBKEY = https://cosign.mongodb.com/atlas-kubernetes-operator.pem
 
-# Licenses status
-GOMOD_SHA := $(shell git ls-files -s go.mod | awk '{print $$1" "$$2" "$$4}')
-LICENSES_GOMOD_SHA_FILE := .licenses-gomod.sha256
-
 OPERATOR_POD_NAME=mongodb-atlas-operator
 RUN_YAML= # Set to the YAML to run when calling make run
 RUN_LOG_LEVEL ?= debug
@@ -177,8 +173,6 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	export GOARCH=amd64
 	GOTOOLCHAIN=local \
 	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
-	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
-
 
 .PHONY: check-licenses
 check-licenses:  ## Check licenses are compliant with our restrictions
@@ -193,8 +187,8 @@ check-licenses:  ## Check licenses are compliant with our restrictions
 	@echo "Licenses check: PASS"
 
 .PHONY: unit-test
-unit-test:
-	go test -race -cover $(GO_UNIT_TEST_FOLDERS)
+unit-test: manifests
+	go test -race -cover $(GO_UNIT_TEST_FOLDERS) $(GO_TEST_FLAGS)
 
 ## Run integration tests. Sample with labels: `make test/int GINKGO_FILTER_LABEL=AtlasProject`
 test/int: envtest
@@ -300,7 +294,7 @@ ifneq ($(shell git ls-files -o -m --directory --exclude-standard --no-empty-dire
 	$(info Detected files that need to be committed:)
 	$(info $(shell git ls-files -o -m --directory --exclude-standard --no-empty-directory | sed -e "s/^/  /"))
 	$(info )
-	$(info Try running: make generate manifests)
+	$(info Try running: make generate manifests api-docs)
 	$(error Check: FAILED)
 else
 	$(info Check: PASS)
@@ -658,7 +652,6 @@ tools/githubjobs/githubjobs: tools/githubjobs/*.go
 tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
 	cd tools/scandeprecation && go test . && go build .
 
-
 .PHONY: slack-deprecations
 slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githubjobs
 	@echo "Computing and sending deprecation report to Slack..."
@@ -672,3 +665,11 @@ bump-version-file:
 
 	@echo "Version updated successfully:"
 	@cat $(VERSION_FILE)
+
+.PHONY: api-docs
+api-docs:
+	 go tool -modfile=tools/toolbox/go.mod crdoc --resources config/crd/bases --output docs/api-docs.md
+
+.PHONY: validate-api-docs
+validate-api-docs: api-docs
+	$(MAKE) check-missing-files

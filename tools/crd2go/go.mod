@@ -1,6 +1,6 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go
 
-go 1.25.1
+go 1.24.7
 
 require (
 	github.com/dave/jennifer v1.7.1
