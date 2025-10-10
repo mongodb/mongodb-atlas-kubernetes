@@ -95,11 +95,6 @@ issues:
 formatters:
   enable:
     - gofmt
-    - goimports
-  settings:
-    goimports:
-      local-prefixes:
-        - github.com/mongodb/mongodb-atlas-kubernetes/v2
   exclusions:
     generated: lax
     paths:
