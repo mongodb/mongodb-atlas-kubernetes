@@ -29,34 +29,19 @@ work/
 
 ### Setup
 
-1. **Clone dependencies:**
-
-   ```bash
-   cd ../
-   git clone https://github.com/mongodb-atlas-kubernetes/atlas2crd
-   git clone https://github.com/mongodb/mongodb-atlas-kubernetes
-   ```
-
-2. **Replace the crd2go dependency**
-   Make sure the crd2go dependency is pointing to the local copy. In your `go.mod` file:
-
-   ```bash
-   replace github.com/josvazg/crd2go => ../crd2go
-   ```
-
-3. **Generate CRD types**
-    Use `crd2go` tool to generate go types for CRDs:
+1. **Generate CRD types**
+    Use `crd2go` tool from the `tools` directory of the AKO repository to generate go types for CRDs:
 
     ```bash
-    cd ./crd2go/
+    cd ./tools/crd2go/
     go build -o ./crd2go ./cmd/crd2go/main.go
     ./crd2go -input=./pkg/crd2go/samples/crds.yaml -output=../atlas-controller-scaffolder/pkg/api/v1
     ```
 
-4. **Build the scaffolder:**
+2. **Build the scaffolder:**
    ```bash
-   cd ../atlas-controller-scaffolder
-   go build -o ./bin/ako-controller-scaffolder ./cmd/main.go
+   cd ../scaffolder
+   go build -o ./bin/scaffolder ./cmd/main.go
    ```
 
 
