@@ -2,24 +2,7 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-  - bases/atlas.mongodb.com_atlasdeployments.yaml
-  - bases/atlas.mongodb.com_atlasprojects.yaml
-  - bases/atlas.mongodb.com_atlasdatabaseusers.yaml
-  - bases/atlas.mongodb.com_atlasdatafederations.yaml
-  - bases/atlas.mongodb.com_atlasbackuppolicies.yaml
-  - bases/atlas.mongodb.com_atlasbackupschedules.yaml
-  - bases/atlas.mongodb.com_atlasteams.yaml
-  - bases/atlas.mongodb.com_atlasfederatedauths.yaml
-  - bases/atlas.mongodb.com_atlasstreaminstances.yaml
-  - bases/atlas.mongodb.com_atlasstreamconnections.yaml
-  - bases/atlas.mongodb.com_atlassearchindexconfigs.yaml
-  - bases/atlas.mongodb.com_atlasbackupcompliancepolicies.yaml
-  - bases/atlas.mongodb.com_atlasprivateendpoints.yaml
-  - bases/atlas.mongodb.com_atlascustomroles.yaml
-  - bases/atlas.mongodb.com_atlasipaccesslists.yaml
-  - bases/atlas.mongodb.com_atlasnetworkcontainers.yaml
-  - bases/atlas.mongodb.com_atlasnetworkpeerings.yaml
-  - bases/atlas.mongodb.com_atlasthirdpartyintegrations.yaml
-  - bases/atlas.mongodb.com_atlasorgsettings.yaml
+- bases/
+
 configurations:
-  - kustomizeconfig.yaml
+- kustomizeconfig.yaml

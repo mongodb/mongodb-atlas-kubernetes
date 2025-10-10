@@ -1,0 +1,23 @@
+The contents of this directory is read by the "operator-sdk generate kustomize manifests --input-dir=config/manifests-template" command
+and will generate a config/manifests containing a patched version of the bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml template clusterservice version file.
+
+Usually just CRD definitions will be added. Example:
+
+```
+$ diff config/manifests-template/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml config/manifests/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+27c27,124
+<   customresourcedefinitions: {}
+---
+>   customresourcedefinitions:
+>     owned:
+>     - description: The AtlasBackupCompliancePolicy is a configuration that enforces
+>         specific backup and retention requirements
+>       displayName: Atlas Backup Compliance Policy
+>       kind: AtlasBackupCompliancePolicy
+>       name: atlasbackupcompliancepolicies.atlas.mongodb.com
+>       version: v1
+>     - description: AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
+>       displayName: Atlas Backup Policy
+>       kind: AtlasBackupPolicy
+...
+```

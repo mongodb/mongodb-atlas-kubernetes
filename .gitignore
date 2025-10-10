@@ -51,3 +51,12 @@ tools/githubjobs/githubjobs
 # ignore the ako.siging key local copy
 ako.pem
 
+config/crd/bases/*.yaml
+config/rbac/clusterwide/role.yaml
+config/rbac/namespaced/role.yaml
+deploy/
+bundle/
+bundle.Dockerfile
+config/manifests/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+config/manifests/kustomization.yaml
+config/manager/kustomization.yaml
