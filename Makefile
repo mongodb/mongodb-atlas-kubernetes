@@ -252,7 +252,11 @@ manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 ifdef EXPERIMENTAL
-	controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds
+	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
+	controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds; \
+	else \
+	echo "No experimental CRDs found, skipping apply."; \
+	fi
 endif
 
 .PHONY: lint
@@ -547,7 +551,11 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 install-crds: ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
 ifdef EXPERIMENTAL
-	kubectl apply -f internal/next-crds/*.yaml
+	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
+	kubectl apply -f internal/next-crds/*.yaml; \
+	else \
+	echo "No experimental CRDs found, skipping apply."; \
+	fi
 endif
 
 .PHONY: set-namespace
@@ -566,7 +574,7 @@ install-credentials: set-namespace ## Install the Atlas credentials for the Oper
 
 .PHONY: prepare-run
 prepare-run: generate vet manifests run-kind install-crds install-credentials
-	rm bin/manager
+	rm -f bin/manager
 	$(MAKE) manager VERSION=$(NEXT_VERSION)
 
 .PHONY: run
