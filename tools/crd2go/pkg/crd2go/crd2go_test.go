@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package crd2go_test
+package crd2go
 
 import (
 	"bytes"
@@ -33,7 +33,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/crd2go"
 )
 
 //go:embed samples/*
@@ -60,7 +59,7 @@ func TestGenerateFromCRDs(t *testing.T) {
 			SkipList: disabledKinds,
 		},
 	}
-	require.NoError(t, crd2go.Generate(&req, in))
+	require.NoError(t, Generate(&req, in))
 
 	assert.NotEmpty(t, buffers)
 	assert.Len(t, buffers, expectedSources)
@@ -83,7 +82,7 @@ func TestRefs(t *testing.T) {
 			SkipList: disabledKinds,
 		},
 	}
-	_, err = crd2go.GenerateStream(&req, in)
+	_, err = GenerateStream(&req, in)
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, buffers)
@@ -156,7 +155,7 @@ imports: []`,
 			if tc.input != "" {
 				inputReader = bytes.NewBufferString(tc.input)
 			}
-			cfg, err := crd2go.LoadConfig(inputReader)
+			cfg, err := LoadConfig(inputReader)
 			if tc.wantErr == "" {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want, cfg)
@@ -175,7 +174,7 @@ func TestCodeFileForCRDAtPath(t *testing.T) {
 	require.NoError(t, err)
 	defer checkerr.CheckErr("removing test temp dir", func() error { return os.RemoveAll(tmpDir) })
 
-	cwFn := crd2go.CodeWriterAtPath(tmpDir)
+	cwFn := CodeWriterAtPath(tmpDir)
 	require.NotNil(t, cwFn)
 
 	w1, err := cwFn("testfile.go", false)
@@ -245,7 +244,7 @@ func ReserveTypeName(name string) *gotype.GoType {
 
 type fakeFailureReader struct{}
 
-func (ffr *fakeFailureReader) Read(buf []byte) (int, error) {
+func (ffr *fakeFailureReader) Read(_ []byte) (int, error) {
 	return 0, errors.New("fake error")
 }
 
