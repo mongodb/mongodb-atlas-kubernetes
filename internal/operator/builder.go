@@ -93,7 +93,6 @@ type Builder struct {
 
 func (b *Builder) WithConfig(config *rest.Config) *Builder {
 	b.config = config
-	b.config.ContentType = "application/json"
 	return b
 }
 
