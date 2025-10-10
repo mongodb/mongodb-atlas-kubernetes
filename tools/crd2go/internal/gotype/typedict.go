@@ -149,7 +149,7 @@ func (td TypeDict) RenameType(parentNames []string, gt *GoType) error {
 	}
 	goType.Name = typeName
 	if goType.Name == "string" {
-		log.Printf("here")
+		log.Printf("here") //TODO handle this case better
 	}
 	td.Add(goType)
 

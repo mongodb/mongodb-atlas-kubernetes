@@ -33,15 +33,20 @@ func ArrayHookFn(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *crd.C
 	if crdType.Schema.Items.Schema == nil {
 		return nil, fmt.Errorf("array %s has no items schema", crdType.Name)
 	}
-	elementType, err := crd.FromOpenAPIType(td, hooks, &crd.CRDType{
-		Name:   crdType.Name,
-		Schema: crdType.Schema.Items.Schema,
-	})
+	elementType, err := crd.FromOpenAPIType(
+		td,
+		hooks,
+		&crd.CRDType{
+			Name:   crdType.Name,
+			Schema: crdType.Schema.Items.Schema,
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse array %s element type: %w", crdType.Name, err)
 	}
 	if err := td.RenameType(crdType.Parents, elementType); err != nil {
 		return nil, fmt.Errorf("failed to rename element type under %s: %w", crdType.Name, err)
 	}
+
 	return gotype.NewArray(elementType), nil
 }

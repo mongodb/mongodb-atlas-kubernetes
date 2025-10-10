@@ -23,30 +23,27 @@ import (
 )
 
 // PrimitiveHookFn converts an OpenAPI primitive type to a GoType
-func PrimitiveHookFn(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
+func PrimitiveHookFn(_ *gotype.TypeDict, _ []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	if !crd.IsPrimitive(crdType) {
 		return nil, fmt.Errorf("%s is not a primitive type: %w", crdType.Schema.Type, crd.ErrNotProcessed)
 	}
 	kind := crdType.Schema.Type
-	goTypeName, err := openAPIKindtoGoType(kind)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse OpenAPI kind %s: %w", kind, err)
-	}
+	goTypeName := openAPIkindGoType(kind)
+
 	return gotype.NewPrimitive(goTypeName, goTypeName), nil
 }
 
-// openAPIKindtoGoType converts an OpenAPI kind to a Go type
-func openAPIKindtoGoType(kind string) (string, error) {
+// openAPIkindGoType converts an OpenAPI kind to a Go type
+func openAPIkindGoType(kind string) string {
 	switch kind {
-	case crd.OpenAPIString:
-		return gotype.StringKind, nil
 	case crd.OpenAPIInteger:
-		return gotype.IntKind, nil
+		return gotype.IntKind
 	case crd.OpenAPINumber:
-		return gotype.FloatKind, nil
+		return gotype.FloatKind
 	case crd.OpenAPIBoolean:
-		return gotype.BoolKind, nil
-	default:
-		return "", fmt.Errorf("unsupported Open API kind %s", kind)
+		return gotype.BoolKind
 	}
+
+	// if none of the above, string type is assumed
+	return gotype.StringKind
 }
