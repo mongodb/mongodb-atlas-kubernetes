@@ -154,7 +154,7 @@ jobs:
         run: devbox run -- kubectl version
 
       - name: Apply CRDs
-        run: devbox run -- kubectl apply -f deploy/crds
+        run: devbox run -- make install
 
       - name: Run CI E2E tests
         run: devbox run -- ./scripts/launch-ci-e2e.sh

@@ -194,7 +194,7 @@ unit-test: manifests
 test/int: envtest manifests
 	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
 
-test/int/clusterwide: envtest
+test/int/clusterwide: envtest manifests
 	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
 
 envtest: envtest-assets
