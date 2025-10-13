@@ -15,6 +15,7 @@
 package operator
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -112,7 +113,7 @@ func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Oper
 	}
 	cmdLine := append(operatorCommand(), cmdArgs...)
 	//nolint:gosec
-	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
+	cmd := exec.CommandContext(context.Background(), cmdLine[0], cmdLine[1:]...)
 
 	// works around  https://github.com/golang/go/issues/40467
 	// to be able to propagate SIGTERM to the child process.
