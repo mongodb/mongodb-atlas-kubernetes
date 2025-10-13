@@ -17,7 +17,6 @@
 set -xeou pipefail
 
 # copy the initial bundle dir state from teh latest released bundle
-latest_release_dir=$(find releases -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -Vr | head -n 1)
 mkdir -p bundle/manifests
 cp config/manifests-template/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml bundle/manifests
 
