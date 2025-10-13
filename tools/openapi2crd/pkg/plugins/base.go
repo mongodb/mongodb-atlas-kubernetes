@@ -23,43 +23,36 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+
 	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
-type CrdPlugin struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
+// Base is a plugin that add minimum required configuration to a CRD
+type Base struct{}
+
+func (p *Base) Name() string {
+	return "base"
 }
 
-func (c CrdPlugin) Name() string {
-	return "crd"
-}
+func (p *Base) Process(req *CRDProcessorRequest) error {
+	pluralGvk, singularGvk := guessKindToResource(req.CRDConfig.GVK)
 
-func NewCrdPlugin(crd *apiextensions.CustomResourceDefinition) *CrdPlugin {
-	return &CrdPlugin{
-		crd: crd,
-	}
-}
-
-func (p *CrdPlugin) ProcessCRD(g Generator, crdConfig *configv1alpha1.CRDConfig) error {
-	pluralGvk, singularGvk := guessKindToResource(crdConfig.GVK)
-
-	p.crd.ObjectMeta = v1.ObjectMeta{
+	req.CRD.ObjectMeta = v1.ObjectMeta{
 		Name: fmt.Sprintf("%s.%s", pluralGvk.Resource, pluralGvk.Group),
 	}
 
-	p.crd.Spec = apiextensions.CustomResourceDefinitionSpec{
+	req.CRD.Spec = apiextensions.CustomResourceDefinitionSpec{
 		Group: pluralGvk.Group,
 		Scope: apiextensions.NamespaceScoped,
 		Names: apiextensions.CustomResourceDefinitionNames{
-			Kind:     crdConfig.GVK.Kind,
-			ListKind: fmt.Sprintf("%sList", crdConfig.GVK.Kind),
+			Kind:     req.CRDConfig.GVK.Kind,
+			ListKind: fmt.Sprintf("%sList", req.CRDConfig.GVK.Kind),
 			Plural:   pluralGvk.Resource,
 			Singular: singularGvk.Resource,
 		},
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
-				Name:    crdConfig.GVK.Version,
+				Name:    req.CRDConfig.GVK.Version,
 				Served:  true,
 				Storage: true,
 			},
@@ -76,7 +69,7 @@ func (p *CrdPlugin) ProcessCRD(g Generator, crdConfig *configv1alpha1.CRDConfig)
 
 %v
 
-At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status`, singularGvk.Resource, strings.Join(majorVersions(crdConfig), "\n")),
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status`, singularGvk.Resource, strings.Join(majorVersions(req.CRDConfig), "\n")),
 						Properties: map[string]apiextensions.JSONSchemaProps{},
 					},
 					"status": {
@@ -89,7 +82,7 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		},
 	}
 
-	p.crd.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties["conditions"] = apiextensions.JSONSchemaProps{
+	req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["status"].Properties["conditions"] = apiextensions.JSONSchemaProps{
 		Type:        "array",
 		Description: "Represents the latest available observations of a resource's current state.",
 		Items: &apiextensions.JSONSchemaPropsOrArray{
@@ -112,31 +105,23 @@ At most one versioned spec can be specified. More info: https://git.k8s.io/commu
 		XListType: ptr.To("map"),
 	}
 
-	p.crd.Status.StoredVersions = []string{}
+	req.CRD.Status.StoredVersions = []string{}
 
 	// enable status subresource
-	p.crd.Spec.Subresources = &apiextensions.CustomResourceSubresources{
+	req.CRD.Spec.Subresources = &apiextensions.CustomResourceSubresources{
 		Status: &apiextensions.CustomResourceSubresourceStatus{},
 	}
 
-	p.crd.Spec.Names.Categories = crdConfig.Categories
-	p.crd.Spec.Names.ShortNames = crdConfig.ShortNames
+	req.CRD.Spec.Names.Categories = req.CRDConfig.Categories
+	req.CRD.Spec.Names.ShortNames = req.CRDConfig.ShortNames
 
-	for _, version := range p.crd.Spec.Versions {
+	for _, version := range req.CRD.Spec.Versions {
 		if version.Storage {
-			p.crd.Status.StoredVersions = append(p.crd.Status.StoredVersions, version.Name)
+			req.CRD.Status.StoredVersions = append(req.CRD.Status.StoredVersions, version.Name)
 		}
 	}
 
 	return nil
-}
-
-func majorVersions(crdConfig *configv1alpha1.CRDConfig) []string {
-	var result []string
-	for _, m := range crdConfig.Mappings {
-		result = append(result, "- "+m.MajorVersion)
-	}
-	return result
 }
 
 func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.GroupVersionResource /*singular*/, runtimeschema.GroupVersionResource) {
@@ -162,4 +147,12 @@ func guessKindToResource(gvk v1.GroupVersionKind) ( /*plural*/ runtimeschema.Gro
 	}
 
 	return runtimeGVK.GroupVersion().WithResource(singularName + "s"), singular
+}
+
+func majorVersions(crdConfig *configv1alpha1.CRDConfig) []string {
+	result := make([]string, 0, len(crdConfig.Mappings))
+	for _, m := range crdConfig.Mappings {
+		result = append(result, "- "+m.MajorVersion)
+	}
+	return result
 }

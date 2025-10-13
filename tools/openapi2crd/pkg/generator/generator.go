@@ -13,20 +13,6 @@
 // limitations under the License.
 //
 
-/*
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package generator
 
 import (
@@ -37,90 +23,96 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"sigs.k8s.io/yaml"
+
 	"tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/atlas"
 	"tools/openapi2crd/pkg/config"
 	"tools/openapi2crd/pkg/plugins"
 )
 
 type Generator struct {
-	config      v1alpha1.CRDConfig
-	definitions map[string]v1alpha1.OpenAPIDefinition
-	plugins     []plugins.Plugin
+	definitions   map[string]v1alpha1.OpenAPIDefinition
+	pluginSet     *plugins.Set
+	openapiLoader config.Loader
+	atlasLoader   config.Loader
 }
 
-func NewGenerator(crdConfig v1alpha1.CRDConfig, definitions []v1alpha1.OpenAPIDefinition) *Generator {
-	definitionsMap := map[string]v1alpha1.OpenAPIDefinition{}
-	for _, def := range definitions {
-		definitionsMap[def.Name] = def
-	}
+func NewGenerator(
+	openAPIDefinitions map[string]v1alpha1.OpenAPIDefinition,
+	pluginSet *plugins.Set,
+	openapiLoader config.Loader,
+	atlasLoader config.Loader,
+) *Generator {
 	return &Generator{
-		config:      crdConfig,
-		definitions: definitionsMap,
+		definitions:   openAPIDefinitions,
+		pluginSet:     pluginSet,
+		openapiLoader: openapiLoader,
+		atlasLoader:   atlasLoader,
 	}
 }
 
-func (g *Generator) majorVersions() []string {
-	var result []string
-	for _, m := range g.config.Mappings {
-		result = append(result, "- "+m.MajorVersion)
-	}
-	return result
-}
-
-func (g *Generator) Generate(ctx context.Context) (*apiextensions.CustomResourceDefinition, error) {
+func (g *Generator) Generate(ctx context.Context, crdConfig *v1alpha1.CRDConfig) (*apiextensions.CustomResourceDefinition, error) {
 	crd := &apiextensions.CustomResourceDefinition{}
-
-	g.plugins = []plugins.Plugin{
-		plugins.NewCrdPlugin(crd),
-		plugins.NewMajorVersionPlugin(crd),
-		plugins.NewParametersPlugin(crd),
-		plugins.NewEntryPlugin(crd),
-		plugins.NewStatusPlugin(crd),
-		plugins.NewSensitivePropertiesPlugin(),
-		plugins.NewSkippedPropertiesPlugin(),
-		plugins.NewReadOnlyPropertiesPlugin(),
-		plugins.NewReadWriteOnlyPropertiesPlugin(),
-		plugins.NewReferencesPlugin(crd),
-		plugins.NewMutualExclusiveMajorVersions(crd),
-		plugins.NewAtlasSdkVersionPlugin(crd, g.definitions),
-	}
 
 	extensionsSchema := openapi3.NewSchema()
 	extensionsSchema.Properties = map[string]*openapi3.SchemaRef{
 		"spec": {Value: &openapi3.Schema{Properties: map[string]*openapi3.SchemaRef{}}},
 	}
 
-	for _, p := range g.plugins {
-		if err := p.ProcessCRD(g, &g.config); err != nil {
+	var err error
+	for _, p := range g.pluginSet.CRD {
+		err = p.Process(&plugins.CRDProcessorRequest{CRD: crd, CRDConfig: crdConfig})
+		if err != nil {
 			return nil, fmt.Errorf("error processing CRD in plugin %q: %w", p.Name(), err)
 		}
 	}
 
-	for _, mapping := range g.config.Mappings {
+	for _, mapping := range crdConfig.Mappings {
 		def, ok := g.definitions[mapping.OpenAPIRef.Name]
 		if !ok {
 			return nil, fmt.Errorf("no OpenAPI definition named %q found", mapping.OpenAPIRef.Name)
 		}
 
 		var openApiSpec *openapi3.T
+		var err error
 
-		path := def.Path
-		if path == "" {
-			var err error
-			path, err = atlas.LoadOpenAPIPath(def.Package)
+		switch def.Path {
+		case "":
+			openApiSpec, err = g.atlasLoader.Load(ctx, def.Package)
 			if err != nil {
-				return nil, fmt.Errorf("error loading OpenAPI package %q: %w", def.Package, err)
+				return nil, fmt.Errorf("error loading Atlas OpenAPI package %q: %w", def.Package, err)
+			}
+		default:
+			openApiSpec, err = g.openapiLoader.Load(ctx, def.Path)
+			if err != nil {
+				return nil, fmt.Errorf("error loading spec: %w", err)
 			}
 		}
 
-		openApiSpec, err := config.LoadOpenAPI(path)
-		if err != nil {
-			return nil, fmt.Errorf("error loading spec: %w", err)
+		for _, p := range g.pluginSet.Mapping {
+			err = p.Process(
+				&plugins.MappingProcessorRequest{
+					CRD:              crd,
+					MappingConfig:    &mapping,
+					OpenAPISpec:      openApiSpec,
+					ExtensionsSchema: extensionsSchema,
+					Converter:        g,
+				},
+			)
+			if err != nil {
+				return nil, fmt.Errorf("error processing mapping plugin %s: %w", p.Name(), err)
+			}
 		}
-		for _, p := range g.plugins {
-			if err := p.ProcessMapping(g, &mapping, openApiSpec, extensionsSchema); err != nil {
-				return nil, fmt.Errorf("error processing plugin %s: %w", p.Name(), err)
+
+		for _, p := range g.pluginSet.Extension {
+			err = p.Process(
+				&plugins.ExtensionProcessorRequest{
+					ExtensionsSchema: extensionsSchema,
+					ApiDefinitions:   g.definitions,
+					MappingConfig:    &mapping,
+				},
+			)
+			if err != nil {
+				return nil, fmt.Errorf("error processing extenssion plugin %s: %w", p.Name(), err)
 			}
 		}
 	}
@@ -137,11 +129,20 @@ func (g *Generator) Generate(ctx context.Context) (*apiextensions.CustomResource
 		crd.Annotations["api-mappings"] = string(d)
 	}
 
-	if err := ValidateCRD(ctx, crd); err != nil {
+	if err = ValidateCRD(ctx, crd); err != nil {
 		log.Printf("Error validating CRD: %v", err)
 	}
 
 	return crd, nil
+}
+
+func (g *Generator) majorVersions(config v1alpha1.CRDConfig) []string {
+	result := make([]string, 0, len(config.Mappings))
+	for _, m := range config.Mappings {
+		result = append(result, "- "+m.MajorVersion)
+	}
+
+	return result
 }
 
 func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {

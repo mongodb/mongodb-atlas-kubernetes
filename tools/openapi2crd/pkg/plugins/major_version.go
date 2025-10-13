@@ -13,20 +13,27 @@
 // limitations under the License.
 //
 
-package generator
+package plugins
 
 import (
-	"context"
 	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/validation"
 )
 
-func ValidateCRD(ctx context.Context, crd *apiextensions.CustomResourceDefinition) error {
-	errorList := validation.ValidateCustomResourceDefinition(ctx, crd)
-	if len(errorList) > 0 {
-		return fmt.Errorf("error validating CRD %v: %w", crd.ObjectMeta.Name, errorList.ToAggregate())
+// MajorVersion is a plugin that adds the major version schema to the CRD.
+// It requires the base plugin to be run first.
+type MajorVersion struct{}
+
+func (s *MajorVersion) Name() string {
+	return "major_version"
+}
+
+func (s *MajorVersion) Process(req *MappingProcessorRequest) error {
+	req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion] = apiextensions.JSONSchemaProps{
+		Type:        "object",
+		Description: fmt.Sprintf("The spec of the %v resource for version %v.", req.CRD.Spec.Names.Singular, req.MappingConfig.MajorVersion),
+		Properties:  map[string]apiextensions.JSONSchemaProps{},
 	}
 
 	return nil

@@ -13,38 +13,54 @@
 // limitations under the License.
 //
 
-package atlas
+package config
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	_ "go.mongodb.org/atlas-sdk/v20250312005/admin"
 )
 
-func LoadOpenAPIPath(modulePath string) (string, error) {
-	path, err := GetGoModulePath(modulePath)
+type Atlas struct {
+	fileLoader Loader
+}
+
+func (a *Atlas) Load(ctx context.Context, pkg string) (*openapi3.T, error) {
+	path, err := getGoModulePath(ctx, pkg)
 	if err != nil {
-		return "", fmt.Errorf("failed to load module path: %v", err)
+		return nil, fmt.Errorf("failed to load module path: %w", err)
 	}
 	_ = path
 
-	return filepath.Clean(filepath.Join(path, "..", "openapi", "atlas-api-transformed.yaml")), nil
+	filename := filepath.Clean(filepath.Join(path, "..", "openapi", "atlas-api-transformed.yaml"))
+
+	return a.fileLoader.Load(ctx, filename)
 }
 
-func GetGoModulePath(modulePath string) (string, error) {
+func NewAtlas(loader Loader) *Atlas {
+	return &Atlas{
+		fileLoader: loader,
+	}
+}
+
+func getGoModulePath(ctx context.Context, modulePath string) (string, error) {
 	goCmd, err := exec.LookPath("go")
 	if err != nil {
 		return "", fmt.Errorf("go command not found in PATH: %w", err)
 	}
 
-	cmd := exec.Command(goCmd, "list", "-f", "{{.Dir}}", modulePath)
+	cmd := exec.CommandContext(ctx, goCmd, "list", "-f", "{{.Dir}}", modulePath)
 	output, err := cmd.Output()
 	if err != nil {
 		// Check if the error is due to the module not being found
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			stderr := string(exitErr.Stderr)
 			if strings.Contains(stderr, "not a known module") || strings.Contains(stderr, "cannot find module") {
 				return "", fmt.Errorf("module '%s' not found or not a dependency of the current project", modulePath)

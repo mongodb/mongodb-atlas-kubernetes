@@ -21,33 +21,22 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/util/sets"
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
-type References struct {
-	NoOp
-	crd *apiextensions.CustomResourceDefinition
-}
-
-var _ Plugin = &References{}
-
-func NewReferencesPlugin(crd *apiextensions.CustomResourceDefinition) *References {
-	return &References{
-		crd: crd,
-	}
-}
+// References adds reference properties to the CRD OpenAPI schema based on the mapping configuration.
+// It requires base and major version schemas to be already processed.
+type References struct{}
 
 func (r *References) Name() string {
-	return "references"
+	return "reference"
 }
 
-func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error {
-	majorVersionSpec := r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion]
+func (r *References) Process(req *MappingProcessorRequest) error {
+	majorVersionSpec := req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion]
 
-	for _, ref := range mappingConfig.ParametersMapping.References {
+	for _, ref := range req.MappingConfig.ParametersMapping.References {
 		var refProp apiextensions.JSONSchemaProps
 
 		openApiPropertyPath := strings.Split(ref.Property, ".")
@@ -77,21 +66,7 @@ func (r *References) ProcessMapping(g Generator, mappingConfig *configv1alpha1.C
 		slices.Sort(majorVersionSpec.Required)
 
 		majorVersionSpec.Properties[ref.Name] = refProp
-		r.crd.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[mappingConfig.MajorVersion] = majorVersionSpec
-
-		schema := openapi3.NewSchema()
-		schema.Extensions = map[string]interface{}{}
-		schema.Extensions["x-kubernetes-mapping"] = map[string]interface{}{
-			"type":         map[string]interface{}{"kind": ref.Target.Type.Kind, "group": ref.Target.Type.Group, "version": ref.Target.Type.Version, "resource": ref.Target.Type.Resource},
-			"nameSelector": ".name",
-			"properties":   ref.Target.Properties,
-		}
-
-		schema.Extensions["x-openapi-mapping"] = map[string]interface{}{
-			"property": ref.Property,
-		}
-
-		extensionsSchema.Properties["spec"].Value.Properties[mappingConfig.MajorVersion].Value.Properties[ref.Name] = openapi3.NewSchemaRef("", schema)
+		req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion] = majorVersionSpec
 	}
 
 	return nil

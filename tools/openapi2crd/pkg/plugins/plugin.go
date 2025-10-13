@@ -18,16 +18,58 @@ package plugins
 import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
 	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"tools/openapi2crd/pkg/converter"
 )
 
-type Plugin interface {
-	Name() string
-	ProcessCRD(g Generator, crdConfig *configv1alpha1.CRDConfig) error
-	ProcessMapping(g Generator, mappingConfig *configv1alpha1.CRDMapping, openApiSpec *openapi3.T, extensionsSchema *openapi3.Schema) error
-	ProcessProperty(g Generator, propertyConfig *configv1alpha1.PropertyMapping, props *apiextensions.JSONSchemaProps, propertySchema *openapi3.Schema, extensionsSchema *openapi3.SchemaRef, path ...string) *apiextensions.JSONSchemaProps
+type CRDProcessorRequest struct {
+	CRD       *apiextensions.CustomResourceDefinition
+	CRDConfig *configv1alpha1.CRDConfig
 }
 
-type Generator interface {
-	ConvertProperty(schema, extensionsSchema *openapi3.SchemaRef, propertyConfig *configv1alpha1.PropertyMapping, depth int, path ...string) *apiextensions.JSONSchemaProps
+type MappingProcessorRequest struct {
+	CRD              *apiextensions.CustomResourceDefinition
+	MappingConfig    *configv1alpha1.CRDMapping
+	OpenAPISpec      *openapi3.T
+	ExtensionsSchema *openapi3.Schema
+	Converter        converter.Converter
 }
+
+type PropertyProcessorRequest struct {
+	Property         *apiextensions.JSONSchemaProps
+	PropertyConfig   *configv1alpha1.PropertyMapping
+	OpenAPISchema    *openapi3.Schema
+	ExtensionsSchema *openapi3.SchemaRef
+	Path             []string
+}
+
+type ExtensionProcessorRequest struct {
+	ExtensionsSchema *openapi3.Schema
+	ApiDefinitions   map[string]configv1alpha1.OpenAPIDefinition
+	MappingConfig    *configv1alpha1.CRDMapping
+}
+
+type Plugin[R any] interface {
+	Name() string
+	Process(request R) error
+}
+
+type CRDPlugin = Plugin[*CRDProcessorRequest]
+type MappingPlugin = Plugin[*MappingProcessorRequest]
+type PropertyPlugin = Plugin[*PropertyProcessorRequest]
+type ExtensionPlugin = Plugin[*ExtensionProcessorRequest]
+
+var _ CRDPlugin = &Base{}
+var _ CRDPlugin = &MutualExclusiveMajorVersions{}
+var _ MappingPlugin = &Entry{}
+var _ MappingPlugin = &Status{}
+var _ MappingPlugin = &Parameters{}
+var _ MappingPlugin = &References{}
+var _ MappingPlugin = &MajorVersion{}
+var _ PropertyPlugin = &ReadOnlyProperties{}
+var _ PropertyPlugin = &ReadWriteProperties{}
+var _ PropertyPlugin = &SensitiveProperties{}
+var _ PropertyPlugin = &SkippedProperties{}
+var _ ExtensionPlugin = &AtlasSdkVersionPlugin{}
+var _ ExtensionPlugin = &ReferencesMetadata{}

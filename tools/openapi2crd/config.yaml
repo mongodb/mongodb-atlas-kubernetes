@@ -21,6 +21,7 @@ spec:
     - name: atlas
       default: true
       plugins:
+        - base
         - major_version
         - parameters
         - entry
@@ -28,7 +29,11 @@ spec:
         - sensitive_properties
         - skipped_properties
         - read_only_properties
-        - read_write_only_properties
+        - read_write_properties
+        - references
+        - references_metadata
+        - mutual_exclusive_major_versions
+        - atlas_sdk_version
 
   openapi:
     - name: v20250312
