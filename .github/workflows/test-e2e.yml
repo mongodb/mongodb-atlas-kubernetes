@@ -154,7 +154,7 @@ jobs:
         run: devbox run -- kubectl version
 
       - name: Apply CRDs
-        run: devbox run -- make install
+        run: devbox run -- make install-crds
 
       - name: Run CI E2E tests
         run: devbox run -- ./scripts/launch-ci-e2e.sh
@@ -197,12 +197,11 @@ jobs:
         with:
           enable-cache: 'true'
 
-      - name: Generate kustomized all-in-one install configs with helm-based image
-        uses: ./.github/actions/gen-install-scripts
-        with:
-          ENV: dev
-          VERSION: dev
+      - name: Generate kustomized all-in-one install configs
+        env:
           IMAGE_URL: ${{ needs.prepare-e2e-image.outputs.image_url }}
+        run: |
+          devbox run -- make bundle
 
       - name: Extract k8s version/platform
         id: extract

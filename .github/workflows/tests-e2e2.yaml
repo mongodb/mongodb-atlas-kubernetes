@@ -167,6 +167,7 @@ jobs:
       - name: Install CRDs if needed
         run: |
           devbox run -- 'make install-crds'
+          devbox run -- 'make bundle'
 
       - name: Run E2E2 test
         env:
