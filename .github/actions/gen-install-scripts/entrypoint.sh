@@ -18,7 +18,8 @@ set -xeou pipefail
 
 # copy the initial bundle dir state from teh latest released bundle
 latest_release_dir=$(find releases -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -Vr | head -n 1)
-cp -rf "releases/${latest_release_dir}/bundle" .
+mkdir -p bundle/manifests
+cp config/manifests-template/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml bundle/manifests
 
 target_dir="deploy"
 clusterwide_dir="${target_dir}/clusterwide"
@@ -68,7 +69,7 @@ cp config/crd/bases/* "${crds_dir}"
 # CSV bundle
 operator-sdk generate kustomize manifests --input-dir=config/manifests-template --interactive=false -q --apis-dir=api
 # get the current version so we could put it into the "replaces:"
-current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml)"
+current_version="$(jq -r .current version.json)"
 
 # We pass the version only for non-dev deployments (it's ok to have "0.0.0" for dev)
 channel="stable"
