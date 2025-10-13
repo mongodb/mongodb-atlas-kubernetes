@@ -22,11 +22,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/internal/gotype"
 )
 
-func DatetimeHookFn(td *gotype.TypeDict, _ []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
+func DatetimeHookFn(_ *gotype.TypeDict, _ []crd.OpenAPI2GoHook, crdType *crd.CRDType) (*gotype.GoType, error) {
 	if !crd.IsPrimitive(crdType) || !crd.IsDateTimeFormat(crdType) {
-		return nil, fmt.Errorf("%s is not a date time (format is %s): %w",
-			crdType.Schema.Type, crdType.Schema.Format, crd.ErrNotProcessed)
+		return nil, fmt.Errorf("%s is not a date time (format is %s): %w", crdType.Schema.Type, crdType.Schema.Format, crd.ErrNotProcessed)
 	}
+
 	return gotype.TimeType, nil
 }
 

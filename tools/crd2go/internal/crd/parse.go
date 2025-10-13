@@ -106,5 +106,6 @@ func DecodeCRD(content []byte) (*apiextensionsv1.CustomResourceDefinition, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert CRD object: %w", err)
 	}
+
 	return crd, nil
 }

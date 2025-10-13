@@ -17,7 +17,6 @@ package gotype
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/pkg/config"
 )
@@ -147,10 +146,8 @@ func (td TypeDict) RenameType(parentNames []string, gt *GoType) error {
 	if used {
 		return fmt.Errorf("failed to find a free type name for type %v", gt)
 	}
+
 	goType.Name = typeName
-	if goType.Name == "string" {
-		log.Printf("here")
-	}
 	td.Add(goType)
 
 	return nil

@@ -29,6 +29,7 @@ func DictHookFn(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *crd.CR
 		return nil, fmt.Errorf("%s is not a dictionary (additionalProperties is %v): %w",
 			crdType.Schema.Type, crdType.Schema.AdditionalProperties, crd.ErrNotProcessed)
 	}
+
 	return fromOpenAPIDict(td, hooks, crdType)
 }
 
@@ -37,15 +38,20 @@ func fromOpenAPIDict(td *gotype.TypeDict, hooks []crd.OpenAPI2GoHook, crdType *c
 	elemType := gotype.JSONType
 	if crdType.Schema.AdditionalProperties.Schema != nil {
 		var err error
-		elemType, err = crd.FromOpenAPIType(td, hooks, &crd.CRDType{
-			Name:    crdType.Name,
-			Parents: crdType.Parents,
-			Schema:  crdType.Schema.AdditionalProperties.Schema,
-		})
+		elemType, err = crd.FromOpenAPIType(
+			td,
+			hooks,
+			&crd.CRDType{
+				Name:    crdType.Name,
+				Parents: crdType.Parents,
+				Schema:  crdType.Schema.AdditionalProperties.Schema,
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check map value type: %w", err)
 		}
 	}
+
 	return &gotype.GoType{Name: gotype.MapKind, Kind: gotype.MapKind, Element: elemType}, nil
 }
 
