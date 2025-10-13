@@ -31,10 +31,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/crds"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/crds"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 

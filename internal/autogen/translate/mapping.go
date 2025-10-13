@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/unstructured"
 )
 
 const (
