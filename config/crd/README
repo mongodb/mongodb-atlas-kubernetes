@@ -1,0 +1,6 @@
+The contents of the bases/ directory is auto-generated, more formally:
+
+- kustomization.yaml
+- *.yaml (CRD definitions)
+
+are created by running `make manifests` from the root of the repository.

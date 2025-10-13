@@ -122,6 +122,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: '0'
       
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.14.0
@@ -129,10 +130,9 @@ jobs:
           enable-cache: 'true'
 
       - name: Generate kustomized all-in-one install configs
-        uses: ./.github/actions/gen-install-scripts
-        with:
-          ENV: dev
-          VERSION: dev
+        run: |
+          devbox run -- make bundle
+
 
       - name: Extract k8s version/platform
         id: extract
@@ -154,7 +154,7 @@ jobs:
         run: devbox run -- kubectl version
 
       - name: Apply CRDs
-        run: devbox run -- kubectl apply -f deploy/crds
+        run: devbox run -- make install-crds
 
       - name: Run CI E2E tests
         run: devbox run -- ./scripts/launch-ci-e2e.sh
@@ -191,18 +191,18 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: '0'
     
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.14.0
         with:
           enable-cache: 'true'
 
-      - name: Generate kustomized all-in-one install configs with helm-based image
-        uses: ./.github/actions/gen-install-scripts
-        with:
-          ENV: dev
-          VERSION: dev
+      - name: Generate kustomized all-in-one install configs
+        env:
           IMAGE_URL: ${{ needs.prepare-e2e-image.outputs.image_url }}
+        run: |
+          devbox run -- make bundle
 
       - name: Extract k8s version/platform
         id: extract

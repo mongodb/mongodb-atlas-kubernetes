@@ -191,10 +191,10 @@ unit-test: manifests
 	go test -race -cover $(GO_UNIT_TEST_FOLDERS) $(GO_TEST_FLAGS)
 
 ## Run integration tests. Sample with labels: `make test/int GINKGO_FILTER_LABEL=AtlasProject`
-test/int: envtest
+test/int: envtest manifests
 	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
 
-test/int/clusterwide: envtest
+test/int/clusterwide: envtest manifests
 	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
 
 envtest: envtest-assets
@@ -248,8 +248,10 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
-manifests: fmt ## Generate manifests e.g. CRD, RBAC etc.
+manifests: ## Generate manifests e.g. CRD, RBAC etc.
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+	touch config/crd/bases/kustomization.yaml
+	sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
 	@./scripts/split_roles_yaml.sh
 ifdef EXPERIMENTAL
 	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
@@ -305,7 +307,7 @@ validate-manifests: generate manifests
 	$(MAKE) check-missing-files
 
 .PHONE: sync-crds-chart
-sync-crds-chart:
+sync-crds-chart: bundle
 	@cp -r bundle/manifests/atlas.mongodb.com_* helm-charts/atlas-operator-crds/templates/
 
 .PHONY: validate-crds-chart
@@ -323,11 +325,7 @@ validate-crds-chart: ## Validate the CRDs in the Helm chart
 
 .PHONY: bundle
 bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
-	@echo "Building bundle $(VERSION)"
-	operator-sdk generate $(KUSTOMIZE) manifests -q --apis-dir=api
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
-	operator-sdk bundle validate ./bundle
+	INPUT_VERSION=$(VERSION) INPUT_ENV=prod INPUT_IMAGE_URL=$(IMG) sh ./.github/actions/gen-install-scripts/entrypoint.sh
 
 .PHONY: image
 image: ## Build an operator image for local development
@@ -430,6 +428,15 @@ x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 
 clean: ## Clean built binaries
 	rm -rf bin/*
+	rm -rf config/manifests/bases/
+	rm -f config/crd/bases/*.yaml
+	rm -f config/rbac/clusterwide/role.yaml
+	rm -f config/rbac/namespaced/role.yaml
+	rm -f config/rbac/role.yaml
+	rm -rf deploy/
+	rm -rf bundle/
+	rm -f bundle.Dockerfile
+	rm -rf test/e2e/data/
 
 .PHONY: all-platforms
 all-platforms:
@@ -548,7 +555,7 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 	git submodule update helm-charts
 
 .PHONY: install-crds
-install-crds: ## Install CRDs in Kubernetes
+install-crds: manifests ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
 ifdef EXPERIMENTAL
 	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
@@ -667,7 +674,7 @@ bump-version-file:
 	@cat $(VERSION_FILE)
 
 .PHONY: api-docs
-api-docs:
+api-docs: manifests
 	 go tool -modfile=tools/toolbox/go.mod crdoc --resources config/crd/bases --output docs/api-docs.md
 
 .PHONY: validate-api-docs

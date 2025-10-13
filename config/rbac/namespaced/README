@@ -1,0 +1,5 @@
+The contents of this directory is auto-generated, more formally:
+
+- role.yaml
+
+are created by running `make manifests` from the root of the repository.
