@@ -21,11 +21,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-type CRDInfo struct {
-	definition *apiextensionsv1.CustomResourceDefinition
-	version    string
-}
-
 // selectVersion returns the version from the CRD spec that matches the given version string
 func selectVersion(spec *apiextensionsv1.CustomResourceDefinitionSpec, version string) *apiextensionsv1.CustomResourceDefinitionVersion {
 	if len(spec.Versions) == 0 {
