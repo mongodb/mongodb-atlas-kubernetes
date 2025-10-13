@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os/exec"
 	"testing"
@@ -29,7 +30,7 @@ import (
 // If the command fails to run, the given test is being failed immediately.
 func RunCommand(t *testing.T, name string, args ...string) io.Reader {
 	var result bytes.Buffer
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	cmd.Stdout = &result
 	cmd.Stderr = &result
 	err := cmd.Run()

@@ -15,6 +15,7 @@
 package cli
 
 import (
+	"context"
 	"io"
 	"os/exec"
 	"strings"
@@ -35,7 +36,7 @@ func ExecuteWithoutWriter(command string, args ...string) *gexec.Session {
 }
 
 func ExecuteCommand(reporter io.Writer, command string, args ...string) *gexec.Session {
-	cmd := exec.Command(command, args...)
+	cmd := exec.CommandContext(context.Background(), command, args...)
 	session, _ := gexec.Start(cmd, reporter, reporter)
 	return session
 }
