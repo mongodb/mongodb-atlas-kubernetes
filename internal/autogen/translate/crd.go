@@ -39,16 +39,16 @@ func selectVersion(spec *apiextensionsv1.CustomResourceDefinitionSpec, version s
 
 func getOpenAPIProperties(kind string, version *apiextensionsv1.CustomResourceDefinitionVersion) (map[string]apiextensionsv1.JSONSchemaProps, error) {
 	if version == nil {
-		return nil, fmt.Errorf("missing version %q from %v spec", version, kind)
+		return nil, fmt.Errorf("missing version (nil) from %v spec", kind)
 	}
 	if version.Schema == nil {
-		return nil, fmt.Errorf("missing version %q schema from %v spec", version, kind)
+		return nil, fmt.Errorf("missing version schema from %v spec", kind)
 	}
 	if version.Schema.OpenAPIV3Schema == nil {
-		return nil, fmt.Errorf("missing version %q OpenAPI Schema from %v spec", version, kind)
+		return nil, fmt.Errorf("missing version OpenAPI Schema from %v spec", kind)
 	}
 	if version.Schema.OpenAPIV3Schema.Properties == nil {
-		return nil, fmt.Errorf("missing version %q OpenAPI Properties from %v spec", version, kind)
+		return nil, fmt.Errorf("missing version OpenAPI Properties from %v spec", kind)
 	}
 	return version.Schema.OpenAPIV3Schema.Properties, nil
 }
@@ -56,7 +56,7 @@ func getOpenAPIProperties(kind string, version *apiextensionsv1.CustomResourceDe
 func getSpecPropertiesFor(kind string, props map[string]apiextensionsv1.JSONSchemaProps, field string) (map[string]apiextensionsv1.JSONSchemaProps, error) {
 	prop, ok := props[field]
 	if !ok {
-		return nil, fmt.Errorf(" kind %q spec is missing field %q on", field, kind)
+		return nil, fmt.Errorf("kind %q spec is missing field %q on", kind, field)
 	}
 	if prop.Type != "object" {
 		return nil, fmt.Errorf("kind %q field %q expected to be object but is %v", kind, field, prop.Type)

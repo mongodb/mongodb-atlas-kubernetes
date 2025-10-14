@@ -18,7 +18,6 @@ package translate
 import (
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/stretchr/testify/assert/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -91,14 +90,17 @@ func ExpandMappings(r *Request, obj map[string]any, main client.Object) ([]clien
 		return nil, fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
 	}
 
-	if err := em.expandMappingsAt(obj, mappings, "spec", r.Translator.majorVersion); err != nil {
-		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
-	}
-	if err := em.expandMappingsAt(obj, mappings, "spec", r.Translator.majorVersion, "entry"); err != nil {
-		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
-	}
-	if err := em.expandMappingsAt(obj, mappings, "status", r.Translator.majorVersion); err != nil {
-		return nil, fmt.Errorf("failed to map properties of status from API to Kubernetes: %w", err)
+	for _, entry := range []struct {
+		title string
+		path  []string
+	}{
+		{title: "spec", path: []string{"spec", r.Translator.majorVersion}},
+		{title: "spec entry", path: []string{"spec", r.Translator.majorVersion, "entry"}},
+		{title: "status", path: []string{"status", r.Translator.majorVersion}},
+	} {
+		if err := em.expandMappingsAt(obj, mappings, entry.path...); err != nil {
+			return nil, fmt.Errorf("failed to map properties of %q from API to Kubernetes: %w", entry.title, err)
+		}
 	}
 	return em.added, nil
 }
@@ -122,13 +124,6 @@ func CollapseMappings(r *Request, spec map[string]any, main client.Object) error
 		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
 	}
 	return cm.mapProperties([]string{}, props, spec)
-}
-
-func findEntryPathInTarget(targetType reflect.Type) []string {
-	if targetType.String() == "admin.CreateAlertConfigurationApiParams" {
-		return []string{"GroupAlertsConfig"}
-	}
-	return []string{}
 }
 
 func (m *mapper) expandMappingsAt(obj, mappings map[string]any, fields ...string) error {
@@ -200,7 +195,10 @@ func (m *mapper) mapArray(path []string, mapping map[string]any, list []any) err
 		if !ok {
 			return fmt.Errorf("expected field %q at %v to be a map but was: %T", mapName, path, mapItem)
 		}
-		key, entry := entryMatchingMapping(mapName, mapping, list, m.expand)
+		key, entry, err := entryMatchingMapping(mapName, mapping, list, m.expand)
+		if err != nil {
+			return fmt.Errorf("failed to match mapping within array item %q at %v: %w", mapItem, path, err)
+		}
 		if entry == nil {
 			continue
 		}
@@ -238,28 +236,36 @@ func (m *mapper) mapReference(path []string, mappingName string, mapping, obj ma
 	return ref.Collapse(m.mapContext, path, obj)
 }
 
-func entryMatchingMapping(mapName string, mapping map[string]any, list []any, expand bool) (string, map[string]any) {
+func entryMatchingMapping(mapName string, mapping map[string]any, list []any, expand bool) (string, map[string]any, error) {
 	key := mapName
 	if expand {
 		refMap := refMapping{}
 		if err := unstructured.FromUnstructured(&refMap, mapping); err != nil {
-			return "", nil // not a ref, cannot reverse mapping dfrom API property name
+			return "", nil, fmt.Errorf("not a reference, cannot reverse mapping from API property name")
 		}
 		path := resolveXPath(refMap.XOpenAPIMapping.Property)
 		key = unstructured.Base(path)
 	}
-	return key, findByExistingKey(list, key)
+	m, err := findByExistingUniqueKey(list, key)
+	return key, m, err
 }
 
-func findByExistingKey(list []any, key string) map[string]any {
+func findByExistingUniqueKey(list []any, key string) (map[string]any, error) {
+	candidates := []map[string]any{}
 	for _, item := range list {
 		obj, ok := (item).(map[string]any)
 		if !ok {
 			continue
 		}
 		if _, ok := obj[key]; ok {
-			return obj
+			candidates = append(candidates, obj)
 		}
 	}
-	return nil
+	if len(candidates) == 1 {
+		return candidates[0], nil
+	}
+	if len(candidates) > 1 {
+		return nil, fmt.Errorf("too many matches for key %q: %v", key, candidates)
+	}
+	return nil, nil
 }

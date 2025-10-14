@@ -39,8 +39,8 @@ func TestPrefixedName(t *testing.T) {
 		{
 			title:  "a very long name",
 			prefix: "a",
-			name:   "very logn name with several parts",
-			want:   "a-54fd46599bbf74b8db44",
+			name:   "very long name with several parts",
+			want:   "a-6df784b579487d5c446",
 		},
 		{
 			title:  "names",

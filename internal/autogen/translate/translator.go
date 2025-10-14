@@ -82,22 +82,10 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	if err := assertMajorVersion(specVersion, crd.Spec.Names.Kind, majorVersion); err != nil {
 		return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", majorVersion, err)
 	}
-
-	schemaBytes, err := json.Marshal(specVersion.Schema.OpenAPIV3Schema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal CRD schema to JSON: %w", err)
-	}
-
-	// Compile the schema. You could cache this compiler for performance.
-	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource("schema.json", bytes.NewReader(schemaBytes)); err != nil {
-		return nil, fmt.Errorf("failed to add schema resource: %w", err)
-	}
-	schema, err := compiler.Compile("schema.json")
+	schema, err := compileCRDSchema(specVersion.Schema.OpenAPIV3Schema)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile schema: %w", err)
 	}
-
 	return &Translator{
 		majorVersion: majorVersion,
 		jsonSchema:   schema,
@@ -105,30 +93,58 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	}, nil
 }
 
-func assertMajorVersion(specVersion *apiextensionsv1.CustomResourceDefinitionVersion, kind string, majorVersion string) error {
-	props, err := getOpenAPIProperties(kind, specVersion)
-	if err != nil {
-		return fmt.Errorf("failed to enumerate CRD schema properties: %w", err)
+// ToAPI translates a source Kubernetes spec into a target API structure
+func ToAPI[T any](r *Request, target *T, source client.Object) error {
+	exporter, ok := (source).(APIExporter[T])
+	if ok {
+		return exporter.ToAPI(r, target)
 	}
-	specProps, err := getSpecPropertiesFor(kind, props, "spec")
+	unstructuredSrc, err := unstructured.ToUnstructured(source)
 	if err != nil {
-		return fmt.Errorf("failed to enumerate CRD spec properties: %w", err)
+		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
 	}
-	_, ok := specProps[majorVersion]
-	if !ok {
-		return fmt.Errorf("failed to match the CRD spec version %q in schema", majorVersion)
+	if err := r.Translator.Validate(unstructuredSrc); err != nil {
+		return fmt.Errorf("failed to validate unstructured object input: %w", err)
+	}
+	targetUnstructured := map[string]any{}
+	value, err := unstructured.AccessField[map[string]any](unstructuredSrc, "spec", r.Translator.majorVersion)
+	if err != nil {
+		return fmt.Errorf("failed to access source spec value: %w", err)
+	}
+
+	if err := CollapseMappings(r, value, source); err != nil {
+		return fmt.Errorf("failed to process API mappings: %w", err)
+	}
+
+	targetType := reflect.TypeOf(target).Elem()
+	if targetType.Kind() != reflect.Struct {
+		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
+	}
+
+	rawEntry := value["entry"]
+	if entry, ok := rawEntry.(map[string]any); ok {
+		unstructured.CopyFields(targetUnstructured, unstructured.SkipKeys(value, "entry"))
+		entryPathInTarget := []string{}
+		dst := targetUnstructured
+		if len(entryPathInTarget) > 0 {
+			newValue := map[string]any{}
+			if err = unstructured.CreateField(targetUnstructured, newValue, entryPathInTarget...); err != nil {
+				return fmt.Errorf("failed to set target copy destination to path %v: %w", entryPathInTarget, err)
+			}
+			dst = newValue
+		}
+		unstructured.CopyFields(dst, entry)
+	} else {
+		unstructured.CopyFields(targetUnstructured, value)
+	}
+	delete(targetUnstructured, "groupref")
+	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
+		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
 	}
 	return nil
 }
 
-func (t *Translator) Validate(unstructuredObj map[string]any) error {
-	if err := t.jsonSchema.Validate(unstructuredObj); err != nil {
-		return fmt.Errorf("object validation failed against CRD schema: %w", err)
-	}
-	return nil
-}
-
-// FromAPI translaters a source API structure into a Kubernetes object.
+// FromAPI translates a source API structure into a Kubernetes object.
 func FromAPI[S any, T any, P PtrClientObj[T]](r *Request, target P, source *S) ([]client.Object, error) {
 	importer, ok := any(source).(APIImporter[T, P])
 	if ok {
@@ -174,53 +190,43 @@ func FromAPI[S any, T any, P PtrClientObj[T]](r *Request, target P, source *S) (
 	return append([]client.Object{target}, extraObjects...), nil
 }
 
-// ToAPI translates a source Kubernetes spec into a target API structure
-func ToAPI[T any](r *Request, target *T, source client.Object) error {
-	exporter, ok := (source).(APIExporter[T])
-	if ok {
-		return exporter.ToAPI(r, target)
-	}
-	unstructuredSrc, err := unstructured.ToUnstructured(source)
-	if err != nil {
-		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
-	}
-	if err := r.Translator.Validate(unstructuredSrc); err != nil {
-		return fmt.Errorf("failed to validate unstructured object input: %w", err)
-	}
-	targetUnstructured := map[string]any{}
-	value, err := unstructured.AccessField[map[string]any](unstructuredSrc, "spec", r.Translator.majorVersion)
-	if err != nil {
-		return fmt.Errorf("failed to access source spec value: %w", err)
-	}
-
-	if err := CollapseMappings(r, value, source); err != nil {
-		return fmt.Errorf("failed to process API mappings: %w", err)
-	}
-
-	targetType := reflect.TypeOf(target).Elem()
-	if targetType.Kind() != reflect.Struct {
-		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
-	}
-
-	rawEntry := value["entry"]
-	if entry, ok := rawEntry.(map[string]any); ok {
-		unstructured.CopyFields(targetUnstructured, unstructured.SkipKeys(value, "entry"))
-		entryPathInTarget := findEntryPathInTarget(targetType)
-		dst := targetUnstructured
-		if len(entryPathInTarget) > 0 {
-			newValue := map[string]any{}
-			if err = unstructured.CreateField(targetUnstructured, newValue, entryPathInTarget...); err != nil {
-				return fmt.Errorf("failed to set target copy destination to path %v: %w", entryPathInTarget, err)
-			}
-			dst = newValue
-		}
-		unstructured.CopyFields(dst, entry)
-	} else {
-		unstructured.CopyFields(targetUnstructured, value)
-	}
-	delete(targetUnstructured, "groupref")
-	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
-		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
+// Validate checks whether or not an unstructured object value conforms to the
+// translator's CRD schema
+func (t *Translator) Validate(unstructuredObj map[string]any) error {
+	if err := t.jsonSchema.Validate(unstructuredObj); err != nil {
+		return fmt.Errorf("object validation failed against CRD schema: %w", err)
 	}
 	return nil
+}
+
+func assertMajorVersion(specVersion *apiextensionsv1.CustomResourceDefinitionVersion, kind string, majorVersion string) error {
+	props, err := getOpenAPIProperties(kind, specVersion)
+	if err != nil {
+		return fmt.Errorf("failed to enumerate CRD schema properties: %w", err)
+	}
+	specProps, err := getSpecPropertiesFor(kind, props, "spec")
+	if err != nil {
+		return fmt.Errorf("failed to enumerate CRD spec properties: %w", err)
+	}
+	_, ok := specProps[majorVersion]
+	if !ok {
+		return fmt.Errorf("failed to match the CRD spec version %q in schema", majorVersion)
+	}
+	return nil
+}
+
+func compileCRDSchema(openAPISchema *apiextensionsv1.JSONSchemaProps) (*jsonschema.Schema, error) {
+	schemaBytes, err := json.Marshal(openAPISchema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal CRD schema to JSON: %w", err)
+	}
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("schema.json", bytes.NewReader(schemaBytes)); err != nil {
+		return nil, fmt.Errorf("failed to add schema resource: %w", err)
+	}
+	schema, err := compiler.Compile("schema.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile schema: %w", err)
+	}
+	return schema, nil
 }

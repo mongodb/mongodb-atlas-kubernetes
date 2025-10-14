@@ -429,8 +429,8 @@ func TestToAPIAllRefs(t *testing.T) {
 		crd    string
 		input  client.Object
 		deps   []client.Object
-		target admin2025.CreateAlertConfigurationApiParams
-		want   admin2025.CreateAlertConfigurationApiParams
+		target admin2025.GroupAlertsConfig
+		want   admin2025.GroupAlertsConfig
 	}{
 		{
 			name: "group alert config with a groupRef and secrets",
@@ -536,184 +536,50 @@ func TestToAPIAllRefs(t *testing.T) {
 					},
 				},
 			},
-			want: admin2025.CreateAlertConfigurationApiParams{
-				GroupId: "62b6e34b3d91647abb20e7b8",
-				GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-					Enabled:       pointer.MakePtr(true),
-					EventTypeName: pointer.MakePtr("some-event"),
-					Matchers: &[]admin2025.StreamsMatcher{
-						{
-							FieldName: "field1",
-							Operator:  "op1",
-							Value:     "value1",
-						},
-						{
-							FieldName: "field2",
-							Operator:  "op2",
-							Value:     "value2",
-						},
+			want: admin2025.GroupAlertsConfig{
+				Enabled:       pointer.MakePtr(true),
+				EventTypeName: pointer.MakePtr("some-event"),
+				GroupId:       pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
+				Matchers: &[]admin2025.StreamsMatcher{
+					{
+						FieldName: "field1",
+						Operator:  "op1",
+						Value:     "value1",
 					},
-					Notifications: &[]admin2025.AlertsNotificationRootForGroup{
-						{
-							DatadogApiKey: pointer.MakePtr("sample-api-key"),
-							DatadogRegion: pointer.MakePtr("US"),
-						},
-						{
-							WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
-							WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
-						},
-					},
-					SeverityOverride: pointer.MakePtr("severe"),
-					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-						MetricName: "metric",
-						Mode:       pointer.MakePtr("mode"),
-						Operator:   pointer.MakePtr("operator"),
-						Threshold:  pointer.MakePtr(1.0),
-						Units:      pointer.MakePtr("unit"),
-					},
-					Threshold: &admin2025.StreamProcessorMetricThreshold{
-						MetricName: pointer.MakePtr("metric"),
-						Mode:       pointer.MakePtr("mode-t"),
-						Operator:   pointer.MakePtr("op-t"),
-						Threshold:  pointer.MakePtr(2.0),
-						Units:      pointer.MakePtr("unit-t"),
+					{
+						FieldName: "field2",
+						Operator:  "op2",
+						Value:     "value2",
 					},
 				},
+				Notifications: &[]admin2025.AlertsNotificationRootForGroup{
+					{
+						DatadogApiKey: pointer.MakePtr("sample-api-key"),
+						DatadogRegion: pointer.MakePtr("US"),
+					},
+					{
+						WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
+						WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
+					},
+				},
+				SeverityOverride: pointer.MakePtr("severe"),
+				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
+					MetricName: "metric",
+					Mode:       pointer.MakePtr("mode"),
+					Operator:   pointer.MakePtr("operator"),
+					Threshold:  pointer.MakePtr(1.0),
+					Units:      pointer.MakePtr("unit"),
+				},
+				Threshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: pointer.MakePtr("metric"),
+					Mode:       pointer.MakePtr("mode-t"),
+					Operator:   pointer.MakePtr("op-t"),
+					Threshold:  pointer.MakePtr(2.0),
+					Units:      pointer.MakePtr("unit-t"),
+				},
 			},
-			target: admin2025.CreateAlertConfigurationApiParams{},
+			target: admin2025.GroupAlertsConfig{},
 		},
-
-		// {
-		// 	name: "group alert config with secrets but a direct groupId",
-		// 	crd:  "GroupAlertsConfig",
-		// 	input: &v1.GroupAlertsConfig{
-		// 		TypeMeta: metav1.TypeMeta{
-		// 			Kind:       "GroupAlertsConfig",
-		// 			APIVersion: "atlas.generated.mongodb.com/v1",
-		// 		},
-		// 		ObjectMeta: metav1.ObjectMeta{
-		// 			Name:      "my-group-alerts-config",
-		// 			Namespace: "ns",
-		// 		},
-		// 		Spec: v1.GroupAlertsConfigSpec{
-		// 			V20250312: &v1.GroupAlertsConfigSpecV20250312{
-		// 				Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-		// 					Enabled:       pointer.MakePtr(true),
-		// 					EventTypeName: pointer.MakePtr("some-event"),
-		// 					Matchers: &[]v1.Matchers{
-		// 						{
-		// 							FieldName: "field1",
-		// 							Operator:  "op1",
-		// 							Value:     "value1",
-		// 						},
-		// 						{
-		// 							FieldName: "field2",
-		// 							Operator:  "op2",
-		// 							Value:     "value2",
-		// 						},
-		// 					},
-		// 					MetricThreshold: &v1.MetricThreshold{
-		// 						MetricName: "metric",
-		// 						Mode:       pointer.MakePtr("mode"),
-		// 						Operator:   pointer.MakePtr("operator"),
-		// 						Threshold:  pointer.MakePtr(1.0),
-		// 						Units:      pointer.MakePtr("unit"),
-		// 					},
-		// 					Notifications: &[]v1.Notifications{
-		// 						{
-		// 							DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.MakePtr("alert-secrets-0"),
-		// 								Key:  pointer.MakePtr("apiKey"),
-		// 							},
-		// 							DatadogRegion: pointer.MakePtr("US"),
-		// 						},
-		// 						{
-		// 							WebhookSecretSecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.MakePtr("alert-secrets-0"),
-		// 								Key:  pointer.MakePtr("webhookSecret"),
-		// 							},
-		// 							WebhookUrlSecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.MakePtr("alert-secrets-1"),
-		// 								Key:  pointer.MakePtr("webhookUrl"),
-		// 							},
-		// 						},
-		// 					},
-		// 					SeverityOverride: pointer.MakePtr("severe"),
-		// 					Threshold: &v1.MetricThreshold{
-		// 						MetricName: "metric",
-		// 						Mode:       pointer.MakePtr("mode-t"),
-		// 						Operator:   pointer.MakePtr("op-t"),
-		// 						Threshold:  pointer.MakePtr(2.0),
-		// 						Units:      pointer.MakePtr("unit-t"),
-		// 					},
-		// 				},
-		// 				GroupId: pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
-		// 			},
-		// 		},
-		// 	},
-		// 	deps: []client.Object{
-		// 		&corev1.Secret{
-		// 			TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-		// 			ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-0", Namespace: "ns"},
-		// 			Data: map[string][]byte{
-		// 				"apiKey":        ([]byte)("sample-api-key"),
-		// 				"webhookSecret": ([]byte)("sample-webhook-secret"),
-		// 			},
-		// 		},
-		// 		&corev1.Secret{
-		// 			TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-		// 			ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-1", Namespace: "ns"},
-		// 			Data: map[string][]byte{
-		// 				"webhookUrl": ([]byte)("sample-webhook-url"),
-		// 			},
-		// 		},
-		// 	},
-		// 	want: admin2025.CreateAlertConfigurationApiParams{
-		// 		GroupId: "62b6e34b3d91647abb20e7b8",
-		// 		GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-		// 			Enabled:       pointer.MakePtr(true),
-		// 			EventTypeName: pointer.MakePtr("some-event"),
-		// 			Matchers: &[]admin2025.StreamsMatcher{
-		// 				{
-		// 					FieldName: "field1",
-		// 					Operator:  "op1",
-		// 					Value:     "value1",
-		// 				},
-		// 				{
-		// 					FieldName: "field2",
-		// 					Operator:  "op2",
-		// 					Value:     "value2",
-		// 				},
-		// 			},
-		// 			Notifications: &[]admin2025.AlertsNotificationRootForGroup{
-		// 				{
-		// 					DatadogApiKey: pointer.MakePtr("sample-api-key"),
-		// 					DatadogRegion: pointer.MakePtr("US"),
-		// 				},
-		// 				{
-		// 					WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
-		// 					WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
-		// 				},
-		// 			},
-		// 			SeverityOverride: pointer.MakePtr("severe"),
-		// 			MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-		// 				MetricName: "metric",
-		// 				Mode:       pointer.MakePtr("mode"),
-		// 				Operator:   pointer.MakePtr("operator"),
-		// 				Threshold:  pointer.MakePtr(1.0),
-		// 				Units:      pointer.MakePtr("unit"),
-		// 			},
-		// 			Threshold: &admin2025.StreamProcessorMetricThreshold{
-		// 				MetricName: pointer.MakePtr("metric"),
-		// 				Mode:       pointer.MakePtr("mode-t"),
-		// 				Operator:   pointer.MakePtr("op-t"),
-		// 				Threshold:  pointer.MakePtr(2.0),
-		// 				Units:      pointer.MakePtr("unit-t"),
-		// 			},
-		// 		},
-		// 	},
-		// 	target: admin2025.CreateAlertConfigurationApiParams{},
-		// },
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			crdsYML := bytes.NewBuffer(crdsYAMLBytes)
