@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate"
 )
 
 func TestPrefixedName(t *testing.T) {

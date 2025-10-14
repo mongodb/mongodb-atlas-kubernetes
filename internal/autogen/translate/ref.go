@@ -26,8 +26,8 @@ import (
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/samples/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/v3/translate/unstructured"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/unstructured"
 )
 
 type EncodeDecodeFunc func(any) (any, error)
