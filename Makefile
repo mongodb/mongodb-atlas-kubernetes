@@ -448,9 +448,6 @@ all-platforms-docker: all-platforms
 	docker build --build-arg BINARY_PATH=bin/linux/amd64 -f fast.Dockerfile -t manager-amd64 .
 	docker build --build-arg BINARY_PATH=bin/linux/arm64 -f fast.Dockerfile -t manager-arm64 .
 
-actions.txt: .github/workflows/ ## List GitHub Action dependencies
-	./scripts/list-actions.sh > $@
-
 .PHONY: check-major-version
 check-major-version: ## Check that VERSION starts with MAJOR_VERSION
 	@VERSION_MAJOR=$$(echo "$(VERSION)" | cut -d. -f1 | sed 's/v//'); \
