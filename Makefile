@@ -681,6 +681,10 @@ shellcheck:
 	fd --type f --extension sh --extension bash --extension ksh . | \
 	xargs shellcheck --color=always $(SHELLCHECK_OPTIONS)
 
+.PHONY: all-lints
+all-lints: fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck
+	@echo "✅ CI ALL linting checks PASSED"
+
 .PHONY: ci
-ci: fmt validate-manifests validate-api-docs check-licenses addlicense-check unit-test lint shellcheck vulncheck
+ci: unit-test all-lints
 	@echo "✅ CI PASSED all checks"
