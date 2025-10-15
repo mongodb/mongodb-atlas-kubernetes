@@ -33,6 +33,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/refs"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
@@ -411,7 +412,7 @@ func TestFromAPI(t *testing.T) {
 	}
 }
 
-func testFromAPI[S any, T any, P translate.PtrClientObj[T]](t *testing.T, kind string, target P, input *S, want []client.Object) {
+func testFromAPI[S any, T any, P refs.PtrClientObj[T]](t *testing.T, kind string, target P, input *S, want []client.Object) {
 	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)

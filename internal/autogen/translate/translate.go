@@ -16,45 +16,47 @@
 package translate
 
 import (
-	"bytes"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 
-	"github.com/go-logr/logr"
-	"github.com/santhosh-tekuri/jsonschema/v5"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/go-logr/logr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/refs"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/unstructured"
+	"github.com/stretchr/testify/assert/yaml"
 )
 
-// PtrClientObj is a pointer type implementing client.Object
-type PtrClientObj[T any] interface {
-	*T
-	client.Object
-}
+const (
+	APIMAppingsAnnotation = "api-mappings"
+)
 
 // Translator allows to translate back and forth between a CRD schema
 // and SDK API structures of a certain version.
 // A translator is an immutable configuration object, it can be safely shared
 // across threads
-type Translator struct {
-	majorVersion string
-	jsonSchema   *jsonschema.Schema
-	annotations  map[string]string
+type Translator interface {
+	// MajorVersion returns the pinned SDK major version
+	MajorVersion() string
+
+	// Annotation gives access to the value of the given annotation on the translated schema
+	Annotation(annotationKey string) string
+
+	// Validate checks the given unsttructured object complies with the translated schema
+	Validate(unstructuredObj map[string]any) error
 }
 
 // Request holds common parameters for all translation request
 type Request struct {
-	Translator   *Translator
+	Translator   Translator
 	Log          logr.Logger
 	Dependencies []client.Object
 }
 
 // APIImporter can translate itself into Kubernetes Objects.
 // Use to customize or accelerate translations ad-hoc
-type APIImporter[T any, P PtrClientObj[T]] interface {
+type APIImporter[T any, P refs.PtrClientObj[T]] interface {
 	FromAPI(tr *Request, target P) ([]client.Object, error)
 }
 
@@ -62,35 +64,6 @@ type APIImporter[T any, P PtrClientObj[T]] interface {
 // Use to customize or accelerate translations ad-hoc
 type APIExporter[T any] interface {
 	ToAPI(tr *Request, target *T) error
-}
-
-// NewTranslator creates a translator for a particular CRD and major version pairs,
-// and with a particular set of known Kubernetes object dependencies.
-//
-// Given the following example resource:
-//
-//	apiVersion: atlas.generated.mongodb.com/v1
-//	kind: SearchIndex
-//	metadata:
-//	  name: search-index
-//	spec:
-//	  v20250312:
-//
-// In the above case crdVersion is "v1" and majorVersion is "v20250312".
-func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, majorVersion string) (*Translator, error) {
-	specVersion := selectVersion(&crd.Spec, crdVersion)
-	if err := assertMajorVersion(specVersion, crd.Spec.Names.Kind, majorVersion); err != nil {
-		return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", majorVersion, err)
-	}
-	schema, err := compileCRDSchema(specVersion.Schema.OpenAPIV3Schema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile schema: %w", err)
-	}
-	return &Translator{
-		majorVersion: majorVersion,
-		jsonSchema:   schema,
-		annotations:  crd.Annotations,
-	}, nil
 }
 
 // ToAPI translates a source Kubernetes spec into a target API structure
@@ -107,12 +80,12 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 		return fmt.Errorf("failed to validate unstructured object input: %w", err)
 	}
 	targetUnstructured := map[string]any{}
-	value, err := unstructured.AccessField[map[string]any](unstructuredSrc, "spec", r.Translator.majorVersion)
+	value, err := unstructured.AccessField[map[string]any](unstructuredSrc, "spec", r.Translator.MajorVersion())
 	if err != nil {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
 
-	if err := CollapseMappings(r, value, source); err != nil {
+	if err := CollapseReferences(r, value, source); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
@@ -145,7 +118,7 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 }
 
 // FromAPI translates a source API structure into a Kubernetes object.
-func FromAPI[S any, T any, P PtrClientObj[T]](r *Request, target P, source *S) ([]client.Object, error) {
+func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source *S) ([]client.Object, error) {
 	importer, ok := any(source).(APIImporter[T, P])
 	if ok {
 		return importer.FromAPI(r, target)
@@ -161,7 +134,7 @@ func FromAPI[S any, T any, P PtrClientObj[T]](r *Request, target P, source *S) (
 	}
 
 	versionedSpec, err := unstructured.AccessOrCreateField(
-		targetUnstructured, map[string]any{}, "spec", r.Translator.majorVersion)
+		targetUnstructured, map[string]any{}, "spec", r.Translator.MajorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("failed to ensure versioned spec object in unstructured target: %w", err)
 	}
@@ -173,11 +146,11 @@ func FromAPI[S any, T any, P PtrClientObj[T]](r *Request, target P, source *S) (
 
 	versionedStatus := map[string]any{}
 	unstructured.CopyFields(versionedStatus, sourceUnstructured)
-	if err := unstructured.CreateField(targetUnstructured, versionedStatus, "status", r.Translator.majorVersion); err != nil {
+	if err := unstructured.CreateField(targetUnstructured, versionedStatus, "status", r.Translator.MajorVersion()); err != nil {
 		return nil, fmt.Errorf("failed to create versioned status object in unsstructured target: %w", err)
 	}
 
-	extraObjects, err := ExpandMappings(r, targetUnstructured, target)
+	extraObjects, err := ExpandReferences(r, targetUnstructured, target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process API mappings: %w", err)
 	}
@@ -190,43 +163,50 @@ func FromAPI[S any, T any, P PtrClientObj[T]](r *Request, target P, source *S) (
 	return append([]client.Object{target}, extraObjects...), nil
 }
 
-// Validate checks whether or not an unstructured object value conforms to the
-// translator's CRD schema
-func (t *Translator) Validate(unstructuredObj map[string]any) error {
-	if err := t.jsonSchema.Validate(unstructuredObj); err != nil {
-		return fmt.Errorf("object validation failed against CRD schema: %w", err)
+func ExpandReferences(r *Request, obj map[string]any, main client.Object) ([]client.Object, error) {
+	h := refs.NewHandler(main, r.Dependencies)
+	mappingsYML := r.Translator.Annotation(APIMAppingsAnnotation)
+	if mappingsYML == "" {
+		return []client.Object{}, nil
 	}
-	return nil
+	mappings := map[string]any{}
+	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
+	}
+
+	majorVersion := r.Translator.MajorVersion()
+	for _, entry := range []struct {
+		title string
+		path  []string
+	}{
+		{title: "spec", path: []string{"spec", majorVersion}},
+		{title: "spec entry", path: []string{"spec", majorVersion, "entry"}},
+		{title: "status", path: []string{"status", majorVersion}},
+	} {
+		if err := h.ExpandMappings(obj, mappings, entry.path...); err != nil {
+			return nil, fmt.Errorf("failed to map properties of %q from API to Kubernetes: %w", entry.title, err)
+		}
+	}
+	return h.Added(), nil
 }
 
-func assertMajorVersion(specVersion *apiextensionsv1.CustomResourceDefinitionVersion, kind string, majorVersion string) error {
-	props, err := getOpenAPIProperties(kind, specVersion)
+func CollapseReferences(r *Request, spec map[string]any, main client.Object) error {
+	h := refs.NewHandler(main, r.Dependencies)
+	mappingsYML := r.Translator.Annotation(APIMAppingsAnnotation)
+	if mappingsYML == "" {
+		return nil
+	}
+	mappings := map[string]any{}
+	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
+		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
+	}
+	props, err := unstructured.AccessField[map[string]any](mappings,
+		"properties", "spec", "properties", r.Translator.MajorVersion(), "properties")
+	if errors.Is(err, unstructured.ErrNotFound) {
+		return nil
+	}
 	if err != nil {
-		return fmt.Errorf("failed to enumerate CRD schema properties: %w", err)
+		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
 	}
-	specProps, err := getSpecPropertiesFor(kind, props, "spec")
-	if err != nil {
-		return fmt.Errorf("failed to enumerate CRD spec properties: %w", err)
-	}
-	_, ok := specProps[majorVersion]
-	if !ok {
-		return fmt.Errorf("failed to match the CRD spec version %q in schema", majorVersion)
-	}
-	return nil
-}
-
-func compileCRDSchema(openAPISchema *apiextensionsv1.JSONSchemaProps) (*jsonschema.Schema, error) {
-	schemaBytes, err := json.Marshal(openAPISchema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal CRD schema to JSON: %w", err)
-	}
-	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource("schema.json", bytes.NewReader(schemaBytes)); err != nil {
-		return nil, fmt.Errorf("failed to add schema resource: %w", err)
-	}
-	schema, err := compiler.Compile("schema.json")
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile schema: %w", err)
-	}
-	return schema, nil
+	return h.CollapseReferences([]string{}, props, spec)
 }

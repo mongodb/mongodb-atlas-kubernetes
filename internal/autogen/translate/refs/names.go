@@ -1,4 +1,4 @@
-// Copyright 2025 MongoDB Inc
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,23 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-package translate
+package refs
 
 import (
-	"encoding/base64"
 	"fmt"
+	"hash/fnv"
+
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
-func secretDecode(value string) (string, error) {
-	bytes, err := base64.StdEncoding.DecodeString(value)
-	if err != nil {
-		return "", fmt.Errorf("failed to decode base64 string: %w", err)
+func HashNames(name string, args ...string) string {
+	hasher := fnv.New64a()
+	hasher.Write([]byte(name))
+	for _, arg := range args {
+		hasher.Write([]byte(arg))
 	}
-	return string(bytes), nil
+	rawHash := hasher.Sum64()
+
+	return rand.SafeEncodeString(fmt.Sprint(rawHash))
 }
 
-func secretEncode(value string) string {
-	return base64.StdEncoding.EncodeToString(([]byte)(value))
+func PrefixedName(prefix string, name string, args ...string) string {
+	return fmt.Sprintf("%s-%s", prefix, HashNames(name, args...))
 }

@@ -13,13 +13,12 @@
 // limitations under the License.
 //
 
-package translate
+package refs
 
 import (
 	"errors"
 	"fmt"
 
-	"github.com/stretchr/testify/assert/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/unstructured"
@@ -31,102 +30,19 @@ const (
 	SecretProperySelector = "$.data.#"
 )
 
-type mapContext struct {
-	main  client.Object
-	m     map[client.ObjectKey]client.Object
-	added []client.Object
-}
-
-func newMapContext(main client.Object, deps []client.Object) *mapContext {
-	m := map[client.ObjectKey]client.Object{}
-	for _, obj := range deps {
-		m[client.ObjectKeyFromObject(obj)] = obj
-	}
-	return &mapContext{main: main, m: m}
-}
-
-func (mc *mapContext) find(name string) client.Object {
-	key := client.ObjectKey{Name: name, Namespace: mc.main.GetNamespace()}
-	return mc.m[key]
-}
-
-func (mc *mapContext) has(name string) bool {
-	return mc.find(name) != nil
-}
-
-func (mc *mapContext) add(obj client.Object) {
-	mc.m[client.ObjectKeyFromObject(obj)] = obj
-	mc.added = append(mc.added, obj)
-}
-
-type mapper struct {
-	*mapContext
+// Handler hodls the context needed to expand or collapse the references on an
+// Kubernetes object translaion to and from API data
+type Handler struct {
+	*context
 	expand bool
 }
 
-func newExpanderMapper(main client.Object, deps []client.Object) *mapper {
-	return newMapper(true, main, deps)
+func NewHandler(main client.Object, deps []client.Object) *Handler {
+	return &Handler{context: newMapContext(main, deps)}
 }
 
-func newCollarserMapper(main client.Object, deps []client.Object) *mapper {
-	return newMapper(false, main, deps)
-}
-
-func newMapper(expand bool, main client.Object, deps []client.Object) *mapper {
-	return &mapper{
-		mapContext: newMapContext(main, deps),
-		expand:     expand,
-	}
-}
-
-func ExpandMappings(r *Request, obj map[string]any, main client.Object) ([]client.Object, error) {
-	em := newExpanderMapper(main, r.Dependencies)
-	mappingsYML := r.Translator.annotations[APIMAppingsAnnotation]
-	if mappingsYML == "" {
-		return []client.Object{}, nil
-	}
-	mappings := map[string]any{}
-	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
-	}
-
-	for _, entry := range []struct {
-		title string
-		path  []string
-	}{
-		{title: "spec", path: []string{"spec", r.Translator.majorVersion}},
-		{title: "spec entry", path: []string{"spec", r.Translator.majorVersion, "entry"}},
-		{title: "status", path: []string{"status", r.Translator.majorVersion}},
-	} {
-		if err := em.expandMappingsAt(obj, mappings, entry.path...); err != nil {
-			return nil, fmt.Errorf("failed to map properties of %q from API to Kubernetes: %w", entry.title, err)
-		}
-	}
-	return em.added, nil
-}
-
-func CollapseMappings(r *Request, spec map[string]any, main client.Object) error {
-	cm := newCollarserMapper(main, r.Dependencies)
-	mappingsYML := r.Translator.annotations[APIMAppingsAnnotation]
-	if mappingsYML == "" {
-		return nil
-	}
-	mappings := map[string]any{}
-	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
-		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
-	}
-	props, err := unstructured.AccessField[map[string]any](mappings,
-		"properties", "spec", "properties", r.Translator.majorVersion, "properties")
-	if errors.Is(err, unstructured.ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
-	}
-	return cm.mapProperties([]string{}, props, spec)
-}
-
-func (m *mapper) expandMappingsAt(obj, mappings map[string]any, fields ...string) error {
+func (h *Handler) ExpandMappings(obj, mappings map[string]any, fields ...string) error {
+	h.expand = true
 	expandedPath := []string{"properties"}
 	for _, field := range fields {
 		expandedPath = append(expandedPath, field, "properties")
@@ -142,13 +58,22 @@ func (m *mapper) expandMappingsAt(obj, mappings map[string]any, fields ...string
 	if err != nil {
 		return fmt.Errorf("failed to access object's %v: %w", fields, err)
 	}
-	if err := m.mapProperties([]string{}, props, field); err != nil {
+	if err := h.mapProperties([]string{}, props, field); err != nil {
 		return fmt.Errorf("failed to process properties from API into %v: %w", fields, err)
 	}
 	return nil
 }
 
-func (m *mapper) mapProperties(path []string, props, obj map[string]any) error {
+func (h *Handler) Added() []client.Object {
+	return h.added
+}
+
+func (h *Handler) CollapseReferences(path []string, props, obj map[string]any) error {
+	h.expand = false
+	return h.mapProperties(path, props, obj)
+}
+
+func (m *Handler) mapProperties(path []string, props, obj map[string]any) error {
 	for key, prop := range props {
 		mapping, ok := (prop).(map[string]any)
 		if !ok {
@@ -185,7 +110,7 @@ func (m *mapper) mapProperties(path []string, props, obj map[string]any) error {
 	return nil
 }
 
-func (m *mapper) mapArray(path []string, mapping map[string]any, list []any) error {
+func (m *Handler) mapArray(path []string, mapping map[string]any, list []any) error {
 	mapItems, err := unstructured.AccessField[map[string]any](mapping, "items", "properties")
 	if err != nil {
 		return fmt.Errorf("failed to access %q: %w", unstructured.Base(path), err)
@@ -210,7 +135,7 @@ func (m *mapper) mapArray(path []string, mapping map[string]any, list []any) err
 	return nil
 }
 
-func (m *mapper) mapObject(path []string, mapName string, mapping, obj map[string]any) error {
+func (m *Handler) mapObject(path []string, mapName string, mapping, obj map[string]any) error {
 	if mapping["properties"] != nil {
 		props, err := unstructured.AccessField[map[string]any](mapping, "properties")
 		if err != nil {
@@ -224,16 +149,16 @@ func (m *mapper) mapObject(path []string, mapName string, mapping, obj map[strin
 	return fmt.Errorf("unsupported extension at %v with fields %v", path, unstructured.FieldsOf(mapping))
 }
 
-func (m *mapper) mapReference(path []string, mappingName string, mapping, obj map[string]any) error {
+func (m *Handler) mapReference(path []string, mappingName string, mapping, obj map[string]any) error {
 	rm := refMapping{}
 	if err := unstructured.FromUnstructured(&rm, mapping); err != nil {
 		return fmt.Errorf("failed to parse a reference mapping: %w", err)
 	}
 	ref := newRef(mappingName, &rm)
 	if m.expand {
-		return ref.Expand(m.mapContext, path, obj)
+		return ref.Expand(m.context, path, obj)
 	}
-	return ref.Collapse(m.mapContext, path, obj)
+	return ref.Collapse(m.context, path, obj)
 }
 
 func entryMatchingMapping(mapName string, mapping map[string]any, list []any, expand bool) (string, map[string]any, error) {

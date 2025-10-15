@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package translate
+package refs
 
 import (
 	"errors"
@@ -36,6 +36,12 @@ const (
 	refKey                 = "key"
 	propertySelectorSuffix = ".#"
 )
+
+// PtrClientObj is a pointer type implementing client.Object
+type PtrClientObj[T any] interface {
+	*T
+	client.Object
+}
 
 var ErrNoMatchingPropertySelector = errors.New("no matching property selector found to set value")
 
@@ -120,7 +126,7 @@ func newRef(name string, rm *refMapping) *namedRef {
 	return &namedRef{name: name, refMapping: rm}
 }
 
-func (ref *namedRef) Expand(mc *mapContext, pathHint []string, obj map[string]any) error {
+func (ref *namedRef) Expand(mc *context, pathHint []string, obj map[string]any) error {
 	path := ref.pathToExpand(pathHint)
 	rawValue, err := unstructured.AccessField[any](obj, unstructured.Base(path))
 	if errors.Is(err, unstructured.ErrNotFound) {
@@ -181,7 +187,7 @@ func (ref *namedRef) Name(prefix string, path []string) string {
 	return PrefixedName(prefix, path[0], path[1:]...)
 }
 
-func (ref *namedRef) Collapse(mc *mapContext, path []string, obj map[string]any) error {
+func (ref *namedRef) Collapse(mc *context, path []string, obj map[string]any) error {
 	reference, err := unstructured.AccessField[map[string]any](obj, unstructured.Base(path))
 	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
@@ -237,7 +243,7 @@ func (km kubeMapping) Equal(gvk schema.GroupVersionKind) bool {
 	return km.Type.Group == gvk.Group && km.Type.Version == gvk.Version && km.Type.Kind == gvk.Kind
 }
 
-func (km kubeMapping) FetchReferencedValue(mc *mapContext, target string, reference map[string]any) (any, error) {
+func (km kubeMapping) FetchReferencedValue(mc *context, target string, reference map[string]any) (any, error) {
 	refPath := km.NameSelector
 	if refPath == "" {
 		return nil, fmt.Errorf("cannot solve reference without a %s.nameSelector", xKubeMappingKey)
