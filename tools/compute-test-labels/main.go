@@ -38,7 +38,6 @@ func jsonDump(data interface{}) string {
 
 func MatchWildcards(labels []string, testLabels []string, testType string) []string {
 	matchedLabels := make(map[string]struct{})
-
 	prefixMatch := regexp.MustCompile(fmt.Sprintf("^test/%s/(.+)$", testType))
 
 	for _, label := range labels {

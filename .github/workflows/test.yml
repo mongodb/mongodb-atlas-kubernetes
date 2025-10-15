@@ -47,31 +47,10 @@ jobs:
       - name: allowed message
         run: echo "Allowed to run tests"
 
-  lint:
+  ci:
     needs:
       - run-tests
-    uses: ./.github/workflows/lint.yaml
-
-  validate-manifests:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/validate-manifests.yml
-  
-  unit-tests:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/test-unit.yml
-    secrets: inherit
-
-  license-header-check:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/license-header-check.yml
-
-  check-licenses:
-    needs:
-      - run-tests
-    uses: ./.github/workflows/check-licenses.yml
+    uses: ./.github/workflows/ci.yml
 
   cloud-tests-filter:
     needs:
@@ -80,30 +59,21 @@ jobs:
 
   tests-selectable:
     needs:
-      - lint
-      - unit-tests
-      - validate-manifests
-      - check-licenses
+      - ci
       - cloud-tests-filter
     uses: ./.github/workflows/tests-selectable.yaml
     secrets: inherit
 
   e2e2:
     needs:
-      - lint
-      - unit-tests
-      - validate-manifests
-      - check-licenses
+      - ci
       - cloud-tests-filter
     uses: ./.github/workflows/tests-e2e2.yaml
     secrets: inherit
 
   cloud-tests:
     needs:
-      - lint
-      - unit-tests
-      - validate-manifests
-      - check-licenses
+      - ci
       - cloud-tests-filter
     if: |
       github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true'
@@ -113,10 +83,7 @@ jobs:
   start-promote-image:
     name: Start Promote Image
     needs:
-      - lint
-      - unit-tests
-      - validate-manifests
-      - check-licenses
+      - ci
       - e2e2
       - cloud-tests
     if: github.ref_name == 'main' && github.event_name != 'pull_request_target' && github.event_name != 'pull_request'

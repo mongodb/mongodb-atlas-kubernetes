@@ -1,17 +1,16 @@
-name: Unit Tests
+name: AKO CI
 
 on:
   workflow_call:
 
 jobs:
   unit-test:
-    name: Unit tests
+    name: AKO CI tests 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           ref: ${{github.event.pull_request.head.sha}}
-          submodules: 'true'
 
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.14.0
@@ -19,10 +18,7 @@ jobs:
           enable-cache: 'true'
 
       - name: Run testing
-        run: devbox run -- 'GO_TEST_FLAGS="-coverprofile=coverage.out" make unit-test'
-
-      - name: Test tools
-        run: devbox run -- 'make test-tools'
+        run: devbox run -- 'GO_TEST_FLAGS="-coverprofile=coverage.out" make -j6 ci'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5

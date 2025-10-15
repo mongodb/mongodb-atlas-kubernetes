@@ -495,21 +495,6 @@ endif
 	@GITHUB_TOKEN=$(GITHUB_TOKEN) FORMAT=summary ./tools/metrics/metrics $(REPORT_TYPE) | \
 	./scripts/slackit.sh $(SLACK_WEBHOOK)
 
-.PHONY: test-clean
-test-clean:
-	cd tools/clean && go test ./...
-
-.PHONY: test-makejwt
-test-makejwt:
-	cd tools/makejwt && go test ./...
-
-.PHONY: test-metrics
-test-metrics:
-	cd tools/metrics && go test ./...
-
-.PHONY: test-tools ## Test all tools
-test-tools: test-clean test-makejwt test-metrics
-
 .PHONY: sign
 sign: ## Sign an AKO multi-architecture image
 	@echo "Signing multi-architecture image $(IMG)..."
@@ -697,5 +682,5 @@ shellcheck:
 	xargs shellcheck --color=always $(SHELLCHECK_OPTIONS)
 
 .PHONY: ci
-ci: fmt validate-manifests api-docs check-licenses addlicense-check unit-test lint shellcheck
+ci: fmt validate-manifests validate-api-docs check-licenses addlicense-check unit-test lint shellcheck vulncheck
 	@echo "✅ CI PASSED all checks"

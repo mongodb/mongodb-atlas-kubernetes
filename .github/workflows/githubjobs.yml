@@ -1,0 +1,27 @@
+name: Githubjobs tool CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'tools/githubjobs/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'tools/githubjobs/**'
+
+jobs:
+
+  githubjobs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.24'
+
+    - name: CI checks
+      working-directory: ./tools/githubjobs
+      run: go build ./... && go test ./...

@@ -27,6 +27,7 @@ import (
 
 func main() {
 	ctx := context.Background()
+
 	awsCleaner := provider.NewAWSCleaner()
 
 	gcpCleaner, err := provider.NewGCPCleaner(ctx)

@@ -56,6 +56,7 @@ func main() {
 		if len(jobList) == jobs.GetTotalCount() {
 			break
 		}
+
 		page++
 	}
 
