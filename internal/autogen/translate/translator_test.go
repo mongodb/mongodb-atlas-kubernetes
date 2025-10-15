@@ -75,7 +75,13 @@ func TestFromAPI(t *testing.T) {
 					},
 					WithDefaultAlertsSettings: pointer.MakePtr(true),
 				}
-				target := v1.Group{}
+				target := v1.Group{
+					Spec: v1.GroupSpec{
+						V20250312: &v1.GroupSpecV20250312{
+							ProjectOwnerId: "",
+						},
+					},
+				}
 				want := []client.Object{
 					&v1.Group{
 						Spec: v1.GroupSpec{
@@ -409,8 +415,10 @@ func testFromAPI[S any, T any, P translate.PtrClientObj[T]](t *testing.T, kind s
 	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	translator := translate.NewTranslator(crd, version, sdkVersion)
-	results, err := translate.FromAPI(translator, target, input)
+	tr, err := translate.NewTranslator(crd, version, sdkVersion)
+	require.NoError(t, err)
+	r := translate.Request{Translator: tr}
+	results, err := translate.FromAPI(&r, target, input)
 	require.NoError(t, err)
 	assert.Equal(t, want, results)
 }
@@ -711,8 +719,10 @@ func TestToAPIAllRefs(t *testing.T) {
 			crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			translator := translate.NewTranslator(crd, version, sdkVersion)
-			require.NoError(t, translate.ToAPI(translator, &tc.target, tc.input, tc.deps...))
+			tr, err := translate.NewTranslator(crd, version, sdkVersion)
+			require.NoError(t, err)
+			r := translate.Request{Translator: tr, Dependencies: tc.deps}
+			require.NoError(t, translate.ToAPI(&r, &tc.target, tc.input))
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}
@@ -2152,8 +2162,10 @@ func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []cli
 	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	translator := translate.NewTranslator(crd, version, sdkVersion)
-	require.NoError(t, translate.ToAPI(translator, target, input, objs...))
+	tr, err := translate.NewTranslator(crd, version, sdkVersion)
+	require.NoError(t, err)
+	r := translate.Request{Translator: tr, Dependencies: objs}
+	require.NoError(t, translate.ToAPI(&r, target, input))
 	assert.Equal(t, want, target)
 }
 

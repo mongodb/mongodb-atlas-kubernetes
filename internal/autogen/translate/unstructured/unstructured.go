@@ -98,6 +98,23 @@ func CreateField[T any](obj map[string]any, value T, fields ...string) error {
 	return nil
 }
 
+// AccessOrCreateField access a field at the given path, it creates the
+// field with the given defaultValue if it did not exist
+func AccessOrCreateField[T any](obj map[string]any, defaultValue T, fields ...string) (T, error) {
+	value, err := AccessField[T](obj, fields...)
+	if err == nil {
+		return value, nil
+	}
+	var emptyValue T
+	if errors.Is(err, ErrNotFound) {
+		if err := CreateField(obj, defaultValue, fields...); err != nil {
+			return emptyValue, fmt.Errorf("failed to create field at path %v: %w", fields, err)
+		}
+		return defaultValue, nil
+	}
+	return emptyValue, fmt.Errorf("failed to check for field at path %v: %w", fields, err)
+}
+
 // AsPath translates the given simplified xpath expression into a sequence of
 // path entries
 func AsPath(xpath string) []string {

@@ -38,9 +38,9 @@ type mapContext struct {
 	added []client.Object
 }
 
-func newMapContext(main client.Object, objs ...client.Object) *mapContext {
+func newMapContext(main client.Object, deps []client.Object) *mapContext {
 	m := map[client.ObjectKey]client.Object{}
-	for _, obj := range objs {
+	for _, obj := range deps {
 		m[client.ObjectKeyFromObject(obj)] = obj
 	}
 	return &mapContext{main: main, m: m}
@@ -65,24 +65,24 @@ type mapper struct {
 	expand bool
 }
 
-func newExpanderMapper(main client.Object, objs ...client.Object) *mapper {
-	return newMapper(true, main, objs...)
+func newExpanderMapper(main client.Object, deps []client.Object) *mapper {
+	return newMapper(true, main, deps)
 }
 
-func newCollarserMapper(main client.Object, objs ...client.Object) *mapper {
-	return newMapper(false, main, objs...)
+func newCollarserMapper(main client.Object, deps []client.Object) *mapper {
+	return newMapper(false, main, deps)
 }
 
-func newMapper(expand bool, main client.Object, objs ...client.Object) *mapper {
+func newMapper(expand bool, main client.Object, deps []client.Object) *mapper {
 	return &mapper{
-		mapContext: newMapContext(main, objs...),
+		mapContext: newMapContext(main, deps),
 		expand:     expand,
 	}
 }
 
-func ExpandMappings(t *Translator, obj map[string]any, main client.Object, objs ...client.Object) ([]client.Object, error) {
-	em := newExpanderMapper(main, objs...)
-	mappingsYML := t.crd.definition.Annotations[APIMAppingsAnnotation]
+func ExpandMappings(r *Request, obj map[string]any, main client.Object) ([]client.Object, error) {
+	em := newExpanderMapper(main, r.Dependencies)
+	mappingsYML := r.Translator.annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return []client.Object{}, nil
 	}
@@ -91,21 +91,21 @@ func ExpandMappings(t *Translator, obj map[string]any, main client.Object, objs 
 		return nil, fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
 	}
 
-	if err := em.expandMappingsAt(obj, mappings, "spec", t.majorVersion); err != nil {
+	if err := em.expandMappingsAt(obj, mappings, "spec", r.Translator.majorVersion); err != nil {
 		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
 	}
-	if err := em.expandMappingsAt(obj, mappings, "spec", t.majorVersion, "entry"); err != nil {
+	if err := em.expandMappingsAt(obj, mappings, "spec", r.Translator.majorVersion, "entry"); err != nil {
 		return nil, fmt.Errorf("failed to map properties of spec from API to Kubernetes: %w", err)
 	}
-	if err := em.expandMappingsAt(obj, mappings, "status", t.majorVersion); err != nil {
+	if err := em.expandMappingsAt(obj, mappings, "status", r.Translator.majorVersion); err != nil {
 		return nil, fmt.Errorf("failed to map properties of status from API to Kubernetes: %w", err)
 	}
 	return em.added, nil
 }
 
-func CollapseMappings(t *Translator, spec map[string]any, main client.Object, objs ...client.Object) error {
-	cm := newCollarserMapper(main, objs...)
-	mappingsYML := t.crd.definition.Annotations[APIMAppingsAnnotation]
+func CollapseMappings(r *Request, spec map[string]any, main client.Object) error {
+	cm := newCollarserMapper(main, r.Dependencies)
+	mappingsYML := r.Translator.annotations[APIMAppingsAnnotation]
 	if mappingsYML == "" {
 		return nil
 	}
@@ -114,7 +114,7 @@ func CollapseMappings(t *Translator, spec map[string]any, main client.Object, ob
 		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
 	}
 	props, err := unstructured.AccessField[map[string]any](mappings,
-		"properties", "spec", "properties", t.majorVersion, "properties")
+		"properties", "spec", "properties", r.Translator.majorVersion, "properties")
 	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	}
