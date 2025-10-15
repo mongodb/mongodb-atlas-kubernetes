@@ -18,7 +18,6 @@ package translate_test
 import (
 	"bufio"
 	"bytes"
-	_ "embed"
 	"fmt"
 	"testing"
 	"time"
@@ -34,6 +33,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/crds"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/testdata"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
@@ -45,9 +45,6 @@ const (
 
 	testProjectID = "6098765432109876"
 )
-
-//go:embed samples/crds.yaml
-var crdsYAMLBytes []byte
 
 func TestFromAPI(t *testing.T) {
 	for _, tc := range []struct {
@@ -716,7 +713,7 @@ func TestToAPIAllRefs(t *testing.T) {
 		// },
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			crdsYML := bytes.NewBuffer(crdsYAMLBytes)
+			crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
 			tr, err := translate.NewTranslator(crd, version, sdkVersion)
@@ -2159,7 +2156,7 @@ func TestToAPI(t *testing.T) {
 }
 
 func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []client.Object, target, want *T) {
-	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
+	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
 	tr, err := translate.NewTranslator(crd, version, sdkVersion)
