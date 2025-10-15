@@ -145,7 +145,9 @@ HELM_AKO_NAMESPACE = $(OPERATOR_NAMESPACE)
 
 GH_RUN_ID=$(shell gh run list -w Test -b main -e schedule -s success --json databaseId | jq '.[0] | .databaseId')
 
-SBOMS_DIR ?= temp
+SBOMS_DIR ?= template
+
+SHELLCHECK_OPTIONS ?= -e SC2086
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -672,8 +674,28 @@ bump-version-file:
 
 .PHONY: api-docs
 api-docs: manifests
-	 go tool -modfile=tools/toolbox/go.mod crdoc --resources config/crd/bases --output docs/api-docs.md
+	go tool -modfile=tools/toolbox/go.mod crdoc --resources config/crd/bases --output docs/api-docs.md
 
 .PHONY: validate-api-docs
 validate-api-docs: api-docs
 	$(MAKE) check-missing-files
+
+.PHONY: addlicenses
+addlicense-check:
+	addlicense -check -l apache -c "MongoDB Inc" \
+	-ignore "**/*.md" \
+	-ignore "**/*.yaml" \
+	-ignore "**/*.yml" \
+	-ignore "**/*.nix" \
+	-ignore "tools/**" \
+	-ignore ".devbox/**" \
+	-ignore "**/*Dockerfile" .
+
+.PHONY: shellcheck
+shellcheck:
+	fd --type f --extension sh --extension bash --extension ksh . | \
+	xargs shellcheck --color=always $(SHELLCHECK_OPTIONS)
+
+.PHONY: ci
+ci: fmt validate-manifests api-docs check-licenses addlicense-check unit-test lint shellcheck
+	@echo "✅ CI PASSED all checks"
