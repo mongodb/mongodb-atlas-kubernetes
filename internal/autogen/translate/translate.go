@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/assert/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/go-logr/logr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/refs"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/unstructured"
-	"github.com/stretchr/testify/assert/yaml"
 )
 
 const (

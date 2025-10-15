@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2025 MongoDB Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translate
+package crds_test
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/testdata"
 )
+
+const (
+	expectedVersion = "v1"
+)
+
+func TestParseAssertAndCompile(t *testing.T) {
+	scanner := bufio.NewScanner(bytes.NewBuffer(testdata.SampleCRDs))
+	for range 2 { // CRDs sample file has at least 2 CRDs
+		def, err := crds.Parse(scanner)
+		require.NoError(t, err)
+		assert.NotNil(t, def)
+		kind := def.Spec.Names.Kind
+		specVersion := crds.SelectVersion(&def.Spec, expectedVersion)
+		crds.AssertMajorVersion(specVersion, kind, expectedVersion)
+		schema, err := crds.CompileCRDSchema(specVersion.Schema.OpenAPIV3Schema)
+		require.NoError(t, err)
+		assert.NotNil(t, schema)
+	}
+}
 
 func TestSelectVersion(t *testing.T) {
 	// Define some sample versions to be reused in the tests
@@ -78,7 +103,7 @@ func TestSelectVersion(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := selectVersion(tc.spec, tc.version)
+			got := crds.SelectVersion(tc.spec, tc.version)
 			require.Equal(t, tc.want, got)
 		})
 	}
@@ -158,7 +183,7 @@ func TestGetOpenAPIProperties(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotProperties, err := getOpenAPIProperties(kind, tc.version)
+			gotProperties, err := crds.GetOpenAPIProperties(kind, tc.version)
 			if tc.wantErrMsg != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tc.wantErrMsg)
@@ -237,7 +262,7 @@ func TestGetSpecPropertiesFor(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Act
-			gotProperties, err := getSpecPropertiesFor(kind, tc.props, tc.field)
+			gotProperties, err := crds.GetSpecPropertiesFor(kind, tc.props, tc.field)
 
 			// Assert
 			if tc.wantErrMsg != "" {
