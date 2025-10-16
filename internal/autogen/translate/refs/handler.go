@@ -30,7 +30,7 @@ const (
 	SecretProperySelector = "$.data.#"
 )
 
-// Handler hodls the context needed to expand or collapse the references on an
+// Handler holds the context needed to expand or collapse the references on an
 // Kubernetes object translaion to and from API data
 type Handler struct {
 	*context
@@ -41,25 +41,43 @@ func NewHandler(main client.Object, deps []client.Object) *Handler {
 	return &Handler{context: newMapContext(main, deps)}
 }
 
-func (h *Handler) ExpandMappings(obj, mappings map[string]any, fields ...string) error {
+func (h *Handler) ExpandReferences(obj, mappings map[string]any, fields ...string) error {
 	h.expand = true
-	expandedPath := []string{"properties"}
-	for _, field := range fields {
-		expandedPath = append(expandedPath, field, "properties")
-	}
-	props, err := unstructured.AccessField[map[string]any](mappings, expandedPath...)
+
+	props, err := accessMappingPropsAt(mappings, fields)
 	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to access mappings to expand references: %w", err)
 	}
-	if err != nil {
-		return fmt.Errorf("failed to access the API mapping properties for %v: %w", expandedPath, err)
-	}
+
 	field, err := unstructured.AccessField[map[string]any](obj, fields...)
 	if err != nil {
 		return fmt.Errorf("failed to access object's %v: %w", fields, err)
 	}
-	if err := h.mapProperties([]string{}, props, field); err != nil {
-		return fmt.Errorf("failed to process properties from API into %v: %w", fields, err)
+	if err := h.scanProperties([]string{}, props, field); err != nil {
+		return fmt.Errorf("failed to expand references at %v: %w", fields, err)
+	}
+	return nil
+}
+
+func (h *Handler) CollapseReferences(obj, mappings map[string]any, fields ...string) error {
+	h.expand = false
+
+	props, err := accessMappingPropsAt(mappings, fields)
+	if errors.Is(err, unstructured.ErrNotFound) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to access mappings to collapse references: %w", err)
+	}
+
+	field, err := unstructured.AccessField[map[string]any](obj, fields...)
+	if err != nil {
+		return fmt.Errorf("failed to access object's %v: %w", fields, err)
+	}
+
+	if err := h.scanProperties([]string{}, props, field); err != nil {
+		return fmt.Errorf("failed to collapse references at %v: %w", fields, err)
 	}
 	return nil
 }
@@ -68,12 +86,19 @@ func (h *Handler) Added() []client.Object {
 	return h.added
 }
 
-func (h *Handler) CollapseReferences(path []string, props, obj map[string]any) error {
-	h.expand = false
-	return h.mapProperties(path, props, obj)
+func accessMappingPropsAt(mappings map[string]any, fields []string) (map[string]any, error) {
+	expandedPath := []string{"properties"}
+	for _, field := range fields {
+		expandedPath = append(expandedPath, field, "properties")
+	}
+	props, err := unstructured.AccessField[map[string]any](mappings, expandedPath...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access the API mapping properties for %v: %w", expandedPath, err)
+	}
+	return props, nil
 }
 
-func (m *Handler) mapProperties(path []string, props, obj map[string]any) error {
+func (m *Handler) scanProperties(path []string, props, obj map[string]any) error {
 	for key, prop := range props {
 		mapping, ok := (prop).(map[string]any)
 		if !ok {
@@ -81,12 +106,12 @@ func (m *Handler) mapProperties(path []string, props, obj map[string]any) error 
 		}
 		subPath := append(path, key)
 		if isReference(mapping) {
-			if err := m.mapReference(subPath, key, mapping, obj); err != nil {
+			if err := m.processReference(subPath, key, mapping, obj); err != nil {
 				return fmt.Errorf("failed to process reference: %w", err)
 			}
 			continue
 		}
-		rawField, err := unstructured.AccessField[any](obj, key) // unstructured.NestedFieldNoCopy(obj, key)
+		rawField, err := unstructured.AccessField[any](obj, key)
 		if errors.Is(err, unstructured.ErrNotFound) {
 			continue
 		}
@@ -94,7 +119,7 @@ func (m *Handler) mapProperties(path []string, props, obj map[string]any) error 
 			return fmt.Errorf("failed to access %q: %w", key, err)
 		}
 		if arrayField, ok := (rawField).([]any); ok {
-			if err := m.mapArray(subPath, mapping, arrayField); err != nil {
+			if err := m.scanArray(subPath, mapping, arrayField); err != nil {
 				return fmt.Errorf("failed to process array mapping %q: %w", key, err)
 			}
 			continue
@@ -103,14 +128,14 @@ func (m *Handler) mapProperties(path []string, props, obj map[string]any) error 
 		if !ok {
 			return fmt.Errorf("unsupported mapping of type %T", rawField)
 		}
-		if err := m.mapObject(subPath, key, mapping, subSpec); err != nil {
+		if err := m.scanObject(subPath, key, mapping, subSpec); err != nil {
 			return fmt.Errorf("failed to process object mapping %q: %w", key, err)
 		}
 	}
 	return nil
 }
 
-func (m *Handler) mapArray(path []string, mapping map[string]any, list []any) error {
+func (m *Handler) scanArray(path []string, mapping map[string]any, list []any) error {
 	mapItems, err := unstructured.AccessField[map[string]any](mapping, "items", "properties")
 	if err != nil {
 		return fmt.Errorf("failed to access %q: %w", unstructured.Base(path), err)
@@ -128,28 +153,28 @@ func (m *Handler) mapArray(path []string, mapping map[string]any, list []any) er
 			continue
 		}
 		subPath := append(path, key)
-		if err := m.mapObject(subPath, mapName, mapping, entry); err != nil {
+		if err := m.scanObject(subPath, mapName, mapping, entry); err != nil {
 			return fmt.Errorf("failed to map property from array item %q at %v: %w", key, path, err)
 		}
 	}
 	return nil
 }
 
-func (m *Handler) mapObject(path []string, mapName string, mapping, obj map[string]any) error {
+func (m *Handler) scanObject(path []string, mapName string, mapping, obj map[string]any) error {
 	if mapping["properties"] != nil {
 		props, err := unstructured.AccessField[map[string]any](mapping, "properties")
 		if err != nil {
 			return fmt.Errorf("failed to access properties at %q: %w", path, err)
 		}
-		return m.mapProperties(path, props, obj)
+		return m.scanProperties(path, props, obj)
 	}
 	if isReference(mapping) {
-		return m.mapReference(path, mapName, mapping, obj)
+		return m.processReference(path, mapName, mapping, obj)
 	}
 	return fmt.Errorf("unsupported extension at %v with fields %v", path, unstructured.FieldsOf(mapping))
 }
 
-func (m *Handler) mapReference(path []string, mappingName string, mapping, obj map[string]any) error {
+func (m *Handler) processReference(path []string, mappingName string, mapping, obj map[string]any) error {
 	rm := refMapping{}
 	if err := unstructured.FromUnstructured(&rm, mapping); err != nil {
 		return fmt.Errorf("failed to parse a reference mapping: %w", err)

@@ -16,7 +16,6 @@
 package translate
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -80,12 +79,8 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 		return fmt.Errorf("failed to validate unstructured object input: %w", err)
 	}
 	targetUnstructured := map[string]any{}
-	value, err := unstructured.AccessField[map[string]any](unstructuredSrc, "spec", r.Translator.MajorVersion())
-	if err != nil {
-		return fmt.Errorf("failed to access source spec value: %w", err)
-	}
 
-	if err := CollapseReferences(r, value, source); err != nil {
+	if err := CollapseReferences(r, unstructuredSrc, source); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
@@ -94,6 +89,10 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
 	}
 
+	value, err := unstructured.AccessField[map[string]any](unstructuredSrc, "spec", r.Translator.MajorVersion())
+	if err != nil {
+		return fmt.Errorf("failed to access source spec value: %w", err)
+	}
 	rawEntry := value["entry"]
 	if entry, ok := rawEntry.(map[string]any); ok {
 		unstructured.CopyFields(targetUnstructured, unstructured.SkipKeys(value, "entry"))
@@ -183,14 +182,14 @@ func ExpandReferences(r *Request, obj map[string]any, main client.Object) ([]cli
 		{title: "spec entry", path: []string{"spec", majorVersion, "entry"}},
 		{title: "status", path: []string{"status", majorVersion}},
 	} {
-		if err := h.ExpandMappings(obj, mappings, entry.path...); err != nil {
+		if err := h.ExpandReferences(obj, mappings, entry.path...); err != nil {
 			return nil, fmt.Errorf("failed to map properties of %q from API to Kubernetes: %w", entry.title, err)
 		}
 	}
 	return h.Added(), nil
 }
 
-func CollapseReferences(r *Request, spec map[string]any, main client.Object) error {
+func CollapseReferences(r *Request, obj map[string]any, main client.Object) error {
 	h := refs.NewHandler(main, r.Dependencies)
 	mappingsYML := r.Translator.Annotation(APIMAppingsAnnotation)
 	if mappingsYML == "" {
@@ -200,13 +199,5 @@ func CollapseReferences(r *Request, spec map[string]any, main client.Object) err
 	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
 		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
 	}
-	props, err := unstructured.AccessField[map[string]any](mappings,
-		"properties", "spec", "properties", r.Translator.MajorVersion(), "properties")
-	if errors.Is(err, unstructured.ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to access the API mapping properties for the spec: %w", err)
-	}
-	return h.CollapseReferences([]string{}, props, spec)
+	return h.CollapseReferences(obj, mappings, "spec", r.Translator.MajorVersion())
 }

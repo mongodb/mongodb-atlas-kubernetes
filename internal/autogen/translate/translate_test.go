@@ -1780,22 +1780,6 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 
-		// "SampleDataset" only holds a name, there is no SDK API struc for the request
-		// {
-		// 	name:       "sample dataset all fields",
-		// 	crd:        "SampleDataset",
-		// 	input: &v1.SampleDataset {
-		//      Spec: v1.SampleDatasetSpec{
-		// 		    V20250312: &v1.SampleDatasetSpecV20250312{
-		// 			    Name:     "sample-dataset",
-		// 			    GroupId:  pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
-		// 	 	    },
-		// 	    },
-		//  },
-		// 	target: admin2025.SampleDatasetStatus{},
-		// 	want:   admin2025.SampleDatasetStatus{},
-		// },
-
 		{
 			name: "searchindex create request fields",
 			test: func(t *testing.T) {
