@@ -101,6 +101,7 @@ func makeJWT(spec *JWTSpec) (string, error) {
 	if !ok {
 		return "", errors.New("error expected RSA public key")
 	}
+
 	return buildJsonReply(pubKey, tokenString)
 }
 

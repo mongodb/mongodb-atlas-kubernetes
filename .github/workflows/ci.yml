@@ -1,17 +1,16 @@
-name: Unit Tests
+name: AKO CI
 
 on:
   workflow_call:
 
 jobs:
   unit-test:
-    name: Unit tests
+    name: AKO unit-tests 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           ref: ${{github.event.pull_request.head.sha}}
-          submodules: 'true'
 
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.14.0
@@ -21,9 +20,6 @@ jobs:
       - name: Run testing
         run: devbox run -- 'GO_TEST_FLAGS="-coverprofile=coverage.out" make unit-test'
 
-      - name: Test tools
-        run: devbox run -- 'make test-tools'
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -32,3 +28,19 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.out
           verbose: true
+
+  lint:
+    name: AKO linting 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.14.0
+        with:
+          enable-cache: 'true'
+
+      - name: Run all linters
+        run: devbox run -- 'make -j3 all-lints'

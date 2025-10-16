@@ -27,6 +27,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: [FORMAT=json|summary] [TILL=date] %s {regressions|flakiness}\n", os.Args[0])
 		os.Exit(1)
 	}
+
 	query := strings.ToLower(os.Args[1])
 	format := valueOrDefault(os.Getenv("FORMAT"), "json")
 	end := mustParseRFC3999(os.Getenv("TILL"))

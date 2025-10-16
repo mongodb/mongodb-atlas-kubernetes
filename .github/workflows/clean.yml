@@ -1,0 +1,27 @@
+name: Clean tool CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'tools/clean/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'tools/clean/**'
+
+jobs:
+
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.24'
+
+    - name: CI checks
+      working-directory: ./tools/clean
+      run: go build ./... && go test ./...
