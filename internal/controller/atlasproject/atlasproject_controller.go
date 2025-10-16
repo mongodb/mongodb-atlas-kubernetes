@@ -63,6 +63,7 @@ type AtlasProjectReconciler struct {
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 	GlobalSecretRef             client.ObjectKey
+	maxConcurrentReconciles     int
 }
 
 type AtlasProjectServices struct {
@@ -277,8 +278,9 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager, skipNameVali
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
-			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation)}).
+			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }
 
@@ -289,6 +291,7 @@ func NewAtlasProjectReconciler(
 	deletionProtection bool,
 	logger *zap.Logger,
 	globalSecretRef client.ObjectKey,
+	maxConcurrentReconciles int,
 ) *AtlasProjectReconciler {
 	return &AtlasProjectReconciler{
 		Scheme:                   c.GetScheme(),
@@ -299,6 +302,7 @@ func NewAtlasProjectReconciler(
 		AtlasProvider:            atlasProvider,
 		ObjectDeletionProtection: deletionProtection,
 		GlobalSecretRef:          globalSecretRef,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 

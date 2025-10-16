@@ -81,14 +81,20 @@ type Builder struct {
 	leaderElection        bool
 	leaderElectionID      string
 
-	atlasDomain        string
-	predicates         []predicate.Predicate
-	apiSecret          client.ObjectKey
-	atlasProvider      atlas.Provider
-	featureFlags       *featureflags.FeatureFlags
-	deletionProtection bool
-	skipNameValidation bool
-	dryRun             bool
+	atlasDomain             string
+	predicates              []predicate.Predicate
+	apiSecret               client.ObjectKey
+	atlasProvider           atlas.Provider
+	featureFlags            *featureflags.FeatureFlags
+	deletionProtection      bool
+	skipNameValidation      bool
+	dryRun                  bool
+	maxConcurrentReconciles int
+}
+
+func (b *Builder) WithMaxConcurrentReconciles(maxConcurrentReconciles int) *Builder {
+	b.maxConcurrentReconciles = maxConcurrentReconciles
+	return b
 }
 
 func (b *Builder) WithConfig(config *rest.Config) *Builder {
@@ -209,6 +215,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		b.independentSyncPeriod,
 		b.featureFlags,
 		b.apiSecret,
+		b.maxConcurrentReconciles,
 	)
 
 	var akoCluster cluster.Cluster

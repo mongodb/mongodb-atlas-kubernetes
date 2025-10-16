@@ -71,18 +71,20 @@ type Registry struct {
 	reconcilers     []Reconciler
 	globalSecretRef client.ObjectKey
 
-	reapplySupport bool
+	reapplySupport          bool
+	maxConcurrentReconciles int
 }
 
-func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey) *Registry {
+func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *Registry {
 	return &Registry{
-		sharedPredicates:      predicates,
-		deletionProtection:    deletionProtection,
-		logger:                logger,
-		independentSyncPeriod: independentSyncPeriod,
-		featureFlags:          featureFlags,
-		globalSecretRef:       globalSecretRef,
-		reapplySupport:        DefaultReapplySupport,
+		sharedPredicates:        predicates,
+		deletionProtection:      deletionProtection,
+		logger:                  logger,
+		independentSyncPeriod:   independentSyncPeriod,
+		featureFlags:            featureFlags,
+		globalSecretRef:         globalSecretRef,
+		reapplySupport:          DefaultReapplySupport,
+		maxConcurrentReconciles: maxConcurrentReconciles,
 	}
 }
 
@@ -113,25 +115,25 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	}
 
 	var reconcilers []Reconciler
-	reconcilers = append(reconcilers, atlasproject.NewAtlasProjectReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasdeployment.NewAtlasDeploymentReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasdatabaseuser.NewAtlasDatabaseUserReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.featureFlags, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasdatafederation.NewAtlasDataFederationReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasfederatedauth.NewAtlasFederatedAuthReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsInstanceReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsConnectionReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger))
-	reconcilers = append(reconcilers, atlascustomrole.NewAtlasCustomRoleReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
-	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef))
+	reconcilers = append(reconcilers, atlasproject.NewAtlasProjectReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasdeployment.NewAtlasDeploymentReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasdatabaseuser.NewAtlasDatabaseUserReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.featureFlags, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasdatafederation.NewAtlasDataFederationReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasfederatedauth.NewAtlasFederatedAuthReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsInstanceReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasstream.NewAtlasStreamsConnectionReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlassearchindexconfig.NewAtlasSearchIndexConfigReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasbackupcompliancepolicy.NewAtlasBackupCompliancePolicyReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlascustomrole.NewAtlasCustomRoleReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasprivateendpoint.NewAtlasPrivateEndpointReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef, r.maxConcurrentReconciles))
 
 	orgSettingsReconciler := atlasorgsettings.NewAtlasOrgSettingsReconciler(c, ap, r.logger, r.globalSecretRef, r.reapplySupport)
-	reconcilers = append(reconcilers, newCtrlStateReconciler(orgSettingsReconciler))
+	reconcilers = append(reconcilers, newCtrlStateReconciler(orgSettingsReconciler, r.maxConcurrentReconciles))
 	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(c, ap, r.deletionProtection, r.logger, r.globalSecretRef, r.reapplySupport)
-	reconcilers = append(reconcilers, newCtrlStateReconciler(integrationsReconciler))
+	reconcilers = append(reconcilers, newCtrlStateReconciler(integrationsReconciler, r.maxConcurrentReconciles))
 
 	if version.IsExperimental() {
 		// Add experimental controllers here
@@ -153,16 +155,18 @@ func (r *Registry) defaultPredicates() []predicate.Predicate {
 
 type ctrlStateReconciler[T any] struct {
 	*ctrlstate.Reconciler[T]
+	maxConcurrentReconciles int
 }
 
-func newCtrlStateReconciler[T any](r *ctrlstate.Reconciler[T]) *ctrlStateReconciler[T] {
-	return &ctrlStateReconciler[T]{Reconciler: r}
+func newCtrlStateReconciler[T any](r *ctrlstate.Reconciler[T], maxConcurrentReconciles int) *ctrlStateReconciler[T] {
+	return &ctrlStateReconciler[T]{Reconciler: r, maxConcurrentReconciles: maxConcurrentReconciles}
 }
 
 func (nr *ctrlStateReconciler[T]) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	defaultReconcilerOptions := controller.TypedOptions[reconcile.Request]{
-		RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-		SkipNameValidation: pointer.MakePtr(skipNameValidation),
+		RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
+		SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+		MaxConcurrentReconciles: nr.maxConcurrentReconciles,
 	}
 	return nr.Reconciler.SetupWithManager(mgr, defaultReconcilerOptions)
 }
