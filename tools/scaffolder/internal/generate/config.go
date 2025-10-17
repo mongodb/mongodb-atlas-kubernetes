@@ -15,160 +15,230 @@
 package generate
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
-
-// Config structures
-type Config struct {
-	metav1.TypeMeta `yaml:",inline"`
-	Spec            Spec `yaml:"spec"`
-}
-
-type Spec struct {
-	OpenAPI []OpenAPIConfig `yaml:"openapi,omitempty"`
-	CRD     []CRDConfig     `yaml:"crd,omitempty"`
-}
 
 type OpenAPIConfig struct {
 	Name    string `yaml:"name"`
 	Package string `yaml:"package"`
 }
 
-type CRDConfig struct {
-	GVK        metav1.GroupVersionKind `yaml:"gvk"`
-	Categories []string                `yaml:"categories,omitempty"`
-	ShortNames []string                `yaml:"shortNames,omitempty"`
-	Mappings   []Mapping               `yaml:"mappings,omitempty"`
-}
-
-type Mapping struct {
-	MajorVersion string      `yaml:"majorVersion"`
-	OpenAPIRef   OpenAPIRef  `yaml:"openAPIRef"`
-	Parameters   *Parameters `yaml:"parameters,omitempty"`
-	Entry        *SchemaRef  `yaml:"entry,omitempty"`
-	Status       *SchemaRef  `yaml:"status,omitempty"`
-}
-
-type OpenAPIRef struct {
-	Name string `yaml:"name"`
-}
-
-type Parameters struct {
-	Path       *PathInfo     `yaml:"path,omitempty"`
-	Query      []QueryParam  `yaml:"query,omitempty"`
-	Additional []interface{} `yaml:"additional,omitempty"`
-}
-
-type PathInfo struct {
-	Template string `yaml:"template"`
-}
-
-type QueryParam struct {
-	Name  string `yaml:"name"`
-	Value string `yaml:"value"`
-}
-
-type SchemaRef struct {
-	Schema string `yaml:"$ref"`
-}
-
-// MappingWithConfig combines mapping with its OpenAPI config
 type MappingWithConfig struct {
-	Mapping       Mapping
+	Version       string
 	OpenAPIConfig OpenAPIConfig
 }
 
-// ParsedConfig contains all parsed configuration data
 type ParsedConfig struct {
-	Config       Config
-	OpenAPIMap   map[string]OpenAPIConfig
-	CRDMap       map[string]CRDConfig
-	SelectedCRD  CRDConfig
+	SelectedCRD  CRDInfo
 	Mappings     []MappingWithConfig
 	ResourceName string
 }
 
-// ParseAtlas2CRDConfig reads and parses the configuration file, validates CRD selection,
-// and returns all necessary data for generating controllers and handlers
-func ParseAtlas2CRDConfig(configPath, crdKind string) (*ParsedConfig, error) {
-	// Read and parse config file
-	data, err := os.ReadFile(configPath)
+type CRDDocument struct {
+	APIVersion string                          `yaml:"apiVersion"`
+	Kind       string                          `yaml:"kind"`
+	Metadata   CRDMetadata                     `yaml:"metadata"`
+	Spec       v1.CustomResourceDefinitionSpec `yaml:"spec"`
+}
+
+type CRDMetadata struct {
+	Name        string            `yaml:"name"`
+	Annotations map[string]string `yaml:"annotations"`
+}
+
+type APIMapping struct {
+	Properties map[string]SpecProperty `yaml:"properties"`
+}
+
+type SpecProperty struct {
+	Properties map[string]VersionProperty `yaml:"properties"`
+}
+
+type VersionProperty struct {
+	AtlasSDKVersion string `yaml:"x-atlas-sdk-version"`
+}
+
+type CRDInfo struct {
+	Kind       string
+	Group      string
+	Version    string
+	ShortNames []string
+	Categories []string
+	Versions   []CRDVersionInfo
+}
+
+type CRDVersionInfo struct {
+	Version         string
+	AtlasSDKVersion string
+	SDKPackage      string
+}
+
+func ParseCRDResult(resultPath, crdKind string) (*CRDInfo, error) {
+	file, err := os.Open(resultPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+		return nil, fmt.Errorf("failed to open result file: %w", err)
 	}
+	defer file.Close()
 
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse config YAML: %w", err)
-	}
+	scanner := bufio.NewScanner(file)
 
-	// Create OpenAPI mapping
-	openAPIMap := make(map[string]OpenAPIConfig)
-	for _, openAPIConfig := range config.Spec.OpenAPI {
-		openAPIMap[openAPIConfig.Name] = openAPIConfig
-	}
+	for {
+		crdInfo, err := parseNextCRD(scanner)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			continue
+		}
 
-	// Create CRD mapping and find selected CRD
-	crdMap := make(map[string]CRDConfig)
-	var selectedCRD CRDConfig
-	var found bool
-
-	for _, crd := range config.Spec.CRD {
-		crdMap[crd.GVK.Kind] = crd
-		if crd.GVK.Kind == crdKind {
-			selectedCRD = crd
-			found = true
+		if crdInfo != nil && crdInfo.Kind == crdKind {
+			return crdInfo, nil
 		}
 	}
 
-	if !found {
-		return nil, fmt.Errorf("CRD kind '%s' not found in config", crdKind)
+	return nil, fmt.Errorf("CRD kind '%s' not found in result file", crdKind)
+}
+
+func parseNextCRD(scanner *bufio.Scanner) (*CRDInfo, error) {
+	var buffer bytes.Buffer
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.TrimSpace(line) == "---" {
+			if len(strings.TrimSpace(buffer.String())) > 0 {
+				crdInfo, err := decodeCRDDocument(buffer.Bytes())
+				if err != nil {
+					buffer.Reset()
+					continue
+				}
+				return crdInfo, nil
+			}
+			continue
+		}
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		buffer.WriteString(line + "\n")
 	}
 
-	if len(selectedCRD.Mappings) == 0 {
-		return nil, fmt.Errorf("no mappings found for CRD kind '%s'", crdKind)
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read input: %w", err)
 	}
 
-	// Build mappings with their OpenAPI configs
-	var mappingsWithConfig []MappingWithConfig
-	for _, mapping := range selectedCRD.Mappings {
-		openAPIConfig, exists := openAPIMap[mapping.OpenAPIRef.Name]
-		if !exists {
-			return nil, fmt.Errorf("OpenAPI config '%s' not found for mapping", mapping.OpenAPIRef.Name)
+	if buffer.Len() > 0 {
+		crdInfo, err := decodeCRDDocument(buffer.Bytes())
+		if err != nil {
+			return nil, err
+		}
+		return crdInfo, nil
+	}
+
+	return nil, io.EOF
+}
+
+func decodeCRDDocument(content []byte) (*CRDInfo, error) {
+	var crd CRDDocument
+	if err := yaml.Unmarshal(content, &crd); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
+	}
+
+	if crd.Kind != "CustomResourceDefinition" {
+		return nil, fmt.Errorf("not a CustomResourceDefinition")
+	}
+
+	crdInfo := &CRDInfo{
+		Kind:       crd.Spec.Names.Kind,
+		Group:      crd.Spec.Group,
+		ShortNames: crd.Spec.Names.ShortNames,
+		Categories: crd.Spec.Names.Categories,
+	}
+
+	if apiMappingsStr, exists := crd.Metadata.Annotations["api-mappings"]; exists {
+		var apiMapping APIMapping
+		if err := yaml.Unmarshal([]byte(apiMappingsStr), &apiMapping); err != nil {
+			return nil, fmt.Errorf("failed to parse api-mappings annotation: %w", err)
 		}
 
-		mappingsWithConfig = append(mappingsWithConfig, MappingWithConfig{
-			Mapping:       mapping,
-			OpenAPIConfig: openAPIConfig,
+		if specProp, exists := apiMapping.Properties["spec"]; exists {
+			for versionName, versionProp := range specProp.Properties {
+				if versionProp.AtlasSDKVersion != "" {
+					crdInfo.Versions = append(crdInfo.Versions, CRDVersionInfo{
+						Version:         versionName,
+						AtlasSDKVersion: versionProp.AtlasSDKVersion,
+						SDKPackage:      versionProp.AtlasSDKVersion,
+					})
+				}
+			}
+		}
+	}
+
+	if len(crd.Spec.Versions) > 0 {
+		crdInfo.Version = crd.Spec.Versions[0].Name
+	}
+
+	return crdInfo, nil
+}
+
+func ParseCRDConfig(resultPath, crdKind string) (*ParsedConfig, error) {
+	crdInfo, err := ParseCRDResult(resultPath, crdKind)
+	if err != nil {
+		return nil, err
+	}
+
+	var mappings []MappingWithConfig
+	for _, version := range crdInfo.Versions {
+		mappings = append(mappings, MappingWithConfig{
+			Version: version.Version,
+			OpenAPIConfig: OpenAPIConfig{
+				Name:    version.Version,
+				Package: version.SDKPackage,
+			},
 		})
 	}
 
 	return &ParsedConfig{
-		Config:       config,
-		OpenAPIMap:   openAPIMap,
-		CRDMap:       crdMap,
-		SelectedCRD:  selectedCRD,
-		Mappings:     mappingsWithConfig,
-		ResourceName: crdKind,
+		SelectedCRD:  *crdInfo,
+		Mappings:     mappings,
+		ResourceName: crdInfo.Kind,
 	}, nil
 }
 
-// ListCRDs returns a list of all available CRDs from the config file
-func ListCRDs(configPath string) ([]CRDConfig, error) {
-	data, err := os.ReadFile(configPath)
+func ListCRDs(resultPath string) ([]CRDInfo, error) {
+	file, err := os.Open(resultPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+		return nil, fmt.Errorf("failed to open result file: %w", err)
+	}
+	defer file.Close()
+
+	var crds []CRDInfo
+	scanner := bufio.NewScanner(file)
+
+	for {
+		crdInfo, err := parseNextCRD(scanner)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			continue
+		}
+
+		if crdInfo != nil {
+			crds = append(crds, *crdInfo)
+		}
 	}
 
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse config YAML: %w", err)
+	if len(crds) == 0 {
+		return nil, fmt.Errorf("no CustomResourceDefinition documents found in '%s' - ensure you're using an openapi2crd result.yaml file", resultPath)
 	}
 
-	return config.Spec.CRD, nil
+	return crds, nil
 }
-
