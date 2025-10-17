@@ -80,7 +80,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			actions.ProjectCreationFlow(test)
 			privateFlow(test, providerAction, pe)
 		},
-		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
+		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("focus-privatelink-aws-1"),
 			model.DataProvider(
 				"privatelink-aws-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -94,7 +94,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("privatelink-azure-1"),
+		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("focus-privatelink-azure-1"),
 			model.DataProvider(
 				"privatelink-azure-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -106,7 +106,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				region:   config.AzureRegionEU,
 			}},
 		),
-		Entry("Test[privatelink-two-identical-aws]: User has project which was updated with 2 Identical AWS Private Endpoints", Label("privatelink-aws-2"),
+		Entry("Test[privatelink-two-identical-aws]: User has project which was updated with 2 Identical AWS Private Endpoints", Label("focus-privatelink-aws-2"),
 			model.DataProvider(
 				"privatelink-two-identical-aws",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -124,7 +124,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS and 1 Azure PrivateEndpoint", Label("privatelink-aws-azure-2"),
+		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS and 1 Azure PrivateEndpoint", Label("focus-privatelink-aws-azure-2"),
 			model.DataProvider(
 				"privatelink-aws-azure",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -146,7 +146,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-gcp-1]: User has project which was updated with 1 GCP PrivateEndpoint", Label("privatelink-gcp-1"),
+		Entry("Test[privatelink-gcp-1]: User has project which was updated with 1 GCP PrivateEndpoint", Label("focus-privatelink-gcp-1"),
 			model.DataProvider(
 				"privatelink-gcp-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -165,8 +165,10 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 
 func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requestedPE []privateEndpoint) {
 	By("Create Private Link and the rest users resources", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Resources.Namespace,
+		}, userData.Project)).To(Succeed())
 		for _, pe := range requestedPE {
 			userData.Project.Spec.PrivateEndpoints = append(userData.Project.Spec.PrivateEndpoints,
 				akov2.PrivateEndpoint{
@@ -186,8 +188,10 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 
 	//nolint:dupl
 	By("Create Endpoint in requested Cloud Provider", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Resources.Namespace,
+		}, userData.Project)).To(Succeed())
 
 		for idx, peStatusItem := range userData.Project.Status.PrivateEndpoints {
 			privateEndpointID := peStatusItem.ID
@@ -273,8 +277,10 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 	})
 
 	By("Check statuses", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Resources.Namespace,
+		}, userData.Project)).To(Succeed())
 		for _, peStatus := range userData.Project.Status.PrivateEndpoints {
 			Expect(peStatus.Region).ShouldNot(BeEmpty())
 			privateEndpointID := GetPrivateEndpointID(peStatus)

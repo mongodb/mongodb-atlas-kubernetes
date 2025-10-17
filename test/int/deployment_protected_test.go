@@ -89,7 +89,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 		})
 
 		It("removing advanced cluster from Kubernetes when protection is ON leaves it in Atlas",
-			Label("preserving-advanced-cluster"),
+			Label("focus-preserving-advanced-cluster"),
 			func() {
 				testDeployment := akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
 				preserveDeploymentFlow(testNamespace.Name, testProject, testDeployment)
@@ -97,7 +97,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 		)
 
 		It("removing flex instance from Kubernetes when protection is ON leaves it in Atlas",
-			Label("preserving-flex-instance"),
+			Label("focus-preserving-flex-instance"),
 			func() {
 				testDeployment := akov2.NewDefaultAWSFlexInstance(testNamespace.Name, testProject.Name)
 				preserveDeploymentFlow(testNamespace.Name, testProject, testDeployment)

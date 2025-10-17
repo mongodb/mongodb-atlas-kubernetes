@@ -195,7 +195,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 		},
 		Entry(
 			"Configure AWS private endpoint",
-			Label("aws-private-endpoint"),
+			Label("focus-aws-private-endpoint"),
 			model.DataProvider(
 				"aws-pe-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -213,7 +213,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 		),
 		Entry(
 			"Configure Azure private endpoint",
-			Label("azure-private-endpoint"),
+			Label("focus-azure-private-endpoint"),
 			model.DataProvider(
 				"azure-pe-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -231,7 +231,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 		),
 		Entry(
 			"Configure GCP private endpoint",
-			Label("gcp-private-endpoint"),
+			Label("focus-gcp-private-endpoint"),
 			model.DataProvider(
 				"gcp-pe-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),

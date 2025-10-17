@@ -63,7 +63,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 			networkPeerFlow(test, networkPeers)
 		},
 		Entry("Test[networkpeering-aws-1]: User has project which was updated with AWS PrivateEndpoint",
-			Label("network-peering-aws-1"),
+			Label("focus-network-peering-aws-1"),
 			model.DataProvider(
 				"networkpeering-aws-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -83,7 +83,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 			},
 		),
 		Entry("Test[networkpeering-aws-2]: User has project which was updated with AWS PrivateEndpoint",
-			Label("network-peering-aws-2"),
+			Label("focus-network-peering-aws-2"),
 			model.DataProvider(
 				"networkpeering-aws-2",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -103,7 +103,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 			},
 		),
 		Entry("Test[networkpeering-aws-3]: User has project which was updated with AWS PrivateEndpoint",
-			Label("network-peering-aws-3"),
+			Label("focus-network-peering-aws-3"),
 			model.DataProvider(
 				"networkpeering-aws-3",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -132,7 +132,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 			},
 		),
 		Entry("Test[networkpeering-gcp-1]: User has project which was updated with GCP PrivateEndpoint",
-			Label("network-peering-gcp-1"),
+			Label("focus-network-peering-gcp-1"),
 			model.DataProvider(
 				"networkpeering-gcp-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -151,7 +151,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 			},
 		),
 		Entry("Test[networkpeering-azure-1]: User has project which was updated with Azure PrivateEndpoint",
-			Label("network-peering-azure-1"),
+			Label("focus-network-peering-azure-1"),
 			model.DataProvider(
 				"networkpeering-azure-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -173,7 +173,6 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 			},
 		),
 	)
-
 })
 
 func networkPeerFlow(userData *model.TestDataProvider, peers []akov2.NetworkPeer) {
@@ -214,8 +213,10 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []akov2.NetworkPeer
 	})
 
 	By("Create network peers", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Project.Namespace,
+		}, userData.Project)).Should(Succeed())
 		userData.Project.Spec.NetworkPeers = append(userData.Project.Spec.NetworkPeers, peers...)
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 	})

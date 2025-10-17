@@ -70,7 +70,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 			integrationTest(test, integration, os.Getenv(envKeyName), setSecret)
 		},
 
-		Entry("Users can integrate DATADOG on region US1", Label("project-integration"),
+		Entry("Users can integrate DATADOG on region US1", Label("focus-project-integration"),
 			model.DataProvider(
 				"datatog-us1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -86,7 +86,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 				integration.APIKeyRef = ref
 			},
 		),
-		Entry("Users can integrate DATADOG on region US3", Label("project-integration"),
+		Entry("Users can integrate DATADOG on region US3", Label("focus-project-integration"),
 			model.DataProvider(
 				"datatog-us3",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -102,7 +102,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 				integration.APIKeyRef = ref
 			},
 		),
-		Entry("Users can integrate DATADOG on region US5", Label("project-integration"),
+		Entry("Users can integrate DATADOG on region US5", Label("focus-project-integration"),
 			model.DataProvider(
 				"datatog-us5",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -118,7 +118,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 				integration.APIKeyRef = ref
 			},
 		),
-		Entry("Users can integrate DATADOG on region EU1", Label("project-integration"),
+		Entry("Users can integrate DATADOG on region EU1", Label("focus-project-integration"),
 			model.DataProvider(
 				"datatog-eu1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -134,7 +134,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 				integration.APIKeyRef = ref
 			},
 		),
-		Entry("Users can integrate DATADOG on region AP1", Label("project-integration"),
+		Entry("Users can integrate DATADOG on region AP1", Label("focus-project-integration"),
 			model.DataProvider(
 				"datatog-ap1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -150,7 +150,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 				integration.APIKeyRef = ref
 			},
 		),
-		Entry("Users can integrate PagerDuty on region US", Label("project-integration"),
+		Entry("Users can integrate PagerDuty on region US", Label("focus-project-integration"),
 			model.DataProvider(
 				"pager-duty-us",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -168,7 +168,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 		),
 	)
 
-	It("Project Integrations are not greedy", Label("project-integration-not-greedy"), func() {
+	It("Project Integrations are not greedy", Label("focus-project-integration-not-greedy"), func() {
 		testData = model.DataProvider(
 			"several-integrations",
 			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -241,8 +241,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 
 		By("Skip reconciliation & remove one integration", func() {
 			_, err := akoretry.RetryUpdateOnConflict(ctx, testData.K8SClient, projectKey, func(project *akov2.AtlasProject) {
-				project.Annotations[customresource.ReconciliationPolicyAnnotation] =
-					customresource.ReconciliationPolicySkip
+				project.Annotations[customresource.ReconciliationPolicyAnnotation] = customresource.ReconciliationPolicySkip
 				kubeIntegrations := project.Spec.Integrations
 				project.Spec.Integrations = kubeIntegrations[:2]
 			})
