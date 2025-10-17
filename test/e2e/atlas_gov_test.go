@@ -96,7 +96,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 	})
 
-	It("Manage all supported Atlas for Government features", Label("atlas-gov-supported"), func() {
+	It("Manage all supported Atlas for Government features", Label("focus-atlas-gov-supported"), func() {
 		By("Preparing API Key for integrations", func() {
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -612,7 +612,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 	})
 
-	It("Fail to manage when there are non supported features for Atlas for Government", Label("atlas-gov-unsupported"), func() {
+	It("Fail to manage when there are non supported features for Atlas for Government", Label("focus-atlas-gov-unsupported"), func() {
 		By("Creating a project to be managed by the operator", func() {
 			akoProject := &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{

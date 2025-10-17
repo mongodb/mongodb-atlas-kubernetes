@@ -63,7 +63,7 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 			actions.ProjectCreationFlow(test)
 			cloudAccessRolesFlow(test, roles)
 		},
-		Entry("Test[cloud-access-role-aws-1]: User has project which was updated with AWS custom role", Label("cloud-access-role-aws-1"),
+		Entry("Test[cloud-access-role-aws-1]: User has project which was updated with AWS custom role", Label("focus-cloud-access-role-aws-1"),
 			model.DataProvider(
 				"cloud-access-role-aws-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -103,8 +103,10 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 	})
 
 	By("Create project with cloud access role", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Project.Namespace,
+		}, userData.Project)).Should(Succeed())
 		for _, role := range roles {
 			userData.Project.Spec.CloudProviderIntegrations = append(userData.Project.Spec.CloudProviderIntegrations, role.AccessRole)
 		}

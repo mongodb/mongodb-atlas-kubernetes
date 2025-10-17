@@ -178,7 +178,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 	})
 })
 
-var _ = Describe("Operator fails if local credentials is mentioned but unavailable", Label("users", "users-no-creds"), func() {
+var _ = Describe("Operator fails if local credentials is mentioned but unavailable", Label("focus-users", "focus-users-no-creds"), func() {
 	var testData *model.TestDataProvider
 	namespace := utils.RandomName("namespace")
 

@@ -56,7 +56,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 			actions.ProjectCreationFlow(test)
 			globalClusterFlow(test, mapping, ns)
 		},
-		Entry("Test[gc-advanced-deployment]: Advanced", Label("gc-advanced-deployment"),
+		Entry("Test[gc-advanced-deployment]: Advanced", Label("focus-gc-advanced-deployment"),
 			model.DataProvider(
 				"gc-advanced-deployment",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),

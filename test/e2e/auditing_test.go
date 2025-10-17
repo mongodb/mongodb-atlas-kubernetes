@@ -49,7 +49,7 @@ var _ = Describe("UserLogin", Label("auditing"), func() {
 			actions.ProjectCreationFlow(test)
 			auditingFlow(test, &auditing)
 		},
-		Entry("Test[auditing]: User has project to which Auditing was added", Label("auditing"),
+		Entry("Test[auditing]: User has project to which Auditing was added", Label("focus-auditing"),
 			model.DataProvider(
 				"auditing",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),

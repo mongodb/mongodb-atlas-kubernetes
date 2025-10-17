@@ -82,7 +82,7 @@ var _ = Describe("AtlasDeployment Deletion Unprotected",
 		})
 
 		It("removing advanced cluster from Kubernetes when protection is OFF wipes it from Atlas",
-			Label("wiping-advanced-cluster"),
+			Label("focus-wiping-advanced-cluster"),
 			func() {
 				testDeployment := akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
 				wipeDeploymentFlow(testNamespace.Name, testProject, testDeployment)
@@ -90,7 +90,7 @@ var _ = Describe("AtlasDeployment Deletion Unprotected",
 		)
 
 		It("removing flex instance from Kubernetes when protection is OFF wipes it from Atlas",
-			Label("wiping-flex-instance"),
+			Label("focus-wiping-flex-instance"),
 			func() {
 				testDeployment := akov2.NewDefaultAWSFlexInstance(testNamespace.Name, testProject.Name)
 				wipeDeploymentFlow(testNamespace.Name, testProject, testDeployment)
