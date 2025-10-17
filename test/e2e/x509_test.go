@@ -48,7 +48,7 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 			actions.ProjectCreationFlow(test)
 			x509Flow(test, &certRef)
 		},
-		Entry("Test[x509auth]: Can create project and add X.509 Auth to that project", Label("x509auth-basic"),
+		Entry("Test[x509auth]: Can create project and add X.509 Auth to that project", Label("focus-x509auth-basic"),
 			model.DataProvider(
 				"x509auth",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -72,8 +72,10 @@ func x509Flow(testData *model.TestDataProvider, certRef *common.ResourceRefNames
 	})
 
 	By("Add X.509 cert to the project", func() {
-		Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name,
-			Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
+		Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+			Name:      testData.Project.Name,
+			Namespace: testData.Resources.Namespace,
+		}, testData.Project)).To(Succeed())
 		testData.Project.Spec.X509CertRef = certRef
 		Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
 		actions.WaitForConditionsToBecomeTrue(testData, api.ReadyType)

@@ -58,7 +58,7 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 			actions.ProjectCreationFlow(test)
 			alertConfigFlow(test, alertConfigurations)
 		},
-		Entry("Test[alert-configs-1]: Project with 2 identical alert configs", Label("alert-configs-1"),
+		Entry("Test[alert-configs-1]: Project with 2 identical alert configs", Label("focus-alert-configs-1"),
 			model.DataProvider(
 				"alert-configs-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -111,7 +111,7 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 				},
 			},
 		),
-		Entry("Test[alert-configs-2]: Project with 2 different alert configs", Label("alert-configs-2"),
+		Entry("Test[alert-configs-2]: Project with 2 different alert configs", Label("focus-alert-configs-2"),
 			model.DataProvider(
 				"alert-configs-2",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -158,7 +158,7 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 				},
 			},
 		),
-		Entry("Test[alert-configs-3]: Project with an alert config containing a matcher", Label("alert-configs-3"),
+		Entry("Test[alert-configs-3]: Project with an alert config containing a matcher", Label("focus-alert-configs-3"),
 			model.DataProvider(
 				"alert-configs-3",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -197,13 +197,14 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 			},
 		),
 	)
-
 })
 
 func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []akov2.AlertConfiguration) {
 	By("Enable Alert Config Sync on Atlas Project", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Project.Namespace,
+		}, userData.Project)).Should(Succeed())
 		userData.Project.Spec.AlertConfigurationSyncEnabled = true
 		userData.Project.Spec.AlertConfigurations = append(userData.Project.Spec.AlertConfigurations, alertConfigs...)
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())

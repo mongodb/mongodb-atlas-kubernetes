@@ -99,7 +99,7 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 		})
 	})
 
-	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Label("helm-ns"),
+	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Label("focus-helm-ns"),
 		func(test model.TestDataProvider, deploymentType string) { // deploymentType - probably will be moved later ()
 			data = test
 			GinkgoWriter.Println(data.Resources.KeyName)

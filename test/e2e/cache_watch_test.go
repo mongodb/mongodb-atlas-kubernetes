@@ -45,7 +45,7 @@ type tc struct {
 }
 
 var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
-	DescribeTable("Cache gets", Label("watch-gets"),
+	DescribeTable("Cache gets", Label("focus-watch-gets"),
 		func(ctx context.Context, testCase *tc) {
 			testData := model.DataProvider(
 				fmt.Sprintf("cache-%s", CurrentSpecReport().LeafNodeLabels[0]),
@@ -77,26 +77,26 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 			})
 		},
 
-		Entry("From all namespaces when no namespace config is set", Label("gets-all"), &tc{
+		Entry("From all namespaces when no namespace config is set", Label("focus-gets-all"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: nil,
 			wantToFind:      []string{"ns1", "ns2", "ns3"},
 		}),
 
-		Entry("One namespace when only one namespace is configured", Label("gets-one"), &tc{
+		Entry("One namespace when only one namespace is configured", Label("focus-gets-one"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1"},
 			wantToFind:      []string{"ns1"},
 		}),
 
-		Entry("Two namespaces when only those two are configured", Label("gets-two"), &tc{
+		Entry("Two namespaces when only those two are configured", Label("focus-gets-two"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1", "ns2"},
 			wantToFind:      []string{"ns1", "ns2"},
 		}),
 	)
 
-	DescribeTable("Cache lists", Label("watch-lists"),
+	DescribeTable("Cache lists", Label("focus-watch-lists"),
 		func(ctx context.Context, testCase *tc) {
 			testData := model.DataProvider(
 				fmt.Sprintf("cache-%s", CurrentSpecReport().LeafNodeLabels[0]),
@@ -129,19 +129,19 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 			})
 		},
 
-		Entry("From all namespaces when no namespace config is set", Label("list-all"), &tc{
+		Entry("From all namespaces when no namespace config is set", Label("focus-list-all"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: nil,
 			wantToFind:      []string{"ns1", "ns2", "ns3"},
 		}),
 
-		Entry("One namespace when only one namespace is configured", Label("list-one"), &tc{
+		Entry("One namespace when only one namespace is configured", Label("focus-list-one"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1"},
 			wantToFind:      []string{"ns1"},
 		}),
 
-		Entry("Two namespaces when only those two are configured", Label("list-two"), &tc{
+		Entry("Two namespaces when only those two are configured", Label("focus-list-two"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1", "ns2"},
 			wantToFind:      []string{"ns1", "ns2"},
@@ -228,7 +228,6 @@ var _ = Describe("Reconciles test:", func() {
 								).To(Succeed())
 								if prj.Status.Common.ObservedGeneration == expectedObservedGeneration {
 									verifications += 1
-
 								}
 								return verifications > 15
 							}).WithPolling(time.Second).WithTimeout(40 * time.Second).Should(BeTrue())
@@ -241,19 +240,19 @@ var _ = Describe("Reconciles test:", func() {
 			})
 		},
 
-		Entry("All namespaces when no namespace config is set", Label("reconcile-all"), &tc{
+		Entry("All namespaces when no namespace config is set", Label("focus-reconcile-all"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: nil,
 			wantToFind:      []string{"ns1", "ns2", "ns3"},
 		}),
 
-		Entry("One namespace when only one namespace is configured", Label("reconcile-one"), &tc{
+		Entry("One namespace when only one namespace is configured", Label("focus-reconcile-one"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1"},
 			wantToFind:      []string{"ns1"},
 		}),
 
-		Entry("Two namespaces when only those two are configured", Label("reconcile-two"), &tc{
+		Entry("Two namespaces when only those two are configured", Label("focus-reconcile-two"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1", "ns2"},
 			wantToFind:      []string{"ns1", "ns2"},
@@ -291,7 +290,8 @@ func setupSecrets(ctx context.Context, testData *model.TestDataProvider, namespa
 				secret := &corev1.Secret{}
 				return g.Expect(
 					testData.K8SClient.Get(ctx, types.NamespacedName{
-						Name: config.DefaultOperatorGlobalKey, Namespace: ns.GetName()}, secret),
+						Name: config.DefaultOperatorGlobalKey, Namespace: ns.GetName(),
+					}, secret),
 				).To(Succeed())
 			}).WithTimeout(time.Minute).Should(BeTrue())
 		}

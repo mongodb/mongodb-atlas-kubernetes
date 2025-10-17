@@ -46,7 +46,7 @@ var _ = Describe("Annotations base test.", Label("deployment-annotations-ns"), f
 			mainCycle(test)
 		},
 		// TODO: fix test for deletion protection on, as it would fail to re-take the cluster after deletion
-		Entry("Simple configuration with keep resource policy annotation on deployment", Label("ns-crd"),
+		Entry("Simple configuration with keep resource policy annotation on deployment", Label("focus-ns-crd"),
 			model.DataProvider(
 				"operator-ns-crd",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),

@@ -50,7 +50,7 @@ var _ = Describe("UserLogin", Label("project-settings"), func() {
 			actions.ProjectCreationFlow(test)
 			projectSettingsFlow(test, &settings)
 		},
-		Entry("Test[project-settings]: User has project to which Project Settings was added", Label("project-settings"),
+		Entry("Test[project-settings]: User has project to which Project Settings was added", Label("focus-project-settings"),
 			model.DataProvider(
 				"project-settings",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
