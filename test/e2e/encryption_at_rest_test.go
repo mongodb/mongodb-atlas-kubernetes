@@ -341,7 +341,7 @@ func checkIfEncryptionsAreDisabled(projectID string) (areEmpty bool, err error) 
 	return true, nil
 }
 
-var _ = Describe("Encryption at rest AWS", "encryption-at-rest-aws"), Ordered, func() {
+var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Ordered, func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
