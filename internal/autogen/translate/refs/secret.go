@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package translate
+package refs
 
 import (
 	"encoding/base64"

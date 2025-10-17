@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2025 MongoDB Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translate_test
+package refs_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/refs"
 )
 
 func TestPrefixedName(t *testing.T) {
@@ -39,8 +39,8 @@ func TestPrefixedName(t *testing.T) {
 		{
 			title:  "a very long name",
 			prefix: "a",
-			name:   "very logn name with several parts",
-			want:   "a-54fd46599bbf74b8db44",
+			name:   "very long name with several parts",
+			want:   "a-6df784b579487d5c446",
 		},
 		{
 			title:  "names",
@@ -51,7 +51,7 @@ func TestPrefixedName(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			got := translate.PrefixedName(tc.prefix, tc.name, tc.args...)
+			got := refs.PrefixedName(tc.prefix, tc.name, tc.args...)
 			assert.Equal(t, tc.want, got)
 		})
 	}

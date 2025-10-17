@@ -11,26 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-package crds_test
+package refs
 
 import (
-	"bufio"
-	"bytes"
-	"testing"
+	"fmt"
+	"hash/fnv"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/testdata"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
-func TestParse(t *testing.T) {
-	scanner := bufio.NewScanner(bytes.NewBuffer(testdata.SampleCRDs))
-	for _ = range 2 { // CRDs sample file has at least 2 CRDs
-		def, err := crds.Parse(scanner)
-		require.NoError(t, err)
-		assert.NotNil(t, def)
+func HashNames(name string, args ...string) string {
+	hasher := fnv.New64a()
+	hasher.Write([]byte(name))
+	for _, arg := range args {
+		hasher.Write([]byte(arg))
 	}
+	rawHash := hasher.Sum64()
+
+	return rand.SafeEncodeString(fmt.Sprint(rawHash))
+}
+
+func PrefixedName(prefix string, name string, args ...string) string {
+	return fmt.Sprintf("%s-%s", prefix, HashNames(name, args...))
 }
