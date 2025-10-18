@@ -11,23 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-package translate
+package testdata
 
-import (
-	"encoding/base64"
-	"fmt"
-)
+import _ "embed"
 
-func secretDecode(value string) (string, error) {
-	bytes, err := base64.StdEncoding.DecodeString(value)
-	if err != nil {
-		return "", fmt.Errorf("failed to decode base64 string: %w", err)
-	}
-	return string(bytes), nil
-}
-
-func secretEncode(value string) string {
-	return base64.StdEncoding.EncodeToString(([]byte)(value))
-}
+//go:embed crds.yaml
+var SampleCRDs []byte

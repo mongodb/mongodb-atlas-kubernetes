@@ -26,6 +26,8 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
+var ErrNilObject = errors.New("nil object")
+
 // ToUnstructured returns an unstructured map holding the public field values
 // from the original input obj value
 func ToUnstructured(obj any) (map[string]any, error) {
@@ -56,6 +58,9 @@ func FromUnstructured[T any](target *T, source map[string]any) error {
 // AccessField gets the value of a named path within the given unstructured map
 func AccessField[T any](obj map[string]any, fields ...string) (T, error) {
 	var zeroValue T
+	if obj == nil {
+		return zeroValue, ErrNilObject
+	}
 	rawValue, ok, err := unstructured.NestedFieldNoCopy(obj, fields...)
 	if !ok {
 		return zeroValue, fmt.Errorf("path %v %w", fields, ErrNotFound)
@@ -80,7 +85,7 @@ func CreateField[T any](obj map[string]any, value T, fields ...string) error {
 		if rawNext, exists := current[fields[i]]; exists {
 			next, typeOk := rawNext.(map[string]any)
 			if !typeOk {
-				return fmt.Errorf("intermediate path %v exists but is of type %T", path, next)
+				return fmt.Errorf("intermediate path %v exists but is of type %T", path, rawNext)
 			}
 			current = next
 		} else {

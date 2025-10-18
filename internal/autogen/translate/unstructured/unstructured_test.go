@@ -207,3 +207,60 @@ func TestSkipKeysAndFieldsOf(t *testing.T) {
 		})
 	}
 }
+
+func TestAccessOrCreateField(t *testing.T) {
+	for _, tc := range []struct {
+		title        string
+		obj          map[string]any
+		path         []string
+		defaultValue any
+		want         any
+		wantErr      string
+	}{
+		{
+			title:        "create missing",
+			obj:          map[string]any{},
+			path:         []string{"deep", "field"},
+			defaultValue: "some string",
+			want:         "some string",
+		},
+		{
+			title: "read existing",
+			obj: map[string]any{
+				"deep": map[string]any{
+					"field": "other string",
+				},
+			},
+			path:         []string{"deep", "field"},
+			defaultValue: "some string",
+			want:         "other string",
+		},
+		{
+			title:        "nil object",
+			obj:          nil,
+			path:         []string{"deep", "field"},
+			defaultValue: "some string",
+			wantErr:      "nil object",
+		},
+		{
+			title: "wrong path type",
+			obj: map[string]any{
+				"deep": "an string",
+			},
+			path:         []string{"deep", "field"},
+			defaultValue: "some string",
+			wantErr:      "intermediate path [deep] exists but is of type string",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			got, err := unstructured.AccessOrCreateField(tc.obj, tc.defaultValue, tc.path...)
+			if tc.wantErr != "" {
+				require.Nil(t, got)
+				assert.ErrorContains(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+			}
+		})
+	}
+}
