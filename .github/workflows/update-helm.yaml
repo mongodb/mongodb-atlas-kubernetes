@@ -3,10 +3,6 @@ name: Helm update
 on:
   workflow_call:
   workflow_dispatch:
-# TODO: remove after the job "Sync helm-charts" is applied to the main branch
-#  pull_request:
-#    types:
-#      - closed
 
 jobs:
   verify-helm-changes:
