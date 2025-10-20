@@ -121,7 +121,6 @@ GO_LICENSES_VERSION = 1.6.0
 KUSTOMIZE = kustomize
 DISALLOWED_LICENSES = restricted,reciprocal
 
-REPORT_TYPE = flakiness
 SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
 
 # Signature definitions
@@ -481,19 +480,6 @@ ifndef JWT_RSA_PEM_KEY_BASE64
 endif
 	@REPO=mongodb/mongodb-atlas-kubernetes APP_ID=$(JWT_APP_ID) \
 	RSA_PEM_KEY_BASE64=$(JWT_RSA_PEM_KEY_BASE64) ./scripts/gh-access-token.sh
-
-tools/metrics/metrics: tools/metrics/*.go
-	cd tools/metrics && go test . && go build .
-
-.PHONY: slack-report
-slack-report: tools/metrics/metrics ## slack a report
-ifndef GITHUB_TOKEN
-	echo "Getting GitHub token..."
-	$(eval GITHUB_TOKEN := $(shell $(MAKE) -s github-token))
-endif
-	@echo "Computing and sending $(REPORT_TYPE) report to Slack..."
-	@GITHUB_TOKEN=$(GITHUB_TOKEN) FORMAT=summary ./tools/metrics/metrics $(REPORT_TYPE) | \
-	./scripts/slackit.sh $(SLACK_WEBHOOK)
 
 .PHONY: sign
 sign: ## Sign an AKO multi-architecture image
