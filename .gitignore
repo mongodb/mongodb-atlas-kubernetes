@@ -44,7 +44,6 @@ tmp/
 # ignore tool binaries
 tools/clean/clean
 tools/makejwt/makejwt
-tools/metrics/metrics
 tools/scandeprecation/scandeprecations
 tools/githubjobs/githubjobs
 
