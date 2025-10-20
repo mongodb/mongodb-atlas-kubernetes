@@ -63,7 +63,7 @@ kustomize build "config/crd" >"${namespaced_dir}/crds.yaml"
 echo "Created namespaced config"
 
 # crds
-cp config/crd/bases/* "${crds_dir}"
+find config/crd/bases -type f ! -name 'kustomization.yaml' -exec cp {} "${crds_dir}" \;
 
 # CSV bundle
 operator-sdk generate kustomize manifests --input-dir=config/manifests-template --interactive=false -q --apis-dir=api
