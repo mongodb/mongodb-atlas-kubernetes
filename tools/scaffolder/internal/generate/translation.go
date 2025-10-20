@@ -24,19 +24,19 @@ import (
 )
 
 // GenerateTranslationLayers generates translation layers for all mappings
-func GenerateTranslationLayers(resourceName string, mappings []MappingWithConfig) error {
+func GenerateTranslationLayers(resourceName string, mappings []MappingWithConfig, translationOutDir string) error {
 	for _, mapping := range mappings {
-		versionSuffix := mapping.Mapping.MajorVersion
-		if err := generateTranslationLayerWithVersion(resourceName, versionSuffix, mapping.OpenAPIConfig); err != nil {
+		versionSuffix := mapping.Version
+		if err := generateTranslationLayerWithVersion(resourceName, versionSuffix, mapping.OpenAPIConfig.Package, translationOutDir); err != nil {
 			return fmt.Errorf("failed to generate translation layer for version %s: %w", versionSuffix, err)
 		}
 	}
 	return nil
 }
 
-func generateTranslationLayerWithVersion(resourceName, versionSuffix string, openAPIConfig OpenAPIConfig) error {
+func generateTranslationLayerWithVersion(resourceName, versionSuffix, sdkPackage, translationOutDir string) error {
 	packageName := strings.ToLower(resourceName) + versionSuffix
-	translationDir := filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "translation", packageName)
+	translationDir := filepath.Join(translationOutDir, packageName)
 
 	if err := os.MkdirAll(translationDir, 0755); err != nil {
 		return fmt.Errorf("failed to create translation directory: %w", err)
@@ -48,7 +48,7 @@ func generateTranslationLayerWithVersion(resourceName, versionSuffix string, ope
 	}
 
 	// Generate service file
-	if err := generateServiceFileWithVersion(translationDir, resourceName, packageName, openAPIConfig); err != nil {
+	if err := generateServiceFileWithVersion(translationDir, resourceName, packageName, sdkPackage); err != nil {
 		return fmt.Errorf("failed to generate service file: %w", err)
 	}
 
@@ -84,7 +84,7 @@ func generateTranslationFileWithVersion(dir, resourceName, packageName string) e
 	return f.Save(fileName)
 }
 
-func generateServiceFileWithVersion(dir, resourceName, packageName string, openAPIConfig OpenAPIConfig) error {
+func generateServiceFileWithVersion(dir, resourceName, packageName, sdkPackage string) error {
 	atlasAPI, err := GetAtlasAPIForCRD(resourceName)
 	if err != nil {
 		return fmt.Errorf("failed to get Atlas API for CRD %s: %w", resourceName, err)
@@ -94,7 +94,7 @@ func generateServiceFileWithVersion(dir, resourceName, packageName string, openA
 	AddLicenseHeader(f)
 
 	// Atlas SDK import for this version
-	f.ImportAlias(openAPIConfig.Package, "admin")
+	f.ImportAlias(sdkPackage, "admin")
 
 	// Service interface
 	f.Type().Id("Atlas"+resourceName+"Service").Interface(
@@ -122,12 +122,12 @@ func generateServiceFileWithVersion(dir, resourceName, packageName string, openA
 
 	// Service implementation struct
 	f.Type().Id("Atlas"+resourceName+"ServiceImpl").Struct(
-		jen.Id(strings.ToLower(resourceName)+"API").Qual(openAPIConfig.Package, atlasAPI),
+		jen.Id(strings.ToLower(resourceName)+"API").Qual(sdkPackage, atlasAPI),
 	)
 
 	// Constructor
 	f.Func().Id("NewAtlas"+resourceName+"Service").Params(
-		jen.Id("api").Qual(openAPIConfig.Package, atlasAPI),
+		jen.Id("api").Qual(sdkPackage, atlasAPI),
 	).Id("Atlas"+resourceName+"Service").Block(
 		jen.Return(jen.Op("&").Id("Atlas"+resourceName+"ServiceImpl").Values(jen.Dict{
 			jen.Id(strings.ToLower(resourceName) + "API"): jen.Id("api"),
@@ -201,6 +201,7 @@ func GetAtlasAPIForCRD(crdKind string) (string, error) {
 		"StreamInstance":         "StreamsApi",
 		"PrivateEndpoint":        "PrivateEndpointServicesApi",
 		"NetworkPeering":         "NetworkPeeringApi",
+		"NetworkPeeringConnection": "NetworkPeeringApi",
 		"NetworkContainer":       "NetworkPeeringApi",
 		"IPAccessList":           "ProjectIPAccessListApi",
 		"CustomRole":             "CustomDatabaseRolesApi",
