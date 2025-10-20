@@ -54,9 +54,9 @@ func FromConfig(resultPath, crdKind, controllerOutDir, translationOutDir, indexe
 	
 	baseControllerDir := filepath.Join(controllerOutDir, strings.ToLower(resourceName))
 
-	// Generate translation layers for all mappings
-	if err := GenerateTranslationLayers(resourceName, parsedConfig.Mappings, translationOutDir); err != nil {
-		return fmt.Errorf("failed to generate translation layers: %w", err)
+	// Generate service layers for all mappings
+	if err := GenerateServiceLayers(resourceName, parsedConfig.Mappings, translationOutDir); err != nil {
+		return fmt.Errorf("failed to generate service layers: %w", err)
 	}
 
 	controllerName := resourceName
