@@ -28,5 +28,16 @@
     "gh@latest",
     "addlicense@latest",
     "fd@latest"
-  ]
+  ],
+  "shell": {
+    "init_hook": [
+      "if test \"$(uname -s)\" = \"Darwin\"; then",
+      "  echo 'Shell Hook: Applying macOS + Nix + Go 1.25 CGO fix...'",
+      "  export CGO_ENABLED=0",
+      "  export BUILD_TAGS='netgo,osusergo'",
+      "else",
+      "  echo 'Shell Hook: Not Darwin, skipping CGO fix. Using defaults.'",
+      "fi"
+    ]
+  }
 }
