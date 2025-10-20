@@ -66,6 +66,12 @@ linters:
           - unparam
         path: pkg/controller
       - linters:
+          - dupl
+        path: internal/generated
+      - linters:
+          - dupl
+        path: internal/indexer
+      - linters:
           - prealloc
         path: pkg/controller/atlasdatabaseuser/connectionsecrets
       - linters:

@@ -40,6 +40,7 @@ type ParsedConfig struct {
 	SelectedCRD  CRDInfo
 	Mappings     []MappingWithConfig
 	ResourceName string
+	APIVersion   string // API version package (e.g., "v1", "v3")
 }
 
 type CRDDocument struct {
@@ -205,10 +206,17 @@ func ParseCRDConfig(resultPath, crdKind string) (*ParsedConfig, error) {
 		})
 	}
 
+	const apiVersion = "v3"
+	// TODO: consider parsing target package from the api version
+	// if crdInfo.Version != "" && crdInfo.Version != "v1" {
+	// 	apiVersion = "v3"
+	// }
+
 	return &ParsedConfig{
 		SelectedCRD:  *crdInfo,
 		Mappings:     mappings,
 		ResourceName: crdInfo.Kind,
+		APIVersion:   apiVersion,
 	}, nil
 }
 
