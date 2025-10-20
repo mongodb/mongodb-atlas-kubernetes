@@ -48,7 +48,7 @@ if [[ "${build}" == "true" ]]; then
     docker push "${bundle_image}"
 fi
 
-kubectl apply -f deploy/crds
+kustomize build --load-restrictor LoadRestrictionsNone deploy/crds | kubectl apply -f -
 
 export MCLI_OPS_MANAGER_URL="${MCLI_OPS_MANAGER_URL:-https://cloud-qa.mongodb.com/}"
 export MCLI_PUBLIC_API_KEY="${MCLI_PUBLIC_API_KEY:-$public_key}"
