@@ -207,7 +207,7 @@ envtest-assets:
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 
 .PHONY: e2e
-e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
+e2e: bundle run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
 
 .PHONY: e2e2
