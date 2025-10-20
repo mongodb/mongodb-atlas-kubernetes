@@ -354,8 +354,8 @@
       }
     },
     "gettext@latest": {
-      "last_modified": "2025-10-07T08:41:47Z",
-      "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#gettext",
+      "last_modified": "2025-10-11T06:31:15Z",
+      "resolved": "github:NixOS/nixpkgs/362791944032cb532aabbeed7887a441496d5e6e#gettext",
       "source": "devbox-search",
       "version": "0.25.1",
       "systems": {
@@ -550,8 +550,8 @@
       }
     },
     "git@latest": {
-      "last_modified": "2025-10-09T02:37:25Z",
-      "resolved": "github:NixOS/nixpkgs/2dad7af78a183b6c486702c18af8a9544f298377#git",
+      "last_modified": "2025-10-07T08:41:47Z",
+      "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#git",
       "source": "devbox-search",
       "version": "2.51.0",
       "systems": {
@@ -622,56 +622,8 @@
       }
     },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "last_modified": "2025-10-16T06:36:44Z",
-      "resolved": "github:NixOS/nixpkgs/3cbe716e2346710d6e1f7c559363d14e11c32a43?lastModified=1760596604&narHash=sha256-J%2Fi5K6AAz%2Fy5dBePHQOuzC7MbhyTOKsd%2FGLezSbEFiM%3D"
-    },
-    "go-mockery@2": {
-      "last_modified": "2025-07-13T22:45:35Z",
-      "resolved": "github:NixOS/nixpkgs/a421ac6595024edcfbb1ef950a3712b89161c359#go-mockery",
-      "source": "devbox-search",
-      "version": "2.53.3",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/gymm44dbi3sp824ghj28z7xdp5y0z8ij-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/gymm44dbi3sp824ghj28z7xdp5y0z8ij-go-mockery-2.53.3"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/7almddm7x5spkllll4avz0fd19slcvvj-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/7almddm7x5spkllll4avz0fd19slcvvj-go-mockery-2.53.3"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/xxd8ynzjqi4v0jahgzs9k45mj0ymcsns-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/xxd8ynzjqi4v0jahgzs9k45mj0ymcsns-go-mockery-2.53.3"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/p7cdcd71qnf8k6h1fyrsx42a768w02c2-go-mockery-2.53.3",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/p7cdcd71qnf8k6h1fyrsx42a768w02c2-go-mockery-2.53.3"
-        }
-      }
+      "last_modified": "2025-10-20T04:25:18Z",
+      "resolved": "github:NixOS/nixpkgs/87848bf0cc4f87717fc813a4575f07330c3e743c?lastModified=1760934318&narHash=sha256-%2FoUYsC0lUCBory65VK%2BUHqCCsCspbL1Vgfcf1KUYqVw%3D"
     },
     "go@latest": {
       "last_modified": "2025-10-07T08:41:47Z",
@@ -914,8 +866,8 @@
       }
     },
     "jq@latest": {
-      "last_modified": "2025-10-13T09:56:54Z",
-      "resolved": "github:NixOS/nixpkgs/c12c63cd6c5eb34c7b4c3076c6a99e00fcab86ec#jq",
+      "last_modified": "2025-10-12T08:13:11Z",
+      "resolved": "github:NixOS/nixpkgs/832e3b6db48508ae436c2c7bfc0cf914eac6938e#jq",
       "source": "devbox-search",
       "version": "1.8.1",
       "systems": {
@@ -1267,14 +1219,6 @@
           "outputs": [
             {
               "path": "/nix/store/72hchxzawfrj0ayhqcb57wyz11320w13-kustomize-4.3.0",
-              "default": true
-            }
-          ]
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "path": "/nix/store/cyxijsvrvl4v986z606yirrdk4pzcqj8-kustomize-4.3.0",
               "default": true
             }
           ]
