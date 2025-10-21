@@ -599,20 +599,6 @@ test-all-in-one: prepare-all-in-one install-credentials ## Test the deploy/all-i
 	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).args[0]="--atlas-domain=$(ATLAS_DOMAIN)"' \
 	| kubectl apply -f -
 
-.PHONY: upload-sbom-to-kondukto
-upload-sbom-to-kondukto: ## Upload a given SBOM (lite) file to Kondukto
-	@KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
-	./scripts/upload-to-kondukto.sh $(SBOM_JSON_FILE)
-
-.PHONY: augment-sbom
-augment-sbom: ## augment the latest SBOM for a given architecture on a given directory
-	@KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
-	./scripts/augment-sbom.sh $(SBOM_JSON_FILE) tmp
-
-.PHONY: store-augmented-sboms
-store-augmented-sboms: ## Augment & Store the latest SBOM for a given version & architecture
-	KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) ./scripts/store-sbom-in-s3.sh $(VERSION) $(TARGET_ARCH) $(SBOMS_DIR)
-
 .PHONY: install-ako-helm
 install-ako-helm:
 	helm repo add mongodb $(HELM_REPO_URL)

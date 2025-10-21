@@ -136,58 +136,9 @@ Follow the format described in the [release-notes-template.md](../release-notes/
 Paste the release notes content approved before the release was started.
 Once the image is out, publish the release notes draft as soon as possible.
 
-## Manual SSDLC steps
+## SSDLC Process
 
-### Process Overview
-
-The SSDLC process requirements are as follows:
-
-1. Sign our images with a MongoDB owned signature.
-1. Produce SBOM (Software Bill Of Materials) for each platform we support (`linux-amd64` and `linux-arm64`).
-1. Upload the plain SBOMs to a MongoDB internal Kondukto service instance.
-1. Produce the augmented SBOMS, including vulnerability metadata, from using Silkbomb 2.0.
-1. Store both sets of SBOM files for internal reference.
-
-The first two steps are semi-automated as documented here. The rest is fully manual.
-
-Right now we are only using **one Kondukto branch per platform**:
-- `main-linux-amd64`
-- `main-linux-arm64`
-
-This means only the latest version is tracked by Kondukto. Note each upload will replace the SBOM document tracked on each asset group.
-
-For more details about credentials required, to to `MongoDB Confluence` and look for page:
-`Kubernetes Atlas Operator SSDLC Compliance Manual`
-
-What follows is a quick reference of the make rules involved, assuming the credential setup is already completed and the process is already familiar.
-
-### Upload SBOMs to Kondukto and Augment SBOMs with Kondukto Scan results
-
-Make sure that you have the credentials configured to handle SBOM artifacts.
-Read through the wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual" on how to retrieve them.
-
-Get the SDLC files form the release notes and put them in some local temporary directory (has to be within the repo):
-
-```shell
-$ curl -L https://github.com/mongodb/mongodb-atlas-kubernetes/releases/download/v${VERSION}/linux_amd64.sbom.json > temp/linux_amd64.sbom.json
-$ curl -L https://github.com/mongodb/mongodb-atlas-kubernetes/releases/download/v${VERSION}/linux_arm64.sbom.json > temp/linux_arm64.sbom.json
-```
-
-Then use teh tool to augment them for `Kondukto`:
-```shell
-$ make augment-sbom SBOM_JSON_FILE="temp/linux_amd64.sbom.json"
-$ make augment-sbom SBOM_JSON_FILE="temp/linux_arm64.sbom.json"
-```
-
-### Register SBOMs internally
-
-To be able to store SBOMs in S3, you need special credentials.
-Please advise the Wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual".
-
-```shell
-$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=amd64 SBOMS_DIR=temp
-$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=arm64 SBOMS_DIR=temp
-```
+The manual SSDLC compliance steps previously documented (including the use of make augment-sbom and make store-augmented-sboms) are no longer required as this process is now fully automated. Starting with version 2.10.0, the official Software Bill of Materials (SBOM) files for both linux-amd64 and linux-arm64 are automatically generated and published directly to the GitHub release page. You can find them listed alongside the other release artifacts. For any versions prior to 2.10.0, the historical SBOMs remain available in the internal S3 bucket.
 
 ## Synchronize configuration changes with the Helm Charts
 
