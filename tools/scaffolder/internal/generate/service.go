@@ -23,18 +23,18 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-// GenerateTranslationLayers generates translation layers for all mappings
-func GenerateTranslationLayers(resourceName string, mappings []MappingWithConfig, translationOutDir string) error {
+// GenerateServiceLayers generates service layers for all mappings
+func GenerateServiceLayers(resourceName string, mappings []MappingWithConfig, translationOutDir string) error {
 	for _, mapping := range mappings {
 		versionSuffix := mapping.Version
-		if err := generateTranslationLayerWithVersion(resourceName, versionSuffix, mapping.OpenAPIConfig.Package, translationOutDir); err != nil {
-			return fmt.Errorf("failed to generate translation layer for version %s: %w", versionSuffix, err)
+		if err := generateServiceLayerWithVersion(resourceName, versionSuffix, mapping.OpenAPIConfig.Package, translationOutDir); err != nil {
+			return fmt.Errorf("failed to generate service layer for version %s: %w", versionSuffix, err)
 		}
 	}
 	return nil
 }
 
-func generateTranslationLayerWithVersion(resourceName, versionSuffix, sdkPackage, translationOutDir string) error {
+func generateServiceLayerWithVersion(resourceName, versionSuffix, sdkPackage, translationOutDir string) error {
 	packageName := strings.ToLower(resourceName) + versionSuffix
 	translationDir := filepath.Join(translationOutDir, packageName)
 
@@ -121,15 +121,15 @@ func generateServiceFileWithVersion(dir, resourceName, packageName, sdkPackage s
 	)
 
 	// Service implementation struct
-	f.Type().Id("Atlas"+resourceName+"ServiceImpl").Struct(
+	f.Type().Id("Atlas" + resourceName + "ServiceImpl").Struct(
 		jen.Id(strings.ToLower(resourceName)+"API").Qual(sdkPackage, atlasAPI),
 	)
 
 	// Constructor
-	f.Func().Id("NewAtlas"+resourceName+"Service").Params(
+	f.Func().Id("NewAtlas" + resourceName + "Service").Params(
 		jen.Id("api").Qual(sdkPackage, atlasAPI),
-	).Id("Atlas"+resourceName+"Service").Block(
-		jen.Return(jen.Op("&").Id("Atlas"+resourceName+"ServiceImpl").Values(jen.Dict{
+	).Id("Atlas" + resourceName + "Service").Block(
+		jen.Return(jen.Op("&").Id("Atlas" + resourceName + "ServiceImpl").Values(jen.Dict{
 			jen.Id(strings.ToLower(resourceName) + "API"): jen.Id("api"),
 		})),
 	)
@@ -164,7 +164,7 @@ func generateServiceFileWithVersion(dir, resourceName, packageName, sdkPackage s
 				jen.Id("ctx").Qual("context", "Context"),
 				jen.Id("orgID").String(),
 				jen.Id("resourceID").String(),
-				jen.Id("a"+strings.ToLower(resourceName)).Op("*").Id("Atlas"+resourceName),
+				jen.Id("a" + strings.ToLower(resourceName)).Op("*").Id("Atlas" + resourceName),
 			},
 			ret: []jen.Code{jen.Op("*").Id("Atlas" + resourceName), jen.Error()},
 		},
@@ -193,26 +193,26 @@ func generateServiceFileWithVersion(dir, resourceName, packageName, sdkPackage s
 // GetAtlasAPIForCRD maps CRD kinds to their corresponding Atlas API types
 func GetAtlasAPIForCRD(crdKind string) (string, error) {
 	apiMapping := map[string]string{
-		"Project":                "ProjectsApi",
-		"Group":                  "ProjectsApi", // Groups are managed by ProjectsApi
-		"Organization":           "OrganizationsApi",
-		"DatabaseUser":           "DatabaseUsersApi",
-		"Deployment":             "ClustersApi",
-		"StreamInstance":         "StreamsApi",
-		"PrivateEndpoint":        "PrivateEndpointServicesApi",
-		"NetworkPeering":         "NetworkPeeringApi",
+		"Project":                  "ProjectsApi",
+		"Group":                    "ProjectsApi", // Groups are managed by ProjectsApi
+		"Organization":             "OrganizationsApi",
+		"DatabaseUser":             "DatabaseUsersApi",
+		"Deployment":               "ClustersApi",
+		"StreamInstance":           "StreamsApi",
+		"PrivateEndpoint":          "PrivateEndpointServicesApi",
+		"NetworkPeering":           "NetworkPeeringApi",
 		"NetworkPeeringConnection": "NetworkPeeringApi",
-		"NetworkContainer":       "NetworkPeeringApi",
-		"IPAccessList":           "ProjectIPAccessListApi",
-		"CustomRole":             "CustomDatabaseRolesApi",
-		"BackupCompliancePolicy": "CompliancePoliciesApi",
-		"DataFederation":         "DataFederationApi",
-		"ThirdPartyIntegrations": "ThirdPartyIntegrationsApi",
-		"FederatedAuth":          "FederatedAuthenticationApi",
-		"SearchIndexConfig":      "AtlasSearchApi",
-		"OrgSettings":            "OrganizationsApi",
-		"StreamConnection":       "StreamsApi",
-		"Team":                   "TeamsApi",
+		"NetworkContainer":         "NetworkPeeringApi",
+		"IPAccessList":             "ProjectIPAccessListApi",
+		"CustomRole":               "CustomDatabaseRolesApi",
+		"BackupCompliancePolicy":   "CompliancePoliciesApi",
+		"DataFederation":           "DataFederationApi",
+		"ThirdPartyIntegrations":   "ThirdPartyIntegrationsApi",
+		"FederatedAuth":            "FederatedAuthenticationApi",
+		"SearchIndexConfig":        "AtlasSearchApi",
+		"OrgSettings":              "OrganizationsApi",
+		"StreamConnection":         "StreamsApi",
+		"Team":                     "TeamsApi",
 	}
 
 	if api, exists := apiMapping[crdKind]; exists {

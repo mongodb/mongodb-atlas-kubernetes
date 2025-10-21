@@ -34,9 +34,9 @@ func main() {
 		},
 	}
 
-	rootCmd.Flags().StringVar(&inputPath, "input", "", "Path to openapi2crd result.yaml file (required)")
+	rootCmd.Flags().StringVar(&inputPath, "input", "", "Path to a CRD yaml file (required)")
 	rootCmd.Flags().StringVar(&crdKind, "crd", "", "CRD kind to generate controller for")
-	rootCmd.Flags().BoolVar(&listCRDs, "list", false, "List available CRDs from result file")
+	rootCmd.Flags().BoolVar(&listCRDs, "list", false, "List available CRDs in the input file")
 	rootCmd.Flags().StringVar(&controllerOutDir, "controller-out", "", "Output directory for controller files (default: ../mongodb-atlas-kubernetes/internal/controller)")
 	rootCmd.Flags().StringVar(&translationOutDir, "translation-out", "", "Output directory for translation files (default: ../mongodb-atlas-kubernetes/internal/translation)")
 	rootCmd.Flags().StringVar(&indexerOutDir, "indexer-out", "", "Output directory for indexer files (default: ../mongodb-atlas-kubernetes/internal/indexer)")

@@ -237,7 +237,7 @@ func ListCRDs(resultPath string) ([]CRDInfo, error) {
 	}
 
 	if len(crds) == 0 {
-		return nil, fmt.Errorf("no CustomResourceDefinition documents found in '%s' - ensure you're using an openapi2crd result.yaml file", resultPath)
+		return nil, fmt.Errorf("no CustomResourceDefinition documents found in '%s' file", resultPath)
 	}
 
 	return crds, nil
