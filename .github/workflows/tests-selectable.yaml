@@ -78,6 +78,7 @@ jobs:
           PR_LABELS: ${{ steps.get-labels.outputs.result }}
           INT_LABELS: ${{ env.int_labels }}
           E2E_LABELS: ${{ env.e2e_labels }}
+          SKIP_PREFIXES: "[\"focus\"]"
           USE_JSON: true
         run: |
           make compute-labels
