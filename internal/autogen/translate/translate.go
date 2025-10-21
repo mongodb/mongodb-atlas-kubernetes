@@ -93,23 +93,11 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 	if err != nil {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
+	unstructured.CopyFields(targetUnstructured, value)
 	rawEntry := value["entry"]
 	if entry, ok := rawEntry.(map[string]any); ok {
-		unstructured.CopyFields(targetUnstructured, unstructured.SkipKeys(value, "entry"))
-		entryPathInTarget := []string{}
-		dst := targetUnstructured
-		if len(entryPathInTarget) > 0 {
-			newValue := map[string]any{}
-			if err = unstructured.CreateField(targetUnstructured, newValue, entryPathInTarget...); err != nil {
-				return fmt.Errorf("failed to set target copy destination to path %v: %w", entryPathInTarget, err)
-			}
-			dst = newValue
-		}
-		unstructured.CopyFields(dst, entry)
-	} else {
-		unstructured.CopyFields(targetUnstructured, value)
+		unstructured.CopyFields(targetUnstructured, entry)
 	}
-	delete(targetUnstructured, "groupref")
 	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
 		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
 	}
@@ -137,17 +125,17 @@ func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source 
 	if err != nil {
 		return nil, fmt.Errorf("failed to ensure versioned spec object in unstructured target: %w", err)
 	}
-	unstructured.CopyFields(versionedSpec, sourceUnstructured)
+	versionedStatus, err := unstructured.AccessOrCreateField(
+		targetUnstructured, map[string]any{}, "status", r.Translator.MajorVersion())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create versioned status object in unstructured target: %w", err)
+	}
 
+	unstructured.CopyFields(versionedSpec, sourceUnstructured)
 	versionedSpecEntry := map[string]any{}
 	unstructured.CopyFields(versionedSpecEntry, sourceUnstructured)
 	versionedSpec["entry"] = versionedSpecEntry
-
-	versionedStatus := map[string]any{}
 	unstructured.CopyFields(versionedStatus, sourceUnstructured)
-	if err := unstructured.CreateField(targetUnstructured, versionedStatus, "status", r.Translator.MajorVersion()); err != nil {
-		return nil, fmt.Errorf("failed to create versioned status object in unsstructured target: %w", err)
-	}
 
 	extraObjects, err := ExpandReferences(r, targetUnstructured, target)
 	if err != nil {
