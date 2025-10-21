@@ -18,7 +18,6 @@ package translate_test
 import (
 	"bufio"
 	"bytes"
-	_ "embed"
 	"fmt"
 	"testing"
 	"time"
@@ -33,7 +32,9 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/refs"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/testdata"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
@@ -45,9 +46,6 @@ const (
 
 	testProjectID = "6098765432109876"
 )
-
-//go:embed samples/crds.yaml
-var crdsYAMLBytes []byte
 
 func TestFromAPI(t *testing.T) {
 	for _, tc := range []struct {
@@ -411,8 +409,8 @@ func TestFromAPI(t *testing.T) {
 	}
 }
 
-func testFromAPI[S any, T any, P translate.PtrClientObj[T]](t *testing.T, kind string, target P, input *S, want []client.Object) {
-	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
+func testFromAPI[S any, T any, P refs.PtrClientObj[T]](t *testing.T, kind string, target P, input *S, want []client.Object) {
+	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
 	tr, err := translate.NewTranslator(crd, version, sdkVersion)
@@ -429,8 +427,8 @@ func TestToAPIAllRefs(t *testing.T) {
 		crd    string
 		input  client.Object
 		deps   []client.Object
-		target admin2025.CreateAlertConfigurationApiParams
-		want   admin2025.CreateAlertConfigurationApiParams
+		target admin2025.GroupAlertsConfig
+		want   admin2025.GroupAlertsConfig
 	}{
 		{
 			name: "group alert config with a groupRef and secrets",
@@ -536,187 +534,53 @@ func TestToAPIAllRefs(t *testing.T) {
 					},
 				},
 			},
-			want: admin2025.CreateAlertConfigurationApiParams{
-				GroupId: "62b6e34b3d91647abb20e7b8",
-				GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-					Enabled:       pointer.MakePtr(true),
-					EventTypeName: pointer.MakePtr("some-event"),
-					Matchers: &[]admin2025.StreamsMatcher{
-						{
-							FieldName: "field1",
-							Operator:  "op1",
-							Value:     "value1",
-						},
-						{
-							FieldName: "field2",
-							Operator:  "op2",
-							Value:     "value2",
-						},
+			want: admin2025.GroupAlertsConfig{
+				Enabled:       pointer.MakePtr(true),
+				EventTypeName: pointer.MakePtr("some-event"),
+				GroupId:       pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
+				Matchers: &[]admin2025.StreamsMatcher{
+					{
+						FieldName: "field1",
+						Operator:  "op1",
+						Value:     "value1",
 					},
-					Notifications: &[]admin2025.AlertsNotificationRootForGroup{
-						{
-							DatadogApiKey: pointer.MakePtr("sample-api-key"),
-							DatadogRegion: pointer.MakePtr("US"),
-						},
-						{
-							WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
-							WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
-						},
-					},
-					SeverityOverride: pointer.MakePtr("severe"),
-					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-						MetricName: "metric",
-						Mode:       pointer.MakePtr("mode"),
-						Operator:   pointer.MakePtr("operator"),
-						Threshold:  pointer.MakePtr(1.0),
-						Units:      pointer.MakePtr("unit"),
-					},
-					Threshold: &admin2025.StreamProcessorMetricThreshold{
-						MetricName: pointer.MakePtr("metric"),
-						Mode:       pointer.MakePtr("mode-t"),
-						Operator:   pointer.MakePtr("op-t"),
-						Threshold:  pointer.MakePtr(2.0),
-						Units:      pointer.MakePtr("unit-t"),
+					{
+						FieldName: "field2",
+						Operator:  "op2",
+						Value:     "value2",
 					},
 				},
+				Notifications: &[]admin2025.AlertsNotificationRootForGroup{
+					{
+						DatadogApiKey: pointer.MakePtr("sample-api-key"),
+						DatadogRegion: pointer.MakePtr("US"),
+					},
+					{
+						WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
+						WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
+					},
+				},
+				SeverityOverride: pointer.MakePtr("severe"),
+				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
+					MetricName: "metric",
+					Mode:       pointer.MakePtr("mode"),
+					Operator:   pointer.MakePtr("operator"),
+					Threshold:  pointer.MakePtr(1.0),
+					Units:      pointer.MakePtr("unit"),
+				},
+				Threshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: pointer.MakePtr("metric"),
+					Mode:       pointer.MakePtr("mode-t"),
+					Operator:   pointer.MakePtr("op-t"),
+					Threshold:  pointer.MakePtr(2.0),
+					Units:      pointer.MakePtr("unit-t"),
+				},
 			},
-			target: admin2025.CreateAlertConfigurationApiParams{},
+			target: admin2025.GroupAlertsConfig{},
 		},
-
-		// {
-		// 	name: "group alert config with secrets but a direct groupId",
-		// 	crd:  "GroupAlertsConfig",
-		// 	input: &v1.GroupAlertsConfig{
-		// 		TypeMeta: metav1.TypeMeta{
-		// 			Kind:       "GroupAlertsConfig",
-		// 			APIVersion: "atlas.generated.mongodb.com/v1",
-		// 		},
-		// 		ObjectMeta: metav1.ObjectMeta{
-		// 			Name:      "my-group-alerts-config",
-		// 			Namespace: "ns",
-		// 		},
-		// 		Spec: v1.GroupAlertsConfigSpec{
-		// 			V20250312: &v1.GroupAlertsConfigSpecV20250312{
-		// 				Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-		// 					Enabled:       pointer.MakePtr(true),
-		// 					EventTypeName: pointer.MakePtr("some-event"),
-		// 					Matchers: &[]v1.Matchers{
-		// 						{
-		// 							FieldName: "field1",
-		// 							Operator:  "op1",
-		// 							Value:     "value1",
-		// 						},
-		// 						{
-		// 							FieldName: "field2",
-		// 							Operator:  "op2",
-		// 							Value:     "value2",
-		// 						},
-		// 					},
-		// 					MetricThreshold: &v1.MetricThreshold{
-		// 						MetricName: "metric",
-		// 						Mode:       pointer.MakePtr("mode"),
-		// 						Operator:   pointer.MakePtr("operator"),
-		// 						Threshold:  pointer.MakePtr(1.0),
-		// 						Units:      pointer.MakePtr("unit"),
-		// 					},
-		// 					Notifications: &[]v1.Notifications{
-		// 						{
-		// 							DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.MakePtr("alert-secrets-0"),
-		// 								Key:  pointer.MakePtr("apiKey"),
-		// 							},
-		// 							DatadogRegion: pointer.MakePtr("US"),
-		// 						},
-		// 						{
-		// 							WebhookSecretSecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.MakePtr("alert-secrets-0"),
-		// 								Key:  pointer.MakePtr("webhookSecret"),
-		// 							},
-		// 							WebhookUrlSecretRef: &v1.ApiTokenSecretRef{
-		// 								Name: pointer.MakePtr("alert-secrets-1"),
-		// 								Key:  pointer.MakePtr("webhookUrl"),
-		// 							},
-		// 						},
-		// 					},
-		// 					SeverityOverride: pointer.MakePtr("severe"),
-		// 					Threshold: &v1.MetricThreshold{
-		// 						MetricName: "metric",
-		// 						Mode:       pointer.MakePtr("mode-t"),
-		// 						Operator:   pointer.MakePtr("op-t"),
-		// 						Threshold:  pointer.MakePtr(2.0),
-		// 						Units:      pointer.MakePtr("unit-t"),
-		// 					},
-		// 				},
-		// 				GroupId: pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
-		// 			},
-		// 		},
-		// 	},
-		// 	deps: []client.Object{
-		// 		&corev1.Secret{
-		// 			TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-		// 			ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-0", Namespace: "ns"},
-		// 			Data: map[string][]byte{
-		// 				"apiKey":        ([]byte)("sample-api-key"),
-		// 				"webhookSecret": ([]byte)("sample-webhook-secret"),
-		// 			},
-		// 		},
-		// 		&corev1.Secret{
-		// 			TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-		// 			ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-1", Namespace: "ns"},
-		// 			Data: map[string][]byte{
-		// 				"webhookUrl": ([]byte)("sample-webhook-url"),
-		// 			},
-		// 		},
-		// 	},
-		// 	want: admin2025.CreateAlertConfigurationApiParams{
-		// 		GroupId: "62b6e34b3d91647abb20e7b8",
-		// 		GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-		// 			Enabled:       pointer.MakePtr(true),
-		// 			EventTypeName: pointer.MakePtr("some-event"),
-		// 			Matchers: &[]admin2025.StreamsMatcher{
-		// 				{
-		// 					FieldName: "field1",
-		// 					Operator:  "op1",
-		// 					Value:     "value1",
-		// 				},
-		// 				{
-		// 					FieldName: "field2",
-		// 					Operator:  "op2",
-		// 					Value:     "value2",
-		// 				},
-		// 			},
-		// 			Notifications: &[]admin2025.AlertsNotificationRootForGroup{
-		// 				{
-		// 					DatadogApiKey: pointer.MakePtr("sample-api-key"),
-		// 					DatadogRegion: pointer.MakePtr("US"),
-		// 				},
-		// 				{
-		// 					WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
-		// 					WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
-		// 				},
-		// 			},
-		// 			SeverityOverride: pointer.MakePtr("severe"),
-		// 			MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-		// 				MetricName: "metric",
-		// 				Mode:       pointer.MakePtr("mode"),
-		// 				Operator:   pointer.MakePtr("operator"),
-		// 				Threshold:  pointer.MakePtr(1.0),
-		// 				Units:      pointer.MakePtr("unit"),
-		// 			},
-		// 			Threshold: &admin2025.StreamProcessorMetricThreshold{
-		// 				MetricName: pointer.MakePtr("metric"),
-		// 				Mode:       pointer.MakePtr("mode-t"),
-		// 				Operator:   pointer.MakePtr("op-t"),
-		// 				Threshold:  pointer.MakePtr(2.0),
-		// 				Units:      pointer.MakePtr("unit-t"),
-		// 			},
-		// 		},
-		// 	},
-		// 	target: admin2025.CreateAlertConfigurationApiParams{},
-		// },
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			crdsYML := bytes.NewBuffer(crdsYAMLBytes)
+			crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
 			tr, err := translate.NewTranslator(crd, version, sdkVersion)
@@ -1916,22 +1780,6 @@ func TestToAPI(t *testing.T) {
 			},
 		},
 
-		// "SampleDataset" only holds a name, there is no SDK API struc for the request
-		// {
-		// 	name:       "sample dataset all fields",
-		// 	crd:        "SampleDataset",
-		// 	input: &v1.SampleDataset {
-		//      Spec: v1.SampleDatasetSpec{
-		// 		    V20250312: &v1.SampleDatasetSpecV20250312{
-		// 			    Name:     "sample-dataset",
-		// 			    GroupId:  pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
-		// 	 	    },
-		// 	    },
-		//  },
-		// 	target: admin2025.SampleDatasetStatus{},
-		// 	want:   admin2025.SampleDatasetStatus{},
-		// },
-
 		{
 			name: "searchindex create request fields",
 			test: func(t *testing.T) {
@@ -2159,7 +2007,7 @@ func TestToAPI(t *testing.T) {
 }
 
 func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []client.Object, target, want *T) {
-	crdsYML := bytes.NewBuffer(crdsYAMLBytes)
+	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
 	tr, err := translate.NewTranslator(crd, version, sdkVersion)
