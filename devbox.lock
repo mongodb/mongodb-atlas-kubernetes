@@ -97,6 +97,34 @@
         }
       }
     },
+    "apple-sdk_12@latest": {
+      "last_modified": "2025-10-07T08:41:47Z",
+      "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#apple-sdk_12",
+      "source": "devbox-search",
+      "version": "12.3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7c89qp9s0z0hw6287ab0birhds66rwcb-apple-sdk-12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/7c89qp9s0z0hw6287ab0birhds66rwcb-apple-sdk-12.3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gqyvpax0b6dw5m02958ic8mdfd51fap7-apple-sdk-12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gqyvpax0b6dw5m02958ic8mdfd51fap7-apple-sdk-12.3"
+        }
+      }
+    },
     "awscli2@latest": {
       "last_modified": "2025-10-10T13:35:32Z",
       "resolved": "github:NixOS/nixpkgs/870493f9a8cb0b074ae5b411b2f232015db19a65#awscli2",
