@@ -202,6 +202,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 					switch obj.(type) {
 					case *akov2.AtlasProject:
 						project = withNamespacedName(obj, resourcePrefix, "-project").(*akov2.AtlasProject)
+						project.WithAtlasName(resourcePrefix + "-project")
 					case *akov2.AtlasDeployment:
 						deployment = deploymentWithProject(withNamespacedName(obj, resourcePrefix, "-cluster").(*akov2.AtlasDeployment), project)
 					}
