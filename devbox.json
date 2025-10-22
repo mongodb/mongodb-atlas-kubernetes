@@ -3,7 +3,6 @@
     "yq-go": "latest",
     "kubebuilder": "4.1.1",
     "jq": "latest",
-    "go": "latest",
     "gotests": "latest",
     "act": "latest",
     "kubectl": "latest",
@@ -29,9 +28,9 @@
     "addlicense": "latest",
     "fd": "latest",
     "apple-sdk_12": {
-      "name":      "sdk_12",
       "version":   "latest",
       "platforms": ["aarch64-darwin", "x86_64-darwin"]
-    }
+    },
+    "path:./flakes/go": {}
   }
 }
