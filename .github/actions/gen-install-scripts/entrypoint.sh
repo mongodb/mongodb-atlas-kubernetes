@@ -32,7 +32,7 @@ mkdir -p "${crds_dir}"
 mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
-controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+make generate
 cd config/manager
 touch kustomization.yaml
 kustomize edit add resource bases/
