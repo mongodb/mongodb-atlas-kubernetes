@@ -43,7 +43,7 @@ func (tr *translator) MajorVersion() string {
 	return tr.majorVersion
 }
 
-// Validate woudl return any errors of teh given unstructured object against the
+// Validate would return any errors of the given unstructured object against the
 // pinned schema version being translated, or nil if the object is compliant
 func (tr *translator) Validate(unstructuredObj map[string]any) error {
 	if err := tr.jsonSchema.Validate(unstructuredObj); err != nil {
