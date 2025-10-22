@@ -37,67 +37,79 @@ type Handler struct {
 	expand bool
 }
 
+// NewHandler creates the basic context to expand or collapse references, such
+// context requires the Kubernetes object being translated and its dependencies
 func NewHandler(main client.Object, deps []client.Object) *Handler {
 	return &Handler{context: newMapContext(main, deps)}
 }
 
-func (h *Handler) ExpandReferences(obj, mappings map[string]any, fields ...string) error {
+// ExpandReferences uses the handler context to expand references on a given
+// unstructured value matching the main object being translated, using the
+// given reference mappings and acting on a particular path og the value object
+func (h *Handler) ExpandReferences(obj, mappings map[string]any, path ...string) error {
 	h.expand = true
 
-	props, err := accessMappingPropsAt(mappings, fields)
+	props, err := accessMappingPropsAt(mappings, path)
 	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("failed to access mappings to expand references: %w", err)
 	}
 
-	field, err := unstructured.AccessField[map[string]any](obj, fields...)
+	field, err := unstructured.GetField[map[string]any](obj, path...)
 	if err != nil {
-		return fmt.Errorf("failed to access object's %v: %w", fields, err)
+		return fmt.Errorf("failed to access object's %v: %w", path, err)
 	}
 	if err := h.scanProperties([]string{}, props, field); err != nil {
-		return fmt.Errorf("failed to expand references at %v: %w", fields, err)
+		return fmt.Errorf("failed to expand references at %v: %w", path, err)
 	}
 	return nil
 }
 
-func (h *Handler) CollapseReferences(obj, mappings map[string]any, fields ...string) error {
+// CollapseReferences uses the handler context to collapse references on a given
+// unstructured value matching the main object being translated, using the
+// given reference mappings and acting on a particular path of the value object
+func (h *Handler) CollapseReferences(obj, mappings map[string]any, path ...string) error {
 	h.expand = false
 
-	props, err := accessMappingPropsAt(mappings, fields)
+	props, err := accessMappingPropsAt(mappings, path)
 	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("failed to access mappings to collapse references: %w", err)
 	}
 
-	field, err := unstructured.AccessField[map[string]any](obj, fields...)
+	field, err := unstructured.GetField[map[string]any](obj, path...)
 	if err != nil {
-		return fmt.Errorf("failed to access object's %v: %w", fields, err)
+		return fmt.Errorf("failed to access object's %v: %w", path, err)
 	}
 
 	if err := h.scanProperties([]string{}, props, field); err != nil {
-		return fmt.Errorf("failed to collapse references at %v: %w", fields, err)
+		return fmt.Errorf("failed to collapse references at %v: %w", path, err)
 	}
 	return nil
 }
 
+// Added returns any kubernetes objects created as references by ExpandReferences
 func (h *Handler) Added() []client.Object {
 	return h.added
 }
 
-func accessMappingPropsAt(mappings map[string]any, fields []string) (map[string]any, error) {
+// accessMappingPropsAt reads the mappings object at a given path
+func accessMappingPropsAt(mappings map[string]any, path []string) (map[string]any, error) {
 	expandedPath := []string{"properties"}
-	for _, field := range fields {
+	for _, field := range path {
 		expandedPath = append(expandedPath, field, "properties")
 	}
-	props, err := unstructured.AccessField[map[string]any](mappings, expandedPath...)
+	props, err := unstructured.GetField[map[string]any](mappings, expandedPath...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access the API mapping properties for %v: %w", expandedPath, err)
 	}
 	return props, nil
 }
 
+// scanProperties checks an object value path position holding field properties
+// against reference mappings that may apply at that path
 func (m *Handler) scanProperties(path []string, props, obj map[string]any) error {
 	for key, prop := range props {
 		mapping, ok := (prop).(map[string]any)
@@ -111,7 +123,7 @@ func (m *Handler) scanProperties(path []string, props, obj map[string]any) error
 			}
 			continue
 		}
-		rawField, err := unstructured.AccessField[any](obj, key)
+		rawField, err := unstructured.GetField[any](obj, key)
 		if errors.Is(err, unstructured.ErrNotFound) {
 			continue
 		}
@@ -135,8 +147,10 @@ func (m *Handler) scanProperties(path []string, props, obj map[string]any) error
 	return nil
 }
 
+// scanArray checks an object value path position holding an array against
+// reference mappings that may apply at that path
 func (m *Handler) scanArray(path []string, mapping map[string]any, list []any) error {
-	mapItems, err := unstructured.AccessField[map[string]any](mapping, "items", "properties")
+	mapItems, err := unstructured.GetField[map[string]any](mapping, "items", "properties")
 	if err != nil {
 		return fmt.Errorf("failed to access %q: %w", unstructured.Base(path), err)
 	}
@@ -160,9 +174,11 @@ func (m *Handler) scanArray(path []string, mapping map[string]any, list []any) e
 	return nil
 }
 
+// scanObject checks an object value path position holding an object against
+// reference mappings that may apply at that path
 func (m *Handler) scanObject(path []string, mapName string, mapping, obj map[string]any) error {
 	if mapping["properties"] != nil {
-		props, err := unstructured.AccessField[map[string]any](mapping, "properties")
+		props, err := unstructured.GetField[map[string]any](mapping, "properties")
 		if err != nil {
 			return fmt.Errorf("failed to access properties at %q: %w", path, err)
 		}
@@ -174,6 +190,7 @@ func (m *Handler) scanObject(path []string, mapName string, mapping, obj map[str
 	return fmt.Errorf("unsupported extension at %v with fields %v", path, unstructured.FieldsOf(mapping))
 }
 
+// processReference kicks of a reference expansion or collapse
 func (m *Handler) processReference(path []string, mappingName string, mapping, obj map[string]any) error {
 	rm := refMapping{}
 	if err := unstructured.FromUnstructured(&rm, mapping); err != nil {
@@ -186,6 +203,8 @@ func (m *Handler) processReference(path []string, mappingName string, mapping, o
 	return ref.Collapse(m.context, path, obj)
 }
 
+// entryMatchingMapping returns the entry name key and value from an array that
+// matches the reference ebing collapsed or expanded
 func entryMatchingMapping(mapName string, mapping map[string]any, list []any, expand bool) (string, map[string]any, error) {
 	key := mapName
 	if expand {
@@ -200,6 +219,7 @@ func entryMatchingMapping(mapName string, mapping map[string]any, list []any, ex
 	return key, m, err
 }
 
+// findByExistingUniqueKey returns the value of an array holding a given key
 func findByExistingUniqueKey(list []any, key string) (map[string]any, error) {
 	candidates := []map[string]any{}
 	for _, item := range list {

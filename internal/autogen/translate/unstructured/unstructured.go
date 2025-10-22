@@ -55,8 +55,8 @@ func FromUnstructured[T any](target *T, source map[string]any) error {
 	return nil
 }
 
-// AccessField gets the value of a named path within the given unstructured map
-func AccessField[T any](obj map[string]any, fields ...string) (T, error) {
+// GetField gets the value of a named path within the given unstructured map
+func GetField[T any](obj map[string]any, fields ...string) (T, error) {
 	var zeroValue T
 	if obj == nil {
 		return zeroValue, ErrNilObject
@@ -103,10 +103,10 @@ func CreateField[T any](obj map[string]any, value T, fields ...string) error {
 	return nil
 }
 
-// AccessOrCreateField access a field at the given path, it creates the
+// GetOrCreateField access a field at the given path, it creates the
 // field with the given defaultValue if it did not exist
-func AccessOrCreateField[T any](obj map[string]any, defaultValue T, fields ...string) (T, error) {
-	value, err := AccessField[T](obj, fields...)
+func GetOrCreateField[T any](obj map[string]any, defaultValue T, fields ...string) (T, error) {
+	value, err := GetField[T](obj, fields...)
 	if err == nil {
 		return value, nil
 	}
@@ -121,7 +121,7 @@ func AccessOrCreateField[T any](obj map[string]any, defaultValue T, fields ...st
 }
 
 // AsPath translates the given simplified xpath expression into a sequence of
-// path entries
+// path entries. This ia very shallow xpath formatter, not full xpath compliant
 func AsPath(xpath string) []string {
 	if strings.HasPrefix(xpath, ".") {
 		return AsPath(xpath[1:])
@@ -157,7 +157,7 @@ func Base(path []string) string {
 	return path[lastIndex]
 }
 
-// FieldsOf returns the names of the fields immediate at the given obj value
+// FieldsOf returns the names of the fields at the given obj value
 func FieldsOf(obj map[string]any) []string {
 	fields := make([]string, 0, len(obj))
 	for field := range obj {
