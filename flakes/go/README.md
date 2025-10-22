@@ -4,16 +4,16 @@
 
 Nix tends to be several minor versions behind Go's official releases.
 
-This posses chanllenges in two situations:
+This posses challenges in two situations:
 
-1. When Go moves to a new majoer version
+1. When Go moves to a new major version
 1. When Go has a vulnerability on the current latest Nix version, fixed by a newer official release
 
-For major versions it is usually fine to wait for Nix to have a major version compilation avaiable for devbox to use. This is because, no matter how early we may want to upgrade, many go tools we depend on, such as licence checking or linting or Kubernetes libraries such as `controller-runtime`, usually need some time to catch up with the major release anyways. By the time they support the new major version, there is usually a Nix compilation of the new Go release, at least in the unstable channel.
+For major versions it is usually fine to wait for Nix to have a major version compilation available for devbox to use. This is because, no matter how early we may want to upgrade, many go tools we depend on, such as license checking or linting or Kubernetes libraries such as `controller-runtime`, usually need some time to catch up with the major release anyways. By the time they support the new major version, there is usually a Nix compilation of the new Go release, at least in the unstable channel.
 
-For minor versions, it can be more problematic. If the latest Nix available release is compromised, it mgiht take a few days or weeks for the new version to become available in Nix. On the other hand, Go only marks a vulnerable release after releasing the fixed version.
+For minor versions, it can be more problematic. If the latest Nix available release is compromised, it might take a few days or weeks for the new version to become available in Nix. On the other hand, Go only marks a vulnerable release after releasing the fixed version.
 
-In other words, we need to be able to move to the latest Go release as needed, specially to avoid vulvnerabilities within the same major version.
+In other words, we need to be able to move to the latest Go release as needed, specially to avoid vulnerabilities within the same major version.
 
 ## How
 
@@ -43,10 +43,10 @@ Make sure to use the correct architecture filename download to grab its correspo
 
 ## Testing
 
-Using `devbox shell` normally would already grab and build the flake, as referenced by devbox.json entry `"path:./flakes/go": {}`. Still if you want to test the flake buil in isolation you can run (in this directory):
+Using `devbox shell` normally would already grab and build the flake, as referenced by devbox.json entry `"path:./flakes/go": {}`. Still if you want to test the flake build in isolation you can run (in this directory):
 
 ``shell
 nix build .
 ```
 
-On success a `result` entry in teh directory soft links to the built flake.
+On success a `result` entry in the directory soft links to the built flake.
