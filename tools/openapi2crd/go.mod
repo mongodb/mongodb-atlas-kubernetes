@@ -2,7 +2,7 @@ module tools/openapi2crd
 
 go 1.25
 
-toolchain go1.25.1
+toolchain go1.25.3
 
 require (
 	github.com/getkin/kin-openapi v0.131.0
