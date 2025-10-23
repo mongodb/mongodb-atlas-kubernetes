@@ -36,9 +36,7 @@ RUN curl -LO https://github.com/operator-framework/operator-sdk/releases/downloa
     chmod +x operator-sdk_linux_amd64 && \
     mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
 
-
-COPY . /home
-COPY .github/actions/gen-install-scripts/entrypoint.sh /home/entrypoint.sh
+COPY entrypoint.sh /home/entrypoint.sh
 RUN chmod +x /home/entrypoint.sh
 
 ENTRYPOINT ["/home/entrypoint.sh"]
