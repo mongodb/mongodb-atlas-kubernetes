@@ -18,8 +18,8 @@ RUN go install github.com/mikefarah/yq/v4@latest
 RUN CONTROLLER_GEN_TMP_DIR=$(mktemp -d); \
     cd $CONTROLLER_GEN_TMP_DIR; \
     go mod init tmp; \
-    go install sigs.k8s.io/controller-tools/cmd/controller-gen@$v{CONTROLLER_GEN_VERSION}; \
-    rm -rf $CONTROLLER_GEN_TMP_DIR, \
+    go install sigs.k8s.io/controller-tools/cmd/controller-gen@v${CONTROLLER_GEN_VERSION}; \
+    rm -rf $CONTROLLER_GEN_TMP_DIR; \
     CONTROLLER_GEN=${GOBIN}/controller-gen
 
 # --- Prebuilt Binaries ---
@@ -36,7 +36,9 @@ RUN curl -LO https://github.com/operator-framework/operator-sdk/releases/downloa
     chmod +x operator-sdk_linux_amd64 && \
     mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
 
-COPY entrypoint.sh /home/entrypoint.sh
+
+COPY . /home
+COPY .github/actions/gen-install-scripts/entrypoint.sh /home/entrypoint.sh
 RUN chmod +x /home/entrypoint.sh
 
 ENTRYPOINT ["/home/entrypoint.sh"]
