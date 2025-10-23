@@ -183,6 +183,7 @@ jobs:
 
       - name: Change URL for the test
         run: |
+          id
           awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
       - name: Cache repo files
