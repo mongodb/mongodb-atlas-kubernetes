@@ -16,12 +16,6 @@
 
 set -xeou pipefail
 
-cd /home/helder/IdeaProjects/MongoDB/mongodb-atlas-kubernetes
-
-INPUT_IMAGE_URL=${INPUT_IMAGE_URL:-"mongodb/atlas-kubernetes-operator:2.11.1"}
-INPUT_ENV=${INPUT_ENV:-"dev"}
-INPUT_VERSION=${INPUT_VERSION:-"2.11.1"}
-
 # copy the initial bundle dir state from teh latest released bundle
 mkdir -p bundle/manifests
 cp config/manifests-template/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml bundle/manifests
@@ -38,8 +32,9 @@ mkdir -p "${crds_dir}"
 mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
-# controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
-make manifests
+controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+touch config/crd/bases/kustomization.yaml
+sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
 cd config/manager
 touch kustomization.yaml
 kustomize edit add resource bases/
@@ -55,17 +50,17 @@ kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_E
 echo "Created all-in-one config"
 
 # clusterwide
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/clusterwide" >"${clusterwide_dir}/clusterwide-config.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/clusterwide" > "${clusterwide_dir}/clusterwide-config.yaml"
 kustomize build "config/crd" >"${clusterwide_dir}/crds.yaml"
 echo "Created clusterwide config"
 
 # base-openshift-namespace-scoped
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/openshift" >"${openshift}/openshift.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/openshift" > "${openshift}/openshift.yaml"
 kustomize build "config/crd" >"${openshift}/crds.yaml"
 echo "Created openshift namespaced config"
 
 # namespaced
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/namespaced" >"${namespaced_dir}/namespaced-config.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/namespaced" > "${namespaced_dir}/namespaced-config.yaml"
 kustomize build "config/crd" >"${namespaced_dir}/crds.yaml"
 echo "Created namespaced config"
 
