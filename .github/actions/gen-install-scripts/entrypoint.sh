@@ -97,3 +97,5 @@ label="LABEL com.redhat.openshift.versions=\"v4.8-v4.18\"\nLABEL com.redhat.deli
 awk -v rep="FROM scratch\n\n$label" '{sub(/FROM scratch/, rep); print}' bundle.Dockerfile >tmp && mv tmp bundle.Dockerfile
 
 operator-sdk bundle validate ./bundle
+
+id
