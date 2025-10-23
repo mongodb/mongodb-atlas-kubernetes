@@ -13,9 +13,24 @@
 // limitations under the License.
 //
 
-// +k8s:deepcopy-gen=package
-// +groupName=atlas.generated.mongodb.com
+package unstructured
 
-package v1
+import "strings"
 
-// controller-gen object paths="./internal/crd2go/samples/v1"
+// AsPath translates the given simplified xpath expression into a sequence of
+// path entries. This ia very shallow xpath formatter, not full xpath compliant
+func AsPath(xpath string) []string {
+	if strings.HasPrefix(xpath, ".") {
+		return AsPath(xpath[1:])
+	}
+	return strings.Split(xpath, ".")
+}
+
+// Base returns the base of the given path, namely the last name in the array
+func Base(path []string) string {
+	if len(path) == 0 {
+		return ""
+	}
+	lastIndex := len(path) - 1
+	return path[lastIndex]
+}

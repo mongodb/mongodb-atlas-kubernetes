@@ -52,8 +52,8 @@ func (tr *translator) Validate(unstructuredObj map[string]any) error {
 	return nil
 }
 
-// NewTranslator creates a translator for a particular CRD and major version pairs,
-// and with a particular set of known Kubernetes object dependencies.
+// NewTranslator creates a translator for a particular CRD version. It is also
+// locked into a particular API majorVersion.
 //
 // Given the following example resource:
 //

@@ -31,7 +31,7 @@ const (
 )
 
 // Handler holds the context needed to expand or collapse the references on an
-// Kubernetes object translaion to and from API data
+// Kubernetes object translation to and from API data
 type Handler struct {
 	*context
 	expand bool

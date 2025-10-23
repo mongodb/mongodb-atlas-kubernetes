@@ -33,8 +33,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/crds"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/refs"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/testdata"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/testdata/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )

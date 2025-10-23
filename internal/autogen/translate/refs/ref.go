@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/unstructured"
 )
 
@@ -37,7 +36,8 @@ const (
 	propertySelectorSuffix = ".#"
 )
 
-// PtrClientObj is a pointer type implementing client.Object
+// PtrClientObj is a pointer type implementing client.Object.
+// It represents a Kubernetes object for the controller-runtime library.
 type PtrClientObj[T any] interface {
 	*T
 	client.Object
@@ -53,6 +53,11 @@ type referenceResolver struct {
 	encoders           map[string]encodeDecodeFunc
 	optionalExpansions map[string]struct{} // A set is better for lookups
 	kubeObjectRegistry map[string]func(map[string]any) (client.Object, error)
+}
+
+// nilInstance use when some type should not be automatically instantiated by translation
+func nilInstance(_ map[string]any) (client.Object, error) {
+	return nil, nil
 }
 
 func newReferenceResolver() *referenceResolver {
@@ -82,7 +87,7 @@ func newReferenceResolver() *referenceResolver {
 
 		kubeObjectRegistry: map[string]func(map[string]any) (client.Object, error){
 			"v1/secrets":                            newKubeObjectFactory[corev1.Secret](),
-			"atlas.generated.mongodb.com/v1/groups": newKubeObjectFactory[v1.Group](),
+			"atlas.generated.mongodb.com/v1/groups": nilInstance,
 		},
 	}
 }
@@ -213,7 +218,7 @@ func (ref *namedRef) nameFor(prefix string, path []string) string {
 	if path[0] == "entry" {
 		path = path[1:]
 	}
-	return PrefixedName(prefix, path[0], path[1:]...)
+	return prefixedName(prefix, path[0], path[1:]...)
 }
 
 type kubeMapping struct {
