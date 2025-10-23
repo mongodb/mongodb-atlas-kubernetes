@@ -38,7 +38,7 @@ var (
 
 // Parse scans a YAML stream and returns the next CRD found.
 // If more than one CRD is present in the stream, calling again
-// on the same stream will return the next CRD found.
+// on the same stream returns the next CRD found.
 func Parse(scanner *bufio.Scanner) (*apiextensionsv1.CustomResourceDefinition, error) {
 	var buffer bytes.Buffer
 
@@ -80,6 +80,8 @@ func Parse(scanner *bufio.Scanner) (*apiextensionsv1.CustomResourceDefinition, e
 	return nil, io.EOF
 }
 
+// Decode reads raw content as bytes and tries to convertdecode as a CRD schema, or
+// will return an error if decoding fails
 func Decode(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
 	sch := runtime.NewScheme()
 	_ = scheme.AddToScheme(sch)

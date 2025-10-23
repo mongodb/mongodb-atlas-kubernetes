@@ -23,7 +23,8 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-// AssertMajorVersion checks the given majorVersion exists for the given kind and CRD version
+// AssertMajorVersion checks the given majorVersion exists for the given kind
+// and CRD version
 func AssertMajorVersion(specVersion *apiextensionsv1.CustomResourceDefinitionVersion, kind string, majorVersion string) error {
 	props, err := GetOpenAPIProperties(kind, specVersion)
 	if err != nil {
@@ -57,7 +58,8 @@ func CompileCRDSchema(openAPISchema *apiextensionsv1.JSONSchemaProps) (*jsonsche
 	return schema, nil
 }
 
-// SelectVersion returns the version from the CRD spec that matches the given version string
+// SelectVersion returns the version from the CRD spec that matches the given
+// version string
 func SelectVersion(spec *apiextensionsv1.CustomResourceDefinitionSpec, version string) *apiextensionsv1.CustomResourceDefinitionVersion {
 	if len(spec.Versions) == 0 {
 		return nil
@@ -73,7 +75,8 @@ func SelectVersion(spec *apiextensionsv1.CustomResourceDefinitionSpec, version s
 	return nil
 }
 
-// GetOpenAPIProperties digs up the schema properties of a given kind on a given CRD version
+// GetOpenAPIProperties digs up the schema properties of a given kind on a given
+// CRD version
 func GetOpenAPIProperties(kind string, version *apiextensionsv1.CustomResourceDefinitionVersion) (map[string]apiextensionsv1.JSONSchemaProps, error) {
 	if version == nil {
 		return nil, fmt.Errorf("missing version (nil) from %v spec", kind)
@@ -90,7 +93,8 @@ func GetOpenAPIProperties(kind string, version *apiextensionsv1.CustomResourceDe
 	return version.Schema.OpenAPIV3Schema.Properties, nil
 }
 
-// GetSpecPropertiesFor takes the properties value of a given field of a kind's properties set
+// GetSpecPropertiesFor takes the properties value of a given field of a kind's
+// properties set
 func GetSpecPropertiesFor(kind string, props map[string]apiextensionsv1.JSONSchemaProps, field string) (map[string]apiextensionsv1.JSONSchemaProps, error) {
 	prop, ok := props[field]
 	if !ok {

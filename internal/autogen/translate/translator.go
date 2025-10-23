@@ -32,14 +32,19 @@ type translator struct {
 	annotations  map[string]string
 }
 
+// Annotation returns the annotation value from the pinned translated schema
+// CRD version
 func (tr *translator) Annotation(annotation string) string {
 	return tr.annotations[annotation]
 }
 
+// MajorVersion returns the CRD pinned version
 func (tr *translator) MajorVersion() string {
 	return tr.majorVersion
 }
 
+// Validate would return any errors of the given unstructured object against the
+// pinned schema version being translated, or nil if the object is compliant
 func (tr *translator) Validate(unstructuredObj map[string]any) error {
 	if err := tr.jsonSchema.Validate(unstructuredObj); err != nil {
 		return fmt.Errorf("object validation failed against CRD schema: %w", err)

@@ -43,13 +43,14 @@ type PtrClientObj[T any] interface {
 	client.Object
 }
 
+// ErrNoMatchingPropertySelector when no property selectors matched the value
 var ErrNoMatchingPropertySelector = errors.New("no matching property selector found to set value")
 
-type EncodeDecodeFunc func(any) (any, error)
+type encodeDecodeFunc func(any) (any, error)
 
 type referenceResolver struct {
-	decoders           map[string]EncodeDecodeFunc
-	encoders           map[string]EncodeDecodeFunc
+	decoders           map[string]encodeDecodeFunc
+	encoders           map[string]encodeDecodeFunc
 	optionalExpansions map[string]struct{} // A set is better for lookups
 	kubeObjectRegistry map[string]func(map[string]any) (client.Object, error)
 }
@@ -57,7 +58,7 @@ type referenceResolver struct {
 func newReferenceResolver() *referenceResolver {
 	return &referenceResolver{
 
-		decoders: map[string]EncodeDecodeFunc{
+		decoders: map[string]encodeDecodeFunc{
 			"v1/secrets": func(in any) (any, error) {
 				s, ok := in.(string)
 				if !ok {
@@ -67,7 +68,7 @@ func newReferenceResolver() *referenceResolver {
 			},
 		},
 
-		encoders: map[string]EncodeDecodeFunc{
+		encoders: map[string]encodeDecodeFunc{
 			"v1/secrets": func(in any) (any, error) {
 				s, ok := in.(string)
 				if !ok {
@@ -126,9 +127,11 @@ func newRef(name string, rm *refMapping) *namedRef {
 	return &namedRef{name: name, refMapping: rm}
 }
 
+// Expand proceses the object at the given path to create and add a reference
+// as a new Kubernetes Object into the given context
 func (ref *namedRef) Expand(mc *context, pathHint []string, obj map[string]any) error {
 	path := ref.pathToExpand(pathHint)
-	rawValue, err := unstructured.AccessField[any](obj, unstructured.Base(path))
+	rawValue, err := unstructured.GetField[any](obj, unstructured.Base(path))
 	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	}
@@ -136,11 +139,11 @@ func (ref *namedRef) Expand(mc *context, pathHint []string, obj map[string]any) 
 		return fmt.Errorf("failed accessing value at path %v: %w", path, err)
 	}
 	refSolver := newReferenceResolver()
-	value, err := ref.XKubernetesMapping.Encode(refSolver, rawValue)
+	value, err := ref.XKubernetesMapping.encode(refSolver, rawValue)
 	if err != nil {
 		return fmt.Errorf("failed to encode value at path %v: %w", path, err)
 	}
-	gvr := ref.XKubernetesMapping.GVR()
+	gvr := ref.XKubernetesMapping.gvr()
 	depUnstructured, err := unstructuredKubeObjectFor(refSolver, gvr)
 	if err != nil {
 		return fmt.Errorf("failed to populate unstructured dependency: %w", err)
@@ -153,7 +156,7 @@ func (ref *namedRef) Expand(mc *context, pathHint []string, obj map[string]any) 
 		}
 		return fmt.Errorf("failed to populate final dependency object: %w", err)
 	}
-	name := ref.Name(mc.main.GetName(), path)
+	name := ref.nameFor(mc.main.GetName(), path)
 	if mc.has(name) {
 		return nil
 	}
@@ -169,26 +172,10 @@ func (ref *namedRef) Expand(mc *context, pathHint []string, obj map[string]any) 
 	return nil
 }
 
-// The pathHint points to the reference field itself (e.g., ["spec", "passwordSecretRef"]).
-// We need to find the raw value in the OpenAPI object, which is at a different path
-// (e.g., ["spec", "password"]). This function replaces the reference field name
-// with the target OpenAPI property name to get the correct path for expansion.
-func (ref *namedRef) pathToExpand(pathHint []string) []string {
-	path := make([]string, len(pathHint))
-	copy(path, pathHint)
-	path[len(path)-1] = unstructured.Base(resolveXPath(ref.XOpenAPIMapping.Property))
-	return path
-}
-
-func (ref *namedRef) Name(prefix string, path []string) string {
-	if path[0] == "entry" {
-		path = path[1:]
-	}
-	return PrefixedName(prefix, path[0], path[1:]...)
-}
-
+// Collapse proceses the object at the given path to follow a reference and
+// extract its value to write it in the given object at the appropriate path
 func (ref *namedRef) Collapse(mc *context, path []string, obj map[string]any) error {
-	reference, err := unstructured.AccessField[map[string]any](obj, unstructured.Base(path))
+	reference, err := unstructured.GetField[map[string]any](obj, unstructured.Base(path))
 	if errors.Is(err, unstructured.ErrNotFound) {
 		return nil
 	}
@@ -204,11 +191,29 @@ func (ref *namedRef) Collapse(mc *context, path []string, obj map[string]any) er
 	if !ok || key == "" {
 		key = unstructured.Base(targetPath)
 	}
-	value, err := ref.XKubernetesMapping.FetchReferencedValue(mc, key, reference)
+	value, err := ref.XKubernetesMapping.fetchReferencedValue(mc, key, reference)
 	if err != nil {
 		return fmt.Errorf("failed to fetch referenced value %s: %w", key, err)
 	}
 	return unstructured.CreateField(obj, value, targetPath...)
+}
+
+// The pathHint points to the reference field itself (e.g., ["spec", "passwordSecretRef"]).
+// We need to find the raw value in the OpenAPI object, which is at a different path
+// (e.g., ["spec", "password"]). This function replaces the reference field name
+// with the target OpenAPI property name to get the correct path for expansion.
+func (ref *namedRef) pathToExpand(pathHint []string) []string {
+	path := make([]string, len(pathHint))
+	copy(path, pathHint)
+	path[len(path)-1] = unstructured.Base(resolveXPath(ref.XOpenAPIMapping.Property))
+	return path
+}
+
+func (ref *namedRef) nameFor(prefix string, path []string) string {
+	if path[0] == "entry" {
+		path = path[1:]
+	}
+	return PrefixedName(prefix, path[0], path[1:]...)
 }
 
 type kubeMapping struct {
@@ -225,30 +230,30 @@ type kubeType struct {
 	Version  string `json:"version"`
 }
 
-func (km kubeMapping) GVK() string {
+func (km kubeMapping) gvk() string {
 	if km.Type.Group == "" {
 		return fmt.Sprintf("%s, Kind=%s", km.Type.Version, km.Type.Kind)
 	}
 	return fmt.Sprintf("%s/%s, Kind=%s", km.Type.Group, km.Type.Version, km.Type.Kind)
 }
 
-func (km kubeMapping) GVR() string {
+func (km kubeMapping) gvr() string {
 	if km.Type.Group == "" {
 		return fmt.Sprintf("%s/%s", km.Type.Version, km.Type.Resource)
 	}
 	return fmt.Sprintf("%s/%s/%s", km.Type.Group, km.Type.Version, km.Type.Resource)
 }
 
-func (km kubeMapping) Equal(gvk schema.GroupVersionKind) bool {
+func (km kubeMapping) equal(gvk schema.GroupVersionKind) bool {
 	return km.Type.Group == gvk.Group && km.Type.Version == gvk.Version && km.Type.Kind == gvk.Kind
 }
 
-func (km kubeMapping) FetchReferencedValue(mc *context, target string, reference map[string]any) (any, error) {
+func (km kubeMapping) fetchReferencedValue(mc *context, target string, reference map[string]any) (any, error) {
 	refPath := km.NameSelector
 	if refPath == "" {
 		return nil, fmt.Errorf("cannot solve reference without a %s.nameSelector", xKubeMappingKey)
 	}
-	refName, err := unstructured.AccessField[string](reference, unstructured.AsPath(refPath)...)
+	refName, err := unstructured.GetField[string](reference, unstructured.AsPath(refPath)...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access field %q at %v: %w", refPath, reference, err)
 	}
@@ -257,8 +262,8 @@ func (km kubeMapping) FetchReferencedValue(mc *context, target string, reference
 		return nil, fmt.Errorf("failed to find Kubernetes resource %q: %w", refName, err)
 	}
 	gvk := resource.GetObjectKind().GroupVersionKind()
-	if km.Type.Kind != "" && !km.Equal(gvk) {
-		return nil, fmt.Errorf("resource %q had to be a %q but got %q", refName, km.GVK(), gvk)
+	if km.Type.Kind != "" && !km.equal(gvk) {
+		return nil, fmt.Errorf("resource %q had to be a %q but got %q", refName, km.gvk(), gvk)
 	}
 	resourceMap, err := unstructured.ToUnstructured(resource)
 	if err != nil {
@@ -279,19 +284,19 @@ func (km kubeMapping) FetchReferencedValue(mc *context, target string, reference
 		}
 	}
 	refSolver := newReferenceResolver()
-	return km.Decode(refSolver, value)
+	return km.decode(refSolver, value)
 }
 
-func (km kubeMapping) Decode(refSolver *referenceResolver, value any) (any, error) {
-	decode := refSolver.decoders[km.GVR()]
+func (km kubeMapping) decode(refSolver *referenceResolver, value any) (any, error) {
+	decode := refSolver.decoders[km.gvr()]
 	if decode != nil {
 		return decode(value)
 	}
 	return value, nil
 }
 
-func (km kubeMapping) Encode(refSolver *referenceResolver, value any) (any, error) {
-	encode := refSolver.encoders[km.GVR()]
+func (km kubeMapping) encode(refSolver *referenceResolver, value any) (any, error) {
+	encode := refSolver.encoders[km.gvr()]
 	if encode != nil {
 		return encode(value)
 	}
@@ -301,7 +306,7 @@ func (km kubeMapping) Encode(refSolver *referenceResolver, value any) (any, erro
 func (km kubeMapping) fetchFromProperties(resource map[string]any) (any, error) {
 	for _, prop := range km.Properties {
 		path := resolveXPath(prop)
-		value, err := unstructured.AccessField[any](resource, path...)
+		value, err := unstructured.GetField[any](resource, path...)
 		if errors.Is(err, unstructured.ErrNotFound) {
 			continue
 		}
@@ -320,7 +325,7 @@ func (km kubeMapping) fetchFromPropertySelectors(resource map[string]any, target
 			prop = fmt.Sprintf("%s.%s", prop[:len(prop)-2], target)
 		}
 		path := resolveXPath(prop)
-		value, err := unstructured.AccessField[any](resource, path...)
+		value, err := unstructured.GetField[any](resource, path...)
 		if errors.Is(err, unstructured.ErrNotFound) {
 			continue
 		}
@@ -351,7 +356,7 @@ func (km kubeMapping) setAtPropertySelectors(refSolver *referenceResolver, gvr s
 		if err != nil {
 			return nil, fmt.Errorf("failed to read Kubernetes object contents: %w", err)
 		}
-		valueCopy, err := unstructured.AccessField[any](unstructuredCopy, path...)
+		valueCopy, err := unstructured.GetField[any](unstructuredCopy, path...)
 		if reflect.DeepEqual(value, valueCopy) {
 			return obj, nil
 		}

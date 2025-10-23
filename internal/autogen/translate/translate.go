@@ -65,7 +65,8 @@ type APIExporter[T any] interface {
 	ToAPI(tr *Request, target *T) error
 }
 
-// ToAPI translates a source Kubernetes spec into a target API structure
+// ToAPI translates a source Kubernetes spec into a target API structure.
+// It uses the spec only to populate ethe API request, nothing from the status.
 func ToAPI[T any](r *Request, target *T, source client.Object) error {
 	exporter, ok := (source).(APIExporter[T])
 	if ok {
@@ -80,7 +81,7 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 	}
 	targetUnstructured := map[string]any{}
 
-	if err := CollapseReferences(r, unstructuredSrc, source); err != nil {
+	if err := collapseReferences(r, unstructuredSrc, source); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
@@ -89,27 +90,15 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
 	}
 
-	value, err := unstructured.AccessField[map[string]any](unstructuredSrc, "spec", r.Translator.MajorVersion())
+	value, err := unstructured.GetField[map[string]any](unstructuredSrc, "spec", r.Translator.MajorVersion())
 	if err != nil {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
+	unstructured.CopyFields(targetUnstructured, value)
 	rawEntry := value["entry"]
 	if entry, ok := rawEntry.(map[string]any); ok {
-		unstructured.CopyFields(targetUnstructured, unstructured.SkipKeys(value, "entry"))
-		entryPathInTarget := []string{}
-		dst := targetUnstructured
-		if len(entryPathInTarget) > 0 {
-			newValue := map[string]any{}
-			if err = unstructured.CreateField(targetUnstructured, newValue, entryPathInTarget...); err != nil {
-				return fmt.Errorf("failed to set target copy destination to path %v: %w", entryPathInTarget, err)
-			}
-			dst = newValue
-		}
-		unstructured.CopyFields(dst, entry)
-	} else {
-		unstructured.CopyFields(targetUnstructured, value)
+		unstructured.CopyFields(targetUnstructured, entry)
 	}
-	delete(targetUnstructured, "groupref")
 	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
 		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
 	}
@@ -117,6 +106,8 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 }
 
 // FromAPI translates a source API structure into a Kubernetes object.
+// The API source is used to populate the Kubernetes spec, including the
+// spec.entry and status as well.
 func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source *S) ([]client.Object, error) {
 	importer, ok := any(source).(APIImporter[T, P])
 	if ok {
@@ -132,24 +123,24 @@ func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source 
 		return nil, fmt.Errorf("failed to convert target value to unstructured: %w", err)
 	}
 
-	versionedSpec, err := unstructured.AccessOrCreateField(
+	versionedSpec, err := unstructured.GetOrCreateField(
 		targetUnstructured, map[string]any{}, "spec", r.Translator.MajorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("failed to ensure versioned spec object in unstructured target: %w", err)
 	}
-	unstructured.CopyFields(versionedSpec, sourceUnstructured)
+	versionedStatus, err := unstructured.GetOrCreateField(
+		targetUnstructured, map[string]any{}, "status", r.Translator.MajorVersion())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create versioned status object in unstructured target: %w", err)
+	}
 
+	unstructured.CopyFields(versionedSpec, sourceUnstructured)
 	versionedSpecEntry := map[string]any{}
 	unstructured.CopyFields(versionedSpecEntry, sourceUnstructured)
 	versionedSpec["entry"] = versionedSpecEntry
-
-	versionedStatus := map[string]any{}
 	unstructured.CopyFields(versionedStatus, sourceUnstructured)
-	if err := unstructured.CreateField(targetUnstructured, versionedStatus, "status", r.Translator.MajorVersion()); err != nil {
-		return nil, fmt.Errorf("failed to create versioned status object in unsstructured target: %w", err)
-	}
 
-	extraObjects, err := ExpandReferences(r, targetUnstructured, target)
+	extraObjects, err := expandReferences(r, targetUnstructured, target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process API mappings: %w", err)
 	}
@@ -162,7 +153,27 @@ func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source 
 	return append([]client.Object{target}, extraObjects...), nil
 }
 
-func ExpandReferences(r *Request, obj map[string]any, main client.Object) ([]client.Object, error) {
+// collapseReferences finds all Kubernetes references, solves them and collapses
+// them by replacing their values from the reference (e.g kubernetes secret or
+// group), into the corresponding API field
+func collapseReferences(r *Request, obj map[string]any, main client.Object) error {
+	h := refs.NewHandler(main, r.Dependencies)
+	mappingsYML := r.Translator.Annotation(APIMAppingsAnnotation)
+	if mappingsYML == "" {
+		return nil
+	}
+	mappings := map[string]any{}
+	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
+		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
+	}
+
+	return h.CollapseReferences(obj, mappings, "spec", r.Translator.MajorVersion())
+}
+
+// expandReferences finds all API fields that must be referenced, and expand
+// such reference, moving the value (e.g. sensitive field or group id) to a
+// referenced Kubernetes object (e.g. kubernets secret or Atlas Group)
+func expandReferences(r *Request, obj map[string]any, main client.Object) ([]client.Object, error) {
 	h := refs.NewHandler(main, r.Dependencies)
 	mappingsYML := r.Translator.Annotation(APIMAppingsAnnotation)
 	if mappingsYML == "" {
@@ -187,17 +198,4 @@ func ExpandReferences(r *Request, obj map[string]any, main client.Object) ([]cli
 		}
 	}
 	return h.Added(), nil
-}
-
-func CollapseReferences(r *Request, obj map[string]any, main client.Object) error {
-	h := refs.NewHandler(main, r.Dependencies)
-	mappingsYML := r.Translator.Annotation(APIMAppingsAnnotation)
-	if mappingsYML == "" {
-		return nil
-	}
-	mappings := map[string]any{}
-	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
-		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
-	}
-	return h.CollapseReferences(obj, mappings, "spec", r.Translator.MajorVersion())
 }

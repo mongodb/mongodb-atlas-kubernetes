@@ -103,7 +103,7 @@ func TestCreateAndAccessField(t *testing.T) {
 	require.NoError(t, err)
 	want := "value"
 	require.NoError(t, unstructured.CreateField(sampleMap, "value", "SubObj", "field"))
-	got, err := unstructured.AccessField[string](sampleMap, "SubObj", "field")
+	got, err := unstructured.GetField[string](sampleMap, "SubObj", "field")
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -253,7 +253,7 @@ func TestAccessOrCreateField(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			got, err := unstructured.AccessOrCreateField(tc.obj, tc.defaultValue, tc.path...)
+			got, err := unstructured.GetOrCreateField(tc.obj, tc.defaultValue, tc.path...)
 			if tc.wantErr != "" {
 				require.Nil(t, got)
 				assert.ErrorContains(t, err, tc.wantErr)
