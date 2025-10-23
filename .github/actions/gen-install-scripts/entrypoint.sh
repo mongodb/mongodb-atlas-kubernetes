@@ -16,6 +16,12 @@
 
 set -xeou pipefail
 
+cd /home/helder/IdeaProjects/MongoDB/mongodb-atlas-kubernetes
+
+INPUT_IMAGE_URL=${INPUT_IMAGE_URL:-"mongodb/atlas-kubernetes-operator:2.11.1"}
+INPUT_ENV=${INPUT_ENV:-"dev"}
+INPUT_VERSION=${INPUT_VERSION:-"2.11.1"}
+
 # copy the initial bundle dir state from teh latest released bundle
 mkdir -p bundle/manifests
 cp config/manifests-template/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml bundle/manifests
@@ -32,7 +38,8 @@ mkdir -p "${crds_dir}"
 mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
-make generate
+# controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+make manifests
 cd config/manager
 touch kustomization.yaml
 kustomize edit add resource bases/
@@ -44,7 +51,7 @@ which kustomize
 kustomize version
 
 # all-in-one
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" >"${target_dir}/all-in-one.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
 echo "Created all-in-one config"
 
 # clusterwide
