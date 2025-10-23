@@ -31,19 +31,19 @@ mkdir -p "${namespaced_dir}"
 mkdir -p "${crds_dir}"
 mkdir -p "${openshift}"
 
+which kustomize
+kustomize version
+
 # Generate configuration and save it to `all-in-one`
 controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 touch config/crd/bases/kustomization.yaml
-sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
+sh -c 'cd config/crd/bases; kustomize edit add resource *.yaml kustomization.yaml'
 cd config/manager
 touch kustomization.yaml
 kustomize edit add resource bases/
 kustomize edit set image controller="${INPUT_IMAGE_URL}"
 cd -
 ./scripts/split_roles_yaml.sh
-
-which kustomize
-kustomize version
 
 # all-in-one
 kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
