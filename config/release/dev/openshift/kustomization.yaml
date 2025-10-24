@@ -15,6 +15,12 @@ resources:
 - ../../../rbac/namespaced
 
 patches:
+  - path: ../dev_patch.json
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: mongodb-atlas-operator
   - path: manager_watch_namespace_patch.json
     target:
       group: apps

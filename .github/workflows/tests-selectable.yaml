@@ -170,29 +170,25 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
-
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
-      - name: Generate configuration for the tests
-        uses: ./.github/actions/gen-install-scripts
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.14.0
         with:
-          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
+          enable-cache: 'true'
+      - name: Prepare bundle
+        env:
+          OPERATOR_IMAGE: ${{ env.GHCR_REPO }}
           VERSION: ${{ needs.detect-tests.outputs.next_version }}
-          ENV: dev
-
-      - name: Change URL for the test
         run: |
-          id
-          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-
+          devbox run -- make bundle-dev
       - name: Cache repo files
         uses: actions/cache@v4
         with:
           path: |
             ./*
           key: ${{ github.sha }}
-
       - name: Prepare docker tag
         id: prepare-docker-bundle-tag
         run: |
@@ -200,10 +196,8 @@ jobs:
           TAG=${{ steps.prepare.outputs.tag }}
           TAGS="${REPOSITORY}:${TAG}"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
-
       - name: Log in to ghcr.io registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
@@ -292,11 +286,11 @@ jobs:
           echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
 
       - name: Generate configuration for the tests
-        uses: ./.github/actions/gen-install-scripts
-        with:
-          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
+        env:
+          IMAGE_URL: ${{ env.GHCR_REPO }}
           VERSION: ${{ needs.detect-tests.outputs.next_version }}
-          ENV: dev
+        run: |
+          devbox run -- make bundle-dev
 
       - name: Change path for the test
         run: |
