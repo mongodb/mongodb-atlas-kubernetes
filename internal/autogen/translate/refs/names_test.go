@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package refs_test
+package refs
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/refs"
 )
 
 func TestPrefixedName(t *testing.T) {
@@ -51,7 +49,7 @@ func TestPrefixedName(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			got := refs.PrefixedName(tc.prefix, tc.name, tc.args...)
+			got := prefixedName(tc.prefix, tc.name, tc.args...)
 			assert.Equal(t, tc.want, got)
 		})
 	}

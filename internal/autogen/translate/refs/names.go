@@ -21,8 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
-// HashNames will return a hash corresponding to a name and optional arguments
-func HashNames(name string, args ...string) string {
+// hashNames will return a hash corresponding to a name and optional arguments
+func hashNames(name string, args ...string) string {
 	hasher := fnv.New64a()
 	hasher.Write([]byte(name))
 	for _, arg := range args {
@@ -33,7 +33,7 @@ func HashNames(name string, args ...string) string {
 	return rand.SafeEncodeString(fmt.Sprint(rawHash))
 }
 
-// PrefixedName produces {prefix}-{hash} by using HashNames
-func PrefixedName(prefix string, name string, args ...string) string {
-	return fmt.Sprintf("%s-%s", prefix, HashNames(name, args...))
+// prefixedName produces {prefix}-{hash} by using HashNames
+func prefixedName(prefix string, name string, args ...string) string {
+	return fmt.Sprintf("%s-%s", prefix, hashNames(name, args...))
 }

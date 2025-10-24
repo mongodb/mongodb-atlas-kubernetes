@@ -27,14 +27,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/translate/unstructured"
 )
 
-const (
-	APIMAppingsAnnotation = "api-mappings"
-)
-
 // Translator allows to translate back and forth between a CRD schema
 // and SDK API structures of a certain version.
 // A translator is an immutable configuration object, it can be safely shared
-// across threads
+// across goroutines
 type Translator interface {
 	// MajorVersion returns the pinned SDK major version
 	MajorVersion() string
@@ -158,7 +154,7 @@ func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source 
 // group), into the corresponding API field
 func collapseReferences(r *Request, obj map[string]any, main client.Object) error {
 	h := refs.NewHandler(main, r.Dependencies)
-	mappingsYML := r.Translator.Annotation(APIMAppingsAnnotation)
+	mappingsYML := r.Translator.Annotation(refs.APIMAppingsAnnotation)
 	if mappingsYML == "" {
 		return nil
 	}
@@ -175,7 +171,7 @@ func collapseReferences(r *Request, obj map[string]any, main client.Object) erro
 // referenced Kubernetes object (e.g. kubernets secret or Atlas Group)
 func expandReferences(r *Request, obj map[string]any, main client.Object) ([]client.Object, error) {
 	h := refs.NewHandler(main, r.Dependencies)
-	mappingsYML := r.Translator.Annotation(APIMAppingsAnnotation)
+	mappingsYML := r.Translator.Annotation(refs.APIMAppingsAnnotation)
 	if mappingsYML == "" {
 		return []client.Object{}, nil
 	}
