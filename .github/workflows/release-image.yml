@@ -225,11 +225,11 @@ jobs:
 
       # Link updates to pr: all-in-one.yml, helm-updates, sdlc requirements
       - name: Generate deployment configurations
-        uses: ./.github/actions/gen-install-scripts
-        with:
+        env:
           ENV: prod
           VERSION: ${{ env.VERSION }}
-          IMAGE_URL: ${{ env.DOCKER_IMAGE_URL }}
+          IMAGE_URL: ${{ needs.compute-repo.outputs.repo }}
+        run: devbox run -- make bundle
 
       - name: Bump Helm chart version
         run: devbox run -- ./scripts/bump-helm-chart-version.sh
