@@ -103,6 +103,12 @@ func (g *AwsResourcesGenerator) CreatePolicy(name string, policy func() IAMPolic
 	input := &iam.CreatePolicyInput{
 		PolicyDocument: policy(),
 		PolicyName:     aws.String(name),
+		Tags: []*iam.Tag{
+			{Key: aws.String(OwnerTag), Value: aws.String(AKOTeam)},
+			{Key: aws.String(OwnerEmailTag), Value: aws.String(AKOEmail)},
+			{Key: aws.String(CostCenterTag), Value: aws.String(AKOCostCenter)},
+			{Key: aws.String(EnvironmentTag), Value: aws.String(AKOEnvTest)},
+		},
 	}
 
 	r, err := g.iamClient.CreatePolicy(input)
@@ -175,6 +181,24 @@ func (g *AwsResourcesGenerator) CreateBucket(name string) error {
 	_, err := g.s3Client.CreateBucket(input)
 	if err != nil {
 		return fmt.Errorf("failed to create aws bucket: %w", err)
+	}
+
+	tagSet := &s3.Tagging{
+		TagSet: []*s3.Tag{
+			{Key: aws.String(OwnerTag), Value: aws.String(AKOTeam)},
+			{Key: aws.String(OwnerEmailTag), Value: aws.String(AKOEmail)},
+			{Key: aws.String(CostCenterTag), Value: aws.String(AKOCostCenter)},
+			{Key: aws.String(EnvironmentTag), Value: aws.String(AKOEnvTest)},
+		},
+	}
+
+	taggingInput := &s3.PutBucketTaggingInput{
+		Bucket:  aws.String(name),
+		Tagging: tagSet,
+	}
+
+	if _, err := g.s3Client.PutBucketTagging(taggingInput); err != nil {
+		return fmt.Errorf("failed to tag bucket %s: %w", name, err)
 	}
 
 	return nil

@@ -21,6 +21,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
+
+	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 )
 
 type AssumeRolePolicyDocument struct {
@@ -102,6 +104,12 @@ func CreateAWSIAMRole(roleName string) (string, error) {
 	roleInput := iam.CreateRoleInput{}
 	roleInput.SetRoleName(roleName)
 	roleInput.SetAssumeRolePolicyDocument(policy)
+	roleInput.Tags = []*iam.Tag{
+		{Key: aws.String(awshelper.OwnerTag), Value: aws.String(awshelper.AKOTeam)},
+		{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
+		{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
+		{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
+	}
 	//roleInput.SetTags([]*iam.Tag{
 	//	{
 	//		Key:   aws.String(config.TagForTestKey),
