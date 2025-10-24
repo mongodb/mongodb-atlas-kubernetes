@@ -19,6 +19,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
+
+	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 )
 
 func CreateVPC(name, cidr, region string) (string, error) {
@@ -34,6 +36,9 @@ func CreateVPC(name, cidr, region string) (string, error) {
 			ResourceType: aws.String(ec2.ResourceTypeVpc),
 			Tags: []*ec2.Tag{
 				{Key: aws.String("Name"), Value: aws.String(name)},
+				{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
+				{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
+				{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
 			},
 		}},
 	})

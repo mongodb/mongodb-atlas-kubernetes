@@ -31,6 +31,7 @@ import (
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 )
 
 type AwsAction struct {
@@ -84,6 +85,12 @@ func (a *AwsAction) CreateKMS(alias, region, atlasAccountArn, assumedRoleArn str
 		MultiRegion: aws.Bool(false),
 		Origin:      aws.String("AWS_KMS"),
 		Policy:      aws.String(policyString),
+		Tags: []*kms.Tag{
+			{TagKey: aws.String(awshelper.OwnerTag), TagValue: aws.String(awshelper.AKOTeam)},
+			{TagKey: aws.String(awshelper.OwnerEmailTag), TagValue: aws.String(awshelper.AKOEmail)},
+			{TagKey: aws.String(awshelper.CostCenterTag), TagValue: aws.String(awshelper.AKOCostCenter)},
+			{TagKey: aws.String(awshelper.EnvironmentTag), TagValue: aws.String(awshelper.AKOEnvTest)},
+		},
 	})
 
 	if err != nil {
@@ -407,6 +414,10 @@ func (a *AwsAction) createVPC(name, cidr, region string) (string, error) {
 			ResourceType: aws.String(ec2.ResourceTypeVpc),
 			Tags: []*ec2.Tag{
 				{Key: aws.String("Name"), Value: aws.String(name)},
+				{Key: aws.String(awshelper.OwnerTag), Value: aws.String(awshelper.AKOTeam)},
+				{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
+				{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
+				{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
 			},
 		}},
 	}
@@ -485,6 +496,10 @@ func (a *AwsAction) createSubnet(vpcID, name, cidr, region, az string) (*string,
 			ResourceType: aws.String(ec2.ResourceTypeSubnet),
 			Tags: []*ec2.Tag{
 				{Key: aws.String("Name"), Value: aws.String(name)},
+				{Key: aws.String(awshelper.OwnerTag), Value: aws.String(awshelper.AKOTeam)},
+				{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
+				{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
+				{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
 			},
 		}},
 		VpcId:            aws.String(vpcID),
