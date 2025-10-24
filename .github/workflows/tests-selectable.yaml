@@ -180,7 +180,7 @@ jobs:
       - name: Prepare bundle
         env:
           OPERATOR_IMAGE: ${{ env.GHCR_REPO }}
-          VERSION: ${{ needs.detect-tests.outputs.next_version }}
+          VERSION: ${{ steps.prepare.outputs.tag }}
         run: |
           devbox run -- make bundle-dev
       - name: Cache repo files
@@ -288,7 +288,7 @@ jobs:
       - name: Generate configuration for the tests
         env:
           IMAGE_URL: ${{ env.GHCR_REPO }}
-          VERSION: ${{ needs.detect-tests.outputs.next_version }}
+          VERSION: ${{ steps.prepare.outputs.tag }}
         run: |
           devbox run -- make bundle-dev
 
