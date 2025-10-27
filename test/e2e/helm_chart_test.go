@@ -39,11 +39,11 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 	skipped := false
 
 	_ = BeforeAll(func() {
-		cli.Execute("kubectl", "delete", "--ignore-not-found=true", "-f", "../../deploy/crds").Wait().Out.Contents()
+		cli.Execute("kubectl", "delete", "--ignore-not-found=true", "-f", "../../config/crd/bases").Wait().Out.Contents()
 	})
 
 	_ = AfterAll(func() {
-		cli.Execute("kubectl", "apply", "-f", "../../deploy/crds").Wait().Out.Contents()
+		cli.Execute("kubectl", "apply", "-f", "../../config/crd/bases").Wait().Out.Contents()
 	})
 
 	_ = BeforeEach(func() {
