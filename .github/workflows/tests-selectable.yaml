@@ -265,8 +265,8 @@ jobs:
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-          IMAGE_URL: "${{ env.GHCR_REPO }}:${{ steps.detect-tests.outputs.image_tag }}"
-          BUNDLE_IMAGE: "${{ env.GHCR_BUNDLES_REPO}}:${{ steps.detect-tests.outputs.image_tag }}"
+          IMAGE_URL: "${{ env.GHCR_REPO }}:${{ needs.detect-tests.outputs.image_tag }}"
+          BUNDLE_IMAGE: "${{ env.GHCR_BUNDLES_REPO}}:${{ needs.detect-tests.outputs.image_tag }}"
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
           IMAGE_PULL_SECRET_USERNAME: $
           IMAGE_PULL_SECRET_PASSWORD: "${{ secrets.GITHUB_TOKEN }}"
