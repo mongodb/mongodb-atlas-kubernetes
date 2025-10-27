@@ -93,11 +93,13 @@ jobs:
         id: read_version
         run: |
           VERSION=$(jq -r '.next' version.json)
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}" >> ${GITHUB_OUTPUT}
+          echo "Read version: ${VERSION}"
           
           COMMIT=$(git rev-parse --short HEAD)
           IMAGE_TAG="${VERSION}-BUILD-${COMMIT}"
-          echo "image_tag=${IMAGE_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "image_tag=${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
+          echo "Computed image tag: ${IMAGE_TAG}"
 
   compute:
     needs: detect-tests
@@ -155,7 +157,9 @@ jobs:
         with:
           file: fast.Dockerfile
           version: ${{ needs.detect-tests.outputs.version }}
-          tags: ${{ env.GHCR_REPO }}:${{ steps.detect-tests.outputs.image_tag }},${{ env.GHCR_BUNDLES_REPO }}:${{ steps.detect-tests.outputs.image_tag }}
+          tags: |
+            ${{ env.GHCR_REPO }}:${{ needs.detect-tests.outputs.image_tag }}
+            ${{ env.GHCR_BUNDLES_REPO }}:${{ needs.detect-tests.outputs.image_tag }}
           platforms: linux/amd64
           push_to_docker: false
 
