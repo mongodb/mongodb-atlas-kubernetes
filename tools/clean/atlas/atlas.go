@@ -121,6 +121,7 @@ func (c *Cleaner) cleanOrphanResources(ctx context.Context, lifetimeHours int) {
 		"europe-west3",
 		"europe-north1",
 		"europe-west6",
+		"europe-west1",
 		"asia-east2",
 		"asia-northeast2",
 		"australia-southeast2",
