@@ -57,7 +57,6 @@ const (
 	// TODO get from GCP
 	GoogleProjectID     = "atlasoperator" // Google Cloud Project ID
 	googleConnectPrefix = "ao"            // Private Service Connect Endpoint Prefix
-	gcpSubnetIPMask     = "10.0.0.%d"
 	googleKeyName       = "projects/atlasoperator/locations/global/keyRings/atlas-operator-test-key-ring/cryptoKeys/encryption-at-rest-test-key"
 )
 
