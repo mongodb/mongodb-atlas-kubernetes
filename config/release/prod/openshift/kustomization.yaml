@@ -3,10 +3,12 @@ namespace: mongodb-atlas-system
 namePrefix: mongodb-atlas-
 
 # Labels to add to all resources and selectors.
-commonLabels:
-  app.kubernetes.io/component: controller
-  app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
-  app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+labels:
+  - pairs:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+      app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    includeSelectors: true
 
 resources:
 - ../../../manager

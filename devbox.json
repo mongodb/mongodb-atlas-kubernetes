@@ -7,7 +7,7 @@
     "act": "latest",
     "kubectl": "latest",
     "docker": "latest",
-    "kustomize": "4.3",
+    "kustomize": "latest",
     "git": "latest",
     "gettext": "latest",
     "wget": "latest",

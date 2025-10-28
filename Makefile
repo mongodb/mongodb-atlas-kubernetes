@@ -1,8 +1,13 @@
 # fix for some Linux distros (i.e. WSL)
 SHELL := /usr/bin/env bash
 
-# CONTAINER ENGINE: docker | podman
-CONTAINER_ENGINE?=docker
+CONTAINER_ENGINE ?= docker
+CONTROLLER_GEN ?= controller-gen
+KUSTOMIZE ?= kustomize
+OPERATOR_SDK ?= operator-sdk
+JQ ?= jq
+YQ ?= yq
+AWK ?= awk
 
 DOCKER_SBOM_PLUGIN_VERSION=0.6.1
 
@@ -12,6 +17,7 @@ DOCKER_SBOM_PLUGIN_VERSION=0.6.1
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION_FILE=version.json
+CURRENT_VERSION := $(shell $(JQ) -r .current $(VERSION_FILE))
 VERSION ?= $(shell git describe --always --tags --dirty --broken | cut -c 2-)
 BUILDTIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GITCOMMIT ?= $(shell git rev-parse --short HEAD 2> /dev/null || true)
@@ -118,7 +124,6 @@ GINKGO=ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT) $(shell pwd)/$@
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
 GO_LICENSES_VERSION = 1.6.0
-KUSTOMIZE = kustomize
 DISALLOWED_LICENSES = restricted,reciprocal
 
 SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
@@ -141,6 +146,41 @@ KONDUKTO_BRANCH_PREFIX=$(shell git rev-parse --abbrev-ref HEAD)
 HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
 HELM_AKO_NAMESPACE = $(OPERATOR_NAMESPACE)
+
+# Build environment (e.g., dev, prod)
+ENV ?= dev
+
+# --- Config Source Directories ---
+CONFIG_CRD_BASES := config/crd/bases
+CONFIG_MANAGER := config/manager
+CONFIG_MANIFESTS_TPL := config/manifests-template
+CONFIG_MANIFESTS := config/manifests
+CONFIG_CRD := config/crd
+CONFIG_RBAC := config/rbac
+
+# ---  Target Directories ---
+TARGET_DIR := deploy
+CLUSTERWIDE_DIR := $(TARGET_DIR)/clusterwide
+NAMESPACED_DIR := $(TARGET_DIR)/namespaced
+CRDS_DIR := $(TARGET_DIR)/crds
+OPENSHIFT_DIR := $(TARGET_DIR)/openshift
+BUNDLE_DIR := bundle
+BUNDLE_MANIFESTS_DIR := $(BUNDLE_DIR)/manifests
+RELEASE_ALLINONE := config/release/$(ENV)/allinone
+RELEASE_CLUSTERWIDE := config/release/$(ENV)/clusterwide
+RELEASE_OPENSHIFT := config/release/$(ENV)/openshift
+RELEASE_NAMESPACED := config/release/$(ENV)/namespaced
+
+# --- File Targets ---
+ALL_IN_ONE_CONFIG := $(TARGET_DIR)/all-in-one.yaml
+CLUSTERWIDE_CONFIG := $(CLUSTERWIDE_DIR)/clusterwide-config.yaml
+CLUSTERWIDE_CRDS := $(CLUSTERWIDE_DIR)/crds.yaml
+NAMESPACED_CONFIG := $(NAMESPACED_DIR)/namespaced-config.yaml
+NAMESPACED_CRDS := $(NAMESPACED_DIR)/crds.yaml
+OPENSHIFT_CONFIG := $(OPENSHIFT_DIR)/openshift.yaml
+OPENSHIFT_CRDS := $(OPENSHIFT_DIR)/crds.yaml
+CSV_FILE := $(BUNDLE_MANIFESTS_DIR)/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+BUNDLE_DOCKERFILE := bundle.Dockerfile
 
 GH_RUN_ID=$(shell gh run list -w Test -b main -e schedule -s success --json databaseId | jq '.[0] | .databaseId')
 
@@ -250,13 +290,13 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: ## Generate manifests e.g. CRD, RBAC etc.
-	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	touch config/crd/bases/kustomization.yaml
 	sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
 	@./scripts/split_roles_yaml.sh
 ifdef EXPERIMENTAL
 	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
-	controller-gen crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds; \
+	$(CONTROLLER_GEN) crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds; \
 	else \
 	echo "No experimental CRDs found, skipping apply."; \
 	fi
@@ -282,9 +322,9 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
 ifdef EXPERIMENTAL
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
 endif
 	go tool -modfile=tools/toolbox/go.mod mockery
 	$(MAKE) fmt
@@ -323,10 +363,6 @@ validate-crds-chart: ## Validate the CRDs in the Helm chart
 	done
 	@echo "All CRD files match"
 	@cd helm-charts/atlas-operator-crds && helm template . > /dev/null
-
-.PHONY: bundle
-bundle: manifests  ## Generate bundle manifests and metadata, then validate generated files.
-	INPUT_VERSION=$(VERSION) INPUT_ENV=prod INPUT_IMAGE_URL=$(IMG) sh ./.github/actions/gen-install-scripts/entrypoint.sh
 
 .PHONY: image
 image: ## Build an operator image for local development
@@ -674,3 +710,105 @@ all-lints: fmt lint validate-manifests validate-api-docs check-licenses addlicen
 .PHONY: ci
 ci: unit-test all-lints
 	@echo "✅ CI PASSED all checks"
+
+prepare-dirs:
+	@echo "Creating directories..."
+	@mkdir -p $(BUNDLE_MANIFESTS_DIR)
+	@mkdir -p $(CLUSTERWIDE_DIR)
+	@mkdir -p $(NAMESPACED_DIR)
+	@mkdir -p $(CRDS_DIR)
+	@mkdir -p $(OPENSHIFT_DIR)
+
+$(CSV_FILE): prepare-dirs
+	@cp $(CONFIG_MANIFESTS_TPL)/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml $@
+
+update-manager-kustomization:
+	@echo "Updating manager kustomization..."
+	@cd $(CONFIG_MANAGER); \
+		touch kustomization.yaml; \
+		$(KUSTOMIZE) edit add resource bases/; \
+		$(KUSTOMIZE) edit set image controller="$(OPERATOR_IMAGE):$(VERSION)";
+	@echo "Manager image set to $(OPERATOR_IMAGE)"
+
+$(ALL_IN_ONE_CONFIG): manifests update-manager-kustomization
+	@echo "Building all-in-one manifest..."
+	@$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone "$(RELEASE_ALLINONE)" > $@
+	@echo "Created $@"
+
+$(CLUSTERWIDE_CONFIG): manifests update-manager-kustomization
+	@echo "Building clusterwide config..."
+	@$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone "$(RELEASE_CLUSTERWIDE)" > $@
+	@echo "Created $@"
+
+$(CLUSTERWIDE_CRDS): manifests update-manager-kustomization
+	@echo "Building clusterwide CRDs..."
+	@$(KUSTOMIZE) build "$(CONFIG_CRD)" > $@
+	@echo "Created $@"
+
+$(NAMESPACED_CONFIG): manifests update-manager-kustomization
+	@echo "Building namespaced config..."
+	@$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone "$(RELEASE_NAMESPACED)" > $@
+	@echo "Created $@"
+
+$(NAMESPACED_CRDS): manifests update-manager-kustomization
+	@echo "Building namespaced CRDs..."
+	@$(KUSTOMIZE) build "$(CONFIG_CRD)" > $@
+	@echo "Created $@"
+
+$(OPENSHIFT_CONFIG): manifests update-manager-kustomization
+	@echo "Building OpenShift namespaced config..."
+	@$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone "$(RELEASE_OPENSHIFT)" > $@
+	@echo "Created $@"
+
+$(OPENSHIFT_CRDS): manifests update-manager-kustomization
+	@echo "Building OpenShift namespaced CRDs..."
+	@$(KUSTOMIZE) build "$(CONFIG_CRD)" > $@
+	@echo "Created $@"
+
+release: $(ALL_IN_ONE_CONFIG) $(CLUSTERWIDE_CONFIG) $(CLUSTERWIDE_CRDS) $(NAMESPACED_CONFIG) $(NAMESPACED_CRDS) $(OPENSHIFT_CONFIG) $(OPENSHIFT_CRDS)
+	@find config/crd/bases -type f ! -name 'kustomization.yaml' -exec cp {} "$(CRDS_DIR)" \;
+	@echo "Release files prepared successfully."
+
+bundle-validate:
+	@echo "Validating bundle..."
+	@$(OPERATOR_SDK) bundle validate ./$(BUNDLE_DIR)
+	@echo "Bundle validation successful."
+
+bundle: prepare-dirs $(CSV_FILE) release
+	@echo "Preparing bundle kustomization..." \
+		$(OPERATOR_SDK) generate kustomize manifests --input-dir=$(CONFIG_MANIFESTS_TPL) --interactive=false -q --apis-dir=api; \
+		echo "Bundle kustomization generated in $(CONFIG_MANIFESTS).";
+
+	@echo "Building release bundle for version $(VERSION)..."; \
+		$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone $(CONFIG_MANIFESTS) | \
+			$(OPERATOR_SDK) generate bundle -q --overwrite --version "$(VERSION)" --default-channel="stable" --channels="stable";
+
+	@echo "Patching CSV with replaces: $(CURRENT_VERSION)"; \
+		$(AWK) '!/replaces:/' $(CSV_FILE) > $(CSV_FILE).tmp && mv $(CSV_FILE).tmp $(CSV_FILE); \
+		echo "  replaces: $(CURRENT_VERSION)" >> $(CSV_FILE);
+
+	@echo "Patching CSV with WATCH_NAMESPACE..."; \
+		value="metadata.annotations['olm.targetNamespaces']" \
+		$(YQ) e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[2] |= {"name": "WATCH_NAMESPACE", "valueFrom": {"fieldRef": {"fieldPath": env(value)}}}' $(CSV_FILE);
+
+	@echo "Patching CSV with containerImage annotation..."; \
+		$(YQ) e -i ".metadata.annotations.containerImage=\"$(OPERATOR_IMAGE)\"" $(CSV_FILE);
+
+	@echo "Patching bundle.Dockerfile with Red Hat labels..."
+    	label="LABEL com.redhat.openshift.versions=\"v4.8-v4.18\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"; \
+    	$(AWK) -v rep="FROM scratch\n\n$${label}" '{sub(/FROM scratch/, rep); print}' $(BUNDLE_DOCKERFILE) > $(BUNDLE_DOCKERFILE).tmp && \
+    	mv $(BUNDLE_DOCKERFILE).tmp $(BUNDLE_DOCKERFILE)
+
+bundle-dev: bundle
+	@$(AWK) '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $$0); print}' $(CSV_FILE) > tmp && mv tmp $(CSV_FILE)
+	@echo "✅ Bundle prepared for development."
+
+clean-bundle:
+	@echo "🧹 Cleaning up generated files..."
+	@rm -rf $(TARGET_DIR) $(BUNDLE_DIR)
+	@rm -f $(CONFIG_CRD_BASES)/*.yaml
+	@rm -f $(CONFIG_MANAGER)/kustomization.yaml
+	@rm -f $(CONFIG_RBAC)/clusterwide/role.yaml
+	@rm -f $(CONFIG_RBAC)/namespaced/role.yaml
+	@rm -f $(BUNDLE_DOCKERFILE)
+	@echo "✅ Cleanup complete."
