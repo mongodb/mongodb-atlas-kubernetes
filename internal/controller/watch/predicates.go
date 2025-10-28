@@ -21,6 +21,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 )
 
 // DeprecatedCommonPredicates returns the predicate which filter out the changes done to any field except for spec (e.g. status)
@@ -31,6 +33,11 @@ func DeprecatedCommonPredicates() predicate.Funcs {
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			if e.ObjectOld.GetResourceVersion() == e.ObjectNew.GetResourceVersion() {
 				// resource version didn't change, so this is a resync, allow reconciliation.
+				return true
+			}
+
+			if customresource.ReconciliationShouldBeSkipped(e.ObjectOld) &&
+				!customresource.ReconciliationShouldBeSkipped(e.ObjectNew) {
 				return true
 			}
 
@@ -58,11 +65,25 @@ func SelectNamespacesPredicate(namespaces []string) predicate.Funcs {
 	})
 }
 
+// ReconcileAgainPredicate reconciles on updates when the skip reconcile
+// annotation is removed or changed
+func ReconcileAgainPredicate[T metav1.Object]() predicate.TypedPredicate[T] {
+	return predicate.TypedFuncs[T]{
+		UpdateFunc: func(e event.TypedUpdateEvent[T]) bool {
+			if customresource.ReconciliationShouldBeSkipped(e.ObjectOld) &&
+				!customresource.ReconciliationShouldBeSkipped(e.ObjectNew) {
+				return true
+			}
+			return false
+		},
+	}
+}
+
 // GlobalResyncAwareGenerationChangePredicate reconcile on unfrequent global
 // resyncs or on spec generation changes, but ignore finalizer changes
 func GlobalResyncAwareGenerationChangePredicate[T metav1.Object]() predicate.TypedPredicate[T] {
-	return predicate.Or[T](
-		predicate.Not[T](predicate.TypedResourceVersionChangedPredicate[T]{}), // for the global resync
+	return predicate.Or(
+		predicate.Not(predicate.TypedResourceVersionChangedPredicate[T]{}), // for the global resync
 		predicate.TypedGenerationChangedPredicate[T]{},
 	)
 }
@@ -79,8 +100,11 @@ func IgnoreDeletedPredicate[T metav1.Object]() predicate.TypedPredicate[T] {
 
 // DefaultPredicates avoid spurious after deletion or finalizer changes handling
 func DefaultPredicates[T metav1.Object]() predicate.TypedPredicate[T] {
-	return predicate.And[T](
-		GlobalResyncAwareGenerationChangePredicate[T](),
+	return predicate.And( // or the generation changed or timed out (except for deletions)
+		predicate.Or(
+			GlobalResyncAwareGenerationChangePredicate[T](),
+			ReconcileAgainPredicate[T](),
+		),
 		IgnoreDeletedPredicate[T](),
 	)
 }
