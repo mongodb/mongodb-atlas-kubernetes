@@ -140,7 +140,7 @@ jobs:
           enable-cache: 'true'
       - name: Prepare bundle
         env:
-          OPERATOR_IMAGE: ${{ env.GHCR_BUNDLES_REPO }}
+          OPERATOR_IMAGE: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.detect-tests.outputs.image_tag }}
           VERSION: ${{ steps.detect-tests.outputs.image_tag }}
         run: |
           devbox run -- make bundle-dev
