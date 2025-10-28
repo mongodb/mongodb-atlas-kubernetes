@@ -15,6 +15,7 @@
 package cloud
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,12 +23,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/kms"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
+	kmstypes "github.com/aws/aws-sdk-go-v2/service/kms/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -38,12 +41,12 @@ type AwsAction struct {
 	t       core.GinkgoTInterface
 	network *awsNetwork
 
-	session *session.Session
+	cfg aws.Config
 }
 
 type awsNetwork struct {
 	VPC     string
-	Subnets []*string
+	Subnets []string
 }
 
 type principal struct {
@@ -66,7 +69,10 @@ type statement struct {
 func (a *AwsAction) CreateKMS(alias, region, atlasAccountArn, assumedRoleArn string) (string, error) {
 	a.t.Helper()
 
-	kmsClient := kms.New(a.session, aws.NewConfig().WithRegion(region))
+	//kmsClient := kms.New(a.session, aws.NewConfig().WithRegion(region))
+	kmsClient := kms.NewFromConfig(a.cfg, func(o *kms.Options) {
+		o.Region = region
+	})
 
 	adminARNs, err := getAdminARNs()
 	if err != nil {
@@ -78,26 +84,28 @@ func (a *AwsAction) CreateKMS(alias, region, atlasAccountArn, assumedRoleArn str
 		return "", err
 	}
 
-	key, err := kmsClient.CreateKey(&kms.CreateKeyInput{
-		Description: aws.String("Key for E2E test"),
-		KeySpec:     aws.String("SYMMETRIC_DEFAULT"),
-		KeyUsage:    aws.String("ENCRYPT_DECRYPT"),
-		MultiRegion: aws.Bool(false),
-		Origin:      aws.String("AWS_KMS"),
-		Policy:      aws.String(policyString),
-		Tags: []*kms.Tag{
-			{TagKey: aws.String(awshelper.OwnerTag), TagValue: aws.String(awshelper.AKOTeam)},
-			{TagKey: aws.String(awshelper.OwnerEmailTag), TagValue: aws.String(awshelper.AKOEmail)},
-			{TagKey: aws.String(awshelper.CostCenterTag), TagValue: aws.String(awshelper.AKOCostCenter)},
-			{TagKey: aws.String(awshelper.EnvironmentTag), TagValue: aws.String(awshelper.AKOEnvTest)},
-		},
-	})
+	ctx := context.TODO()
+	key, err := kmsClient.CreateKey(ctx,
+		&kms.CreateKeyInput{
+			Description: aws.String("Key for E2E test"),
+			KeySpec:     kmstypes.KeySpecSymmetricDefault,
+			KeyUsage:    kmstypes.KeyUsageTypeEncryptDecrypt,
+			MultiRegion: aws.Bool(false),
+			Origin:      kmstypes.OriginTypeAwsKms,
+			Policy:      aws.String(policyString),
+			Tags: []kmstypes.Tag{
+				{TagKey: aws.String(awshelper.OwnerTag), TagValue: aws.String(awshelper.AKOTeam)},
+				{TagKey: aws.String(awshelper.OwnerEmailTag), TagValue: aws.String(awshelper.AKOEmail)},
+				{TagKey: aws.String(awshelper.CostCenterTag), TagValue: aws.String(awshelper.AKOCostCenter)},
+				{TagKey: aws.String(awshelper.EnvironmentTag), TagValue: aws.String(awshelper.AKOEnvTest)},
+			},
+		})
 
 	if err != nil {
 		return "", err
 	}
 
-	_, err = kmsClient.CreateAlias(&kms.CreateAliasInput{
+	_, err = kmsClient.CreateAlias(ctx, &kms.CreateAliasInput{
 		AliasName:   aws.String("alias/" + strings.ToLower(strings.ReplaceAll(alias, " ", "-"))),
 		TargetKeyId: key.KeyMetadata.KeyId,
 	})
@@ -107,9 +115,9 @@ func (a *AwsAction) CreateKMS(alias, region, atlasAccountArn, assumedRoleArn str
 	}
 
 	a.t.Cleanup(func() {
-		_, err = kmsClient.ScheduleKeyDeletion(&kms.ScheduleKeyDeletionInput{
+		_, err = kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
 			KeyId:               key.KeyMetadata.KeyId,
-			PendingWindowInDays: aws.Int64(7), // this is the minimum possible and can be up to 24h longer than value set
+			PendingWindowInDays: aws.Int32(7), // this is the minimum possible and can be up to 24h longer than value set
 		})
 		if err != nil {
 			a.t.Error(err)
@@ -201,8 +209,10 @@ func defaultKMSPolicy(atlasAccountArn, assumedRoleArn string, adminARNs []string
 func (a *AwsAction) GetAccountID() (string, error) {
 	a.t.Helper()
 
-	stsClient := sts.New(a.session)
-	identity, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	ctx := context.TODO()
+
+	stsClient := sts.NewFromConfig(a.cfg)
+	identity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
 		return "", err
 	}
@@ -239,7 +249,7 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets map[string
 		return "", err
 	}
 
-	subnetsIDs := make([]*string, 0, len(subnets))
+	subnetsIDs := make([]string, 0, len(subnets))
 	azs := []string{"a", "b", "c"}
 	counter := 0
 
@@ -253,7 +263,7 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets map[string
 
 			if cleanup {
 				a.t.Cleanup(func() {
-					err = a.deleteSubnet(*subnetID, region)
+					err = a.deleteSubnet(subnetID, region)
 					if err != nil {
 						a.t.Error(err)
 					}
@@ -276,30 +286,35 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets map[string
 func (a *AwsAction) CreatePrivateEndpoint(serviceName, privateEndpointName, region string) (string, error) {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
 
 	createInput := &ec2.CreateVpcEndpointInput{
 		ServiceName: aws.String(serviceName),
 		SubnetIds:   a.network.Subnets,
-		TagSpecifications: []*ec2.TagSpecification{{
-			ResourceType: aws.String(ec2.ResourceTypeVpcEndpoint),
-			Tags: []*ec2.Tag{
+		TagSpecifications: []ec2types.TagSpecification{{
+			ResourceType: ec2types.ResourceTypeVpcEndpoint,
+			Tags: []ec2types.Tag{
 				{Key: aws.String("PrivateEndpointName"), Value: aws.String(privateEndpointName)},
 			},
 		}},
-		VpcEndpointType: aws.String("Interface"),
+		VpcEndpointType: ec2types.VpcEndpointTypeInterface,
 		VpcId:           aws.String(a.network.VPC),
 	}
-	result, err := ec2Client.CreateVpcEndpoint(createInput)
+	result, err := ec2Client.CreateVpcEndpoint(ctx, createInput)
 	if err != nil {
 		return "", err
 	}
+	vpcEndpointId := aws.ToString(result.VpcEndpoint.VpcEndpointId)
 
 	a.t.Cleanup(func() {
 		deleteInput := &ec2.DeleteVpcEndpointsInput{
-			VpcEndpointIds: []*string{result.VpcEndpoint.VpcEndpointId},
+			VpcEndpointIds: []string{vpcEndpointId},
 		}
-		_, err = ec2Client.DeleteVpcEndpoints(deleteInput)
+		_, err = ec2Client.DeleteVpcEndpoints(ctx, deleteInput)
 		if err != nil {
 			a.t.Error(err)
 		}
@@ -307,19 +322,23 @@ func (a *AwsAction) CreatePrivateEndpoint(serviceName, privateEndpointName, regi
 		timeout := 10 * time.Minute
 		start := time.Now()
 		for {
-			a.t.Log(fmt.Sprintf("deleting VPC ID %q since %v", aws.StringValue(result.VpcEndpoint.VpcEndpointId), time.Since(start)))
+			a.t.Log(fmt.Sprintf("deleting VPC ID %q since %v", vpcEndpointId, time.Since(start)))
 
-			output, err := ec2Client.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{
-				VpcEndpointIds: []*string{result.VpcEndpoint.VpcEndpointId},
+			output, err := ec2Client.DescribeVpcEndpoints(ctx, &ec2.DescribeVpcEndpointsInput{
+				VpcEndpointIds: []string{vpcEndpointId},
 			})
 
-			var e awserr.Error
-			if (errors.As(err, &e) && e.Code() == "InvalidVpcEndpointId.NotFound") || len(output.VpcEndpoints) == 0 {
+			if err != nil {
+				var apiErr *smithy.GenericAPIError
+				if errors.As(err, &apiErr) && apiErr.Code == "InvalidVpcEndpointId.NotFound" {
+					return
+				}
+
+				a.t.Error(err)
 				return
 			}
 
-			if err != nil {
-				a.t.Error(err)
+			if len(output.VpcEndpoints) == 0 {
 				return
 			}
 
@@ -336,18 +355,22 @@ func (a *AwsAction) CreatePrivateEndpoint(serviceName, privateEndpointName, regi
 	return *result.VpcEndpoint.VpcEndpointId, nil
 }
 
-func (a *AwsAction) GetPrivateEndpoint(endpointID, region string) (*ec2.VpcEndpoint, error) {
+func (a *AwsAction) GetPrivateEndpoint(endpointID, region string) (ec2types.VpcEndpoint, error) {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
 
 	input := &ec2.DescribeVpcEndpointsInput{
-		VpcEndpointIds: []*string{aws.String(endpointID)},
+		VpcEndpointIds: []string{endpointID},
 	}
 
-	result, err := ec2Client.DescribeVpcEndpoints(input)
+	result, err := ec2Client.DescribeVpcEndpoints(ctx, input)
 	if err != nil {
-		return nil, err
+		return ec2types.VpcEndpoint{}, err
 	}
 
 	return result.VpcEndpoints[0], nil
@@ -356,8 +379,14 @@ func (a *AwsAction) GetPrivateEndpoint(endpointID, region string) (*ec2.VpcEndpo
 func (a *AwsAction) AcceptVpcPeeringConnection(connectionID, region string) error {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
+
 	_, err := ec2Client.AcceptVpcPeeringConnection(
+		ctx,
 		&ec2.AcceptVpcPeeringConnectionInput{
 			VpcPeeringConnectionId: aws.String(connectionID),
 		},
@@ -365,6 +394,7 @@ func (a *AwsAction) AcceptVpcPeeringConnection(connectionID, region string) erro
 
 	a.t.Cleanup(func() {
 		_, err = ec2Client.DeleteVpcPeeringConnection(
+			ctx,
 			&ec2.DeleteVpcPeeringConnectionInput{
 				VpcPeeringConnectionId: aws.String(connectionID),
 			},
@@ -380,17 +410,19 @@ func (a *AwsAction) AcceptVpcPeeringConnection(connectionID, region string) erro
 func (a *AwsAction) findVPC(name, region string) (string, error) {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
 
 	input := &ec2.DescribeVpcsInput{
-		Filters: []*ec2.Filter{{
-			Name: aws.String("tag:Name"),
-			Values: []*string{
-				aws.String(name),
-			},
+		Filters: []ec2types.Filter{{
+			Name:   aws.String("tag:Name"),
+			Values: []string{name},
 		}},
 	}
-	result, err := ec2Client.DescribeVpcs(input)
+	result, err := ec2Client.DescribeVpcs(ctx, input)
 	if err != nil {
 		return "", err
 	}
@@ -405,14 +437,18 @@ func (a *AwsAction) findVPC(name, region string) (string, error) {
 func (a *AwsAction) createVPC(name, cidr, region string) (string, error) {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
 
 	input := &ec2.CreateVpcInput{
 		AmazonProvidedIpv6CidrBlock: aws.Bool(false),
 		CidrBlock:                   aws.String(cidr),
-		TagSpecifications: []*ec2.TagSpecification{{
-			ResourceType: aws.String(ec2.ResourceTypeVpc),
-			Tags: []*ec2.Tag{
+		TagSpecifications: []ec2types.TagSpecification{{
+			ResourceType: ec2types.ResourceTypeVpc,
+			Tags: []ec2types.Tag{
 				{Key: aws.String("Name"), Value: aws.String(name)},
 				{Key: aws.String(awshelper.OwnerTag), Value: aws.String(awshelper.AKOTeam)},
 				{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
@@ -422,13 +458,13 @@ func (a *AwsAction) createVPC(name, cidr, region string) (string, error) {
 		}},
 	}
 
-	result, err := ec2Client.CreateVpc(input)
+	result, err := ec2Client.CreateVpc(ctx, input)
 	if err != nil {
 		return "", err
 	}
 
-	_, err = ec2Client.ModifyVpcAttribute(&ec2.ModifyVpcAttributeInput{
-		EnableDnsHostnames: &ec2.AttributeBooleanValue{
+	_, err = ec2Client.ModifyVpcAttribute(ctx, &ec2.ModifyVpcAttributeInput{
+		EnableDnsHostnames: &ec2types.AttributeBooleanValue{
 			Value: aws.Bool(true),
 		},
 		VpcId: result.Vpc.VpcId,
@@ -443,58 +479,68 @@ func (a *AwsAction) createVPC(name, cidr, region string) (string, error) {
 func (a *AwsAction) deleteVPC(id, region string) error {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
 
 	input := &ec2.DeleteVpcInput{
 		DryRun: aws.Bool(false),
 		VpcId:  aws.String(id),
 	}
 
-	_, err := ec2Client.DeleteVpc(input)
+	_, err := ec2Client.DeleteVpc(ctx, input)
 
 	return err
 }
 
-func (a *AwsAction) getSubnets(vpcID, region string) (map[string]*string, error) {
+func (a *AwsAction) getSubnets(vpcID, region string) (map[string]string, error) {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
 
 	input := &ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
-				Name: aws.String("vpc-id"),
-				Values: []*string{
-					aws.String(vpcID),
-				},
+				Name:   aws.String("vpc-id"),
+				Values: []string{vpcID},
 			},
 		},
 	}
 
-	result, err := ec2Client.DescribeSubnets(input)
+	result, err := ec2Client.DescribeSubnets(ctx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	subnetsMap := map[string]*string{}
+	subnetsMap := map[string]string{}
 
 	for _, subnet := range result.Subnets {
-		subnetsMap[*subnet.CidrBlock] = subnet.SubnetId
+		subnetsMap[*subnet.CidrBlock] = aws.ToString(subnet.SubnetId)
 	}
 
 	return subnetsMap, nil
 }
 
-func (a *AwsAction) createSubnet(vpcID, name, cidr, region, az string) (*string, error) {
+func (a *AwsAction) createSubnet(vpcID, name, cidr, region, az string) (string, error) {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
 
 	input := &ec2.CreateSubnetInput{
 		CidrBlock: aws.String(cidr),
-		TagSpecifications: []*ec2.TagSpecification{{
-			ResourceType: aws.String(ec2.ResourceTypeSubnet),
-			Tags: []*ec2.Tag{
+		TagSpecifications: []ec2types.TagSpecification{{
+			ResourceType: ec2types.ResourceTypeSubnet,
+			Tags: []ec2types.Tag{
 				{Key: aws.String("Name"), Value: aws.String(name)},
 				{Key: aws.String(awshelper.OwnerTag), Value: aws.String(awshelper.AKOTeam)},
 				{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
@@ -505,23 +551,27 @@ func (a *AwsAction) createSubnet(vpcID, name, cidr, region, az string) (*string,
 		VpcId:            aws.String(vpcID),
 		AvailabilityZone: pointer.MakePtr(fmt.Sprintf("%s%s", region, az)),
 	}
-	result, err := ec2Client.CreateSubnet(input)
+	result, err := ec2Client.CreateSubnet(ctx, input)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return result.Subnet.SubnetId, nil
+	return aws.ToString(result.Subnet.SubnetId), nil
 }
 
 func (a *AwsAction) deleteSubnet(subnetID, region string) error {
 	a.t.Helper()
 
-	ec2Client := ec2.New(a.session, aws.NewConfig().WithRegion(region))
+	ctx := context.TODO()
+
+	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
+		o.Region = region
+	})
 
 	input := &ec2.DeleteSubnetInput{
 		SubnetId: aws.String(subnetID),
 	}
-	_, err := ec2Client.DeleteSubnet(input)
+	_, err := ec2Client.DeleteSubnet(ctx, input)
 	if err != nil {
 		return err
 	}
@@ -532,14 +582,14 @@ func (a *AwsAction) deleteSubnet(subnetID, region string) error {
 func NewAWSAction(t core.GinkgoTInterface) (*AwsAction, error) {
 	t.Helper()
 
-	awsSession, err := session.NewSession(aws.NewConfig())
+	ctx := context.TODO()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	return &AwsAction{
 		t: t,
 
-		session: awsSession,
+		cfg: cfg,
 	}, nil
 }

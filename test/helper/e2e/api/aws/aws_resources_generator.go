@@ -15,20 +15,24 @@
 package helper
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/iam"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/onsi/ginkgo/v2"
 )
 
 type AwsResourcesGenerator struct {
 	t ginkgo.GinkgoTInterface
 
-	iamClient *iam.IAM
-	s3Client  *s3.S3
+	iamClient *iam.Client
+	s3Client  *s3.Client
 }
 
 const defaultRegion = "us-east-1"
@@ -42,11 +46,11 @@ func NewAwsResourcesGenerator(t ginkgo.GinkgoTInterface, region *string) *AwsRes
 		region = aws.String(defaultRegion)
 	}
 
-	awsSession, err := session.NewSession(
-		&aws.Config{
-			Region: region,
-		},
-	)
+	ctx := context.TODO()
+	cfg, err := config.LoadDefaultConfig(ctx, func(lo *config.LoadOptions) error {
+		lo.Region = *region
+		return nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,31 +58,38 @@ func NewAwsResourcesGenerator(t ginkgo.GinkgoTInterface, region *string) *AwsRes
 	return &AwsResourcesGenerator{
 		t: t,
 
-		iamClient: iam.New(awsSession),
-		s3Client:  s3.New(awsSession),
+		iamClient: iam.NewFromConfig(cfg),
+		s3Client:  s3.NewFromConfig(cfg),
 	}
 }
 
 func (g *AwsResourcesGenerator) GetIAMRole(name string) (string, error) {
+	ctx := context.TODO()
 	input := &iam.GetRoleInput{
 		RoleName: aws.String(name),
 	}
 
-	role, err := g.iamClient.GetRole(input)
+	role, err := g.iamClient.GetRole(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("failed to get iam role: %w", err)
 	}
 
-	return role.GoString(), nil
+	b, err := json.MarshalIndent(role, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal role output: %w", err)
+	}
+
+	return string(b), nil
 }
 
 func (g *AwsResourcesGenerator) CreateIAMRole(name string, policy func() IAMPolicy) (string, error) {
+	ctx := context.TODO()
 	input := &iam.CreateRoleInput{
 		RoleName:                 aws.String(name),
 		AssumeRolePolicyDocument: policy(),
 	}
 
-	role, err := g.iamClient.CreateRole(input)
+	role, err := g.iamClient.CreateRole(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("failed to create iam role: %w", err)
 	}
@@ -87,11 +98,12 @@ func (g *AwsResourcesGenerator) CreateIAMRole(name string, policy func() IAMPoli
 }
 
 func (g *AwsResourcesGenerator) DeleteIAMRole(name string) error {
+	ctx := context.TODO()
 	input := &iam.DeleteRoleInput{
 		RoleName: aws.String(name),
 	}
 
-	_, err := g.iamClient.DeleteRole(input)
+	_, err := g.iamClient.DeleteRole(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to create iam role: %w", err)
 	}
@@ -100,10 +112,11 @@ func (g *AwsResourcesGenerator) DeleteIAMRole(name string) error {
 }
 
 func (g *AwsResourcesGenerator) CreatePolicy(name string, policy func() IAMPolicy) (string, error) {
+	ctx := context.TODO()
 	input := &iam.CreatePolicyInput{
 		PolicyDocument: policy(),
 		PolicyName:     aws.String(name),
-		Tags: []*iam.Tag{
+		Tags: []iamtypes.Tag{
 			{Key: aws.String(OwnerTag), Value: aws.String(AKOTeam)},
 			{Key: aws.String(OwnerEmailTag), Value: aws.String(AKOEmail)},
 			{Key: aws.String(CostCenterTag), Value: aws.String(AKOCostCenter)},
@@ -111,7 +124,7 @@ func (g *AwsResourcesGenerator) CreatePolicy(name string, policy func() IAMPolic
 		},
 	}
 
-	r, err := g.iamClient.CreatePolicy(input)
+	r, err := g.iamClient.CreatePolicy(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("failed to create iam policy: %w", err)
 	}
@@ -120,11 +133,12 @@ func (g *AwsResourcesGenerator) CreatePolicy(name string, policy func() IAMPolic
 }
 
 func (g *AwsResourcesGenerator) DeletePolicy(arn string) error {
+	ctx := context.TODO()
 	input := &iam.DeletePolicyInput{
 		PolicyArn: aws.String(arn),
 	}
 
-	_, err := g.iamClient.DeletePolicy(input)
+	_, err := g.iamClient.DeletePolicy(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to delete iam policy: %w", err)
 	}
@@ -133,12 +147,13 @@ func (g *AwsResourcesGenerator) DeletePolicy(arn string) error {
 }
 
 func (g *AwsResourcesGenerator) AttachRolePolicy(roleName, policyArn string) error {
+	ctx := context.TODO()
 	input := &iam.AttachRolePolicyInput{
 		PolicyArn: aws.String(policyArn),
 		RoleName:  aws.String(roleName),
 	}
 
-	_, err := g.iamClient.AttachRolePolicy(input)
+	_, err := g.iamClient.AttachRolePolicy(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to attach iam policy to role: %w", err)
 	}
@@ -147,12 +162,13 @@ func (g *AwsResourcesGenerator) AttachRolePolicy(roleName, policyArn string) err
 }
 
 func (g *AwsResourcesGenerator) DetachRolePolicy(roleName, policyArn string) error {
+	ctx := context.TODO()
 	input := &iam.DetachRolePolicyInput{
 		PolicyArn: aws.String(policyArn),
 		RoleName:  aws.String(roleName),
 	}
 
-	_, err := g.iamClient.DetachRolePolicy(input)
+	_, err := g.iamClient.DetachRolePolicy(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to detach iam policy from role: %w", err)
 	}
@@ -161,30 +177,37 @@ func (g *AwsResourcesGenerator) DetachRolePolicy(roleName, policyArn string) err
 }
 
 func (g *AwsResourcesGenerator) ListAttachedRolePolicy(roleName string) (string, error) {
+	ctx := context.TODO()
 	input := &iam.ListAttachedRolePoliciesInput{
 		RoleName: aws.String(roleName),
 	}
 
-	r, err := g.iamClient.ListAttachedRolePolicies(input)
+	r, err := g.iamClient.ListAttachedRolePolicies(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("failed to list iam policies from role: %w", err)
 	}
 
-	return r.GoString(), nil
+	b, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal role output: %w", err)
+	}
+
+	return string(b), nil
 }
 
 func (g *AwsResourcesGenerator) CreateBucket(name string) error {
+	ctx := context.TODO()
 	input := &s3.CreateBucketInput{
 		Bucket: aws.String(name),
 	}
 
-	_, err := g.s3Client.CreateBucket(input)
+	_, err := g.s3Client.CreateBucket(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to create aws bucket: %w", err)
 	}
 
-	tagSet := &s3.Tagging{
-		TagSet: []*s3.Tag{
+	tagSet := &s3types.Tagging{
+		TagSet: []s3types.Tag{
 			{Key: aws.String(OwnerTag), Value: aws.String(AKOTeam)},
 			{Key: aws.String(OwnerEmailTag), Value: aws.String(AKOEmail)},
 			{Key: aws.String(CostCenterTag), Value: aws.String(AKOCostCenter)},
@@ -197,7 +220,7 @@ func (g *AwsResourcesGenerator) CreateBucket(name string) error {
 		Tagging: tagSet,
 	}
 
-	if _, err := g.s3Client.PutBucketTagging(taggingInput); err != nil {
+	if _, err := g.s3Client.PutBucketTagging(ctx, taggingInput); err != nil {
 		return fmt.Errorf("failed to tag bucket %s: %w", name, err)
 	}
 
@@ -205,11 +228,12 @@ func (g *AwsResourcesGenerator) CreateBucket(name string) error {
 }
 
 func (g *AwsResourcesGenerator) DeleteBucket(name string) error {
+	ctx := context.TODO()
 	input := &s3.DeleteBucketInput{
 		Bucket: aws.String(name),
 	}
 
-	_, err := g.s3Client.DeleteBucket(input)
+	_, err := g.s3Client.DeleteBucket(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to delete aws bucket: %w", err)
 	}
@@ -233,12 +257,13 @@ func (g *AwsResourcesGenerator) EmptyBucket(name string) error {
 	return nil
 }
 
-func (g *AwsResourcesGenerator) ListObjects(name string) ([]*s3.Object, error) {
+func (g *AwsResourcesGenerator) ListObjects(name string) ([]s3types.Object, error) {
+	ctx := context.TODO()
 	input := &s3.ListObjectsInput{
 		Bucket: aws.String(name),
 	}
 
-	objs, err := g.s3Client.ListObjects(input)
+	objs, err := g.s3Client.ListObjects(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list objects of bucket %s: %w", name, err)
 	}
@@ -247,12 +272,13 @@ func (g *AwsResourcesGenerator) ListObjects(name string) ([]*s3.Object, error) {
 }
 
 func (g *AwsResourcesGenerator) DeleteObject(bucketName, objectKey string) error {
+	ctx := context.TODO()
 	input := &s3.DeleteObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 	}
 
-	_, err := g.s3Client.DeleteObject(input)
+	_, err := g.s3Client.DeleteObject(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to delete object %s in bucket %s: %w", bucketName, objectKey, err)
 	}
