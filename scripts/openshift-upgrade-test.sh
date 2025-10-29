@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-set -eou pipefail
+set -eoux pipefail
 
 # This test is designed to be launched from "mongodb-atlas-kubernetes/scripts" catalog
 #
