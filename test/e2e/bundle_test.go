@@ -32,7 +32,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-var _ = Describe("User can deploy operator from bundles", Label("bundle-test"), func() {
+var _ = Describe("User can deploy operator from bundles", Label("focus-quatantine-bundle-test"), func() {
 	var testData *model.TestDataProvider
 	var imageURL string
 
