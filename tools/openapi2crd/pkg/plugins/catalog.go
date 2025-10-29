@@ -136,11 +136,12 @@ func NewCatalog() *Catalog {
 			"mutual_exclusive_major_versions": &MutualExclusiveMajorVersions{},
 		},
 		mapping: map[string]MappingPlugin{
-			"major_version": &MajorVersion{},
-			"parameters":    &Parameters{},
-			"entry":         &Entry{},
-			"status":        &Status{},
-			"references":    &References{},
+			"major_version":     &MajorVersion{},
+			"parameters":        &Parameters{},
+			"entry":             &Entry{},
+			"status":            &Status{},
+			"references":        &References{},
+			"connection_secret": &ConnectionSecret{},
 		},
 		property: map[string]PropertyPlugin{
 			"sensitive_properties":  &SensitiveProperties{},

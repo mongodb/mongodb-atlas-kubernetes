@@ -24,6 +24,7 @@ spec:
         - base
         - major_version
         - parameters
+        - connection_secret
         - entry
         - status
         - sensitive_properties
@@ -37,9 +38,7 @@ spec:
 
   openapi:
     - name: v20250312
-      package: go.mongodb.org/atlas-sdk/v20250312005/admin
-    - name: v20250313
-      package: go.mongodb.org/atlas-sdk/v20250312006/admin
+      package: go.mongodb.org/atlas-sdk/v20250312008/admin
 
   crd:
     - gvk:
@@ -62,9 +61,9 @@ spec:
               skipProperties:
                 - $.apiKey
                 - $.organization.links
-        - majorVersion: v20250313
+        - majorVersion: v20250312
           openAPIRef:
-            name: v20250313
+            name: v20250312
           entry:
             schema: "CreateOrganizationRequest"
           status:

@@ -18,7 +18,6 @@ package plugins
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 
@@ -50,7 +49,6 @@ func TestMutualExclusiveMajorVersionsProcess(t *testing.T) {
 			err := p.Process(tt.request)
 			assert.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedValidation, tt.request.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].XValidations)
-			t.Log(cmp.Diff(tt.expectedValidation, tt.request.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].XValidations))
 		})
 	}
 }

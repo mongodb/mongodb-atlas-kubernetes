@@ -31,7 +31,7 @@ func TestAtlas_Load(t *testing.T) {
 		expectedErrMsg string
 	}{
 		"valid package": {
-			pkg:            "go.mongodb.org/atlas-sdk/v20250312005/admin",
+			pkg:            "go.mongodb.org/atlas-sdk/v20250312008/admin",
 			expectedSchema: &openapi3.T{},
 		},
 		"invalid package": {
