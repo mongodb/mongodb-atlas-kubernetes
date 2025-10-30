@@ -25,4 +25,4 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 KEY_FILE=${KEY_FILE:-ako.pem}
 
 COSIGN_REPOSITORY="${SIGNATURE_REPO}" "${SCRIPT_DIR}"/retry.sh cosign verify \
-  --insecure-ignore-tlog --key="${KEY_FILE}" "${img_to_verify}"
+  --insecure-ignore-tlog --key="${KEY_FILE}" "${img_to_verify}" && echo "✅ Signature OK"

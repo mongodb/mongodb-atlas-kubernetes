@@ -45,4 +45,6 @@ docker run \
   -v "$(pwd):$(pwd)" \
   -w "$(pwd)" \
   artifactory.corp.mongodb.com/release-tools-container-registry-local/garasign-cosign \
-  cosign sign --key "${PKCS11_URI}" --tlog-upload=false "${img}"
+  cosign sign --key "${PKCS11_URI}" \
+  --tlog-upload=false --use-signing-config=false --new-bundle-format=false "${img}" && \
+  echo "✍️  Signed"

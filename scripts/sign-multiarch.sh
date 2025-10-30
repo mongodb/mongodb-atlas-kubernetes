@@ -34,3 +34,9 @@ for platform_sha in ${IMG_PLATFORMS_SHAS}; do
   echo "${action} platform image ${img}@${platform_sha}..."
   IMG="${img}@${platform_sha}" "${SCRIPT_DIR}/${action}.sh"
 done
+
+msg="All signed"
+if [ "${action}" == "verify" ]; then
+  msg="All verified OK"
+fi
+echo "✅ ${msg}"
