@@ -1,6 +1,8 @@
-.PHONY: build
-build:
-	go build -o bin/scaffolder cmd/main.go
+build: clean
+	go build -o ../../bin/scaffolder ./cmd/main.go
+
+clean:
+	rm -f ../../bin/scaffolder
 
 .PHONY: list
 list: build
