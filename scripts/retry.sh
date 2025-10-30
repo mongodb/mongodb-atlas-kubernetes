@@ -13,14 +13,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/bin/bash
+# retry.sh: Executes a command with retries and exponential backoff.
+# Usage: ./retry.sh <command> [args...]
 
-set -euo pipefail
+set +o pipefail
 
-max_retries=${MAX_RETRIES:-7}
+max_retries=${MAX_RETRIES:-3}
 backoff=${BACKOFF:-1}
 
 retries=0
-until (( retries == max_retries )) || "${@}"; do
-    sleep "$(( (retries++)*backoff ))"
+exit_status=0
+
+while true; do
+    "${@}" 2>&1 | cat
+    
+    exit_status="${PIPESTATUS[0]}"
+
+    if [ "$exit_status" -eq 0 ]; then
+        exit 0
+    fi
+    
+    if (( retries == max_retries )); then
+        echo "❌ Command failed permanently with code $exit_status after $((retries)) retries." >&2
+        exit "$exit_status"
+    fi
+
+    wait_time=$(( (retries++) * backoff ))
+    echo "⚠️ Command failed (exit code $exit_status). Retrying in ${wait_time} seconds..." >&2
+    sleep "${wait_time}"
 done
-exit $?
