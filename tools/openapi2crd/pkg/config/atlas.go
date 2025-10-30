@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	_ "go.mongodb.org/atlas-sdk/v20250312005/admin"
 )
 
 type Atlas struct {
