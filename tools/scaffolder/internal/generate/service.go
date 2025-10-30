@@ -197,7 +197,7 @@ func GetAtlasAPIForCRD(crdKind string) (string, error) {
 		"Group":                    "ProjectsApi", // Groups are managed by ProjectsApi
 		"Organization":             "OrganizationsApi",
 		"DatabaseUser":             "DatabaseUsersApi",
-		"Deployment":               "ClustersApi",
+		"Cluster":                  "ClustersApi",
 		"StreamInstance":           "StreamsApi",
 		"PrivateEndpoint":          "PrivateEndpointServicesApi",
 		"NetworkPeering":           "NetworkPeeringApi",

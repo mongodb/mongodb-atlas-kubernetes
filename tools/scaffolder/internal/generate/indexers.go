@@ -21,7 +21,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -38,13 +37,12 @@ type ReferenceField struct {
 }
 
 type IndexerInfo struct {
-	ResourceName string
-	IndexerName  string
-	IndexerType  string
-	ConstantName string
-	FunctionName string
-	BaseType     string
-	RefFieldName string
+	ResourceName    string
+	IndexerName     string
+	TargetKind      string
+	ConstantName    string
+	FunctionName    string
+	ReferenceFields []ReferenceField // All fields that reference this kind
 }
 
 func ParseReferenceFields(resultPath, crdKind string) ([]ReferenceField, error) {
@@ -269,157 +267,195 @@ func GenerateIndexers(resultPath, crdKind, indexerOutDir string) error {
 		return nil
 	}
 
-	indexersByType := make(map[string][]IndexerInfo)
-
+	// Group references by target kind (e.g., all Secret refs together, all Group refs together)
+	refsByKind := make(map[string][]ReferenceField)
 	for _, ref := range references {
-		info := createIndexerInfo(crdKind, ref)
-		indexersByType[ref.IndexerType] = append(indexersByType[ref.IndexerType], info)
+		refsByKind[ref.ReferencedKind] = append(refsByKind[ref.ReferencedKind], ref)
 	}
 
-	for indexerType, indexers := range indexersByType {
-		if err := generateIndexerFiles(crdKind, indexerType, indexers, indexerOutDir); err != nil {
-			return fmt.Errorf("failed to generate %s indexers: %w", indexerType, err)
+	// Generate one indexer per target kind
+	for kind, refs := range refsByKind {
+		indexerInfo := createIndexerInfoForKind(crdKind, kind, refs)
+		if err := generateIndexerFile(crdKind, indexerInfo, indexerOutDir); err != nil {
+			return fmt.Errorf("failed to generate indexer for kind %s: %w", kind, err)
 		}
 	}
 
-	fmt.Printf("Generated indexers for CRD %s: %v\n", crdKind, indexersByType)
+	fmt.Printf("Generated indexers for CRD %s: %v\n", crdKind, refsByKind)
 	return nil
 }
 
-func createIndexerInfo(crdKind string, ref ReferenceField) IndexerInfo {
+func createIndexerInfoForKind(crdKind, targetKind string, refs []ReferenceField) IndexerInfo {
 	resourceName := strings.ToLower(crdKind)
 
-	switch ref.IndexerType {
-	case "project":
-		return IndexerInfo{
-			ResourceName: crdKind,
-			IndexerName:  fmt.Sprintf("atlas%s.spec.projectRef", resourceName),
-			IndexerType:  "project",
-			ConstantName: fmt.Sprintf("Atlas%sByProjectIndex", crdKind),
-			FunctionName: fmt.Sprintf("NewAtlas%sByProjectIndexer", crdKind),
-			BaseType:     "AtlasReferrerByProjectIndexerBase",
-			RefFieldName: ref.FieldName,
-		}
-	case "credentials":
-		return IndexerInfo{
-			ResourceName: crdKind,
-			IndexerName:  fmt.Sprintf("atlas%s.credentials", resourceName),
-			IndexerType:  "credentials",
-			ConstantName: fmt.Sprintf("Atlas%sCredentialsIndex", crdKind),
-			FunctionName: fmt.Sprintf("NewAtlas%sByCredentialIndexer", crdKind),
-			BaseType:     "LocalCredentialIndexer",
-			RefFieldName: ref.FieldName,
-		}
-	default:
-		return IndexerInfo{
-			ResourceName: crdKind,
-			IndexerName:  fmt.Sprintf("atlas%s.%s", resourceName, strings.ToLower(ref.FieldName)),
-			IndexerType:  "resource",
-			ConstantName: fmt.Sprintf("Atlas%sBy%sIndex", crdKind, ref.ReferencedKind),
-			FunctionName: fmt.Sprintf("NewAtlas%sBy%sIndexer", crdKind, ref.ReferencedKind),
-			BaseType:     "ResourceIndexer",
-			RefFieldName: ref.FieldName,
-		}
+	// Build index name from all field paths
+	indexParts := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		indexParts = append(indexParts, ref.FieldName)
+	}
+	indexName := fmt.Sprintf("%s.%s", resourceName, strings.Join(indexParts, ","))
+
+	return IndexerInfo{
+		ResourceName:    crdKind,
+		IndexerName:     indexName,
+		TargetKind:      targetKind,
+		ConstantName:    fmt.Sprintf("%sBy%sIndex", crdKind, targetKind),
+		FunctionName:    fmt.Sprintf("New%sBy%sIndexer", crdKind, targetKind),
+		ReferenceFields: refs,
 	}
 }
 
-func generateIndexerFiles(crdKind, indexerType string, indexers []IndexerInfo, indexerOutDir string) error {
+func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir string) error {
 	// Set default directory if not provided
 	if indexerOutDir == "" {
 		indexerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "indexer")
 	}
 
-	switch indexerType {
-	case "project":
-		return generateProjectIndexer(crdKind, indexers[0], indexerOutDir)
-	case "credentials":
-		return generateCredentialsIndexer(crdKind, indexers[0], indexerOutDir)
-	default:
-		for _, indexer := range indexers {
-			if err := generateResourceIndexer(crdKind, indexer, indexerOutDir); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
-func generateProjectIndexer(crdKind string, indexer IndexerInfo, indexerOutDir string) error {
 	// Ensure output directory exists
 	if err := os.MkdirAll(indexerOutDir, 0755); err != nil {
 		return fmt.Errorf("failed to create indexer directory: %w", err)
 	}
 
-	filename := fmt.Sprintf("atlas%sprojects.go", strings.ToLower(crdKind))
+	filename := fmt.Sprintf("%sby%s.go", strings.ToLower(crdKind), strings.ToLower(indexer.TargetKind))
 	filePath := filepath.Join(indexerOutDir, filename)
 
 	f := jen.NewFile("indexer")
-
 	AddLicenseHeader(f)
 	f.Comment("nolint:dupl")
 
-	f.ImportAlias("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "akov2")
-
 	f.Const().Id(indexer.ConstantName).Op("=").Lit(indexer.IndexerName)
 
-	// Add struct type
-	structName := fmt.Sprintf("Atlas%sByProjectIndexer", crdKind)
+	// Add struct type with logger field
+	structName := fmt.Sprintf("%sBy%sIndexer", crdKind, indexer.TargetKind)
 	f.Type().Id(structName).Struct(
-		jen.Id("AtlasReferrerByProjectIndexerBase"),
+		jen.Id("logger").Op("*").Qual("go.uber.org/zap", "SugaredLogger"),
 	)
 
+	// Constructor
 	f.Func().Id(indexer.FunctionName).Params(
 		jen.Id("logger").Op("*").Qual("go.uber.org/zap", "Logger"),
 	).Op("*").Id(structName).Block(
 		jen.Return(jen.Op("&").Id(structName).Values(jen.Dict{
-			jen.Id("AtlasReferrerByProjectIndexerBase"): jen.Op("*").Id("NewAtlasReferrerByProjectIndexer").Call(
-				jen.Id("logger"),
-				jen.Id(indexer.ConstantName),
-			),
+			jen.Id("logger"): jen.Id("logger").Dot("Named").Call(jen.Id(indexer.ConstantName)).Dot("Sugar").Call(),
 		})),
 	)
 
+	// Object method
 	f.Func().Params(jen.Op("*").Id(structName)).Id("Object").Params().Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object").Block(
-		jen.Return(jen.Op("&").Id("akov2").Dot("Atlas" + crdKind).Values()),
+		jen.Return(jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", crdKind).Values()),
 	)
+
+	// Name method
+	f.Func().Params(jen.Op("*").Id(structName)).Id("Name").Params().String().Block(
+		jen.Return(jen.Id(indexer.ConstantName)),
+	)
+
+	// Keys method with logic for all reference fields
+	generateKeysMethod(f, structName, crdKind, indexer)
+
+	// For Secret references, add helper Requests function
+	if indexer.TargetKind == "Secret" {
+		generateRequestsFunction(f, crdKind)
+	}
 
 	if err := f.Save(filePath); err != nil {
 		return fmt.Errorf("failed to save file %s: %w", filePath, err)
 	}
 
-	fmt.Printf("Generated project indexer: %s\n", filePath)
+	fmt.Printf("Generated indexer: %s\n", filePath)
 	return nil
 }
 
-func generateCredentialsIndexer(crdKind string, indexer IndexerInfo, indexerOutDir string) error {
-	if err := os.MkdirAll(indexerOutDir, 0755); err != nil {
-		return fmt.Errorf("failed to create indexer directory: %w", err)
+func generateKeysMethod(f *jen.File, structName, crdKind string, indexer IndexerInfo) {
+	f.Comment("Keys extracts the index key(s) from the given object")
+
+	// Build the block statements
+	blockStatements := []jen.Code{
+		// Type assertion
+		jen.List(jen.Id("resource"), jen.Id("ok")).Op(":=").Id("object").Assert(jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", crdKind)),
+		jen.If(jen.Op("!").Id("ok")).Block(
+			jen.Id("i").Dot("logger").Dot("Errorf").Call(
+				jen.Lit(fmt.Sprintf("expected *v1.%s but got %%T", crdKind)),
+				jen.Id("object"),
+			),
+			jen.Return(jen.Nil()),
+		),
+		jen.Var().Id("keys").Index().String(),
 	}
 
-	filename := fmt.Sprintf("atlas%scredentials.go", strings.ToLower(crdKind))
-	filePath := filepath.Join(indexerOutDir, filename)
+	// Add field extraction logic
+	blockStatements = append(blockStatements, generateFieldExtractionCode(indexer.ReferenceFields, indexer.TargetKind)...)
 
-	f := jen.NewFile("indexer")
+	// Add return statement
+	blockStatements = append(blockStatements, jen.Return(jen.Id("keys")))
 
-	AddLicenseHeader(f)
-	f.ImportAlias("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "akov2")
+	f.Func().Params(jen.Id("i").Op("*").Id(structName)).Id("Keys").Params(
+		jen.Id("object").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
+	).Index().String().Block(blockStatements...)
+}
 
-	f.Const().Id(indexer.ConstantName).Op("=").Lit(indexer.IndexerName)
+func generateFieldExtractionCode(fields []ReferenceField, targetKind string) []jen.Code {
+	code := make([]jen.Code, 0)
 
-	f.Func().Id(indexer.FunctionName).Params(
-		jen.Id("logger").Op("*").Qual("go.uber.org/zap", "Logger"),
-	).Op("*").Id("LocalCredentialIndexer").Block(
-		jen.Return(jen.Id("NewLocalCredentialsIndexer").Call(
-			jen.Id(indexer.ConstantName),
-			jen.Op("&").Id("akov2").Dot("Atlas"+crdKind).Values(),
-			jen.Id("logger"),
-		)),
-	)
+	for _, field := range fields {
+		// Build the field path from the FieldPath
+		// FieldPath looks like: "properties.spec.properties.v20250312.properties.groupRef"
+		// We need to convert this to: resource.Spec.V20250312.GroupRef
+		fieldAccessPath := buildFieldAccessPath(field.FieldPath)
 
-	listTypeName := fmt.Sprintf("Atlas%sList", crdKind)
+		// Generate: if resource.Spec.V20250312.GroupRef != nil && resource.Spec.V20250312.GroupRef.Name != "" {
+		//   keys = append(keys, resource.Spec.V20250312.GroupRef.GetObject(resource.Namespace).String())
+		// }
+		code = append(code,
+			jen.If(
+				jen.Op("").Add(
+					jen.Id(fieldAccessPath).Op("!=").Nil(),
+				).Op("&&").Add(
+					jen.Id(fieldAccessPath).Dot("Name").Op("!=").Lit(""),
+				),
+			).Block(
+				jen.Id("keys").Op("=").Append(
+					jen.Id("keys"),
+					jen.Id(fieldAccessPath).Dot("GetObject").Call(jen.Id("resource").Dot("Namespace")).Dot("String").Call(),
+				),
+			),
+		)
+	}
+
+	return code
+}
+
+func buildFieldAccessPath(fieldPath string) string {
+	parts := strings.Split(fieldPath, ".")
+	accessPath := []string{"resource"}
+
+	for i := 0; i < len(parts); i++ {
+		part := parts[i]
+
+		// Skip "properties" keywords
+		if part == "properties" {
+			continue
+		}
+
+		// Capitalize the first letter
+		accessPath = append(accessPath, capitalizeFirst(part))
+	}
+
+	return strings.Join(accessPath, ".")
+}
+
+func capitalizeFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+func generateRequestsFunction(f *jen.File, crdKind string) {
+	listTypeName := fmt.Sprintf("%sList", crdKind)
 	requestsFuncName := fmt.Sprintf("%sRequests", crdKind)
 	f.Func().Id(requestsFuncName).Params(
-		jen.Id("list").Op("*").Id("akov2").Dot(listTypeName),
+		jen.Id("list").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", listTypeName),
 	).Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Block(
 		jen.Id("requests").Op(":=").Make(jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"), jen.Lit(0), jen.Len(jen.Id("list").Dot("Items"))),
 		jen.For(jen.List(jen.Id("_"), jen.Id("item")).Op(":=").Range().Id("list").Dot("Items")).Block(
@@ -427,65 +463,7 @@ func generateCredentialsIndexer(crdKind string, indexer IndexerInfo, indexerOutD
 		),
 		jen.Return(jen.Id("requests")),
 	)
-
-	if err := f.Save(filePath); err != nil {
-		return fmt.Errorf("failed to save file %s: %w", filePath, err)
-	}
-
-	fmt.Printf("Generated credentials indexer: %s\n", filePath)
-	return nil
 }
 
-func generateResourceIndexer(crdKind string, indexer IndexerInfo, indexerOutDir string) error {
-	// For now, resource indexers follow the same pattern to project indexers. Can be extend later
-	return generateProjectIndexer(crdKind, indexer, indexerOutDir)
-}
-
-// TODO: this is kinda hacky, consider regenerating the entire file, or have a separate one for new indexers
-func UpdateIndexerRegistry(crdKind, indexerOutDir string) error {
-	const idxArrayLen = 4
-	registryFile := filepath.Join(indexerOutDir, "indexer.go")
-
-	content, err := os.ReadFile(registryFile)
-	if err != nil {
-		return fmt.Errorf("failed to read indexer.go: %w", err)
-	}
-
-	projectIndexerCall := fmt.Sprintf("NewAtlas%sByProjectIndexer(logger),", crdKind)
-	credentialsIndexerCall := fmt.Sprintf("NewAtlas%sByCredentialIndexer(logger),", crdKind)
-
-	contentStr := string(content)
-
-	// Check if indexers are already registered
-	if strings.Contains(contentStr, projectIndexerCall) && strings.Contains(contentStr, credentialsIndexerCall) {
-		fmt.Printf("Indexers for %s are already registered\n", crdKind)
-		return nil
-	}
-
-	// Find the "IndexesArray"
-	re := regexp.MustCompile(`(indexers = append\(indexers,\s*\n)([\s\S]*?)(\s*\)\s*if version\.IsExperimental\(\))`)
-	matches := re.FindStringSubmatch(contentStr)
-
-	if len(matches) != idxArrayLen {
-		return fmt.Errorf("could not find indexers append block in indexer.go")
-	}
-
-	newIndexers := matches[2]
-
-	if !strings.Contains(newIndexers, projectIndexerCall) {
-		newIndexers += fmt.Sprintf("\t\t%s\n", projectIndexerCall)
-	}
-
-	if !strings.Contains(newIndexers, credentialsIndexerCall) {
-		newIndexers += fmt.Sprintf("\t\t%s\n", credentialsIndexerCall)
-	}
-
-	newContent := strings.Replace(contentStr, matches[0], matches[1]+newIndexers+matches[3], 1)
-
-	if err := os.WriteFile(registryFile, []byte(newContent), 0644); err != nil {
-		return fmt.Errorf("failed to write indexer.go: %w", err)
-	}
-
-	fmt.Printf("Updated indexer registry for %s\n", crdKind)
-	return nil
-}
+// TODO: UpdateIndexerRegistry needs to be reimplemented to work with the new kind-based indexer approach
+// For now, indexers need to be manually registered in the indexer registry

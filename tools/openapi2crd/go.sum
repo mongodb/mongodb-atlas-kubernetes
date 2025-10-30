@@ -192,6 +192,10 @@ go.etcd.io/etcd/client/pkg/v3 v3.5.24 h1:JPCKyJTTpCosaKBCVCt8BLo4L4o4RWqe3dg31fv
 go.etcd.io/etcd/client/pkg/v3 v3.5.24/go.mod h1:YUpTrsmBAWzR+opQRptf8b2Q/JUL8mSfpsTT79ESH4g=
 go.etcd.io/etcd/client/v3 v3.5.24 h1:LJ1iJ8tCXeIjpbo2vXScqhXb4gH4bnphBVCOnxo+p5I=
 go.etcd.io/etcd/client/v3 v3.5.24/go.mod h1:9pMmJIl2ZNctbPbvwdgv93cqrSS/UcN8QkOwvtJgB3c=
+go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0 h1:uKOtHXCP/Gwuj+IF1hsKtIAxNSVjKNo+o4Z+ulgCEXw=
+go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0/go.mod h1:UeRE741z+kDGH00qQasZmthQxJMeA6PmAtY/2dStW+Q=
+go.mongodb.org/atlas-sdk/v20250312006 v20250312006.1.0 h1:PcVxslw4G7/I9SbUi5y81i4YZnL1dKRnGpeHVyNSTh4=
+go.mongodb.org/atlas-sdk/v20250312006 v20250312006.1.0/go.mod h1:UZYSaCimjGs3j+wMwgHSKUSIvoJXzmy/xrer0t5TLgo=
 go.mongodb.org/atlas-sdk/v20250312008 v20250312008.0.0 h1:Pzrb2bPXtkw1vDTiFxovZyYD4BIA4l0o6c2/HBqxe0I=
 go.mongodb.org/atlas-sdk/v20250312008 v20250312008.0.0/go.mod h1:o1ExR4zmunAhRHXF5hlkVUNoJNkmyQ9vRScDGahstyQ=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=

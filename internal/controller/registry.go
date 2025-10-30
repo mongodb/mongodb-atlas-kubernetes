@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/autogen/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasbackupcompliancepolicy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlascustomrole"
@@ -47,6 +46,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"

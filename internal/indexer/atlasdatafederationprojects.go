@@ -32,7 +32,7 @@ type AtlasDataFederationByProjectIndexer struct {
 
 func NewAtlasDataFederationByProjectIndexer(logger *zap.Logger) *AtlasDataFederationByProjectIndexer {
 	return &AtlasDataFederationByProjectIndexer{
-		logger: logger.Named(AtlasDatabaseUserByProject).Sugar(),
+		logger: logger.Named(AtlasDataFederationByProject).Sugar(),
 	}
 }
 

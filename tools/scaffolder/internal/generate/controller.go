@@ -27,23 +27,24 @@ const (
 	pkgCtrlState = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
+func getAPIPackage(apiVersion string) string {
+	return fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/%s", apiVersion)
+}
+
 // FromConfig generates controllers and handlers based on the parsed CRD result file
-func FromConfig(resultPath, crdKind, controllerOutDir, translationOutDir, indexerOutDir string) error {
+func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath string) error {
 	parsedConfig, err := ParseCRDConfig(resultPath, crdKind)
 	if err != nil {
 		return err
 	}
 
 	resourceName := parsedConfig.ResourceName
-	
+
 	// Set default directories if not provided
 	if controllerOutDir == "" {
 		controllerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "controller")
 	}
-	if translationOutDir == "" {
-		translationOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "translation")
-	}
-	
+
 	// Generate indexers
 	if indexerOutDir == "" {
 		indexerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "indexer")
@@ -51,13 +52,8 @@ func FromConfig(resultPath, crdKind, controllerOutDir, translationOutDir, indexe
 	if err := GenerateIndexers(resultPath, crdKind, indexerOutDir); err != nil {
 		return fmt.Errorf("failed to generate indexers: %w", err)
 	}
-	
-	baseControllerDir := filepath.Join(controllerOutDir, strings.ToLower(resourceName))
 
-	// Generate service layers for all mappings
-	if err := GenerateServiceLayers(resourceName, parsedConfig.Mappings, translationOutDir); err != nil {
-		return fmt.Errorf("failed to generate service layers: %w", err)
-	}
+	baseControllerDir := filepath.Join(controllerOutDir, strings.ToLower(resourceName))
 
 	controllerName := resourceName
 	controllerDir := baseControllerDir
@@ -66,12 +62,19 @@ func FromConfig(resultPath, crdKind, controllerOutDir, translationOutDir, indexe
 		return fmt.Errorf("failed to create controller directory: %w", err)
 	}
 
-	if err := generateControllerFileWithMultipleVersions(controllerDir, controllerName, resourceName, parsedConfig.Mappings); err != nil {
+	if err := generateControllerFileWithMultipleVersions(controllerDir, controllerName, resourceName, typesPath, parsedConfig.Mappings); err != nil {
 		return fmt.Errorf("failed to generate controller file: %w", err)
 	}
 
-	if err := generateHandlerFileWithMultipleVersions(controllerDir, controllerName, resourceName, parsedConfig.Mappings); err != nil {
-		return fmt.Errorf("failed to generate handler file: %w", err)
+	if err := generateMainHandlerFile(controllerDir, controllerName, resourceName, typesPath, parsedConfig.Mappings); err != nil {
+		return fmt.Errorf("failed to generate main handler file: %w", err)
+	}
+
+	// Generate version-specific handlers
+	for _, mapping := range parsedConfig.Mappings {
+		if err := generateVersionHandlerFile(controllerDir, controllerName, resourceName, typesPath, mapping); err != nil {
+			return fmt.Errorf("failed to generate handler for version %s: %w", mapping.Version, err)
+		}
 	}
 
 	fmt.Printf("Successfully generated controller %s for resource %s with %d SDK versions at %s\n",
@@ -109,44 +112,33 @@ func PrintCRDs(resultPath string) error {
 	return nil
 }
 
-func generateControllerFileWithMultipleVersions(dir, controllerName, resourceName string, mappings []MappingWithConfig) error {
+func generateControllerFileWithMultipleVersions(dir, controllerName, resourceName, typesPath string, mappings []MappingWithConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
-	atlasAPI, err := GetAtlasAPIForCRD(resourceName)
-	if err != nil {
-		return fmt.Errorf("failed to get Atlas API for CRD %s: %w", resourceName, err)
-	}
+	apiPkg := typesPath
 
 	f := jen.NewFile(atlasResourceName)
 	AddLicenseHeader(f)
 
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
 
-	// RBAC
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s,verbs=get;list;watch;create;update;patch;delete", strings.ToLower("atlas"+resourceName+"s")))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s/status,verbs=get;update;patch", strings.ToLower("atlas"+resourceName+"s")))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s/finalizers,verbs=update", strings.ToLower("atlas"+resourceName+"s")))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s,verbs=get;list;watch;create;update;patch;delete", strings.ToLower("atlas"+resourceName+"s")))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s/status,verbs=get;update;patch", strings.ToLower("atlas"+resourceName+"s")))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s/finalizers,verbs=update", strings.ToLower("atlas"+resourceName+"s")))
-
-	// Service builder types for each version
-	for _, mapping := range mappings {
-		versionSuffix := mapping.Version
-		f.Type().Id("serviceBuilderFunc"+versionSuffix).Func().Params(
-			jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "ClientSet"),
-		).Qual(fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/%s%s", atlasResourceName, versionSuffix), "Atlas"+resourceName+"Service")
-	}
+	resourcePlural := strings.ToLower(resourceName) + "s"
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s/status,verbs=get;update;patch", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s/finalizers,verbs=update", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s/status,verbs=get;update;patch", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s/finalizers,verbs=update", resourcePlural))
 
 	// Handler struct for ALL CRD versions
 	handlerFields := []jen.Code{
-		jen.Qual(pkgCtrlState, "StateHandler").Types(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName)),
+		jen.Qual(pkgCtrlState, "StateHandler").Types(jen.Qual(apiPkg, resourceName)),
 		jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "AtlasReconciler"),
 	}
 
-	// Service builder for each version
+	// Version-specific handler for each version
 	for _, mapping := range mappings {
 		versionSuffix := mapping.Version
-		handlerFields = append(handlerFields, jen.Id("serviceBuilder"+versionSuffix).Id("serviceBuilderFunc"+versionSuffix))
+		handlerFields = append(handlerFields, jen.Id("handler"+versionSuffix).Op("*").Id(controllerName+"Handler"+versionSuffix))
 	}
 
 	f.Type().Id(controllerName + "Handler").Struct(handlerFields...)
@@ -160,28 +152,40 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		jen.Id("reapplySupport").Bool(),
 	}
 
-	serviceBuilderValues := jen.Dict{
-		jen.Id("AtlasReconciler"): jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "AtlasReconciler").Values(jen.Dict{
-			jen.Id("Client"):          jen.Id("c").Dot("GetClient").Call(),
-			jen.Id("AtlasProvider"):   jen.Id("atlasProvider"),
-			jen.Id("Log"):             jen.Id("logger").Dot("Named").Call(jen.Lit("controllers")).Dot("Named").Call(jen.Lit("Atlas" + resourceName)).Dot("Sugar").Call(),
-			jen.Id("GlobalSecretRef"): jen.Id("globalSecretRef"),
+	atlasReconcilerBase := jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "AtlasReconciler").Values(jen.Dict{
+		jen.Id("Client"):          jen.Id("c").Dot("GetClient").Call(),
+		jen.Id("AtlasProvider"):   jen.Id("atlasProvider"),
+		jen.Id("Log"):             jen.Id("logger").Dot("Named").Call(jen.Lit("controllers")).Dot("Named").Call(jen.Lit("Atlas" + resourceName)).Dot("Sugar").Call(),
+		jen.Id("GlobalSecretRef"): jen.Id("globalSecretRef"),
+	})
+
+	f.Func().Id("New"+controllerName+"Reconciler").Params(reconcilerParams...).Op("*").Qual(pkgCtrlState, "Reconciler").Types(jen.Qual(apiPkg, resourceName)).Block(
+		jen.Comment("Create version-specific handlers"),
+		jen.CustomFunc(jen.Options{Multi: true}, func(g *jen.Group) {
+			for _, mapping := range mappings {
+				versionSuffix := mapping.Version
+				g.Id("handler"+versionSuffix).Op(":=").Id("New"+controllerName+"Handler"+versionSuffix).Call(
+					jen.Id("atlasProvider"),
+					jen.Id("c").Dot("GetClient").Call(),
+					jen.Id("logger").Dot("Named").Call(jen.Lit("controllers")).Dot("Named").Call(jen.Lit(resourceName+"-"+versionSuffix)).Dot("Sugar").Call(),
+					jen.Id("globalSecretRef"),
+				)
+			}
 		}),
-	}
-
-	for _, mapping := range mappings {
-		versionSuffix := mapping.Version
-		serviceBuilderValues[jen.Id("serviceBuilder"+versionSuffix)] = jen.Func().Params(jen.Id("clientSet").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "ClientSet")).Qual(fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/%s%s", atlasResourceName, versionSuffix), "Atlas"+resourceName+"Service").Block(
-			jen.Return(jen.Qual(fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/%s%s", atlasResourceName, versionSuffix), "NewAtlas"+resourceName+"Service").Call(jen.Id("clientSet").Dot("SdkClient" + versionSuffix + "006").Dot(atlasAPI))),
-		)
-	}
-
-	f.Func().Id("New"+controllerName+"Reconciler").Params(reconcilerParams...).Op("*").Qual(pkgCtrlState, "Reconciler").Types(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName)).Block(
-		jen.Id(strings.ToLower(controllerName)+"Handler").Op(":=").Op("&").Id(controllerName+"Handler").Values(serviceBuilderValues),
+		jen.Line(),
+		jen.Comment("Create main handler dispatcher"),
+		jen.Id(strings.ToLower(controllerName)+"Handler").Op(":=").Op("&").Id(controllerName+"Handler").Values(jen.DictFunc(func(d jen.Dict) {
+			d[jen.Id("AtlasReconciler")] = atlasReconcilerBase
+			for _, mapping := range mappings {
+				versionSuffix := mapping.Version
+				d[jen.Id("handler"+versionSuffix)] = jen.Id("handler" + versionSuffix)
+			}
+		})),
+		jen.Line(),
 		jen.Return(jen.Qual(pkgCtrlState, "NewStateReconciler").Call(
 			jen.Id(strings.ToLower(controllerName)+"Handler"),
-			jen.Qual(pkgCtrlState, "WithCluster").Types(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName)).Call(jen.Id("c")),
-			jen.Qual(pkgCtrlState, "WithReapplySupport").Types(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName)).Call(jen.Id("reapplySupport")),
+			jen.Qual(pkgCtrlState, "WithCluster").Types(jen.Qual(apiPkg, resourceName)).Call(jen.Id("c")),
+			jen.Qual(pkgCtrlState, "WithReapplySupport").Types(jen.Qual(apiPkg, resourceName)).Call(jen.Id("reapplySupport")),
 		)),
 	)
 
@@ -189,158 +193,93 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	return f.Save(fileName)
 }
 
-func generateHandlerFileWithMultipleVersions(dir, controllerName, resourceName string, mappings []MappingWithConfig) error {
+func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string, mappings []MappingWithConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
+	apiPkg := typesPath
 
 	f := jen.NewFile(atlasResourceName)
 	AddLicenseHeader(f)
 
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
 
-	for _, mapping := range mappings {
-		versionSuffix := mapping.Version
-		translationPkg := fmt.Sprintf("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/%s%s", atlasResourceName, versionSuffix)
-		f.ImportAlias(translationPkg, atlasResourceName+versionSuffix)
-	}
-
-	f.Type().Id("reconcileRequest").Struct(
-		jen.Id("version").String(),
-		jen.Id(strings.ToLower("a"+resourceName)).Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName),
-	)
-
-	// Helper method to get service for resource (merged getSDKVersion + getServiceForVersion)
-	f.Comment("getServiceForResource determines the SDK version from the resource spec and returns the appropriate service")
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("getServiceForResource").Params(
-		jen.Id("ctx").Qual("context", "Context"),
-		jen.Id(strings.ToLower("a"+resourceName)).Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName),
-	).Params(jen.Interface(), jen.Error()).Block(
-		jen.Comment("Determine which SDK version to use from resource spec"),
-		jen.Var().Id("version").String(),
-		jen.BlockFunc(func(g *jen.Group) {
+	f.Comment("getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set")
+	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("getHandlerForResource").Params(
+		jen.Id(strings.ToLower(resourceName)).Op("*").Qual(apiPkg, resourceName),
+	).Params(jen.Qual(pkgCtrlState, "StateHandler").Types(jen.Qual(apiPkg, resourceName)), jen.Error()).Block(
+		jen.Comment("Check which resource spec version is set and validate that only one is specified"),
+		jen.Var().Id("versionCount").Int(),
+		jen.Var().Id("selectedHandler").Qual(pkgCtrlState, "StateHandler").Types(jen.Qual(apiPkg, resourceName)),
+		jen.Line(),
+		jen.CustomFunc(jen.Options{Multi: true}, func(g *jen.Group) {
 			for _, mapping := range mappings {
 				versionSuffix := mapping.Version
 				// Capitalize first letter of version (e.g., v20250312 -> V20250312)
 				capitalizedVersion := strings.ToUpper(string(versionSuffix[0])) + versionSuffix[1:]
-				g.If(jen.Id(strings.ToLower("a" + resourceName)).Dot("Spec").Dot(capitalizedVersion).Op("!=").Nil()).Block(
-					jen.Id("version").Op("=").Lit(versionSuffix),
+				g.If(jen.Id(strings.ToLower(resourceName)).Dot("Spec").Dot(capitalizedVersion).Op("!=").Nil()).Block(
+					jen.Id("versionCount").Op("++"),
+					jen.Id("selectedHandler").Op("=").Id("h").Dot("handler"+versionSuffix),
 				)
 			}
 		}),
-		jen.Comment("Ensure a version was specified"),
-		jen.If(jen.Id("version").Op("==").Lit("")).Block(
-			jen.Return(jen.Nil().Op(",").Qual("fmt", "Errorf").Call(jen.Lit("no SDK version specified in resource spec - please specify one of the supported versions"))),
+		jen.Line(),
+		jen.If(jen.Id("versionCount").Op("==").Lit(0)).Block(
+			jen.Return(jen.Nil().Op(",").Qual("fmt", "Errorf").Call(jen.Lit("no resource spec version specified - please set one of the available spec versions"))),
 		),
-		jen.Comment("Get client set"),
-		jen.Id("clientSet").Op(",").Id("err").Op(":=").Id("h").Dot("AtlasProvider").Dot("SdkClient").Call(jen.Id("ctx").Op(",").Id("h").Dot("GlobalSecretRef").Op(",").Id("h").Dot("Log")),
-		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Nil().Op(",").Id("err")),
+		jen.If(jen.Id("versionCount").Op(">").Lit(1)).Block(
+			jen.Return(jen.Nil().Op(",").Qual("fmt", "Errorf").Call(jen.Lit("multiple resource spec versions specified - please set only one spec version"))),
 		),
-		jen.Comment("Return appropriate service for version"),
-		jen.Switch(jen.Id("version")).BlockFunc(func(g *jen.Group) {
-			for _, mapping := range mappings {
-				versionSuffix := mapping.Version
-				g.Case(jen.Lit(versionSuffix)).Block(
-					jen.Return(jen.Id("h").Dot("serviceBuilder" + versionSuffix).Call(jen.Id("clientSet")).Op(",").Nil()),
-				)
-			}
-			g.Default().Block(
-				jen.Return(jen.Nil().Op(",").Qual("fmt", "Errorf").Call(jen.Lit("unsupported SDK version: %s"), jen.Id("version"))),
-			)
-		}),
+		jen.Return(jen.Id("selectedHandler").Op(",").Nil()),
 	)
 
-	generateVersionAwareStateHandlers(f, controllerName, resourceName, mappings)
+	generateDelegatingStateHandlers(f, controllerName, resourceName, apiPkg)
 
 	fileName := filepath.Join(dir, "handler.go")
 	return f.Save(fileName)
 }
 
-func generateVersionAwareStateHandlers(f *jen.File, controllerName, resourceName string, mappings []MappingWithConfig) {
-	// HandleInitial method
-	f.Comment("HandleInitial handles the initial state")
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("HandleInitial").Params(
-		jen.Id("ctx").Qual("context", "Context"),
-		jen.Id(strings.ToLower("a"+resourceName)).Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName),
-	).Params(
-		jen.Qual(pkgCtrlState, "Result"),
-		jen.Error(),
-	).Block(
-		jen.Comment("TODO: Implement initial state logic"),
-		jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
-			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "StateUpdated"),
-			jen.Lit("Updated Atlas"+resourceName+"."),
-		)),
-	)
-
-	// HandleUpdated method
-	f.Comment("HandleUpdated handles the updated state")
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("HandleUpdated").Params(
-		jen.Id("ctx").Qual("context", "Context"),
-		jen.Id(strings.ToLower("a"+resourceName)).Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName),
-	).Params(
-		jen.Qual(pkgCtrlState, "Result"),
-		jen.Error(),
-	).Block(
-		jen.Comment("Get the appropriate service for this resource"),
-		jen.List(jen.Id("svc"), jen.Id("err")).Op(":=").Id("h").Dot("getServiceForResource").Call(jen.Id("ctx"), jen.Id(strings.ToLower("a"+resourceName))),
-		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
-				jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "StateUpdated"),
-				jen.Id("err"),
-			)),
-		),
-		jen.Comment("TODO: Use the service to implement updated state logic with Atlas API calls"),
-		jen.Id("_").Op("=").Id("svc").Comment("Use service in implementation"),
-		jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
-			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "StateUpdated"),
-			jen.Lit("Ready"),
-		)),
-	)
-
-	// Generate all other state handler methods
-	handlers := []struct {
-		name      string
-		nextState string
-		message   string
-	}{
-		{"HandleImportRequested", "StateImported", "Import completed"},
-		{"HandleImported", "StateUpdated", "Ready"},
-		{"HandleCreating", "StateCreated", "Resource created"},
-		{"HandleCreated", "StateUpdated", "Ready"},
-		{"HandleUpdating", "StateUpdated", "Update completed"},
-		{"HandleDeletionRequested", "StateDeleting", "Deletion started"},
-		{"HandleDeleting", "StateDeleted", "Deleted"},
+func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, apiPkg string) {
+	handlers := []string{
+		"HandleInitial",
+		"HandleImportRequested",
+		"HandleImported",
+		"HandleCreating",
+		"HandleCreated",
+		"HandleUpdating",
+		"HandleUpdated",
+		"HandleDeletionRequested",
+		"HandleDeleting",
 	}
 
-	for _, handler := range handlers {
-		f.Comment(fmt.Sprintf("%s handles the %s state", handler.name, strings.ToLower(strings.TrimPrefix(handler.name, "Handle"))))
-		f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id(handler.name).Params(
+	for _, handlerName := range handlers {
+		f.Comment(fmt.Sprintf("%s delegates to the version-specific handler", handlerName))
+		f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id(handlerName).Params(
 			jen.Id("ctx").Qual("context", "Context"),
-			jen.Id(strings.ToLower("a"+resourceName)).Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName),
+			jen.Id(strings.ToLower(resourceName)).Op("*").Qual(apiPkg, resourceName),
 		).Params(
 			jen.Qual(pkgCtrlState, "Result"),
 			jen.Error(),
 		).Block(
-			jen.Comment("TODO: Implement "+strings.ToLower(strings.TrimPrefix(handler.name, "Handle"))+" state logic"),
-			jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
-				jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", handler.nextState),
-				jen.Lit(handler.message),
-			)),
+			jen.List(jen.Id("handler"), jen.Id("err")).Op(":=").Id("h").Dot("getHandlerForResource").Call(jen.Id(strings.ToLower(resourceName))),
+			jen.If(jen.Id("err").Op("!=").Nil()).Block(
+				jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
+					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "StateInitial"),
+					jen.Id("err"),
+				)),
+			),
+			jen.Return(jen.Id("handler").Dot(handlerName).Call(jen.Id("ctx"), jen.Id(strings.ToLower(resourceName)))),
 		)
 	}
 
-	// For method
 	f.Comment("For returns the resource and predicates for the controller")
 	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("For").Params().Params(
 		jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
 		jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "Predicates"),
 	).Block(
-		jen.Id("obj").Op(":=").Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1", "Atlas"+resourceName).Values(),
+		jen.Id("obj").Op(":=").Op("&").Qual(apiPkg, resourceName).Values(),
 		jen.Comment("TODO: Add appropriate predicates"),
 		jen.Return(jen.Id("obj"), jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").Call()),
 	)
 
-	// SetupWithManager method
 	f.Comment("SetupWithManager sets up the controller with the Manager")
 	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("SetupWithManager").Params(
 		jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
@@ -349,10 +288,108 @@ func generateVersionAwareStateHandlers(f *jen.File, controllerName, resourceName
 	).Error().Block(
 		jen.Id("h").Dot("Client").Op("=").Id("mgr").Dot("GetClient").Call(),
 		jen.Return(jen.Qual("sigs.k8s.io/controller-runtime", "NewControllerManagedBy").Call(jen.Id("mgr")).
-			Dot("Named").Call(jen.Lit("Atlas"+resourceName)).
+			Dot("Named").Call(jen.Lit(resourceName)).
 			Dot("For").Call(jen.Id("h").Dot("For").Call()).
 			Dot("WithOptions").Call(jen.Id("defaultOptions")).
 			Dot("Complete").Call(jen.Id("rec"))),
 	)
 }
 
+func generateVersionHandlerFile(dir, controllerName, resourceName, typesPath string, mapping MappingWithConfig) error {
+	atlasResourceName := strings.ToLower(resourceName)
+	versionSuffix := mapping.Version
+	apiPkg := typesPath
+
+	f := jen.NewFile(atlasResourceName)
+	AddLicenseHeader(f)
+
+	f.ImportAlias(pkgCtrlState, "ctrlstate")
+
+	f.Type().Id(controllerName+"Handler"+versionSuffix).Struct(
+		jen.Id("atlasProvider").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "Provider"),
+		jen.Id("client").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+		jen.Id("log").Op("*").Qual("go.uber.org/zap", "SugaredLogger"),
+		jen.Id("globalSecretRef").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey"),
+	)
+
+	f.Func().Id("New"+controllerName+"Handler"+versionSuffix).Params(
+		jen.Id("atlasProvider").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "Provider"),
+		jen.Id("client").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+		jen.Id("log").Op("*").Qual("go.uber.org/zap", "SugaredLogger"),
+		jen.Id("globalSecretRef").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey"),
+	).Op("*").Id(controllerName + "Handler" + versionSuffix).Block(
+		jen.Return(jen.Op("&").Id(controllerName + "Handler" + versionSuffix).Values(jen.Dict{
+			jen.Id("atlasProvider"):   jen.Id("atlasProvider"),
+			jen.Id("client"):          jen.Id("client"),
+			jen.Id("log"):             jen.Id("log"),
+			jen.Id("globalSecretRef"): jen.Id("globalSecretRef"),
+		})),
+	)
+
+	generateVersionStateHandlers(f, controllerName, resourceName, apiPkg, versionSuffix)
+
+	// Generate For and SetupWithManager methods to satisfy StateHandler interface
+	generateVersionInterfaceMethods(f, controllerName, resourceName, apiPkg, versionSuffix)
+
+	fileName := filepath.Join(dir, "handler_"+versionSuffix+".go")
+	return f.Save(fileName)
+}
+
+func generateVersionStateHandlers(f *jen.File, controllerName, resourceName, apiPkg, versionSuffix string) {
+	handlers := []struct {
+		name      string
+		nextState string
+		message   string
+	}{
+		{"HandleInitial", "StateUpdated", "Updated Atlas" + resourceName + "."},
+		{"HandleImportRequested", "StateImported", "Import completed"},
+		{"HandleImported", "StateUpdated", "Ready"},
+		{"HandleCreating", "StateCreated", "Resource created"},
+		{"HandleCreated", "StateUpdated", "Ready"},
+		{"HandleUpdating", "StateUpdated", "Update completed"},
+		{"HandleUpdated", "StateUpdated", "Ready"},
+		{"HandleDeletionRequested", "StateDeleting", "Deletion started"},
+		{"HandleDeleting", "StateDeleted", "Deleted"},
+	}
+
+	for _, handler := range handlers {
+		f.Comment(fmt.Sprintf("%s handles the %s state for version %s", handler.name, strings.ToLower(strings.TrimPrefix(handler.name, "Handle")), versionSuffix))
+		f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix)).Id(handler.name).Params(
+			jen.Id("ctx").Qual("context", "Context"),
+			jen.Id(strings.ToLower(resourceName)).Op("*").Qual(apiPkg, resourceName),
+		).Params(
+			jen.Qual(pkgCtrlState, "Result"),
+			jen.Error(),
+		).Block(
+			jen.Comment("TODO: Implement "+strings.ToLower(strings.TrimPrefix(handler.name, "Handle"))+" state logic"),
+			jen.Comment("TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client"),
+			jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
+				jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", handler.nextState),
+				jen.Lit(handler.message),
+			)),
+		)
+	}
+}
+
+// generateVersionInterfaceMethods generates For and SetupWithManager methods for version-specific handlers
+func generateVersionInterfaceMethods(f *jen.File, controllerName, resourceName, apiPkg, versionSuffix string) {
+	// For method
+	f.Comment("For returns the resource and predicates for the controller")
+	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix)).Id("For").Params().Params(
+		jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
+		jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "Predicates"),
+	).Block(
+		jen.Return(jen.Op("&").Qual(apiPkg, resourceName).Values(), jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").Call()),
+	)
+
+	// SetupWithManager method
+	f.Comment("SetupWithManager sets up the controller with the Manager")
+	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix)).Id("SetupWithManager").Params(
+		jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
+		jen.Id("rec").Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Reconciler"),
+		jen.Id("defaultOptions").Qual("sigs.k8s.io/controller-runtime/pkg/controller", "Options"),
+	).Error().Block(
+		jen.Comment("This method is not used for version-specific handlers but required by StateHandler interface"),
+		jen.Return(jen.Nil()),
+	)
+}

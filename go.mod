@@ -1,6 +1,6 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/v2
 
-go 1.25
+go 1.25.1
 
 toolchain go1.25.3
 
@@ -21,6 +21,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/mongodb-forks/digest v1.1.0
+	github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go v0.0.0-20251023081430-afe130f9138e
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
@@ -28,6 +29,7 @@ require (
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.11.1
 	github.com/yudai/gojsondiff v1.0.0
+	go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0
 	go.mongodb.org/atlas-sdk/v20250312006 v20250312006.1.0
 	go.mongodb.org/mongo-driver v1.17.6
 	go.uber.org/zap v1.27.0
@@ -68,11 +70,10 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
-	github.com/spf13/cobra v1.9.1 // indirect
+	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
@@ -138,7 +139,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
