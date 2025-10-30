@@ -25,11 +25,11 @@ import (
 // It requires the parameters and references plugins to be run first.
 type ConnectionSecret struct{}
 
-func (s *ConnectionSecret) Name() string {
+func (p *ConnectionSecret) Name() string {
 	return "connection_secret"
 }
 
-func (s *ConnectionSecret) Process(req *MappingProcessorRequest) error {
+func (p *ConnectionSecret) Process(req *MappingProcessorRequest) error {
 	specProps := req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"]
 
 	if _, exists := specProps.Properties["connectionSecretRef"]; !exists {
@@ -45,37 +45,22 @@ func (s *ConnectionSecret) Process(req *MappingProcessorRequest) error {
 		}
 	}
 
-	if specProps.XValidations == nil {
-		specProps.XValidations = apiextensions.ValidationRules{}
-	}
-
 	version := req.MappingConfig.MajorVersion
 	versionProps, ok := specProps.Properties[version]
 	if !ok {
 		return fmt.Errorf("version %s not found in spec", version)
 	}
 
-	_, gIDExists := versionProps.Properties["groupId"]
-	if gIDExists {
+	_, groupIDExists := versionProps.Properties["groupId"]
+	if groupIDExists {
+		if specProps.XValidations == nil {
+			specProps.XValidations = apiextensions.ValidationRules{}
+		}
 		specProps.XValidations = append(specProps.XValidations, apiextensions.ValidationRule{
 			Rule:    "(has(self." + version + ".groupId) && has(self.connectionSecretRef)) || (!has(self." + version + ".groupId))",
-			Message: "connectionSecretRef must be set if groupId is set for version " + version,
+			Message: fmt.Sprintf("spec.connectionSecretRef must be set if spec.%v.groupId is set.", version),
 		})
 	}
-
-	if versionProps.XValidations == nil {
-		versionProps.XValidations = apiextensions.ValidationRules{}
-	}
-
-	_, gRefExists := versionProps.Properties["groupRef"]
-	if gIDExists || gRefExists {
-		versionProps.XValidations = append(versionProps.XValidations, apiextensions.ValidationRule{
-			Rule:    "(has(self.groupId) && !has(self.groupRef)) || (!has(self.groupId) && has(self.groupRef))",
-			Message: "groupId and groupRef are mutually exclusive; only one of them can be set",
-		})
-	}
-
-	specProps.Properties[version] = versionProps
 	req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"] = specProps
 
 	return nil

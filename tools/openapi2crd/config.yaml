@@ -25,6 +25,7 @@ spec:
         - major_version
         - parameters
         - connection_secret
+        - mutual_exclusive_group
         - entry
         - status
         - sensitive_properties
@@ -50,17 +51,6 @@ spec:
       shortNames:
         - aorg
       mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          entry:
-            schema: "CreateOrganizationRequest"
-          status:
-            schema: "CreateOrganizationResponse"
-            filters:
-              skipProperties:
-                - $.apiKey
-                - $.organization.links
         - majorVersion: v20250312
           openAPIRef:
             name: v20250312
