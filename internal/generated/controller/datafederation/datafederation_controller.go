@@ -15,14 +15,13 @@
 package datafederation
 
 import (
-	zap "go.uber.org/zap"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
-	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
-
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	zap "go.uber.org/zap"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
+	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
 )
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=datafederations,verbs=get;list;watch;create;update;patch;delete

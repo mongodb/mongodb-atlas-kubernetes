@@ -15,14 +15,13 @@
 package cluster
 
 import (
-	zap "go.uber.org/zap"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
-	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
-
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	zap "go.uber.org/zap"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
+	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
 )
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=clusters,verbs=get;list;watch;create;update;patch;delete
@@ -35,14 +34,12 @@ type ClusterHandler struct {
 	ctrlstate.StateHandler[v1.Cluster]
 	reconciler.AtlasReconciler
 	handlerv20250312 *ClusterHandlerv20250312
-	handlerv20250313 *ClusterHandlerv20250313
 }
 
 func NewClusterReconciler(c cluster.Cluster, atlasProvider atlas.Provider, logger *zap.Logger, globalSecretRef client.ObjectKey, reapplySupport bool) *ctrlstate.Reconciler[v1.Cluster] {
 	// Create version-specific handlers
 
 	handlerv20250312 := NewClusterHandlerv20250312(atlasProvider, c.GetClient(), logger.Named("controllers").Named("Cluster-v20250312").Sugar(), globalSecretRef)
-	handlerv20250313 := NewClusterHandlerv20250313(atlasProvider, c.GetClient(), logger.Named("controllers").Named("Cluster-v20250313").Sugar(), globalSecretRef)
 
 	// Create main handler dispatcher
 	clusterHandler := &ClusterHandler{
@@ -53,7 +50,6 @@ func NewClusterReconciler(c cluster.Cluster, atlasProvider atlas.Provider, logge
 			Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		},
 		handlerv20250312: handlerv20250312,
-		handlerv20250313: handlerv20250313,
 	}
 
 	return ctrlstate.NewStateReconciler(clusterHandler, ctrlstate.WithCluster[v1.Cluster](c), ctrlstate.WithReapplySupport[v1.Cluster](reapplySupport))

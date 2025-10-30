@@ -13,6 +13,10 @@ crds: ## Generate CRDs from config file
 	@echo "==> Generating CRDs..."
 	@go run main.go --config config.yaml --output $(CRD_FILE)
 
+crds-force: ## Generate CRDs from config file
+	@echo "==> Generating CRDs..."
+	@go run main.go --config config.yaml --force --output $(CRD_FILE)
+
 build: $(BINARY_PATH) ## Build the binary
 
 $(BINARY_PATH): $(GO_FILES) ## File-based build target.

@@ -17,17 +17,15 @@ package cluster
 import (
 	"context"
 	"fmt"
-
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
+	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
-	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 // getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set
@@ -39,10 +37,6 @@ func (h *ClusterHandler) getHandlerForResource(cluster *v1.Cluster) (ctrlstate.S
 	if cluster.Spec.V20250312 != nil {
 		versionCount++
 		selectedHandler = h.handlerv20250312
-	}
-	if cluster.Spec.V20250313 != nil {
-		versionCount++
-		selectedHandler = h.handlerv20250313
 	}
 
 	if versionCount == 0 {

@@ -16,19 +16,17 @@ package flexcluster
 
 import (
 	"context"
-
+	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
+	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	zap "go.uber.org/zap"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
-	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 type FlexClusterHandlerv20250312 struct {
