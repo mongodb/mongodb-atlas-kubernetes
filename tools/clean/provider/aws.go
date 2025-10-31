@@ -15,37 +15,35 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
+	"github.com/aws/smithy-go"
 )
 
 type AWS struct{}
 
 func (a *AWS) DeleteVpc(ID, region string) error {
-	awsSession, err := session.NewSession(
-		&aws.Config{
-			Region: aws.String(normalizeAwsRegion(region)),
-		},
-	)
+	ctx := context.TODO()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create AWS config: %w", err)
 	}
-
-	client := ec2.New(awsSession)
-
-	vpc, err := client.DescribeVpcs(&ec2.DescribeVpcsInput{
-		VpcIds: []*string{aws.String(ID)},
+	client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
+		o.Region = normalizeAwsRegion(region)
 	})
+
+	vpc, err := client.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{VpcIds: []string{ID}})
 	if err != nil {
-		var e awserr.Error
-		if errors.As(err, &e) && e.Code() == "InvalidVpcID.NotFound" {
+		var apiErr *smithy.GenericAPIError
+		if errors.As(err, &apiErr) && apiErr.Code == "InvalidVpcID.NotFound" {
 			return nil
 		}
 		return err
@@ -60,31 +58,27 @@ func (a *AWS) DeleteVpc(ID, region string) error {
 		return err
 	}
 
-	_, err = client.DeleteVpc(&ec2.DeleteVpcInput{
-		VpcId: aws.String(ID),
-	})
+	_, err = client.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(ID)})
 
 	return err
 }
 
 func (a *AWS) DeleteEndpoint(ID, region string) error {
-	awsSession, err := session.NewSession(
-		&aws.Config{
-			Region: aws.String(normalizeAwsRegion(region)),
-		},
-	)
+	ctx := context.TODO()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create AWS config: %w", err)
 	}
 
-	client := ec2.New(awsSession)
+	client := ec2.NewFromConfig(cfg)
 
-	endpoints, err := client.DescribeVpcEndpointServices(&ec2.DescribeVpcEndpointServicesInput{
-		ServiceNames: []*string{aws.String(ID)},
-	})
+	endpoints, err := client.DescribeVpcEndpointServices(
+		ctx,
+		&ec2.DescribeVpcEndpointServicesInput{ServiceNames: []string{ID}},
+	)
 	if err != nil {
-		var e awserr.Error
-		if errors.As(err, &e) && e.Code() == "InvalidVpcEndpointID.NotFound" {
+		var apiErr *smithy.GenericAPIError
+		if errors.As(err, &apiErr) && apiErr.Code == "InvalidVpcEndpointID.NotFound" {
 			return nil
 		}
 		return err
@@ -94,47 +88,43 @@ func (a *AWS) DeleteEndpoint(ID, region string) error {
 		return nil
 	}
 
-	endpointIDs := make([]*string, 0, len(endpoints.ServiceNames))
+	endpointIDs := make([]string, 0, len(endpoints.ServiceNames))
 
 	for _, serviceName := range endpoints.ServiceNames {
-		endpointID := strings.TrimPrefix(*serviceName, fmt.Sprintf("com.amazonaws.vpce.%s.", normalizeAwsRegion(region)))
-		endpointIDs = append(endpointIDs, &endpointID)
+		endpointID := strings.TrimPrefix(serviceName, fmt.Sprintf("com.amazonaws.vpce.%s.", normalizeAwsRegion(region)))
+		endpointIDs = append(endpointIDs, endpointID)
 	}
 
-	_, err = client.DeleteVpcEndpointServiceConfigurations(&ec2.DeleteVpcEndpointServiceConfigurationsInput{
-		ServiceIds: endpointIDs,
-	})
+	_, err = client.DeleteVpcEndpointServiceConfigurations(
+		ctx, &ec2.DeleteVpcEndpointServiceConfigurationsInput{ServiceIds: endpointIDs})
 
 	return err
 }
 
 func (a *AWS) DeleteKMS(ID, region string) error {
-	awsSession, err := session.NewSession(
-		&aws.Config{
-			Region: aws.String(normalizeAwsRegion(region)),
-		},
-	)
+	ctx := context.TODO()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create AWS config: %w", err)
 	}
 
-	kmsClient := kms.New(awsSession)
+	kmsClient := kms.NewFromConfig(cfg)
 
-	_, err = kmsClient.DescribeKey(&kms.DescribeKeyInput{
+	_, err = kmsClient.DescribeKey(ctx, &kms.DescribeKeyInput{
 		GrantTokens: nil,
 		KeyId:       aws.String(ID),
 	})
 	if err != nil {
-		var e awserr.Error
-		if errors.As(err, &e) && e.Code() == "NotFoundException" {
+		var apiErr *smithy.GenericAPIError
+		if errors.As(err, &apiErr) && apiErr.Code == "NotFoundException" {
 			return nil
 		}
 		return err
 	}
 
-	_, err = kmsClient.ScheduleKeyDeletion(&kms.ScheduleKeyDeletionInput{
+	_, err = kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
 		KeyId:               aws.String(ID),
-		PendingWindowInDays: aws.Int64(7), // this is the minimum possible and can be up to 24h longer than value set
+		PendingWindowInDays: aws.Int32(7), // this is the minimum possible and can be up to 24h longer than value set
 	})
 	if err != nil {
 		return err
@@ -143,17 +133,18 @@ func (a *AWS) DeleteKMS(ID, region string) error {
 	return nil
 }
 
-func (a *AWS) deletePeeringConnection(ec2Client *ec2.EC2, vpcID string) error {
+func (a *AWS) deletePeeringConnection(ec2Client *ec2.Client, vpcID string) error {
+	ctx := context.TODO()
 	input := ec2.DescribeVpcPeeringConnectionsInput{
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
 				Name:   aws.String("accepter-vpc-info.vpc-id"),
-				Values: []*string{aws.String(vpcID)},
+				Values: []string{vpcID},
 			},
 		},
 	}
 
-	peers, err := ec2Client.DescribeVpcPeeringConnections(&input)
+	peers, err := ec2Client.DescribeVpcPeeringConnections(ctx, &input)
 	if err != nil {
 		return err
 	}
@@ -163,7 +154,7 @@ func (a *AWS) deletePeeringConnection(ec2Client *ec2.EC2, vpcID string) error {
 	}
 
 	for _, peer := range peers.VpcPeeringConnections {
-		_, err = ec2Client.DeleteVpcPeeringConnection(&ec2.DeleteVpcPeeringConnectionInput{
+		_, err = ec2Client.DeleteVpcPeeringConnection(ctx, &ec2.DeleteVpcPeeringConnectionInput{
 			VpcPeeringConnectionId: peer.VpcPeeringConnectionId,
 		})
 

@@ -310,7 +310,7 @@ func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.Pro
 			pe, err := a.awsProvider.GetPrivateEndpoint(endpoint, region)
 			g.Expect(err).To(BeNil())
 
-			return *pe.State == "available"
+			return pe.State == "available"
 		case provider.ProviderGCP:
 			res := true
 			for i := 0; i < gcpNumAttachments; i++ {
