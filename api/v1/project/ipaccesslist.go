@@ -14,6 +14,10 @@
 
 package project
 
+// IPAccessList allows the use of the IP Access List for a Project. See more information at
+// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+// Deprecated: Migrate to the AtlasIPAccessList Custom Resource in accordance with the migration guide
+// at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 type IPAccessList struct {
 	// Unique identifier of AWS security group in this access list entry.
 	// +optional
