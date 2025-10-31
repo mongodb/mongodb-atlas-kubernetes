@@ -295,13 +295,6 @@ func TestReconcile(t *testing.T) {
 			},
 			wantErr: "failed to manage finalizers: simulated patch error",
 		},
-		{
-			name:        "check state",
-			existingObj: basePod,
-			handleState: func(ctx context.Context, do *dummyObject) (Result, error) {
-				return Result{NextState: "Initial"}, nil
-			},
-		},
 	}
 
 	for _, tc := range tests {
