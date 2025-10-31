@@ -216,7 +216,6 @@ func TestPatchLastConfigApplied(t *testing.T) {
 		{
 			title: "spec without changes is a noop",
 			object: &akov2.AtlasProject{
-				TypeMeta:   metav1.TypeMeta{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com"},
 				ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns", Annotations: map[string]string{}},
 				Spec: akov2.AtlasProjectSpec{
 					Name:                "atlas-project-name",
@@ -243,7 +242,6 @@ func TestPatchLastConfigApplied(t *testing.T) {
 		{
 			title: "cleared spec is applied with no other changes",
 			object: &akov2.AtlasProject{
-				TypeMeta:   metav1.TypeMeta{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com"},
 				ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns", Annotations: map[string]string{}},
 				Spec: akov2.AtlasProjectSpec{
 					Name:                "atlas-project-name",
@@ -309,7 +307,7 @@ func TestPatchLastConfigAppliedErrors(t *testing.T) {
 			title:        "empty struct cannot be patched",
 			object:       &akov2.AtlasProject{},
 			spec:         &struct{}{},
-			wantErrorMsg: "failed to patch resource:  \"\" is invalid: metadata.name: Required value: name is required",
+			wantErrorMsg: "is invalid: metadata.name: Required value: name is required",
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
