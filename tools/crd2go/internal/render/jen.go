@@ -65,8 +65,7 @@ func (jr JenRenderer) RenderCRD(req *CRDRenderRequest) error {
 	}
 	renderCRDListObject(f, req.Kind)
 
-	overwrite := true
-	w, err := req.CodeWriterFn(req.Filename, overwrite)
+	w, err := req.CodeWriterFn(req.Filename, true)
 	if err != nil {
 		return fmt.Errorf("failed to get writer for %s: %w", req.Filename, err)
 	}
@@ -116,8 +115,8 @@ func renderDocFile(req *gotype.Request, group, version string) error {
 	f.HeaderComment("+k8s:deepcopy-gen=package")
 	f.HeaderComment(fmt.Sprintf("+groupName=%s", group))
 	f.Add(jen.Commentf("controller-gen object paths=..."))
-	overwrite := false
-	wc, err := req.CodeWriterFn("doc.go", overwrite)
+
+	wc, err := req.CodeWriterFn("doc.go", false)
 	if err != nil {
 		return fmt.Errorf("failed to prepare doc.go for writing: %w", err)
 	}
@@ -150,8 +149,7 @@ func renderSchemeFile(req *gotype.Request, group, version string) error {
 		jen.Id("AddToScheme").Op("=").Id("SchemeBuilder").Dot("AddToScheme"),
 	)
 
-	overwrite := true
-	wc, err := req.CodeWriterFn("scheme.go", overwrite)
+	wc, err := req.CodeWriterFn("groupversion_info.go", true)
 	if err != nil {
 		return fmt.Errorf("failed to prepare scheme.go for writing: %w", err)
 	}
