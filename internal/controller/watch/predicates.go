@@ -28,25 +28,22 @@ import (
 // DeprecatedCommonPredicates returns the predicate which filter out the changes done to any field except for spec (e.g. status)
 // Also we should reconcile if finalizers have changed (see https://blog.openshift.com/kubernetes-operators-best-practices/)
 // This will be phased out gradually to be replaced by DefaultPredicates
-func DeprecatedCommonPredicates() predicate.Funcs {
-	return predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			if e.ObjectOld.GetResourceVersion() == e.ObjectNew.GetResourceVersion() {
-				// resource version didn't change, so this is a resync, allow reconciliation.
-				return true
-			}
+func DeprecatedCommonPredicates[T metav1.Object]() predicate.TypedPredicate[T] {
+	return predicate.Or(
+		SkipAnnotationRemovedPredicate[T](),
+		predicate.TypedFuncs[T]{
+			UpdateFunc: func(e event.TypedUpdateEvent[T]) bool {
+				if e.ObjectOld.GetResourceVersion() == e.ObjectNew.GetResourceVersion() {
+					// resource version didn't change, so this is a resync, allow reconciliation.
+					return true
+				}
 
-			if customresource.ReconciliationShouldBeSkipped(e.ObjectOld) &&
-				!customresource.ReconciliationShouldBeSkipped(e.ObjectNew) {
+				if e.ObjectOld.GetGeneration() == e.ObjectNew.GetGeneration() && reflect.DeepEqual(e.ObjectNew.GetFinalizers(), e.ObjectOld.GetFinalizers()) {
+					return false
+				}
 				return true
-			}
-
-			if e.ObjectOld.GetGeneration() == e.ObjectNew.GetGeneration() && reflect.DeepEqual(e.ObjectNew.GetFinalizers(), e.ObjectOld.GetFinalizers()) {
-				return false
-			}
-			return true
-		},
-	}
+			},
+		})
 }
 
 func SelectNamespacesPredicate(namespaces []string) predicate.Funcs {
@@ -65,9 +62,9 @@ func SelectNamespacesPredicate(namespaces []string) predicate.Funcs {
 	})
 }
 
-// ReconcileAgainPredicate reconciles on updates when the skip reconcile
+// SkipAnnotationRemovedPredicate reconciles on updates when the skip reconcile
 // annotation is removed or changed
-func ReconcileAgainPredicate[T metav1.Object]() predicate.TypedPredicate[T] {
+func SkipAnnotationRemovedPredicate[T metav1.Object]() predicate.TypedPredicate[T] {
 	return predicate.TypedFuncs[T]{
 		UpdateFunc: func(e event.TypedUpdateEvent[T]) bool {
 			if customresource.ReconciliationShouldBeSkipped(e.ObjectOld) &&
@@ -103,7 +100,7 @@ func DefaultPredicates[T metav1.Object]() predicate.TypedPredicate[T] {
 	return predicate.And( // or the generation changed or timed out (except for deletions)
 		predicate.Or(
 			GlobalResyncAwareGenerationChangePredicate[T](),
-			ReconcileAgainPredicate[T](),
+			SkipAnnotationRemovedPredicate[T](),
 		),
 		IgnoreDeletedPredicate[T](),
 	)

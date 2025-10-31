@@ -144,7 +144,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 
 // deprecatedPredicates are to be phased out in favor of defaultPredicates
 func (r *Registry) deprecatedPredicates() []predicate.Predicate {
-	return append(r.sharedPredicates, watch.DeprecatedCommonPredicates())
+	return append(r.sharedPredicates, watch.DeprecatedCommonPredicates[client.Object]())
 }
 
 // defaultPredicates minimize the reconciliations controllers actually do, avoiding

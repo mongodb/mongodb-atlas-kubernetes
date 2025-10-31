@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -115,8 +116,8 @@ func TestDeprecatedCommonPredicates(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			f := watch.DeprecatedCommonPredicates()
-			assert.Equal(t, tc.want, f.UpdateFunc(
+			f := watch.DeprecatedCommonPredicates[client.Object]()
+			assert.Equal(t, tc.want, f.Update(
 				event.UpdateEvent{ObjectOld: tc.old, ObjectNew: tc.new}))
 		})
 	}
