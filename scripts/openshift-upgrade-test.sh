@@ -80,8 +80,8 @@ cleanup() {
   return ${exit_code}
 }
 # Collect logs and remove all resources before exiting
-trap cleanup exit
-
+#trap cleanup exit
+#
 try_until_success() {
   local cmd=$1
   local timeout=$2
