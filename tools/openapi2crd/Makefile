@@ -1,5 +1,5 @@
 # Define the output binary location
-BINARY_DIR  := bin
+BINARY_DIR  ?= bin
 BINARY_NAME := openapi2crd
 BINARY_PATH := $(BINARY_DIR)/$(BINARY_NAME)
 # Define the generated CRD file
