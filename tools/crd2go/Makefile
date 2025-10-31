@@ -1,4 +1,4 @@
-BINARY_DIR  := bin
+BINARY_DIR  ?= bin
 BINARY_NAME := crd2go
 BINARY_PATH := $(BINARY_DIR)/$(BINARY_NAME)
 

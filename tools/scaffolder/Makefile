@@ -1,4 +1,4 @@
-BINARY_DIR  := bin
+BINARY_DIR  ?= bin
 BINARY_NAME := scaffolder
 BINARY_PATH := $(BINARY_DIR)/$(BINARY_NAME)
 
