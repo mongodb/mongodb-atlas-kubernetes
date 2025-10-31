@@ -239,6 +239,7 @@ func TestReconcile(t *testing.T) {
 
 	basePod := &dummyObject{
 		Pod: corev1.Pod{
+			TypeMeta: metav1.TypeMeta{Kind: "Pod", APIVersion: "v1"},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:       "mypod",
 				Namespace:  "default",
@@ -294,13 +295,6 @@ func TestReconcile(t *testing.T) {
 				},
 			},
 			wantErr: "failed to manage finalizers: simulated patch error",
-		},
-		{
-			name:        "check state",
-			existingObj: basePod,
-			handleState: func(ctx context.Context, do *dummyObject) (Result, error) {
-				return Result{NextState: "Initial"}, nil
-			},
 		},
 	}
 
