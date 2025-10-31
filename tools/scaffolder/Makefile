@@ -1,8 +1,16 @@
-build: clean
-	go build -o ../../bin/scaffolder ./cmd/main.go
+BINARY_DIR  := bin
+BINARY_NAME := scaffolder
+BINARY_PATH := $(BINARY_DIR)/$(BINARY_NAME)
+
+build: clean $(BINARY_PATH) ## Build the binary
+
+$(BINARY_PATH): $(GO_FILES) ## File-based build target.
+	@echo "==> Building $(BINARY_PATH)..."
+	@mkdir -p $(BINARY_DIR)
+	@go build -o $(BINARY_PATH) cmd/main.go
 
 clean:
-	rm -f ../../bin/scaffolder
+	rm -f $(BINARY_PATH)
 
 .PHONY: list
 list: build
