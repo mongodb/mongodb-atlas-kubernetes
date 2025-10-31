@@ -185,7 +185,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
 	}
 
-	Describe("Deployment with Termination Protection should remain in Atlas after the CR is deleted", Label("dedicated-termination-protection", "slow"), func() {
+	Describe("Deployment with Termination Protection should remain in Atlas after the CR is deleted", Label("focus-dedicated-termination-protection", "slow"), func() {
 		It("Should succeed", func() {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			deploymentName := createdDeployment.GetDeploymentName()
@@ -311,7 +311,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create deployment & change ReplicationSpecs", Label("AtlasDeploymentSharding"), func() {
+	Describe("Create deployment & change ReplicationSpecs", Label("focus-AtlasDeploymentSharding"), func() {
 		It("Should Succeed", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).
 				WithInstanceSize("M30")
@@ -400,7 +400,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create deployment & change it to GEOSHARDED", Label("int", "geosharded", "slow"), func() {
+	Describe("Create deployment & change it to GEOSHARDED", Label("focus-int", "focus-geosharded", "focus-slow"), func() {
 		It("Should Succeed", func(ctx context.Context) {
 			expectedDeployment := akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
@@ -470,7 +470,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create/Update the deployment (more complex scenario)", Label("int", "create-update-complex-deployment", "slow"), func() {
+	Describe("Create/Update the deployment (more complex scenario)", Label("focus-int", "focus-create-update-complex-deployment", "slow"), func() {
 		It("Should be created", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.ClusterType = string(akov2.TypeReplicaSet)
@@ -1254,7 +1254,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 		removeControllersAndNamespace()
 	})
 
-	Describe("Create default deployment with backups enabled", Label("basic-backups"), func() {
+	Describe("Create default deployment with backups enabled", Label("focus-basic-backups"), func() {
 		BeforeEach(func() {
 			backupPolicyDefault = &akov2.AtlasBackupPolicy{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1356,7 +1356,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 		})
 	})
 
-	Describe("Create deployment with backups enabled and snapshot distribution", Label("snapshot-distribution"), func() {
+	Describe("Create deployment with backups enabled and snapshot distribution", Label("focus-snapshot-distribution"), func() {
 		var secondDeployment *akov2.AtlasDeployment
 		bScheduleName := "schedule-1"
 

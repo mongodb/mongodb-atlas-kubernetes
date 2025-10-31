@@ -50,7 +50,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 			testData = test
 			mainCycle(test)
 		},
-		Entry("Trial - Simplest configuration with no backup and one Admin User", Label("ns-trial"),
+		Entry("Trial - Simplest configuration with no backup and one Admin User", Label("focus-ns-trial"),
 			model.DataProvider(
 				"operator-ns-trial",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -62,7 +62,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				WithInitialDeployments(data.CreateBasicDeployment("basic-deployment")).
 				WithUsers(data.BasicUser("user1", "user1", data.WithSecretRef("dbuser-secret-u1"), data.WithAdminRole())),
 		),
-		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db", "long-run"),
+		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("focus-ns-backup2db", "focus-long-run"),
 			model.DataProvider(
 				"operator-ns-prodlike",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -79,7 +79,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 					data.BasicUser("admin", "user1", data.WithSecretRef("dbuser-secret-u1"), data.WithAdminRole()),
 					data.BasicUser("user2", "user2", data.WithSecretRef("dbuser-secret-u2"), data.WithCustomRole(string(model.RoleCustomReadWrite), "Ships", "readWrite")),
 				)),
-		Entry("Multiregion AWS, Backup and 2 DBUsers", Label("ns-multiregion-aws-2"),
+		Entry("Multiregion AWS, Backup and 2 DBUsers", Label("focus-ns-multiregion-aws-2"),
 			model.DataProvider(
 				"operator-ns-multiregion-aws",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -94,7 +94,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				WithUsers(data.BasicUser("user1", "user1", data.WithSecretRef("dbuser-secret-u1"), data.WithAdminRole()),
 					data.BasicUser("user2", "user2", data.WithSecretRef("dbuser-secret-u2"), data.WithAdminRole())),
 		),
-		Entry("Multiregion Azure, Backup and 1 DBUser", Label("ns-multiregion-azure-1"),
+		Entry("Multiregion Azure, Backup and 1 DBUser", Label("focus-ns-multiregion-azure-1"),
 			model.DataProvider(
 				"operator-multiregion-azure",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
@@ -106,7 +106,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				WithInitialDeployments(data.CreateDeploymentWithMultiregionAzure("multiregion-azure-deployment")).
 				WithUsers(data.BasicUser("user1", "user1", data.WithSecretRef("dbuser-secret-azure"), data.WithAdminRole())),
 		),
-		Entry("Multiregion GCP, Backup and 1 DBUser", Label("ns-multiregion-gcp-1"),
+		Entry("Multiregion GCP, Backup and 1 DBUser", Label("focus-ns-multiregion-gcp-1"),
 			model.DataProvider(
 				"operator-multiregion-gcp",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
@@ -118,7 +118,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				WithInitialDeployments(data.CreateDeploymentWithMultiregionGCP("multiregion-gcp-deployment")).
 				WithUsers(data.BasicUser("user1", "user1", data.WithSecretRef("dbuser-secret-gcp"), data.WithAdminRole())),
 		),
-		Entry("Product Owner - Simplest configuration with ProjectOwner and update deployment to have backup", Label("ns-owner", "long-run"),
+		Entry("Product Owner - Simplest configuration with ProjectOwner and update deployment to have backup", Label("focus-ns-owner", "long-run"),
 			model.DataProvider(
 				"operator-ns-product-owner",
 				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
@@ -131,7 +131,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				WithUsers(
 					data.BasicUser("user1", "user1", data.WithSecretRef("dbuser-secret-u1"), data.WithAdminRole()),
 				)),
-		Entry("Trial - Global connection", Label("ns-global-key"),
+		Entry("Trial - Global connection", Label("focus-ns-global-key"),
 			model.DataProvider(
 				"operator-ns-trial-global",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
@@ -145,7 +145,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 					data.BasicUser("user1", "user1", data.WithSecretRef("dbuser-secret-u1"), data.WithAdminRole()),
 				),
 		),
-		Entry("Free - Users can use M0, default key", Label("ns-m0"),
+		Entry("Free - Users can use M0, default key", Label("focus-ns-m0"),
 			model.DataProvider(
 				"operator-ns-free",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -157,7 +157,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				WithInitialDeployments(data.CreateFreeAdvancedDeployment("basic-free-deployment")).
 				WithUsers(data.BasicUser("user", "user1", data.WithSecretRef("dbuser-secret"), data.WithAdminRole())),
 		),
-		Entry("Free - Users can use M0, global", Label("ns-global-key-m0"),
+		Entry("Free - Users can use M0, global", Label("focus-ns-global-key-m0"),
 			model.DataProvider(
 				"operator-ns-free",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),

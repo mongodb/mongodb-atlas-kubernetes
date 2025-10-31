@@ -72,7 +72,7 @@ var _ = Describe("NetworkContainerController", Label("networkcontainer-controlle
 			networkContainerControllerFlow(test, useProjectID, networkPeers)
 		},
 		Entry("Test[networkpeering-aws-1]: New AWS Network Container is created successfully",
-			Label("network-container-cr-aws-1"),
+			Label("focus-network-container-cr-aws-1"),
 			model.DataProvider(
 				"networkcontainer-cr-aws-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -96,7 +96,7 @@ var _ = Describe("NetworkContainerController", Label("networkcontainer-controlle
 			},
 		),
 		Entry("Test[networkpeering-azure-2]: New Azure Network Container is created successfully",
-			Label("network-container-cr-azure-2"),
+			Label("focus-network-container-cr-azure-2"),
 			model.DataProvider(
 				"networkcontainer-cr-azure-2",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -120,7 +120,7 @@ var _ = Describe("NetworkContainerController", Label("networkcontainer-controlle
 			},
 		),
 		Entry("Test[networkpeering-gcp-3]: New GCP Network Container is created successfully",
-			Label("network-container-cr-gcp-3"),
+			Label("focus-network-container-cr-gcp-3"),
 			model.DataProvider(
 				"networkcontainer-cr-gcp-3",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -143,7 +143,7 @@ var _ = Describe("NetworkContainerController", Label("networkcontainer-controlle
 			},
 		),
 		Entry("Test[networkpeering-all-5]: Existing Network Containers from all providers with direct ids are taken over successfully",
-			Label("network-container-cr-all-5"),
+			Label("focus-network-container-cr-all-5"),
 			model.DataProvider(
 				"networkcontainer-cr-all-5",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),

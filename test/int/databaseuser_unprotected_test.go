@@ -100,7 +100,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 	})
 
 	Describe("Operator is running with deletion protection disabled", func() {
-		It("Adds database users and allow them to be deleted", Label("user-removable"), func() {
+		It("Adds database users and allow them to be deleted", Label("focus-user-removable"), func() {
 			By("Creating a database user previously on Atlas", func() {
 				dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), dbUserName3)
 				dbUser.SetPassword("mypass")
@@ -230,7 +230,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			})
 		})
 
-		It("Adds an user and manage roles", Label("user-manage-roles"), func() {
+		It("Adds an user and manage roles", Label("focus-user-manage-roles"), func() {
 			By("Creating an user with clusterMonitor role", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())

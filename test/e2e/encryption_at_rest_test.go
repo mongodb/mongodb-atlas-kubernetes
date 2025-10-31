@@ -89,7 +89,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 
 			encryptionAtRestFlow(test, encAtRest)
 		},
-		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("encryption-at-rest-aws"),
+		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("focus-encryption-at-rest-aws"),
 			model.DataProvider(
 				"encryption-at-rest-aws",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -111,7 +111,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 				},
 			},
 		),
-		Entry("Test[encryption-at-rest-azure]: Can add Encryption at Rest to Azure project", Label("encryption-at-rest-azure"),
+		Entry("Test[encryption-at-rest-azure]: Can add Encryption at Rest to Azure project", Label("focus-encryption-at-rest-azure"),
 			model.DataProvider(
 				"encryption-at-rest-azure",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -129,7 +129,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			},
 			nil,
 		),
-		Entry("Test[encryption-at-rest-gcp]: Can add Encryption at Rest to GCP project", Label("encryption-at-rest-gcp"),
+		Entry("Test[encryption-at-rest-gcp]: Can add Encryption at Rest to GCP project", Label("focus-encryption-at-rest-gcp"),
 			model.DataProvider(
 				"encryption-at-rest-gcp",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -148,8 +148,10 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 
 func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.EncryptionAtRest) {
 	By("Create KMS", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Resources.Namespace,
+		}, userData.Project)).Should(Succeed())
 
 		var aRole status.CloudProviderIntegration
 		if len(userData.Project.Status.CloudProviderIntegrations) > 0 {
@@ -160,8 +162,10 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.Encr
 		fillVaultforAzure(userData, &encAtRest)
 		fillKMSforGCP(userData, &encAtRest)
 
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Resources.Namespace,
+		}, userData.Project)).Should(Succeed())
 		userData.Project.Spec.EncryptionAtRest = &encAtRest
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		actions.WaitForConditionsToBecomeTrue(userData, api.EncryptionAtRestReadyType, api.ReadyType)
@@ -170,8 +174,10 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.Encr
 	By("Remove Encryption at Rest from the project", func() {
 		removeAllEncryptionsSeparately(&encAtRest)
 
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Resources.Namespace,
+		}, userData.Project)).Should(Succeed())
 		userData.Project.Spec.EncryptionAtRest = &encAtRest
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 	})
@@ -179,8 +185,10 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.Encr
 	By("Check if project returned back to the initial state", func() {
 		actions.CheckProjectConditionsNotSet(userData, api.EncryptionAtRestReadyType)
 
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+			Name:      userData.Project.Name,
+			Namespace: userData.Resources.Namespace,
+		}, userData.Project)).Should(Succeed())
 
 		Eventually(func(g Gomega) bool {
 			areEmpty, err := checkIfEncryptionsAreDisabled(userData.Project.ID())
@@ -333,7 +341,7 @@ func checkIfEncryptionsAreDisabled(projectID string) (areEmpty bool, err error) 
 	return true, nil
 }
 
-var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encryption-at-rest-aws"), Ordered, func() {
+var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Ordered, func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -359,7 +367,6 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 	})
 
 	It("Should be able to create Encryption at REST on AWS with RoleID equal to AWS ARN", func() {
-
 		testData = model.DataProvider(
 			"encryption-at-rest-aws",
 			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -417,16 +424,20 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 		})
 
 		By("Create KMS with AWS RoleID", func() {
-			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+				Name:      userData.Project.Name,
+				Namespace: userData.Resources.Namespace,
+			}, userData.Project)).Should(Succeed())
 
 			Expect(len(userData.Project.Status.CloudProviderIntegrations)).NotTo(Equal(0))
 			aRole := userData.Project.Status.CloudProviderIntegrations[0]
 
 			fillKMSforAWS(userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 
-			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
+				Name:      userData.Project.Name,
+				Namespace: userData.Resources.Namespace,
+			}, userData.Project)).Should(Succeed())
 			userData.Project.Spec.EncryptionAtRest = &encAtRest
 
 			Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
