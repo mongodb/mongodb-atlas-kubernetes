@@ -26,10 +26,10 @@ type ResourceRef struct {
 
 // ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
 type ResourceRefNamespaced struct {
-	// Name is the name of the Kubernetes Resource
+	// Name of the Kubernetes Resource
 	Name string `json:"name"`
 
-	// Namespace is the namespace of the Kubernetes Resource
+	// Namespace of the Kubernetes Resource
 	// +optional
 	Namespace string `json:"namespace"`
 }

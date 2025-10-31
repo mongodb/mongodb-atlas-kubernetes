@@ -783,14 +783,14 @@ A reference (name & namespace) for backup policy in the desired updated backup p
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1062,7 +1062,10 @@ AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas
         <td><b><a href="#atlascustomrolespecrole">role</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          CustomRole lets you create and change a custom role in your cluster.
+Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+Deprecated: Migrate to the AtlasCustomRoles custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1097,7 +1100,10 @@ Mutually exclusive with the "externalProjectRef" field<br/>
 
 
 
-
+CustomRole lets you create and change a custom role in your cluster.
+Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+Deprecated: Migrate to the AtlasCustomRoles custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -1319,14 +1325,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1810,14 +1816,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2105,14 +2111,14 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2857,14 +2863,14 @@ Backup schedule for the AtlasDeployment
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3830,14 +3836,14 @@ A reference to the AtlasSearchIndexConfig custom resource
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -4284,14 +4290,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5435,14 +5441,14 @@ These credentials must have OrganizationOwner permissions.
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5852,14 +5858,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6211,14 +6217,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6722,14 +6728,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7611,14 +7617,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7930,7 +7936,8 @@ AtlasProjectSpec defines the desired state of Project in Atlas
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.<br/>
+          Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.
+The name length must not exceed 64 characters. The name must contain only letters, numbers, spaces, dashes, and underscores.<br/>
           <br/>
             <i>Validations</i>:<li>self == oldSelf: Name cannot be modified after project creation</li>
         </td>
@@ -7941,28 +7948,32 @@ AtlasProjectSpec defines the desired state of Project in Atlas
         <td>
           AlertConfigurationSyncEnabled is a flag that enables/disables Alert Configurations sync for the current Project.
 If true - project alert configurations will be synced according to AlertConfigurations.
-If not - alert configurations will not be modified by the operator. They can be managed through API, cli, UI.<br/>
+If not - alert configurations will not be modified by the operator. They can be managed through the API, CLI, and UI.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecalertconfigurationsindex">alertConfigurations</a></b></td>
         <td>[]object</td>
         <td>
-          AlertConfiguration is a list of Alert Configurations configured for the current Project.<br/>
+          AlertConfiguration is a list of Alert Configurations configured for the current Project.
+If you use this setting, you must also set spec.alertConfigurationSyncEnabled to true for Atlas Kubernetes
+Operator to modify project alert configurations.
+If you omit or leave this setting empty, Atlas Kubernetes Operator doesn't alter the project's alert
+configurations. If creating a project, Atlas applies the default project alert configurations.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecauditing">auditing</a></b></td>
         <td>object</td>
         <td>
-          Auditing represents MongoDB Maintenance Windows<br/>
+          Auditing represents MongoDB Maintenance Windows.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecbackupcompliancepolicyref">backupCompliancePolicyRef</a></b></td>
         <td>object</td>
         <td>
-          BackupCompliancePolicyRef is a reference to the backup compliance CR.<br/>
+          BackupCompliancePolicyRef is a reference to the backup compliance custom resource.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7992,21 +8003,26 @@ Atlas (organization ID, API keys). The default Operator connection configuration
         <td><b><a href="#atlasprojectspeccustomrolesindex">customRoles</a></b></td>
         <td>[]object</td>
         <td>
-          The customRoles lets you create, and change custom roles in your cluster. Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.<br/>
+          CustomRoles lets you create and change custom roles in your cluster.
+Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+Deprecated: Migrate to the AtlasCustomRoles custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecencryptionatrest">encryptionAtRest</a></b></td>
         <td>object</td>
         <td>
-          EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers<br/>
+          EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindex">integrations</a></b></td>
         <td>[]object</td>
         <td>
-          Integrations is a list of MongoDB Atlas integrations for the project<br/>
+          Integrations is a list of MongoDB Atlas integrations for the project.
+Deprecated: Migrate to the AtlasThirdPartyIntegration custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8021,22 +8037,28 @@ information at https://www.mongodb.com/docs/atlas/reference/api/maintenance-wind
         <td><b><a href="#atlasprojectspecnetworkpeersindex">networkPeers</a></b></td>
         <td>[]object</td>
         <td>
-          NetworkPeers is a list of Network Peers configured for the current Project.<br/>
+          NetworkPeers is a list of Network Peers configured for the current Project.
+Deprecated: Migrate to the AtlasNetworkPeering and AtlasNetworkContainer custom resources in accordance with
+the migration guide at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecprivateendpointsindex">privateEndpoints</a></b></td>
         <td>[]object</td>
         <td>
-          PrivateEndpoints is a list of Private Endpoints configured for the current Project.<br/>
+          PrivateEndpoints is a list of Private Endpoints configured for the current Project.
+Deprecated: Migrate to the AtlasPrivateEndpoint Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecprojectipaccesslistindex">projectIpAccessList</a></b></td>
         <td>[]object</td>
         <td>
-          ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
-https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/<br/>
+          ProjectIPAccessList allows the use of the IP Access List for a Project. See more information at
+https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+Deprecated: Migrate to the AtlasIPAccessList Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8045,7 +8067,7 @@ https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-acces
         <td>
           RegionUsageRestrictions designate the project's AWS region when using Atlas for Government.
 This parameter should not be used with commercial Atlas.
-In Atlas for Government, not setting this field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY<br/>
+In Atlas for Government, not setting this field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY.<br/>
           <br/>
             <i>Enum</i>: NONE, GOV_REGIONS_ONLY, COMMERCIAL_FEDRAMP_REGIONS_ONLY<br/>
             <i>Default</i>: NONE<br/>
@@ -8055,7 +8077,7 @@ In Atlas for Government, not setting this field (defaulting to NONE) means the p
         <td><b><a href="#atlasprojectspecsettings">settings</a></b></td>
         <td>object</td>
         <td>
-          Settings allow to set Project Settings for the project<br/>
+          Settings allows the configuration of the Project Settings.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8069,7 +8091,12 @@ In Atlas for Government, not setting this field (defaulting to NONE) means the p
         <td><b>withDefaultAlertsSettings</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether to create the new project with the default alert settings enabled. This parameter defaults to true<br/>
+          Flag that indicates whether Atlas Kubernetes Operator creates a project with the default alert configurations.
+If you use this setting, you must also set spec.alertConfigurationSyncEnabled to true for Atlas Kubernetes
+Operator to modify project alert configurations.
+If you set this parameter to false when you create a project, Atlas doesn't add the default alert configurations
+to your project.
+This setting has no effect on existing projects.<br/>
           <br/>
             <i>Default</i>: true<br/>
         </td>
@@ -8078,7 +8105,9 @@ In Atlas for Government, not setting this field (defaulting to NONE) means the p
         <td><b><a href="#atlasprojectspecx509certref">x509CertRef</a></b></td>
         <td>object</td>
         <td>
-          X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate<br/>
+          X509CertRef is a reference to the Kubernetes Secret which contains PEM-encoded CA certificate.
+Atlas Kubernetes Operator watches secrets only with the label atlas.mongodb.com/type=credentials to avoid
+watching unnecessary secrets.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8446,14 +8475,14 @@ Secret containing a Slack API token or Bot token. Populated for the SLACK notifi
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8480,14 +8509,14 @@ Secret containing a Datadog API Key. Found in the Datadog dashboard. Populated f
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8514,14 +8543,14 @@ The Flowdock personal API token. Populated for the FLOWDOCK notifications type. 
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8548,14 +8577,14 @@ OpsGenie API Key. Populated for the OPS_GENIE notifications type. If the key lat
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8582,14 +8611,14 @@ PagerDuty service key. Populated for the PAGER_DUTY notifications type. If the k
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8616,14 +8645,14 @@ Secret containing a VictorOps API key and Routing key. Populated for the VICTOR_
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8676,7 +8705,7 @@ Threshold  causes an alert to be triggered.
 
 
 
-Auditing represents MongoDB Maintenance Windows
+Auditing represents MongoDB Maintenance Windows.
 
 <table>
     <thead>
@@ -8691,21 +8720,22 @@ Auditing represents MongoDB Maintenance Windows
         <td><b>auditAuthorizationSuccess</b></td>
         <td>boolean</td>
         <td>
-          Indicates whether the auditing system captures successful authentication attempts for audit filters using the "atype" : "authCheck" auditing event. For more information, see auditAuthorizationSuccess<br/>
+          Indicates whether the auditing system captures successful authentication attempts for audit filters using the "atype" : "authCheck" auditing event.
+For more information, see auditAuthorizationSuccess.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>auditFilter</b></td>
         <td>string</td>
         <td>
-          JSON-formatted audit filter used by the project<br/>
+          JSON-formatted audit filter used by the project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          Denotes whether or not the project associated with the {GROUP-ID} has database auditing enabled.<br/>
+          Denotes whether the project associated with the {GROUP-ID} has database auditing enabled.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8717,7 +8747,7 @@ Auditing represents MongoDB Maintenance Windows
 
 
 
-BackupCompliancePolicyRef is a reference to the backup compliance CR.
+BackupCompliancePolicyRef is a reference to the backup compliance custom resource.
 
 <table>
     <thead>
@@ -8732,14 +8762,14 @@ BackupCompliancePolicyRef is a reference to the backup compliance CR.
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8836,14 +8866,14 @@ Atlas (organization ID, API keys). The default Operator connection configuration
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8855,7 +8885,10 @@ Atlas (organization ID, API keys). The default Operator connection configuration
 
 
 
-
+CustomRole lets you create and change a custom role in your cluster.
+Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+Deprecated: Migrate to the AtlasCustomRoles custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -9005,7 +9038,7 @@ Atlas (organization ID, API keys). The default Operator connection configuration
 
 
 
-EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers
+EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers.
 
 <table>
     <thead>
@@ -9109,14 +9142,14 @@ A reference to as Secret containing the AccessKeyID, SecretAccessKey, CustomerMa
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9205,14 +9238,14 @@ A reference to as Secret containing the SubscriptionID, KeyVaultName, KeyIdentif
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9273,14 +9306,14 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9292,7 +9325,9 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
 
 
 
-
+Integration for the project between Atlas and a third party service.
+Deprecated: Migrate to the AtlasThirdPartyIntegration custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -9307,28 +9342,28 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b>accountId</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Unique 40-hexadecimal digit string that identifies your New Relic account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexapikeyref">apiKeyRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing your API Key for Datadog, OpsGenie or Victor Ops.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexapitokenref">apiTokenRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the Key that allows Atlas to access your Slack account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>channelName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Name of the Slack channel to which Atlas sends alert notifications.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9349,14 +9384,14 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b><a href="#atlasprojectspecintegrationsindexlicensekeyref">licenseKeyRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing your Unique 40-hexadecimal digit string that identifies your New Relic license.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>microsoftTeamsWebhookUrl</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Endpoint web address of the Microsoft Teams webhook to which Atlas sends notifications.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9377,28 +9412,29 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b><a href="#atlasprojectspecintegrationsindexpasswordref">passwordRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the password to allow Atlas to access your Prometheus account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexreadtokenref">readTokenRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the query key associated with your New Relic account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>region</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Region code indicating which regional API Atlas uses to access PagerDuty, Datadog, or OpsGenie.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexroutingkeyref">routingKeyRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the Routing key associated with your Splunk On-Call account.
+Used for Victor Ops.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9412,35 +9448,37 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b><a href="#atlasprojectspecintegrationsindexsecretref">secretRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the secret for your Webhook.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>serviceDiscovery</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Desired method to discover the Prometheus service.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexservicekeyref">serviceKeyRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the service key associated with your PagerDuty account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>teamName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies your Slack team.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>enum</td>
         <td>
-          Third Party Integration type such as Slack, New Relic, etc<br/>
+          Third Party Integration type such as Slack, New Relic, etc.
+Each integration type requires a distinct set of configuration fields.
+For example, if you set type to DATADOG, you must configure only datadog subfields.<br/>
           <br/>
             <i>Enum</i>: PAGER_DUTY, SLACK, DATADOG, NEW_RELIC, OPS_GENIE, VICTOR_OPS, FLOWDOCK, WEBHOOK, MICROSOFT_TEAMS, PROMETHEUS<br/>
         </td>
@@ -9449,21 +9487,22 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b>url</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Endpoint web address to which Atlas sends notifications.
+Used for Webhooks.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>username</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies your Prometheus incoming webhook.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexwritetokenref">writeTokenRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the insert key associated with your New Relic account.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9475,7 +9514,7 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing your API Key for Datadog, OpsGenie or Victor Ops.
 
 <table>
     <thead>
@@ -9490,14 +9529,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9509,7 +9548,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the Key that allows Atlas to access your Slack account.
 
 <table>
     <thead>
@@ -9524,14 +9563,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9543,7 +9582,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing your Unique 40-hexadecimal digit string that identifies your New Relic license.
 
 <table>
     <thead>
@@ -9558,14 +9597,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9577,7 +9616,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the password to allow Atlas to access your Prometheus account.
 
 <table>
     <thead>
@@ -9592,14 +9631,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9611,7 +9650,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the query key associated with your New Relic account.
 
 <table>
     <thead>
@@ -9626,14 +9665,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9645,7 +9684,8 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the Routing key associated with your Splunk On-Call account.
+Used for Victor Ops.
 
 <table>
     <thead>
@@ -9660,14 +9700,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9679,7 +9719,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the secret for your Webhook.
 
 <table>
     <thead>
@@ -9694,14 +9734,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9713,7 +9753,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the service key associated with your PagerDuty account.
 
 <table>
     <thead>
@@ -9728,14 +9768,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9747,7 +9787,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the insert key associated with your New Relic account.
 
 <table>
     <thead>
@@ -9762,14 +9802,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9805,7 +9845,7 @@ information at https://www.mongodb.com/docs/atlas/reference/api/maintenance-wind
         <td>integer</td>
         <td>
           Day of the week when you would like the maintenance window to start as a 1-based integer.
-Sunday 1, Monday 2, Tuesday 3, Wednesday 4, Thursday 5, Friday 6, Saturday 7<br/>
+Sunday 1, Monday 2, Tuesday 3, Wednesday 4, Thursday 5, Friday 6, Saturday 7.<br/>
           <br/>
             <i>Minimum</i>: 1<br/>
             <i>Maximum</i>: 7<br/>
@@ -9847,7 +9887,9 @@ Cannot be specified if defer is true<br/>
 
 
 
-
+NetworkPeer configured for the current Project.
+Deprecated: Migrate to the AtlasNetworkPeering and AtlasNetworkContainer custom resources in accordance with
+the migration guide at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -9862,7 +9904,7 @@ Cannot be specified if defer is true<br/>
         <td><b>accepterRegionName</b></td>
         <td>string</td>
         <td>
-          AccepterRegionName is the provider region name of user's vpc.<br/>
+          AccepterRegionName is the provider region name of user's VPC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9876,7 +9918,7 @@ Cannot be specified if defer is true<br/>
         <td><b>awsAccountId</b></td>
         <td>string</td>
         <td>
-          AccountID of the user's vpc.<br/>
+          AccountID of the user's VPC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9965,7 +10007,9 @@ Cannot be specified if defer is true<br/>
 
 
 
-
+PrivateEndpoint is a list of Private Endpoints configured for the current Project.
+Deprecated: Migrate to the AtlasPrivateEndpoint Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -9980,7 +10024,7 @@ Cannot be specified if defer is true<br/>
         <td><b>provider</b></td>
         <td>enum</td>
         <td>
-          Cloud provider for which you want to retrieve a private endpoint service. Atlas accepts AWS or AZURE.<br/>
+          Cloud provider for which you want to retrieve a private endpoint service. Atlas accepts AWS, GCP, or AZURE.<br/>
           <br/>
             <i>Enum</i>: AWS, GCP, AZURE, TENANT<br/>
         </td>
@@ -9996,7 +10040,7 @@ Cannot be specified if defer is true<br/>
         <td><b>endpointGroupName</b></td>
         <td>string</td>
         <td>
-          Unique identifier of the endpoint group. The endpoint group encompasses all of the endpoints that you created in Google Cloud.<br/>
+          Unique identifier of the endpoint group. The endpoint group encompasses all the endpoints that you created in Google Cloud.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10017,7 +10061,7 @@ Cannot be specified if defer is true<br/>
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          Unique identifier of the private endpoint you created in your AWS VPC or Azure Vnet.<br/>
+          Unique identifier of the private endpoint you created in your AWS VPC or Azure VNet.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10070,7 +10114,10 @@ Cannot be specified if defer is true<br/>
 
 
 
-
+IPAccessList allows the use of the IP Access List for a Project. See more information at
+https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+Deprecated: Migrate to the AtlasIPAccessList Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -10125,7 +10172,7 @@ Cannot be specified if defer is true<br/>
 
 
 
-Settings allow to set Project Settings for the project
+Settings allows the configuration of the Project Settings.
 
 <table>
     <thead>
@@ -10140,42 +10187,42 @@ Settings allow to set Project Settings for the project
         <td><b>isCollectDatabaseSpecificsStatisticsEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to collect database-specific metrics for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isDataExplorerEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable the Data Explorer for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isExtendedStorageSizesEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable extended storage sizes for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isPerformanceAdvisorEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable the Performance Advisor and Profiler for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isRealtimePerformancePanelEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable the Real Time Performance Panel for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isSchemaAdvisorEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable the Schema Advisor for the specified project.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10202,7 +10249,7 @@ Settings allow to set Project Settings for the project
         <td><b>roles</b></td>
         <td>[]enum</td>
         <td>
-          Roles the users of the team has over the project<br/>
+          Roles the users in the team has within the project.<br/>
           <br/>
             <i>Enum</i>: GROUP_OWNER, GROUP_CLUSTER_MANAGER, GROUP_DATA_ACCESS_ADMIN, GROUP_DATA_ACCESS_READ_WRITE, GROUP_DATA_ACCESS_READ_ONLY, GROUP_READ_ONLY<br/>
         </td>
@@ -10211,7 +10258,7 @@ Settings allow to set Project Settings for the project
         <td><b><a href="#atlasprojectspecteamsindexteamref">teamRef</a></b></td>
         <td>object</td>
         <td>
-          Reference to the team which will assigned to the project<br/>
+          Reference to the AtlasTeam custom resource which will be assigned to the project.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -10223,7 +10270,7 @@ Settings allow to set Project Settings for the project
 
 
 
-Reference to the team which will assigned to the project
+Reference to the AtlasTeam custom resource which will be assigned to the project.
 
 <table>
     <thead>
@@ -10238,14 +10285,14 @@ Reference to the team which will assigned to the project
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10257,7 +10304,9 @@ Reference to the team which will assigned to the project
 
 
 
-X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate
+X509CertRef is a reference to the Kubernetes Secret which contains PEM-encoded CA certificate.
+Atlas Kubernetes Operator watches secrets only with the label atlas.mongodb.com/type=credentials to avoid
+watching unnecessary secrets.
 
 <table>
     <thead>
@@ -10272,14 +10321,14 @@ X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA c
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11185,7 +11234,10 @@ Threshold  causes an alert to be triggered.
 
 
 
-
+IPAccessList allows the use of the IP Access List for a Project. See more information at
+https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+Deprecated: Migrate to the AtlasIPAccessList Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -11560,14 +11612,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12173,14 +12225,14 @@ Reference to the secret containing th Username and Password of the account to co
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12243,14 +12295,14 @@ A trusted, public x509 certificate for connecting to Kafka over SSL
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12378,14 +12430,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12560,14 +12612,14 @@ Project which the instance belongs to
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12594,14 +12646,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12777,14 +12829,14 @@ Reference for the resource that contains connection configuration
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13586,14 +13638,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
