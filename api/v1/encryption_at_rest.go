@@ -18,7 +18,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 )
 
-// EncryptionAtRest allows to specify the Encryption at Rest for AWS, Azure and GCP providers
+// EncryptionAtRest configures the Encryption at Rest for the AWS, Azure and GCP providers.
 type EncryptionAtRest struct {
 	AwsKms         AwsKms         `json:"awsKms,omitempty"`         // AwsKms specifies AWS KMS configuration details and whether Encryption at Rest is enabled for an Atlas project.
 	AzureKeyVault  AzureKeyVault  `json:"azureKeyVault,omitempty"`  // AzureKeyVault specifies Azure Key Vault configuration details and whether Encryption at Rest is enabled for an Atlas project.
