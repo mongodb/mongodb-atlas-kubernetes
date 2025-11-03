@@ -240,19 +240,19 @@ var _ = Describe("Reconciles test:", func() {
 			})
 		},
 
-		Entry("All namespaces when no namespace config is set", Label("focus-reconcile-all"), &tc{
+		Entry("All namespaces when no namespace config is set", Label("reconcile-all"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: nil,
 			wantToFind:      []string{"ns1", "ns2", "ns3"},
 		}),
 
-		Entry("One namespace when only one namespace is configured", Label("focus-reconcile-one"), &tc{
+		Entry("One namespace when only one namespace is configured", Label("reconcile-one"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1"},
 			wantToFind:      []string{"ns1"},
 		}),
 
-		Entry("Two namespaces when only those two are configured", Label("focus-reconcile-two"), &tc{
+		Entry("Two namespaces when only those two are configured", Label("reconcile-two"), &tc{
 			namespaces:      []string{"ns1", "ns2", "ns3"},
 			watchNamespaces: []string{"ns1", "ns2"},
 			wantToFind:      []string{"ns1", "ns2"},
