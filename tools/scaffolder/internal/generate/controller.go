@@ -122,12 +122,18 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
 
 	resourcePlural := strings.ToLower(resourceName) + "s"
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s/status,verbs=get;update;patch", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,resources=%s/finalizers,verbs=update", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s/status,verbs=get;update;patch", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=%s/finalizers,verbs=update", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s/status,verbs=get;update;patch", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s/finalizers,verbs=update", resourcePlural))
+	f.Comment("+kubebuilder:rbac:groups=\"\",resources=secrets,verbs=get;list;watch")
+	f.Comment("+kubebuilder:rbac:groups=\"\",resources=events,verbs=create;patch")
+	f.Line()
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=%s/status,verbs=get;update;patch", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=%s/finalizers,verbs=update", resourcePlural))
+	f.Comment("+kubebuilder:rbac:groups=\"\",namespace=default,resources=secrets,verbs=get;list;watch")
+	f.Comment("+kubebuilder:rbac:groups=\"\",namespace=default,resources=events,verbs=create;patch")
+	f.Line()
 
 	// Handler struct for ALL CRD versions
 	handlerFields := []jen.Code{
