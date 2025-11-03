@@ -784,7 +784,7 @@ bundle: prepare-dirs $(CSV_FILE) release
 
 	@echo "Building release bundle for version $(VERSION)..."; \
 		$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone $(CONFIG_MANIFESTS) | \
-			$(OPERATOR_SDK) generate bundle -q --overwrite --version "$(VERSION)" --default-channel="stable" --channels="stable";
+			$(OPERATOR_SDK) generate bundle -q --overwrite --version "$(VERSION)" --kustomize-dir="$(CONFIG_MANIFESTS_TPL)" --default-channel="stable" --channels="stable";
 
 	@echo "Patching CSV with replaces: $(CURRENT_VERSION)"; \
 		$(AWK) '!/replaces:/' $(CSV_FILE) > $(CSV_FILE).tmp && mv $(CSV_FILE).tmp $(CSV_FILE); \
