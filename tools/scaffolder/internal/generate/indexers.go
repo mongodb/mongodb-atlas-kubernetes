@@ -416,7 +416,7 @@ func generateFieldExtractionCode(fields []ReferenceField, targetKind string) []j
 			).Block(
 				jen.Id("keys").Op("=").Append(
 					jen.Id("keys"),
-					jen.Id(fieldAccessPath).Dot("GetObject").Call(jen.Id("resource").Dot("Namespace")).Dot("String").Call(),
+					jen.Id("resource").Dot("Namespace").Op("+").Lit("/").Op("+").Id(fieldAccessPath).Dot("Name"),
 				),
 			),
 		)
