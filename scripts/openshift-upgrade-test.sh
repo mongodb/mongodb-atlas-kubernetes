@@ -178,6 +178,8 @@ build_and_publish_image_and_bundle() {
   VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make image bundle
   echo "Adding REPLACE parameter to the CSV"
   value="v1.0.0" yq e -i '.spec.replaces = env(value)' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+  echo "DEBUG: BUNDLE"
+  cat bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   echo "Publishing bundle"
   VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make bundle-build bundle-push
   cd -
