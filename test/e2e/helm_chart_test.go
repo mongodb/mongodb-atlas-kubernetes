@@ -99,7 +99,7 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 		})
 	})
 
-	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Label("focus-helm-ns"),
+	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Label("helm-ns"),
 		func(test model.TestDataProvider, deploymentType string) { // deploymentType - probably will be moved later ()
 			data = test
 			GinkgoWriter.Println(data.Resources.KeyName)
@@ -128,7 +128,7 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 			})
 			deleteDeploymentAndOperator(&data)
 		},
-		Entry("Several actions with helm update", Label("helm-ns-flow"),
+		Entry("Several actions with helm update", Label("focus-helm-ns-flow"),
 			model.DataProviderWithResources(
 				"helm-ns",
 				model.AProject{},
@@ -150,7 +150,7 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 			),
 			"flex",
 		),
-		Entry("Deployment multiregion by helm chart", Label("helm-advanced-multiregion"),
+		Entry("Deployment multiregion by helm chart", Label("focus-helm-advanced-multiregion"),
 			model.DataProviderWithResources(
 				"helm-advanced-multiregion",
 				model.AProject{},
@@ -168,7 +168,7 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 			),
 			"advanced",
 		),
-		Entry("Flex deployment by helm chart", Label("helm-flex"),
+		Entry("Flex deployment by helm chart", Label("focus-helm-flex"),
 			model.DataProviderWithResources(
 				"helm-flex",
 				model.AProject{},
