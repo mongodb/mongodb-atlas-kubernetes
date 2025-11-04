@@ -4,10 +4,10 @@ BINARY_NAME := scaffolder
 BINARY_PATH := $(BINARY_DIR)/$(BINARY_NAME)
 
 # Define the generated CRD file
-CRD_FILE ?= $(realpath ../../config/generated/crd/bases/crds.yaml)
+CRD_FILE ?= $(realpath ../..)/config/generated/crd/bases/crds.yaml
 # Define the output folder for the CRDs
-CONTROLLER_OUT ?= $(realpath ../../internal/generated/controller)
-INDEXER_OUT ?= $(realpath ../../internal/generated/indexer)
+CONTROLLER_OUT ?= $(realpath ../..)/internal/generated/controller
+INDEXER_OUT ?= $(realpath ../..)/internal/generated/indexer
 
 build: clean $(BINARY_PATH) ## Build the binary
 

@@ -21,8 +21,8 @@ jobs:
           go get go.mongodb.org/atlas-sdk/v20250312008@v20250312008.0.0
           go get github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go
 
-                    controller-gen --version
-                    kustomize version
+          controller-gen --version
+          kustomize version
       - name: Generate CRDs
         run: |
           make gen-crds
