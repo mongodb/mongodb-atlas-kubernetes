@@ -23,6 +23,16 @@ VERSION ?= $(shell git describe --always --tags --dirty --broken | cut -c 2-)
 BUILDTIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GITCOMMIT ?= $(shell git rev-parse --short HEAD 2> /dev/null || true)
 
+# Fix for e2e-gov tests not to use a bad semver version instead
+ifdef USE_NEXT_VERSION
+VERSION=$(NEXT_VERSION)
+endif
+
+# Fix for e2e2 all-in-one test so that it uses an image that already exists in pre-release
+ifdef USE_CURRENT_VERSION
+VERSION=$(CURRENT_VERSION)
+endif
+
 VERSION_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version
 
 # LD_FLAGS
@@ -252,11 +262,11 @@ envtest-assets:
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 
 .PHONY: e2e
-e2e: bundle manifests run-kind $(BUILD_DEPENDENCY) ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
+e2e: bundle manifests run-kind install-crds $(BUILD_DEPENDENCY) ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	AKO_E2E_TEST=1 $(GINKGO) $(shell pwd)/test/$@
 
 .PHONY: e2e2
-e2e2: run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
+e2e2: bundle run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
 	NO_GORUN=1 \
 	AKO_E2E2_TEST=1 \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
@@ -491,12 +501,17 @@ all-platforms:
 
 .PHONY: all-platforms-docker
 all-platforms-docker: all-platforms
-	docker build --build-arg BINARY_PATH=bin/linux/amd64 -f fast.Dockerfile -t manager-amd64 .
-	docker build --build-arg BINARY_PATH=bin/linux/arm64 -f fast.Dockerfile -t manager-arm64 .
+	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=amd64 \
+	-f fast.Dockerfile -t manager-amd64 .
+	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=arm64 \
+	-f fast.Dockerfile -t manager-arm64 .
 
+# docker-image builds the test image always for linux, even on MacOS.
+# This is because the Kubernetes cluster is always run within a Linux VM
 .PHONY: docker-image
-docker-image:
-	docker build  --build-arg BINARY_PATH=bin/$(TARGET_OS)/$(TARGET_ARCH) -f fast.Dockerfile -t $(DEFAULT_IMAGE_URL) .
+docker-image: all-platforms
+	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=$(TARGET_ARCH) \
+	-f fast.Dockerfile -t $(DEFAULT_IMAGE_URL) .
 
 .PHONY: test-docker-image
 test-docker-image: docker-image run-kind

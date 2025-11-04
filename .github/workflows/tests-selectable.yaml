@@ -233,25 +233,8 @@ jobs:
           platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
           echo "k8s_version=$version" >> $GITHUB_OUTPUT
           echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
-      - name: Create k8s Kind Cluster
-        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
-        uses: helm/kind-action@v1.13.0
-        with:
-          version: v0.29.0
-          config: test/helper/e2e/config/kind.yaml
-          node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
-          cluster_name: ${{ matrix.test }}
-          wait: 180s
-      - name: Print kubectl version
-        run: |
-          devbox run -- 'kubectl version'
-      - name: Install CRDs if needed
-        if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'helm-ns' || matrix.test == 'bundle-test' ) }}
-        run: |
-          devbox run -- 'make install'
       - name: Run E2E test
         env:
-          label: "${{ matrix.test }}"
           MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
@@ -260,6 +243,7 @@ jobs:
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
           IMAGE_PULL_SECRET_USERNAME: $
           IMAGE_PULL_SECRET_PASSWORD: "${{ secrets.GITHUB_TOKEN }}"
+          TEST_NAME: "${{ matrix.test }}"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -272,7 +256,7 @@ jobs:
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
         run: |
           echo "Using ENV: ${{ steps.select-env.outputs.ENV }}"
-          devbox run -- make e2e
+          devbox run -- make e2e label=${{ env.TEST_NAME }}
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v5
@@ -304,20 +288,10 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
-      - name: Create k8s Kind Cluster
-        if: ${{ !env.ACT }}
-        uses: helm/kind-action@v1.13.0
-        with:
-          version: v0.29.0
-          config: test/helper/e2e/config/kind.yaml
-          cluster_name: "atlas-gov-e2e-test"
-          wait: 180s
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.14.0
         with:
           enable-cache: 'true'
-      - name: Install CRDs
-        run: devbox run -- 'make install'
       - name: Run e2e test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_GOV_PUBLIC_KEY }}
@@ -329,7 +303,7 @@ jobs:
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
           TEST_NAME: "${{ matrix.test }}"
-        run: devbox run -- ./scripts/launch-ci-e2e.sh
+        run: devbox run -- make e2e label=${{ env.TEST_NAME }}
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v5

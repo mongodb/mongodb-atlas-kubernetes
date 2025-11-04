@@ -133,33 +133,16 @@ jobs:
         run: |
           devbox run -- make bundle
 
-
       - name: Extract k8s version/platform
         id: extract
         run: |
           echo "k8s_version=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $1}')" >> $GITHUB_OUTPUT
           echo "k8s_platform=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $2}')" >> $GITHUB_OUTPUT
 
-      - name: Setup kind cluster
-        if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
-        uses: helm/kind-action@v1.13.0
-        with:
-          version: v0.29.0
-          config: test/helper/e2e/config/kind.yaml
-          node_image: kindest/node:${{ steps.extract.outputs.k8s_version }}
-          cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
-          wait: 180s
-
-      - name: Print Kubernetes version
-        run: devbox run -- kubectl version
-
-      - name: Apply CRDs
-        run: devbox run -- make install-crds
-
       - name: Run CI E2E tests
-        run: devbox run -- make e2e
+        run: devbox run -- make e2e label=${{ env.TEST_NAME}}
         env:
-          label: ${{ matrix.test }}
+          TEST_NAME: ${{ matrix.test }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -210,21 +193,8 @@ jobs:
           echo "k8s_version=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $1}')" >> $GITHUB_OUTPUT
           echo "k8s_platform=$(echo '${{ matrix.k8s }}' | awk -F '-' '{print $2}')" >> $GITHUB_OUTPUT
 
-      - name: Setup kind cluster
-        if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
-        uses: helm/kind-action@v1.13.0
-        with:
-          version: v0.29.0
-          config: test/helper/e2e/config/kind.yaml
-          node_image: kindest/node:${{ steps.extract.outputs.k8s_version }}
-          cluster_name: ${{ matrix.test }}-${{ matrix.k8s }}
-          wait: 180s
-
-      - name: Print Kubernetes version
-        run: devbox run -- kubectl version
-
       - name: Run CI helm-E2E test with prepared image
-        run: devbox run -- ./scripts/launch-ci-e2e.sh
+        run: devbox run -- make e2e label=${{ env.TEST_NAME }}
         env:
           TEST_NAME: ${{ matrix.test }}
           IMAGE_PULL_SECRET_REGISTRY: ghcr.io
