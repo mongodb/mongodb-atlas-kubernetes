@@ -26,15 +26,11 @@ type Cluster struct {
 }
 
 type ClusterSpec struct {
-	/*
-	   ConnectionSecretRef SENSITIVE FIELD
-
-	   Reference to a secret containing the credentials to setup the connection to Atlas.
-	*/
-	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
-
 	// V20250312 The spec of the cluster resource for version v20250312.
 	V20250312 *ClusterSpecV20250312 `json:"v20250312,omitempty"`
+
+	// V20250313 The spec of the cluster resource for version v20250313.
+	V20250313 *ClusterSpecV20250312 `json:"v20250313,omitempty"`
 }
 
 type ClusterSpecV20250312 struct {
@@ -130,11 +126,6 @@ type ClusterSpecV20250312Entry struct {
 	*/
 	GlobalClusterSelfManagedSharding *bool `json:"globalClusterSelfManagedSharding,omitempty"`
 
-	// InternalClusterRole Internal classification of the cluster's role. Possible
-	// values: NONE (regular user cluster), SYSTEM_CLUSTER (system cluster for backup),
-	// INTERNAL_SHADOW_CLUSTER (internal use shadow cluster for testing).
-	InternalClusterRole *string `json:"internalClusterRole,omitempty"`
-
 	/*
 	   Labels Collection of key-value pairs between 1 to 255 characters in length that tag and categorize the cluster. The MongoDB Cloud console doesn't display your labels.
 
@@ -205,12 +196,6 @@ type ClusterSpecV20250312Entry struct {
 	// cluster. If set to `false`, MongoDB Cloud will delete the cluster.
 	TerminationProtectionEnabled *bool `json:"terminationProtectionEnabled,omitempty"`
 
-	// UseAwsTimeBasedSnapshotCopyForFastInitialSync Flag that indicates whether AWS
-	// time-based snapshot copies will be used instead of slower standard snapshot
-	// copies during fast Atlas cross-region initial syncs. This flag is only relevant
-	// for clusters containing AWS nodes.
-	UseAwsTimeBasedSnapshotCopyForFastInitialSync *bool `json:"useAwsTimeBasedSnapshotCopyForFastInitialSync,omitempty"`
-
 	// VersionReleaseSystem Method by which the cluster maintains the MongoDB versions.
 	// If value is `CONTINUOUS`, you must not specify **mongoDBMajorVersion**.
 	VersionReleaseSystem *string `json:"versionReleaseSystem,omitempty"`
@@ -273,7 +258,7 @@ type Links struct {
 
 type ReplicationSpecs struct {
 	/*
-	   RegionConfigs Hardware specifications for nodes set for a given region. Each **regionConfigs** object must be unique by region and cloud provider within the **replicationSpec**. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
+	   RegionConfigs Hardware specifications for nodes set for a given region. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
 
 	   **Example:**
 
@@ -296,7 +281,9 @@ type RegionConfigs struct {
 	// scaling.
 	AnalyticsAutoScaling *AnalyticsAutoScaling `json:"analyticsAutoScaling,omitempty"`
 
-	// AnalyticsSpecs The current hardware specifications for read only nodes in the
+	// AnalyticsSpecs Hardware specifications for read-only nodes in the region.
+	// Read-only nodes can never become the primary member, but can enable local reads.
+	// If you don't specify this parameter, no read-only nodes are deployed to the
 	// region.
 	AnalyticsSpecs *AnalyticsSpecs `json:"analyticsSpecs,omitempty"`
 
@@ -309,18 +296,6 @@ type RegionConfigs struct {
 	   Please note that  using an instanceSize of M2 or M5 will create a Flex cluster instead. Support for the instanceSize of M2 or M5 will be discontinued in January 2026. We recommend using the createFlexCluster API for such configurations moving forward.
 	*/
 	BackingProviderName *string `json:"backingProviderName,omitempty"`
-
-	// EffectiveAnalyticsSpecs The current hardware specifications for read only nodes
-	// in the region.
-	EffectiveAnalyticsSpecs *AnalyticsSpecs `json:"effectiveAnalyticsSpecs,omitempty"`
-
-	// EffectiveElectableSpecs The current hardware specifications for read only nodes
-	// in the region.
-	EffectiveElectableSpecs *AnalyticsSpecs `json:"effectiveElectableSpecs,omitempty"`
-
-	// EffectiveReadOnlySpecs The current hardware specifications for read only nodes
-	// in the region.
-	EffectiveReadOnlySpecs *AnalyticsSpecs `json:"effectiveReadOnlySpecs,omitempty"`
 
 	// ElectableSpecs Hardware specifications for all electable nodes deployed in the
 	// region. Electable nodes can become the primary and can enable local reads. If
@@ -339,7 +314,9 @@ type RegionConfigs struct {
 	// Set dedicated clusters to `AWS`, `GCP`, `AZURE` or `TENANT`.
 	ProviderName *string `json:"providerName,omitempty"`
 
-	// ReadOnlySpecs The current hardware specifications for read only nodes in the
+	// ReadOnlySpecs Hardware specifications for read-only nodes in the region.
+	// Read-only nodes can never become the primary member, but can enable local reads.
+	// If you don't specify this parameter, no read-only nodes are deployed to the
 	// region.
 	ReadOnlySpecs *AnalyticsSpecs `json:"readOnlySpecs,omitempty"`
 
@@ -518,6 +495,10 @@ type ClusterStatus struct {
 	// V20250312 The last observed Atlas state of the cluster resource for version
 	// v20250312.
 	V20250312 *ClusterStatusV20250312 `json:"v20250312,omitempty"`
+
+	// V20250313 The last observed Atlas state of the cluster resource for version
+	// v20250313.
+	V20250313 *ClusterStatusV20250312 `json:"v20250313,omitempty"`
 }
 
 type ClusterStatusV20250312 struct {
@@ -571,11 +552,6 @@ type ClusterStatusV20250312 struct {
 	// Id Unique 24-hexadecimal digit string that identifies the cluster.
 	Id *string `json:"id,omitempty"`
 
-	// InternalClusterRole Internal classification of the cluster's role. Possible
-	// values: NONE (regular user cluster), SYSTEM_CLUSTER (system cluster for backup),
-	// INTERNAL_SHADOW_CLUSTER (internal use shadow cluster for testing).
-	InternalClusterRole *string `json:"internalClusterRole,omitempty"`
-
 	// MongoDBEmployeeAccessGrant MongoDB employee granted access level and expiration
 	// for a cluster.
 	MongoDBEmployeeAccessGrant *MongoDBEmployeeAccessGrant `json:"mongoDBEmployeeAccessGrant,omitempty"`
@@ -610,22 +586,9 @@ type ClusterStatusV20250312 struct {
 	// For replica sets there is only one object representing node configurations.
 	ReplicationSpecs *[]V20250312ReplicationSpecs `json:"replicationSpecs,omitempty"`
 
-	/*
-	   StateName Human-readable label that indicates any current activity being taken on this cluster by the Atlas control plane. With the exception of CREATING and DELETING states, clusters should always be available and have a Primary node even when in states indicating ongoing activity.
-
-	    - `IDLE`: Atlas is making no changes to this cluster and all changes requested via the UI or API can be assumed to have been applied.
-	    - `CREATING`: A cluster being provisioned for the very first time returns state CREATING until it is ready for connections. Ensure IP Access List and DB Users are configured before attempting to connect.
-	    - `UPDATING`: A change requested via the UI, API, AutoScaling, or other scheduled activity is taking place.
-	    - `DELETING`: The cluster is in the process of deletion and will soon be deleted.
-	    - `REPAIRING`: One or more nodes in the cluster are being returned to service by the Atlas control plane. Other nodes should continue to provide service as normal.
-	*/
+	// StateName Human-readable label that indicates the current operating condition of
+	// this cluster.
 	StateName *string `json:"stateName,omitempty"`
-
-	// UseAwsTimeBasedSnapshotCopyForFastInitialSync Flag that indicates whether AWS
-	// time-based snapshot copies will be used instead of slower standard snapshot
-	// copies during fast Atlas cross-region initial syncs. This flag is only relevant
-	// for clusters containing AWS nodes.
-	UseAwsTimeBasedSnapshotCopyForFastInitialSync *bool `json:"useAwsTimeBasedSnapshotCopyForFastInitialSync,omitempty"`
 }
 
 type ConnectionStrings struct {

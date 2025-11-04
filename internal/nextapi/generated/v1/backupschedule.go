@@ -26,13 +26,6 @@ type BackupSchedule struct {
 }
 
 type BackupScheduleSpec struct {
-	/*
-	   ConnectionSecretRef SENSITIVE FIELD
-
-	   Reference to a secret containing the credentials to setup the connection to Atlas.
-	*/
-	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
-
 	// V20250312 The spec of the backupschedule resource for version v20250312.
 	V20250312 *BackupScheduleSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -72,10 +65,6 @@ type BackupScheduleSpecV20250312Entry struct {
 	// DeleteCopiedBackups List that contains a document for each deleted copy setting
 	// whose backup copies you want to delete.
 	DeleteCopiedBackups *[]DeleteCopiedBackups `json:"deleteCopiedBackups,omitempty"`
-
-	// DeleteSnapshots Flag that indicates whether to delete Snapshots that MongoDB
-	// Cloud took previously when deleting the associated backup policy.
-	DeleteSnapshots *bool `json:"deleteSnapshots,omitempty"`
 
 	// Export Policy for automatically exporting Cloud Backup Snapshots.
 	Export *Export `json:"export,omitempty"`

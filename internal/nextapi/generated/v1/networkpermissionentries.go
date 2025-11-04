@@ -26,13 +26,6 @@ type NetworkPermissionEntries struct {
 }
 
 type NetworkPermissionEntriesSpec struct {
-	/*
-	   ConnectionSecretRef SENSITIVE FIELD
-
-	   Reference to a secret containing the credentials to setup the connection to Atlas.
-	*/
-	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
-
 	// V20250312 The spec of the networkpermissionentries resource for version
 	// v20250312.
 	V20250312 *NetworkPermissionEntriesSpecV20250312 `json:"v20250312,omitempty"`

@@ -15,27 +15,22 @@
 package thirdpartyintegration
 
 import (
+	zap "go.uber.org/zap"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
+	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
+
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
-	zap "go.uber.org/zap"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
-	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
 )
 
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=thirdpartyintegrations,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=thirdpartyintegrations/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=thirdpartyintegrations/finalizers,verbs=update
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
-
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=thirdpartyintegrations,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=thirdpartyintegrations/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=thirdpartyintegrations/finalizers,verbs=update
-// +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
-
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=thirdpartyintegrations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=thirdpartyintegrations/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=thirdpartyintegrations/finalizers,verbs=update
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=thirdpartyintegrations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=thirdpartyintegrations/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=thirdpartyintegrations/finalizers,verbs=update
 type ThirdPartyIntegrationHandler struct {
 	ctrlstate.StateHandler[v1.ThirdPartyIntegration]
 	reconciler.AtlasReconciler

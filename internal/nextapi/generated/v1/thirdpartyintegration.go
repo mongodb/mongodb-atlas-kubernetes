@@ -26,13 +26,6 @@ type ThirdPartyIntegration struct {
 }
 
 type ThirdPartyIntegrationSpec struct {
-	/*
-	   ConnectionSecretRef SENSITIVE FIELD
-
-	   Reference to a secret containing the credentials to setup the connection to Atlas.
-	*/
-	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
-
 	// V20250312 The spec of the thirdpartyintegration resource for version v20250312.
 	V20250312 *ThirdPartyIntegrationSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -147,8 +140,8 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 	*/
 	ReadTokenSecretRef *ApiTokenSecretRef `json:"readTokenSecretRef,omitempty"`
 
-	// Region Two-letter code that indicates which regional URL MongoDB uses to access
-	// the Opsgenie API.
+	// Region PagerDuty region that indicates the API Uniform Resource Locator (URL) to
+	// use.
 	Region *string `json:"region,omitempty"`
 
 	/*
@@ -180,18 +173,9 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 	// and metrics on the number of collections, storage size, and index size.
 	SendDatabaseMetrics *bool `json:"sendDatabaseMetrics,omitempty"`
 
-	// SendQueryStatsMetrics Toggle sending query shape metrics that includes query
-	// hash and metrics on latency, execution frequency, documents returned, and
-	// timestamps.
-	SendQueryStatsMetrics *bool `json:"sendQueryStatsMetrics,omitempty"`
-
 	// SendUserProvidedResourceTags Toggle sending user provided group and cluster
 	// resource tags with the datadog metrics.
 	SendUserProvidedResourceTags *bool `json:"sendUserProvidedResourceTags,omitempty"`
-
-	// SendUserProvidedResourceTagsEnabled Toggle sending user provided group and
-	// cluster resource tags with the prometheus metrics.
-	SendUserProvidedResourceTagsEnabled *bool `json:"sendUserProvidedResourceTagsEnabled,omitempty"`
 
 	// ServiceDiscovery Desired method to discover the Prometheus service.
 	ServiceDiscovery *string `json:"serviceDiscovery,omitempty"`
@@ -267,18 +251,9 @@ type ThirdPartyIntegrationStatusV20250312 struct {
 	// and metrics on the number of collections, storage size, and index size.
 	SendDatabaseMetrics *bool `json:"sendDatabaseMetrics,omitempty"`
 
-	// SendQueryStatsMetrics Toggle sending query shape metrics that includes query
-	// hash and metrics on latency, execution frequency, documents returned, and
-	// timestamps.
-	SendQueryStatsMetrics *bool `json:"sendQueryStatsMetrics,omitempty"`
-
 	// SendUserProvidedResourceTags Toggle sending user provided group and cluster
 	// resource tags with the datadog metrics.
 	SendUserProvidedResourceTags *bool `json:"sendUserProvidedResourceTags,omitempty"`
-
-	// SendUserProvidedResourceTagsEnabled Toggle sending user provided group and
-	// cluster resource tags with the prometheus metrics.
-	SendUserProvidedResourceTagsEnabled *bool `json:"sendUserProvidedResourceTagsEnabled,omitempty"`
 
 	// Type Human-readable label that identifies the service to which you want to
 	// integrate with MongoDB Cloud. The value must match the third-party service

@@ -27,13 +27,6 @@ type SearchIndex struct {
 }
 
 type SearchIndexSpec struct {
-	/*
-	   ConnectionSecretRef SENSITIVE FIELD
-
-	   Reference to a secret containing the credentials to setup the connection to Atlas.
-	*/
-	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
-
 	// V20250312 The spec of the searchindex resource for version v20250312.
 	V20250312 *SearchIndexSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -123,9 +116,6 @@ type Definition struct {
 
 	// Synonyms Rule sets that map words to their synonyms in this index.
 	Synonyms *[]Synonyms `json:"synonyms,omitempty"`
-
-	// TypeSets Type sets for the index.
-	TypeSets *[]TypeSets `json:"typeSets,omitempty"`
 }
 
 type Analyzers struct {
@@ -156,13 +146,9 @@ type Analyzers struct {
 }
 
 type Mappings struct {
-	// Dynamic Indicates whether the index uses static, default dynamic, or
-	// configurable dynamic mappings. Set to **true** to enable dynamic mapping with
-	// default type set or define object to specify the name of the configured type
-	// sets for dynamic mapping. If you specify configurable dynamic mappings, you must
-	// define the referred type sets in the **typeSets** field. Set to **false** to use
-	// only static mappings through **mappings.fields**.
-	Dynamic *apiextensionsv1.JSON `json:"dynamic,omitempty"`
+	// Dynamic Flag that indicates whether the index uses dynamic or static mappings.
+	// Required if **mappings.fields** is omitted.
+	Dynamic *bool `json:"dynamic,omitempty"`
 
 	// Fields One or more field specifications for the Atlas Search index. Required if
 	// **mappings.dynamic** is omitted or set to **false**.
@@ -186,18 +172,6 @@ type Source struct {
 	// Collection Label that identifies the MongoDB collection that stores words and
 	// their applicable synonyms.
 	Collection string `json:"collection"`
-}
-
-type TypeSets struct {
-	// Name Label that identifies the type set name. Each **typeSets.name** must be
-	// unique within the same index definition.
-	Name string `json:"name"`
-
-	// Types List of types associated with the type set. Each type definition must
-	// include a "type" field specifying the search field type ("autocomplete",
-	// "boolean", "date", "geo", "number", "objectId", "string", "token", or "uuid")
-	// and may include additional configuration properties specific to that type.
-	Types *[]apiextensionsv1.JSON `json:"types,omitempty"`
 }
 
 type SearchIndexStatus struct {

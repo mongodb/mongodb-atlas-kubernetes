@@ -2,10 +2,7 @@
 
 package v1
 
-import (
-	k8s "github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 func init() {
 	SchemeBuilder.Register(&Organization{})
@@ -26,13 +23,6 @@ type Organization struct {
 }
 
 type OrganizationSpec struct {
-	/*
-	   ConnectionSecretRef SENSITIVE FIELD
-
-	   Reference to a secret containing the credentials to setup the connection to Atlas.
-	*/
-	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
-
 	// V20250312 The spec of the organization resource for version v20250312.
 	V20250312 *V20250312 `json:"v20250312,omitempty"`
 }
@@ -44,10 +34,7 @@ type V20250312 struct {
 }
 
 type Entry struct {
-	// ApiKey Organization Service Account that Atlas creates for this organization. If
-	// omitted, Atlas doesn't create an organization Service Account for this
-	// organization. If specified, this object requires all body parameters. Note that
-	// API Keys cannot be specified in the same request.
+	// ApiKey Details of the programmatic API key to be created.
 	ApiKey *ApiKey `json:"apiKey,omitempty"`
 
 	// FederationSettingsId Unique 24-hexadecimal digit string that identifies the
@@ -67,12 +54,6 @@ type Entry struct {
 	// when you authenticate with Programmatic API Keys.
 	OrgOwnerId *string `json:"orgOwnerId,omitempty"`
 
-	// ServiceAccount Organization Service Account that Atlas creates for this
-	// organization. If omitted, Atlas doesn't create an organization Service Account
-	// for this organization. If specified, this object requires all body parameters.
-	// Note that API Keys cannot be specified in the same request.
-	ServiceAccount *ServiceAccount `json:"serviceAccount,omitempty"`
-
 	// SkipDefaultAlertsSettings Disables automatic alert creation. When set to true,
 	// no organization level alerts will be created automatically.
 	SkipDefaultAlertsSettings *bool `json:"skipDefaultAlertsSettings,omitempty"`
@@ -86,23 +67,6 @@ type ApiKey struct {
 	// Roles List of roles to grant this API key. If you provide this list, provide a
 	// minimum of one role and ensure each role applies to this organization.
 	Roles []string `json:"roles"`
-}
-
-type ServiceAccount struct {
-	// Description Human readable description for the Service Account.
-	Description string `json:"description"`
-
-	// Name Human-readable name for the Service Account. The name is modifiable and
-	// does not have to be unique.
-	Name string `json:"name"`
-
-	// Roles A list of organization-level roles for the Service Account.
-	Roles []string `json:"roles"`
-
-	// SecretExpiresAfterHours The expiration time of the new Service Account secret,
-	// provided in hours. The minimum and maximum allowed expiration times are subject
-	// to change and are controlled by the organization's settings.
-	SecretExpiresAfterHours int `json:"secretExpiresAfterHours"`
 }
 
 type OrganizationStatus struct {
@@ -127,10 +91,6 @@ type OrganizationStatusV20250312 struct {
 	// Organization Details that describe the organization.
 	Organization *V20250312Organization `json:"organization,omitempty"`
 
-	// ServiceAccount Organization Service Account that Atlas created for the
-	// organization.
-	ServiceAccount *V20250312ServiceAccount `json:"serviceAccount,omitempty"`
-
 	// SkipDefaultAlertsSettings Disables automatic alert creation. When set to true,
 	// no organization level alerts will be created automatically.
 	SkipDefaultAlertsSettings *bool `json:"skipDefaultAlertsSettings,omitempty"`
@@ -149,51 +109,6 @@ type V20250312Organization struct {
 	// SkipDefaultAlertsSettings Disables automatic alert creation. When set to true,
 	// no organization level alerts will be created automatically.
 	SkipDefaultAlertsSettings *bool `json:"skipDefaultAlertsSettings,omitempty"`
-}
-
-type V20250312ServiceAccount struct {
-	// ClientId The Client ID of the Service Account.
-	ClientId *string `json:"clientId,omitempty"`
-
-	// CreatedAt The date that the Service Account was created on. This parameter
-	// expresses its value in the ISO 8601 timestamp format in UTC.
-	CreatedAt *string `json:"createdAt,omitempty"`
-
-	// Description Human readable description for the Service Account.
-	Description *string `json:"description,omitempty"`
-
-	// Name Human-readable name for the Service Account.
-	Name *string `json:"name,omitempty"`
-
-	// Roles A list of Organization roles associated with the Service Account.
-	Roles *[]string `json:"roles,omitempty"`
-
-	// Secrets A list of secrets associated with the specified Service Account.
-	Secrets *[]Secrets `json:"secrets,omitempty"`
-}
-
-type Secrets struct {
-	// CreatedAt The date that the secret was created on. This parameter expresses its
-	// value in the ISO 8601 timestamp format in UTC.
-	CreatedAt string `json:"createdAt"`
-
-	// ExpiresAt The date for the expiration of the secret. This parameter expresses
-	// its value in the ISO 8601 timestamp format in UTC.
-	ExpiresAt string `json:"expiresAt"`
-
-	// Id Unique 24-hexadecimal digit string that identifies the secret.
-	Id string `json:"id"`
-
-	// LastUsedAt The last time the secret was used. This parameter expresses its value
-	// in the ISO 8601 timestamp format in UTC.
-	LastUsedAt *string `json:"lastUsedAt,omitempty"`
-
-	// MaskedSecretValue The masked Service Account secret.
-	MaskedSecretValue *string `json:"maskedSecretValue,omitempty"`
-
-	// Secret The secret for the Service Account. It will be returned only the first
-	// time after creation.
-	Secret *string `json:"secret,omitempty"`
 }
 
 // +kubebuilder:object:root=true
