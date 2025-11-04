@@ -21,6 +21,7 @@ import (
 	"github.com/Masterminds/semver"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -136,7 +137,7 @@ func ResourceVersionIsValid(resource akov2.AtlasCustomResource) (bool, error) {
 }
 
 // ReconciliationShouldBeSkipped returns 'true' if reconciliation should be skipped for this resource.
-func ReconciliationShouldBeSkipped(resource akov2.AtlasCustomResource) bool {
+func ReconciliationShouldBeSkipped(resource metav1.Object) bool {
 	if v, ok := resource.GetAnnotations()[ReconciliationPolicyAnnotation]; ok {
 		return v == ReconciliationPolicySkip
 	}
