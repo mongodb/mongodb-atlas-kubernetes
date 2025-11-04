@@ -53,6 +53,18 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath 
 		return fmt.Errorf("failed to generate indexers: %w", err)
 	}
 
+	// Parse reference fields for watch generation
+	referenceFields, err := ParseReferenceFields(resultPath, crdKind)
+	if err != nil {
+		return fmt.Errorf("failed to parse reference fields: %w", err)
+	}
+
+	// Group references by target kind
+	refsByKind := make(map[string][]ReferenceField)
+	for _, ref := range referenceFields {
+		refsByKind[ref.ReferencedKind] = append(refsByKind[ref.ReferencedKind], ref)
+	}
+
 	baseControllerDir := filepath.Join(controllerOutDir, strings.ToLower(resourceName))
 
 	controllerName := resourceName
@@ -66,7 +78,7 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath 
 		return fmt.Errorf("failed to generate controller file: %w", err)
 	}
 
-	if err := generateMainHandlerFile(controllerDir, controllerName, resourceName, typesPath, parsedConfig.Mappings); err != nil {
+	if err := generateMainHandlerFile(controllerDir, controllerName, resourceName, typesPath, parsedConfig.Mappings, refsByKind); err != nil {
 		return fmt.Errorf("failed to generate main handler file: %w", err)
 	}
 
@@ -193,7 +205,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	return f.Save(fileName)
 }
 
-func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string, mappings []MappingWithConfig) error {
+func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	apiPkg := typesPath
 
@@ -231,13 +243,13 @@ func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string
 		jen.Return(jen.Id("selectedHandler").Op(",").Nil()),
 	)
 
-	generateDelegatingStateHandlers(f, controllerName, resourceName, apiPkg)
+	generateDelegatingStateHandlers(f, controllerName, resourceName, apiPkg, refsByKind)
 
 	fileName := filepath.Join(dir, "handler.go")
 	return f.Save(fileName)
 }
 
-func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, apiPkg string) {
+func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, apiPkg string, refsByKind map[string][]ReferenceField) {
 	handlers := []string{
 		"HandleInitial",
 		"HandleImportRequested",
@@ -280,19 +292,9 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 		jen.Return(jen.Id("obj"), jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").Call()),
 	)
 
-	f.Comment("SetupWithManager sets up the controller with the Manager")
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("SetupWithManager").Params(
-		jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
-		jen.Id("rec").Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Reconciler"),
-		jen.Id("defaultOptions").Qual("sigs.k8s.io/controller-runtime/pkg/controller", "Options"),
-	).Error().Block(
-		jen.Id("h").Dot("Client").Op("=").Id("mgr").Dot("GetClient").Call(),
-		jen.Return(jen.Qual("sigs.k8s.io/controller-runtime", "NewControllerManagedBy").Call(jen.Id("mgr")).
-			Dot("Named").Call(jen.Lit(resourceName)).
-			Dot("For").Call(jen.Id("h").Dot("For").Call()).
-			Dot("WithOptions").Call(jen.Id("defaultOptions")).
-			Dot("Complete").Call(jen.Id("rec"))),
-	)
+	generateMapperFunctions(f, controllerName, resourceName, apiPkg, refsByKind)
+	
+	generateSetupWithManager(f, controllerName, resourceName, refsByKind)
 }
 
 func generateVersionHandlerFile(dir, controllerName, resourceName, typesPath string, mapping MappingWithConfig) error {
@@ -392,4 +394,153 @@ func generateVersionInterfaceMethods(f *jen.File, controllerName, resourceName, 
 		jen.Comment("This method is not used for version-specific handlers but required by StateHandler interface"),
 		jen.Return(jen.Nil()),
 	)
+}
+
+func generateSetupWithManager(f *jen.File, controllerName, resourceName string, refsByKind map[string][]ReferenceField) {
+	f.Comment("SetupWithManager sets up the controller with the Manager")
+
+	setupChain := jen.Qual("sigs.k8s.io/controller-runtime", "NewControllerManagedBy").Call(jen.Id("mgr")).
+		Dot("Named").Call(jen.Lit(resourceName)).
+		Dot("For").Call(jen.Id("h").Dot("For").Call())
+
+	// Add Watches()
+	for kind := range refsByKind {
+		watchedTypeInstance := getWatchedTypeInstance(kind)
+		mapperFuncName := fmt.Sprintf("%sFor%sMapFunc", strings.ToLower(resourceName), kind)
+
+		setupChain = setupChain.
+			Dot("Watches").Call(
+			watchedTypeInstance,
+			jen.Qual("sigs.k8s.io/controller-runtime/pkg/handler", "EnqueueRequestsFromMapFunc").Call(
+				jen.Id("h").Dot(mapperFuncName).Call(),
+			),
+			jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").Call(
+				jen.Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "ResourceVersionChangedPredicate").Values(),
+			),
+		)
+	}
+
+	setupChain = setupChain.
+		Dot("WithOptions").Call(jen.Id("defaultOptions")).
+		Dot("Complete").Call(jen.Id("rec"))
+
+	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("SetupWithManager").Params(
+		jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
+		jen.Id("rec").Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Reconciler"),
+		jen.Id("defaultOptions").Qual("sigs.k8s.io/controller-runtime/pkg/controller", "Options"),
+	).Error().Block(
+		jen.Id("h").Dot("Client").Op("=").Id("mgr").Dot("GetClient").Call(),
+		jen.Return(setupChain),
+	)
+}
+
+func generateMapperFunctions(f *jen.File, controllerName, resourceName, apiPkg string, refsByKind map[string][]ReferenceField) {
+	for kind, refs := range refsByKind {
+		if len(refs) == 0 {
+			continue
+		}
+
+		indexerType := refs[0].IndexerType
+		mapperFuncName := fmt.Sprintf("%sFor%sMapFunc", strings.ToLower(resourceName), kind)
+
+		switch indexerType {
+		case "project":
+			generateIndexerBasedMapperFunction(f, controllerName, resourceName, apiPkg, kind, mapperFuncName, "ProjectsIndexMapperFunc")
+		case "credentials":
+			generateIndexerBasedMapperFunction(f, controllerName, resourceName, apiPkg, kind, mapperFuncName, "CredentialsIndexMapperFunc")
+		case "resource":
+			generateResourceMapperFunction(f, controllerName, resourceName, apiPkg, kind, mapperFuncName, refs)
+		}
+	}
+}
+
+// For Group or Secrets
+func generateIndexerBasedMapperFunction(f *jen.File, controllerName, resourceName, apiPkg, referencedKind, mapperFuncName, indexerHelperFunc string) {
+	indexName := fmt.Sprintf("%sBy%sIndex", resourceName, referencedKind)
+	listTypeName := fmt.Sprintf("%sList", resourceName)
+	requestsFuncName := fmt.Sprintf("%sRequestsFrom%s", resourceName, referencedKind)
+
+	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
+		jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer", indexerHelperFunc).Call(
+			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexer", indexName),
+			jen.Func().Params().Op("*").Qual(apiPkg, listTypeName).Block(
+				jen.Return(jen.Op("&").Qual(apiPkg, listTypeName).Values()),
+			),
+			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexer", requestsFuncName),
+			jen.Id("h").Dot("Client"),
+			jen.Id("h").Dot("Log"),
+		)),
+	)
+}
+
+func generateResourceMapperFunction(f *jen.File, controllerName, resourceName, apiPkg, referencedKind, mapperFuncName string, refs []ReferenceField) {
+	indexName := fmt.Sprintf("%sBy%sIndex", resourceName, referencedKind)
+	listTypeName := fmt.Sprintf("%sList", resourceName)
+	watchedType := getWatchedType(referencedKind)
+
+	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
+		jen.Return(jen.Func().Params(
+			jen.Id("ctx").Qual("context", "Context"),
+			jen.Id("obj").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
+		).Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Block(
+
+			jen.List(jen.Id("refObj"), jen.Id("ok")).Op(":=").Id("obj").Assert(jen.Op("*").Add(watchedType)),
+			jen.If(jen.Op("!").Id("ok")).Block(
+				jen.Id("h").Dot("Log").Dot("Warnf").Call(
+					jen.Lit(fmt.Sprintf("watching %s but got %%T", referencedKind)),
+					jen.Id("obj"),
+				),
+				jen.Return(jen.Nil()),
+			),
+
+			jen.Id("listOpts").Op(":=").Op("&").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ListOptions").Values(jen.Dict{
+				jen.Id("FieldSelector"): jen.Qual("k8s.io/apimachinery/pkg/fields", "OneTermEqualSelector").Call(
+					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexer", indexName),
+					jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKeyFromObject").Call(jen.Id("refObj")).Dot("String").Call(),
+				),
+			}),
+			jen.Id("list").Op(":=").Op("&").Qual(apiPkg, listTypeName).Values(),
+			jen.Id("err").Op(":=").Id("h").Dot("Client").Dot("List").Call(jen.Id("ctx"), jen.Id("list"), jen.Id("listOpts")),
+			jen.If(jen.Id("err").Op("!=").Nil()).Block(
+				jen.Id("h").Dot("Log").Dot("Errorf").Call(
+					jen.Lit(fmt.Sprintf("failed to list from indexer %s: %%v", indexName)),
+					jen.Id("err"),
+				),
+				jen.Return(jen.Nil()),
+			),
+
+			jen.Id("requests").Op(":=").Make(jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"), jen.Lit(0), jen.Len(jen.Id("list").Dot("Items"))),
+			jen.For(jen.List(jen.Id("_"), jen.Id("item")).Op(":=").Range().Id("list").Dot("Items")).Block(
+				jen.Id("requests").Op("=").Append(jen.Id("requests"), jen.Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Values(jen.Dict{
+					jen.Id("NamespacedName"): jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
+						jen.Id("Name"):      jen.Id("item").Dot("Name"),
+						jen.Id("Namespace"): jen.Id("item").Dot("Namespace"),
+					}),
+				})),
+			),
+			jen.Return(jen.Id("requests")),
+		)),
+	)
+}
+
+func getWatchedTypeInstance(kind string) *jen.Statement {
+	switch kind {
+	case "Secret":
+		return jen.Op("&").Qual("k8s.io/api/core/v1", "Secret").Values()
+	case "Group":
+		return jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", "Group").Values()
+	default:
+		return jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", kind).Values()
+	}
+}
+
+func getWatchedType(kind string) *jen.Statement {
+	switch kind {
+	case "Secret":
+		return jen.Qual("k8s.io/api/core/v1", "Secret")
+	case "Group":
+		return jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", "Group")
+	default:
+		return jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", kind)
+	}
 }

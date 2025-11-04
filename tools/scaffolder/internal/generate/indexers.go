@@ -268,8 +268,14 @@ func GenerateIndexers(resultPath, crdKind, indexerOutDir string) error {
 	}
 
 	// Group references by target kind (e.g., all Secret refs together, all Group refs together)
+	// Skip array-based references for now as they require iteration logic
 	refsByKind := make(map[string][]ReferenceField)
 	for _, ref := range references {
+		// Skip references that are arrays for now
+		if strings.Contains(ref.FieldPath, ".items.") {
+			fmt.Printf("Skipping array-based reference %s in %s (array indexing not yet supported)\n", ref.FieldName, crdKind)
+			continue
+		}
 		refsByKind[ref.ReferencedKind] = append(refsByKind[ref.ReferencedKind], ref)
 	}
 
@@ -353,10 +359,8 @@ func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir stri
 	// Keys method with logic for all reference fields
 	generateKeysMethod(f, structName, crdKind, indexer)
 
-	// For Secret references, add helper Requests function
-	if indexer.TargetKind == "Secret" {
-		generateRequestsFunction(f, crdKind)
-	}
+	// Always generate helper Requests function for all reference types
+	generateRequestsFunction(f, crdKind, indexer.TargetKind)
 
 	if err := f.Save(filePath); err != nil {
 		return fmt.Errorf("failed to save file %s: %w", filePath, err)
@@ -399,12 +403,12 @@ func generateFieldExtractionCode(fields []ReferenceField, targetKind string) []j
 
 	for _, field := range fields {
 		// Build the field path from the FieldPath
-		// FieldPath looks like: "properties.spec.properties.v20250312.properties.groupRef"
-		// We need to convert this to: resource.Spec.V20250312.GroupRef
+		// FieldPath looks like: "properties.spec.properties.<version>.properties.groupRef"
+		// We need to convert this to: resource.Spec.<version>.GroupRef
 		fieldAccessPath := buildFieldAccessPath(field.FieldPath)
 
-		// Generate: if resource.Spec.V20250312.GroupRef != nil && resource.Spec.V20250312.GroupRef.Name != "" {
-		//   keys = append(keys, resource.Spec.V20250312.GroupRef.GetObject(resource.Namespace).String())
+		// Generate: if resource.Spec.<version>.GroupRef != nil && resource.Spec.<version>.GroupRef.Name != "" {
+		//   keys = append(keys, types.NamespacedName{Name: resource.Spec.<version>.GroupRef.Name, Namespace: resource.Namespace}.String())
 		// }
 		code = append(code,
 			jen.If(
@@ -416,7 +420,10 @@ func generateFieldExtractionCode(fields []ReferenceField, targetKind string) []j
 			).Block(
 				jen.Id("keys").Op("=").Append(
 					jen.Id("keys"),
-					jen.Id(fieldAccessPath).Dot("GetObject").Call(jen.Id("resource").Dot("Namespace")).Dot("String").Call(),
+					jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
+						jen.Id("Name"):      jen.Id(fieldAccessPath).Dot("Name"),
+						jen.Id("Namespace"): jen.Id("resource").Dot("Namespace"),
+					}).Dot("String").Call(),
 				),
 			),
 		)
@@ -432,8 +439,8 @@ func buildFieldAccessPath(fieldPath string) string {
 	for i := 0; i < len(parts); i++ {
 		part := parts[i]
 
-		// Skip "properties" keywords
-		if part == "properties" {
+		// Skip "properties" and "items" keywords. Array based indexers are not supported for now
+		if part == "properties" || part == "items" {
 			continue
 		}
 
@@ -451,15 +458,21 @@ func capitalizeFirst(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-func generateRequestsFunction(f *jen.File, crdKind string) {
+func generateRequestsFunction(f *jen.File, crdKind string, targetKind string) {
 	listTypeName := fmt.Sprintf("%sList", crdKind)
-	requestsFuncName := fmt.Sprintf("%sRequests", crdKind)
+	// Make function name unique per targetKind to avoid duplicates when multiple indexers exist for same CRD
+	requestsFuncName := fmt.Sprintf("%sRequestsFrom%s", crdKind, targetKind)
 	f.Func().Id(requestsFuncName).Params(
 		jen.Id("list").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", listTypeName),
 	).Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Block(
 		jen.Id("requests").Op(":=").Make(jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"), jen.Lit(0), jen.Len(jen.Id("list").Dot("Items"))),
 		jen.For(jen.List(jen.Id("_"), jen.Id("item")).Op(":=").Range().Id("list").Dot("Items")).Block(
-			jen.Id("requests").Op("=").Append(jen.Id("requests"), jen.Id("toRequest").Call(jen.Op("&").Id("item"))),
+			jen.Id("requests").Op("=").Append(jen.Id("requests"), jen.Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Values(jen.Dict{
+				jen.Id("NamespacedName"): jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
+					jen.Id("Name"):      jen.Id("item").Dot("Name"),
+					jen.Id("Namespace"): jen.Id("item").Dot("Namespace"),
+				}),
+			})),
 		),
 		jen.Return(jen.Id("requests")),
 	)
