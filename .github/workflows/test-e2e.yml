@@ -142,7 +142,7 @@ jobs:
 
       - name: Setup kind cluster
         if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
-        uses: helm/kind-action@v1.12.0
+        uses: helm/kind-action@v1.13.0
         with:
           version: v0.29.0
           config: test/helper/e2e/config/kind.yaml
@@ -212,7 +212,7 @@ jobs:
 
       - name: Setup kind cluster
         if: ${{ steps.extract.outputs.k8s_platform == 'kind' }}
-        uses: helm/kind-action@v1.12.0
+        uses: helm/kind-action@v1.13.0
         with:
           version: v0.29.0
           config: test/helper/e2e/config/kind.yaml
