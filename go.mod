@@ -29,12 +29,11 @@ require (
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.11.1
 	github.com/yudai/gojsondiff v1.0.0
-	go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0
 	go.mongodb.org/atlas-sdk/v20250312006 v20250312006.1.0
 	go.mongodb.org/mongo-driver v1.17.6
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.17.0
-	google.golang.org/api v0.253.0
+	google.golang.org/api v0.254.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.34.1
@@ -90,7 +89,7 @@ require (
 	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/tools v0.37.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251014184007-4626949a642f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	k8s.io/component-base v0.34.1 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
