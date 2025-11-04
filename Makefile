@@ -182,7 +182,8 @@ SBOMS_DIR ?= template
 
 SHELLCHECK_OPTIONS ?= -e SC2086
 
-DEFAULT_IMAGE_URL := localhost:5000/mongodb-atlas-kubernetes-operator:$(NEXT_VERSION)-test
+TEST_REGISTRY ?= localhost:5000
+DEFAULT_IMAGE_URL := $(TEST_REGISTRY)/mongodb-atlas-kubernetes-operator:$(NEXT_VERSION)-test
 export IMAGE_URL
 
 ifndef IMAGE_URL
