@@ -115,27 +115,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	doDeploymentStatusChecks := func() {
 		By("Checking observed Deployment state", func() {
-			deploymentName := createdDeployment.GetDeploymentName()
-			Expect(deploymentName).ToNot(BeEmpty())
-
-			atlasDeployment, _, err := atlasClient.ClustersApi.
-				GetCluster(context.Background(), createdProject.Status.ID, deploymentName).
-				Execute()
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
-			Expect(createdDeployment.Status.ConnectionStrings.Standard).To(Equal(atlasDeployment.ConnectionStrings.GetStandard()))
-			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.GetStandardSrv()))
-			Expect(createdDeployment.Status.MongoDBVersion).To(Equal(atlasDeployment.GetMongoDBVersion()))
-			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
-			Expect(createdDeployment.Status.Conditions).To(ConsistOf(conditions.MatchConditions(
-				api.TrueCondition(api.DeploymentReadyType),
-				api.TrueCondition(api.ReadyType),
-				api.TrueCondition(api.ValidationSucceeded),
-				api.TrueCondition(api.ResourceVersionStatus),
-			)))
-			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
+			doDeploymentStatusChecksFor(createdProject, createdDeployment)
 		})
 	}
 
@@ -308,59 +288,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			// it's needed to skip deployment deletion in AfterEach
 			createdDeployment = nil
-		})
-	})
-
-	Describe("Create deployment & change ReplicationSpecs", Label("focus-AtlasDeploymentSharding"), func() {
-		It("Should Succeed", func(ctx context.Context) {
-			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).
-				WithInstanceSize("M30")
-
-			// Atlas will add some defaults in case the Atlas Operator doesn't set them
-			replicationSpecsCheck := func(deployment *admin.ClusterDescription20240805) {
-				Expect(deployment.GetReplicationSpecs()[0].GetId()).NotTo(BeEmpty())
-				Expect(deployment.GetReplicationSpecs()[0].GetZoneName()).To(Equal("Zone 1"))
-				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()).To(HaveLen(1))
-				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()[0]).NotTo(BeNil())
-			}
-
-			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				performCreate(createdDeployment, 30*time.Minute)
-
-				doDeploymentStatusChecks()
-
-				singleNumShard := func(deployment *admin.ClusterDescription20240805) {
-					Expect(len(deployment.GetReplicationSpecs())).To(Equal(1))
-				}
-				checkAtlasState(replicationSpecsCheck, singleNumShard)
-			})
-
-			By("Upgrade to sharded", func() {
-				createdDeployment = performUpdate(ctx, 40*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.ClusterType = "SHARDED"
-				})
-				doDeploymentStatusChecks()
-
-				singleNumShard := func(deployment *admin.ClusterDescription20240805) {
-					Expect(len(deployment.GetReplicationSpecs())).To(Equal(1))
-				}
-				// ReplicationSpecs has the same defaults but the number of shards has changed
-				checkAtlasState(replicationSpecsCheck, singleNumShard)
-			})
-
-			By("Increase number of shards", func() {
-				numShards := 2
-				createdDeployment = performUpdate(ctx, 40*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].NumShards = numShards
-				})
-				doDeploymentStatusChecks()
-
-				twoNumShard := func(deployment *admin.ClusterDescription20240805) {
-					Expect(len(deployment.GetReplicationSpecs())).To(Equal(numShards))
-				}
-				// ReplicationSpecs has the same defaults but the number of shards has changed
-				checkAtlasState(replicationSpecsCheck, twoNumShard)
-			})
 		})
 	})
 
@@ -1500,6 +1427,156 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 		})
 	})
 })
+
+var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentSharding", "deployment-non-backups"), func() {
+	var (
+		connectionSecret  *corev1.Secret
+		createdProject    *akov2.AtlasProject
+		createdDeployment *akov2.AtlasDeployment
+		manualDeletion    bool
+	)
+
+	BeforeEach(func() {
+		prepareControllers(false)
+
+		deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, atlasClient.FlexClustersApi, false)
+		createdDeployment = &akov2.AtlasDeployment{}
+
+		manualDeletion = false
+
+		connectionSecret = createConnectionSecret()
+		createdProject = createProject(connectionSecret)
+	})
+
+	AfterEach(func() {
+		if DeploymentDevMode {
+			return
+		}
+		if manualDeletion && createdProject != nil {
+			By("Deleting the deployment in Atlas manually", func() {
+				// We need to remove the deployment in Atlas to let project get removed
+				_, err := atlasClient.ClustersApi.
+					DeleteCluster(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
+					Execute()
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName()), 600, interval).Should(BeTrue())
+				createdDeployment = nil
+			})
+		}
+		if createdProject != nil && createdProject.Status.ID != "" {
+			if createdDeployment != nil {
+				deleteDeploymentFromKubernetes(createdProject, createdDeployment)
+			}
+
+			deleteProjectFromKubernetes(createdProject)
+		}
+		removeControllersAndNamespace()
+	})
+
+	doDeploymentStatusChecks := func() {
+		By("Checking observed Deployment state", func() {
+			doDeploymentStatusChecksFor(createdProject, createdDeployment)
+		})
+	}
+
+	checkAtlasState := func(additionalChecks ...func(c *admin.ClusterDescription20240805)) {
+		By("Verifying Deployment state in Atlas", func() {
+			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersApi.
+				GetCluster(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
+				Execute()
+			Expect(err).ToNot(HaveOccurred())
+
+			for _, check := range additionalChecks {
+				check(atlasDeploymentAsAtlas)
+			}
+		})
+	}
+
+	performCreate := func(deployment *akov2.AtlasDeployment, timeout time.Duration) {
+		Expect(k8sClient.Create(context.Background(), deployment)).To(Succeed())
+
+		Eventually(func(g Gomega) bool {
+			return resources.CheckCondition(k8sClient, createdDeployment, api.TrueCondition(api.ReadyType), validateDeploymentCreatingFunc(g))
+		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
+	}
+
+	Describe("Create deployment & change ReplicationSpecs", func() {
+		It("Should Succeed", func(ctx context.Context) {
+			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).
+				WithInstanceSize("M30")
+
+			// Atlas will add some defaults in case the Atlas Operator doesn't set them
+			replicationSpecsCheck := func(deployment *admin.ClusterDescription20240805) {
+				Expect(deployment.GetReplicationSpecs()[0].GetId()).NotTo(BeEmpty())
+				Expect(deployment.GetReplicationSpecs()[0].GetZoneName()).To(Equal("Zone 1"))
+				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()).To(HaveLen(1))
+				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()[0]).NotTo(BeNil())
+			}
+
+			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				performCreate(createdDeployment, 30*time.Minute)
+
+				doDeploymentStatusChecks()
+
+				singleNumShard := func(deployment *admin.ClusterDescription20240805) {
+					Expect(len(deployment.GetReplicationSpecs())).To(Equal(1))
+				}
+				checkAtlasState(replicationSpecsCheck, singleNumShard)
+			})
+
+			By("Upgrade to sharded", func() {
+				createdDeployment = performUpdate(ctx, 40*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+					deployment.Spec.DeploymentSpec.ClusterType = "SHARDED"
+				})
+				doDeploymentStatusChecks()
+
+				singleNumShard := func(deployment *admin.ClusterDescription20240805) {
+					Expect(len(deployment.GetReplicationSpecs())).To(Equal(1))
+				}
+				// ReplicationSpecs has the same defaults but the number of shards has changed
+				checkAtlasState(replicationSpecsCheck, singleNumShard)
+			})
+
+			By("Increase number of shards", func() {
+				numShards := 2
+				createdDeployment = performUpdate(ctx, 40*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
+					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].NumShards = numShards
+				})
+				doDeploymentStatusChecks()
+
+				twoNumShard := func(deployment *admin.ClusterDescription20240805) {
+					Expect(len(deployment.GetReplicationSpecs())).To(Equal(numShards))
+				}
+				// ReplicationSpecs has the same defaults but the number of shards has changed
+				checkAtlasState(replicationSpecsCheck, twoNumShard)
+			})
+		})
+	})
+})
+
+func doDeploymentStatusChecksFor(createdProject *akov2.AtlasProject, createdDeployment *akov2.AtlasDeployment) {
+	deploymentName := createdDeployment.GetDeploymentName()
+	Expect(deploymentName).ToNot(BeEmpty())
+
+	atlasDeployment, _, err := atlasClient.ClustersApi.
+		GetCluster(context.Background(), createdProject.Status.ID, deploymentName).
+		Execute()
+	Expect(err).ToNot(HaveOccurred())
+
+	Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
+	Expect(createdDeployment.Status.ConnectionStrings.Standard).To(Equal(atlasDeployment.ConnectionStrings.GetStandard()))
+	Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.GetStandardSrv()))
+	Expect(createdDeployment.Status.MongoDBVersion).To(Equal(atlasDeployment.GetMongoDBVersion()))
+	Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
+	Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
+	Expect(createdDeployment.Status.Conditions).To(ConsistOf(conditions.MatchConditions(
+		api.TrueCondition(api.DeploymentReadyType),
+		api.TrueCondition(api.ReadyType),
+		api.TrueCondition(api.ValidationSucceeded),
+		api.TrueCondition(api.ResourceVersionStatus),
+	)))
+	Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
+}
 
 func validateDeploymentCreatingFunc(g Gomega) func(a api.AtlasCustomResource) {
 	startedCreation := false

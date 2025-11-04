@@ -115,11 +115,11 @@ KUBEBUILDER_ASSETS ?= $(ENVTEST_ASSETS_DIR)/k8s/$(ENVTEST_K8S_VERSION)-$(TARGET_
 GINKGO_NODES ?= 12
 GINKGO_EDITOR_INTEGRATION ?= true
 GINKGO_OPTS = -vv --randomize-all --output-interceptor-mode=none --trace --timeout 90m --race --nodes=$(GINKGO_NODES) --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/... --coverprofile=coverprofile.out
-GINKGO_FILTER_LABEL ?=
+GINKGO_FILTER_LABEL ?= $(label)
 ifneq ($(GINKGO_FILTER_LABEL),)
 GINKGO_FILTER_LABEL_OPT := --label-filter="$(GINKGO_FILTER_LABEL)"
 endif
-GINKGO=ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT) $(shell pwd)/$@
+GINKGO=ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT)
 
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
@@ -233,10 +233,10 @@ unit-test: manifests
 
 ## Run integration tests. Sample with labels: `make test/int GINKGO_FILTER_LABEL=AtlasProject`
 test/int: envtest manifests
-	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
+	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO) $(shell pwd)/$@
 
 test/int/clusterwide: envtest manifests
-	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO)
+	AKO_INT_TEST=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) $(GINKGO) $(shell pwd)/$@
 
 envtest: envtest-assets
 	KUBEBUILDER_ASSETS=$(shell setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(ENVTEST_ASSETS_DIR) -p path)
@@ -246,8 +246,8 @@ envtest-assets:
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 
 .PHONY: e2e
-e2e: bundle run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
-	./scripts/e2e_local.sh $(label) $(build)
+e2e: bundle manifests run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
+	AKO_E2E_TEST=1 $(GINKGO) $(shell pwd)/test/$@
 
 .PHONY: e2e2
 e2e2: run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test

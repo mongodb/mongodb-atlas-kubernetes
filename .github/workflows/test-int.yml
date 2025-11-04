@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: ["AtlasProject", "AtlasDeployment && !AtlasDeploymentSharding", "AtlasDatabaseUser", "AtlasDataFederation", "AtlasFederatedAuth", "AtlasDeploymentSharding", "AtlasStreams"]
+        test: ["AtlasProject", "AtlasDeployment", "AtlasDatabaseUser", "AtlasDataFederation", "AtlasFederatedAuth", "AtlasDeploymentSharding", "AtlasStreams"]
         target: [ "test/int" ]
         nodes: [12]
         include:
