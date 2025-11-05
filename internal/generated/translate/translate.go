@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-logr/logr"
-	"github.com/stretchr/testify/assert/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/refs"
@@ -35,8 +35,8 @@ type Translator interface {
 	// MajorVersion returns the pinned SDK major version
 	MajorVersion() string
 
-	// Annotation gives access to the value of the given annotation on the translated schema
-	Annotation(annotationKey string) string
+	// Mappings returns all the OpenAPi custom reference extensions, or an error
+	Mappings() ([]*refs.Mapping, error)
 
 	// Validate checks the given unsttructured object complies with the translated schema
 	Validate(unstructuredObj map[string]any) error
@@ -150,48 +150,31 @@ func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source 
 }
 
 // collapseReferences finds all Kubernetes references, solves them and collapses
-// them by replacing their values from the reference (e.g kubernetes secret or
-// group), into the corresponding API field
-func collapseReferences(r *Request, obj map[string]any, main client.Object) error {
-	h := refs.NewHandler(main, r.Dependencies)
-	mappingsYML := r.Translator.Annotation(refs.APIMAppingsAnnotation)
-	if mappingsYML == "" {
-		return nil
+// them by replacing their values from the reference (e.g Kubernetes secret or
+// group), into the corresponding API request value
+func collapseReferences(r *Request, req map[string]any, main client.Object) error {
+	mappings, err := r.Translator.Mappings()
+	if err != nil {
+		return fmt.Errorf("failed to extract mappings to collapse: %w", err)
 	}
-	mappings := map[string]any{}
-	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
-		return fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
-	}
-
-	return h.CollapseReferences(obj, mappings, "spec", r.Translator.MajorVersion())
+	return refs.CollapseAll(mappings, main, r.Dependencies, req)
 }
 
 // expandReferences finds all API fields that must be referenced, and expand
 // such reference, moving the value (e.g. sensitive field or group id) to a
-// referenced Kubernetes object (e.g. kubernets secret or Atlas Group)
-func expandReferences(r *Request, obj map[string]any, main client.Object) ([]client.Object, error) {
-	h := refs.NewHandler(main, r.Dependencies)
-	mappingsYML := r.Translator.Annotation(refs.APIMAppingsAnnotation)
-	if mappingsYML == "" {
-		return []client.Object{}, nil
+// referenced Kubernetes object (e.g. Kubernetes secret or Atlas Group)
+func expandReferences(r *Request, cr map[string]any, main client.Object) ([]client.Object, error) {
+	mappings, err := r.Translator.Mappings()
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract mappings to expand: %w", err)
 	}
-	mappings := map[string]any{}
-	if err := yaml.Unmarshal([]byte(mappingsYML), mappings); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal mappings YAML: %w", err)
-	}
+	return refs.ExpandAll(mappings, main, r.Dependencies, cr)
+}
 
-	majorVersion := r.Translator.MajorVersion()
-	for _, entry := range []struct {
-		title string
-		path  []string
-	}{
-		{title: "spec", path: []string{"spec", majorVersion}},
-		{title: "spec entry", path: []string{"spec", majorVersion, "entry"}},
-		{title: "status", path: []string{"status", majorVersion}},
-	} {
-		if err := h.ExpandReferences(obj, mappings, entry.path...); err != nil {
-			return nil, fmt.Errorf("failed to map properties of %q from API to Kubernetes: %w", entry.title, err)
-		}
+func propertyValueOrNil(schema *openapi3.Schema, propertyName string) *openapi3.Schema {
+	if schema.Properties != nil &&
+		schema.Properties[propertyName] != nil && schema.Properties[propertyName].Value != nil {
+		return schema.Properties[propertyName].Value
 	}
-	return h.Added(), nil
+	return nil
 }

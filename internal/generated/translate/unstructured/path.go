@@ -34,3 +34,11 @@ func Base(path []string) string {
 	lastIndex := len(path) - 1
 	return path[lastIndex]
 }
+
+// Dir returns the parent path of path
+func Dir(path []string) []string {
+	if len(path) == 0 {
+		return path
+	}
+	return path[:len(path)-1]
+}

@@ -731,6 +731,8 @@ addlicense-check:
 	-ignore "**/*.nix" \
 	-ignore "tools/**" \
 	-ignore ".devbox/**" \
+	-ignore "tmp/**" \
+	-ignore "temp/**" \
 	-ignore "**/*Dockerfile" .
 
 .PHONY: shellcheck
