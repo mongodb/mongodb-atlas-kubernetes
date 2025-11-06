@@ -73,7 +73,7 @@ var _ = Describe("NetworkContainerController", Label("networkcontainer-controlle
 		},
 		Entry("Test[networkpeering-aws-1]: New AWS Network Container is created successfully",
 			Label("focus-network-container-cr-aws-1"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkcontainer-cr-aws-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			false,
@@ -94,7 +94,7 @@ var _ = Describe("NetworkContainerController", Label("networkcontainer-controlle
 		),
 		Entry("Test[networkpeering-azure-2]: New Azure Network Container is created successfully",
 			Label("focus-network-container-cr-azure-2"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkcontainer-cr-azure-2", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			false,
@@ -115,7 +115,7 @@ var _ = Describe("NetworkContainerController", Label("networkcontainer-controlle
 		),
 		Entry("Test[networkpeering-gcp-3]: New GCP Network Container is created successfully",
 			Label("focus-network-container-cr-gcp-3"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkcontainer-cr-gcp-3", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			false,
@@ -135,7 +135,7 @@ var _ = Describe("NetworkContainerController", Label("networkcontainer-controlle
 		),
 		Entry("Test[networkpeering-all-5]: Existing Network Containers from all providers with direct ids are taken over successfully",
 			Label("focus-network-container-cr-all-5"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkcontainer-cr-all-5", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			true,

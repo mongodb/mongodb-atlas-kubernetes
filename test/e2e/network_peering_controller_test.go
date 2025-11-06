@@ -90,7 +90,7 @@ var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"),
 		},
 		Entry("Test[networkpeering-aws-1]: AWS Network Peering CR within a region and without existent Atlas Container",
 			Label("focus-network-peering-cr-aws-1"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(
 					ctx,
 					"network-peering-cr-aws-1",
@@ -127,7 +127,7 @@ var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"),
 		),
 		Entry("Test[networkpeering-aws-2]: AWS Network Peering CR between different regions and without existent Atlas Container",
 			Label("focus-network-peering-cr-aws-2"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "network-peering-cr-aws-2", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]containerAndPeering{
@@ -158,7 +158,7 @@ var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"),
 		),
 		Entry("Test[networkpeering-aws-3]: AWS Network Peering CRs between different regions and without container region specified",
 			Label("focus-network-peering-cr-aws-3"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "network-peering-cr-aws-3", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]containerAndPeering{
@@ -212,7 +212,7 @@ var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"),
 		),
 		Entry("Test[networkpeering-gcp-1]: GCP Network Peering CR",
 			Label("focus-network-peering-cr-gcp-1"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "network-peering-cr-gcp-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]containerAndPeering{
@@ -241,7 +241,7 @@ var _ = Describe("NetworkPeeringController", Label("networkpeering-controller"),
 		),
 		Entry("Test[networkpeering-azure-1]: Azure Network Peering CR",
 			Label("focus-network-peering-cr-azure-1"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "network-peering-cr-azure-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]containerAndPeering{

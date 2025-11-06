@@ -58,7 +58,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 			globalClusterFlow(testData, mapping, ns)
 		},
 		Entry("Test[gc-advanced-deployment]: Advanced", Label("focus-gc-advanced-deployment"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "gc-advanced-deployment", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedGeoshardedDeployment("gc-advanced-deployment"))
 			},
 			[]akov2.CustomZoneMapping{

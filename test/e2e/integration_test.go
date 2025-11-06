@@ -72,7 +72,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 		},
 
 		Entry("Users can integrate DATADOG on region US1", Label("focus-project-integration"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "datatog-us1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30018, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			project.Integration{
@@ -85,7 +85,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 			},
 		),
 		Entry("Users can integrate DATADOG on region US3", Label("focus-project-integration"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "datatog-us3", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30018, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			project.Integration{
@@ -98,7 +98,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 			},
 		),
 		Entry("Users can integrate DATADOG on region US5", Label("focus-project-integration"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "datatog-us5", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30018, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			project.Integration{
@@ -111,7 +111,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 			},
 		),
 		Entry("Users can integrate DATADOG on region EU1", Label("focus-project-integration"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "datatog-eu1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30018, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			project.Integration{
@@ -124,7 +124,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 			},
 		),
 		Entry("Users can integrate DATADOG on region AP1", Label("focus-project-integration"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "datatog-ap1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30018, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			project.Integration{
@@ -137,7 +137,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 			},
 		),
 		Entry("Users can integrate PagerDuty on region US", Label("focus-project-integration"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "pager-duty-us", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30018, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			project.Integration{

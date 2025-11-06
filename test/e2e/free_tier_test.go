@@ -56,12 +56,12 @@ var _ = Describe("Free tier", Label("free-tier"), func() {
 			freeTierDeploymentFlow(testData)
 		},
 		Entry("Test free tier deployment",
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "free-tier", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateFreeAdvancedDeployment("free-tier"))
 			},
 		),
 		Entry("Test free tier advanced deployment",
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "free-tier-advanced", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateFreeAdvancedDeployment("free-tier"))
 			},
 		),

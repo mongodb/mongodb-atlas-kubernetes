@@ -65,7 +65,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		},
 		Entry("Test[networkpeering-aws-1]: User has project which was updated with AWS PrivateEndpoint",
 			Label("focus-network-peering-aws-1"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkpeering-aws-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]akov2.NetworkPeer{
@@ -82,7 +82,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		),
 		Entry("Test[networkpeering-aws-2]: User has project which was updated with AWS PrivateEndpoint",
 			Label("focus-network-peering-aws-2"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkpeering-aws-2", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]akov2.NetworkPeer{
@@ -99,7 +99,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		),
 		Entry("Test[networkpeering-aws-3]: User has project which was updated with AWS PrivateEndpoint",
 			Label("focus-network-peering-aws-3"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkpeering-aws-3", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]akov2.NetworkPeer{
@@ -125,7 +125,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		),
 		Entry("Test[networkpeering-gcp-1]: User has project which was updated with GCP PrivateEndpoint",
 			Label("focus-network-peering-gcp-1"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkpeering-gcp-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]akov2.NetworkPeer{
@@ -141,7 +141,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		),
 		Entry("Test[networkpeering-azure-1]: User has project which was updated with Azure PrivateEndpoint",
 			Label("focus-network-peering-azure-1"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "networkpeering-azure-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]akov2.NetworkPeer{

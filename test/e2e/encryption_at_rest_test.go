@@ -90,7 +90,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			encryptionAtRestFlow(ctx, testData, encAtRest)
 		},
 		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("focus-encryption-at-rest-aws"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "encryption-at-rest-aws", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			akov2.EncryptionAtRest{
@@ -109,7 +109,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			},
 		),
 		Entry("Test[encryption-at-rest-azure]: Can add Encryption at Rest to Azure project", Label("focus-encryption-at-rest-azure"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "encryption-at-rest-azure", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			akov2.EncryptionAtRest{
@@ -124,7 +124,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			nil,
 		),
 		Entry("Test[encryption-at-rest-gcp]: Can add Encryption at Rest to GCP project", Label("focus-encryption-at-rest-gcp"),
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "encryption-at-rest-gcp", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			akov2.EncryptionAtRest{

@@ -54,7 +54,7 @@ var _ = Describe("CustomRoles", Label("custom-roles"), func() {
 			projectCustomRolesFlow(testData, customRoles)
 		},
 		Entry("Test[custom-roles-1]: User has project to which custom roles where added",
-			func(ctx SpecContext) *model.TestDataProvider {
+			func(ctx context.Context) *model.TestDataProvider {
 				return model.DataProvider(ctx, "custom-roles-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			[]akov2.CustomRole{
