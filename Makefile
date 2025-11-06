@@ -18,9 +18,20 @@ DOCKER_SBOM_PLUGIN_VERSION=0.6.1
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION_FILE=version.json
 CURRENT_VERSION := $(shell $(JQ) -r .current $(VERSION_FILE))
+NEXT_VERSION := $(shell $(JQ) -r .next $(VERSION_FILE))
 VERSION ?= $(shell git describe --always --tags --dirty --broken | cut -c 2-)
 BUILDTIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GITCOMMIT ?= $(shell git rev-parse --short HEAD 2> /dev/null || true)
+
+# Fix for e2e-gov tests not to use a bad semver version instead
+ifdef USE_NEXT_VERSION
+VERSION=$(NEXT_VERSION)
+endif
+
+# Fix for e2e2 all-in-one test so that it uses an image that already exists in pre-release
+ifdef USE_CURRENT_VERSION
+VERSION=$(CURRENT_VERSION)
+endif
 
 VERSION_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version
 
@@ -31,13 +42,6 @@ LD_FLAGS += -X $(VERSION_PACKAGE).BuildTime=$(BUILDTIME)
 ifdef EXPERIMENTAL
 LD_FLAGS += -X $(VERSION_PACKAGE).Experimental=$(EXPERIMENTAL)
 endif
-
-# NEXT_VERSION represents a version that is higher than anything released
-# VERSION default value does not play well with the run target which might end up failing
-# with errors such as:
-# "version of the resource $Resource is higher than the operator version $VERSION"
-# This happens if you use exported YAMLs from CLI and the dirty version is deemed a pre-release
-NEXT_VERSION = 99.99.99-next
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -188,6 +192,18 @@ SBOMS_DIR ?= template
 
 SHELLCHECK_OPTIONS ?= -e SC2086
 
+TEST_REGISTRY ?= localhost:5000
+DEFAULT_IMAGE_URL := $(TEST_REGISTRY)/mongodb-atlas-kubernetes-operator:$(NEXT_VERSION)-test
+export IMAGE_URL
+
+ifndef IMAGE_URL
+    IMAGE_URL := $(DEFAULT_IMAGE_URL)
+	BUILD_DEPENDENCY := test-docker-image
+else
+    $(info --- IMAGE_URL is set externally: $(IMAGE_URL))
+    BUILD_DEPENDENCY :=
+endif
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -246,11 +262,11 @@ envtest-assets:
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 
 .PHONY: e2e
-e2e: bundle manifests run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
+e2e: bundle manifests run-kind install-crds $(BUILD_DEPENDENCY) ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	AKO_E2E_TEST=1 $(GINKGO) $(shell pwd)/test/$@
 
 .PHONY: e2e2
-e2e2: run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
+e2e2: bundle run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
 	NO_GORUN=1 \
 	AKO_E2E2_TEST=1 \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
@@ -485,8 +501,21 @@ all-platforms:
 
 .PHONY: all-platforms-docker
 all-platforms-docker: all-platforms
-	docker build --build-arg BINARY_PATH=bin/linux/amd64 -f fast.Dockerfile -t manager-amd64 .
-	docker build --build-arg BINARY_PATH=bin/linux/arm64 -f fast.Dockerfile -t manager-arm64 .
+	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=amd64 \
+	-f fast.Dockerfile -t manager-amd64 .
+	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=arm64 \
+	-f fast.Dockerfile -t manager-arm64 .
+
+# docker-image builds the test image always for linux, even on MacOS.
+# This is because the Kubernetes cluster is always run within a Linux VM
+.PHONY: docker-image
+docker-image: all-platforms
+	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=$(TARGET_ARCH) \
+	-f fast.Dockerfile -t $(DEFAULT_IMAGE_URL) .
+
+.PHONY: test-docker-image
+test-docker-image: docker-image run-kind
+	docker push $(DEFAULT_IMAGE_URL)
 
 .PHONY: check-major-version
 check-major-version: ## Check that VERSION starts with MAJOR_VERSION
