@@ -14,6 +14,8 @@
 
 package v1
 
+// ServerlessPrivateEndpoint configures private endpoints for the Serverless instances.
+// DEPRECATED: Serverless private endpoints are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 type ServerlessPrivateEndpoint struct {
 	// Name is the name of the Serverless PrivateLink Service. Should be unique.
 	Name string `json:"name,omitempty"`

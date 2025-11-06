@@ -39,8 +39,8 @@ const (
 	TypeGeoSharded DeploymentType = "GEOSHARDED"
 )
 
-// AtlasDeploymentSpec defines the desired state of AtlasDeployment
-// Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined
+// AtlasDeploymentSpec defines the desired state of AtlasDeployment.
+// Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasDeploymentSpec struct {
@@ -57,16 +57,16 @@ type AtlasDeploymentSpec struct {
 	// +optional
 	DeploymentSpec *AdvancedDeploymentSpec `json:"deploymentSpec,omitempty"`
 
-	// Backup schedule for the AtlasDeployment
+	// Reference to the backup schedule for the AtlasDeployment.
 	// +optional
 	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
 
 	// Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
-	// DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
+	// DEPRECATED: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 	// +optional
 	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
 
-	// ProcessArgs allows to modify Advanced Configuration Options
+	// ProcessArgs allows modification of Advanced Configuration Options.
 	// +optional
 	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
 
@@ -86,8 +86,8 @@ type SearchNode struct {
 }
 
 type AdvancedDeploymentSpec struct {
-	// Applicable only for M10+ deployments.
 	// Flag that indicates if the deployment uses Cloud Backups for backups.
+	// Applicable only for M10+ deployments.
 	// +optional
 	BackupEnabled *bool `json:"backupEnabled,omitempty"`
 	// Configuration of BI Connector for Atlas on this deployment.
@@ -113,9 +113,11 @@ type AdvancedDeploymentSpec struct {
 	EncryptionAtRestProvider string `json:"encryptionAtRestProvider,omitempty"`
 	// Collection of key-value pairs that tag and categorize the deployment.
 	// Each key and value has a maximum length of 255 characters.
+	// DEPRECATED: Cluster labels are deprecated and will be removed in a future release. We strongly recommend that you use Resource Tags instead.
 	// +optional
 	Labels []common.LabelSpec `json:"labels,omitempty"`
-	// Version of the deployment to deploy.
+	// MongoDB major version of the cluster. Set to the binary major version.
+	// +optional
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
 	MongoDBVersion      string `json:"mongoDBVersion,omitempty"`
 	// Name of the advanced deployment as it appears in Atlas.
@@ -133,14 +135,21 @@ type AdvancedDeploymentSpec struct {
 	// Configuration for deployment regions.
 	// +optional
 	ReplicationSpecs []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
-	RootCertType     string                     `json:"rootCertType,omitempty"`
+	// Root Certificate Authority that MongoDB Atlas cluster uses.
+	// +optional
+	RootCertType string `json:"rootCertType,omitempty"`
 	// Key-value pairs for resource tagging.
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
-	Tags                 []*TagSpec `json:"tags,omitempty"`
-	VersionReleaseSystem string     `json:"versionReleaseSystem,omitempty"`
+	Tags []*TagSpec `json:"tags,omitempty"`
+	// Method by which the cluster maintains the MongoDB versions.
+	// If value is CONTINUOUS, you must not specify mongoDBMajorVersion.
+	// +optional
+	VersionReleaseSystem string `json:"versionReleaseSystem,omitempty"`
+	// List that contains Global Cluster parameters that map zones to geographic regions.
 	// +optional
 	CustomZoneMapping []CustomZoneMapping `json:"customZoneMapping,omitempty"`
+	// List that contains information to create a managed namespace in a specified Global Cluster to create.
 	// +optional
 	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
 	// Flag that indicates whether termination protection is enabled on the cluster. If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
@@ -150,7 +159,7 @@ type AdvancedDeploymentSpec struct {
 	// +kubebuilder:validation:MaxItems=1
 	// +optional
 	SearchNodes []SearchNode `json:"searchNodes,omitempty"`
-	// A list of atlas search indexes configuration for the current deployment
+	// An array of SearchIndex objects with fields that describe the search index.
 	// +optional
 	SearchIndexes []SearchIndex `json:"searchIndexes,omitempty"`
 	// Config Server Management Mode for creating or updating a sharded cluster.
@@ -174,7 +183,8 @@ func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymen
 	return result
 }
 
-// ServerlessSpec defines the desired state of Atlas Serverless Instance
+// ServerlessSpec defines the desired state of Atlas Serverless Instance.
+// DEPRECATED: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 type ServerlessSpec struct {
 	// Name of the serverless deployment as it appears in Atlas.
 	// After Atlas creates the deployment, you can't change its name.
@@ -183,7 +193,9 @@ type ServerlessSpec struct {
 	Name string `json:"name"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
 	ProviderSettings *ServerlessProviderSettingsSpec `json:"providerSettings"`
-	PrivateEndpoints []ServerlessPrivateEndpoint     `json:"privateEndpoints,omitempty"`
+	// List that contains the private endpoint configurations for the Serverless instance.
+	// DEPRECATED: Serverless private endpoints are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
+	PrivateEndpoints []ServerlessPrivateEndpoint `json:"privateEndpoints,omitempty"`
 	// Key-value pairs for resource tagging.
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
@@ -197,18 +209,25 @@ type ServerlessSpec struct {
 	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
 }
 
-// BiConnector specifies BI Connector for Atlas configuration on this deployment.
+// BiConnector specifies Business Intelligence Connector for Atlas configuration on this deployment.
 type BiConnector struct {
-	Enabled        *bool  `json:"enabled,omitempty"`
+	// Flag that indicates whether MongoDB Connector for Business Intelligence is enabled on the specified cluster.
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
+	// Data source node designated for the MongoDB Connector for Business Intelligence on MongoDB Cloud.
+	// The MongoDB Connector for Business Intelligence on MongoDB Cloud reads data from the primary, secondary, or analytics node based on your read preferences.
+	// +optional
 	ReadPreference string `json:"readPreference,omitempty"`
 }
 
 // TagSpec holds a key-value pair for resource tagging on this deployment.
 type TagSpec struct {
+	// Constant that defines the set of the tag.
 	// +kubebuilder:validation:MaxLength:=255
 	// +kubebuilder:validation:MinLength:=1
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
 	Key string `json:"key"`
+	// Variable that belongs to the set of the tag.
 	// +kubebuilder:validation:MaxLength:=255
 	// +kubebuilder:validation:MinLength:=1
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
@@ -216,20 +235,45 @@ type TagSpec struct {
 }
 
 type ServerlessBackupOptions struct {
-	// ServerlessContinuousBackupEnabled
+	// ServerlessContinuousBackupEnabled indicates whether the cluster uses continuous cloud backups.
+	// DEPRECATED: Serverless instances are deprecated, and no longer support continuous backup. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 	// +kubebuilder:default:=true
 	ServerlessContinuousBackupEnabled bool `json:"serverlessContinuousBackupEnabled,omitempty"`
 }
 
-// ConnectionStrings configuration for applications use to connect to this deployment.
+// ConnectionStrings is a collection of Uniform Resource Locators that point to the MongoDB database.
 type ConnectionStrings struct {
-	Standard          string                `json:"standard,omitempty"`
-	StandardSrv       string                `json:"standardSrv,omitempty"`
-	PrivateEndpoint   []PrivateEndpointSpec `json:"privateEndpoint,omitempty"`
-	AwsPrivateLink    map[string]string     `json:"awsPrivateLink,omitempty"`
-	AwsPrivateLinkSrv map[string]string     `json:"awsPrivateLinkSrv,omitempty"`
-	Private           string                `json:"private,omitempty"`
-	PrivateSrv        string                `json:"privateSrv,omitempty"`
+	// Public connection string that you can use to connect to this cluster. This connection string uses the mongodb:// protocol.
+	Standard string `json:"standard,omitempty"`
+	// Public connection string that you can use to connect to this cluster. This connection string uses the mongodb+srv:// protocol.
+	StandardSrv string `json:"standardSrv,omitempty"`
+	// List of private endpoint-aware connection strings that you can use to connect to this cluster through a private endpoint.
+	// This parameter returns only if you deployed a private endpoint to all regions to which you deployed this clusters' nodes.
+	PrivateEndpoint []PrivateEndpointSpec `json:"privateEndpoint,omitempty"`
+	// Private endpoint-aware connection strings that use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink.
+	// Each key identifies an Amazon Web Services (AWS) interface endpoint.
+	// Each value identifies the related mongodb:// connection string that you use to connect to MongoDB Cloud through the interface endpoint that the key names.
+	AwsPrivateLink map[string]string `json:"awsPrivateLink,omitempty"`
+	// Private endpoint-aware connection strings that use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink.
+	// Each key identifies an Amazon Web Services (AWS) interface endpoint.
+	// Each value identifies the related mongodb:// connection string that you use to connect to Atlas through the interface endpoint that the key names.
+	// If the cluster uses an optimized connection string, awsPrivateLinkSrv contains the optimized connection string.
+	// If the cluster has the non-optimized (legacy) connection string, awsPrivateLinkSrv contains the non-optimized connection string even if an optimized connection string is also present.
+	AwsPrivateLinkSrv map[string]string `json:"awsPrivateLinkSrv,omitempty"`
+	// Network peering connection strings for each interface Virtual Private Cloud (VPC) endpoint that you configured to connect to this cluster.
+	// This connection string uses the mongodb+srv:// protocol. The resource returns this parameter once someone creates a network peering connection to this cluster.
+	// This protocol tells the application to look up the host seed list in the Domain Name System (DNS). This list synchronizes with the nodes in a cluster.
+	// If the connection string uses this Uniform Resource Identifier (URI) format, you don't need to append the seed list or change the URI if the nodes change.
+	// Use this URI format if your driver supports it. If it doesn't, use connectionStrings.private.
+	// For Amazon Web Services (AWS) clusters, this resource returns this parameter only if you enable custom DNS.
+	Private string `json:"private,omitempty"`
+	// Network peering connection strings for each interface Virtual Private Cloud (VPC) endpoint that you configured to connect to this cluster.
+	// This connection string uses the mongodb+srv:// protocol. The resource returns this parameter when someone creates a network peering connection to this cluster.
+	// This protocol tells the application to look up the host seed list in the Domain Name System (DNS).
+	// This list synchronizes with the nodes in a cluster. If the connection string uses this Uniform Resource Identifier (URI) format, you don't need to append the seed list or change the Uniform Resource Identifier (URI) if the nodes change.
+	// Use this Uniform Resource Identifier (URI) format if your driver supports it. If it doesn't, use connectionStrings.private.
+	// For Amazon Web Services (AWS) clusters, this parameter returns only if you enable custom DNS.
+	PrivateSrv string `json:"privateSrv,omitempty"`
 }
 
 // PrivateEndpointSpec connection strings. Each object describes the connection strings
@@ -237,17 +281,28 @@ type ConnectionStrings struct {
 // Atlas returns this parameter only if you deployed a private endpoint to all regions
 // to which you deployed this deployment's nodes.
 type PrivateEndpointSpec struct {
-	ConnectionString    string         `json:"connectionString,omitempty"`
-	Endpoints           []EndpointSpec `json:"endpoints,omitempty"`
-	SRVConnectionString string         `json:"srvConnectionString,omitempty"`
-	Type                string         `json:"type,omitempty"`
+	// Private endpoint-aware connection string that uses the mongodb:// protocol to connect to MongoDB Cloud through a private endpoint.
+	ConnectionString string `json:"connectionString,omitempty"`
+	// List that contains the private endpoints through which you connect to MongoDB Atlas.
+	Endpoints []EndpointSpec `json:"endpoints,omitempty"`
+	// Private endpoint-aware connection string that uses the mongodb+srv:// protocol to connect to MongoDB Cloud through a private endpoint.
+	// The mongodb+srv protocol tells the driver to look up the seed list of hosts in the Domain Name System (DNS). This list synchronizes with the nodes in a cluster.
+	// If the connection string uses this Uniform Resource Identifier (URI) format, you don't need to append the seed list or change the Uniform Resource Identifier (URI) if the nodes change.
+	// Use this Uniform Resource Identifier (URI) format if your application supports it.
+	SRVConnectionString string `json:"srvConnectionString,omitempty"`
+	// MongoDB process type to which your application connects.
+	// Use MONGOD for replica sets and MONGOS for sharded clusters.
+	Type string `json:"type,omitempty"`
 }
 
 // EndpointSpec through which you connect to Atlas.
 type EndpointSpec struct {
-	EndpointID   string `json:"endpointId,omitempty"`
+	// Unique string that the cloud provider uses to identify the private endpoint.
+	EndpointID string `json:"endpointId,omitempty"`
+	// Cloud provider in which MongoDB Cloud deploys the private endpoint.
 	ProviderName string `json:"providerName,omitempty"`
-	Region       string `json:"region,omitempty"`
+	// Region where the private endpoint is deployed.
+	Region string `json:"region,omitempty"`
 }
 
 type AdvancedReplicationSpec struct {
@@ -273,7 +328,7 @@ type AdvancedRegionConfig struct {
 	AutoScaling    *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
 	// Cloud service provider on which the host for a multi-tenant deployment is provisioned.
 	// This setting only works when "providerName" : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.
-	// Otherwise it should be equal to "providerName" value
+	// Otherwise, it should be equal to the "providerName" value.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE
 	BackingProviderName string `json:"backingProviderName,omitempty"`
 	// Precedence is given to this region when a primary election occurs.
@@ -299,7 +354,7 @@ type Specs struct {
 	EbsVolumeType string `json:"ebsVolumeType,omitempty"`
 	// Hardware specification for the instance sizes in this region.
 	// Each instance size has a default storage and memory capacity.
-	// The instance size you select applies to all the data-bearing hosts in your instance size
+	// The instance size you select applies to all the data-bearing hosts in your instance size.
 	InstanceSize string `json:"instanceSize,omitempty"`
 	// Number of nodes of the given type for MongoDB Cloud to deploy to the region.
 	NodeCount *int `json:"nodeCount,omitempty"`
@@ -307,9 +362,9 @@ type Specs struct {
 
 // AutoScalingSpec configures your deployment to automatically scale its storage
 type AutoScalingSpec struct {
-	// Deprecated: This flag is not supported anymore.
 	// Flag that indicates whether autopilot mode for Performance Advisor is enabled.
 	// The default is false.
+	// DEPRECATED: This flag is no longer supported.
 	AutoIndexingEnabled *bool `json:"autoIndexingEnabled,omitempty"`
 	// Flag that indicates whether disk auto-scaling is enabled. The default is true.
 	// +optional
@@ -333,6 +388,8 @@ type AdvancedAutoScalingSpec struct {
 
 // DiskGB specifies whether disk auto-scaling is enabled. The default is true.
 type DiskGB struct {
+	// Flag that indicates whether this cluster enables disk auto-scaling.
+	// The maximum memory allowed for the selected cluster tier and the oplog size can limit storage auto-scaling.
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
@@ -356,21 +413,34 @@ type ComputeSpec struct {
 }
 
 type ProcessArgs struct {
-	DefaultReadConcern               string `json:"defaultReadConcern,omitempty"`
-	DefaultWriteConcern              string `json:"defaultWriteConcern,omitempty"`
-	MinimumEnabledTLSProtocol        string `json:"minimumEnabledTlsProtocol,omitempty"`
-	FailIndexKeyTooLong              *bool  `json:"failIndexKeyTooLong,omitempty"`
-	JavascriptEnabled                *bool  `json:"javascriptEnabled,omitempty"`
-	NoTableScan                      *bool  `json:"noTableScan,omitempty"`
-	OplogSizeMB                      *int64 `json:"oplogSizeMB,omitempty"`
-	SampleSizeBIConnector            *int64 `json:"sampleSizeBIConnector,omitempty"`
+	// String that indicates the default level of acknowledgment requested from MongoDB for read operations set for this cluster.
+	DefaultReadConcern string `json:"defaultReadConcern,omitempty"`
+	// String that indicates the default level of acknowledgment requested from MongoDB for write operations set for this cluster.
+	DefaultWriteConcern string `json:"defaultWriteConcern,omitempty"`
+	// String that indicates the minimum TLS version that the cluster accepts for incoming connections.
+	// Clusters using TLS 1.0 or 1.1 should consider setting TLS 1.2 as the minimum TLS protocol version.
+	MinimumEnabledTLSProtocol string `json:"minimumEnabledTlsProtocol,omitempty"`
+	// Flag that indicates whether to fail the operation and return an error when you insert or update documents where all indexed entries exceed 1024 bytes.
+	// If you set this to false, mongod writes documents that exceed this limit, but doesn't index them.
+	FailIndexKeyTooLong *bool `json:"failIndexKeyTooLong,omitempty"`
+	// Flag that indicates whether the cluster allows execution of operations that perform server-side executions of JavaScript.
+	JavascriptEnabled *bool `json:"javascriptEnabled,omitempty"`
+	// Flag that indicates whether the cluster disables executing any query that requires a collection scan to return results.
+	NoTableScan *bool `json:"noTableScan,omitempty"`
+	// Number that indicates the storage limit of a cluster's oplog expressed in megabytes.
+	// A value of null indicates that the cluster uses the default oplog size that Atlas calculates.
+	OplogSizeMB *int64 `json:"oplogSizeMB,omitempty"`
+	// Number that indicates the interval in seconds at which the mongosqld process re-samples data to create its relational schema.
+	SampleSizeBIConnector *int64 `json:"sampleSizeBIConnector,omitempty"`
+	// Number that indicates the documents per database to sample when gathering schema information.
 	SampleRefreshIntervalBIConnector *int64 `json:"sampleRefreshIntervalBIConnector,omitempty"`
-	OplogMinRetentionHours           string `json:"oplogMinRetentionHours,omitempty"`
+	// Minimum retention window for cluster's oplog expressed in hours. A value of null indicates that the cluster uses the default minimum oplog window that MongoDB Cloud calculates.
+	OplogMinRetentionHours string `json:"oplogMinRetentionHours,omitempty"`
 }
 
 // BiConnectorSpec specifies BI Connector for Atlas configuration on this deployment
 type BiConnectorSpec struct {
-	// Flag that indicates whether or not BI Connector for Atlas is enabled on the deployment.
+	// Flag that indicates whether the Business Intelligence Connector for Atlas is enabled on the deployment.
 	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
 
@@ -387,20 +457,24 @@ type ServerlessProviderSettingsSpec struct {
 	// +optional
 	BackingProviderName string `json:"backingProviderName,omitempty"`
 
-	// DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
+	// Disk IOPS setting for AWS storage.
 	// Set only if you selected AWS as your cloud service provider.
+	// DEPRECATED: The value of this field doesn't take any effect.
 	// +optional
 	DiskIOPS *int64 `json:"diskIOPS,omitempty"`
 
-	// DEPRECATED FIELD. The value of this field doesn't take any effect. Type of disk if you selected Azure as your cloud service provider.
+	// Type of disk if you selected Azure as your cloud service provider.
+	// DEPRECATED: The value of this field doesn't take any effect.
 	// +optional
 	DiskTypeName string `json:"diskTypeName,omitempty"`
 
-	// DEPRECATED FIELD. The value of this field doesn't take any effect. Flag that indicates whether the Amazon EBS encryption feature encrypts the host's root volume for both data at rest within the volume and for data moving between the volume and the deployment.
+	// Flag that indicates whether the Amazon EBS encryption feature encrypts the host's root volume for both data at rest within the volume and for data moving between the volume and the deployment.
+	// DEPRECATED: The value of this field doesn't take any effect.
 	// +optional
 	EncryptEBSVolume *bool `json:"encryptEBSVolume,omitempty"`
 
-	// DEPRECATED FIELD. The value of this field doesn't take any effect. Atlas provides different deployment tiers, each with a default storage capacity and RAM size. The deployment you select is used for all the data-bearing hosts in your deployment tier.
+	// Atlas provides different deployment tiers, each with a default storage capacity and RAM size. The deployment you select is used for all the data-bearing hosts in your deployment tier.
+	// DEPRECATED: The value of this field doesn't take any effect.
 	// +optional
 	InstanceSizeName string `json:"instanceSizeName,omitempty"`
 
@@ -413,12 +487,14 @@ type ServerlessProviderSettingsSpec struct {
 	// +optional
 	RegionName string `json:"regionName,omitempty"`
 
-	// DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
+	// Disk IOPS setting for AWS storage.
 	// Set only if you selected AWS as your cloud service provider.
+	// DEPRECATED: The value of this field doesn't take any effect.
 	// +kubebuilder:validation:Enum=STANDARD;PROVISIONED
 	VolumeType string `json:"volumeType,omitempty"`
 
-	// DEPRECATED FIELD. The value of this field doesn't take any effect. Range of instance sizes to which your deployment can scale.
+	// Range of instance sizes to which your deployment can scale.
+	// DEPRECATED: The value of this field doesn't take any effect.
 	AutoScaling *AutoScalingSpec `json:"autoScaling,omitempty"`
 }
 
@@ -522,7 +598,7 @@ type FlexSpec struct {
 	// +required
 	Name string `json:"name"`
 
-	// List that contains key-value pairs between 1 to 255 characters in length for tagging and categorizing the instance.
+	// List that contains key-value pairs between 1 and 255 characters in length for tagging and categorizing the instance.
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
 	Tags []*TagSpec `json:"tags,omitempty"`

@@ -1754,14 +1754,14 @@ LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Key applied to tag and categorize this component.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Value set to the Key applied to tag and categorize this component.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -2737,8 +2737,8 @@ AtlasDeployment is the Schema for the atlasdeployments API
         <td><b><a href="#atlasdeploymentspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasDeploymentSpec defines the desired state of AtlasDeployment
-Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined<br/>
+          AtlasDeploymentSpec defines the desired state of AtlasDeployment.
+Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li>
         </td>
@@ -2759,8 +2759,8 @@ Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be 
 
 
 
-AtlasDeploymentSpec defines the desired state of AtlasDeployment
-Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined
+AtlasDeploymentSpec defines the desired state of AtlasDeployment.
+Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.
 
 <table>
     <thead>
@@ -2775,7 +2775,7 @@ Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be 
         <td><b><a href="#atlasdeploymentspecbackupref">backupRef</a></b></td>
         <td>object</td>
         <td>
-          Backup schedule for the AtlasDeployment<br/>
+          Reference to the backup schedule for the AtlasDeployment.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2811,7 +2811,7 @@ Mutually exclusive with the "projectRef" field<br/>
         <td><b><a href="#atlasdeploymentspecprocessargs">processArgs</a></b></td>
         <td>object</td>
         <td>
-          ProcessArgs allows to modify Advanced Configuration Options<br/>
+          ProcessArgs allows modification of Advanced Configuration Options.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2827,7 +2827,7 @@ Mutually exclusive with the "externalProjectRef" field<br/>
         <td>object</td>
         <td>
           Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
-DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.<br/>
+DEPRECATED: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2848,7 +2848,7 @@ DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongod
 
 
 
-Backup schedule for the AtlasDeployment
+Reference to the backup schedule for the AtlasDeployment.
 
 <table>
     <thead>
@@ -2936,8 +2936,8 @@ Can only contain ASCII letters, numbers, and hyphens.<br/>
         <td><b>backupEnabled</b></td>
         <td>boolean</td>
         <td>
-          Applicable only for M10+ deployments.
-Flag that indicates if the deployment uses Cloud Backups for backups.<br/>
+          Flag that indicates if the deployment uses Cloud Backups for backups.
+Applicable only for M10+ deployments.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2971,7 +2971,7 @@ The parameter is required if replicationSpecs are set or if Global Deployments a
         <td><b><a href="#atlasdeploymentspecdeploymentspeccustomzonemappingindex">customZoneMapping</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          List that contains Global Cluster parameters that map zones to geographic regions.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3001,21 +3001,22 @@ The parameter is required if replicationSpecs are configured.<br/>
         <td>[]object</td>
         <td>
           Collection of key-value pairs that tag and categorize the deployment.
-Each key and value has a maximum length of 255 characters.<br/>
+Each key and value has a maximum length of 255 characters.
+DEPRECATED: Cluster labels are deprecated and will be removed in a future release. We strongly recommend that you use Resource Tags instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecmanagednamespacesindex">managedNamespaces</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          List that contains information to create a managed namespace in a specified Global Cluster to create.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>mongoDBMajorVersion</b></td>
         <td>string</td>
         <td>
-          Version of the deployment to deploy.<br/>
+          MongoDB major version of the cluster. Set to the binary major version.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3050,14 +3051,14 @@ Each key and value has a maximum length of 255 characters.<br/>
         <td><b>rootCertType</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Root Certificate Authority that MongoDB Atlas cluster uses.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindex">searchIndexes</a></b></td>
         <td>[]object</td>
         <td>
-          A list of atlas search indexes configuration for the current deployment<br/>
+          An array of SearchIndex objects with fields that describe the search index.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3087,7 +3088,8 @@ Each key and value has a maximum length of 255 characters.<br/>
         <td><b>versionReleaseSystem</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Method by which the cluster maintains the MongoDB versions.
+If value is CONTINUOUS, you must not specify mongoDBMajorVersion.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3115,7 +3117,7 @@ The MongoDB Connector for Business Intelligence for Atlas (BI Connector) is only
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether or not BI Connector for Atlas is enabled on the deployment.<br/>
+          Flag that indicates whether the Business Intelligence Connector for Atlas is enabled on the deployment.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3149,14 +3151,15 @@ The MongoDB Connector for Business Intelligence for Atlas (BI Connector) is only
         <td><b>location</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Code that represents a location that maps to a zone in your global cluster.
+MongoDB Atlas represents this location with a ISO 3166-2 location and subdivision codes when possible.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>zone</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the zone in your global cluster. This zone maps to a location code.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -3183,14 +3186,14 @@ LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Key applied to tag and categorize this component.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Value set to the Key applied to tag and categorize this component.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -3217,49 +3220,54 @@ ManagedNamespace represents the information about managed namespace configuratio
         <td><b>collection</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label of the collection to manage for this Global Cluster.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>db</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label of the database to manage for this Global Cluster.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>customShardKey</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Database parameter used to divide the collection into shards. Global clusters require a compound shard key.
+This compound shard key combines the location parameter and the user-selected custom key.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isCustomShardKeyHashed</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether someone hashed the custom shard key for the specified collection.
+If you set this value to false, MongoDB Cloud uses ranged sharding.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isShardKeyUnique</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether someone hashed the custom shard key.
+If this parameter returns false, this cluster uses ranged sharding.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>numInitialChunks</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Minimum number of chunks to create initially when sharding an empty collection with a hashed shard key.
+Maximum value is 8192.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>presplitHashedZones</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether MongoDB Cloud should create and distribute initial chunks for an empty or non-existing collection.
+MongoDB Cloud distributes data based on the defined zones and zone ranges for the collection.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3350,7 +3358,7 @@ Every hardware specification must use the same instanceSize.<br/>
         <td>
           Cloud service provider on which the host for a multi-tenant deployment is provisioned.
 This setting only works when "providerName" : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.
-Otherwise it should be equal to "providerName" value<br/>
+Otherwise, it should be equal to the "providerName" value.<br/>
           <br/>
             <i>Enum</i>: AWS, GCP, AZURE<br/>
         </td>
@@ -3442,7 +3450,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size<br/>
+The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3558,7 +3566,8 @@ Flag that indicates whether disk auto-scaling is enabled. The default is true.
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether this cluster enables disk auto-scaling.
+The maximum memory allowed for the selected cluster tier and the oplog size can limit storage auto-scaling.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3607,7 +3616,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size<br/>
+The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3663,7 +3672,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size<br/>
+The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3682,7 +3691,7 @@ The instance size you select applies to all the data-bearing hosts in your insta
 
 
 
-SearchIndex is the CRD to configure part of the Atlas Search Index
+SearchIndex is the CRD to configure part of the Atlas Search Index.
 
 <table>
     <thead>
@@ -3697,28 +3706,28 @@ SearchIndex is the CRD to configure part of the Atlas Search Index
         <td><b>DBName</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the database that contains the collection with one or more Atlas Search indexes<br/>
+          Human-readable label that identifies the database that contains the collection with one or more Atlas Search indexes.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>collectionName</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the collection that contains one or more Atlas Search indexes<br/>
+          Human-readable label that identifies the collection that contains one or more Atlas Search indexes.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies this index. Must be unique for a deployment<br/>
+          Human-readable label that identifies this index. Must be unique for a deployment.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>enum</td>
         <td>
-          Type of the index<br/>
+          Type of the index.<br/>
           <br/>
             <i>Enum</i>: search, vectorSearch<br/>
         </td>
@@ -3727,14 +3736,14 @@ SearchIndex is the CRD to configure part of the Atlas Search Index
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearch">search</a></b></td>
         <td>object</td>
         <td>
-          Atlas search index configuration<br/>
+          Atlas search index configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexvectorsearch">vectorSearch</a></b></td>
         <td>object</td>
         <td>
-          Atlas vector search index configuration<br/>
+          Atlas vector search index configuration.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3746,7 +3755,7 @@ SearchIndex is the CRD to configure part of the Atlas Search Index
 
 
 
-Atlas search index configuration
+Atlas search index configuration.
 
 <table>
     <thead>
@@ -3761,21 +3770,21 @@ Atlas search index configuration
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearchmappings">mappings</a></b></td>
         <td>object</td>
         <td>
-          Index specifications for the collection's fields<br/>
+          Index specifications for the collection's fields.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearchsearchconfigurationref">searchConfigurationRef</a></b></td>
         <td>object</td>
         <td>
-          A reference to the AtlasSearchIndexConfig custom resource<br/>
+          A reference to the AtlasSearchIndexConfig custom resource.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearchsynonymsindex">synonyms</a></b></td>
         <td>[]object</td>
         <td>
-          Rule sets that map words to their synonyms in this index<br/>
+          Rule sets that map words to their synonyms in this index.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3787,7 +3796,7 @@ Atlas search index configuration
 
 
 
-Index specifications for the collection's fields
+Index specifications for the collection's fields.
 
 <table>
     <thead>
@@ -3821,7 +3830,7 @@ Index specifications for the collection's fields
 
 
 
-A reference to the AtlasSearchIndexConfig custom resource
+A reference to the AtlasSearchIndexConfig custom resource.
 
 <table>
     <thead>
@@ -3855,7 +3864,7 @@ A reference to the AtlasSearchIndexConfig custom resource
 
 
 
-Synonym represents "Synonym" type of Atlas Search Index
+Synonym represents "Synonym" type of Atlas Search Index.
 
 <table>
     <thead>
@@ -3870,7 +3879,7 @@ Synonym represents "Synonym" type of Atlas Search Index
         <td><b>analyzer</b></td>
         <td>enum</td>
         <td>
-          Specific pre-defined method chosen to apply to the synonyms to be searched<br/>
+          Specific pre-defined method chosen to apply to the synonyms to be searched.<br/>
           <br/>
             <i>Enum</i>: lucene.standard, lucene.simple, lucene.whitespace, lucene.keyword, lucene.arabic, lucene.armenian, lucene.basque, lucene.bengali, lucene.brazilian, lucene.bulgarian, lucene.catalan, lucene.chinese, lucene.cjk, lucene.czech, lucene.danish, lucene.dutch, lucene.english, lucene.finnish, lucene.french, lucene.galician, lucene.german, lucene.greek, lucene.hindi, lucene.hungarian, lucene.indonesian, lucene.irish, lucene.italian, lucene.japanese, lucene.korean, lucene.kuromoji, lucene.latvian, lucene.lithuanian, lucene.morfologik, lucene.nori, lucene.norwegian, lucene.persian, lucene.portuguese, lucene.romanian, lucene.russian, lucene.smartcn, lucene.sorani, lucene.spanish, lucene.swedish, lucene.thai, lucene.turkish, lucene.ukrainian<br/>
         </td>
@@ -3879,14 +3888,14 @@ Synonym represents "Synonym" type of Atlas Search Index
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the synonym definition. Each name must be unique within the same index definition<br/>
+          Human-readable label that identifies the synonym definition. Each name must be unique within the same index definition.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearchsynonymsindexsource">source</a></b></td>
         <td>object</td>
         <td>
-          Data set that stores the mapping one or more words map to one or more synonyms of those words<br/>
+          Data set that stores the mapping one or more words map to one or more synonyms of those words.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -3898,7 +3907,7 @@ Synonym represents "Synonym" type of Atlas Search Index
 
 
 
-Data set that stores the mapping one or more words map to one or more synonyms of those words
+Data set that stores the mapping one or more words map to one or more synonyms of those words.
 
 <table>
     <thead>
@@ -3913,7 +3922,7 @@ Data set that stores the mapping one or more words map to one or more synonyms o
         <td><b>collection</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the MongoDB collection that stores words and their applicable synonyms<br/>
+          Human-readable label that identifies the MongoDB collection that stores words and their applicable synonyms.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -3925,7 +3934,7 @@ Data set that stores the mapping one or more words map to one or more synonyms o
 
 
 
-Atlas vector search index configuration
+Atlas vector search index configuration.
 
 <table>
     <thead>
@@ -4006,14 +4015,14 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Constant that defines the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Variable that belongs to the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -4082,7 +4091,7 @@ Configuration for the Flex cluster API. https://www.mongodb.com/docs/atlas/refer
         <td><b><a href="#atlasdeploymentspecflexspectagsindex">tags</a></b></td>
         <td>[]object</td>
         <td>
-          List that contains key-value pairs between 1 to 255 characters in length for tagging and categorizing the instance.<br/>
+          List that contains key-value pairs between 1 and 255 characters in length for tagging and categorizing the instance.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4159,14 +4168,14 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Constant that defines the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Variable that belongs to the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -4178,7 +4187,7 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
 
 
 
-ProcessArgs allows to modify Advanced Configuration Options
+ProcessArgs allows modification of Advanced Configuration Options.
 
 <table>
     <thead>
@@ -4193,56 +4202,59 @@ ProcessArgs allows to modify Advanced Configuration Options
         <td><b>defaultReadConcern</b></td>
         <td>string</td>
         <td>
-          <br/>
+          String that indicates the default level of acknowledgment requested from MongoDB for read operations set for this cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>defaultWriteConcern</b></td>
         <td>string</td>
         <td>
-          <br/>
+          String that indicates the default level of acknowledgment requested from MongoDB for write operations set for this cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>failIndexKeyTooLong</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to fail the operation and return an error when you insert or update documents where all indexed entries exceed 1024 bytes.
+If you set this to false, mongod writes documents that exceed this limit, but doesn't index them.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>javascriptEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether the cluster allows execution of operations that perform server-side executions of JavaScript.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>minimumEnabledTlsProtocol</b></td>
         <td>string</td>
         <td>
-          <br/>
+          String that indicates the minimum TLS version that the cluster accepts for incoming connections.
+Clusters using TLS 1.0 or 1.1 should consider setting TLS 1.2 as the minimum TLS protocol version.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>noTableScan</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether the cluster disables executing any query that requires a collection scan to return results.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>oplogMinRetentionHours</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Minimum retention window for cluster's oplog expressed in hours. A value of null indicates that the cluster uses the default minimum oplog window that MongoDB Cloud calculates.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>oplogSizeMB</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Number that indicates the storage limit of a cluster's oplog expressed in megabytes.
+A value of null indicates that the cluster uses the default oplog size that Atlas calculates.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4251,7 +4263,7 @@ ProcessArgs allows to modify Advanced Configuration Options
         <td><b>sampleRefreshIntervalBIConnector</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Number that indicates the documents per database to sample when gathering schema information.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4260,7 +4272,7 @@ ProcessArgs allows to modify Advanced Configuration Options
         <td><b>sampleSizeBIConnector</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Number that indicates the interval in seconds at which the mongosqld process re-samples data to create its relational schema.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4310,7 +4322,7 @@ Mutually exclusive with the "externalProjectRef" field
 
 
 Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
-DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
+DEPRECATED: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 
 <table>
     <thead>
@@ -4348,7 +4360,8 @@ Can only contain ASCII letters, numbers, and hyphens.<br/>
         <td><b><a href="#atlasdeploymentspecserverlessspecprivateendpointsindex">privateEndpoints</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          List that contains the private endpoint configurations for the Serverless instance.
+DEPRECATED: Serverless private endpoints are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4400,7 +4413,8 @@ Configuration for the provisioned hosts on which MongoDB runs. The available opt
         <td><b><a href="#atlasdeploymentspecserverlessspecprovidersettingsautoscaling">autoScaling</a></b></td>
         <td>object</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Range of instance sizes to which your deployment can scale.<br/>
+          Range of instance sizes to which your deployment can scale.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4417,8 +4431,9 @@ This setting only works when "providerSetting.providerName" : "TENANT" and "prov
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
-Set only if you selected AWS as your cloud service provider.<br/>
+          Disk IOPS setting for AWS storage.
+Set only if you selected AWS as your cloud service provider.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4427,21 +4442,24 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td><b>diskTypeName</b></td>
         <td>string</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Type of disk if you selected Azure as your cloud service provider.<br/>
+          Type of disk if you selected Azure as your cloud service provider.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>encryptEBSVolume</b></td>
         <td>boolean</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Flag that indicates whether the Amazon EBS encryption feature encrypts the host's root volume for both data at rest within the volume and for data moving between the volume and the deployment.<br/>
+          Flag that indicates whether the Amazon EBS encryption feature encrypts the host's root volume for both data at rest within the volume and for data moving between the volume and the deployment.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>instanceSizeName</b></td>
         <td>string</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Atlas provides different deployment tiers, each with a default storage capacity and RAM size. The deployment you select is used for all the data-bearing hosts in your deployment tier.<br/>
+          Atlas provides different deployment tiers, each with a default storage capacity and RAM size. The deployment you select is used for all the data-bearing hosts in your deployment tier.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4456,8 +4474,9 @@ The region you choose can affect network latency for clients accessing your data
         <td><b>volumeType</b></td>
         <td>enum</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
-Set only if you selected AWS as your cloud service provider.<br/>
+          Disk IOPS setting for AWS storage.
+Set only if you selected AWS as your cloud service provider.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
           <br/>
             <i>Enum</i>: STANDARD, PROVISIONED<br/>
         </td>
@@ -4471,7 +4490,8 @@ Set only if you selected AWS as your cloud service provider.<br/>
 
 
 
-DEPRECATED FIELD. The value of this field doesn't take any effect. Range of instance sizes to which your deployment can scale.
+Range of instance sizes to which your deployment can scale.
+DEPRECATED: The value of this field doesn't take any effect.
 
 <table>
     <thead>
@@ -4486,9 +4506,9 @@ DEPRECATED FIELD. The value of this field doesn't take any effect. Range of inst
         <td><b>autoIndexingEnabled</b></td>
         <td>boolean</td>
         <td>
-          Deprecated: This flag is not supported anymore.
-Flag that indicates whether autopilot mode for Performance Advisor is enabled.
-The default is false.<br/>
+          Flag that indicates whether autopilot mode for Performance Advisor is enabled.
+The default is false.
+DEPRECATED: This flag is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4577,7 +4597,8 @@ Serverless Backup Options
         <td><b>serverlessContinuousBackupEnabled</b></td>
         <td>boolean</td>
         <td>
-          ServerlessContinuousBackupEnabled<br/>
+          ServerlessContinuousBackupEnabled indicates whether the cluster uses continuous cloud backups.
+DEPRECATED: Serverless instances are deprecated, and no longer support continuous backup. See https://dochub.mongodb.org/core/atlas-flex-migration for details.<br/>
           <br/>
             <i>Default</i>: true<br/>
         </td>
@@ -4591,7 +4612,8 @@ Serverless Backup Options
 
 
 
-
+ServerlessPrivateEndpoint configures private endpoints for the Serverless instances.
+DEPRECATED: Serverless private endpoints are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 
 <table>
     <thead>
@@ -4647,14 +4669,14 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Constant that defines the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Variable that belongs to the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr></tbody>

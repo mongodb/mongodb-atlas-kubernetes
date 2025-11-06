@@ -44,8 +44,10 @@ func (rn ResourceRefNamespaced) Key() string {
 
 // LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
 type LabelSpec struct {
+	// Key applied to tag and categorize this component.
 	// +kubebuilder:validation:MaxLength:=255
-	Key   string `json:"key"`
+	Key string `json:"key"`
+	// Value set to the Key applied to tag and categorize this component.
 	Value string `json:"value"`
 }
 
