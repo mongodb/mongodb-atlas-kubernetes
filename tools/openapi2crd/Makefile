@@ -1,23 +1,23 @@
 # Define the output binary location
-BINARY_DIR  := bin
+BINARY_DIR  ?= bin
 BINARY_NAME := openapi2crd
 BINARY_PATH := $(BINARY_DIR)/$(BINARY_NAME)
 # Define the generated CRD file
-CRD_FILE := crds.yaml
+CRD_FILE ?= crds.yaml
 # Go source files (excluding vendor)
 GO_FILES := $(shell find . -name '*.go' -not -path './vendor/*')
 # Go packages for testing
 PACKAGES := $(shell go list ./...)
 
-crds: ## Generate CRDs from config file
+crds: build ## Generate CRDs from config file
 	@echo "==> Generating CRDs..."
-	@go run main.go --config config.yaml --output $(CRD_FILE)
+	$(BINARY_PATH) --config config.yaml --output $(CRD_FILE)
 
 crds-force: ## Generate CRDs from config file
 	@echo "==> Generating CRDs..."
 	@go run main.go --config config.yaml --force --output $(CRD_FILE)
 
-build: $(BINARY_PATH) ## Build the binary
+build: clean $(BINARY_PATH) ## Build the binary
 
 $(BINARY_PATH): $(GO_FILES) ## File-based build target.
 	@echo "==> Building $(BINARY_PATH)..."
