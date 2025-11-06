@@ -122,8 +122,6 @@ endif
 GINKGO=ginkgo run $(GINKGO_OPTS) $(GINKGO_FILTER_LABEL_OPT)
 
 BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
-GO_LICENSES = go-licenses
-GO_LICENSES_VERSION = 1.6.0
 DISALLOWED_LICENSES = restricted,reciprocal
 
 SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
@@ -215,7 +213,7 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	export GOOS=linux
 	export GOARCH=amd64
 	GOTOOLCHAIN=local \
-	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
+	go-licenses csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 
 .PHONY: check-licenses
 check-licenses:  ## Check licenses are compliant with our restrictions
@@ -224,7 +222,7 @@ check-licenses:  ## Check licenses are compliant with our restrictions
 	export GOOS=linux
 	export GOARCH=amd64
 	GOTOOLCHAIN=local \
-	go run github.com/google/$(GO_LICENSES)@v$(GO_LICENSES_VERSION) check --include_tests \
+	go-licenses check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
 	@echo "Licenses check: PASS"

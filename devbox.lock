@@ -653,6 +653,54 @@
       "last_modified": "2025-10-31T03:13:32Z",
       "resolved": "github:NixOS/nixpkgs/a7fc11be66bdfb5cdde611ee5ce381c183da8386?lastModified=1761880412&narHash=sha256-QoJjGd4NstnyOG4mm4KXF%2BweBzA2AH%2F7gn1Pmpfcb0A%3D"
     },
+    "go-licenses@1.6.0": {
+      "last_modified": "2025-10-22T20:59:19Z",
+      "resolved": "github:NixOS/nixpkgs/01b6809f7f9d1183a2b3e081f0a1e6f8f415cb09#go-licenses",
+      "source": "devbox-search",
+      "version": "1.6.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/cqvl7nkak2b4zg1m2jqgnlykz4qfria7-go-licenses-1.6.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/cqvl7nkak2b4zg1m2jqgnlykz4qfria7-go-licenses-1.6.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/cz8gp980aiapvj1da8nhn0q502xzywdc-go-licenses-1.6.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/cz8gp980aiapvj1da8nhn0q502xzywdc-go-licenses-1.6.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/wf432dmyklk4yyxg0cgzrwcar33sp16m-go-licenses-1.6.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/wf432dmyklk4yyxg0cgzrwcar33sp16m-go-licenses-1.6.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gk8cnvhy4psyn47rbd77bdznj9dm8vc9-go-licenses-1.6.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gk8cnvhy4psyn47rbd77bdznj9dm8vc9-go-licenses-1.6.0"
+        }
+      }
+    },
     "golangci-lint@2": {
       "last_modified": "2025-10-07T08:41:47Z",
       "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#golangci-lint",
